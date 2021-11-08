@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="OCEANBASE-TABLE-CLIENT-APPENDER"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logging.path.com.alipay.oceanbase-table-client}/oceanbase-table-client/oceanbase-table-client.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>
+                %d{yyyy-MM-dd HH:mm:ss}-%msg%n
+            </Pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- rollover daily -->
+            <fileNamePattern>${logging.path.oceanbase-table-client}/oceanbase-table-client/oceanbase-table-client.%d{yyyy-MM-dd}.log
+            </fileNamePattern>
+        </rollingPolicy>
+    </appender>
+
+    <logger name="com.alipay.oceanbase.rpc" level="${logging.level.oceanbase-table-client}" additivity="false">
+        <appender-ref ref="OCEANBASE-TABLE-CLIENT-APPENDER"/>
+    </logger>
+
+</configuration>

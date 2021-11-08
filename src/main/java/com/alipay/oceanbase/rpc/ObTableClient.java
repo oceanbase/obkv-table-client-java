@@ -1,0 +1,1570 @@
+/*-
+ * #%L
+ * OBKV Table Client Framework
+ * %%
+ * Copyright (C) 2021 OceanBase
+ * %%
+ * OBKV Table Client Framework is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * #L%
+ */
+
+package com.alipay.oceanbase.rpc;
+
+import com.alipay.oceanbase.rpc.constant.Constants;
+import com.alipay.oceanbase.rpc.exception.*;
+import com.alipay.oceanbase.rpc.batch.QueryByBatch;
+import com.alipay.oceanbase.rpc.location.model.*;
+import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
+import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionLevel;
+import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutate;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateRequest;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObBorderFlag;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryRequest;
+import com.alipay.oceanbase.rpc.table.AbstractObTableClient;
+import com.alipay.oceanbase.rpc.table.ObTable;
+import com.alipay.oceanbase.rpc.table.ObTableClientBatchOpsImpl;
+import com.alipay.oceanbase.rpc.table.ObTableClientQueryImpl;
+import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
+import com.alipay.oceanbase.rpc.table.api.TableQuery;
+import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
+import com.alipay.oceanbase.rpc.util.StringUtil;
+import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
+import com.alipay.oceanbase.rpc.util.ZoneUtil;
+import com.alipay.remoting.util.StringUtils;
+import org.slf4j.Logger;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import static com.alipay.oceanbase.rpc.constant.Constants.ALL_DUMMY_TABLE;
+import static com.alipay.oceanbase.rpc.constant.Constants.OCEANBASE_DATABASE;
+import static com.alipay.oceanbase.rpc.location.LocationUtil.*;
+import static com.alipay.oceanbase.rpc.location.model.ObServerRoute.STRONG_READ;
+import static com.alipay.oceanbase.rpc.location.model.TableEntry.HBASE_ROW_KEY_ELEMENT;
+import static com.alipay.oceanbase.rpc.location.model.partition.ObPartConstants.PART_ID_BITNUM;
+import static com.alipay.oceanbase.rpc.location.model.partition.ObPartConstants.PART_ID_SHIFT;
+import static com.alipay.oceanbase.rpc.property.Property.*;
+import static com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType.*;
+import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.LCD;
+
+public class ObTableClient extends AbstractObTableClient implements Lifecycle {
+    private static final Logger                               logger                                  = TableClientLoggerFactory
+                                                                                                          .getLogger(ObTableClient.class);
+
+    private static final String                               usernameSeparators                      = ":;-;.";
+
+    private AtomicInteger                                     tableEntryRefreshContinuousFailureCount = new AtomicInteger(
+                                                                                                          0);
+    private String                                            dataSourceName;
+    private String                                            paramURL;
+    /**
+     * user name
+     * Standard format: user@tenant#cluster
+     * NonStandard format: cluster:tenant:user
+     */
+    private String                                            fullUserName;
+    private String                                            userName;
+    private String                                            tenantName;
+    private String                                            clusterName;
+    private String                                            password;
+    private String                                            database;
+
+    /**
+     * sys user auth to access meta table.
+     */
+    private ObUserAuth                                        sysUA                                   = new ObUserAuth(
+                                                                                                          Constants.PROXY_SYS_USER_NAME,
+                                                                                                          "");
+
+    private volatile OcpModel                                 ocpModel                                = new OcpModel();
+
+    /**
+     * ServerAddr(all) -> ObTableConnection
+     */
+    private volatile ConcurrentHashMap<ObServerAddr, ObTable> tableRoster                             = null;
+
+    /**
+     * current tenant server address order by priority desc
+     * <p>
+     * be careful about concurrency when change the element
+     */
+    private final ServerRoster                                serverRoster                            = new ServerRoster();
+
+    private volatile RunningMode                              runningMode                             = RunningMode.NORMAL;
+
+    /**
+     * TableName -> TableEntry
+     */
+    private Map<String, TableEntry>                           tableLocations                          = new ConcurrentHashMap<String, TableEntry>();
+
+    /**
+     * TableName -> rowKey element
+     */
+    private Map<String, Map<String, Integer>>                 tableRowKeyElement                      = new ConcurrentHashMap<String, Map<String, Integer>>();
+
+    private boolean                                           retryOnChangeMasterTimes                = true;
+    /**
+     * TableName -> Failures/Lock
+     */
+    private ConcurrentHashMap<String, AtomicLong>             tableContinuousFailures                 = new ConcurrentHashMap<String, AtomicLong>();
+
+    private ConcurrentHashMap<String, Lock>                   refreshTableLocks                       = new ConcurrentHashMap<String, Lock>();
+
+    private Lock                                              refreshMetadataLock                     = new ReentrantLock();
+
+    private volatile long                                     lastRefreshMetadataTimestamp;
+
+    private volatile boolean                                  initialized                             = false;
+    private volatile boolean                                  closed                                  = false;
+    private ReentrantLock                                     statusLock                              = new ReentrantLock();
+
+    private String                                            currentIDC;
+    private ObReadConsistency                                 readConsistency                         = ObReadConsistency.STRONG;
+    private ObRoutePolicy                                     obRoutePolicy                           = ObRoutePolicy.IDC_ORDER;
+
+    /**
+     * Init.
+     */
+    public void init() throws Exception {
+        if (initialized) {
+            return;
+        }
+        statusLock.lock();
+        try {
+            if (initialized) {
+                return;
+            }
+            // 1.init properties
+            initProperties();
+            // 2. init metadata
+            initMetadata();
+            initialized = true;
+        } finally {
+            statusLock.unlock();
+        }
+    }
+
+    /**
+     * Close.
+     */
+    @Override
+    public void close() throws Exception {
+        if (closed) {
+            return;
+        }
+        statusLock.lock();
+        try {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            if (tableRoster != null) {
+                Exception throwException = null;
+                List<ObServerAddr> exceptionObServers = new ArrayList<ObServerAddr>();
+                for (Map.Entry<ObServerAddr, ObTable> entry : tableRoster.entrySet()) {
+                    try {
+                        entry.getValue().close();
+                    } catch (Exception e) {
+                        // do not throw exception immediately
+                        logger.error(LCD.convert("01-00004"), entry.getKey(), e);
+                        throwException = e;
+                        exceptionObServers.add(entry.getKey());
+                    }
+                }
+                if (exceptionObServers.size() > 0) {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("following ob servers [");
+                    for (int i = 0; i < exceptionObServers.size(); i++) {
+                        if (i != 0) {
+                            sb.append(",");
+                        }
+                        sb.append(exceptionObServers.get(i));
+                    }
+                    sb.append("] close error.");
+                    throw new ObTableCloseException(sb.toString(), throwException);
+                }
+            }
+        } finally {
+            statusLock.unlock();
+        }
+    }
+
+    /**
+     * Check status.
+     */
+    public void checkStatus() throws IllegalStateException {
+        if (!initialized) {
+            throw new IllegalStateException("param url " + paramURL + "fullUserName" + fullUserName
+                                            + " is not initialized");
+        }
+
+        if (closed) {
+            throw new IllegalStateException("param url " + paramURL + "fullUserName" + fullUserName
+                                            + " is closed");
+        }
+    }
+
+    private void initProperties() {
+
+        // metadata.refresh.interval is preferred.
+        metadataRefreshInterval = parseToLong(METADATA_REFRESH_INTERNAL.getKey(),
+            metadataRefreshInterval);
+        metadataRefreshInterval = parseToLong(METADATA_REFRESH_INTERVAL.getKey(),
+            metadataRefreshInterval);
+
+        metadataRefreshLockTimeout = parseToLong(METADATA_REFRESH_LOCK_TIMEOUT.getKey(),
+            metadataRefreshLockTimeout);
+
+        rsListAcquireConnectTimeout = parseToInt(RS_LIST_ACQUIRE_CONNECT_TIMEOUT.getKey(),
+            rsListAcquireConnectTimeout);
+
+        rsListAcquireReadTimeout = parseToInt(RS_LIST_ACQUIRE_READ_TIMEOUT.getKey(),
+            rsListAcquireReadTimeout);
+
+        rsListAcquireTryTimes = parseToInt(RS_LIST_ACQUIRE_TRY_TIMES.getKey(),
+            rsListAcquireTryTimes);
+
+        // rs.list.acquire.retry.interval is preferred.
+        rsListAcquireRetryInterval = parseToLong(RS_LIST_ACQUIRE_RETRY_INTERNAL.getKey(),
+            rsListAcquireRetryInterval);
+        rsListAcquireRetryInterval = parseToLong(RS_LIST_ACQUIRE_RETRY_INTERVAL.getKey(),
+            rsListAcquireRetryInterval);
+
+        // table.entry.refresh.interval.base is preferred.
+        tableEntryRefreshIntervalBase = parseToLong(TABLE_ENTRY_REFRESH_INTERNAL_BASE.getKey(),
+            tableEntryRefreshIntervalBase);
+        tableEntryRefreshIntervalBase = parseToLong(TABLE_ENTRY_REFRESH_INTERVAL_BASE.getKey(),
+            tableEntryRefreshIntervalBase);
+
+        // table.entry.refresh.interval.ceiling is preferred.
+        tableEntryRefreshIntervalCeiling = parseToLong(
+            TABLE_ENTRY_REFRESH_INTERNAL_CEILING.getKey(), tableEntryRefreshIntervalCeiling);
+        tableEntryRefreshIntervalCeiling = parseToLong(
+            TABLE_ENTRY_REFRESH_INTERVAL_CEILING.getKey(), tableEntryRefreshIntervalCeiling);
+
+        tableEntryRefreshLockTimeout = parseToLong(TABLE_ENTRY_REFRESH_LOCK_TIMEOUT.getKey(),
+            tableEntryRefreshLockTimeout);
+
+        tableEntryRefreshContinuousFailureCeiling = parseToInt(
+            TABLE_ENTRY_REFRESH_CONTINUOUS_FAILURE_CEILING.getKey(),
+            tableEntryRefreshContinuousFailureCeiling);
+
+        serverAddressPriorityTimeout = parseToLong(SERVER_ADDRESS_PRIORITY_TIMEOUT.getKey(),
+            serverAddressPriorityTimeout);
+
+        serverAddressCachingTimeout = parseToLong(SERVER_ADDRESS_CACHING_TIMEOUT.getKey(),
+            serverAddressCachingTimeout);
+
+        runtimeContinuousFailureCeiling = parseToInt(RUNTIME_CONTINUOUS_FAILURE_CEILING.getKey(),
+            runtimeContinuousFailureCeiling);
+
+        int runtimeRetryTimes = parseToInt(RUNTIME_RETRY_TIMES.getKey(), this.runtimeRetryTimes);
+        this.runtimeRetryTimes = runtimeRetryTimes > 1 ? runtimeRetryTimes : this.runtimeRetryTimes;
+
+        runtimeRetryInterval = parseToInt(RUNTIME_RETRY_INTERVAL.getKey(), runtimeRetryInterval);
+
+        runtimeMaxWait = parseToLong(RUNTIME_MAX_WAIT.getKey(), runtimeMaxWait);
+
+        runtimeBatchMaxWait = parseToLong(RUNTIME_BATCH_MAX_WAIT.getKey(), runtimeBatchMaxWait);
+
+        rpcConnectTimeout = parseToInt(RPC_CONNECT_TIMEOUT.getKey(), rpcConnectTimeout);
+
+        rpcExecuteTimeout = parseToInt(RPC_EXECUTE_TIMEOUT.getKey(), rpcExecuteTimeout);
+
+        rpcLoginTimeout = parseToInt(RPC_LOGIN_TIMEOUT.getKey(), rpcLoginTimeout);
+    }
+
+    private void initMetadata() throws Exception {
+
+        this.ocpModel = loadOcpModel(paramURL, dataSourceName, rsListAcquireConnectTimeout,
+            rsListAcquireReadTimeout, rsListAcquireTryTimes, rsListAcquireRetryInterval);
+
+        List<ObServerAddr> servers = new ArrayList<ObServerAddr>();
+        ConcurrentHashMap<ObServerAddr, ObTable> tableRoster = new ConcurrentHashMap<ObServerAddr, ObTable>();
+
+        TableEntryKey rootServerKey = new TableEntryKey(clusterName, tenantName,
+            OCEANBASE_DATABASE, ALL_DUMMY_TABLE);
+
+        List<ObServerAddr> rsList = ocpModel.getObServerAddrs();
+
+        TableEntry tableEntry = loadTableEntryRandomly(rsList,//
+            rootServerKey,//
+            tableEntryAcquireConnectTimeout,//
+            tableEntryAcquireSocketTimeout, sysUA);
+
+        List<ReplicaLocation> replicaLocations = tableEntry.getTableLocation()
+            .getReplicaLocations();
+        for (ReplicaLocation replicaLocation : replicaLocations) {
+            ObServerInfo info = replicaLocation.getInfo();
+            ObServerAddr addr = replicaLocation.getAddr();
+            if (!info.isActive()) {
+                logger.warn("will not init location {} because status is {}", addr.toString(),
+                    info.getStatus());
+                continue;
+            }
+
+            // 忽略初始化建连失败，否则client会初始化失败，导致应用无法启动的问题
+            // 初始化建连失败(可能性较小)，如果后面这台server恢复，数据路由失败，就会重新刷新metadata
+            // 在失败100次后(RUNTIME_CONTINUOUS_FAILURE_CEILING)，重新刷新建连
+            // 本地cache 1小时超时后(SERVER_ADDRESS_CACHING_TIMEOUT)，重新刷新建连
+            // 应急可以直接observer切主
+            try {
+                ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort()) //
+                    .setLoginInfo(tenantName, userName, password, database) //
+                    .setProperties(getProperties()).build();
+                tableRoster.put(addr, obTable);
+                servers.add(addr);
+            } catch (Exception e) {
+                logger
+                    .warn(
+                        "The addr{}:{} failed to put into table roster, the node status may be wrong, Ignore",
+                        addr.getIp(), addr.getSvrPort());
+            }
+        }
+        this.tableRoster = tableRoster;
+        this.serverRoster.reset(servers);
+
+        // Get Server LDC info for weak read consistency.
+        if (StringUtil.isEmpty(currentIDC)) {
+            currentIDC = ZoneUtil.getCurrentIDC();
+        }
+        List<ObServerLdcItem> ldcServers = getServerLdc(serverRoster,
+            tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
+            serverAddressPriorityTimeout, serverAddressCachingTimeout, sysUA);
+        this.serverRoster.resetServerLdc(ObServerLdcLocation.buildLdcLocation(ldcServers,
+            currentIDC, ocpModel.getIdc2Region(currentIDC)));
+
+        if (logger.isInfoEnabled()) {
+            logger.info("finish refresh serverRoster: {}", serverRoster);
+        }
+
+        this.lastRefreshMetadataTimestamp = System.currentTimeMillis();
+    }
+
+    private abstract class TableExecuteCallback<T> {
+        private final Object[] rowKey;
+
+        TableExecuteCallback(Object[] rowKey) {
+            this.rowKey = rowKey;
+        }
+
+        void checkObTableOperationResult(String ip, int port, ObPayload result) {
+
+            if (result == null) {
+                throw new ObTableException("client get unexpected NULL result");
+            }
+
+            if (!(result instanceof ObTableOperationResult)) {
+                throw new ObTableException("client get unexpected result: "
+                                           + result.getClass().getName());
+            }
+
+            ObTableOperationResult obTableOperationResult = (ObTableOperationResult) result;
+            obTableOperationResult.setExecuteHost(ip);
+            obTableOperationResult.setExecutePort(port);
+            ExceptionUtil
+                .throwObTableException(ip, port, obTableOperationResult.getSequence(),
+                    obTableOperationResult.getUniqueId(), obTableOperationResult.getHeader()
+                        .getErrno());
+        }
+
+        abstract T execute(ObPair<Long, ObTable> obTable) throws Exception;
+
+        /**
+         * Get row key.
+         */
+        public Object[] getRowKey() {
+            return rowKey;
+        }
+    }
+
+    private <T> T execute(String tableName, TableExecuteCallback<T> callback) throws Exception {
+        // force strong read by default, for backward compatibility.
+        return execute(tableName, callback, getRoute(false));
+    }
+
+    /**
+     * Execute with a route strategy.
+     */
+    private <T> T execute(String tableName, TableExecuteCallback<T> callback, ObServerRoute route)
+                                                                                                  throws Exception {
+        boolean needRefreshTableEntry = false;
+        int tryTimes = 0;
+        long startExecute = System.currentTimeMillis();
+        while (true) {
+            checkStatus();
+            long currentExecute = System.currentTimeMillis();
+            long costMillis = currentExecute - startExecute;
+            if (costMillis > runtimeMaxWait) {
+                throw new ObTableTimeoutExcetion("it has tried " + tryTimes
+                                                 + " times and it has waited " + costMillis
+                                                 + "/ms which exceeds response timeout "
+                                                 + runtimeMaxWait + "/ms");
+            }
+            tryTimes++;
+            ObPair<Long, ObTable> obPair = null;
+            try {
+                obPair = getTable(tableName, callback.getRowKey(), needRefreshTableEntry,
+                    tableEntryRefreshIntervalWait, route);
+                T t = callback.execute(obPair);
+                resetExecuteContinuousFailureCount(tableName);
+                return t;
+            } catch (ObTableReplicaNotReadableException ex) {
+                if (obPair != null && (tryTimes - 1) < runtimeRetryTimes) {
+                    logger.warn("retry when replica not readable: {}", ex.getMessage());
+                    route.addToBlackList(obPair.getRight().getIp());
+                } else {
+                    logger.warn("exhaust retry when replica not readable: {}", ex.getMessage());
+                    throw ex;
+                }
+            } catch (Exception ex) {
+                if (ex instanceof ObTableException
+                    && ((ObTableException) ex).isNeedRefreshTableEntry()) {
+                    needRefreshTableEntry = true;
+                    logger.warn(
+                        "refresh table while meet ObTableMasterChangeException, errorCode: {}",
+                        ((ObTableException) ex).getErrorCode());
+                    if (retryOnChangeMasterTimes && (tryTimes - 1) < runtimeRetryTimes) {
+                        logger
+                            .warn(
+                                "retry while meet ObTableMasterChangeException, errorCode: {} , retry times {}",
+                                ((ObTableException) ex).getErrorCode(), tryTimes);
+                    } else {
+                        calculateContinuousFailure(tableName, ex.getMessage());
+                        throw ex;
+                    }
+                } else {
+                    calculateContinuousFailure(tableName, ex.getMessage());
+                    throw ex;
+                }
+            }
+            Thread.sleep(runtimeRetryInterval);
+        }
+    }
+
+    /**
+     * Calculate continuous failure.
+     */
+    public void calculateContinuousFailure(String tableName, String errorMsg) throws Exception {
+        AtomicLong tempFailures = new AtomicLong();
+        AtomicLong failures = tableContinuousFailures.putIfAbsent(tableName, tempFailures);
+        failures = (failures == null) ? tempFailures : failures; // check the first failure
+        if (failures.incrementAndGet() > runtimeContinuousFailureCeiling) {
+            logger.warn("refresh table entry {} while execute failed times exceeded {}, msg: {}",
+                tableName, runtimeContinuousFailureCeiling, errorMsg);
+            getOrRefreshTableEntry(tableName, true, isTableEntryRefreshIntervalWait());
+            failures.set(0);
+        }
+    }
+
+    /**
+     * Reset execute continuous failure count.
+     */
+    public void resetExecuteContinuousFailureCount(String tableName) {
+        AtomicLong failures = tableContinuousFailures.get(tableName);
+        if (failures != null) {
+            failures.set(0);
+        }
+    }
+
+    /**
+     * refresh all ob server synchronized just in case rslist has changed, it will not refresh if last refresh time is 1 min ago
+     * <p>
+     * 1. cannot find table from tables, need refresh tables
+     * 2. server list refresh failed: {@see com.alipay.oceanbase.obproxy.resource.ObServerStateProcessor#MAX_REFRESH_FAILURE}
+     *
+     * @throws Exception
+     */
+    public void syncRefreshMetadata() throws Exception {
+
+        if (System.currentTimeMillis() - lastRefreshMetadataTimestamp < metadataRefreshInterval) {
+            logger
+                .warn(
+                    "try to lock metadata refreshing, it has refresh  at: {}, dataSourceName: {}, url: {}",
+                    lastRefreshMetadataTimestamp, dataSourceName, paramURL);
+            return;
+        }
+        boolean acquired = refreshMetadataLock.tryLock(metadataRefreshLockTimeout,
+            TimeUnit.MILLISECONDS);
+
+        if (!acquired) {
+            // TODO exception should be classified
+            throw new ObTableGetException("try to lock metadata refreshing timeout "
+                                          + "dataSource:" + dataSourceName + " + refresh timeout:"
+                                          + tableEntryRefreshLockTimeout + ".");
+        }
+
+        try {
+
+            if (System.currentTimeMillis() - lastRefreshMetadataTimestamp < metadataRefreshInterval) {
+                logger.warn("it has refresh metadata at: {}, dataSourceName: {}, url: {}",
+                    lastRefreshMetadataTimestamp, dataSourceName, paramURL);
+                return;
+            }
+            if (logger.isInfoEnabled()) {
+                logger.info("start refresh metadata, ts: {}, dataSourceName: {}, url: {}",
+                    lastRefreshMetadataTimestamp, dataSourceName, paramURL);
+            }
+
+            this.ocpModel = loadOcpModel(paramURL, //
+                dataSourceName,//
+                rsListAcquireConnectTimeout,//
+                rsListAcquireReadTimeout,//
+                rsListAcquireTryTimes, //
+                rsListAcquireRetryInterval);
+
+            TableEntryKey allDummyKey = new TableEntryKey(clusterName, tenantName,
+                OCEANBASE_DATABASE, ALL_DUMMY_TABLE);
+
+            List<ObServerAddr> rsList = ocpModel.getObServerAddrs();
+
+            TableEntry tableEntry = loadTableEntryRandomly(rsList,//
+                allDummyKey,//
+                tableEntryAcquireConnectTimeout,//
+                tableEntryAcquireSocketTimeout, sysUA);
+
+            List<ReplicaLocation> replicaLocations = tableEntry.getTableLocation()
+                .getReplicaLocations();
+
+            // update new ob table
+
+            List<ObServerAddr> servers = new ArrayList<ObServerAddr>();
+
+            for (ReplicaLocation replicaLocation : replicaLocations) {
+                ObServerAddr addr = replicaLocation.getAddr();
+                ObServerInfo info = replicaLocation.getInfo();
+                if (!info.isActive()) {
+                    logger.warn("will not refresh location {} because status is {} stop time {}",
+                        addr.toString(), info.getStatus(), info.getStopTime());
+                    continue;
+                }
+
+                servers.add(addr);
+
+                if (tableRoster.containsKey(addr)) { // has ob table addr, continue
+                    continue;
+                }
+
+                ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort()) //
+                    .setLoginInfo(tenantName, userName, password, database) //
+                    .setProperties(getProperties())//
+                    .build();
+                ObTable oldObTable = tableRoster.putIfAbsent(addr, obTable); // not control concurrency
+                logger.warn("add new table addr, {}", addr.toString());
+                if (oldObTable != null) { // maybe create two ob table concurrently, close current ob table
+                    obTable.close();
+                }
+            }
+
+            // clean useless ob table
+            for (ObServerAddr addr : tableRoster.keySet()) {
+                if (servers.contains(addr)) {
+                    continue;
+                }
+                ObTable table = this.tableRoster.remove(addr);
+                logger.warn("remove useless table addr, {}", addr.toString());
+                if (table != null) {
+                    table.close();
+                }
+            }
+            this.serverRoster.reset(servers);
+            // Get Server LDC info for weak read consistency.
+
+            List<ObServerLdcItem> ldcServers = getServerLdc(serverRoster,
+                tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
+                serverAddressPriorityTimeout, serverAddressCachingTimeout, sysUA);
+            // reset Server LDC location.
+            this.serverRoster.resetServerLdc(ObServerLdcLocation.buildLdcLocation(ldcServers,
+                currentIDC, ocpModel.getIdc2Region(currentIDC)));
+
+            if (logger.isInfoEnabled()) {
+                logger.info("finish refresh serverRoster: {}", serverRoster);
+            }
+            this.lastRefreshMetadataTimestamp = System.currentTimeMillis();
+        } finally {
+            refreshMetadataLock.unlock();
+            logger.warn("finish refresh all ob servers, ts: {}, dataSourceName: {}, url: {}",
+                lastRefreshMetadataTimestamp, dataSourceName, paramURL);
+        }
+    }
+
+    /**
+     * Get or refresh table entry.
+     */
+    public TableEntry getOrRefreshTableEntry(final String tableName, final boolean refresh,
+                                             final boolean waitForRefresh) throws Exception {
+
+        TableEntry tableEntry = tableLocations.get(tableName);
+        // attempt the cached data and try best to avoid lock
+        if (tableEntry != null) {
+            //if the refresh is false indicates that user tolerate not the latest data
+            if (!refresh) {
+                return tableEntry;
+            }
+            // avoid unnecessary lock
+            long punishInterval = (long) (tableEntryRefreshIntervalBase * Math.pow(2,
+                -serverRoster.getMaxPriority()));
+            punishInterval = punishInterval <= tableEntryRefreshIntervalCeiling ? punishInterval
+                : tableEntryRefreshIntervalCeiling;
+            long current = System.currentTimeMillis();
+            long interval = current - tableEntry.getRefreshTimeMills();
+            if (interval < punishInterval) {
+                if (waitForRefresh) {
+                    if (logger.isInfoEnabled()) {
+                        long toHoldTime = punishInterval - interval;
+                        logger
+                            .info(
+                                "punish table entry {} : table entry refresh time {} punish interval {} current time {}. wait for refresh times {}",
+                                tableName, tableEntry.getRefreshTimeMills(), punishInterval,
+                                current, toHoldTime);
+                        try {
+                            // may have more elegant method ?
+                            Thread.sleep(toHoldTime);
+                        } catch (InterruptedException e) {
+                            logger.error(LCD.convert("01-00018"), tableName, punishInterval, e);
+                            throw new ObTableUnexpectedException("waiting for table entry "
+                                                                 + tableName + " punish interval "
+                                                                 + punishInterval
+                                                                 + " is interrupted.");
+                        }
+                    }
+                } else {
+                    return tableEntry;
+                }
+            }
+        }
+
+        Lock tempLock = new ReentrantLock();
+        Lock lock = refreshTableLocks.putIfAbsent(tableName, tempLock);
+        lock = (lock == null) ? tempLock : lock; // check the first lock
+
+        // attempt lock the refreshing action, avoiding concurrent refreshing
+        // use the time-out mechanism, avoiding the rpc hanging up
+        boolean acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
+
+        if (!acquired) {
+            throw new ObTableEntryRefreshException("try to lock table-entry refreshing timeout "
+                                                   + "dataSource:" + dataSourceName
+                                                   + " ,tableName:" + tableName + ", refresh:"
+                                                   + refresh + " , timeout:"
+                                                   + tableEntryRefreshLockTimeout + ".");
+        }
+
+        try {
+            tableEntry = tableLocations.get(tableName);
+
+            if (tableEntry != null) {
+                // the server roster is ordered by priority
+                long interval = (long) (tableEntryRefreshIntervalBase * Math.pow(2,
+                    -serverRoster.getMaxPriority()));
+                interval = interval <= tableEntryRefreshIntervalCeiling ? interval
+                    : tableEntryRefreshIntervalCeiling;
+                // control refresh frequency less than 100 milli second
+                // just in case of connecting to OB Server failed or change master
+                if (((System.currentTimeMillis() - tableEntry.getRefreshTimeMills())) < interval) {
+                    return tableEntry;
+                }
+            }
+
+            if (tableEntry == null || refresh) {// not exist or need refresh, create new table entry
+                int serverSize = serverRoster.getMembers().size();
+                int refreshTryTimes = tableEntryRefreshTryTimes > serverSize ? serverSize
+                    : tableEntryRefreshTryTimes;
+
+                for (int i = 0; i < refreshTryTimes; i++) {
+                    try {
+                        return refreshTableEntry(tableEntry, tableName);
+                    } catch (ObTableNotExistException e) {
+                        throw e;
+                    } catch (ObTableServerCacheExpiredException e) {
+                        if (logger.isInfoEnabled()) {
+                            logger.info("server addr is expired and it will refresh metadata.");
+                        }
+                        syncRefreshMetadata();
+                        tableEntryRefreshContinuousFailureCount.set(0);
+                    } catch (ObTableEntryRefreshException e) {
+                        if (tableEntryRefreshContinuousFailureCount.incrementAndGet() > tableEntryRefreshContinuousFailureCeiling) {
+                            logger.error(LCD.convert("01-00019"),
+                                tableEntryRefreshContinuousFailureCeiling);
+                            syncRefreshMetadata();
+                            tableEntryRefreshContinuousFailureCount.set(0);
+                        }
+                    }
+                }
+                // failure reach the try times may all the server change
+                if (logger.isInfoEnabled()) {
+                    logger
+                        .info(
+                            "refresh table entry has tried {}-times failure and will sync refresh metadata",
+                            refreshTryTimes);
+                }
+                syncRefreshMetadata();
+                return refreshTableEntry(tableEntry, tableName);
+            }
+            return tableEntry;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private TableEntry refreshTableEntry(TableEntry tableEntry, String tableName)
+                                                                                 throws ObTableEntryRefreshException {
+        TableEntryKey tableEntryKey = new TableEntryKey(clusterName, tenantName, database,
+            tableName);
+        try {
+
+            // if table entry is exist we just need to refresh table locations
+            if (tableEntry != null) {
+                tableEntry = loadTableEntryLocationWithPriority(serverRoster, //
+                    tableEntryKey,//
+                    tableEntry,//
+                    tableEntryAcquireConnectTimeout,//
+                    tableEntryAcquireSocketTimeout,//
+                    serverAddressPriorityTimeout, //
+                    serverAddressCachingTimeout, sysUA);
+            } else {
+                // if table entry is not exist we should fetch partition info and table locations
+                tableEntry = loadTableEntryWithPriority(serverRoster, //
+                    tableEntryKey,//
+                    tableEntryAcquireConnectTimeout,//
+                    tableEntryAcquireSocketTimeout,//
+                    serverAddressPriorityTimeout,//
+                    serverAddressCachingTimeout, sysUA);
+
+                if (tableEntry.isPartitionTable()) {
+                    switch (runningMode) {
+                        case HBASE:
+                            tableEntry.setRowKeyElement(HBASE_ROW_KEY_ELEMENT);
+                            break;
+                        case NORMAL:
+                            Map<String, Integer> rowKeyElement = tableRowKeyElement.get(tableName);
+                            if (rowKeyElement != null) {
+                                tableEntry.setRowKeyElement(rowKeyElement);
+                            } else {
+                                throw new ObTableEntryRefreshException(
+                                    "partition table must has row key element key ="
+                                            + tableEntryKey);
+                            }
+                    }
+                    tableEntry.prepare();
+                }
+            }
+            // prepare the table entry for weak read.
+            tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
+        } catch (ObTableNotExistException e) {
+            throw e;
+        } catch (ObTableServerCacheExpiredException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error(LCD.convert("01-00020"), tableEntryKey, tableEntry, e);
+            throw new ObTableEntryRefreshException(String.format(
+                "failed to get table entry key=%s original tableEntry=%s ", tableEntryKey,
+                tableEntry), e);
+        }
+        tableLocations.put(tableName, tableEntry);
+        tableEntryRefreshContinuousFailureCount.set(0);
+        if (logger.isInfoEnabled()) {
+            logger.info(
+                "refresh table entry, dataSource: {}, tableName: {}, refresh: {} key:{} entry:{} ",
+                dataSourceName, tableName, true, tableEntryKey, tableEntry);
+        }
+        return tableEntry;
+    }
+
+    private static final Long MASK = (1L << PART_ID_BITNUM)
+                                     | 1L << (PART_ID_BITNUM + PART_ID_SHIFT);
+
+    private long getPartition(TableEntry tableEntry, Object[] rowKey) {
+        // non partition
+        if (!tableEntry.isPartitionTable()
+            || tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ZERO) {
+            return 0L;
+        }
+
+        if (tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ONE) {
+            return tableEntry.getPartitionInfo().getFirstPartDesc().getPartId(rowKey);
+        }
+
+        Long partId1 = tableEntry.getPartitionInfo().getFirstPartDesc().getPartId(rowKey);
+        Long partId2 = tableEntry.getPartitionInfo().getSubPartDesc().getPartId(rowKey);
+        return (partId1 << PART_ID_SHIFT) | partId2 | MASK;
+    }
+
+    private ObPair<Long, ReplicaLocation> getPartitionReplica(TableEntry tableEntry, long partId,
+                                                              ObServerRoute route) {
+        return new ObPair<Long, ReplicaLocation>(partId, getPartitionLocation(tableEntry, partId,
+            route));
+    }
+
+    private ReplicaLocation getPartitionLocation(TableEntry tableEntry, long partId,
+                                                 ObServerRoute route) {
+        return tableEntry.getPartitionEntry().getPartitionLocationWithPartId(partId)
+            .getReplica(route);
+    }
+
+    public ObPair<Long, ObTable> getTable(String tableName, Object[] rowKey, boolean refresh,
+                                          boolean waitForRefresh) throws Exception {
+        return getTable(tableName, rowKey, refresh, waitForRefresh, getRoute(false));
+    }
+
+    public ObPair<Long, ObTable> getTable(String tableName, Object[] rowKey, boolean refresh,
+                                          boolean waitForRefresh, ObServerRoute route)
+                                                                                      throws Exception {
+        TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh);
+
+        long partId = getPartition(tableEntry, rowKey);
+
+        return getTable(tableName, tableEntry, partId, waitForRefresh, route);
+    }
+
+    public ObPair<Long, ObTable> getTable(String tableName, long partId, boolean refresh,
+                                          boolean waitForRefresh, ObServerRoute route)
+                                                                                      throws Exception {
+        return getTable(tableName, getOrRefreshTableEntry(tableName, refresh, waitForRefresh),
+            partId, waitForRefresh, route);
+    }
+
+    public ObPair<Long, ObTable> getTable(String tableName, TableEntry tableEntry, long partId,
+                                          boolean waitForRefresh, ObServerRoute route)
+                                                                                      throws Exception {
+        ObPair<Long, ReplicaLocation> partitionReplica = getPartitionReplica(tableEntry, partId,
+            route);
+
+        ReplicaLocation replica = partitionReplica.getRight();
+
+        ObServerAddr addr = replica.getAddr();
+        ObTable obTable = tableRoster.get(addr);
+        boolean addrExpired = addr.isExpired(serverAddressCachingTimeout);
+        if (obTable == null) {
+            logger.warn("can not get ObTable by addr {}, refresh metadata.", addr);
+            syncRefreshMetadata();
+        }
+        if (addrExpired || obTable == null) {
+            if (logger.isInfoEnabled() && addrExpired) {
+                logger.info("server addr {} is expired, refresh tableEntry.", addr);
+            }
+            tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh);
+            replica = getPartitionReplica(tableEntry, partId, route).getRight();
+            addr = replica.getAddr();
+            obTable = tableRoster.get(addr);
+        }
+
+        if (obTable == null) {
+            throw new ObTableGetException("cannot get table by addr: " + addr);
+        }
+        addr.recordAccess();
+        return new ObPair<Long, ObTable>(partitionReplica.getLeft(), obTable);
+    }
+
+    private List<ObPair<Long, ReplicaLocation>> getPartitionReplica(TableEntry tableEntry,
+                                                                    Object[] start,
+                                                                    boolean startIncluded,
+                                                                    Object[] end,
+                                                                    boolean endIncluded,
+                                                                    ObServerRoute route) {
+        // non partition
+        List<ObPair<Long, ReplicaLocation>> replicas = new ArrayList<ObPair<Long, ReplicaLocation>>();
+        if (!tableEntry.isPartitionTable()
+            || tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ZERO) {
+            replicas.add(new ObPair<Long, ReplicaLocation>(0L, getPartitionLocation(tableEntry, 0L,
+                route)));
+            return replicas;
+        } else if (tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ONE) {
+            List<Long> partIds = tableEntry.getPartitionInfo().getFirstPartDesc()
+                .getPartIds(start, startIncluded, end, endIncluded);
+            for (Long partId : partIds) {
+                replicas.add(new ObPair<Long, ReplicaLocation>(partId, getPartitionLocation(
+                    tableEntry, partId, route)));
+            }
+        } else {
+            throw new ObTableGetException("range partition is not allowed in level two");
+        }
+
+        return replicas;
+    }
+
+    public List<ObPair<Long, ObTable>> getTables(String tableName, Object[] start,
+                                                 boolean startInclusive, Object[] end,
+                                                 boolean endInclusive, boolean refresh,
+                                                 boolean waitForRefresh) throws Exception {
+        return getTables(tableName, start, startInclusive, end, endInclusive, refresh,
+            waitForRefresh, getRoute(false));
+    }
+
+    public List<ObPair<Long, ObTable>> getTables(String tableName, Object[] start,
+                                                 boolean startInclusive, Object[] end,
+                                                 boolean endInclusive, boolean refresh,
+                                                 boolean waitForRefresh, ObServerRoute route)
+                                                                                             throws Exception {
+
+        // 1. get TableEntry information
+        TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh);
+        // 2. get replica location
+        List<ObPair<Long, ReplicaLocation>> partIdWithReplicaList = getPartitionReplica(tableEntry,
+            start, startInclusive, end, endInclusive, route);
+
+        List<ObPair<Long, ObTable>> obTables = new ArrayList<ObPair<Long, ObTable>>();
+        for (ObPair<Long, ReplicaLocation> partIdWithReplica : partIdWithReplicaList) {
+            long partId = partIdWithReplica.getLeft();
+            ReplicaLocation replica = partIdWithReplica.getRight();
+            ObServerAddr addr = replica.getAddr();
+            ObTable obTable = tableRoster.get(addr);
+            boolean addrExpired = addr.isExpired(serverAddressCachingTimeout);
+            if (addrExpired || obTable == null) {
+                logger
+                    .warn(
+                        "server address {} is expired={} or can not get ob table. So that will sync refresh metadata",
+                        addr, addrExpired);
+                syncRefreshMetadata();
+                tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh);
+                replica = getPartitionLocation(tableEntry, partId, route);
+                addr = replica.getAddr();
+                obTable = tableRoster.get(addr);
+            }
+
+            if (obTable == null) {
+                throw new ObTableGetException("cannot get table by addr: " + addr);
+            }
+            addr.recordAccess();
+
+            obTables.add(new ObPair<Long, ObTable>(partId, obTable));
+        }
+        return obTables;
+    }
+
+    /**
+     * Query.
+     */
+    @Override
+    public TableQuery query(String tableName) {
+        ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(tableName, this);
+
+        return new ObClusterTableQuery(tableQuery);
+    }
+
+    @Override
+    public TableQuery queryByBatch(String tableName) throws Exception {
+        return new QueryByBatch(query(tableName));
+    }
+
+    /**
+     * Batch.
+     */
+    @Override
+    public TableBatchOps batch(String tableName) {
+        ObTableClientBatchOpsImpl batchOps = new ObTableClientBatchOpsImpl(tableName, this);
+
+        return new ObClusterTableBatchOps(runtimeBatchExecutor, batchOps);
+    }
+
+    @Override
+    public Map<String, Object> get(final String tableName, final Object[] rowKey,
+                                   final String[] columns) throws Exception {
+        final ObReadConsistency obReadConsistency = this.getReadConsistency();
+        return execute(tableName, new TableExecuteCallback<Map<String, Object>>(rowKey) {
+            @Override
+            public Map<String, Object> execute(ObPair<Long, ObTable> obPair) throws Exception {
+                ObTable obTable = obPair.getRight();
+                long partId = obPair.getLeft();
+                ObTableOperationRequest request = ObTableOperationRequest.getInstance(tableName,
+                    GET, rowKey, columns, null, obTable.getObTableOperationTimeout());
+                request.setPartitionId(partId);
+                request.setConsistencyLevel(obReadConsistency.toObTableConsistencyLevel());
+                ObPayload result = obPair.getRight().execute(request);
+                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                return ((ObTableOperationResult) result).getEntity().getSimpleProperties();
+            }
+        }, getReadRoute());
+    }
+
+    /**
+     * Update.
+     */
+    @Override
+    public long update(final String tableName, final Object[] rowKey, final String[] columns,
+                       final Object[] values) throws Exception {
+        return execute(tableName, new TableExecuteCallback<Long>(rowKey) {
+            /**
+             * Execute.
+             */
+            @Override
+            public Long execute(ObPair<Long, ObTable> obPair) throws Exception {
+                ObTable obTable = obPair.getRight();
+                long partId = obPair.getLeft();
+                ObTableOperationRequest request = ObTableOperationRequest.getInstance(tableName,
+                    UPDATE, rowKey, columns, values, obTable.getObTableOperationTimeout());
+                request.setPartitionId(partId);
+                ObPayload result = obPair.getRight().execute(request);
+                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                return ((ObTableOperationResult) result).getAffectedRows();
+            }
+        });
+    }
+
+    /**
+     * Delete.
+     */
+    @Override
+    public long delete(final String tableName, final Object[] rowKey) throws Exception {
+        return execute(tableName, new TableExecuteCallback<Long>(rowKey) {
+
+            /**
+             * Execute.
+             */
+            @Override
+            public Long execute(ObPair<Long, ObTable> obPair) throws Exception {
+                ObTable obTable = obPair.getRight();
+                long partId = obPair.getLeft();
+                ObTableOperationRequest request = ObTableOperationRequest.getInstance(tableName,
+                    DEL, rowKey, null, null, obTable.getObTableOperationTimeout());
+                request.setPartitionId(partId);
+                ObPayload result = obPair.getRight().execute(request);
+                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                return ((ObTableOperationResult) result).getAffectedRows();
+            }
+        });
+    }
+
+    /**
+     * Insert.
+     */
+    @Override
+    public long insert(final String tableName, final Object[] rowKey, final String[] columns,
+                       final Object[] values) throws Exception {
+        return execute(tableName, new TableExecuteCallback<Long>(rowKey) {
+            /**
+             * Execute.
+             */
+            @Override
+            public Long execute(ObPair<Long, ObTable> obPair) throws Exception {
+                ObTable obTable = obPair.getRight();
+                long partId = obPair.getLeft();
+                ObTableOperationRequest request = ObTableOperationRequest.getInstance(tableName,
+                    INSERT, rowKey, columns, values, obTable.getObTableOperationTimeout());
+                request.setPartitionId(partId);
+                ObPayload result = obPair.getRight().execute(request);
+                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                return ((ObTableOperationResult) result).getAffectedRows();
+            }
+        });
+    }
+
+    /**
+     * Replace.
+     */
+    @Override
+    public long replace(final String tableName, final Object[] rowKey, final String[] columns,
+                        final Object[] values) throws Exception {
+        return execute(tableName, new TableExecuteCallback<Long>(rowKey) {
+            /**
+             * Execute.
+             */
+            @Override
+            public Long execute(ObPair<Long, ObTable> obPair) throws Exception {
+                ObTable obTable = obPair.getRight();
+                long partId = obPair.getLeft();
+                ObTableOperationRequest request = ObTableOperationRequest.getInstance(tableName,
+                    REPLACE, rowKey, columns, values, obTable.getObTableOperationTimeout());
+                request.setPartitionId(partId);
+                ObPayload result = obPair.getRight().execute(request);
+                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                return ((ObTableOperationResult) result).getAffectedRows();
+            }
+        });
+    }
+
+    /**
+     * Insert or update.
+     */
+    @Override
+    public long insertOrUpdate(final String tableName, final Object[] rowKey,
+                               final String[] columns, final Object[] values) throws Exception {
+        return execute(tableName, new TableExecuteCallback<Long>(rowKey) {
+            /**
+             * Execute.
+             */
+            @Override
+            public Long execute(ObPair<Long, ObTable> obPair) throws Exception {
+                ObTable obTable = obPair.getRight();
+                long partId = obPair.getLeft();
+                ObTableOperationRequest request = ObTableOperationRequest.getInstance(tableName,
+                    INSERT_OR_UPDATE, rowKey, columns, values, obTable.getObTableOperationTimeout());
+                request.setPartitionId(partId);
+                ObPayload result = obPair.getRight().execute(request);
+                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                return ((ObTableOperationResult) result).getAffectedRows();
+            }
+        });
+    }
+
+    @Override
+    public Map<String, Object> increment(final String tableName, final Object[] rowKey,
+                                         final String[] columns, final Object[] values,
+                                         final boolean withResult) throws Exception {
+        return execute(tableName, new TableExecuteCallback<Map<String, Object>>(rowKey) {
+            @Override
+            public Map<String, Object> execute(ObPair<Long, ObTable> obPair) throws Exception {
+                ObTable obTable = obPair.getRight();
+                long partId = obPair.getLeft();
+                ObTableOperationRequest request = ObTableOperationRequest.getInstance(tableName,
+                    INCREMENT, rowKey, columns, values, obTable.getObTableOperationTimeout());
+                request.setReturningAffectedEntity(withResult);
+                request.setPartitionId(partId);
+                ObPayload result = obPair.getRight().execute(request);
+                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                return ((ObTableOperationResult) result).getEntity().getSimpleProperties();
+            }
+        });
+    }
+
+    @Override
+    public Map<String, Object> append(final String tableName, final Object[] rowKey,
+                                      final String[] columns, final Object[] values,
+                                      final boolean withResult) throws Exception {
+        return execute(tableName, new TableExecuteCallback<Map<String, Object>>(rowKey) {
+            @Override
+            public Map<String, Object> execute(ObPair<Long, ObTable> obPair) throws Exception {
+                ObTable obTable = obPair.getRight();
+                long partId = obPair.getLeft();
+                ObTableOperationRequest request = ObTableOperationRequest.getInstance(tableName,
+                    APPEND, rowKey, columns, values, obTable.getObTableOperationTimeout());
+                request.setReturningAffectedEntity(withResult);
+                request.setPartitionId(partId);
+                ObPayload result = obPair.getRight().execute(request);
+                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                return ((ObTableOperationResult) result).getEntity().getSimpleProperties();
+            }
+        });
+    }
+
+    /**
+     * Execute.
+     */
+    public ObPayload execute(final ObTableAbstractOperationRequest request) throws Exception {
+        if (request instanceof ObTableOperationRequest) {
+            ObTableBatchOperation batchOperation = new ObTableBatchOperation();
+            batchOperation.addTableOperation(((ObTableOperationRequest) request)
+                .getTableOperation());
+            ObTableClientBatchOpsImpl batchOps = new ObTableClientBatchOpsImpl(
+                request.getTableName(), batchOperation, this);
+            batchOps.setEntityType(request.getEntityType());
+            ObTableBatchOperationResult batchOpsResult = new ObClusterTableBatchOps(batchOps)
+                .executeInternal();
+            return batchOpsResult.getResults().get(0);
+        } else if (request instanceof ObTableQueryRequest) {
+            ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(request.getTableName(),
+                ((ObTableQueryRequest) request).getTableQuery(), this);
+            tableQuery.setEntityType(request.getEntityType());
+            return new ObClusterTableQuery(tableQuery).executeInternal();
+        } else if (request instanceof ObTableBatchOperationRequest) {
+            ObTableClientBatchOpsImpl batchOps = new ObTableClientBatchOpsImpl(
+                request.getTableName(),
+                ((ObTableBatchOperationRequest) request).getBatchOperation(), this);
+            batchOps.setEntityType(request.getEntityType());
+            return new ObClusterTableBatchOps(batchOps).executeInternal();
+        } else if (request instanceof ObTableQueryAndMutateRequest) {
+            ObTableQueryAndMutate tableQueryAndMutate = ((ObTableQueryAndMutateRequest) request)
+                .getTableQueryAndMutate();
+            ObTableQuery tableQuery = tableQueryAndMutate.getTableQuery();
+            Map<Long, ObTable> partIdMapObTable = new HashMap<Long, ObTable>();
+            for (ObNewRange rang : tableQuery.getKeyRanges()) {
+                ObRowKey startKey = rang.getStartKey();
+                int startKeySize = startKey.getObjs().size();
+                ObRowKey endKey = rang.getEndKey();
+                int endKeySize = endKey.getObjs().size();
+                Object[] start = new Object[startKeySize];
+                Object[] end = new Object[endKeySize];
+                for (int i = 0; i < startKeySize; i++) {
+                    start[i] = startKey.getObj(i).getValue();
+                }
+
+                for (int i = 0; i < endKeySize; i++) {
+                    end[i] = endKey.getObj(i).getValue();
+                }
+                ObBorderFlag borderFlag = rang.getBorderFlag();
+                List<ObPair<Long, ObTable>> pairList = getTables(request.getTableName(), start,
+                    borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false, false);
+                for (ObPair<Long, ObTable> pair : pairList) {
+                    partIdMapObTable.put(pair.getLeft(), pair.getRight());
+                }
+            }
+            if (partIdMapObTable.size() > 1) {
+                throw new ObTablePartitionConsistentException(
+                    "query and mutate must be a atomic operation");
+            }
+
+            for (Long partId : partIdMapObTable.keySet()) {
+                request.setPartitionId(partId);
+                return partIdMapObTable.get(partId).execute(request);
+            }
+        }
+
+        throw new FeatureNotSupportedException("request type " + request.getClass().getSimpleName()
+                                               + "is not supported. make sure the correct version");
+    }
+
+    /**
+     * Set full user name.
+     */
+    public void setFullUserName(String fullUserName) throws IllegalArgumentException {
+        if (StringUtils.isBlank(fullUserName)) {
+            throw new IllegalArgumentException(String.format(
+                "full username is empty, full username=%s", fullUserName));
+        }
+        if (-1 != fullUserName.indexOf('@') || -1 != fullUserName.indexOf('#')) {
+            parseStandardFullUsername(fullUserName);
+        } else {
+            parseNonStandardFullUsername(fullUserName);
+        }
+        this.fullUserName = fullUserName;
+    }
+
+    /**
+     * Set sys user name to access meta table.
+     * @param sysUserName
+     */
+    public void setSysUserName(String sysUserName) {
+        sysUA.setUserName(sysUserName);
+    }
+
+    /**
+     * Set sys user password to access meta table.
+     * @param sysPassword
+     */
+    public void setSysPassword(String sysPassword) {
+        sysUA.setPassword(sysPassword);
+    }
+
+    /**
+     * Set sys user encrypted password to access meta table.
+     * @param encSysPassword
+     */
+    public void setEncSysPassword(String encSysPassword) throws Exception {
+        sysUA.setEncPassword(encSysPassword);
+    }
+
+    private void parseStandardFullUsername(String username) {
+        int utIndex = -1;
+        int tcIndex = -1;
+        utIndex = username.indexOf('@');
+        tcIndex = username.indexOf('#');
+        if (-1 == utIndex || -1 == tcIndex || utIndex >= tcIndex) {
+            throw new IllegalArgumentException(String.format("invalid full username, username=%s",
+                username));
+        }
+
+        String user = username.substring(0, utIndex);
+        String tenant = username.substring(utIndex + 1, tcIndex);
+        String cluster = username.substring(tcIndex + 1);
+        handleFullUsername(user, tenant, cluster, username);
+    }
+
+    private void parseNonStandardFullUsername(String username) {
+        if (StringUtils.isBlank(usernameSeparators)) {
+            throw new IllegalArgumentException(String.format(
+                "non standard username separators has not been set, full username=%s", username));
+        }
+        String[] separators = usernameSeparators.split(";");
+        char separatorChar = '\0';
+        int ctIndex = -1;
+        int tuIndex = -1;
+        for (String separator : separators) {
+            separatorChar = separator.charAt(0);
+            ctIndex = username.indexOf(separatorChar);
+            tuIndex = username.lastIndexOf(separatorChar);
+            if (ctIndex != tuIndex) {
+                break;
+            }
+        }
+
+        if (-1 == ctIndex || -1 == tuIndex || (ctIndex == tuIndex)) {
+            throw new IllegalArgumentException(String.format(
+                "invalid full username, username=%s, userSeparators=%s", username,
+                usernameSeparators));
+        }
+
+        String cluster = username.substring(0, ctIndex);
+        String tenant = username.substring(ctIndex + 1, tuIndex);
+        String user = username.substring(tuIndex + 1);
+        handleFullUsername(user, tenant, cluster, username);
+    }
+
+    private void handleFullUsername(String user, String tenant, String cluster, String username) {
+        if (StringUtils.isBlank(user)) {
+            throw new IllegalArgumentException(String.format("user has not been set, username=%s",
+                username));
+        }
+        if (StringUtils.isBlank(tenant)) {
+            throw new IllegalArgumentException(String.format(
+                "tenant has not been set, username=%s", username));
+        }
+        if (StringUtils.isBlank(cluster)) {
+            throw new IllegalArgumentException(String.format(
+                "cluster has not been set, username=%s", username));
+        }
+        setUserName(user);
+        setTenantName(tenant);
+        setClusterName(cluster);
+    }
+
+    /**
+     * Get param u r l.
+     */
+    public String getParamURL() {
+        return paramURL;
+    }
+
+    /*
+     * Config URL must contain database and may contain read_consistency
+     * example:
+     * http://configserver.com/services?Action=ObRootServiceInfo&User_ID=xxx&UID=uuu&ObRegion=rrr
+     * &read_consitency=weak&database=test
+     */
+    public void setParamURL(String paramURL) throws IllegalArgumentException {
+        if (StringUtils.isBlank(paramURL)) {
+            throw new IllegalArgumentException(String.format("zdal url is empty, url=%s", paramURL));
+        }
+        int paramIndex = paramURL.indexOf('?');
+        if (-1 == paramIndex || (paramIndex + 1) == paramURL.length()) {
+            throw new IllegalArgumentException(String.format(
+                "invalid zdal url, parameters are not set. url=%s", paramURL));
+        }
+        String[] params = paramURL.substring(paramIndex + 1).split("&");
+        String db = null;
+        // in order to be compatible with old version, database should be the last parameter,
+        // however, we will not strictly need this limitation since the version
+        for (String param : params) {
+            String kv[] = param.split("=");
+            if (2 != kv.length) {
+                throw new IllegalArgumentException(String.format(
+                    "invalid parameter format. url=%s", paramURL));
+            }
+            if (Constants.DATABASE.equalsIgnoreCase(kv[0])) {
+                db = kv[1];
+                if (logger.isInfoEnabled()) {
+                    logger.info(String.format("will set database=%s", kv[1]));
+                }
+            } else if (Constants.READ_CONSISTENCY.equalsIgnoreCase(kv[0])) {
+                readConsistency = ObReadConsistency.getByName(kv[1]);
+                if (logger.isInfoEnabled()) {
+                    logger.info(String.format("will set %s=%s", Constants.READ_CONSISTENCY, kv[1]));
+                }
+            } else if (Constants.OB_ROUTE_POLICY.equalsIgnoreCase(kv[0])) {
+                obRoutePolicy = ObRoutePolicy.getByName(kv[1]);
+                if (logger.isInfoEnabled()) {
+                    logger.info(String.format("will set %s=%s", Constants.OB_ROUTE_POLICY, kv[1]));
+                }
+            }
+        }
+
+        if (StringUtils.isBlank(db)) {
+            throw new IllegalArgumentException(String.format("database is empty. url=%s", paramURL));
+        }
+        setDatabase(db);
+        this.paramURL = paramURL;
+    }
+
+    /**
+     * Get full user name.
+     */
+    public String getFullUserName() {
+        return fullUserName;
+    }
+
+    /**
+     * Get user name.
+     */
+    public String getUserName() {
+        return userName;
+    }
+
+    /**
+     * Set user name.
+     */
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    /**
+     * Get tenant name.
+     */
+    public String getTenantName() {
+        return tenantName;
+    }
+
+    /**
+     * Set tenant name.
+     */
+    public void setTenantName(String tenantName) {
+        this.tenantName = tenantName;
+    }
+
+    /**
+     * Get cluster name.
+     */
+    public String getClusterName() {
+        return clusterName;
+    }
+
+    /**
+     * Set cluster name.
+     */
+    public void setClusterName(String clusterName) {
+        this.clusterName = clusterName;
+    }
+
+    /**
+     * Get password.
+     */
+    public String getPassword() {
+        return password;
+    }
+
+    /**
+     * Set password.
+     */
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    /**
+     * Get database.
+     */
+    public String getDatabase() {
+        return database;
+    }
+
+    /**
+     * Set database.
+     */
+    public void setDatabase(String database) {
+        this.database = database;
+    }
+
+    /**
+     * Get data source name.
+     */
+    public String getDataSourceName() {
+        return dataSourceName;
+    }
+
+    /**
+     * Set data source name.
+     */
+    public void setDataSourceName(String dataSourceName) {
+        this.dataSourceName = dataSourceName;
+    }
+
+    /**
+     * Is retry on change master times.
+     */
+    public boolean isRetryOnChangeMasterTimes() {
+        return retryOnChangeMasterTimes;
+    }
+
+    /**
+     * Set retry on change master times.
+     */
+    public void setRetryOnChangeMasterTimes(boolean retryOnChangeMasterTimes) {
+        this.retryOnChangeMasterTimes = retryOnChangeMasterTimes;
+    }
+
+    /**
+     * Add row key element.
+     */
+    public void addRowKeyElement(String tableName, String[] columns) {
+        if (columns == null || columns.length == 0) {
+            throw new IllegalArgumentException("add row key element error table " + tableName
+                                               + " column " + Arrays.toString(columns));
+        }
+        Map<String, Integer> rowKeyElement = new HashMap<String, Integer>();
+        for (int i = 0; i < columns.length; i++) {
+            rowKeyElement.put(columns[i], i);
+        }
+        tableRowKeyElement.put(tableName, rowKeyElement);
+    }
+
+    /**
+     * Set running mode.
+     */
+    public void setRunningMode(RunningMode runningMode) {
+        this.runningMode = runningMode;
+    }
+
+    public enum RunningMode {
+        NORMAL, HBASE;
+    }
+
+    /**
+     * Get Read Consistency.
+     */
+    public ObReadConsistency getReadConsistency() {
+        ObReadConsistency readConsistency = ThreadLocalMap.getReadConsistency();
+        if (readConsistency == null) {
+            readConsistency = this.readConsistency;
+        }
+        return readConsistency;
+    }
+
+    /**
+     * Get OB route policy.
+     */
+    public ObRoutePolicy getObRoutePolicy() {
+        return obRoutePolicy;
+    }
+
+    /**
+     * Get read route.
+     */
+    public ObServerRoute getReadRoute() {
+        if (getReadConsistency().isStrong()) {
+            return STRONG_READ;
+        }
+        return new ObServerRoute(ObReadConsistency.WEAK, obRoutePolicy, serverRoster
+            .getServerLdcLocation().isLdcUsed());
+    }
+
+    /**
+     * Get route for read or write.
+     */
+    public ObServerRoute getRoute(boolean readonly) {
+        if (readonly) {
+            return getReadRoute();
+        } else {
+            return STRONG_READ;
+        }
+    }
+
+    /**
+     * Set current IDC, for testing only.
+     */
+    public void setCurrentIDC(String idc) {
+        this.currentIDC = idc;
+    }
+
+    @Override
+    public String toString() {
+        return "ObTableClient {\n serverRoster = " + serverRoster.getMembers()
+               + ", \n serverIdc = " + serverRoster.getServerLdcLocation()
+               + ", \n tableLocations = " + tableLocations + ", \n tableRoster = " + tableRoster
+               + ", \n ocpModel = " + ocpModel + "\n}\n";
+    }
+
+}
