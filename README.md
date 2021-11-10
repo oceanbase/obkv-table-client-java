@@ -31,18 +31,18 @@ The code demo:
     obTableClient.setPassword("password");
     obTableClient.setSysUserName("sys_user_name");
     obTableClient.setEncSysPassword("sys_sys_password");
-    client.init();
+    obTableClient.init();
 
     // 2. single execute
     // return affectedRows
-    client.insert("test_varchar_table", "foo", new String[] { "c2" }, new String[] { "bar" });
+    obTableClient.insert("test_varchar_table", "foo", new String[] { "c2" }, new String[] { "bar" });
     // return Map<String, Object>
-    client.get("test_varchar_table", "foo", new String[] { "c2" });
+    obTableClient.get("test_varchar_table", "foo", new String[] { "c2" });
     // return affectedRows
-    client.delete("test_varchar_table", "foo");
+    obTableClient.delete("test_varchar_table", "foo");
 
     // 3. batch execute
-    TableBatchOps batchOps = client.batch("test_varchar_table");
+    TableBatchOps batchOps = obTableClient.batch("test_varchar_table");
     batchOps.insert("foo", new String[] { "c2" }, new String[] { "bar" });
     batchOps.get("foo", new String[] { "c2" });
     batchOps.delete("foo");
