@@ -19,48 +19,48 @@ package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableServerDownException extends ObTableException {
 
-    /**
+    /*
      * Ob table server down exception.
      */
     public ObTableServerDownException() {
     }
 
-    /**
+    /*
      * Ob table server down exception.
      */
     public ObTableServerDownException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table server down exception.
      */
     public ObTableServerDownException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table server down exception.
      */
     public ObTableServerDownException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table server down exception.
      */
     public ObTableServerDownException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table server down exception.
      */
     public ObTableServerDownException(Throwable cause) {
         super(cause);
     }
 
-    /**
+    /*
      * Is need refresh table entry.
      */
     public boolean isNeedRefreshTableEntry() {

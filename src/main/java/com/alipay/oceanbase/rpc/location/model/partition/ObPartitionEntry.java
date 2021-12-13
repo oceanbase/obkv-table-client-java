@@ -29,21 +29,21 @@ public class ObPartitionEntry {
         return partitionLocation;
     }
 
-    /**
+    /*
      * Set partition location.
      */
     public void setPartitionLocation(Map<Long, ObPartitionLocation> partitionLocation) {
         this.partitionLocation = partitionLocation;
     }
 
-    /**
+    /*
      * Get partition location with part id.
      */
     public ObPartitionLocation getPartitionLocationWithPartId(long partId) {
         return partitionLocation.get(partId);
     }
 
-    /**
+    /*
      * Put partition location with part id.
      */
     public ObPartitionLocation putPartitionLocationWithPartId(long partId,
@@ -51,7 +51,7 @@ public class ObPartitionEntry {
         return partitionLocation.put(partId, ObpartitionLocation);
     }
 
-    /**
+    /*
      * Prepare for weak read.
      * @param ldcLocation
      */
@@ -61,7 +61,7 @@ public class ObPartitionEntry {
         }
     }
 
-    /**
+    /*
      * To string.
      */
     @Override

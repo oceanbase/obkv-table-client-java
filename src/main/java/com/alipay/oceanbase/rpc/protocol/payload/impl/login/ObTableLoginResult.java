@@ -38,13 +38,13 @@ public class ObTableLoginResult extends AbstractPayload {
     private long          userId;
     private long          databaseId;
 
-    /**
+    /*
      * Ob table login result.
      */
     public ObTableLoginResult() {
     }
 
-    /**
+    /*
      * Get pcode.
      */
     @Override
@@ -52,7 +52,7 @@ public class ObTableLoginResult extends AbstractPayload {
         return Pcodes.OB_TABLE_API_LOGIN;
     }
 
-    /**
+    /*
      * Encode.
      */
     public byte[] encode() {
@@ -93,7 +93,7 @@ public class ObTableLoginResult extends AbstractPayload {
         return bytes;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -105,7 +105,7 @@ public class ObTableLoginResult extends AbstractPayload {
                + Serialization.getNeedBytes(databaseId);
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -126,112 +126,112 @@ public class ObTableLoginResult extends AbstractPayload {
         return this;
     }
 
-    /**
+    /*
      * Get server capabilities.
      */
     public int getServerCapabilities() {
         return serverCapabilities;
     }
 
-    /**
+    /*
      * Set server capabilities.
      */
     public void setServerCapabilities(int serverCapabilities) {
         this.serverCapabilities = serverCapabilities;
     }
 
-    /**
+    /*
      * Get reversed1.
      */
     public int getReversed1() {
         return reversed1;
     }
 
-    /**
+    /*
      * Set reversed1.
      */
     public void setReversed1(int reversed1) {
         this.reversed1 = reversed1;
     }
 
-    /**
+    /*
      * Get reversed2.
      */
     public long getReversed2() {
         return reversed2;
     }
 
-    /**
+    /*
      * Set reversed2.
      */
     public void setReversed2(long reversed2) {
         this.reversed2 = reversed2;
     }
 
-    /**
+    /*
      * Get server version.
      */
     public String getServerVersion() {
         return serverVersion;
     }
 
-    /**
+    /*
      * Set server version.
      */
     public void setServerVersion(String serverVersion) {
         this.serverVersion = serverVersion;
     }
 
-    /**
+    /*
      * Get credential.
      */
     public ObBytesString getCredential() {
         return credential;
     }
 
-    /**
+    /*
      * Set credential.
      */
     public void setCredential(ObBytesString credential) {
         this.credential = credential;
     }
 
-    /**
+    /*
      * Get tenant id.
      */
     public long getTenantId() {
         return tenantId;
     }
 
-    /**
+    /*
      * Set tenant id.
      */
     public void setTenantId(long tenantId) {
         this.tenantId = tenantId;
     }
 
-    /**
+    /*
      * Get user id.
      */
     public long getUserId() {
         return userId;
     }
 
-    /**
+    /*
      * Set user id.
      */
     public void setUserId(long userId) {
         this.userId = userId;
     }
 
-    /**
+    /*
      * Get database id.
      */
     public long getDatabaseId() {
         return databaseId;
     }
 
-    /**
+    /*
      * Set database id.
      */
     public void setDatabaseId(long databaseId) {

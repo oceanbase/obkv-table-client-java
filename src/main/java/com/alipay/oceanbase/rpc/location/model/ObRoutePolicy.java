@@ -42,7 +42,7 @@ public enum ObRoutePolicy {
 
     private static Map<Integer, ObRoutePolicy> map = new HashMap<Integer, ObRoutePolicy>();
 
-    /**
+    /*
      * Constructor.
      *
      * @param value
@@ -57,7 +57,7 @@ public enum ObRoutePolicy {
         }
     }
 
-    /**
+    /*
      * Get ObRoutePolicy name, return "IDC_ORDER" by default.
      */
     static public ObRoutePolicy getByName(String routePolicy) {

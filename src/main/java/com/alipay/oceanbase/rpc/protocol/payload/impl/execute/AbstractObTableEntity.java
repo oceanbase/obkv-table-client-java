@@ -27,7 +27,7 @@ import java.util.Map;
 import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
 import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderLength;
 
-/**
+/*
  *
  <code>
 OB_DEF_SERIALIZE(ObITableEntity)
@@ -183,7 +183,7 @@ public abstract class AbstractObTableEntity extends AbstractPayload implements O
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -208,7 +208,7 @@ public abstract class AbstractObTableEntity extends AbstractPayload implements O
         return this;
     }
 
-    /**
+    /*
      * Get payload size.
      */
     @Override
@@ -218,7 +218,7 @@ public abstract class AbstractObTableEntity extends AbstractPayload implements O
 
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override

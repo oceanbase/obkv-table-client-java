@@ -36,7 +36,7 @@ import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.LCD;
 public class ObRangePartDesc extends ObPartDesc {
     private static final Logger logger = TableClientLoggerFactory.getLogger(ObRangePartDesc.class);
 
-    /**
+    /*
      * Ob range part desc.
      */
     public ObRangePartDesc() {
@@ -47,14 +47,14 @@ public class ObRangePartDesc extends ObPartDesc {
     private List<ObObjType>                            orderedCompareColumnTypes = null;
     private List<ObComparableKV<ObPartitionKey, Long>> bounds                    = null;
 
-    /**
+    /*
      * Get ordered compare column types.
      */
     public List<ObObjType> getOrderedCompareColumnTypes() {
         return orderedCompareColumnTypes;
     }
 
-    /**
+    /*
      * Set ordered compare column types.
      */
     public void setOrderedCompareColumnTypes(List<ObObjType> orderedPartColumnTypes) {
@@ -62,21 +62,21 @@ public class ObRangePartDesc extends ObPartDesc {
         this.orderedCompareColumnTypes = orderedPartColumnTypes;
     }
 
-    /**
+    /*
      * Set ordered compare columns.
      */
     public void setOrderedCompareColumns(List<ObColumn> orderedPartColumn) {
         this.orderedCompareColumns = orderedPartColumn;
     }
 
-    /**
+    /*
      * Get ordered compare columns.
      */
     public List<ObColumn> getOrderedCompareColumns() {
         return orderedCompareColumns;
     }
 
-    /**
+    /*
      * Set bounds.
      */
     public void setBounds(List<ObComparableKV<ObPartitionKey, Long>> bounds) {
@@ -87,7 +87,7 @@ public class ObRangePartDesc extends ObPartDesc {
         return bounds;
     }
 
-    /**
+    /*
      * Get random part id.
      */
     @Override
@@ -99,7 +99,7 @@ public class ObRangePartDesc extends ObPartDesc {
         return this.bounds.get(randomIndex).value;
     }
 
-    /**
+    /*
      * Prepare.
      */
     @Override
@@ -152,7 +152,7 @@ public class ObRangePartDesc extends ObPartDesc {
         super.prepare();
     }
 
-    /**
+    /*
      * Get part ids.
      */
     @Override
@@ -169,7 +169,7 @@ public class ObRangePartDesc extends ObPartDesc {
         return partIds;
     }
 
-    /**
+    /*
      * Get part id.
      */
     @Override
@@ -197,7 +197,7 @@ public class ObRangePartDesc extends ObPartDesc {
 
     }
 
-    /**
+    /*
      * Get part id.
      */
     @Override
@@ -245,7 +245,7 @@ public class ObRangePartDesc extends ObPartDesc {
         return first;
     }
 
-    /**
+    /*
      * To string.
      */
     @Override

@@ -39,7 +39,7 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
     protected boolean                 returningAffectedEntity = false;
     protected boolean                 returningAffectedRows   = false;
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -97,28 +97,28 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
         return idx;
     }
 
-    /**
+    /*
      * Get credential.
      */
     public ObBytesString getCredential() {
         return credential;
     }
 
-    /**
+    /*
      * Set timeout.
      */
     public void setTimeout(long timeout) {
         this.timeout = timeout;
     }
 
-    /**
+    /*
      * Set tenant id.
      */
     public void setTenantId(long tenantId) {
         this.tenantId = tenantId;
     }
 
-    /**
+    /*
      * Set credential.
      */
     @Override
@@ -126,112 +126,112 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
         this.credential = credential;
     }
 
-    /**
+    /*
      * Get table name.
      */
     public String getTableName() {
         return tableName;
     }
 
-    /**
+    /*
      * Set table name.
      */
     public void setTableName(String tableName) {
         this.tableName = tableName;
     }
 
-    /**
+    /*
      * Get table id.
      */
     public long getTableId() {
         return tableId;
     }
 
-    /**
+    /*
      * Set table id.
      */
     public void setTableId(long tableId) {
         this.tableId = tableId;
     }
 
-    /**
+    /*
      * Get partition id.
      */
     public long getPartitionId() {
         return partitionId;
     }
 
-    /**
+    /*
      * Set partition id.
      */
     public void setPartitionId(long partitionId) {
         this.partitionId = partitionId;
     }
 
-    /**
+    /*
      * Get entity type.
      */
     public ObTableEntityType getEntityType() {
         return entityType;
     }
 
-    /**
+    /*
      * Set entity type.
      */
     public void setEntityType(ObTableEntityType entityType) {
         this.entityType = entityType;
     }
 
-    /**
+    /*
      * Get consistency level.
      */
     public ObTableConsistencyLevel getConsistencyLevel() {
         return consistencyLevel;
     }
 
-    /**
+    /*
      * Set consistency level.
      */
     public void setConsistencyLevel(ObTableConsistencyLevel consistencyLevel) {
         this.consistencyLevel = consistencyLevel;
     }
 
-    /**
+    /*
      * Is returning row key.
      */
     public boolean isReturningRowKey() {
         return returningRowKey;
     }
 
-    /**
+    /*
      * Set returning row key.
      */
     public void setReturningRowKey(boolean returningRowKey) {
         this.returningRowKey = returningRowKey;
     }
 
-    /**
+    /*
      * Is returning affected entity.
      */
     public boolean isReturningAffectedEntity() {
         return returningAffectedEntity;
     }
 
-    /**
+    /*
      * Set returning affected entity.
      */
     public void setReturningAffectedEntity(boolean returningAffectedEntity) {
         this.returningAffectedEntity = returningAffectedEntity;
     }
 
-    /**
+    /*
      * Is returning affected rows.
      */
     public boolean isReturningAffectedRows() {
         return returningAffectedRows;
     }
 
-    /**
+    /*
      * Set returning affected rows.
      */
     public void setReturningAffectedRows(boolean returningAffectedRows) {

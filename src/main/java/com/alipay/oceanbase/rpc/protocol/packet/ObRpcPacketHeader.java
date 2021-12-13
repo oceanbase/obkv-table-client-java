@@ -86,7 +86,7 @@ public class ObRpcPacketHeader {
 
     private int              originalLen                               = 0;
 
-    /**
+    /*
      * Ob rpc packet header.
      */
     public ObRpcPacketHeader() {
@@ -103,7 +103,7 @@ public class ObRpcPacketHeader {
         flag = 0x7; // let ObServer determine the ob log level.
     }
 
-    /**
+    /*
      * Encode.
      */
     public byte[] encode() {
@@ -144,7 +144,7 @@ public class ObRpcPacketHeader {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     public Object decode(ByteBuf buf) {
@@ -181,7 +181,7 @@ public class ObRpcPacketHeader {
         return this;
     }
 
-    /**
+    /*
      * Ignore unresolved bytes.
      */
     public void ignoreUnresolvedBytes(ByteBuf buf, int hlen, int encodeSize) {
@@ -190,49 +190,49 @@ public class ObRpcPacketHeader {
         }
     }
 
-    /**
+    /*
      * Is response.
      */
     public boolean isResponse() {
         return (flag & RESP_FLAG) != 0;
     }
 
-    /**
+    /*
      * Is stream.
      */
     public boolean isStream() {
         return (flag & STREAM_FLAG) != 0;
     }
 
-    /**
+    /*
      * Is stream next.
      */
     public boolean isStreamNext() {
         return isStream() && (flag & STREAM_LAST_FLAG) == 0;
     }
 
-    /**
+    /*
      * Is stream last.
      */
     public boolean isStreamLast() {
         return isStream() && (flag & STREAM_LAST_FLAG) != 0;
     }
 
-    /**
+    /*
      * Is routing wrong.
      */
     public boolean isRoutingWrong() {
         return (flag & REQUIRE_REROUTING_FLAG) != 0;
     }
 
-    /**
+    /*
      * Set routing wrong flag bit.
      */
     public void setRoutingWrong() {
         flag |= REQUIRE_REROUTING_FLAG;
     }
 
-    /**
+    /*
      * Set stream next.
      */
     public void setStreamNext() {
@@ -240,7 +240,7 @@ public class ObRpcPacketHeader {
         flag |= STREAM_FLAG;
     }
 
-    /**
+    /*
      * Set stream last.
      */
     public void setStreamLast() {
@@ -248,224 +248,224 @@ public class ObRpcPacketHeader {
         flag |= STREAM_FLAG;
     }
 
-    /**
+    /*
      * Get pcode.
      */
     public int getPcode() {
         return pcode;
     }
 
-    /**
+    /*
      * Set pcode.
      */
     public void setPcode(int pcode) {
         this.pcode = pcode;
     }
 
-    /**
+    /*
      * Get hlen.
      */
     public short getHlen() {
         return hlen;
     }
 
-    /**
+    /*
      * Set hlen.
      */
     public void setHlen(byte hlen) {
         this.hlen = hlen;
     }
 
-    /**
+    /*
      * Get priority.
      */
     public short getPriority() {
         return priority;
     }
 
-    /**
+    /*
      * Set priority.
      */
     public void setPriority(short priority) {
         this.priority = priority;
     }
 
-    /**
+    /*
      * Get flag.
      */
     public short getFlag() {
         return flag;
     }
 
-    /**
+    /*
      * Set flag.
      */
     public void setFlag(short flag) {
         this.flag = flag;
     }
 
-    /**
+    /*
      * Get checksum.
      */
     public long getChecksum() {
         return checksum;
     }
 
-    /**
+    /*
      * Set checksum.
      */
     public void setChecksum(long checksum) {
         this.checksum = checksum;
     }
 
-    /**
+    /*
      * Get tenant id.
      */
     public long getTenantId() {
         return tenantId;
     }
 
-    /**
+    /*
      * Set tenant id.
      */
     public void setTenantId(long tenantId) {
         this.tenantId = tenantId;
     }
 
-    /**
+    /*
      * Get prv tenant id.
      */
     public long getPrvTenantId() {
         return prvTenantId;
     }
 
-    /**
+    /*
      * Set prv tenant id.
      */
     public void setPrvTenantId(long prvTenantId) {
         this.prvTenantId = prvTenantId;
     }
 
-    /**
+    /*
      * Get session id.
      */
     public long getSessionId() {
         return sessionId;
     }
 
-    /**
+    /*
      * Set session id.
      */
     public void setSessionId(long sessionId) {
         this.sessionId = sessionId;
     }
 
-    /**
+    /*
      * Get trace id0.
      */
     public long getTraceId0() {
         return traceId0;
     }
 
-    /**
+    /*
      * Set trace id0.
      */
     public void setTraceId0(long traceId0) {
         this.traceId0 = traceId0;
     }
 
-    /**
+    /*
      * Get trace id1.
      */
     public long getTraceId1() {
         return traceId1;
     }
 
-    /**
+    /*
      * Set trace id1.
      */
     public void setTraceId1(long traceId1) {
         this.traceId1 = traceId1;
     }
 
-    /**
+    /*
      * Get timeout.
      */
     public long getTimeout() {
         return timeout;
     }
 
-    /**
+    /*
      * Set timeout.
      */
     public void setTimeout(long timeout) {
         this.timeout = timeout;
     }
 
-    /**
+    /*
      * Get timestamp.
      */
     public long getTimestamp() {
         return timestamp;
     }
 
-    /**
+    /*
      * Set timestamp.
      */
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
 
-    /**
+    /*
      * Get ob rpc cost time.
      */
     public ObRpcCostTime getObRpcCostTime() {
         return obRpcCostTime;
     }
 
-    /**
+    /*
      * Set ob rpc cost time.
      */
     public void setObRpcCostTime(ObRpcCostTime obRpcCostTime) {
         this.obRpcCostTime = obRpcCostTime;
     }
 
-    /**
+    /*
      * Get cluster id.
      */
     public long getClusterId() {
         return clusterId;
     }
 
-    /**
+    /*
      * Set cluster id.
      */
     public void setClusterId(long clusterId) {
         this.clusterId = clusterId;
     }
 
-    /**
+    /*
      * Get ob compress type.
      */
     public ObCompressType getObCompressType() {
         return obCompressType;
     }
 
-    /**
+    /*
      * Set ob compress type.
      */
     public void setObCompressType(ObCompressType obCompressType) {
         this.obCompressType = obCompressType;
     }
 
-    /**
+    /*
      * Get original len.
      */
     public int getOriginalLen() {
         return originalLen;
     }
 
-    /**
+    /*
      * Set original len.
      */
     public void setOriginalLen(int originalLen) {

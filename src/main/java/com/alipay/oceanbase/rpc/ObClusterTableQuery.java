@@ -34,7 +34,7 @@ public class ObClusterTableQuery extends AbstractTableQuery {
         this.tableClientQuery = tableQuery;
     }
 
-    /**
+    /*
      * Get table name.
      */
     @Override
@@ -42,7 +42,7 @@ public class ObClusterTableQuery extends AbstractTableQuery {
         return tableClientQuery.getTableName();
     }
 
-    /**
+    /*
      * Get ob table query.
      */
     @Override
@@ -50,7 +50,7 @@ public class ObClusterTableQuery extends AbstractTableQuery {
         return tableClientQuery.getObTableQuery();
     }
 
-    /**
+    /*
      * Execute.
      */
     @Override
@@ -58,14 +58,14 @@ public class ObClusterTableQuery extends AbstractTableQuery {
         return tableClientQuery.execute();
     }
 
-    /**
+    /*
      * Execute internal.
      */
     public ObTableClientQueryStreamResult executeInternal() throws Exception {
         return tableClientQuery.executeInternal();
     }
 
-    /**
+    /*
      * Select.
      */
     @Override
@@ -74,7 +74,7 @@ public class ObClusterTableQuery extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * 只有 limit query 需要，其他不需要
      * @param keys
      * @return
@@ -84,7 +84,7 @@ public class ObClusterTableQuery extends AbstractTableQuery {
         throw new IllegalArgumentException("Not needed");
     }
 
-    /**
+    /*
      * Limit.
      */
     @Override

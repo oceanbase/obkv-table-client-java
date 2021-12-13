@@ -42,14 +42,14 @@ public class ObTableConnection {
     private long                uniqueId;
     private AtomicLong          sequence;
 
-    /**
+    /*
      * Ob table connection.
      */
     public ObTableConnection(ObTable obTable) {
         this.obTable = obTable;
     }
 
-    /**
+    /*
      * Init.
      */
     public void init() throws Exception {
@@ -134,7 +134,7 @@ public class ObTableConnection {
         }
     }
 
-    /**
+    /*
      * Close.
      */
     public void close() {
@@ -145,7 +145,7 @@ public class ObTableConnection {
         }
     }
 
-    /**
+    /*
      * Check status.
      */
     public void checkStatus() throws Exception {
@@ -176,42 +176,42 @@ public class ObTableConnection {
         }
     }
 
-    /**
+    /*
      * Get credential.
      */
     public ObBytesString getCredential() {
         return credential;
     }
 
-    /**
+    /*
      * Set credential.
      */
     public void setCredential(ObBytesString credential) {
         this.credential = credential;
     }
 
-    /**
+    /*
      * Get tenant id.
      */
     public long getTenantId() {
         return tenantId;
     }
 
-    /**
+    /*
      * Set tenant id.
      */
     public void setTenantId(long tenantId) {
         this.tenantId = tenantId;
     }
 
-    /**
+    /*
      * Get connection.
      */
     public Connection getConnection() {
         return connection;
     }
 
-    /**
+    /*
      * Get ob table.
      */
     public ObTable getObTable() {
@@ -238,14 +238,14 @@ public class ObTableConnection {
         request.setPassScramble(scramble);
     }
 
-    /**
+    /*
      * Get unique id.
      */
     public long getUniqueId() {
         return uniqueId;
     }
 
-    /**
+    /*
      * Get next sequence.
      */
     public long getNextSequence() {

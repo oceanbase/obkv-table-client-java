@@ -21,20 +21,20 @@ public class GenerateColumnParseException extends RuntimeException {
 
     private int errorCode;
 
-    /**
+    /*
      * Generate column parse exception.
      */
     public GenerateColumnParseException() {
     }
 
-    /**
+    /*
      * Generate column parse exception.
      */
     public GenerateColumnParseException(int errorCode) {
         this("error code: " + errorCode, errorCode);
     }
 
-    /**
+    /*
      * Generate column parse exception.
      */
     public GenerateColumnParseException(String message, int errorCode) {
@@ -42,28 +42,28 @@ public class GenerateColumnParseException extends RuntimeException {
         this.errorCode = errorCode;
     }
 
-    /**
+    /*
      * Generate column parse exception.
      */
     public GenerateColumnParseException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Generate column parse exception.
      */
     public GenerateColumnParseException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Generate column parse exception.
      */
     public GenerateColumnParseException(Throwable cause) {
         super(cause);
     }
 
-    /**
+    /*
      * Get error code.
      */
     public int getErrorCode() {

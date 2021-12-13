@@ -21,20 +21,20 @@ public class ObShardTableException extends RuntimeException {
 
     private int errorCode;
 
-    /**
+    /*
      * Ob shard table exception.
      */
     public ObShardTableException() {
     }
 
-    /**
+    /*
      * Ob shard table exception.
      */
     public ObShardTableException(int errorCode) {
         this("error code: " + errorCode, errorCode);
     }
 
-    /**
+    /*
      * Ob shard table exception.
      */
     public ObShardTableException(String message, int errorCode) {
@@ -42,28 +42,28 @@ public class ObShardTableException extends RuntimeException {
         this.errorCode = errorCode;
     }
 
-    /**
+    /*
      * Ob shard table exception.
      */
     public ObShardTableException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob shard table exception.
      */
     public ObShardTableException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob shard table exception.
      */
     public ObShardTableException(Throwable cause) {
         super(cause);
     }
 
-    /**
+    /*
      * Get error code.
      */
     public int getErrorCode() {

@@ -33,6 +33,10 @@ import static com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjType.*;
 public class ObHashUtils {
     /**
      * Varchar hash.
+     * @param varchar input varchar data
+     * @param collationType collation type
+     * @param hashCode old hashCode
+     * @return new hashCode
      */
     public static long varcharHash(Object varchar, ObCollationType collationType, long hashCode) {
         // magic number, the same number with observer
@@ -76,7 +80,11 @@ public class ObHashUtils {
     }
 
     /**
-     * To hashcode.
+     * To hash code
+     * @param value input data
+     * @param refColumn data info, include type and collation type
+     * @param hashCode old hashCode
+     * @return new hashCode
      */
     public static long toHashcode(Object value, ObColumn refColumn, long hashCode) {
 
@@ -105,7 +113,10 @@ public class ObHashUtils {
     }
 
     /**
-     * Long hash.
+     * Long hash
+     * @param l input data
+     * @param hashCode old hashCode
+     * @return new hashCode
      */
     public static long longHash(long l, long hashCode) {
         return MurmurHash.hash64(longToByteArray(l), 8, hashCode);
@@ -113,13 +124,19 @@ public class ObHashUtils {
 
     /**
      * Date hash.
+     * @param d input data
+     * @param hashCode old hashCode
+     * @return new hashCode
      */
     public static long dateHash(Date d, long hashCode) {
         return longHash(d.getTime(), hashCode);
     }
 
     /**
-     * Time stamp hash.
+     * Time stamp hash
+     * @param ts input data
+     * @param hashCode old hashCode
+     * @return new hashCode
      */
     public static long timeStampHash(Timestamp ts, long hashCode) {
         return longHash(ts.getTime(), hashCode);

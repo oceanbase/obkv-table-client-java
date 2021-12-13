@@ -27,7 +27,7 @@ import io.netty.buffer.ByteBuf;
 import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
 import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderLength;
 
-/**
+/*
  *
  OB_SERIALIZE_MEMBER(ObTableOperation, operation_type_, const_cast<ObITableEntity&>(*entity_));
  *
@@ -37,7 +37,7 @@ public class ObTableOperation extends AbstractPayload {
     private ObTableOperationType operationType;
     private ObITableEntity       entity;       // TODO 我是如何知道类型的？
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -62,7 +62,7 @@ public class ObTableOperation extends AbstractPayload {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -80,7 +80,7 @@ public class ObTableOperation extends AbstractPayload {
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -88,35 +88,35 @@ public class ObTableOperation extends AbstractPayload {
         return 1 + entity.getPayloadSize();
     }
 
-    /**
+    /*
      * Get operation type.
      */
     public ObTableOperationType getOperationType() {
         return operationType;
     }
 
-    /**
+    /*
      * Set operation type.
      */
     public void setOperationType(ObTableOperationType operationType) {
         this.operationType = operationType;
     }
 
-    /**
+    /*
      * Get entity.
      */
     public ObITableEntity getEntity() {
         return entity;
     }
 
-    /**
+    /*
      * Set entity.
      */
     public void setEntity(ObITableEntity entity) {
         this.entity = entity;
     }
 
-    /**
+    /*
      * Get instance.
      */
     public static ObTableOperation getInstance(ObTableOperationType type, Object[] rowKeys,
@@ -156,7 +156,7 @@ public class ObTableOperation extends AbstractPayload {
         return obTableOperation;
     }
 
-    /**
+    /*
      * Is readonly.
      */
     public boolean isReadonly() {

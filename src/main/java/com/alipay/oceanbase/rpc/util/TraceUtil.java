@@ -24,14 +24,14 @@ import com.alipay.oceanbase.rpc.table.ObTable;
 
 public class TraceUtil {
 
-    /**
+    /*
      * Trace format from connection and payload.
      */
     public static String formatTraceMessage(final ObTableConnection conn, final ObPayload payload) {
         return formatTraceMessage(conn, payload, "");
     }
 
-    /**
+    /*
      * Trace format from connection and payload.
      */
     public static String formatTraceMessage(final ObTableConnection conn, final ObPayload payload,
@@ -40,14 +40,14 @@ public class TraceUtil {
             payload.getUniqueId(), conn.getObTable().getIp(), conn.getObTable().getPort(), msg);
     }
 
-    /**
+    /*
      * Trace format from connection and packet, used when the packet isn't decoded yet.
      */
     public static String formatTraceMessage(final ObTableConnection conn, final ObTablePacket packet) {
         return formatTraceMessage(conn, packet, "");
     }
 
-    /**
+    /*
      * Trace format from connection and packet, used when the packet isn't decoded yet.
      */
     public static String formatTraceMessage(final ObTableConnection conn,
@@ -57,7 +57,7 @@ public class TraceUtil {
                 .getPort(), msg);
     }
 
-    /**
+    /*
      * Format IP:port from ObTable.
      */
     public static String formatIpPort(final ObTable obTable) {

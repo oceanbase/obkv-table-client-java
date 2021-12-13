@@ -86,7 +86,11 @@ public class Base64 {
     }
 
     /**
-     *
+     * Base64 decode
+     * @param data input data buf
+     * @param off the data offset
+     * @param len the data length
+     * @return plain data
      */
     public static byte[] decode(char[] data, int off, int len) {
         char[] ibuf = new char[4];
@@ -112,7 +116,9 @@ public class Base64 {
     }
 
     /**
-     *
+     * Base64 deocde
+     * @param data input data
+     * @return plain data
      */
     public static byte[] decode(String data) {
         char[] ibuf = new char[4];
@@ -138,7 +144,12 @@ public class Base64 {
     }
 
     /**
-     *
+     * Base64 decode.
+     * @param data input data buffer
+     * @param off input data offset
+     * @param len input data length
+     * @param ostream output data stream
+     * @throws IOException if an I/O error occurs.
      */
     public static void decode(char[] data, int off, int len, OutputStream ostream)
                                                                                   throws IOException {
@@ -160,7 +171,10 @@ public class Base64 {
     }
 
     /**
-     *
+     * Base64 decode
+     * @param data input data
+     * @param ostream output stream
+     * @throws IOException if an I/O error occurs.
      */
     public static void decode(String data, OutputStream ostream) throws IOException {
         char[] ibuf = new char[4];
@@ -181,14 +195,20 @@ public class Base64 {
     }
 
     /**
-     * Returns base64 representation of specified byte array.
+     * Base64 encode
+     * @param data input data
+     * @return out data
      */
     public static String encode(byte[] data) {
         return encode(data, 0, data.length);
     }
 
     /**
-     * Returns base64 representation of specified byte array.
+     * Base64 encode
+     * @param data input data
+     * @param off input data offset
+     * @param len input data length
+     * @return output data
      */
     public static String encode(byte[] data, int off, int len) {
         if (len <= 0)
@@ -224,7 +244,12 @@ public class Base64 {
     }
 
     /**
-     * Outputs base64 representation of the specified byte array to a byte stream.
+     * Base64 encode
+     * @param data input data buffer
+     * @param off input data offset
+     * @param len input data length
+     * @param ostream output stream
+     * @throws IOException if an I/O error occurs.
      */
     public static void encode(byte[] data, int off, int len, OutputStream ostream)
                                                                                   throws IOException {
@@ -262,7 +287,12 @@ public class Base64 {
     }
 
     /**
-     * Outputs base64 representation of the specified byte array to a character stream.
+     * Base64 encode
+     * @param data input data buffer
+     * @param off input data offset
+     * @param len input data length
+     * @param writer output data writer
+     * @throws IOException if an I/O error occurs.
      */
     public static void encode(byte[] data, int off, int len, Writer writer) throws IOException {
         if (len <= 0)

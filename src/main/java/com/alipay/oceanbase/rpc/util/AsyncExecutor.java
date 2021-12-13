@@ -35,15 +35,18 @@ public class AsyncExecutor {
 
     private Exception              exception     = null;
 
-    /**
+    /*
      * Async executor.
      */
     public AsyncExecutor() {
         this(4, 4, 1024);
     }
 
-    /**
+    /*
      * Async executor.
+     * @param corePoolSize the number of threads to keep in the pool
+     * @param maxPoolSize the maximum number of threads to allow in the pool
+     * @param queueSize the work queue size
      */
     public AsyncExecutor(int corePoolSize, int maxPoolSize, int queueSize) {
         executor = new SofaThreadPoolExecutor(corePoolSize, maxPoolSize, 1000, TimeUnit.SECONDS,
@@ -51,8 +54,9 @@ public class AsyncExecutor {
             OCEANBASE_TABLE_CLIENT_LOGGER_SPACE);
     }
 
-    /**
+    /*
      * Wait complete.
+     * @throws Exception if something is wrong
      */
     public void waitComplete() throws Exception {
         startMonitor();
@@ -64,12 +68,13 @@ public class AsyncExecutor {
         }
     }
 
-    /**
+    /*
      * Add task.
+     * @param runnable task
      */
     public void addTask(final Runnable runnable) {
         executor.execute(new Runnable() {
-            /**
+            /*
              * Run.
              */
             @Override
@@ -88,12 +93,12 @@ public class AsyncExecutor {
         taskCount.incrementAndGet();
     }
 
-    /**
+    /*
      * monitor executor tasks, if finished, shutdown executor
      */
     private void startMonitor() {
         new Thread(new Runnable() {
-            /**
+            /*
              * Run.
              */
             @Override

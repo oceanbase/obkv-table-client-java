@@ -39,7 +39,7 @@ public class YcsbBenchClient extends DB {
             "FIELD1", "FIELD2", "FIELD3", "FIELD4", "FIELD5", "FIELD6", "FIELD7", "FIELD8",
             "FIELD9"                                           };
 
-    /**
+    /*
      * Init.
      */
     public void init() throws DBException {
@@ -87,7 +87,7 @@ public class YcsbBenchClient extends DB {
 
     }
 
-    /**
+    /*
      * Read.
      */
     @Override
@@ -114,7 +114,7 @@ public class YcsbBenchClient extends DB {
         return null;
     }
 
-    /**
+    /*
      * Scan.
      */
     @Override
@@ -150,7 +150,7 @@ public class YcsbBenchClient extends DB {
         return null;
     }
 
-    /**
+    /*
      * Update.
      */
     @Override
@@ -170,7 +170,7 @@ public class YcsbBenchClient extends DB {
         return Status.ERROR;
     }
 
-    /**
+    /*
      * Insert.
      */
     @Override
@@ -190,7 +190,7 @@ public class YcsbBenchClient extends DB {
         return Status.ERROR;
     }
 
-    /**
+    /*
      * Delete.
      */
     @Override

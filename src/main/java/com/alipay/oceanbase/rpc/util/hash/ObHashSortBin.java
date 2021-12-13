@@ -18,7 +18,7 @@
 package com.alipay.oceanbase.rpc.util.hash;
 
 public class ObHashSortBin {
-    /**
+    /*
      * Ob hash sort bin.
      */
     public static long obHashSortBin(byte[] s, int len, long n1, long n2) {

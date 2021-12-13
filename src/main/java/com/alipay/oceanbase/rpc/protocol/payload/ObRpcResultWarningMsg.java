@@ -31,13 +31,13 @@ public class ObRpcResultWarningMsg extends AbstractPayload {
     private int    lineNo;
     private int    code;
 
-    /**
+    /*
      * Ob rpc result warning msg.
      */
     public ObRpcResultWarningMsg() {
     }
 
-    /**
+    /*
      * Get pcode.
      */
     @Override
@@ -45,7 +45,7 @@ public class ObRpcResultWarningMsg extends AbstractPayload {
         return 0;
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -78,7 +78,7 @@ public class ObRpcResultWarningMsg extends AbstractPayload {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -97,7 +97,7 @@ public class ObRpcResultWarningMsg extends AbstractPayload {
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -107,70 +107,70 @@ public class ObRpcResultWarningMsg extends AbstractPayload {
                + Serialization.getNeedBytes(lineNo) + Serialization.getNeedBytes(code);
     }
 
-    /**
+    /*
      * Get msg.
      */
     public byte[] getMsg() {
         return msg;
     }
 
-    /**
+    /*
      * Set msg.
      */
     public void setMsg(byte[] msg) {
         this.msg = msg;
     }
 
-    /**
+    /*
      * Get timestamp.
      */
     public long getTimestamp() {
         return timestamp;
     }
 
-    /**
+    /*
      * Set timestamp.
      */
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
 
-    /**
+    /*
      * Get log level.
      */
     public int getLogLevel() {
         return logLevel;
     }
 
-    /**
+    /*
      * Set log level.
      */
     public void setLogLevel(int logLevel) {
         this.logLevel = logLevel;
     }
 
-    /**
+    /*
      * Get line no.
      */
     public int getLineNo() {
         return lineNo;
     }
 
-    /**
+    /*
      * Set line no.
      */
     public void setLineNo(int lineNo) {
         this.lineNo = lineNo;
     }
 
-    /**
+    /*
      * Get code.
      */
     public int getCode() {
         return code;
     }
 
-    /**
+    /*
      * Set code.
      */
     public void setCode(int code) {

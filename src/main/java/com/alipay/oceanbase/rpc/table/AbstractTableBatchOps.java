@@ -100,14 +100,14 @@ public abstract class AbstractTableBatchOps implements TableBatchOps {
         return tableName;
     }
 
-    /**
+    /*
      * Set table name.
      */
     public void setTableName(String tableName) {
         this.tableName = tableName;
     }
 
-    /**
+    /*
      * Set atomic operation.
      */
     @Override
@@ -115,7 +115,7 @@ public abstract class AbstractTableBatchOps implements TableBatchOps {
         this.atomicOperation = atomicOperation;
     }
 
-    /**
+    /*
      * Is atomic operation.
      */
     @Override
@@ -123,7 +123,7 @@ public abstract class AbstractTableBatchOps implements TableBatchOps {
         return atomicOperation;
     }
 
-    /**
+    /*
      * Set entity type.
      */
     @Override
@@ -131,7 +131,7 @@ public abstract class AbstractTableBatchOps implements TableBatchOps {
         this.entityType = entityType;
     }
 
-    /**
+    /*
      * Get entity type.
      */
     @Override

@@ -23,9 +23,7 @@ import java.util.regex.Pattern;
 /**
  * NamePattern: patternPrefix_{from1-to1}_{from2-to2}_patternSuffix
  *
- *  <p>
  *  user_{00-15}_suffix, user_{00-15}_{00-11}_suffix
- *  <p>
  *
  */
 public class NamePattern {
@@ -49,9 +47,6 @@ public class NamePattern {
 
     private boolean             hasTwoColumn        = false;
 
-    /**
-     * Name pattern.
-     */
     public NamePattern(String patternString) {
         this.patternString = patternString;
         String regex = "\\{\\d+-\\d+\\}";
@@ -110,6 +105,8 @@ public class NamePattern {
 
     /**
      * Wrap value.
+     * @param value value
+     * @return replace
      */
     public String wrapValue(int value) {
         int firstValue = value;
@@ -139,6 +136,7 @@ public class NamePattern {
 
     /**
      * Get min value.
+     * @return min value
      */
     public int getMinValue() {
         return minValue;
@@ -146,6 +144,7 @@ public class NamePattern {
 
     /**
      * Get max value.
+     * @return max value
      */
     public int getMaxValue() {
         return maxValue;
@@ -153,6 +152,7 @@ public class NamePattern {
 
     /**
      * Get size.
+     * @return size
      */
     public int getSize() {
         return maxValue - minValue + 1;

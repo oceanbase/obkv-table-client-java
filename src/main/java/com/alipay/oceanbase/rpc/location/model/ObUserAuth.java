@@ -30,13 +30,13 @@ public class ObUserAuth {
 
     private String encPassword; // encrypted password, set by user.
 
-    /**
+    /*
      * Default constructor.
      */
     public ObUserAuth() {
     }
 
-    /**
+    /*
      * Constructor with user/password.
      */
     public ObUserAuth(String userName, String password) {
@@ -44,21 +44,21 @@ public class ObUserAuth {
         this.password = password;
     }
 
-    /**
+    /*
      * Set User Name
      */
     public void setUserName(String userName) {
         this.userName = userName;
     }
 
-    /**
+    /*
      * Set password
      */
     public void setPassword(String password) {
         this.password = password;
     }
 
-    /**
+    /*
      * Set encrypted password. Decrypt it and set the password.
      */
     public void setEncPassword(String encPassword) throws Exception {
@@ -68,21 +68,21 @@ public class ObUserAuth {
         }
     }
 
-    /**
+    /*
      * Get password.
      */
     public String getPassword() {
         return password;
     }
 
-    /**
+    /*
      * Get user name.
      */
     public String getUserName() {
         return userName;
     }
 
-    /**
+    /*
      * Get encrypted password set by user.
      * <p>
      * Attention: you won't get encrypted password if you haven't set it, even if you have set a password.

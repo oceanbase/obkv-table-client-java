@@ -41,7 +41,7 @@ public class ObTableOperationRequest extends ObTableAbstractOperationRequest {
 
     private ObTableOperation tableOperation;
 
-    /**
+    /*
      * Get pcode.
      */
     @Override
@@ -49,7 +49,7 @@ public class ObTableOperationRequest extends ObTableAbstractOperationRequest {
         return Pcodes.OB_TABLE_API_EXECUTE;
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -82,7 +82,7 @@ public class ObTableOperationRequest extends ObTableAbstractOperationRequest {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -110,7 +110,7 @@ public class ObTableOperationRequest extends ObTableAbstractOperationRequest {
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -118,21 +118,21 @@ public class ObTableOperationRequest extends ObTableAbstractOperationRequest {
         return super.getPayloadContentSize() + tableOperation.getPayloadSize();
     }
 
-    /**
+    /*
      * Get table operation.
      */
     public ObTableOperation getTableOperation() {
         return tableOperation;
     }
 
-    /**
+    /*
      * Set table operation.
      */
     public void setTableOperation(ObTableOperation tableOperation) {
         this.tableOperation = tableOperation;
     }
 
-    /**
+    /*
      * Get instance.
      */
     public static ObTableOperationRequest getInstance(String tableName, //

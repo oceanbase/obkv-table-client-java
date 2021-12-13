@@ -19,48 +19,48 @@ package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableEntryRefreshException extends ObTableException {
 
-    /**
+    /*
      * Ob table entry refresh exception.
      */
     public ObTableEntryRefreshException() {
     }
 
-    /**
+    /*
      * Ob table entry refresh exception.
      */
     public ObTableEntryRefreshException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table entry refresh exception.
      */
     public ObTableEntryRefreshException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table entry refresh exception.
      */
     public ObTableEntryRefreshException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table entry refresh exception.
      */
     public ObTableEntryRefreshException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table entry refresh exception.
      */
     public ObTableEntryRefreshException(Throwable cause) {
         super(cause);
     }
 
-    /**
+    /*
      * Is need refresh table entry.
      */
     @Override

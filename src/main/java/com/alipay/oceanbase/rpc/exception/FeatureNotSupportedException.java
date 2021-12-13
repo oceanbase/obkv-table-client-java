@@ -21,20 +21,20 @@ public class FeatureNotSupportedException extends RuntimeException {
 
     private int errorCode;
 
-    /**
+    /*
      * Feature not supported exception.
      */
     public FeatureNotSupportedException() {
     }
 
-    /**
+    /*
      * Feature not supported exception.
      */
     public FeatureNotSupportedException(int errorCode) {
         this("error code: " + errorCode, errorCode);
     }
 
-    /**
+    /*
      * Feature not supported exception.
      */
     public FeatureNotSupportedException(String message, int errorCode) {
@@ -42,28 +42,28 @@ public class FeatureNotSupportedException extends RuntimeException {
         this.errorCode = errorCode;
     }
 
-    /**
+    /*
      * Feature not supported exception.
      */
     public FeatureNotSupportedException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Feature not supported exception.
      */
     public FeatureNotSupportedException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Feature not supported exception.
      */
     public FeatureNotSupportedException(Throwable cause) {
         super(cause);
     }
 
-    /**
+    /*
      * Get error code.
      */
     public int getErrorCode() {

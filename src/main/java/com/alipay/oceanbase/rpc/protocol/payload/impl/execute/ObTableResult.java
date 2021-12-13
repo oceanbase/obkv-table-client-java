@@ -28,7 +28,7 @@ public class ObTableResult extends AbstractPayload {
     private byte[] sqlState;
     private byte[] msg;
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -55,7 +55,7 @@ public class ObTableResult extends AbstractPayload {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -71,7 +71,7 @@ public class ObTableResult extends AbstractPayload {
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -81,42 +81,42 @@ public class ObTableResult extends AbstractPayload {
                + Serialization.getNeedBytes(msg);
     }
 
-    /**
+    /*
      * Get errno.
      */
     public int getErrno() {
         return errno;
     }
 
-    /**
+    /*
      * Set errno.
      */
     public void setErrno(int errno) {
         this.errno = errno;
     }
 
-    /**
+    /*
      * Get sql state.
      */
     public byte[] getSqlState() {
         return sqlState;
     }
 
-    /**
+    /*
      * Set sql state.
      */
     public void setSqlState(byte[] sqlState) {
         this.sqlState = sqlState;
     }
 
-    /**
+    /*
      * Get msg.
      */
     public byte[] getMsg() {
         return msg;
     }
 
-    /**
+    /*
      * Set msg.
      */
     public void setMsg(byte[] msg) {

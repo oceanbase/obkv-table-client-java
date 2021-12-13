@@ -2899,21 +2899,21 @@ public final class ObHashSortUtf8mb4 {
                                                                       | OB_CS_UNICODE
                                                                       | OB_CS_UNICODE_SUPPLEMENT;
 
-    /**
+    /*
      * A continuation byte in UTF-8 is any byte where the top two bits are 10.
-     **/
+     */
     private static boolean isContinuationByte(byte c) {
         return ((c & 0xC0) == 0x80);
     }
 
-    /**
+    /*
      * Whether the buffer has enough bytes remaining.
      */
     private static boolean enoughBytesRemaining(ObMbContext ctx, int n) {
         return (ctx.end >= ctx.start + n);
     }
 
-    /**
+    /*
      * Please refer to : https://en.wikipedia.org/wiki/UTF-8
      * The following table shows how the Unicode code points map to UTF-8 multi-byte byte sequences,
      * and their equivalent binary values.
@@ -3021,7 +3021,7 @@ public final class ObHashSortUtf8mb4 {
         ctx.n2 += 3;
     }
 
-    /**
+    /*
      * Ob hash sort utf8 mb4.
      */
     public static long obHashSortUtf8Mb4(byte[] s, int len, long n1, long n2) {
@@ -3050,7 +3050,7 @@ public final class ObHashSortUtf8mb4 {
         return ctx.n1;
     }
 
-    /**
+    /*
      * Ob hash sort mb bin.
      */
     public static long obHashSortMbBin(byte[] s, int len, long n1, long n2) {

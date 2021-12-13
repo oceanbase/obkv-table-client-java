@@ -54,7 +54,7 @@ public class ObTablePacket implements RemotingCommand {
         this.setCmdCode(ObTablePacketCode.valueOf((short) header.getPcode()));
     }
 
-    /**
+    /*
      * Create transport error packet.
      */
     public static ObTablePacket createTransportErrorPacket(int transportCode, String message,
@@ -67,7 +67,7 @@ public class ObTablePacket implements RemotingCommand {
         return tablePacket;
     }
 
-    /**
+    /*
      * Get protocol code.
      */
     @Override
@@ -75,7 +75,7 @@ public class ObTablePacket implements RemotingCommand {
         return OB_RPC_MAGIC_CODE;
     }
 
-    /**
+    /*
      * Get cmd code.
      */
     @Override
@@ -83,14 +83,14 @@ public class ObTablePacket implements RemotingCommand {
         return commandCode;
     }
 
-    /**
+    /*
      * Set cmd code.
      */
     public void setCmdCode(CommandCode cmdCode) {
         this.commandCode = cmdCode;
     }
 
-    /**
+    /*
      * Get id.
      */
     @Override
@@ -98,42 +98,42 @@ public class ObTablePacket implements RemotingCommand {
         return id;
     }
 
-    /**
+    /*
      * Set id.
      */
     public void setId(int id) {
         this.id = id;
     }
 
-    /**
+    /*
      * Get packet content.
      */
     public byte[] getPacketContent() {
         return packetContent;
     }
 
-    /**
+    /*
      * Set packet content.
      */
     public void setPacketContent(byte[] packetContent) {
         this.packetContent = packetContent;
     }
 
-    /**
+    /*
      * Set packet content buf.
      */
     public void setPacketContentBuf(ByteBuf packetContent) {
         this.packetContentBuf = packetContent;
     }
 
-    /**
+    /*
      * Get packet content buf.
      */
     public ByteBuf getPacketContentBuf() {
         return packetContentBuf;
     }
 
-    /**
+    /*
      * Release byte buf.
      */
     public void releaseByteBuf() {
@@ -143,63 +143,63 @@ public class ObTablePacket implements RemotingCommand {
         }
     }
 
-    /**
+    /*
      * Get header.
      */
     public ObRpcPacketHeader getHeader() {
         return header;
     }
 
-    /**
+    /*
      * Set header.
      */
     public void setHeader(ObRpcPacketHeader header) {
         this.header = header;
     }
 
-    /**
+    /*
      * Is success.
      */
     public boolean isSuccess() {
         return transportCode == 0;
     }
 
-    /**
+    /*
      * Get transport code.
      */
     public int getTransportCode() {
         return transportCode;
     }
 
-    /**
+    /*
      * Set transport code.
      */
     public void setTransportCode(int transportCode) {
         this.transportCode = transportCode;
     }
 
-    /**
+    /*
      * Get message.
      */
     public String getMessage() {
         return message;
     }
 
-    /**
+    /*
      * Set message.
      */
     public void setMessage(String message) {
         this.message = message;
     }
 
-    /**
+    /*
      * Get cause.
      */
     public Throwable getCause() {
         return cause;
     }
 
-    /**
+    /*
      * Set cause.
      */
     public void setCause(Throwable cause) {
@@ -208,7 +208,7 @@ public class ObTablePacket implements RemotingCommand {
 
     // TODO useless for now
 
-    /**
+    /*
      * Get invoke context.
      */
     @Override
@@ -216,7 +216,7 @@ public class ObTablePacket implements RemotingCommand {
         return null;
     }
 
-    /**
+    /*
      * Get serializer.
      */
     @Override
@@ -224,7 +224,7 @@ public class ObTablePacket implements RemotingCommand {
         return 0;
     }
 
-    /**
+    /*
      * Get protocol switch.
      */
     @Override
@@ -232,7 +232,7 @@ public class ObTablePacket implements RemotingCommand {
         return null;
     }
 
-    /**
+    /*
      * Serialize.
      */
     @Override
@@ -240,7 +240,7 @@ public class ObTablePacket implements RemotingCommand {
 
     }
 
-    /**
+    /*
      * Deserialize.
      */
     @Override
@@ -248,7 +248,7 @@ public class ObTablePacket implements RemotingCommand {
 
     }
 
-    /**
+    /*
      * Serialize content.
      */
     @Override
@@ -256,7 +256,7 @@ public class ObTablePacket implements RemotingCommand {
 
     }
 
-    /**
+    /*
      * Deserialize content.
      */
     @Override

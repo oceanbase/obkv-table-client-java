@@ -27,7 +27,7 @@ public class ObServerLdcItem {
     private String idc;   // physical idc
     private String region; // city
 
-    /**
+    /*
      * Constructor.
      *
      * @param ip
@@ -42,35 +42,35 @@ public class ObServerLdcItem {
         this.region = region;
     }
 
-    /**
+    /*
      * Get IP of the server.
      */
     public String getIp() {
         return ip;
     }
 
-    /**
+    /*
      * Get Zone of the server.
      */
     public String getZone() {
         return zone;
     }
 
-    /**
+    /*
      * Get IDC of the server.
      */
     public String getIdc() {
         return idc;
     }
 
-    /**
+    /*
      * Get region of the server.
      */
     public String getRegion() {
         return region;
     }
 
-    /**
+    /*
      * To String.
      */
     @Override

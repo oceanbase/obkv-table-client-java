@@ -33,7 +33,7 @@ public class ObTableQueryImpl extends AbstractTableQueryImpl {
 
     private ObTableQueryRequest request;
 
-    /**
+    /*
      * Ob table query impl.
      */
     public ObTableQueryImpl(String tableName, ObTable table) {
@@ -52,7 +52,7 @@ public class ObTableQueryImpl extends AbstractTableQueryImpl {
         this.request.setPartitionId(0);
     }
 
-    /**
+    /*
      * Execute.
      */
     @Override
@@ -70,7 +70,7 @@ public class ObTableQueryImpl extends AbstractTableQueryImpl {
 
     }
 
-    /**
+    /*
      * 只有 limit query 需要，其他不需要
      * @param keys
      * @return
@@ -80,7 +80,7 @@ public class ObTableQueryImpl extends AbstractTableQueryImpl {
         throw new IllegalArgumentException("Not needed");
     }
 
-    /**
+    /*
      * Clear.
      */
     @Override
@@ -88,7 +88,7 @@ public class ObTableQueryImpl extends AbstractTableQueryImpl {
         resetRequest();
     }
 
-    /**
+    /*
      * Get ob table query.
      */
     @Override
@@ -96,7 +96,7 @@ public class ObTableQueryImpl extends AbstractTableQueryImpl {
         return tableQuery;
     }
 
-    /**
+    /*
      * Get table name.
      */
     @Override
@@ -104,14 +104,14 @@ public class ObTableQueryImpl extends AbstractTableQueryImpl {
         return tableName;
     }
 
-    /**
+    /*
      * Get table.
      */
     public ObTable getTable() {
         return table;
     }
 
-    /**
+    /*
      * Reset ob table.
      */
     public void resetObTable(ObTable obTable) {

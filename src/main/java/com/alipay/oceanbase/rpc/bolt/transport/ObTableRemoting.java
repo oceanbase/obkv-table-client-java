@@ -38,14 +38,14 @@ public class ObTableRemoting extends BaseRemoting {
 
     private static final Logger logger = TableClientLoggerFactory.getLogger(ObTableRemoting.class);
 
-    /**
+    /*
      * Ob table remoting.
      */
     public ObTableRemoting(CommandFactory commandFactory) {
         super(commandFactory);
     }
 
-    /**
+    /*
      * Invoke sync.
      */
     public ObPayload invokeSync(final ObTableConnection conn, final ObPayload request,

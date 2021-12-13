@@ -150,7 +150,7 @@ public class QueryByBatch implements TableQuery {
         throw new IllegalArgumentException("not support setHTableFilter for QueryByBatch");
     }
 
-    /**
+    /*
      * 这边取名为 batch size, 实际转化到查询，就是stream的limit
      * 保证它的查询只是单次的，所以在observer不会转化成stream query
      * @param batchSize
@@ -176,7 +176,7 @@ public class QueryByBatch implements TableQuery {
         return tableQuery;
     }
 
-    /**
+    /*
      * 必须显式的设置一下 scan 的 keys
      * 因为目前 observer 没有返回 primary key 或者其他 index 的信息
      * 所以拆分查询时，必须手动指定 key
@@ -203,8 +203,8 @@ public class QueryByBatch implements TableQuery {
 
     /**
      * 需要和 select 的 key 合并
-     * @param columns
-     * @return
+     * @param columns columns
+     * @return this
      */
     @Override
     public QueryByBatch select(String... columns) {

@@ -33,7 +33,7 @@ import java.net.InetSocketAddress;
 
 public class ObPacketFactory implements CommandFactory {
 
-    /**
+    /*
      * Create request command.
      */
     @Override
@@ -84,7 +84,7 @@ public class ObPacketFactory implements CommandFactory {
         return rpcPacket.encode();
     }
 
-    /**
+    /*
      * Create timeout response.
      */
     @Override
@@ -93,7 +93,7 @@ public class ObPacketFactory implements CommandFactory {
             "connection {" + address.toString() + "} timeout", null);
     }
 
-    /**
+    /*
      * Create send failed response.
      */
     @Override
@@ -102,7 +102,7 @@ public class ObPacketFactory implements CommandFactory {
             "connection {" + address.toString() + "} send failed", throwable);
     }
 
-    /**
+    /*
      * TODO tell client this connection has been closed
      */
     // TODO for server processor
@@ -111,7 +111,7 @@ public class ObPacketFactory implements CommandFactory {
         return null;
     }
 
-    /**
+    /*
      * Create exception response.
      */
     @Override
@@ -119,7 +119,7 @@ public class ObPacketFactory implements CommandFactory {
         return null;
     }
 
-    /**
+    /*
      * Create exception response.
      */
     @Override
@@ -127,7 +127,7 @@ public class ObPacketFactory implements CommandFactory {
         return null;
     }
 
-    /**
+    /*
      * Create response.
      */
     @Override
@@ -135,7 +135,7 @@ public class ObPacketFactory implements CommandFactory {
         return null;
     }
 
-    /**
+    /*
      * Create exception response.
      */
     @Override
@@ -143,7 +143,7 @@ public class ObPacketFactory implements CommandFactory {
         return null;
     }
 
-    /**
+    /*
      * Create connection closed response.
      */
     @Override

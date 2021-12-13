@@ -27,7 +27,7 @@ public abstract class AbstractTableQuery implements TableQuery {
 
     protected long              operationTimeout   = -1;
 
-    /**
+    /*
      * Limit.
      */
     @Override
@@ -35,7 +35,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         return limit(0, limit);
     }
 
-    /**
+    /*
      * Primary index.
      */
     @Override
@@ -43,7 +43,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         return indexName(PRIMARY_INDEX_NAME);
     }
 
-    /**
+    /*
      * Add scan range.
      */
     @Override
@@ -51,7 +51,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         return addScanRange(new Object[] { start }, true, new Object[] { end }, true);
     }
 
-    /**
+    /*
      * Add scan range.
      */
     @Override
@@ -59,7 +59,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         return addScanRange(start, true, end, true);
     }
 
-    /**
+    /*
      * Add scan range.
      */
     @Override
@@ -67,7 +67,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         return addScanRange(new Object[] { start }, startEquals, new Object[] { end }, endEquals);
     }
 
-    /**
+    /*
      * Add scan range starts with.
      */
     @Override
@@ -75,7 +75,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         return addScanRangeStartsWith(new Object[] { start }, true);
     }
 
-    /**
+    /*
      * Add scan range starts with.
      */
     @Override
@@ -83,7 +83,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         return addScanRangeStartsWith(start, true);
     }
 
-    /**
+    /*
      * Add scan range ends with.
      */
     @Override
@@ -91,7 +91,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         return addScanRangeEndsWith(new Object[] { end }, true);
     }
 
-    /**
+    /*
      * Add scan range ends with.
      */
     @Override
@@ -99,7 +99,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         return addScanRangeEndsWith(end, true);
     }
 
-    /**
+    /*
      * Set entity type.
      */
     @Override
@@ -107,7 +107,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         this.entityType = entityType;
     }
 
-    /**
+    /*
      * Get entity type.
      */
     @Override
@@ -115,7 +115,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         return entityType;
     }
 
-    /**
+    /*
      * Set operation timeout.
      */
     @Override

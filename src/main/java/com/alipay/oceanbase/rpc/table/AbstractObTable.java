@@ -41,119 +41,119 @@ public abstract class AbstractObTable extends AbstractTable {
 
     protected int  nettyBlockingWaitInterval = NETTY_BLOCKING_WAIT_INTERVAL.getDefaultInt();
 
-    /**
+    /*
      * Get ob table connect try times.
      */
     public int getObTableConnectTryTimes() {
         return obTableConnectTryTimes;
     }
 
-    /**
+    /*
      * Set ob table connect try times.
      */
     public void setObTableConnectTryTimes(int obTableConnectTryTimes) {
         this.obTableConnectTryTimes = obTableConnectTryTimes;
     }
 
-    /**
+    /*
      * Get ob table login try times.
      */
     public int getObTableLoginTryTimes() {
         return obTableLoginTryTimes;
     }
 
-    /**
+    /*
      * Set ob table login try times.
      */
     public void setObTableLoginTryTimes(int obTableLoginTryTimes) {
         this.obTableLoginTryTimes = obTableLoginTryTimes;
     }
 
-    /**
+    /*
      * Get ob table connection pool size.
      */
     public int getObTableConnectionPoolSize() {
         return obTableConnectionPoolSize;
     }
 
-    /**
+    /*
      * Set ob table connection pool size.
      */
     public void setObTableConnectionPoolSize(int obTableConnectionPoolSize) {
         this.obTableConnectionPoolSize = obTableConnectionPoolSize;
     }
 
-    /**
+    /*
      * Get ob table connect timeout.
      */
     public int getObTableConnectTimeout() {
         return obTableConnectTimeout;
     }
 
-    /**
+    /*
      * Set ob table connect timeout.
      */
     public void setObTableConnectTimeout(int obTableConnectTimeout) {
         this.obTableConnectTimeout = obTableConnectTimeout;
     }
 
-    /**
+    /*
      * Get ob table execute timeout.
      */
     public int getObTableExecuteTimeout() {
         return obTableExecuteTimeout;
     }
 
-    /**
+    /*
      * Set ob table execute timeout.
      */
     public void setObTableExecuteTimeout(int obTableExecuteTimeout) {
         this.obTableExecuteTimeout = obTableExecuteTimeout;
     }
 
-    /**
+    /*
      * Get ob table login timeout.
      */
     public int getObTableLoginTimeout() {
         return obTableLoginTimeout;
     }
 
-    /**
+    /*
      * Set ob table login timeout.
      */
     public void setObTableLoginTimeout(int obTableLoginTimeout) {
         this.obTableLoginTimeout = obTableLoginTimeout;
     }
 
-    /**
+    /*
      * Get ob table operation timeout.
      */
     public long getObTableOperationTimeout() {
         return obTableOperationTimeout;
     }
 
-    /**
+    /*
      * Set ob table operation timeout.
      */
     public void setObTableOperationTimeout(long obTableOperationTimeout) {
         this.obTableOperationTimeout = obTableOperationTimeout;
     }
 
-    /**
+    /*
      * Get netty buffer low watermark.
      */
     public int getNettyBufferLowWatermark() {
         return nettyBufferLowWatermark;
     }
 
-    /**
+    /*
      * Get netty buffer high watermark.
      */
     public int getNettyBufferHighWatermark() {
         return nettyBufferHighWatermark;
     }
 
-    /**
+    /*
      * Get netty blocking wait interval.
      */
     public int getNettyBlockingWaitInterval() {

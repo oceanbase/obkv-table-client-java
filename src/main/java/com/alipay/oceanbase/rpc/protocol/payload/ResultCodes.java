@@ -737,7 +737,7 @@ public enum ResultCodes {
         }
     }
 
-    /**
+    /*
      * Value of.
      */
     public static ResultCodes valueOf(int errorCode) {

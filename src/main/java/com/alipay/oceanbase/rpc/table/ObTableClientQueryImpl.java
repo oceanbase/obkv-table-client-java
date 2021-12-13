@@ -34,7 +34,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     private final String        tableName;
     private final ObTableClient obTableClient;
 
-    /**
+    /*
      * Ob table client query impl.
      */
     public ObTableClientQueryImpl(String tableName, ObTableClient client) {
@@ -43,7 +43,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         this.tableQuery = new ObTableQuery();
     }
 
-    /**
+    /*
      * Ob table client query impl.
      */
     public ObTableClientQueryImpl(String tableName, ObTableQuery tableQuery, ObTableClient client) {
@@ -52,7 +52,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         this.tableQuery = tableQuery;
     }
 
-    /**
+    /*
      * Execute.
      */
     @Override
@@ -60,7 +60,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         return new QueryResultSet(executeInternal());
     }
 
-    /**
+    /*
      * 只有 limit query 需要，其他不需要
      * @param keys
      * @return
@@ -70,7 +70,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         throw new IllegalArgumentException("Not needed");
     }
 
-    /**
+    /*
      * Execute internal.
      */
     public ObTableClientQueryStreamResult executeInternal() throws Exception {
@@ -111,7 +111,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         return obTableClientQueryStreamResult;
     }
 
-    /**
+    /*
      * Clear.
      */
     @Override
@@ -119,7 +119,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         this.tableQuery = new ObTableQuery();
     }
 
-    /**
+    /*
      * Get ob table query.
      */
     @Override
@@ -127,7 +127,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         return tableQuery;
     }
 
-    /**
+    /*
      * Get table name.
      */
     public String getTableName() {

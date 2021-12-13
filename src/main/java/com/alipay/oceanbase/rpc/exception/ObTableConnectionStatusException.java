@@ -18,41 +18,41 @@
 package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableConnectionStatusException extends ObTableException {
-    /**
+    /*
      * Ob table connection status exception.
      */
     public ObTableConnectionStatusException() {
     }
 
-    /**
+    /*
      * Ob table connection status exception with error code.
      */
     public ObTableConnectionStatusException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table connection status exception with message and error code.
      */
     public ObTableConnectionStatusException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table connection status exception with message.
      */
     public ObTableConnectionStatusException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table connection status exception with message and cause.
      */
     public ObTableConnectionStatusException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table connection status exception with cause.
      */
     public ObTableConnectionStatusException(Throwable cause) {

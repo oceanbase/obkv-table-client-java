@@ -23,7 +23,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
-/**
+/*
  *
  OB_SERIALIZE_MEMBER(ObTableQueryAndMutateRequest,
      credential_,
@@ -38,7 +38,7 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
 
     private ObTableQueryAndMutate tableQueryAndMutate;
 
-    /**
+    /*
      * Get pcode.
      */
     @Override
@@ -46,7 +46,7 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
         return Pcodes.OB_TABLE_API_QUERY_AND_MUTATE;
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -68,7 +68,7 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -87,7 +87,7 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -97,14 +97,14 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
                + tableQueryAndMutate.getPayloadSize();
     }
 
-    /**
+    /*
      * Get table query and mutate.
      */
     public ObTableQueryAndMutate getTableQueryAndMutate() {
         return tableQueryAndMutate;
     }
 
-    /**
+    /*
      * Set table query and mutate.
      */
     public void setTableQueryAndMutate(ObTableQueryAndMutate tableQueryAndMutate) {

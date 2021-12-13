@@ -48,21 +48,21 @@ public enum ObCollationLevel {
         }
     }
 
-    /**
+    /*
      * Value of.
      */
     public static ObCollationLevel valueOf(int value) {
         return map.get(value);
     }
 
-    /**
+    /*
      * Get value.
      */
     public int getValue() {
         return value;
     }
 
-    /**
+    /*
      * Get byte value.
      */
     public byte getByteValue() {

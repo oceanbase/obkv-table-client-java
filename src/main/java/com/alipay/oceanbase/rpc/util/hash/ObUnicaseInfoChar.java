@@ -22,7 +22,7 @@ public class ObUnicaseInfoChar {
     int tolower;
     int sort;
 
-    /**
+    /*
      * Ob unicase info char.
      */
     public ObUnicaseInfoChar(int toupper, int tolower, int sort) {

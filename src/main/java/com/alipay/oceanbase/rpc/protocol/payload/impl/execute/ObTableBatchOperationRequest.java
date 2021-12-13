@@ -21,7 +21,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
-/**
+/*
  *
 OB_SERIALIZE_MEMBER(ObTableBatchOperationRequest,
         credential_,
@@ -43,7 +43,7 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
     private ObTableBatchOperation batchOperation;
     private boolean               batchOperationAsAtomic = false;
 
-    /**
+    /*
      * Get pcode.
      */
     @Override
@@ -51,7 +51,7 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
         return Pcodes.OB_TABLE_API_BATCH_EXECUTE;
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -94,7 +94,7 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -118,7 +118,7 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -126,28 +126,28 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
         return super.getPayloadContentSize() + batchOperation.getPayloadSize() + 1;
     }
 
-    /**
+    /*
      * Get batch operation.
      */
     public ObTableBatchOperation getBatchOperation() {
         return batchOperation;
     }
 
-    /**
+    /*
      * Set batch operation.
      */
     public void setBatchOperation(ObTableBatchOperation batchOperation) {
         this.batchOperation = batchOperation;
     }
 
-    /**
+    /*
      * Whether BatchOperation As Atomic.
      */
     public boolean isBatchOperationAsAtomic() {
         return batchOperationAsAtomic;
     }
 
-    /**
+    /*
      * Set BatchOperation As Atomic.
      */
     public void setBatchOperationAsAtomic(boolean batchOperationAsAtomic) {

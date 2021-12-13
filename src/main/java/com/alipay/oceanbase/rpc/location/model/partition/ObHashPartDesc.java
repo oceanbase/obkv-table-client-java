@@ -42,35 +42,35 @@ public class ObHashPartDesc extends ObPartDesc {
     private int                 partSpace = 0;
     private int                 partNum   = 0;
 
-    /**
+    /*
      * Ob hash part desc.
      */
     public ObHashPartDesc() {
         setPartFuncType(ObPartFuncType.HASH);
     }
 
-    /**
+    /*
      * Get part space.
      */
     public int getPartSpace() {
         return partSpace;
     }
 
-    /**
+    /*
      * Set part space.
      */
     public void setPartSpace(int partSpace) {
         this.partSpace = partSpace;
     }
 
-    /**
+    /*
      * Get part num.
      */
     public int getPartNum() {
         return this.partNum;
     }
 
-    /**
+    /*
      * Set part num.
      */
     public void setPartNum(int partNum) {
@@ -82,7 +82,7 @@ public class ObHashPartDesc extends ObPartDesc {
         completeWorks = Collections.unmodifiableList(partIds);
     }
 
-    /**
+    /*
      * Prepare.
      */
     @Override
@@ -91,7 +91,7 @@ public class ObHashPartDesc extends ObPartDesc {
         super.prepare();
     }
 
-    /**
+    /*
      * Get part ids.
      */
     @Override
@@ -133,7 +133,7 @@ public class ObHashPartDesc extends ObPartDesc {
 
     }
 
-    /**
+    /*
      * Get random part id.
      */
     @Override
@@ -141,7 +141,7 @@ public class ObHashPartDesc extends ObPartDesc {
         return ((this.partNum > 0) ? (long) RandomUtil.getRandomNum(0, this.partNum) : null);
     }
 
-    /**
+    /*
      * Get part id.
      */
     @Override
@@ -151,7 +151,7 @@ public class ObHashPartDesc extends ObPartDesc {
         return this.getPartId(rowKeys, false);
     }
 
-    /**
+    /*
      * Get part id.
      */
     @Override
@@ -199,7 +199,7 @@ public class ObHashPartDesc extends ObPartDesc {
         return (partSpace << ObPartConstants.PART_ID_BITNUM) | (hashValue % partNum);
     }
 
-    /**
+    /*
      * To string.
      */
     @Override

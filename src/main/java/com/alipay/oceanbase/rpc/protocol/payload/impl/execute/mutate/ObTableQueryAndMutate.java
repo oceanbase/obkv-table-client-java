@@ -40,7 +40,7 @@ public class ObTableQueryAndMutate extends AbstractPayload {
     private ObTableBatchOperation mutations;
     private boolean               returnAffectedEntity = true;
 
-    /**
+    /*
      * Get pcode.
      */
     @Override
@@ -48,7 +48,7 @@ public class ObTableQueryAndMutate extends AbstractPayload {
         return Pcodes.OB_TABLE_API_EXECUTE_QUERY;
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -77,7 +77,7 @@ public class ObTableQueryAndMutate extends AbstractPayload {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -94,7 +94,7 @@ public class ObTableQueryAndMutate extends AbstractPayload {
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -104,28 +104,28 @@ public class ObTableQueryAndMutate extends AbstractPayload {
                + 1;// returnAffectedEntity
     }
 
-    /**
+    /*
      * Get table query.
      */
     public ObTableQuery getTableQuery() {
         return tableQuery;
     }
 
-    /**
+    /*
      * Set table query.
      */
     public void setTableQuery(ObTableQuery tableQuery) {
         this.tableQuery = tableQuery;
     }
 
-    /**
+    /*
      * Get mutations.
      */
     public ObTableBatchOperation getMutations() {
         return mutations;
     }
 
-    /**
+    /*
      * Set mutations.
      */
     public void setMutations(ObTableBatchOperation mutations) {

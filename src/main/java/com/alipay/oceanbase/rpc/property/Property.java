@@ -40,7 +40,7 @@ public enum Property {
 
     METADATA_REFRESH_INTERVAL("metadata.refresh.interval", 60000L, "刷新METADATA的时间间隔"),
 
-    /**
+    /*
      * typo of METADATA_REFRESH_INTERVAL
      */
     @Deprecated
@@ -56,7 +56,7 @@ public enum Property {
 
     RS_LIST_ACQUIRE_RETRY_INTERVAL("rs.list.acquire.retry.interval", 100L, "每次尝试获取RS列表的时间间隔"),
 
-    /**
+    /*
      * typo of RS_LIST_ACQUIRE_RETRY_INTERVAL
      */
     @Deprecated
@@ -70,7 +70,7 @@ public enum Property {
 
     TABLE_ENTRY_REFRESH_INTERVAL_BASE("table.entry.refresh.interval.base", 100L, "刷新TABLE地址的基础时间间隔"),
 
-    /**
+    /*
      * typo of TABLE_ENTRY_REFRESH_INTERVAL_BASE
      */
     @Deprecated
@@ -79,7 +79,7 @@ public enum Property {
     TABLE_ENTRY_REFRESH_INTERVAL_CEILING("table.entry.refresh.interval.ceiling", 1600L,
                                          "刷新TABLE地址的最大时间间隔"),
 
-    /**
+    /*
      * typo of TABLE_ENTRY_REFRESH_INTERVAL_CEILING
      */
     @Deprecated
@@ -137,42 +137,42 @@ public enum Property {
         this.desc = desc;
     }
 
-    /**
+    /*
      * Get key.
      */
     public String getKey() {
         return key;
     }
 
-    /**
+    /*
      * Get default int.
      */
     public int getDefaultInt() {
         return (Integer) defaultV;
     }
 
-    /**
+    /*
      * Get default long.
      */
     public long getDefaultLong() {
         return (Long) defaultV;
     }
 
-    /**
+    /*
      * Get default object.
      */
     public Object getDefaultObject() {
         return defaultV;
     }
 
-    /**
+    /*
      * Get default boolean.
      */
     public boolean getDefaultBoolean() {
         return (Boolean) defaultV;
     }
 
-    /**
+    /*
      * Get desc.
      */
     public String getDesc() {

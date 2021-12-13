@@ -18,48 +18,48 @@
 package com.alipay.oceanbase.rpc.exception;
 
 public class ObTablePartitionNoMasterException extends ObTablePartitionLocationRefreshException {
-    /**
+    /*
      * Ob table partition no master exception.
      */
     public ObTablePartitionNoMasterException() {
     }
 
-    /**
+    /*
      * Ob table partition no master exception.
      */
     public ObTablePartitionNoMasterException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table partition no master exception.
      */
     public ObTablePartitionNoMasterException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table partition no master exception.
      */
     public ObTablePartitionNoMasterException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table partition no master exception.
      */
     public ObTablePartitionNoMasterException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table partition no master exception.
      */
     public ObTablePartitionNoMasterException(Throwable cause) {
         super(cause);
     }
 
-    /**
+    /*
      * Is need refresh table entry.
      */
     public boolean isNeedRefreshTableEntry() {

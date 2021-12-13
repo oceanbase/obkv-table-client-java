@@ -35,7 +35,7 @@ public class ObTablePacketProcessor implements RemotingProcessor<ObTablePacket> 
     private static final Logger logger = TableClientLoggerFactory
                                            .getLogger(ObTablePacketProcessor.class);
 
-    /**
+    /*
      * Process.
      */
     @Override
@@ -71,7 +71,7 @@ public class ObTablePacketProcessor implements RemotingProcessor<ObTablePacket> 
 
     }
 
-    /**
+    /*
      * Get executor.
      */
     @Override
@@ -79,7 +79,7 @@ public class ObTablePacketProcessor implements RemotingProcessor<ObTablePacket> 
         return null;
     }
 
-    /**
+    /*
      * Set executor.
      */
     @Override

@@ -24,7 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
+/*
  * ObServerLdcLocation organizes server by IDC->Region order.
  *
  */
@@ -44,7 +44,7 @@ public class ObServerLdcLocation {
     private HashMap<String, ObServerLdcItem> sameRegion  = new HashMap<String, ObServerLdcItem>();
     private HashMap<String, ObServerLdcItem> otherRegion = new HashMap<String, ObServerLdcItem>();
 
-    /**
+    /*
      * 构造 ObServerLdcLocation，根据当前 IDC 和 RegionMap 将服务器按 IDC->Region->OtherRegion的分类整理。
      *
      * @param allServers
@@ -103,49 +103,49 @@ public class ObServerLdcLocation {
         return loc;
     }
 
-    /**
+    /*
      * Whether the server in the same IDC.
      */
     public boolean inSameIDC(String svr_ip) {
         return sameIDC.containsKey(svr_ip);
     }
 
-    /**
+    /*
      * Whether the server in the same region.
      */
     public boolean inSameRegion(String ip) {
         return sameRegion.containsKey(ip);
     }
 
-    /**
+    /*
      * Whether the server in other region.
      */
     public boolean inOtherRegion(String ip) {
         return otherRegion.containsKey(ip);
     }
 
-    /**
+    /*
      * Whether the LDC routing is enabled.
      */
     public boolean isLdcUsed() {
         return isLdcUsed;
     }
 
-    /**
+    /*
      * Get current IDC.
      */
     public String getCurrentIDC() {
         return currentIDC;
     }
 
-    /**
+    /*
      * Get Region Match Type.
      */
     public RegionMatchType getMatchType() {
         return matchType;
     }
 
-    /**
+    /*
      * To String
      *
      * @return

@@ -25,7 +25,7 @@ import java.util.List;
 public class ObGeneratedColumnReferFunc implements ObGeneratedColumnSimpleFunc {
     private final List<String> refColumnNames;
 
-    /**
+    /*
      * Ob generated column refer func.
      */
     public ObGeneratedColumnReferFunc(String columnName) {
@@ -34,7 +34,7 @@ public class ObGeneratedColumnReferFunc implements ObGeneratedColumnSimpleFunc {
         this.refColumnNames = refColumnNameList;
     }
 
-    /**
+    /*
      * Set parameters.
      */
     @Override
@@ -42,7 +42,7 @@ public class ObGeneratedColumnReferFunc implements ObGeneratedColumnSimpleFunc {
         //ignore
     }
 
-    /**
+    /*
      * Get min parameters.
      */
     @Override
@@ -50,7 +50,7 @@ public class ObGeneratedColumnReferFunc implements ObGeneratedColumnSimpleFunc {
         return 0;
     }
 
-    /**
+    /*
      * Get max parameters.
      */
     @Override
@@ -58,7 +58,7 @@ public class ObGeneratedColumnReferFunc implements ObGeneratedColumnSimpleFunc {
         return 0;
     }
 
-    /**
+    /*
      * Get ref column names.
      */
     @Override
@@ -66,7 +66,7 @@ public class ObGeneratedColumnReferFunc implements ObGeneratedColumnSimpleFunc {
         return refColumnNames;
     }
 
-    /**
+    /*
      * Eval value.
      */
     @Override

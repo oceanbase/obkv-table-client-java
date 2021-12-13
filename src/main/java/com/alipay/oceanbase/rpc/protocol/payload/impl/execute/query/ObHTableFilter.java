@@ -52,7 +52,7 @@ public class ObHTableFilter extends AbstractPayload {
     private int                 offsetPerRowPerCf     = 0;                             // -1 means unlimited
     private String              filterString;
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -101,7 +101,7 @@ public class ObHTableFilter extends AbstractPayload {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -125,7 +125,7 @@ public class ObHTableFilter extends AbstractPayload {
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -147,126 +147,126 @@ public class ObHTableFilter extends AbstractPayload {
         return contentSize;
     }
 
-    /**
+    /*
      * Is valid.
      */
     public boolean isValid() {
         return isValid;
     }
 
-    /**
+    /*
      * Set valid.
      */
     public void setValid(boolean valid) {
         isValid = valid;
     }
 
-    /**
+    /*
      * Get select column qualifier.
      */
     public List<ObBytesString> getSelectColumnQualifier() {
         return selectColumnQualifier;
     }
 
-    /**
+    /*
      * Add select column qualifier.
      */
     public void addSelectColumnQualifier(String selectColumnQualifier) {
         this.selectColumnQualifier.add(new ObBytesString(selectColumnQualifier));
     }
 
-    /**
+    /*
      * Add select column qualifier.
      */
     public void addSelectColumnQualifier(byte[] selectColumnQualifier) {
         this.selectColumnQualifier.add(new ObBytesString(selectColumnQualifier));
     }
 
-    /**
+    /*
      * Set select column qualifier.
      */
     public void setSelectColumnQualifier(List<ObBytesString> selectColumnQualifier) {
         this.selectColumnQualifier = selectColumnQualifier;
     }
 
-    /**
+    /*
      * Get min stamp.
      */
     public long getMinStamp() {
         return minStamp;
     }
 
-    /**
+    /*
      * Set min stamp.
      */
     public void setMinStamp(long minStamp) {
         this.minStamp = minStamp;
     }
 
-    /**
+    /*
      * Get max stamp.
      */
     public long getMaxStamp() {
         return maxStamp;
     }
 
-    /**
+    /*
      * Set max stamp.
      */
     public void setMaxStamp(long maxStamp) {
         this.maxStamp = maxStamp;
     }
 
-    /**
+    /*
      * Get max versions.
      */
     public int getMaxVersions() {
         return maxVersions;
     }
 
-    /**
+    /*
      * Set max versions.
      */
     public void setMaxVersions(int maxVersions) {
         this.maxVersions = maxVersions;
     }
 
-    /**
+    /*
      * Get limit per row per cf.
      */
     public int getLimitPerRowPerCf() {
         return limitPerRowPerCf;
     }
 
-    /**
+    /*
      * Set limit per row per cf.
      */
     public void setLimitPerRowPerCf(int limitPerRowPerCf) {
         this.limitPerRowPerCf = limitPerRowPerCf;
     }
 
-    /**
+    /*
      * Get offset per row per cf.
      */
     public int getOffsetPerRowPerCf() {
         return offsetPerRowPerCf;
     }
 
-    /**
+    /*
      * Set offset per row per cf.
      */
     public void setOffsetPerRowPerCf(int offsetPerRowPerCf) {
         this.offsetPerRowPerCf = offsetPerRowPerCf;
     }
 
-    /**
+    /*
      * Get filter string.
      */
     public String getFilterString() {
         return filterString;
     }
 
-    /**
+    /*
      * Set filter string.
      */
     public void setFilterString(String filterString) {

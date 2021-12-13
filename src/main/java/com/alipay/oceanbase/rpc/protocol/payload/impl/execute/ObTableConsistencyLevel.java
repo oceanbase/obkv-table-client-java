@@ -37,21 +37,21 @@ public enum ObTableConsistencyLevel {
         }
     }
 
-    /**
+    /*
      * Value of.
      */
     public static ObTableConsistencyLevel valueOf(int value) {
         return map.get(value);
     }
 
-    /**
+    /*
      * Get value.
      */
     public int getValue() {
         return value;
     }
 
-    /**
+    /*
      * Get byte value.
      */
     public byte getByteValue() {

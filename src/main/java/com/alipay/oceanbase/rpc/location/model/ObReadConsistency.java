@@ -39,28 +39,28 @@ public enum ObReadConsistency {
         }
     }
 
-    /**
+    /*
      * Value of.
      */
     public static ObReadConsistency valueOf(int value) {
         return map.get(value);
     }
 
-    /**
+    /*
      * Get value.
      */
     public int getValue() {
         return value;
     }
 
-    /**
+    /*
      * Get byte value.
      */
     public byte getByteValue() {
         return (byte) value;
     }
 
-    /**
+    /*
      * Get ObReadConsistency by string value, return "STRONG" by default.
      */
     static public ObReadConsistency getByName(String consistency) {
@@ -70,7 +70,7 @@ public enum ObReadConsistency {
         return ObReadConsistency.STRONG;
     }
 
-    /**
+    /*
      * Is Strong consistency or not.
      *
      * @return
@@ -79,7 +79,7 @@ public enum ObReadConsistency {
         return this.value == STRONG.value;
     }
 
-    /**
+    /*
      * Is weak consistency or not.
      *
      * @return
@@ -88,7 +88,7 @@ public enum ObReadConsistency {
         return this.value == WEAK.value;
     }
 
-    /**
+    /*
      * Convert to ObTableConsistencyLevel.
      */
     public ObTableConsistencyLevel toObTableConsistencyLevel() {

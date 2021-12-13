@@ -28,14 +28,14 @@ public enum ObCompressType {
         this.code = code;
     }
 
-    /**
+    /*
      * Get code.
      */
     public int getCode() {
         return code;
     }
 
-    /**
+    /*
      * Value of.
      */
     public static ObCompressType valueOf(int code) {

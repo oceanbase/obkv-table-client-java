@@ -19,32 +19,32 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.parser;
 
 public interface LayoutCharacters {
 
-    /**
+    /*
      * Tabulator column increment.
      */
     int  TabInc = 8;
 
-    /**
+    /*
      * Tabulator character.
      */
     byte TAB    = 0x8;
 
-    /**
+    /*
      * Line feed character.
      */
     byte LF     = 0xA;
 
-    /**
+    /*
      * Form feed character.
      */
     byte FF     = 0xC;
 
-    /**
+    /*
      * Carriage return character.
      */
     byte CR     = 0xD;
 
-    /**
+    /*
      * End of input character. Used as a sentinel to denote the character one beyond the last defined character in a
      * source file.
      */

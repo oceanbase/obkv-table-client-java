@@ -23,70 +23,70 @@ public class OcpResponse {
     private boolean         Success;
     private OcpResponseData Data;
 
-    /**
+    /*
      * Get code.
      */
     public int getCode() {
         return Code;
     }
 
-    /**
+    /*
      * Set code.
      */
     public void setCode(int code) {
         Code = code;
     }
 
-    /**
+    /*
      * Get message.
      */
     public String getMessage() {
         return Message;
     }
 
-    /**
+    /*
      * Set message.
      */
     public void setMessage(String message) {
         Message = message;
     }
 
-    /**
+    /*
      * Is success.
      */
     public boolean isSuccess() {
         return Success;
     }
 
-    /**
+    /*
      * Set success.
      */
     public void setSuccess(boolean success) {
         Success = success;
     }
 
-    /**
+    /*
      * Get data.
      */
     public OcpResponseData getData() {
         return Data;
     }
 
-    /**
+    /*
      * Validate.
      */
     public boolean validate() {
         return isSuccess() && getCode() == 200 && Data != null && Data.validate();
     }
 
-    /**
+    /*
      * Set data.
      */
     public void setData(OcpResponseData data) {
         Data = data;
     }
 
-    /**
+    /*
      * To string.
      */
     @Override

@@ -19,48 +19,48 @@ package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableUnitMigrateException extends ObTableException {
 
-    /**
+    /*
      * Ob table unit migrate exception.
      */
     public ObTableUnitMigrateException() {
     }
 
-    /**
+    /*
      * Ob table unit migrate exception.
      */
     public ObTableUnitMigrateException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table unit migrate exception.
      */
     public ObTableUnitMigrateException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table unit migrate exception.
      */
     public ObTableUnitMigrateException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table unit migrate exception.
      */
     public ObTableUnitMigrateException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table unit migrate exception.
      */
     public ObTableUnitMigrateException(Throwable cause) {
         super(cause);
     }
 
-    /**
+    /*
      * Is need refresh table entry.
      */
     public boolean isNeedRefreshTableEntry() {

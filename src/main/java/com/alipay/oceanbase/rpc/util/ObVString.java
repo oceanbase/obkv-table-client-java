@@ -24,9 +24,6 @@ public class ObVString {
     private byte[] bytesVal;
     private byte[] encodeBytes;
 
-    /**
-     * Ob v string.
-     */
     public ObVString(String stringVal) {
         this.stringVal = stringVal;
         if (stringVal == null) {
@@ -43,28 +40,20 @@ public class ObVString {
 
     /**
      * Get encode need bytes.
+     * @return return length
      */
     public int getEncodeNeedBytes() {
         return encodeBytes.length;
     }
 
-    /**
-     * Get bytes val.
-     */
     public byte[] getBytesVal() {
         return bytesVal;
     }
 
-    /**
-     * Get encode bytes.
-     */
     public byte[] getEncodeBytes() {
         return encodeBytes;
     }
 
-    /**
-     * Get string val.
-     */
     public String getStringVal() {
         return stringVal;
     }

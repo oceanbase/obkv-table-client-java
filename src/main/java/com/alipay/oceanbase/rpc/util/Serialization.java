@@ -39,9 +39,8 @@ public class Serialization {
 
     /**
      * bytes length + bytes + 1
-     *
-     * @param val
-     * @return
+     * @param val input data
+     * @return output data
      */
     public static byte[] encodeObString(String val) {
         byte[] strbytes = new byte[0];
@@ -62,6 +61,9 @@ public class Serialization {
 
     /**
      * Str to bytes.
+     * @param str input string
+     * @return output byte array
+     * @throws IllegalArgumentException if Character Encoding is not supported.
      */
     public static byte[] strToBytes(String str) throws IllegalArgumentException {
         try {
@@ -71,9 +73,6 @@ public class Serialization {
         }
     }
 
-    /**
-     * Bytes to str.
-     */
     public static String bytesToStr(byte[] bytes) throws IllegalArgumentException {
         try {
             return new String(bytes, "UTF-8");
@@ -84,6 +83,8 @@ public class Serialization {
 
     /**
      * Get ob string serialize size.
+     * @param val input data
+     * @return output size
      */
     public static long getObStringSerializeSize(long val) {
         return encodeLengthVi64(val) + val + 1;
@@ -91,6 +92,8 @@ public class Serialization {
 
     /**
      * Get ob string serialize size.
+     * @param val input data
+     * @return output size
      */
     public static long getObStringSerializeSize(String val) {
         return getObStringSerializeSize(val.length());
@@ -98,6 +101,8 @@ public class Serialization {
 
     /**
      * Encode length vi64.
+     * @param len data length
+     * @return bytes need for serialize data length
      */
     public static long encodeLengthVi64(long len) {
         int needBytes;
@@ -127,6 +132,8 @@ public class Serialization {
 
     /**
      * Encode i8.
+     * @param val input data
+     * @return output data
      */
     public static byte[] encodeI8(byte val) {
         byte[] bytes = new byte[1];
@@ -136,6 +143,8 @@ public class Serialization {
 
     /**
      * Encode i8.
+     * @param val input data
+     * @return output data
      */
     public static byte[] encodeI8(short val) {
         byte[] bytes = new byte[1];
@@ -145,6 +154,8 @@ public class Serialization {
 
     /**
      * Encode i16.
+     * @param val input data
+     * @return output data
      */
     public static byte[] encodeI16(short val) {
         byte[] bytes = new byte[4];
@@ -155,6 +166,8 @@ public class Serialization {
 
     /**
      * Encode i32.
+     * @param val input data
+     * @return output data
      */
     public static byte[] encodeI32(int val) {
         byte[] bytes = new byte[4];
@@ -167,6 +180,8 @@ public class Serialization {
 
     /**
      * Encode i64.
+     * @param val input data
+     * @return output data
      */
     public static byte[] encodeI64(long val) {
         byte[] bytes = new byte[8];
@@ -183,13 +198,17 @@ public class Serialization {
 
     /**
      * Decode i8.
+     * @param val input data buffer
+     * @return output i8 data.
      */
     public static byte decodeI8(ByteBuf val) {
         return (byte) (val.readByte() & 0xff);
     }
 
     /**
-     * Decode u i8.
+     * Decode UI8.
+     * @param val input data buffer
+     * @return output UI8 data.
      */
     public static short decodeUI8(ByteBuf val) {
         return (short) (val.readUnsignedByte() & 0xffff);
@@ -197,6 +216,8 @@ public class Serialization {
 
     /**
      * Decode i8.
+     * @param val input data
+     * @return output i8 data.
      */
     public static byte decodeI8(byte val) {
         return (byte) (val & 0xff);
@@ -204,6 +225,8 @@ public class Serialization {
 
     /**
      * Decode i8.
+     * @param val input data buffer
+     * @return output i8 data.
      */
     public static byte decodeI8(byte[] val) {
         return (byte) (val[0] & 0xff);
@@ -211,6 +234,8 @@ public class Serialization {
 
     /**
      * Decode i16.
+     * @param val input data
+     * @return output i16 data.
      */
     public static short decodeI16(ByteBuf val) {
         short ret = (short) ((val.readByte() & 0xff) << 8);
@@ -220,6 +245,8 @@ public class Serialization {
 
     /**
      * Decode i16.
+     * @param val input data buffer
+     * @return output i16 data.
      */
     public static short decodeI16(byte[] val) {
         short ret = (short) ((val[0] & 0xff) << 8);
@@ -229,6 +256,8 @@ public class Serialization {
 
     /**
      * Decode i32.
+     * @param val input data buffer
+     * @return output i32 data.
      */
     public static int decodeI32(byte[] val) {
         int ret = (val[0] & 0xff) << 24;
@@ -240,6 +269,8 @@ public class Serialization {
 
     /**
      * Decode i32.
+     * @param val input data
+     * @return output i32 data.
      */
     public static int decodeI32(ByteBuf val) {
         int ret = (val.readByte() & 0xff) << 24;
@@ -251,6 +282,8 @@ public class Serialization {
 
     /**
      * Decode i64.
+     * @param val input data buffer
+     * @return output i64 data.
      */
     public static long decodeI64(byte[] val) {
         long ret = ((long) (val[0] & 0xff)) << 56;
@@ -266,6 +299,8 @@ public class Serialization {
 
     /**
      * Decode i64.
+     * @param val input data
+     * @return output i64 data.
      */
     public static long decodeI64(ByteBuf val) {
         long ret = ((long) (val.readByte() & 0xff)) << 56;
@@ -281,6 +316,8 @@ public class Serialization {
 
     /**
      * Decode double.
+     * @param buffer input data buffer
+     * @return output double data.
      */
     public static double decodeDouble(ByteBuf buffer) {
         return Double.longBitsToDouble(Serialization.decodeVi64(buffer));
@@ -288,6 +325,8 @@ public class Serialization {
 
     /**
      * Encode double.
+     * @param d input double data
+     * @return output data buffer
      */
     public static byte[] encodeDouble(double d) {
         return Serialization.encodeVi64(Double.doubleToRawLongBits(d));
@@ -295,6 +334,8 @@ public class Serialization {
 
     /**
      * Decode float.
+     * @param value input data buffer
+     * @return output float data.
      */
     public static float decodeFloat(ByteBuf value) {
         return Float.intBitsToFloat(decodeVi32(value));
@@ -302,6 +343,8 @@ public class Serialization {
 
     /**
      * Encode float.
+     * @param f input float data
+     * @return output data buffer
      */
     public static byte[] encodeFloat(float f) {
         return encodeVi32(Float.floatToRawIntBits(f));
@@ -309,6 +352,8 @@ public class Serialization {
 
     /**
      * Get need bytes.
+     * @param l input data
+     * @return bytes need for serialize long data
      */
     public static int getNeedBytes(long l) {
         if (l < 0)
@@ -324,6 +369,8 @@ public class Serialization {
 
     /**
      * Get need bytes.
+     * @param l input data
+     * @return bytes need for serialize int data
      */
     public static int getNeedBytes(int l) {
         if (l < 0)
@@ -339,6 +386,8 @@ public class Serialization {
 
     /**
      * Get need bytes.
+     * @param str input data
+     * @return bytes need for serialize string data
      */
     public static int getNeedBytes(ObBytesString str) {
         if (str == null) {
@@ -349,6 +398,8 @@ public class Serialization {
 
     /**
      * Get need bytes.
+     * @param val input data
+     * @return bytes need for serialize double data
      */
     public static int getNeedBytes(double val) {
         return getNeedBytes(Double.doubleToRawLongBits(val));
@@ -356,6 +407,8 @@ public class Serialization {
 
     /**
      * Get need bytes.
+     * @param val input data
+     * @return bytes need for serialize float data
      */
     public static int getNeedBytes(float val) {
         return getNeedBytes(Float.floatToRawIntBits(val));
@@ -363,6 +416,8 @@ public class Serialization {
 
     /**
      * Get need bytes.
+     * @param bytes input data
+     * @return bytes need for serialize byte array data
      */
     public static int getNeedBytes(byte[] bytes) {
         if (bytes == null) {
@@ -373,6 +428,8 @@ public class Serialization {
 
     /**
      * Get need bytes.
+     * @param str input data
+     * @return bytes need for serialize string data
      */
     public static int getNeedBytes(String str) {
         if (str == null)
@@ -386,7 +443,9 @@ public class Serialization {
     }
 
     /**
-     * Encode vi32.
+     * Encode vi32
+     * @param i input data
+     * @return output data buffer
      */
     public static byte[] encodeVi32(int i) {
         byte[] ret = new byte[getNeedBytes(i)];
@@ -401,6 +460,8 @@ public class Serialization {
 
     /**
      * Decode vi32.
+     * @param value input data buffer
+     * @return output int data
      */
     public static int decodeVi32(byte[] value) {
         int ret = 0;
@@ -417,6 +478,8 @@ public class Serialization {
 
     /**
      * Decode vi32.
+     * @param buffer input data buffer
+     * @return output int data
      */
     public static int decodeVi32(ByteBuf buffer) {
         int ret = 0;
@@ -434,6 +497,8 @@ public class Serialization {
 
     /**
      * Decode vi64.
+     * @param buffer input data buffer
+     * @return output long data
      */
     public static long decodeVi64(ByteBuf buffer) {
         long ret = 0;
@@ -450,7 +515,9 @@ public class Serialization {
     }
 
     /**
-     * Encode vi64.
+     * Encode vi64
+     * @param l input data
+     * @return output data buffer
      */
     public static byte[] encodeVi64(long l) {
         byte[] ret = new byte[getNeedBytes(l)];
@@ -465,6 +532,8 @@ public class Serialization {
 
     /**
      * Decode vi64.
+     * @param value input data buffer
+     * @return output long data
      */
     public static long decodeVi64(byte[] value) {
         long ret = 0;
@@ -480,14 +549,18 @@ public class Serialization {
     }
 
     /**
-     * Encode v string.
+     * Encode vi64
+     * @param str input data
+     * @return output data buffer
      */
     public static byte[] encodeVString(String str) {
         return encodeVString(str, "UTF-8");
     }
 
     /**
-     * Encode bytes string.
+     * Encode vi64
+     * @param str input data
+     * @return output data buffer
      */
     public static byte[] encodeBytesString(ObBytesString str) {
         if (str == null) {
@@ -509,7 +582,9 @@ public class Serialization {
     }
 
     /**
-     * Encode bytes.
+     * Encode vi64
+     * @param bytes input data
+     * @return output data buffer
      */
     public static byte[] encodeBytes(byte[] bytes) {
         if (bytes == null) {
@@ -530,7 +605,10 @@ public class Serialization {
     }
 
     /**
-     * Encode v string.
+     * Encode VString
+     * @param str input data
+     * @param charset input data charset
+     * @return output data buffer
      */
     public static byte[] encodeVString(String str, String charset) {
         if (str == null)
@@ -555,7 +633,9 @@ public class Serialization {
     }
 
     /**
-     * Decode bytes string.
+     * Decode byte string
+     * @param buf input data
+     * @return output data
      */
     public static ObBytesString decodeBytesString(ByteBuf buf) {
         int dataLen = decodeVi32(buf);
@@ -566,7 +646,9 @@ public class Serialization {
     }
 
     /**
-     * Decode bytes.
+     * Decode bytes
+     * @param buf input data
+     * @return output data
      */
     public static byte[] decodeBytes(ByteBuf buf) {
         int dataLen = decodeVi32(buf);
@@ -576,14 +658,19 @@ public class Serialization {
     }
 
     /**
-     * Decode v string.
+     * Decode VString
+     * @param buf input data
+     * @return output data
      */
     public static String decodeVString(ByteBuf buf) {
         return decodeVString(buf, "UTF-8");
     }
 
     /**
-     * Decode v string.
+     * Decode byte string
+     * @param buffer input data
+     * @param charset input data charset
+     * @return output data
      */
     public static String decodeVString(ByteBuf buffer, String charset) {
         int dataLen = decodeVi32(buffer);
@@ -594,14 +681,19 @@ public class Serialization {
     }
 
     /**
-     * Decode v string.
+     * Decode VString
+     * @param content input data
+     * @return output data
      */
     public static String decodeVString(byte[] content) {
         return decodeVString(content, "UTF-8");
     }
 
     /**
-     * Decode v string.
+     * Decode byte string
+     * @param content input data
+     * @param charset input data charset
+     * @return output data
      */
     public static String decodeVString(byte[] content, String charset) {
         try {
@@ -613,6 +705,9 @@ public class Serialization {
 
     /**
      * Get ob uni version header length.
+     * @param version version
+     * @param payloadLen paylaod length
+     * @return bytes need for version and payloadLen
      */
     public static long getObUniVersionHeaderLength(long version, long payloadLen) {
         return Serialization.getNeedBytes(version) + Serialization.getNeedBytes(payloadLen);
@@ -620,6 +715,9 @@ public class Serialization {
 
     /**
      * Encode ob uni version header.
+     * @param version version
+     * @param payloadLen payload length
+     * @return output data buffer
      */
     public static byte[] encodeObUniVersionHeader(long version, long payloadLen) {
         byte[] bytes = new byte[(int) getObUniVersionHeaderLength(version, payloadLen)];
@@ -633,5 +731,4 @@ public class Serialization {
 
         return bytes;
     }
-
 }

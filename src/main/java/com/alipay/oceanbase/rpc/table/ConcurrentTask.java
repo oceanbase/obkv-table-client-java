@@ -25,7 +25,7 @@ public abstract class ConcurrentTask implements Runnable {
     private CountDownLatch countDownLatch;
     private AtomicBoolean  stopped;
 
-    /**
+    /*
      * Run.
      */
     @Override

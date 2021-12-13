@@ -19,41 +19,41 @@ package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableNoMasterException extends ObTableException {
 
-    /**
+    /*
      * Ob table no master exception.
      */
     public ObTableNoMasterException() {
     }
 
-    /**
+    /*
      * Ob table no master exception.
      */
     public ObTableNoMasterException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table no master exception.
      */
     public ObTableNoMasterException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table no master exception.
      */
     public ObTableNoMasterException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table no master exception.
      */
     public ObTableNoMasterException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table no master exception.
      */
     public ObTableNoMasterException(Throwable cause) {

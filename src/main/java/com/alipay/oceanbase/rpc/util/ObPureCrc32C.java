@@ -85,14 +85,20 @@ public class ObPureCrc32C {
             0xad7d5351L          };
 
     /**
-     * Calculate.
+     * Calculate crc32
+     * @param buf input data buffer
+     * @return CRC32 value
      */
     public static long calculate(byte[] buf) {
         return calculate(buf, 0, buf.length);
     }
 
     /**
-     * Calculate.
+     * Calculate crc32
+     * @param buf input data buffer
+     * @param offset input data offset
+     * @param length input data length
+     * @return CRC32 value
      */
     public static long calculate(byte[] buf, int offset, int length) {
         long crc = 0;

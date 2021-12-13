@@ -32,35 +32,35 @@ public class ObGeneratedColumnSubStrFunc implements ObGeneratedColumnSimpleFunc 
     private int          pos            = 0;
     private int          len            = Integer.MIN_VALUE;
 
-    /**
+    /*
      * Get pos.
      */
     public int getPos() {
         return pos;
     }
 
-    /**
+    /*
      * Set pos.
      */
     public void setPos(int pos) {
         this.pos = pos;
     }
 
-    /**
+    /*
      * Get len.
      */
     public int getLen() {
         return len;
     }
 
-    /**
+    /*
      * Set len.
      */
     public void setLen(int len) {
         this.len = len;
     }
 
-    /**
+    /*
      * Set parameters.
      */
     @Override
@@ -108,7 +108,7 @@ public class ObGeneratedColumnSubStrFunc implements ObGeneratedColumnSimpleFunc 
         }
     }
 
-    /**
+    /*
      * Get min parameters.
      */
     @Override
@@ -116,7 +116,7 @@ public class ObGeneratedColumnSubStrFunc implements ObGeneratedColumnSimpleFunc 
         return 2;
     }
 
-    /**
+    /*
      * Get max parameters.
      */
     @Override
@@ -124,7 +124,7 @@ public class ObGeneratedColumnSubStrFunc implements ObGeneratedColumnSimpleFunc 
         return 3;
     }
 
-    /**
+    /*
      * Get ref column names.
      */
     @Override
@@ -132,7 +132,7 @@ public class ObGeneratedColumnSubStrFunc implements ObGeneratedColumnSimpleFunc 
         return refColumnNames;
     }
 
-    /**
+    /*
      * Eval value.
      */
     @Override
@@ -232,7 +232,7 @@ public class ObGeneratedColumnSubStrFunc implements ObGeneratedColumnSimpleFunc 
         }
     }
 
-    /**
+    /*
      * To string.
      */
     @Override
