@@ -50,7 +50,7 @@ public class TableEntry {
     private TableEntryKey                    tableEntryKey         = null;
     private volatile ObPartitionEntry        partitionEntry        = null;
 
-    /**
+    /*
      * Is valid.
      */
     public boolean isValid() {
@@ -59,91 +59,91 @@ public class TableEntry {
 
     }
 
-    /**
+    /*
      * Get table id.
      */
     public Long getTableId() {
         return tableId;
     }
 
-    /**
+    /*
      * Set table id.
      */
     public void setTableId(Long tableId) {
         this.tableId = tableId;
     }
 
-    /**
+    /*
      * Get partition num.
      */
     public Long getPartitionNum() {
         return partitionNum;
     }
 
-    /**
+    /*
      * Set partition num.
      */
     public void setPartitionNum(Long partitionNum) {
         this.partitionNum = partitionNum;
     }
 
-    /**
+    /*
      * Get replica num.
      */
     public Long getReplicaNum() {
         return replicaNum;
     }
 
-    /**
+    /*
      * Is partition table.
      */
     public boolean isPartitionTable() {
         return this.partitionNum > 1;
     }
 
-    /**
+    /*
      * Set replica num.
      */
     public void setReplicaNum(Long replicaNum) {
         this.replicaNum = replicaNum;
     }
 
-    /**
+    /*
      * Get table location.
      */
     public TableLocation getTableLocation() {
         return tableLocation;
     }
 
-    /**
+    /*
      * Set table location.
      */
     public void setTableLocation(TableLocation tableLocation) {
         this.tableLocation = tableLocation;
     }
 
-    /**
+    /*
      * Get partition info.
      */
     public ObPartitionInfo getPartitionInfo() {
         return partitionInfo;
     }
 
-    /**
+    /*
      * Set partition info.
      */
     public void setPartitionInfo(ObPartitionInfo partitionInfo) {
         this.partitionInfo = partitionInfo;
     }
 
-    /**
+    /*
      * Get refresh time mills.
      */
     public long getRefreshTimeMills() {
         return refreshTimeMills;
     }
 
-    /**
+    /*
      * Set refresh time mills.
      */
     public void setRefreshTimeMills(long refreshTimeMills) {
@@ -154,7 +154,7 @@ public class TableEntry {
         return rowKeyElement;
     }
 
-    /**
+    /*
      * Set row key element.
      */
     public void setRowKeyElement(Map<String, Integer> rowKeyElement) {
@@ -164,35 +164,35 @@ public class TableEntry {
         }
     }
 
-    /**
+    /*
      * Get table entry key.
      */
     public TableEntryKey getTableEntryKey() {
         return tableEntryKey;
     }
 
-    /**
+    /*
      * Set table entry key.
      */
     public void setTableEntryKey(TableEntryKey tableEntryKey) {
         this.tableEntryKey = tableEntryKey;
     }
 
-    /**
+    /*
      * Get partition entry.
      */
     public ObPartitionEntry getPartitionEntry() {
         return partitionEntry;
     }
 
-    /**
+    /*
      * Set partition entry.
      */
     public void setPartitionEntry(ObPartitionEntry partitionEntry) {
         this.partitionEntry = partitionEntry;
     }
 
-    /**
+    /*
      * Prepare.
      */
     public void prepare() throws IllegalArgumentException {
@@ -205,7 +205,7 @@ public class TableEntry {
         }
     }
 
-    /**
+    /*
      * Prepare for weak read.
      * @param ldcLocation
      */
@@ -215,7 +215,7 @@ public class TableEntry {
         }
     }
 
-    /**
+    /*
      * To string.
      */
     @Override

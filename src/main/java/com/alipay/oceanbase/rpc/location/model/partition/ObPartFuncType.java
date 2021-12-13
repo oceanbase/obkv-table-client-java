@@ -36,7 +36,7 @@ public enum ObPartFuncType {
         this.index = index;
     }
 
-    /**
+    /*
      * Get ob part func type.
      */
     public static ObPartFuncType getObPartFuncType(long index) {
@@ -65,7 +65,7 @@ public enum ObPartFuncType {
         }
     }
 
-    /**
+    /*
      * Get ob part func type.
      */
     public static ObPartFuncType getObPartFuncType(String name) {
@@ -94,35 +94,35 @@ public enum ObPartFuncType {
         }
     }
 
-    /**
+    /*
      * Get index.
      */
     public long getIndex() {
         return index;
     }
 
-    /**
+    /*
      * Get name.
      */
     public String getName() {
         return name;
     }
 
-    /**
+    /*
      * Is range part.
      */
     public boolean isRangePart() {
         return this.index == RANGE.getIndex() || this.index == RANGE_COLUMNS.getIndex();
     }
 
-    /**
+    /*
      * Is hash part.
      */
     public boolean isHashPart() {
         return this.index == HASH.getIndex() || this.index == HASH_V2.getIndex();
     }
 
-    /**
+    /*
      * Is key part.
      */
     public boolean isKeyPart() {
@@ -130,7 +130,7 @@ public enum ObPartFuncType {
                || this.index == KEY_V3.getIndex();
     }
 
-    /**
+    /*
      * Is list part.
      */
     public boolean isListPart() {

@@ -66,8 +66,8 @@ public class QueryByBatchResultSet implements QueryStreamResult {
      * 通过当前的最后一条数据，与之前的查询条件融合
      * 例如，上次查询为 limit["a","z"), 最后一条数据为 "bbb"
      * 则此次查询改造为 limit("bbb", "z")
-     * @param row
-     * @param tableQuery
+     * @param row row
+     * @param tableQuery tableQuery
      */
     private void updateQuery(Map<String, Object> row, TableQuery tableQuery) {
         List<ObNewRange> ranges = tableQuery.getObTableQuery().getKeyRanges();

@@ -34,14 +34,14 @@ public class ObClientFuture implements InvokeFuture {
     private RemotingCommand response;
     private int             channelId;
 
-    /**
+    /*
      * Ob client future.
      */
     public ObClientFuture(int channelId) {
         this.channelId = channelId;
     }
 
-    /**
+    /*
      * Wait response.
      */
     @Override
@@ -54,7 +54,7 @@ public class ObClientFuture implements InvokeFuture {
         }
     }
 
-    /**
+    /*
      * Wait response.
      */
     @Override
@@ -63,7 +63,7 @@ public class ObClientFuture implements InvokeFuture {
         return response;
     }
 
-    /**
+    /*
      * Put response.
      */
     @Override
@@ -72,7 +72,7 @@ public class ObClientFuture implements InvokeFuture {
         waiter.countDown();
     }
 
-    /**
+    /*
      * Invoke id.
      */
     @Override
@@ -80,7 +80,7 @@ public class ObClientFuture implements InvokeFuture {
         return channelId;
     }
 
-    /**
+    /*
      * Is done.
      */
     @Override
@@ -88,7 +88,7 @@ public class ObClientFuture implements InvokeFuture {
         return this.waiter.getCount() == 0;
     }
 
-    /**
+    /*
      * Create connection closed response.
      */
     @Override
@@ -96,7 +96,7 @@ public class ObClientFuture implements InvokeFuture {
         return null;
     }
 
-    /**
+    /*
      * Execute invoke callback.
      */
     @Override
@@ -104,7 +104,7 @@ public class ObClientFuture implements InvokeFuture {
 
     }
 
-    /**
+    /*
      * Try async execute invoke callback abnormally.
      */
     @Override
@@ -112,7 +112,7 @@ public class ObClientFuture implements InvokeFuture {
 
     }
 
-    /**
+    /*
      * Set cause.
      */
     @Override
@@ -120,7 +120,7 @@ public class ObClientFuture implements InvokeFuture {
 
     }
 
-    /**
+    /*
      * Get cause.
      */
     @Override
@@ -128,7 +128,7 @@ public class ObClientFuture implements InvokeFuture {
         return null;
     }
 
-    /**
+    /*
      * Get invoke callback.
      */
     @Override
@@ -136,7 +136,7 @@ public class ObClientFuture implements InvokeFuture {
         return null;
     }
 
-    /**
+    /*
      * Add timeout.
      */
     @Override
@@ -144,7 +144,7 @@ public class ObClientFuture implements InvokeFuture {
 
     }
 
-    /**
+    /*
      * Cancel timeout.
      */
     @Override
@@ -152,7 +152,7 @@ public class ObClientFuture implements InvokeFuture {
 
     }
 
-    /**
+    /*
      * Get app class loader.
      */
     @Override
@@ -160,7 +160,7 @@ public class ObClientFuture implements InvokeFuture {
         return null;
     }
 
-    /**
+    /*
      * Get protocol code.
      */
     @Override
@@ -168,7 +168,7 @@ public class ObClientFuture implements InvokeFuture {
         return 0;
     }
 
-    /**
+    /*
      * Set invoke context.
      */
     @Override
@@ -176,7 +176,7 @@ public class ObClientFuture implements InvokeFuture {
 
     }
 
-    /**
+    /*
      * Get invoke context.
      */
     @Override

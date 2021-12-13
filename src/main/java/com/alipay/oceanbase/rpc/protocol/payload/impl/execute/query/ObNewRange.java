@@ -24,7 +24,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
-/**
+/*
  * int ObNewRange::serialize(char *buf, const int64_t buf_len, int64_t &pos) const
  * {
  * int ret = OB_SUCCESS;
@@ -51,7 +51,7 @@ public class ObNewRange implements ObSimplePayload {
     private ObRowKey     startKey;
     private ObRowKey     endKey;
 
-    /**
+    /*
      * Ob new range.
      */
     public ObNewRange() {
@@ -59,7 +59,7 @@ public class ObNewRange implements ObSimplePayload {
         borderFlag.setInclusiveEnd();
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -98,7 +98,7 @@ public class ObNewRange implements ObSimplePayload {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -125,7 +125,7 @@ public class ObNewRange implements ObSimplePayload {
         return this;
     }
 
-    /**
+    /*
      * Get encoded size.
      */
     @Override
@@ -150,56 +150,56 @@ public class ObNewRange implements ObSimplePayload {
         return encodedSize;
     }
 
-    /**
+    /*
      * Get table id.
      */
     public long getTableId() {
         return tableId;
     }
 
-    /**
+    /*
      * Set table id.
      */
     public void setTableId(long tableId) {
         this.tableId = tableId;
     }
 
-    /**
+    /*
      * Get border flag.
      */
     public ObBorderFlag getBorderFlag() {
         return borderFlag;
     }
 
-    /**
+    /*
      * Set border flag.
      */
     public void setBorderFlag(ObBorderFlag borderFlag) {
         this.borderFlag = borderFlag;
     }
 
-    /**
+    /*
      * Get start key.
      */
     public ObRowKey getStartKey() {
         return startKey;
     }
 
-    /**
+    /*
      * Set start key.
      */
     public void setStartKey(ObRowKey startKey) {
         this.startKey = startKey;
     }
 
-    /**
+    /*
      * Get end key.
      */
     public ObRowKey getEndKey() {
         return endKey;
     }
 
-    /**
+    /*
      * Set end key.
      */
     public void setEndKey(ObRowKey endKey) {

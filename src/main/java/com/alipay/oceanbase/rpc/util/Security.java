@@ -57,8 +57,9 @@ public class Security {
 
     /**
      * SHA1(passwd) ^ SHA1(scramble + SHA1(SHA1(passwd)))
-     *
-     * @return scramble password by scramble salt
+     * @param password plain password
+     * @param scrambleSalt salt
+     * @return cipher password
      */
     public static final ObBytesString scramblePassword(String password, ObBytesString scrambleSalt) {
         if (password == null || password.isEmpty()) {
@@ -90,6 +91,8 @@ public class Security {
     }
 
     /**
+     * Get password scramble salt
+     * @param size salt size
      * @return password scramble salt
      */
     public static final ObBytesString getPasswordScramble(int size) {
@@ -122,18 +125,12 @@ public class Security {
     private static String ENC_KEY_BYTES_PROD_STR = "gQzLk5tTcGYlQ47GG29xQxfbHIURCheJ";
     private static byte[] ENC_KEY_BYTES_PROD     = ENC_KEY_BYTES_PROD_STR.getBytes();
 
-    /**
-     * Encode.
-     */
     public static String encode(String secret) throws NoSuchPaddingException,
                                               NoSuchAlgorithmException, InvalidKeyException,
                                               BadPaddingException, IllegalBlockSizeException {
         return encode(null, secret);
     }
 
-    /**
-     * Encode.
-     */
     public static String encode(String encKey, String secret) throws InvalidKeyException,
                                                              NoSuchAlgorithmException,
                                                              NoSuchPaddingException,
@@ -175,18 +172,12 @@ public class Security {
         return n.toString(16);
     }
 
-    /**
-     * Decode.
-     */
     public static char[] decode(String secret) throws NoSuchPaddingException,
                                               NoSuchAlgorithmException, InvalidKeyException,
                                               BadPaddingException, IllegalBlockSizeException {
         return decode(null, secret).toCharArray();
     }
 
-    /**
-     * Decode.
-     */
     public static String decode(String encKey, String secret) throws NoSuchPaddingException,
                                                              NoSuchAlgorithmException,
                                                              InvalidKeyException,

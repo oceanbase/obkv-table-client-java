@@ -26,7 +26,7 @@ import java.util.List;
 
 public class ObTablePacketDecoder implements CommandDecoder {
 
-    /**
+    /*
      * Decode.
      */
     @Override

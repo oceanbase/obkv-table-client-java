@@ -29,7 +29,7 @@ public abstract class AbstractTable extends AbstractPropertyAware implements Tab
         return get(tableName, new Object[] { rowkey }, columns);
     }
 
-    /**
+    /*
      * Update.
      */
     public long update(String tableName, Object rowkey, String[] columns, Object[] values)
@@ -37,14 +37,14 @@ public abstract class AbstractTable extends AbstractPropertyAware implements Tab
         return update(tableName, new Object[] { rowkey }, columns, values);
     }
 
-    /**
+    /*
      * Delete.
      */
     public long delete(String tableName, Object rowkey) throws Exception {
         return delete(tableName, new Object[] { rowkey });
     }
 
-    /**
+    /*
      * Insert.
      */
     public long insert(String tableName, Object rowkey, String[] columns, Object[] values)
@@ -52,7 +52,7 @@ public abstract class AbstractTable extends AbstractPropertyAware implements Tab
         return insert(tableName, new Object[] { rowkey }, columns, values);
     }
 
-    /**
+    /*
      * Replace.
      */
     public long replace(String tableName, Object rowkey, String[] columns, Object[] values)
@@ -60,7 +60,7 @@ public abstract class AbstractTable extends AbstractPropertyAware implements Tab
         return replace(tableName, new Object[] { rowkey }, columns, values);
     }
 
-    /**
+    /*
      * Insert or update.
      */
     public long insertOrUpdate(String tableName, Object rowkey, String[] columns, Object[] values)

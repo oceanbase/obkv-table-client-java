@@ -24,7 +24,7 @@ public class ObPartIdCalculator {
     private static final Long MASK = (1L << PART_ID_BITNUM)
                                      | 1L << (PART_ID_BITNUM + PART_ID_SHIFT);
 
-    /**
+    /*
      * Generate part id.
      */
     public static Long generatePartId(Long partId1, Long partId2) {

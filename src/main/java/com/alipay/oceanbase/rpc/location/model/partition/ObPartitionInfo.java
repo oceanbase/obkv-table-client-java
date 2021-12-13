@@ -33,56 +33,56 @@ public class ObPartitionInfo {
     private Map<String, Long>    partNameIdMap = null;
     private Map<String, Integer> rowKeyElement = null;
 
-    /**
+    /*
      * Get level.
      */
     public ObPartitionLevel getLevel() {
         return level;
     }
 
-    /**
+    /*
      * Set level.
      */
     public void setLevel(ObPartitionLevel level) {
         this.level = level;
     }
 
-    /**
+    /*
      * Get first part desc.
      */
     public ObPartDesc getFirstPartDesc() {
         return firstPartDesc;
     }
 
-    /**
+    /*
      * Set first part desc.
      */
     public void setFirstPartDesc(ObPartDesc firstPartDesc) {
         this.firstPartDesc = firstPartDesc;
     }
 
-    /**
+    /*
      * Get sub part desc.
      */
     public ObPartDesc getSubPartDesc() {
         return subPartDesc;
     }
 
-    /**
+    /*
      * Set sub part desc.
      */
     public void setSubPartDesc(ObPartDesc subPartDesc) {
         this.subPartDesc = subPartDesc;
     }
 
-    /**
+    /*
      * Get part columns.
      */
     public List<ObColumn> getPartColumns() {
         return partColumns;
     }
 
-    /**
+    /*
      * Add column.
      */
     public void addColumn(ObColumn column) {
@@ -93,7 +93,7 @@ public class ObPartitionInfo {
         return rowKeyElement;
     }
 
-    /**
+    /*
      * Set row key element.
      */
     public void setRowKeyElement(Map<String, Integer> rowKeyElement) {
@@ -106,7 +106,7 @@ public class ObPartitionInfo {
         }
     }
 
-    /**
+    /*
      * Prepare.
      */
     public void prepare() throws IllegalArgumentException {
@@ -126,7 +126,7 @@ public class ObPartitionInfo {
         }
     }
 
-    /**
+    /*
      * To string.
      */
     @Override
@@ -144,7 +144,7 @@ public class ObPartitionInfo {
         return this.partNameIdMap;
     }
 
-    /**
+    /*
      * Set part name id map.
      */
     public void setPartNameIdMap(Map<String, Long> partNameIdMap) {

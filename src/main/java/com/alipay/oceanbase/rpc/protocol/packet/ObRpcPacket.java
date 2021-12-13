@@ -22,39 +22,39 @@ public class ObRpcPacket {
     private ObRpcPacketHeader rpcPacketHeader;
     private byte[]            payloadContent;
 
-    /**
+    /*
      * Get rpc packet header.
      */
     public ObRpcPacketHeader getRpcPacketHeader() {
         return rpcPacketHeader;
     }
 
-    /**
+    /*
      * Set rpc packet header.
      */
     public void setRpcPacketHeader(ObRpcPacketHeader rpcPacketHeader) {
         this.rpcPacketHeader = rpcPacketHeader;
     }
 
-    /**
+    /*
      * Get payload content.
      */
     public byte[] getPayloadContent() {
         return payloadContent;
     }
 
-    /**
+    /*
      * Set payload content.
      */
     public void setPayloadContent(byte[] payloadContent) {
         this.payloadContent = payloadContent;
     }
 
-    /**
+    /*
      * useless, only for reference
      */
     @Deprecated
-    /**
+    /*
      * Encode.
      */
     public byte[] encode() {

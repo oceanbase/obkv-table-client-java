@@ -18,41 +18,41 @@
 package com.alipay.oceanbase.rpc.exception;
 
 public class ObTablePartitionInfoRefreshException extends ObTableEntryRefreshException {
-    /**
+    /*
      * Ob table partition info refresh exception.
      */
     public ObTablePartitionInfoRefreshException() {
     }
 
-    /**
+    /*
      * Ob table partition info refresh exception.
      */
     public ObTablePartitionInfoRefreshException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table partition info refresh exception.
      */
     public ObTablePartitionInfoRefreshException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table partition info refresh exception.
      */
     public ObTablePartitionInfoRefreshException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table partition info refresh exception.
      */
     public ObTablePartitionInfoRefreshException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table partition info refresh exception.
      */
     public ObTablePartitionInfoRefreshException(Throwable cause) {

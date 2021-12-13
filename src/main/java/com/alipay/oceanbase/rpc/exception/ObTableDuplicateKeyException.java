@@ -19,42 +19,42 @@ package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableDuplicateKeyException extends ObTableException {
 
-    /**
+    /*
      * Ob table duplicate key exception.
      */
     public ObTableDuplicateKeyException() {
 
     }
 
-    /**
+    /*
      * Ob table duplicate key exception.
      */
     public ObTableDuplicateKeyException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table duplicate key exception.
      */
     public ObTableDuplicateKeyException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table duplicate key exception.
      */
     public ObTableDuplicateKeyException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table duplicate key exception.
      */
     public ObTableDuplicateKeyException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table duplicate key exception.
      */
     public ObTableDuplicateKeyException(Throwable cause) {

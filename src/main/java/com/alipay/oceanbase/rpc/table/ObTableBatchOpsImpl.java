@@ -33,7 +33,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
 
     private ObTable                            obTable;
 
-    /**
+    /*
      * Ob table batch ops impl.
      */
     public ObTableBatchOpsImpl(String tableName, ObTable obTable) {
@@ -48,7 +48,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         request.setReturningAffectedRows(true);
     }
 
-    /**
+    /*
      * Get.
      */
     @Override
@@ -56,7 +56,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         addObTableOperation(ObTableOperationType.GET, rowkeys, columns, null);
     }
 
-    /**
+    /*
      * Update.
      */
     @Override
@@ -64,7 +64,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         addObTableOperation(ObTableOperationType.UPDATE, rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Delete.
      */
     @Override
@@ -72,7 +72,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         addObTableOperation(ObTableOperationType.DEL, rowkeys, null, null);
     }
 
-    /**
+    /*
      * Insert.
      */
     @Override
@@ -80,7 +80,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         addObTableOperation(ObTableOperationType.INSERT, rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Replace.
      */
     @Override
@@ -88,7 +88,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         addObTableOperation(ObTableOperationType.REPLACE, rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Insert or update.
      */
     @Override
@@ -96,7 +96,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         addObTableOperation(ObTableOperationType.INSERT_OR_UPDATE, rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Increment.
      */
     @Override
@@ -105,7 +105,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         addObTableOperation(ObTableOperationType.INCREMENT, rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Append.
      */
     @Override
@@ -114,7 +114,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         addObTableOperation(ObTableOperationType.APPEND, rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Add ob table operation.
      */
     public void addObTableOperation(ObTableOperationType type, Object[] rowkeys, String[] columns,
@@ -124,7 +124,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         operations.addTableOperation(instance);
     }
 
-    /**
+    /*
      * Execute.
      */
     public List<Object> execute() throws RemotingException, InterruptedException {
@@ -157,7 +157,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         return results;
     }
 
-    /**
+    /*
      * clear batch operations
      */
     public void clear() {
@@ -178,14 +178,14 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         // ExceptionUtil.throwObTableException(obTableOperationResult.getHeader().getErrno());
     }
 
-    /**
+    /*
      * Reset ob table.
      */
     public void resetObTable(ObTable obTable) {
         this.obTable = obTable;
     }
 
-    /**
+    /*
      * Get ob table batch operation.
      */
     @Override

@@ -20,7 +20,7 @@ package com.alipay.oceanbase.rpc.util;
 public class ZoneUtil {
     private static String DEFAULT_IDC_VALUE = "dev";
 
-    /**
+    /*
      * Get current IDC.
      */
     public static String getCurrentIDC() {

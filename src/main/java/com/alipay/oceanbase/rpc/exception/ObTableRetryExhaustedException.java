@@ -18,41 +18,41 @@
 package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableRetryExhaustedException extends ObTableException {
-    /**
+    /*
      * Ob table retry exhausted exception.
      */
     public ObTableRetryExhaustedException() {
     }
 
-    /**
+    /*
      * Ob table retry exhausted exception.
      */
     public ObTableRetryExhaustedException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table retry exhausted exception.
      */
     public ObTableRetryExhaustedException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table retry exhausted exception.
      */
     public ObTableRetryExhaustedException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table retry exhausted exception.
      */
     public ObTableRetryExhaustedException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table retry exhausted exception.
      */
     public ObTableRetryExhaustedException(Throwable cause) {

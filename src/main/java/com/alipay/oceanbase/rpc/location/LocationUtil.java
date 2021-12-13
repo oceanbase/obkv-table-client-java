@@ -139,7 +139,7 @@ public class LocationUtil {
         }
     }
 
-    /**
+    /*
      * Get Server LDC info from OB system table.
      */
     public static List<ObServerLdcItem> getServerLdc(ServerRoster serverRoster,
@@ -161,7 +161,7 @@ public class LocationUtil {
         }
     }
 
-    /**
+    /*
      * Format ob server url with the tenant server.
      *
      * @param obServerAddr
@@ -176,7 +176,7 @@ public class LocationUtil {
             obServerAddr.getIp() + ":" + obServerAddr.getSqlPort(), connectTimeout, socketTimeout);
     }
 
-    /**
+    /*
      * Establish db connection to the given database URL, with proxy user/password.
      *
      * @param url
@@ -199,7 +199,7 @@ public class LocationUtil {
 
     }
 
-    /**
+    /*
      * Refresh server LDC info.
      *
      * @param obServerAddr
@@ -290,7 +290,7 @@ public class LocationUtil {
 
     }
 
-    /**
+    /*
      * Load table entry with priority.
      */
     public static TableEntry loadTableEntryWithPriority(final ServerRoster serverRoster,
@@ -317,7 +317,7 @@ public class LocationUtil {
             });
     }
 
-    /**
+    /*
      * Load table entry location with priority.
      */
     public static TableEntry loadTableEntryLocationWithPriority(final ServerRoster serverRoster,
@@ -346,7 +346,7 @@ public class LocationUtil {
             });
     }
 
-    /**
+    /*
      * Load table entry randomly.
      */
     public static TableEntry loadTableEntryRandomly(final List<ObServerAddr> rsList,//
@@ -438,7 +438,7 @@ public class LocationUtil {
         return tableEntry;
     }
 
-    /**
+    /*
      * Get table entry location from remote.
      */
     public static TableEntry getTableEntryLocationFromRemote(Connection connection,
@@ -670,7 +670,7 @@ public class LocationUtil {
         return partitionEntry;
     }
 
-    /**
+    /*
      * Get ReplicaLocation from the result row.
      *
      * @param rs
@@ -1075,7 +1075,7 @@ public class LocationUtil {
         return sets;
     }
 
-    /**
+    /*
      * Load ocp model.
      */
     public static OcpModel loadOcpModel(String paramURL, String dataSourceName, int connectTimeout,
@@ -1161,7 +1161,7 @@ public class LocationUtil {
         return null;
     }
 
-    /**
+    /*
      * Get IdcRegion info from OCP.
      * Return null instead of throwing exception if get nothing, because the info is optional.
      *

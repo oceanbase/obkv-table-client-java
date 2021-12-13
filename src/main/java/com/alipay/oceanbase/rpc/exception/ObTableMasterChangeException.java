@@ -19,48 +19,48 @@ package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableMasterChangeException extends ObTableException {
 
-    /**
+    /*
      * Ob table master change exception.
      */
     public ObTableMasterChangeException() {
     }
 
-    /**
+    /*
      * Ob table master change exception.
      */
     public ObTableMasterChangeException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table master change exception.
      */
     public ObTableMasterChangeException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table master change exception.
      */
     public ObTableMasterChangeException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table master change exception.
      */
     public ObTableMasterChangeException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table master change exception.
      */
     public ObTableMasterChangeException(Throwable cause) {
         super(cause);
     }
 
-    /**
+    /*
      * Is need refresh table entry.
      */
     public boolean isNeedRefreshTableEntry() {

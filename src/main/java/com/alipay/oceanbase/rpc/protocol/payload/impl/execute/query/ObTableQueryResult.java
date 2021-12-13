@@ -38,21 +38,21 @@ public class ObTableQueryResult extends AbstractPayload {
     // TODO 需要做成流式的，目前 OB 还不支持流式协议，单个 packet 大小过大会失败
     private List<List<ObObj>> propertiesRows  = new LinkedList<List<ObObj>>();
 
-    /**
+    /*
      * Ob table query result.
      */
     public ObTableQueryResult() {
         this.header = new ObRpcPacketHeader();
     }
 
-    /**
+    /*
      * Ob table query result.
      */
     public ObTableQueryResult(ObRpcPacketHeader header) {
         this.header = header;
     }
 
-    /**
+    /*
      * Get pcode.
      */
     @Override
@@ -60,7 +60,7 @@ public class ObTableQueryResult extends AbstractPayload {
         return Pcodes.OB_TABLE_API_EXECUTE_QUERY;
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -103,7 +103,7 @@ public class ObTableQueryResult extends AbstractPayload {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -136,7 +136,7 @@ public class ObTableQueryResult extends AbstractPayload {
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -159,91 +159,91 @@ public class ObTableQueryResult extends AbstractPayload {
         return size;
     }
 
-    /**
+    /*
      * Get properties names.
      */
     public List<String> getPropertiesNames() {
         return propertiesNames;
     }
 
-    /**
+    /*
      * Set properties names.
      */
     public void setPropertiesNames(List<String> propertiesNames) {
         this.propertiesNames = propertiesNames;
     }
 
-    /**
+    /*
      * Add properties name.
      */
     public void addPropertiesName(String propertiesName) {
         this.propertiesNames.add(propertiesName);
     }
 
-    /**
+    /*
      * Get row count.
      */
     public long getRowCount() {
         return rowCount;
     }
 
-    /**
+    /*
      * Set row count.
      */
     public void setRowCount(long rowCount) {
         this.rowCount = rowCount;
     }
 
-    /**
+    /*
      * Get properties rows.
      */
     public List<List<ObObj>> getPropertiesRows() {
         return propertiesRows;
     }
 
-    /**
+    /*
      * Set properties rows.
      */
     public void setPropertiesRows(List<List<ObObj>> propertiesRows) {
         this.propertiesRows = propertiesRows;
     }
 
-    /**
+    /*
      * Add properties row.
      */
     public void addPropertiesRow(List<ObObj> propertiesRow) {
         this.propertiesRows.add(propertiesRow);
     }
 
-    /**
+    /*
      * Add all properties rows.
      */
     public void addAllPropertiesRows(List<List<ObObj>> propertiesRows) {
         this.propertiesRows.addAll(propertiesRows);
     }
 
-    /**
+    /*
      * Is stream.
      */
     public boolean isStream() {
         return header.isStream();
     }
 
-    /**
+    /*
      * Is stream last.
      */
     public boolean isStreamLast() {
         return header.isStreamLast();
     }
 
-    /**
+    /*
      * Is stream next.
      */
     public boolean isStreamNext() {
         return header.isStreamNext();
     }
 
-    /**
+    /*
      * Get session id.
      */
     public long getSessionId() {

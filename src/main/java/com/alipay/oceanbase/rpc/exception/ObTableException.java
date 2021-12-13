@@ -22,20 +22,20 @@ public class ObTableException extends RuntimeException {
     private int     errorCode;
     private boolean needRefreshTableEntry;
 
-    /**
+    /*
      * Ob table exception.
      */
     public ObTableException() {
     }
 
-    /**
+    /*
      * Ob table exception.
      */
     public ObTableException(int errorCode) {
         this("error code: " + errorCode, errorCode);
     }
 
-    /**
+    /*
      * Ob table exception.
      */
     public ObTableException(String message, int errorCode) {
@@ -43,14 +43,14 @@ public class ObTableException extends RuntimeException {
         this.errorCode = errorCode;
     }
 
-    /**
+    /*
      * Ob table exception.
      */
     public ObTableException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table exception.
      */
     public ObTableException(String message, Throwable cause) {
@@ -61,21 +61,21 @@ public class ObTableException extends RuntimeException {
         }
     }
 
-    /**
+    /*
      * Ob table exception.
      */
     public ObTableException(Throwable cause) {
         super(cause);
     }
 
-    /**
+    /*
      * Get error code.
      */
     public int getErrorCode() {
         return errorCode;
     }
 
-    /**
+    /*
      * Is need refresh table entry.
      */
     public boolean isNeedRefreshTableEntry() {

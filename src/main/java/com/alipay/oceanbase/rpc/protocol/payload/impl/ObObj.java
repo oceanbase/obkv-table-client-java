@@ -30,7 +30,7 @@ public class ObObj implements ObSimplePayload {
         MIN_OBJECT = new ObObj(ObObjType.ObExtendType.getDefaultObjMeta(), -3L);
     }
 
-    /**
+    /*
      * Ob obj.
      */
     public ObObj() {
@@ -38,7 +38,7 @@ public class ObObj implements ObSimplePayload {
         this.value = null;
     }
 
-    /**
+    /*
      * Ob obj.
      */
     public ObObj(ObObjMeta meta, Object value) {
@@ -50,7 +50,7 @@ public class ObObj implements ObSimplePayload {
     private ObObjMeta meta;
     // 2. 序列化 valueLength 还是 nmb_desc_？
     private int       valueLength;
-    /**
+    /*
      *3. 序列化 value。
      *  obj_val_serialize<OBJTYPE>,
      *  obj_val_deserialize<OBJTYPE>,
@@ -58,7 +58,7 @@ public class ObObj implements ObSimplePayload {
      */
     private Object    value;
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -73,7 +73,7 @@ public class ObObj implements ObSimplePayload {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -84,7 +84,7 @@ public class ObObj implements ObSimplePayload {
         return this;
     }
 
-    /**
+    /*
      * Get encoded size.
      */
     @Override
@@ -92,42 +92,42 @@ public class ObObj implements ObSimplePayload {
         return meta.getEncodedSize() + meta.getType().getEncodedSize(value);
     }
 
-    /**
+    /*
      * Get meta.
      */
     public ObObjMeta getMeta() {
         return meta;
     }
 
-    /**
+    /*
      * Set meta.
      */
     public void setMeta(ObObjMeta meta) {
         this.meta = meta;
     }
 
-    /**
+    /*
      * Get value length.
      */
     public int getValueLength() {
         return valueLength;
     }
 
-    /**
+    /*
      * Set value length.
      */
     public void setValueLength(int valueLength) {
         this.valueLength = valueLength;
     }
 
-    /**
+    /*
      * Get value.
      */
     public Object getValue() {
         return value;
     }
 
-    /**
+    /*
      * Set value.
      */
     public void setValue(Object value) {
@@ -138,7 +138,7 @@ public class ObObj implements ObSimplePayload {
         }
     }
 
-    /**
+    /*
      * Get instance.
      */
     public static ObObj getInstance(Object value) {
@@ -146,21 +146,21 @@ public class ObObj implements ObSimplePayload {
         return new ObObj(meta, value);
     }
 
-    /**
+    /*
      * Get max.
      */
     public static ObObj getMax() {
         return MAX_OBJECT;
     }
 
-    /**
+    /*
      * Get min.
      */
     public static ObObj getMin() {
         return MIN_OBJECT;
     }
 
-    /**
+    /*
      * To string.
      */
     @Override

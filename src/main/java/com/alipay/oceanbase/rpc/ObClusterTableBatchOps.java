@@ -40,7 +40,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         this.tableBatchOps.setExecutorService(executorService);
     }
 
-    /**
+    /*
      * Get.
      */
     @Override
@@ -48,7 +48,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.get(rowkeys, columns);
     }
 
-    /**
+    /*
      * Update.
      */
     @Override
@@ -56,7 +56,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.update(rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Delete.
      */
     @Override
@@ -64,7 +64,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.delete(rowkeys);
     }
 
-    /**
+    /*
      * Insert.
      */
     @Override
@@ -72,7 +72,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.insert(rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Replace.
      */
     @Override
@@ -80,7 +80,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.replace(rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Insert or update.
      */
     @Override
@@ -88,7 +88,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.insertOrUpdate(rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Increment.
      */
     @Override
@@ -96,7 +96,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.increment(rowkeys, columns, values, withResult);
     }
 
-    /**
+    /*
      * Append.
      */
     @Override
@@ -104,7 +104,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.append(rowkeys, columns, values, withResult);
     }
 
-    /**
+    /*
      * Execute.
      */
     @Override
@@ -112,21 +112,21 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         return tableBatchOps.execute();
     }
 
-    /**
+    /*
      * Execute internal.
      */
     public ObTableBatchOperationResult executeInternal() throws Exception {
         return tableBatchOps.executeInternal();
     }
 
-    /**
+    /*
      * clear batch operations
      */
     public void clear() {
         tableBatchOps.clear();
     }
 
-    /**
+    /*
      * Get ob table batch operation.
      */
     @Override
@@ -134,7 +134,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         return tableBatchOps.getObTableBatchOperation();
     }
 
-    /**
+    /*
      * Get table name.
      */
     @Override
@@ -142,7 +142,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         return tableBatchOps.getTableName();
     }
 
-    /**
+    /*
      * Set entity type.
      */
     @Override
@@ -151,7 +151,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.setEntityType(entityType);
     }
 
-    /**
+    /*
      * Set atomic operation.
      */
     @Override

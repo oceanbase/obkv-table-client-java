@@ -103,13 +103,15 @@ public class CRC64 implements Checksum {
 
     /**
      * Update.
+     * @param b input data
      */
     public void update(final int b) {
         update((byte) (b & 0xFF));
     }
 
     /**
-     * Update.
+     * Update
+     * @param b input data
      */
     public void update(final byte b) {
         final int tab_index = ((int) (crc >> 56) ^ b) & 0xFF;
@@ -117,7 +119,10 @@ public class CRC64 implements Checksum {
     }
 
     /**
-     * Update.
+     * Update
+     * @param buffer input data buffer
+     * @param offset input data offset
+     * @param length input data length
      */
     public void update(final byte[] buffer, final int offset, int length) {
         for (int i = offset; length > 0; length--)
@@ -125,7 +130,8 @@ public class CRC64 implements Checksum {
     }
 
     /**
-     * Update.
+     * Update
+     * @param buffer input data buffer
      */
     public void update(final byte[] buffer) {
         for (int i = 0; i < buffer.length; i++)
@@ -133,14 +139,15 @@ public class CRC64 implements Checksum {
     }
 
     /**
-     * Get value.
+     * Get value
+     * @return CRC64 value
      */
     public long getValue() {
         return crc;
     }
 
     /**
-     * Reset.
+     * reset
      */
     public void reset() {
         crc = 0;

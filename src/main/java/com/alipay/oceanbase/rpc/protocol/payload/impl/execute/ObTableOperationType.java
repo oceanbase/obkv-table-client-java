@@ -41,28 +41,28 @@ public enum ObTableOperationType {
         }
     }
 
-    /**
+    /*
      * Value of.
      */
     public static ObTableOperationType valueOf(int value) {
         return map.get(value);
     }
 
-    /**
+    /*
      * Get value.
      */
     public int getValue() {
         return value;
     }
 
-    /**
+    /*
      * Get byte value.
      */
     public byte getByteValue() {
         return (byte) value;
     }
 
-    /**
+    /*
      * Is readonly.
      */
     public boolean isReadonly() {

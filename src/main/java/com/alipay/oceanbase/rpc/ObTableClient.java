@@ -74,7 +74,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                                                                           0);
     private String                                            dataSourceName;
     private String                                            paramURL;
-    /**
+    /*
      * user name
      * Standard format: user@tenant#cluster
      * NonStandard format: cluster:tenant:user
@@ -86,7 +86,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private String                                            password;
     private String                                            database;
 
-    /**
+    /*
      * sys user auth to access meta table.
      */
     private ObUserAuth                                        sysUA                                   = new ObUserAuth(
@@ -95,12 +95,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     private volatile OcpModel                                 ocpModel                                = new OcpModel();
 
-    /**
+    /*
      * ServerAddr(all) -> ObTableConnection
      */
     private volatile ConcurrentHashMap<ObServerAddr, ObTable> tableRoster                             = null;
 
-    /**
+    /*
      * current tenant server address order by priority desc
      * <p>
      * be careful about concurrency when change the element
@@ -109,18 +109,18 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     private volatile RunningMode                              runningMode                             = RunningMode.NORMAL;
 
-    /**
+    /*
      * TableName -> TableEntry
      */
     private Map<String, TableEntry>                           tableLocations                          = new ConcurrentHashMap<String, TableEntry>();
 
-    /**
+    /*
      * TableName -> rowKey element
      */
     private Map<String, Map<String, Integer>>                 tableRowKeyElement                      = new ConcurrentHashMap<String, Map<String, Integer>>();
 
     private boolean                                           retryOnChangeMasterTimes                = true;
-    /**
+    /*
      * TableName -> Failures/Lock
      */
     private ConcurrentHashMap<String, AtomicLong>             tableContinuousFailures                 = new ConcurrentHashMap<String, AtomicLong>();
@@ -139,7 +139,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private ObReadConsistency                                 readConsistency                         = ObReadConsistency.STRONG;
     private ObRoutePolicy                                     obRoutePolicy                           = ObRoutePolicy.IDC_ORDER;
 
-    /**
+    /*
      * Init.
      */
     public void init() throws Exception {
@@ -161,7 +161,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
     }
 
-    /**
+    /*
      * Close.
      */
     @Override
@@ -206,7 +206,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
     }
 
-    /**
+    /*
      * Check status.
      */
     public void checkStatus() throws IllegalStateException {
@@ -387,7 +387,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         abstract T execute(ObPair<Long, ObTable> obTable) throws Exception;
 
-        /**
+        /*
          * Get row key.
          */
         public Object[] getRowKey() {
@@ -461,6 +461,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * Calculate continuous failure.
+     * @param tableName table name
+     * @param errorMsg err msg
+     * @throws Exception if failed
      */
     public void calculateContinuousFailure(String tableName, String errorMsg) throws Exception {
         AtomicLong tempFailures = new AtomicLong();
@@ -476,6 +479,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * Reset execute continuous failure count.
+     * @param tableName table name
      */
     public void resetExecuteContinuousFailureCount(String tableName) {
         AtomicLong failures = tableContinuousFailures.get(tableName);
@@ -488,9 +492,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * refresh all ob server synchronized just in case rslist has changed, it will not refresh if last refresh time is 1 min ago
      * <p>
      * 1. cannot find table from tables, need refresh tables
-     * 2. server list refresh failed: {@see com.alipay.oceanbase.obproxy.resource.ObServerStateProcessor#MAX_REFRESH_FAILURE}
+     * 2. server list refresh failed: {see com.alipay.oceanbase.obproxy.resource.ObServerStateProcessor#MAX_REFRESH_FAILURE}
      *
-     * @throws Exception
+     * @throws Exception if fail
      */
     public void syncRefreshMetadata() throws Exception {
 
@@ -607,6 +611,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * Get or refresh table entry.
+     * @param tableName table name
+     * @param refresh is re-fresh
+     * @param waitForRefresh wait re-fresh
+     * @return this
+     * @throws Exception if fail
      */
     public TableEntry getOrRefreshTableEntry(final String tableName, final boolean refresh,
                                              final boolean waitForRefresh) throws Exception {
@@ -1157,6 +1166,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     /**
      * Execute.
      */
+    /**
+     * Excute
+     * @param request request
+     * @return response
+     * @throws Exception if fail
+     */
     public ObPayload execute(final ObTableAbstractOperationRequest request) throws Exception {
         if (request instanceof ObTableOperationRequest) {
             ObTableBatchOperation batchOperation = new ObTableBatchOperation();
@@ -1221,7 +1236,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /**
-     * Set full user name.
+     * Set full username
+     * @param fullUserName user name
+     * @throws IllegalArgumentException if userName invalid
      */
     public void setFullUserName(String fullUserName) throws IllegalArgumentException {
         if (StringUtils.isBlank(fullUserName)) {
@@ -1238,7 +1255,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * Set sys user name to access meta table.
-     * @param sysUserName
+     * @param sysUserName system user name
      */
     public void setSysUserName(String sysUserName) {
         sysUA.setUserName(sysUserName);
@@ -1246,7 +1263,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * Set sys user password to access meta table.
-     * @param sysPassword
+     * @param sysPassword system password
      */
     public void setSysPassword(String sysPassword) {
         sysUA.setPassword(sysPassword);
@@ -1254,7 +1271,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * Set sys user encrypted password to access meta table.
-     * @param encSysPassword
+     * @param encSysPassword encrypted system password
+     * @throws Exception if fail
      */
     public void setEncSysPassword(String encSysPassword) throws Exception {
         sysUA.setEncPassword(encSysPassword);
@@ -1325,17 +1343,17 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /**
-     * Get param u r l.
+     * Get param url
+     * @return param url
      */
     public String getParamURL() {
         return paramURL;
     }
 
-    /*
-     * Config URL must contain database and may contain read_consistency
-     * example:
-     * http://configserver.com/services?Action=ObRootServiceInfo&User_ID=xxx&UID=uuu&ObRegion=rrr
-     * &read_consitency=weak&database=test
+    /**
+     * Set param url.
+     * @param paramURL param url
+     * @throws IllegalArgumentException if paramURL invalid
      */
     public void setParamURL(String paramURL) throws IllegalArgumentException {
         if (StringUtils.isBlank(paramURL)) {
@@ -1382,28 +1400,32 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /**
-     * Get full user name.
+     * Get full username
+     * @return user name
      */
     public String getFullUserName() {
         return fullUserName;
     }
 
     /**
-     * Get user name.
+     * Get username
+     * @return username
      */
     public String getUserName() {
         return userName;
     }
 
     /**
-     * Set user name.
+     * Set username
+     * @param userName username
      */
     public void setUserName(String userName) {
         this.userName = userName;
     }
 
     /**
-     * Get tenant name.
+     * Get tenant name
+     * @return tenant name
      */
     public String getTenantName() {
         return tenantName;
@@ -1411,62 +1433,71 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * Set tenant name.
+     * @param tenantName tenant name
      */
     public void setTenantName(String tenantName) {
         this.tenantName = tenantName;
     }
 
     /**
-     * Get cluster name.
+     * Get cluster name
+     * @return ob cluster name
      */
     public String getClusterName() {
         return clusterName;
     }
 
     /**
-     * Set cluster name.
+     * Set cluster name
+     * @param clusterName ob cluster name
      */
     public void setClusterName(String clusterName) {
         this.clusterName = clusterName;
     }
 
     /**
-     * Get password.
+     * Get password
+     * @return password
      */
     public String getPassword() {
         return password;
     }
 
     /**
-     * Set password.
+     * Set password
+     * @param password password
      */
     public void setPassword(String password) {
         this.password = password;
     }
 
     /**
-     * Get database.
+     * Get database
+     * @return database
      */
     public String getDatabase() {
         return database;
     }
 
     /**
-     * Set database.
+     * Set database
+     * @param database database
      */
     public void setDatabase(String database) {
         this.database = database;
     }
 
     /**
-     * Get data source name.
+     * Get data source name
+     * @return data source name
      */
     public String getDataSourceName() {
         return dataSourceName;
     }
 
     /**
-     * Set data source name.
+     * Set data source name
+     * @param dataSourceName data source name
      */
     public void setDataSourceName(String dataSourceName) {
         this.dataSourceName = dataSourceName;
@@ -1474,6 +1505,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * Is retry on change master times.
+     * @return is retry
      */
     public boolean isRetryOnChangeMasterTimes() {
         return retryOnChangeMasterTimes;
@@ -1481,13 +1513,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * Set retry on change master times.
+     * @param retryOnChangeMasterTimes set retry
      */
     public void setRetryOnChangeMasterTimes(boolean retryOnChangeMasterTimes) {
         this.retryOnChangeMasterTimes = retryOnChangeMasterTimes;
     }
 
     /**
-     * Add row key element.
+     * Add row key element
+     * @param tableName table name
+     * @param columns rowkey columns
      */
     public void addRowKeyElement(String tableName, String[] columns) {
         if (columns == null || columns.length == 0) {
@@ -1503,6 +1538,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * Set running mode.
+     * @param runningMode mode, NORMAL: table client, HBASE: hbase client.
      */
     public void setRunningMode(RunningMode runningMode) {
         this.runningMode = runningMode;
@@ -1513,7 +1549,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /**
-     * Get Read Consistency.
+     * Get read consistency.
+     * @return read consistency level.
      */
     public ObReadConsistency getReadConsistency() {
         ObReadConsistency readConsistency = ThreadLocalMap.getReadConsistency();
@@ -1524,14 +1561,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /**
-     * Get OB route policy.
+     * Get OB router policy.
+     * @return policy
      */
     public ObRoutePolicy getObRoutePolicy() {
         return obRoutePolicy;
     }
 
     /**
-     * Get read route.
+     * Get OB router.
+     * @return router
      */
     public ObServerRoute getReadRoute() {
         if (getReadConsistency().isStrong()) {
@@ -1543,6 +1582,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * Get route for read or write.
+     * @param readonly is readonly
+     * @return route
      */
     public ObServerRoute getRoute(boolean readonly) {
         if (readonly) {
@@ -1554,6 +1595,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * Set current IDC, for testing only.
+     * @param idc idc
      */
     public void setCurrentIDC(String idc) {
         this.currentIDC = idc;

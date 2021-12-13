@@ -24,7 +24,7 @@ import static com.alipay.oceanbase.rpc.protocol.payload.ResultCodes.OB_DESERIALI
 
 public class ExceptionUtil {
 
-    /**
+    /*
      * throw ObTableException based on error code
      * TODO 错误信息这里应该要加上表名/字段等，但是报错的地方没有表名上下文，比较麻烦
      *
@@ -37,7 +37,7 @@ public class ExceptionUtil {
         }
     }
 
-    /**
+    /*
      * throw ObTableException based on error code
      * TODO 错误信息这里应该要加上表名/字段等，但是报错的地方没有表名上下文，比较麻烦
      *
@@ -51,7 +51,7 @@ public class ExceptionUtil {
         }
     }
 
-    /**
+    /*
      * throw ObTableException based on error code
      * TODO 错误信息这里应该要加上表名/字段等，但是报错的地方没有表名上下文，比较麻烦
      *
@@ -143,7 +143,7 @@ public class ExceptionUtil {
         }
     }
 
-    /**
+    /*
      * throw ObTableTransportException based on transport error code
      * TODO 错误信息这里应该要加上表名/字段等，但是报错的地方没有表名上下文，比较麻烦
      *

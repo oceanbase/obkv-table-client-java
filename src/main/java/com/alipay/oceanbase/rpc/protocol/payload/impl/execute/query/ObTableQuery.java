@@ -58,7 +58,7 @@ public class ObTableQuery extends AbstractPayload {
     private static final byte[] HTABLE_FILTER_DUMMY_BYTES = new byte[] { 0x01, 0x00 };
     private boolean             isHbaseQuery              = false;
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -126,7 +126,7 @@ public class ObTableQuery extends AbstractPayload {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -173,7 +173,7 @@ public class ObTableQuery extends AbstractPayload {
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -204,126 +204,126 @@ public class ObTableQuery extends AbstractPayload {
         return contentSize;
     }
 
-    /**
+    /*
      * Get key ranges.
      */
     public List<ObNewRange> getKeyRanges() {
         return keyRanges;
     }
 
-    /**
+    /*
      * Set key ranges.
      */
     public void setKeyRanges(List<ObNewRange> keyRanges) {
         this.keyRanges = keyRanges;
     }
 
-    /**
+    /*
      * Add key range.
      */
     public void addKeyRange(ObNewRange keyRange) {
         this.keyRanges.add(keyRange);
     }
 
-    /**
+    /*
      * Get select columns.
      */
     public List<String> getSelectColumns() {
         return selectColumns;
     }
 
-    /**
+    /*
      * Set select columns.
      */
     public void setSelectColumns(List<String> selectColumns) {
         this.selectColumns = selectColumns;
     }
 
-    /**
+    /*
      * Add select column.
      */
     public void addSelectColumn(String selectColumn) {
         this.selectColumns.add(selectColumn);
     }
 
-    /**
+    /*
      * Get filter string.
      */
     public String getFilterString() {
         return filterString;
     }
 
-    /**
+    /*
      * Set filter string.
      */
     public void setFilterString(String filterString) {
         this.filterString = filterString;
     }
 
-    /**
+    /*
      * Get limit.
      */
     public int getLimit() {
         return limit;
     }
 
-    /**
+    /*
      * Set limit.
      */
     public void setLimit(int limit) {
         this.limit = limit;
     }
 
-    /**
+    /*
      * Get offset.
      */
     public int getOffset() {
         return offset;
     }
 
-    /**
+    /*
      * Set offset.
      */
     public void setOffset(int offset) {
         this.offset = offset;
     }
 
-    /**
+    /*
      * Get scan order.
      */
     public ObScanOrder getScanOrder() {
         return scanOrder;
     }
 
-    /**
+    /*
      * Set scan order.
      */
     public void setScanOrder(ObScanOrder scanOrder) {
         this.scanOrder = scanOrder;
     }
 
-    /**
+    /*
      * Get index name.
      */
     public String getIndexName() {
         return indexName;
     }
 
-    /**
+    /*
      * Set index name.
      */
     public void setIndexName(String indexName) {
         this.indexName = indexName;
     }
 
-    /**
+    /*
      * Get batch size.
      */
     public int getBatchSize() {
         return batchSize;
     }
 
-    /**
+    /*
      * Set batch size.
      */
     public void setBatchSize(int batchSize) {
@@ -332,28 +332,28 @@ public class ObTableQuery extends AbstractPayload {
         }
     }
 
-    /**
+    /*
      * Get max result size.
      */
     public long getMaxResultSize() {
         return maxResultSize;
     }
 
-    /**
+    /*
      * Set max result size.
      */
     public void setMaxResultSize(long maxResultSize) {
         this.maxResultSize = maxResultSize;
     }
 
-    /**
+    /*
      * Geth table filter.
      */
     public ObHTableFilter gethTableFilter() {
         return hTableFilter;
     }
 
-    /**
+    /*
      * Seth table filter.
      */
     public void sethTableFilter(ObHTableFilter hTableFilter) {
@@ -361,14 +361,14 @@ public class ObTableQuery extends AbstractPayload {
         this.hTableFilter = hTableFilter;
     }
 
-    /**
+    /*
      * Is hbase query.
      */
     public boolean isHbaseQuery() {
         return isHbaseQuery;
     }
 
-    /**
+    /*
      * Set hbase query.
      */
     public void setHbaseQuery(boolean hbaseQuery) {

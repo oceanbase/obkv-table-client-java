@@ -21,48 +21,48 @@ import com.alipay.oceanbase.rpc.bolt.transport.TransportCodes;
 
 public class ObTableTransportException extends ObTableException {
 
-    /**
+    /*
      * Ob table transport exception.
      */
     public ObTableTransportException() {
     }
 
-    /**
+    /*
      * Ob table transport exception.
      */
     public ObTableTransportException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table transport exception.
      */
     public ObTableTransportException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table transport exception.
      */
     public ObTableTransportException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table transport exception.
      */
     public ObTableTransportException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table transport exception.
      */
     public ObTableTransportException(Throwable cause) {
         super(cause);
     }
 
-    /**
+    /*
      * Is need refresh table entry.
      */
     @Override

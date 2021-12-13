@@ -41,42 +41,42 @@ public class ObKeyPartDesc extends ObPartDesc {
     private int                 partSpace = 0;
     private int                 partNum   = 0;
 
-    /**
+    /*
      * Ob key part desc.
      */
     public ObKeyPartDesc() {
         setPartFuncType(ObPartFuncType.KEY);
     }
 
-    /**
+    /*
      * Get part space.
      */
     public int getPartSpace() {
         return partSpace;
     }
 
-    /**
+    /*
      * Set part space.
      */
     public void setPartSpace(int partSpace) {
         this.partSpace = partSpace;
     }
 
-    /**
+    /*
      * Get part num.
      */
     public int getPartNum() {
         return this.partNum;
     }
 
-    /**
+    /*
      * Set part num.
      */
     public void setPartNum(int partNum) {
         this.partNum = partNum;
     }
 
-    /**
+    /*
      * Get part ids.
      */
     @Override
@@ -90,7 +90,7 @@ public class ObKeyPartDesc extends ObPartDesc {
         return partIds;
     }
 
-    /**
+    /*
      * Get random part id.
      */
     @Override
@@ -98,7 +98,7 @@ public class ObKeyPartDesc extends ObPartDesc {
         return (this.partNum > 0 ? (long) getRandomNum(0, this.partNum) : null);
     }
 
-    /**
+    /*
      * Get part id.
      */
     @Override
@@ -108,7 +108,7 @@ public class ObKeyPartDesc extends ObPartDesc {
         return getPartId(rowKeys, false);
     }
 
-    /**
+    /*
      * Get part id.
      */
     @Override
@@ -175,7 +175,7 @@ public class ObKeyPartDesc extends ObPartDesc {
         }
     }
 
-    /**
+    /*
      * Set row key element.
      */
     @Override
@@ -186,7 +186,7 @@ public class ObKeyPartDesc extends ObPartDesc {
         super.setRowKeyElement(rowKeyElement);
     }
 
-    /**
+    /*
      * To string.
      */
     @Override

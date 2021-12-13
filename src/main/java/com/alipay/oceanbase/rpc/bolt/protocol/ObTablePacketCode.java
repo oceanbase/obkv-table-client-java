@@ -30,7 +30,7 @@ import com.alipay.remoting.CommandCode;
 public enum ObTablePacketCode implements CommandCode {
 
     OB_TABLE_API_LOGIN(Pcodes.OB_TABLE_API_LOGIN) {
-        /**
+        /*
          * New payload.
          */
         @Override
@@ -39,7 +39,7 @@ public enum ObTablePacketCode implements CommandCode {
         }
     }, //
     OB_TABLE_API_EXECUTE(Pcodes.OB_TABLE_API_EXECUTE) {
-        /**
+        /*
          * New payload.
          */
         @Override
@@ -48,7 +48,7 @@ public enum ObTablePacketCode implements CommandCode {
         }
     }, //
     OB_TABLE_API_BATCH_EXECUTE(Pcodes.OB_TABLE_API_BATCH_EXECUTE) {
-        /**
+        /*
          * New payload.
          */
         @Override
@@ -57,7 +57,7 @@ public enum ObTablePacketCode implements CommandCode {
         }
     }, //
     OB_TABLE_API_EXECUTE_QUERY(Pcodes.OB_TABLE_API_EXECUTE_QUERY) {
-        /**
+        /*
          * New payload.
          */
         @Override
@@ -66,7 +66,7 @@ public enum ObTablePacketCode implements CommandCode {
         }
     }, //
     OB_TABLE_API_QUERY_AND_MUTATE(Pcodes.OB_TABLE_API_QUERY_AND_MUTATE) {
-        /**
+        /*
          * New payload.
          */
         @Override
@@ -77,7 +77,7 @@ public enum ObTablePacketCode implements CommandCode {
 
     // INVALID REQUEST PCODE, no such rpc
     OB_ERROR_PACKET(Pcodes.OB_ERROR_PACKET) {
-        /**
+        /*
          * New payload.
          */
         @Override
@@ -92,14 +92,14 @@ public enum ObTablePacketCode implements CommandCode {
         this.value = (short) value;
     }
 
-    /**
+    /*
      * Value.
      */
     public short value() {
         return this.value;
     }
 
-    /**
+    /*
      * Value of.
      */
     public static ObTablePacketCode valueOf(short value) {

@@ -55,7 +55,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     private LinkedList<ObPair<ObPair<Long, ObTable>, ObTableQueryResult>> partitionLastResult = new LinkedList<ObPair<ObPair<Long, ObTable>, ObTableQueryResult>>();
     private ObReadConsistency                                             readConsistency     = ObReadConsistency.STRONG;
 
-    /**
+    /*
      * Get pcode.
      */
     @Override
@@ -63,7 +63,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         return Pcodes.OB_TABLE_API_EXECUTE_QUERY;
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -71,7 +71,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         throw new FeatureNotSupportedException("stream result can not decode from bytes");
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -79,7 +79,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         throw new FeatureNotSupportedException("stream result can not decode from bytes");
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -87,7 +87,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         throw new FeatureNotSupportedException("stream result has no pay load size");
     }
 
-    /**
+    /*
      * Next.
      */
     public boolean next() throws Exception {
@@ -231,7 +231,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         }
     }
 
-    /**
+    /*
      * Get row.
      */
     public List<ObObj> getRow() {
@@ -241,7 +241,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         return row;
     }
 
-    /**
+    /*
      * Get row index.
      */
     @Override
@@ -249,7 +249,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         return rowIndex;
     }
 
-    /**
+    /*
      * Init.
      */
     @Override
@@ -267,7 +267,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         initialized = true;
     }
 
-    /**
+    /*
      * Close.
      */
     public void close() throws Exception {
@@ -282,14 +282,14 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         }
     }
 
-    /**
+    /*
      * Get cache properties.
      */
     public List<String> getCacheProperties() {
         return cacheProperties;
     }
 
-    /**
+    /*
      * Get cache rows.
      */
     public LinkedList<List<ObObj>> getCacheRows() {
@@ -300,56 +300,56 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         return partitionLastResult;
     }
 
-    /**
+    /*
      * Get table query.
      */
     public ObTableQuery getTableQuery() {
         return tableQuery;
     }
 
-    /**
+    /*
      * Set table query.
      */
     public void setTableQuery(ObTableQuery tableQuery) {
         this.tableQuery = tableQuery;
     }
 
-    /**
+    /*
      * Get operation timeout.
      */
     public long getOperationTimeout() {
         return operationTimeout;
     }
 
-    /**
+    /*
      * Set operation timeout.
      */
     public void setOperationTimeout(long operationTimeout) {
         this.operationTimeout = operationTimeout;
     }
 
-    /**
+    /*
      * Get table name.
      */
     public String getTableName() {
         return tableName;
     }
 
-    /**
+    /*
      * Set table name.
      */
     public void setTableName(String tableName) {
         this.tableName = tableName;
     }
 
-    /**
+    /*
      * Get entity type.
      */
     public ObTableEntityType getEntityType() {
         return entityType;
     }
 
-    /**
+    /*
      * Set entity type.
      */
     public void setEntityType(ObTableEntityType entityType) {
@@ -360,21 +360,21 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         return expectant;
     }
 
-    /**
+    /*
      * Set expectant.
      */
     public void setExpectant(Map<Long, ObPair<Long, ObTable>> expectant) {
         this.expectant = expectant;
     }
 
-    /**
+    /*
      * Get Read Consistency
      */
     public ObReadConsistency getReadConsistency() {
         return readConsistency;
     }
 
-    /**
+    /*
      * Set Read Consistency
      *
      * @param readConsistency

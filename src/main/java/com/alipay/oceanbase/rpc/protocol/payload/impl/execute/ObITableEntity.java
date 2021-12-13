@@ -23,7 +23,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 
 import java.util.Map;
 
-/**
+/*
  *
  <code>
 OB_DEF_SERIALIZE(ObITableEntity)
@@ -155,7 +155,7 @@ public interface ObITableEntity extends ObPayload {
      */
     long getRowKeySize();
 
-    /**
+    /*
      * Set rowkey size
      */
     void setRowKeySize(long rowKeySize);

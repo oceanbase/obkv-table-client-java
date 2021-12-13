@@ -33,7 +33,7 @@ public class ObTablePacketEncoder implements CommandEncoder {
     private static final Logger logger = TableClientLoggerFactory
                                            .getLogger(ObTablePacketEncoder.class);
 
-    /**
+    /*
      * Encode.
      */
     @Override

@@ -36,21 +36,21 @@ public class ObTablePacketHandler implements CommandHandler {
     private static final Logger          logger = TableClientLoggerFactory
                                                     .getLogger(ObTablePacketHandler.class);
 
-    /**
+    /*
      * Unlike {@link com.alipay.remoting.rpc.protocol.RpcCommandHandler}, ObTable client only decodes ObNetPacket, it only has 16 bytes,
      * and all content will decode it in biz thread by {@link ObTableRemoting}.
      * So this class has no ProcessorManager logic
      */
     private final ObTablePacketProcessor processor;
 
-    /**
+    /*
      * Ob table packet handler.
      */
     public ObTablePacketHandler() {
         this.processor = new ObTablePacketProcessor();
     }
 
-    /**
+    /*
      * Handle command.
      */
     @Override
@@ -88,7 +88,7 @@ public class ObTablePacketHandler implements CommandHandler {
         logger.error(LCD.convert("01-00021"), id, t);
     }
 
-    /**
+    /*
      * Register processor.
      */
     @Override
@@ -96,7 +96,7 @@ public class ObTablePacketHandler implements CommandHandler {
         throw new IllegalArgumentException("not support yet");
     }
 
-    /**
+    /*
      * Register default executor.
      */
     @Override
@@ -104,7 +104,7 @@ public class ObTablePacketHandler implements CommandHandler {
         throw new IllegalArgumentException("not support yet");
     }
 
-    /**
+    /*
      * Get default executor.
      */
     @Override

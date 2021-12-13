@@ -22,42 +22,42 @@ public class ObServerInfo {
     private long   stopTime;
     private String status;  // ACTIVE / INACTIVE / DELETING
 
-    /**
+    /*
      * Get status.
      */
     public String getStatus() {
         return status;
     }
 
-    /**
+    /*
      * Set status.
      */
     public void setStatus(String status) {
         this.status = status;
     }
 
-    /**
+    /*
      * Get stop time.
      */
     public long getStopTime() {
         return stopTime;
     }
 
-    /**
+    /*
      * Set stop time.
      */
     public void setStopTime(long stopTime) {
         this.stopTime = stopTime;
     }
 
-    /**
+    /*
      * Is active.
      */
     public boolean isActive() {
         return stopTime == 0 && "active".equalsIgnoreCase(status);
     }
 
-    /**
+    /*
      * To string.
      */
     @Override

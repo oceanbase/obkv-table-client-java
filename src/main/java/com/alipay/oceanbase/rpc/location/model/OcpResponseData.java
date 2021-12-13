@@ -25,70 +25,70 @@ public class OcpResponseData {
     private List<OcpResponseDataRs>  RsList;
     private List<OcpResponseDataIDC> IDCList;
 
-    /**
+    /*
      * Get ob region.
      */
     public String getObRegion() {
         return ObRegion;
     }
 
-    /**
+    /*
      * Set ob region.
      */
     public void setObRegion(String obRegion) {
         ObRegion = obRegion;
     }
 
-    /**
+    /*
      * Get ob region id.
      */
     public long getObRegionId() {
         return ObRegionId;
     }
 
-    /**
+    /*
      * Set ob region id.
      */
     public void setObRegionId(long obRegionId) {
         ObRegionId = obRegionId;
     }
 
-    /**
+    /*
      * Get rs list.
      */
     public List<OcpResponseDataRs> getRsList() {
         return RsList;
     }
 
-    /**
+    /*
      * Set rs list.
      */
     public void setRsList(List<OcpResponseDataRs> rsList) {
         RsList = rsList;
     }
 
-    /**
+    /*
      * Get IDC list.
      */
     public List<OcpResponseDataIDC> getIDCList() {
         return IDCList;
     }
 
-    /**
+    /*
      * Set IDC list.
      */
     public void setIDCList(List<OcpResponseDataIDC> IDCList) {
         this.IDCList = IDCList;
     }
 
-    /**
+    /*
      * Validate.
      */
     public boolean validate() {
         return RsList != null && RsList.size() > 0;
     }
 
-    /**
+    /*
      * To string.
      */
     @Override

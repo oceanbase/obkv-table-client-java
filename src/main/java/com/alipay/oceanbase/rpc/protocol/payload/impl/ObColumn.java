@@ -30,7 +30,7 @@ public abstract class ObColumn {
     protected final List<String>                refColumnNames;
     protected final ObGeneratedColumnSimpleFunc columnExpress;
 
-    /**
+    /*
      * Ob column.
      */
     public ObColumn(String columnName, int index, ObObjType obObjType,
@@ -44,42 +44,42 @@ public abstract class ObColumn {
         this.columnExpress = columnExpress;
     }
 
-    /**
+    /*
      * Get column name.
      */
     public String getColumnName() {
         return columnName;
     }
 
-    /**
+    /*
      * Get index.
      */
     public int getIndex() {
         return index;
     }
 
-    /**
+    /*
      * Get ob obj type.
      */
     public ObObjType getObObjType() {
         return obObjType;
     }
 
-    /**
+    /*
      * Get ob collation type.
      */
     public ObCollationType getObCollationType() {
         return obCollationType;
     }
 
-    /**
+    /*
      * Get ref column names.
      */
     public List<String> getRefColumnNames() {
         return refColumnNames;
     }
 
-    /**
+    /*
      * Get ob generated column simple func.
      */
     public ObGeneratedColumnSimpleFunc getObGeneratedColumnSimpleFunc() {
@@ -88,7 +88,7 @@ public abstract class ObColumn {
 
     public abstract Object evalValue(Object... refs) throws IllegalArgumentException;
 
-    /**
+    /*
      * To string.
      */
     @Override

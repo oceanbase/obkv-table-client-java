@@ -48,14 +48,14 @@ public enum ObServerRole {
         }
     }
 
-    /**
+    /*
      * Get name.
      */
     public String getName() {
         return name;
     }
 
-    /**
+    /*
      * Get index.
      */
     public int getIndex() {

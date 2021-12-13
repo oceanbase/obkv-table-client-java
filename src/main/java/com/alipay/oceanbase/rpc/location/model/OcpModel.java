@@ -26,49 +26,49 @@ public class OcpModel {
     private long                    clusterId  = -1;
     private HashMap<String, String> idc2Region = new HashMap<String, String>();
 
-    /**
+    /*
      * Get ob server addrs.
      */
     public List<ObServerAddr> getObServerAddrs() {
         return obServerAddrs;
     }
 
-    /**
+    /*
      * Set ob server addrs.
      */
     public void setObServerAddrs(List<ObServerAddr> obServerAddrs) {
         this.obServerAddrs = obServerAddrs;
     }
 
-    /**
+    /*
      * Get cluster id.
      */
     public long getClusterId() {
         return clusterId;
     }
 
-    /**
+    /*
      * Set cluster id.
      */
     public void setClusterId(long clusterId) {
         this.clusterId = clusterId;
     }
 
-    /**
+    /*
      * Get Region by IDC.
      */
     public String getIdc2Region(String idc) {
         return idc2Region.get(idc);
     }
 
-    /**
+    /*
      * Add Idc-Region pair.
      */
     public void addIdc2Region(String idc, String region) {
         idc2Region.put(idc, region);
     }
 
-    /**
+    /*
      * To string.
      */
     @Override

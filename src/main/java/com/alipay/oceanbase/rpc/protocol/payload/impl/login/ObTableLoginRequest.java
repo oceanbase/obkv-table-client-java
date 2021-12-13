@@ -29,7 +29,7 @@ import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderL
 
 public class ObTableLoginRequest extends AbstractPayload {
 
-    /**
+    /*
      * Get pcode.
      */
     @Override
@@ -54,13 +54,13 @@ public class ObTableLoginRequest extends AbstractPayload {
     private String        databaseName;
     private long          ttlUs;
 
-    /**
+    /*
      * Ob table login request.
      */
     public ObTableLoginRequest() {
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -116,7 +116,7 @@ public class ObTableLoginRequest extends AbstractPayload {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     public Object decode(byte[] bytes) {
@@ -129,7 +129,7 @@ public class ObTableLoginRequest extends AbstractPayload {
         }
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -154,7 +154,7 @@ public class ObTableLoginRequest extends AbstractPayload {
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -167,203 +167,203 @@ public class ObTableLoginRequest extends AbstractPayload {
                + Serialization.getNeedBytes(databaseName) + Serialization.getNeedBytes(ttlUs);
     }
 
-    /**
+    /*
      * Get auth method.
      */
     public byte getAuthMethod() {
         return authMethod;
     }
 
-    /**
+    /*
      * Set auth method.
      */
     public void setAuthMethod(byte authMethod) {
         this.authMethod = authMethod;
     }
 
-    /**
+    /*
      * Get client type.
      */
     public byte getClientType() {
         return clientType;
     }
 
-    /**
+    /*
      * Set client type.
      */
     public void setClientType(byte clientType) {
         this.clientType = clientType;
     }
 
-    /**
+    /*
      * Get client version.
      */
     public byte getClientVersion() {
         return clientVersion;
     }
 
-    /**
+    /*
      * Set client version.
      */
     public void setClientVersion(byte clientVersion) {
         this.clientVersion = clientVersion;
     }
 
-    /**
+    /*
      * Get reversed1.
      */
     public byte getReversed1() {
         return reversed1;
     }
 
-    /**
+    /*
      * Set reversed1.
      */
     public void setReversed1(byte reversed1) {
         this.reversed1 = reversed1;
     }
 
-    /**
+    /*
      * Get client capabilities.
      */
     public int getClientCapabilities() {
         return clientCapabilities;
     }
 
-    /**
+    /*
      * Set client capabilities.
      */
     public void setClientCapabilities(int clientCapabilities) {
         this.clientCapabilities = clientCapabilities;
     }
 
-    /**
+    /*
      * Get max packet size.
      */
     public int getMaxPacketSize() {
         return maxPacketSize;
     }
 
-    /**
+    /*
      * Set max packet size.
      */
     public void setMaxPacketSize(int maxPacketSize) {
         this.maxPacketSize = maxPacketSize;
     }
 
-    /**
+    /*
      * Get reversed2.
      */
     public int getReversed2() {
         return reversed2;
     }
 
-    /**
+    /*
      * Set reversed2.
      */
     public void setReversed2(int reversed2) {
         this.reversed2 = reversed2;
     }
 
-    /**
+    /*
      * Get reversed3.
      */
     public long getReversed3() {
         return reversed3;
     }
 
-    /**
+    /*
      * Set reversed3.
      */
     public void setReversed3(long reversed3) {
         this.reversed3 = reversed3;
     }
 
-    /**
+    /*
      * Get tenant name.
      */
     public String getTenantName() {
         return tenantName;
     }
 
-    /**
+    /*
      * Set tenant name.
      */
     public void setTenantName(String tenantName) {
         this.tenantName = tenantName;
     }
 
-    /**
+    /*
      * Get user name.
      */
     public String getUserName() {
         return userName;
     }
 
-    /**
+    /*
      * Set user name.
      */
     public void setUserName(String userName) {
         this.userName = userName;
     }
 
-    /**
+    /*
      * Get pass secret.
      */
     public ObBytesString getPassSecret() {
         return passSecret;
     }
 
-    /**
+    /*
      * Set pass secret.
      */
     public void setPassSecret(ObBytesString passSecret) {
         this.passSecret = passSecret;
     }
 
-    /**
+    /*
      * Set pass secret.
      */
     public void setPassSecret(String passSecret) {
         this.passSecret = new ObBytesString(passSecret);
     }
 
-    /**
+    /*
      * Get pass scramble.
      */
     public ObBytesString getPassScramble() {
         return passScramble;
     }
 
-    /**
+    /*
      * Set pass scramble.
      */
     public void setPassScramble(ObBytesString passScramble) {
         this.passScramble = passScramble;
     }
 
-    /**
+    /*
      * Get database name.
      */
     public String getDatabaseName() {
         return databaseName;
     }
 
-    /**
+    /*
      * Set database name.
      */
     public void setDatabaseName(String databaseName) {
         this.databaseName = databaseName;
     }
 
-    /**
+    /*
      * Get ttl us.
      */
     public long getTtlUs() {
         return ttlUs;
     }
 
-    /**
+    /*
      * Set ttl us.
      */
     public void setTtlUs(long ttlUs) {

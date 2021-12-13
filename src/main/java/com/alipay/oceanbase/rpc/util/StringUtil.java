@@ -19,16 +19,10 @@ package com.alipay.oceanbase.rpc.util;
 
 public class StringUtil {
 
-    /**
-     * Is empty.
-     */
     public static boolean isEmpty(String str) {
         return str == null || str.isEmpty();
     }
 
-    /**
-     * Is not empty.
-     */
     public static boolean isNotEmpty(String str) {
         return !isEmpty(str);
     }
@@ -136,7 +130,6 @@ public class StringUtil {
     /**
      * 替换指定的子串，只替换第一个出现的子串。
      *
-     * <p>
      * 如果字符串为<code>null</code>则返回<code>null</code>，如果指定子串为<code>null</code>，则返回原字符串。
      * <pre>
      * StringUtil.replaceOnce(null, *, *)        = null
@@ -147,7 +140,6 @@ public class StringUtil {
      * StringUtil.replaceOnce("aba", "a", "")    = "ba"
      * StringUtil.replaceOnce("aba", "a", "z")   = "zba"
      * </pre>
-     * </p>
      *
      * @param text 要扫描的字符串
      * @param repl 要搜索的子串
@@ -162,7 +154,6 @@ public class StringUtil {
     /**
      * 替换指定的子串，替换指定的次数。
      *
-     * <p>
      * 如果字符串为<code>null</code>则返回<code>null</code>，如果指定子串为<code>null</code>，则返回原字符串。
      * <pre>
      * StringUtil.replace(null, *, *, *)         = null
@@ -176,7 +167,6 @@ public class StringUtil {
      * StringUtil.replace("abaa", "a", "z", 2)   = "zbza"
      * StringUtil.replace("abaa", "a", "z", -1)  = "zbzz"
      * </pre>
-     * </p>
      *
      * @param text 要扫描的字符串
      * @param repl 要搜索的子串
@@ -210,6 +200,8 @@ public class StringUtil {
 
     /**
      * Parse name pattern.
+     * @param pattern pattern
+     * @return string array
      */
     public static String[] parseNamePattern(String pattern) {
         String dbIndexes[];

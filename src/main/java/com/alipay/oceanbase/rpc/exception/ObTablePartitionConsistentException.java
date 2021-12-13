@@ -21,20 +21,20 @@ public class ObTablePartitionConsistentException extends RuntimeException {
 
     private int errorCode;
 
-    /**
+    /*
      * Ob table partition consistent exception.
      */
     public ObTablePartitionConsistentException() {
     }
 
-    /**
+    /*
      * Ob table partition consistent exception.
      */
     public ObTablePartitionConsistentException(int errorCode) {
         this("error code: " + errorCode, errorCode);
     }
 
-    /**
+    /*
      * Ob table partition consistent exception.
      */
     public ObTablePartitionConsistentException(String message, int errorCode) {
@@ -42,28 +42,28 @@ public class ObTablePartitionConsistentException extends RuntimeException {
         this.errorCode = errorCode;
     }
 
-    /**
+    /*
      * Ob table partition consistent exception.
      */
     public ObTablePartitionConsistentException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table partition consistent exception.
      */
     public ObTablePartitionConsistentException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table partition consistent exception.
      */
     public ObTablePartitionConsistentException(Throwable cause) {
         super(cause);
     }
 
-    /**
+    /*
      * Get error code.
      */
     public int getErrorCode() {

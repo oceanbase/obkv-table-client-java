@@ -19,41 +19,41 @@ package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableServerTimeoutException extends ObTableException {
 
-    /**
+    /*
      * Ob table server timeout exception.
      */
     public ObTableServerTimeoutException() {
     }
 
-    /**
+    /*
      * Ob table server timeout exception.
      */
     public ObTableServerTimeoutException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table server timeout exception.
      */
     public ObTableServerTimeoutException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table server timeout exception.
      */
     public ObTableServerTimeoutException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table server timeout exception.
      */
     public ObTableServerTimeoutException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table server timeout exception.
      */
     public ObTableServerTimeoutException(Throwable cause) {

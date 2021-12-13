@@ -33,7 +33,7 @@ public class ObPartitionLocation {
     private List<ReplicaLocation> sameRegion  = new ArrayList<ReplicaLocation>();
     private List<ReplicaLocation> otherRegion = new ArrayList<ReplicaLocation>();
 
-    /**
+    /*
      * Get leader.
      */
     public ReplicaLocation getLeader() {
@@ -46,7 +46,7 @@ public class ObPartitionLocation {
         return leader;
     }
 
-    /**
+    /*
      * Add replication
      *
      * @param replica
@@ -58,7 +58,7 @@ public class ObPartitionLocation {
         this.replicas.add(replica);
     }
 
-    /**
+    /*
      * Get replica according to route strategy.
      *
      * @param route
@@ -78,7 +78,7 @@ public class ObPartitionLocation {
         }
     }
 
-    /**
+    /*
      * Get read replica according to LDC route strategy.
      *
      * @param route
@@ -108,7 +108,7 @@ public class ObPartitionLocation {
         return leader;
     }
 
-    /**
+    /*
      * Get read replica according to LDC route strategy.
      *
      * @param route
@@ -124,7 +124,7 @@ public class ObPartitionLocation {
         return leader;
     }
 
-    /**
+    /*
      * Classify Replica for weak read, according to Server LDC location.
      * Synchronized to avoid duplicate initialization.
      *
@@ -145,7 +145,7 @@ public class ObPartitionLocation {
         }
     }
 
-    /**
+    /*
      * To string.
      */
     @Override

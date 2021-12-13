@@ -51,28 +51,28 @@ public abstract class ObPartDesc {
     @SuppressWarnings("unchecked")
     protected Map<String, Integer>                  rowKeyElement                       = EMPTY_MAP;
 
-    /**
+    /*
      * Get part func type.
      */
     public ObPartFuncType getPartFuncType() {
         return partFuncType;
     }
 
-    /**
+    /*
      * Set part func type.
      */
     public void setPartFuncType(ObPartFuncType partFuncType) {
         this.partFuncType = partFuncType;
     }
 
-    /**
+    /*
      * Get part expr.
      */
     public String getPartExpr() {
         return partExpr;
     }
 
-    /**
+    /*
      * Set part expr.
      */
     public void setPartExpr(String partExpr) {
@@ -83,21 +83,21 @@ public abstract class ObPartDesc {
         this.orderedPartColumnNames = unmodifiableList(Arrays.asList(partExpr.split(",")));
     }
 
-    /**
+    /*
      * Get ordered part column names.
      */
     public List<String> getOrderedPartColumnNames() {
         return orderedPartColumnNames;
     }
 
-    /**
+    /*
      * Get part columns.
      */
     public List<ObColumn> getPartColumns() {
         return partColumns;
     }
 
-    /**
+    /*
      * Set part columns.
      */
     public void setPartColumns(List<ObColumn> partColumns) {
@@ -108,7 +108,7 @@ public abstract class ObPartDesc {
         return this.partNameIdMap;
     }
 
-    /**
+    /*
      * Set part name id map.
      */
     public void setPartNameIdMap(Map<String, Long> partNameIdMap) {
@@ -119,7 +119,7 @@ public abstract class ObPartDesc {
         return rowKeyElement;
     }
 
-    /**
+    /*
      * Set row key element.
      */
     public void setRowKeyElement(Map<String, Integer> rowKeyElement) {
@@ -189,7 +189,7 @@ public abstract class ObPartDesc {
         this.orderedPartRefColumnRowKeyRelations = orderPartRefColumnRowKeyRelations;
     }
 
-    /**
+    /*
      * Eval row key values.
      */
     public List<Object> evalRowKeyValues(Object... rowKey) throws IllegalArgumentException {
@@ -216,7 +216,7 @@ public abstract class ObPartDesc {
         return evalValues;
     }
 
-    /**
+    /*
      *
      * @param start the start row key
      * @param startInclusive the start row key inclusive

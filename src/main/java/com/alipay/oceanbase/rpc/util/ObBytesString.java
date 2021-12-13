@@ -19,22 +19,15 @@ package com.alipay.oceanbase.rpc.util;
 
 /**
  * binary bytes string without charset
- *
  */
 public class ObBytesString implements Comparable<ObBytesString> {
 
     public byte[] bytes;
 
-    /**
-     * Ob bytes string.
-     */
     public ObBytesString() {
         this.bytes = new byte[0];
     }
 
-    /**
-     * Ob bytes string.
-     */
     public ObBytesString(byte[] bytes) {
         if (bytes == null) {
             throw new IllegalArgumentException("ObBytesString bytes can not be null ");
@@ -42,9 +35,6 @@ public class ObBytesString implements Comparable<ObBytesString> {
         this.bytes = bytes;
     }
 
-    /**
-     * Ob bytes string.
-     */
     public ObBytesString(String str) {
         if (str == null) {
             throw new IllegalArgumentException("ObBytesString str can not be null ");
@@ -53,7 +43,8 @@ public class ObBytesString implements Comparable<ObBytesString> {
     }
 
     /**
-     * Length.
+     * Get length
+     * @return length
      */
     public int length() {
         return bytes.length;
@@ -61,6 +52,8 @@ public class ObBytesString implements Comparable<ObBytesString> {
 
     /**
      * Equals.
+     * @param o object
+     * @return equal or not
      */
     @Override
     public boolean equals(Object o) {
@@ -73,7 +66,9 @@ public class ObBytesString implements Comparable<ObBytesString> {
     }
 
     /**
-     * Compare to.
+     * Compare
+     * @param another byte string
+     * @return integer greater than, equal to, or less than 0
      */
     @Override
     public int compareTo(ObBytesString another) {

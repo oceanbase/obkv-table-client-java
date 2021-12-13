@@ -117,14 +117,14 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
         return (ObTableQueryResult) result;
     }
 
-    /**
+    /*
      * Get client.
      */
     public ObTableClient getClient() {
         return client;
     }
 
-    /**
+    /*
      * Set client.
      */
     public void setClient(ObTableClient client) {

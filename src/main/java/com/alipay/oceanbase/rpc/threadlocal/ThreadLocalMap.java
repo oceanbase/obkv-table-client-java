@@ -34,28 +34,28 @@ public class ThreadLocalMap {
     public static final String                            PROCESS_PRIORITY     = "PROCESS_PRIORITY";
     public static final String                            READ_CONSISTENCY     = "READ_CONSISTENCY";
 
-    /**
+    /*
      * Set process high priority.
      */
     public static void setProcessHighPriority() {
         getContextMap().put(PROCESS_PRIORITY, (short) 4);
     }
 
-    /**
+    /*
      * Set process normal priority.
      */
     public static void setProcessNormalPriority() {
         getContextMap().put(PROCESS_PRIORITY, (short) 5);
     }
 
-    /**
+    /*
      * Set process low priority.
      */
     public static void setProcessLowPriority() {
         getContextMap().put(PROCESS_PRIORITY, (short) 6);
     }
 
-    /**
+    /*
      * Get process priority.
      */
     public static short getProcessPriority() {
@@ -67,21 +67,21 @@ public class ThreadLocalMap {
         return (Short) getContextMap().get(PROCESS_PRIORITY);
     }
 
-    /**
+    /*
      * Set read consistency.
      */
     public static void setReadConsistency(ObReadConsistency readConsistency) {
         getContextMap().put(READ_CONSISTENCY, readConsistency);
     }
 
-    /**
+    /*
      * Get read consistency.
      */
     public static ObReadConsistency getReadConsistency() {
         return (ObReadConsistency) getContextMap().get(READ_CONSISTENCY);
     }
 
-    /**
+    /*
      * Clear read consistency.
      */
     public static void clearReadConsistency() {
@@ -94,14 +94,14 @@ public class ThreadLocalMap {
         return THREAD_LOCAL_CONTEXT.get();
     }
 
-    /**
+    /*
      * Set context map.
      */
     public static void setContextMap(Map<Object, Object> context) {
         THREAD_LOCAL_CONTEXT.set(context);
     }
 
-    /**
+    /*
      * Transmit context map.
      */
     public static void transmitContextMap(Map<Object, Object> context) {
@@ -116,7 +116,7 @@ public class ThreadLocalMap {
 
                 private static final long serialVersionUID = 3637958959138295593L;
 
-                /**
+                /*
                  * put
                  */
                 public Object put(Object key, Object value) {
@@ -136,7 +136,7 @@ public class ThreadLocalMap {
         }
     }
 
-    /**
+    /*
      * Reset.
      */
     public static void reset() {

@@ -31,7 +31,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
 
     protected ObTableQuery tableQuery;
 
-    /**
+    /*
      * Select.
      */
     @Override
@@ -40,7 +40,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * Limit.
      */
     @Override
@@ -50,7 +50,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * Limit.
      */
     @Override
@@ -60,7 +60,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * Add scan range.
      */
     @Override
@@ -85,7 +85,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * Add scan range starts with.
      */
     @Override
@@ -104,7 +104,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * Add scan range ends with.
      */
     @Override
@@ -123,7 +123,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * Scan order.
      */
     @Override
@@ -132,7 +132,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * Index name.
      */
     @Override
@@ -141,7 +141,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * Filter string.
      */
     @Override
@@ -150,7 +150,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * Set h table filter.
      */
     @Override
@@ -159,7 +159,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * Set batch size.
      */
     @Override

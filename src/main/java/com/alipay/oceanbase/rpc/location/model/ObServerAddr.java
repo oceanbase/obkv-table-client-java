@@ -28,35 +28,35 @@ public class ObServerAddr implements Comparable<ObServerAddr> {
     private volatile long       grantPriorityTime = 0;
     private volatile long       lastAccessTime    = System.currentTimeMillis();
 
-    /**
+    /*
      * Whether the addr is expired given the timeout.
      */
     public boolean isExpired(long cachingTimeout) {
         return System.currentTimeMillis() - lastAccessTime > cachingTimeout;
     }
 
-    /**
+    /*
      * Record the access time.
      */
     public void recordAccess() {
         lastAccessTime = System.currentTimeMillis();
     }
 
-    /**
+    /*
      * Get ip.
      */
     public String getIp() {
         return ip;
     }
 
-    /**
+    /*
      * Set ip.
      */
     public void setIp(String ip) {
         this.ip = ip;
     }
 
-    /**
+    /*
      * Set address.
      */
     public void setAddress(String address) {
@@ -68,49 +68,49 @@ public class ObServerAddr implements Comparable<ObServerAddr> {
         }
     }
 
-    /**
+    /*
      * Get sql port.
      */
     public int getSqlPort() {
         return sqlPort;
     }
 
-    /**
+    /*
      * Set sql port.
      */
     public void setSqlPort(int sqlPort) {
         this.sqlPort = sqlPort;
     }
 
-    /**
+    /*
      * Get svr port.
      */
     public int getSvrPort() {
         return svrPort;
     }
 
-    /**
+    /*
      * Set svr port.
      */
     public void setSvrPort(int svrPort) {
         this.svrPort = svrPort;
     }
 
-    /**
+    /*
      * Get priority.
      */
     public AtomicInteger getPriority() {
         return priority;
     }
 
-    /**
+    /*
      * Get grant priority time.
      */
     public long getGrantPriorityTime() {
         return grantPriorityTime;
     }
 
-    /**
+    /*
      * Set grant priority time.
      */
     public void setGrantPriorityTime(long grantPriorityTime) {
@@ -121,7 +121,7 @@ public class ObServerAddr implements Comparable<ObServerAddr> {
         return lastAccessTime;
     }
 
-    /**
+    /*
      * Equals.
      */
     @Override
@@ -134,7 +134,7 @@ public class ObServerAddr implements Comparable<ObServerAddr> {
         return sqlPort == that.sqlPort && svrPort == that.svrPort && ip.equals(that.ip);
     }
 
-    /**
+    /*
      * Hash code.
      */
     @Override
@@ -142,7 +142,7 @@ public class ObServerAddr implements Comparable<ObServerAddr> {
         return ip.hashCode() + sqlPort + svrPort;
     }
 
-    /**
+    /*
      * To string.
      */
     @Override
@@ -151,7 +151,7 @@ public class ObServerAddr implements Comparable<ObServerAddr> {
                + svrPort + '}';
     }
 
-    /**
+    /*
      * Compare to.
      */
     @Override

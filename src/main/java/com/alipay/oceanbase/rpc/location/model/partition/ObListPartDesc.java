@@ -37,28 +37,28 @@ public class ObListPartDesc extends ObPartDesc {
     private List<ObColumn>            orderCompareColumns = null;
     private Map<ObPartitionKey, Long> sets                = null;
 
-    /**
+    /*
      * Ob list part desc.
      */
     public ObListPartDesc() {
         this.setPartFuncType(ObPartFuncType.LIST);
     }
 
-    /**
+    /*
      * Get order compare columns.
      */
     public List<ObColumn> getOrderCompareColumns() {
         return this.orderCompareColumns;
     }
 
-    /**
+    /*
      * Set order compare columns.
      */
     public void setOrderCompareColumns(List<ObColumn> columns) {
         this.orderCompareColumns = columns;
     }
 
-    /**
+    /*
      * Set sets.
      */
     public void setSets(Map<ObPartitionKey, Long> sets) {
@@ -69,7 +69,7 @@ public class ObListPartDesc extends ObPartDesc {
         return this.sets;
     }
 
-    /**
+    /*
      * Get random part id.
      */
     @Override
@@ -81,7 +81,7 @@ public class ObListPartDesc extends ObPartDesc {
         return (Long) this.sets.values().toArray()[randomIndex];
     }
 
-    /**
+    /*
      * Prepare.
      */
     @Override
@@ -99,7 +99,7 @@ public class ObListPartDesc extends ObPartDesc {
         super.prepare();
     }
 
-    /**
+    /*
      * Get part ids.
      */
     @Override
@@ -114,7 +114,7 @@ public class ObListPartDesc extends ObPartDesc {
         return partIds;
     }
 
-    /**
+    /*
      * Get part id.
      */
     @Override
@@ -124,7 +124,7 @@ public class ObListPartDesc extends ObPartDesc {
         return getPartId(rowKeys, false);
     }
 
-    /**
+    /*
      * Get part id.
      */
     @Override
@@ -165,7 +165,7 @@ public class ObListPartDesc extends ObPartDesc {
 
     }
 
-    /**
+    /*
      * To string.
      */
     @Override

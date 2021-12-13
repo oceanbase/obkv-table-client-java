@@ -28,7 +28,7 @@ public class ObTableQueryAndMutateResult extends AbstractPayload {
     private long               affectedRows   = 0;
     private ObTableQueryResult affectedEntity = new ObTableQueryResult();
 
-    /**
+    /*
      * Get pcode.
      */
     @Override
@@ -36,7 +36,7 @@ public class ObTableQueryAndMutateResult extends AbstractPayload {
         return Pcodes.OB_TABLE_API_QUERY_AND_MUTATE;
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -61,7 +61,7 @@ public class ObTableQueryAndMutateResult extends AbstractPayload {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -75,7 +75,7 @@ public class ObTableQueryAndMutateResult extends AbstractPayload {
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -83,28 +83,28 @@ public class ObTableQueryAndMutateResult extends AbstractPayload {
         return Serialization.getNeedBytes(affectedRows) + affectedEntity.getPayloadSize();
     }
 
-    /**
+    /*
      * Get affected rows.
      */
     public long getAffectedRows() {
         return affectedRows;
     }
 
-    /**
+    /*
      * Set affected rows.
      */
     public void setAffectedRows(long affectedRows) {
         this.affectedRows = affectedRows;
     }
 
-    /**
+    /*
      * Get affected entity.
      */
     public ObTableQueryResult getAffectedEntity() {
         return affectedEntity;
     }
 
-    /**
+    /*
      * Set affected entity.
      */
     public void setAffectedEntity(ObTableQueryResult affectedEntity) {

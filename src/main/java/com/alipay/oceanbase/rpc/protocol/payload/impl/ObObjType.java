@@ -33,7 +33,7 @@ import java.util.Map;
 public enum ObObjType {
 
     ObNullType(0) {
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -41,7 +41,7 @@ public enum ObObjType {
             return new byte[0];
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -49,7 +49,7 @@ public enum ObObjType {
             return null;
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -57,7 +57,7 @@ public enum ObObjType {
             return 0;
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -66,7 +66,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -79,7 +79,7 @@ public enum ObObjType {
     }, // 空类型
 
     ObTinyIntType(1) {
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -91,7 +91,7 @@ public enum ObObjType {
             }
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -99,7 +99,7 @@ public enum ObObjType {
             return Serialization.decodeI8(buf.readByte());
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -107,7 +107,7 @@ public enum ObObjType {
             return 1;
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -116,7 +116,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -134,7 +134,7 @@ public enum ObObjType {
         }
     }, // int8, aka mysql boolean type
     ObSmallIntType(2) {
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -142,7 +142,7 @@ public enum ObObjType {
             return Serialization.encodeVi32(((Number) obj).intValue());
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -150,7 +150,7 @@ public enum ObObjType {
             return (short) Serialization.decodeVi32(buf);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -158,7 +158,7 @@ public enum ObObjType {
             return Serialization.getNeedBytes(((Number) obj).intValue());
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -167,7 +167,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -188,7 +188,7 @@ public enum ObObjType {
     @Deprecated
     ObMediumIntType(3) { // // TODO not suppor
 
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -196,7 +196,7 @@ public enum ObObjType {
             return Serialization.encodeVi32(((Number) obj).intValue());
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -204,7 +204,7 @@ public enum ObObjType {
             return Serialization.decodeVi32(buf);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -212,7 +212,7 @@ public enum ObObjType {
             return Serialization.getNeedBytes(((Number) obj).intValue());
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -221,7 +221,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -232,7 +232,7 @@ public enum ObObjType {
         }
     }, // int24
     ObInt32Type(4) {
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -240,7 +240,7 @@ public enum ObObjType {
             return Serialization.encodeVi32(((Number) obj).intValue());
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -248,7 +248,7 @@ public enum ObObjType {
             return Serialization.decodeVi32(buf);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -256,7 +256,7 @@ public enum ObObjType {
             return Serialization.getNeedBytes(((Number) obj).intValue());
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -265,7 +265,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -284,7 +284,7 @@ public enum ObObjType {
     }, // int32
     ObInt64Type(5) { // Origin name: ObIntType
 
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -292,7 +292,7 @@ public enum ObObjType {
             return Serialization.encodeVi64(((Number) obj).longValue());
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -300,7 +300,7 @@ public enum ObObjType {
             return Serialization.decodeVi64(buf);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -308,7 +308,7 @@ public enum ObObjType {
             return Serialization.getNeedBytes(((Number) obj).longValue());
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -317,7 +317,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -329,7 +329,7 @@ public enum ObObjType {
     }, // int64, aka bigint
 
     ObUTinyIntType(6) {
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -337,7 +337,7 @@ public enum ObObjType {
             return new byte[] { (Byte) obj };
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -345,7 +345,7 @@ public enum ObObjType {
             return Serialization.decodeI8(buf.readByte());
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -353,7 +353,7 @@ public enum ObObjType {
             return 1;
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -362,7 +362,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -381,7 +381,7 @@ public enum ObObjType {
     }, // uint8
     ObUSmallIntType(7) { // TODO not support
 
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -389,7 +389,7 @@ public enum ObObjType {
             return Serialization.encodeVi32(((Number) obj).intValue());
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -397,7 +397,7 @@ public enum ObObjType {
             return Serialization.decodeVi32(buf);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -405,7 +405,7 @@ public enum ObObjType {
             return Serialization.getNeedBytes(((Number) obj).intValue());
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -414,7 +414,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -435,7 +435,7 @@ public enum ObObjType {
     }, // uint16
     ObUMediumIntType(8) { // TODO not support
 
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -443,7 +443,7 @@ public enum ObObjType {
             return Serialization.encodeVi32(((Number) obj).intValue());
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -451,7 +451,7 @@ public enum ObObjType {
             return Serialization.decodeVi32(buf);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -459,7 +459,7 @@ public enum ObObjType {
             return Serialization.getNeedBytes(((Number) obj).intValue());
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -468,7 +468,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -489,7 +489,7 @@ public enum ObObjType {
     }, // uint24
     ObUInt32Type(9) { // TODO not support
 
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -497,7 +497,7 @@ public enum ObObjType {
             return Serialization.encodeVi32(((Number) obj).intValue());
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -505,7 +505,7 @@ public enum ObObjType {
             return Serialization.decodeVi32(buf);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -513,7 +513,7 @@ public enum ObObjType {
             return Serialization.getNeedBytes(((Number) obj).intValue());
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -522,7 +522,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -542,7 +542,7 @@ public enum ObObjType {
     }, // uint32
     ObUInt64Type(10) { // TODO not support
 
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -551,7 +551,7 @@ public enum ObObjType {
             return Serialization.encodeVi64(((Number) obj).longValue());
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -560,7 +560,7 @@ public enum ObObjType {
             return Serialization.decodeVi64(buf);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -568,7 +568,7 @@ public enum ObObjType {
             return Serialization.getNeedBytes(((Number) obj).longValue());
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -577,7 +577,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -589,7 +589,7 @@ public enum ObObjType {
     }, // uint64
 
     ObFloatType(11) {
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -597,7 +597,7 @@ public enum ObObjType {
             return Serialization.encodeFloat(((Float) obj));
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -605,7 +605,7 @@ public enum ObObjType {
             return Serialization.decodeFloat(buf);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -613,7 +613,7 @@ public enum ObObjType {
             return Serialization.getNeedBytes((Float) obj);
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -622,7 +622,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -646,7 +646,7 @@ public enum ObObjType {
         }
     }, // single-precision floating point
     ObDoubleType(12) {
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -654,7 +654,7 @@ public enum ObObjType {
             return Serialization.encodeDouble((Double) obj);
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -662,7 +662,7 @@ public enum ObObjType {
             return Serialization.decodeDouble(buf);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -670,7 +670,7 @@ public enum ObObjType {
             return Serialization.getNeedBytes((Double) obj);
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -679,7 +679,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -705,7 +705,7 @@ public enum ObObjType {
 
     ObUFloatType(13) { // TODO not support
 
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -713,7 +713,7 @@ public enum ObObjType {
             return new byte[0];
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -721,7 +721,7 @@ public enum ObObjType {
             return null;
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -729,7 +729,7 @@ public enum ObObjType {
             return 0;
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -738,7 +738,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -750,7 +750,7 @@ public enum ObObjType {
     }, // unsigned single-precision floating point
     ObUDoubleType(14) { // TODO not support
 
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -758,7 +758,7 @@ public enum ObObjType {
             return new byte[0];
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -766,7 +766,7 @@ public enum ObObjType {
             return null;
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -774,7 +774,7 @@ public enum ObObjType {
             return 0;
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -783,7 +783,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -796,7 +796,7 @@ public enum ObObjType {
 
     ObNumberType(15) { // TODO
 
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -804,7 +804,7 @@ public enum ObObjType {
             return new byte[0];
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -812,7 +812,7 @@ public enum ObObjType {
             return null;
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -820,7 +820,7 @@ public enum ObObjType {
             return 0;
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -829,7 +829,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -841,7 +841,7 @@ public enum ObObjType {
     }, // aka decimal/numeric
     ObUNumberType(16) { // TODO not support
 
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -849,7 +849,7 @@ public enum ObObjType {
             return new byte[0];
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -857,7 +857,7 @@ public enum ObObjType {
             return null;
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -865,7 +865,7 @@ public enum ObObjType {
             return 0;
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -874,7 +874,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -889,7 +889,7 @@ public enum ObObjType {
     // The DATETIME type is used for values that contain both date and time parts.
     // MySQL retrieves and displays DATETIME values in 'YYYY-MM-DD HH:MM:SS' format. The supported range is '1000-01-01 00:00:00' to '9999-12-31 23:59:59'.
     ObDateTimeType(17) {
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -897,7 +897,7 @@ public enum ObObjType {
             return Serialization.encodeVi64(((Date) obj).getTime() * 1000L);
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -905,7 +905,7 @@ public enum ObObjType {
             return new Timestamp(Serialization.decodeVi64(buf) / 1000L);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -913,7 +913,7 @@ public enum ObObjType {
             return Serialization.getNeedBytes(((Date) obj).getTime() * 1000L);
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -922,7 +922,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -935,7 +935,7 @@ public enum ObObjType {
     // The TIMESTAMP data type is used for values that contain both date and time parts.
     // TIMESTAMP has a range of '1970-01-01 00:00:01' UTC to '2038-01-19 03:14:07' UTC.
     ObTimestampType(18) {
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -944,7 +944,7 @@ public enum ObObjType {
             return Serialization.encodeVi64(((Date) obj).getTime() * 1000L);
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -952,7 +952,7 @@ public enum ObObjType {
             return new Timestamp(Serialization.decodeVi64(buf) / 1000L);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -960,7 +960,7 @@ public enum ObObjType {
             return Serialization.getNeedBytes(((Date) obj).getTime() * 1000L);
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -969,7 +969,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -982,7 +982,7 @@ public enum ObObjType {
     // The DATE type is used for values with a date part but no time part.
     // MySQL retrieves and displays DATE values in 'YYYY-MM-DD' format. The supported range is '1000-01-01' to '9999-12-31'.
     ObDateType(19) {
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -991,7 +991,7 @@ public enum ObObjType {
             return Serialization.encodeVi32((int) ((Date) obj).getTime());
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -999,7 +999,7 @@ public enum ObObjType {
             return new Date(Serialization.decodeVi32(buf) * 1000L);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -1007,7 +1007,7 @@ public enum ObObjType {
             return Serialization.getNeedBytes((int) ((Date) obj).getTime());
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -1016,7 +1016,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -1045,7 +1045,7 @@ public enum ObObjType {
     },
     ObTimeType(20) { // TODO not support
 
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -1053,7 +1053,7 @@ public enum ObObjType {
             return Serialization.encodeVi64((int) ((Date) obj).getTime());
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -1061,7 +1061,7 @@ public enum ObObjType {
             return new Timestamp(Serialization.decodeVi64(buf));
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -1069,7 +1069,7 @@ public enum ObObjType {
             return Serialization.getNeedBytes((int) ((Date) obj).getTime());
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -1078,7 +1078,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -1090,7 +1090,7 @@ public enum ObObjType {
     },
     ObYearType(21) { // TODO not support
 
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -1098,7 +1098,7 @@ public enum ObObjType {
             return new byte[] { (Byte) obj };
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -1106,7 +1106,7 @@ public enum ObObjType {
             return Serialization.decodeI8(buf.readByte());
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -1114,7 +1114,7 @@ public enum ObObjType {
             return 1;
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -1123,7 +1123,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -1135,7 +1135,7 @@ public enum ObObjType {
     },
 
     ObVarcharType(22) {
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -1150,7 +1150,7 @@ public enum ObObjType {
             }
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -1158,7 +1158,7 @@ public enum ObObjType {
             return decodeText(buf, type);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -1166,7 +1166,7 @@ public enum ObObjType {
             return getTextEncodedSize(obj);
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -1175,7 +1175,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_UTF8MB4_GENERAL_CI, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -1189,7 +1189,7 @@ public enum ObObjType {
     }, // charset: utf8mb4 or binary
     ObCharType(23) { // TODO not support
 
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -1197,7 +1197,7 @@ public enum ObObjType {
             return Serialization.encodeVString((String) obj);
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -1205,7 +1205,7 @@ public enum ObObjType {
             return decodeText(buf, type);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -1213,7 +1213,7 @@ public enum ObObjType {
             return getTextEncodedSize(obj);
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -1222,7 +1222,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_UTF8MB4_GENERAL_CI, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -1236,7 +1236,7 @@ public enum ObObjType {
 
     @Deprecated
     ObHexStringType(24) {
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -1244,7 +1244,7 @@ public enum ObObjType {
             return new byte[0];
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -1252,7 +1252,7 @@ public enum ObObjType {
             return null;
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -1260,7 +1260,7 @@ public enum ObObjType {
             return 0;
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -1269,7 +1269,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -1283,7 +1283,7 @@ public enum ObObjType {
 
     ObExtendType(25) { // MIN_OBJECT / MAX_OBJECT
 
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -1291,7 +1291,7 @@ public enum ObObjType {
             return Serialization.encodeVi64((Long) obj);
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -1299,7 +1299,7 @@ public enum ObObjType {
             return Serialization.decodeVi64(buf);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -1307,7 +1307,7 @@ public enum ObObjType {
             return Serialization.getNeedBytes((Long) obj);
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -1316,7 +1316,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -1329,7 +1329,7 @@ public enum ObObjType {
     }, // Min, Max, NOP etc.
     @Deprecated
     ObUnknownType(26) {
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -1337,7 +1337,7 @@ public enum ObObjType {
             return new byte[0];
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -1345,7 +1345,7 @@ public enum ObObjType {
             return null;
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -1353,7 +1353,7 @@ public enum ObObjType {
             return 0;
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -1362,7 +1362,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -1375,7 +1375,7 @@ public enum ObObjType {
     }, // For question mark(?) in prepared statement, no need to serialize
        // @note future new types to be defined here !!!
     ObTinyTextType(27) {
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -1383,7 +1383,7 @@ public enum ObObjType {
             return Serialization.encodeVString((String) obj);
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -1391,7 +1391,7 @@ public enum ObObjType {
             return decodeText(buf, type);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -1399,7 +1399,7 @@ public enum ObObjType {
             return getTextEncodedSize(obj);
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -1408,7 +1408,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -1421,7 +1421,7 @@ public enum ObObjType {
 
     },
     ObTextType(28) {
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -1430,7 +1430,7 @@ public enum ObObjType {
             return Serialization.encodeVString((String) obj);
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -1438,7 +1438,7 @@ public enum ObObjType {
             return decodeText(buf, type);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -1446,7 +1446,7 @@ public enum ObObjType {
             return getTextEncodedSize(obj);
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -1455,7 +1455,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -1467,7 +1467,7 @@ public enum ObObjType {
 
     },
     ObMediumTextType(29) {
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -1476,7 +1476,7 @@ public enum ObObjType {
             return Serialization.encodeVString((String) obj);
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -1484,7 +1484,7 @@ public enum ObObjType {
             return decodeText(buf, type);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -1492,7 +1492,7 @@ public enum ObObjType {
             return getTextEncodedSize(obj);
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -1501,7 +1501,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -1511,7 +1511,7 @@ public enum ObObjType {
 
     },
     ObLongTextType(30) {
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -1520,7 +1520,7 @@ public enum ObObjType {
             return Serialization.encodeVString((String) obj);
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -1528,7 +1528,7 @@ public enum ObObjType {
             return decodeText(buf, type);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -1536,7 +1536,7 @@ public enum ObObjType {
             return getTextEncodedSize(obj);
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -1545,7 +1545,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -1555,7 +1555,7 @@ public enum ObObjType {
     },
     ObBitType(31) { // TODO not support
 
-        /**
+        /*
          * Encode.
          */
         @Override
@@ -1564,7 +1564,7 @@ public enum ObObjType {
             return Serialization.encodeVi64(((Number) obj).longValue());
         }
 
-        /**
+        /*
          * Decode.
          */
         @Override
@@ -1573,7 +1573,7 @@ public enum ObObjType {
             return Serialization.decodeVi64(buf);
         }
 
-        /**
+        /*
          * Get encoded size.
          */
         @Override
@@ -1582,7 +1582,7 @@ public enum ObObjType {
             return Serialization.getNeedBytes(((Number) obj).longValue());
         }
 
-        /**
+        /*
          * Get default obj meta.
          */
         @Override
@@ -1592,7 +1592,7 @@ public enum ObObjType {
                 ObCollationType.CS_TYPE_BINARY, (byte) 10);
         }
 
-        /**
+        /*
          * Parse to comparable.
          */
         @Override
@@ -1618,14 +1618,14 @@ public enum ObObjType {
         }
     }
 
-    /**
+    /*
      * Default obj meta.
      */
     public static ObObjMeta defaultObjMeta(Object object) {
         return valueOfType(object).getDefaultObjMeta();
     }
 
-    /**
+    /*
      * Value of type.
      */
     public static ObObjType valueOfType(Object object) {
@@ -1665,21 +1665,21 @@ public enum ObObjType {
                                            + object.getClass().getName());
     }
 
-    /**
+    /*
      * Value of.
      */
     public static ObObjType valueOf(int value) {
         return map.get(value);
     }
 
-    /**
+    /*
      * Get value.
      */
     public int getValue() {
         return value;
     }
 
-    /**
+    /*
      * Get byte value.
      */
     public byte getByteValue() {
@@ -1698,7 +1698,7 @@ public enum ObObjType {
                                                                               throws IllegalArgumentException,
                                                                               FeatureNotSupportedException;
 
-    /**
+    /*
      * Parse to long or null.
      */
     public static Long parseToLongOrNull(Object object) {
@@ -1721,7 +1721,7 @@ public enum ObObjType {
         return value;
     }
 
-    /**
+    /*
      * Decode text.
      */
     public Object decodeText(ByteBuf buf, ObCollationType type) {
@@ -1732,7 +1732,7 @@ public enum ObObjType {
         }
     }
 
-    /**
+    /*
      * Get text encoded size.
      */
     public static int getTextEncodedSize(Object obj) {
@@ -1746,7 +1746,7 @@ public enum ObObjType {
         }
     }
 
-    /**
+    /*
      * Parse text to comparable.
      */
     public static Comparable parseTextToComparable(ObObjType obObjType, Object object,
@@ -1796,7 +1796,7 @@ public enum ObObjType {
                                            + object);
     }
 
-    /**
+    /*
      * Parse timestamp.
      */
     public static Timestamp parseTimestamp(ObObjType obObjType, Object object,
@@ -1821,7 +1821,7 @@ public enum ObObjType {
                                            + collationType + "argument:" + object);
     }
 
-    /**
+    /*
      * Parse long.
      */
     public static Long parseLong(ObObjType obObjType, Object object, ObCollationType collationType) {

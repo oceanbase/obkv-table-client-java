@@ -23,7 +23,7 @@ public class ObComparableKV<A extends Comparable<A>, B> implements Comparable<Ob
     public final A key;
     public final B value;
 
-    /**
+    /*
      * Ob comparable k v.
      */
     public ObComparableKV(A key, B value) {
@@ -31,7 +31,7 @@ public class ObComparableKV<A extends Comparable<A>, B> implements Comparable<Ob
         this.value = value;
     }
 
-    /**
+    /*
      * To string.
      */
     @Override
@@ -39,7 +39,7 @@ public class ObComparableKV<A extends Comparable<A>, B> implements Comparable<Ob
         return new ToStringBuilder(this).append("key", key).append("value", value).toString();
     }
 
-    /**
+    /*
      * Compare to.
      */
     @Override

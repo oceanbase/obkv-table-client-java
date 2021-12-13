@@ -18,41 +18,41 @@
 package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableConnectionUnWritableException extends ObTableException {
-    /**
+    /*
      * Ob table connection un-writable exception.
      */
     public ObTableConnectionUnWritableException() {
     }
 
-    /**
+    /*
      * Ob table connection un-writable exception with error code
      */
     public ObTableConnectionUnWritableException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table connection un-writable exception with message and error code.
      */
     public ObTableConnectionUnWritableException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table connection un-writable exception with message.
      */
     public ObTableConnectionUnWritableException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table connection un-writable exception with message and cause.
      */
     public ObTableConnectionUnWritableException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table connection un-writable exception with cause.
      */
     public ObTableConnectionUnWritableException(Throwable cause) {

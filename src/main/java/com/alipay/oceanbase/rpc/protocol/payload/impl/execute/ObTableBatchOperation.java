@@ -27,9 +27,8 @@ import java.util.List;
 import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
 import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderLength;
 
-/**
- *
- OB_SERIALIZE_MEMBER(ObTableOperation, operation_type_, const_cast<ObITableEntity&>(*entity_));
+/*
+ * OB_SERIALIZE_MEMBER(ObTableOperation, operation_type_, const_cast<ObITableEntity&>(*entity_));
  *
  */
 public class ObTableBatchOperation extends AbstractPayload {
@@ -39,7 +38,7 @@ public class ObTableBatchOperation extends AbstractPayload {
     private boolean                isSameType;
     private boolean                isSamePropertiesNames;
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -76,7 +75,7 @@ public class ObTableBatchOperation extends AbstractPayload {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -101,7 +100,7 @@ public class ObTableBatchOperation extends AbstractPayload {
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -115,14 +114,14 @@ public class ObTableBatchOperation extends AbstractPayload {
         return payloadContentSize + 3;
     }
 
-    /**
+    /*
      * Get table operations.
      */
     public List<ObTableOperation> getTableOperations() {
         return tableOperations;
     }
 
-    /**
+    /*
      * Add table operation.
      */
     public void addTableOperation(ObTableOperation tableOperation) {
@@ -132,7 +131,7 @@ public class ObTableBatchOperation extends AbstractPayload {
         }
     }
 
-    /**
+    /*
      * Set table operations.
      */
     public void setTableOperations(List<ObTableOperation> tableOperations) {
@@ -146,42 +145,42 @@ public class ObTableBatchOperation extends AbstractPayload {
         }
     }
 
-    /**
+    /*
      * Is read only.
      */
     public boolean isReadOnly() {
         return isReadOnly;
     }
 
-    /**
+    /*
      * Set read only.
      */
     public void setReadOnly(boolean readOnly) {
         isReadOnly = readOnly;
     }
 
-    /**
+    /*
      * Is same type.
      */
     public boolean isSameType() {
         return isSameType;
     }
 
-    /**
+    /*
      * Set same type.
      */
     public void setSameType(boolean sameType) {
         isSameType = sameType;
     }
 
-    /**
+    /*
      * Is same properties names.
      */
     public boolean isSamePropertiesNames() {
         return isSamePropertiesNames;
     }
 
-    /**
+    /*
      * Set same properties names.
      */
     public void setSamePropertiesNames(boolean samePropertiesNames) {

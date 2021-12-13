@@ -45,7 +45,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
     private boolean               returningAffectedEntity = false;
     private ObTableBatchOperation batchOperation;
 
-    /**
+    /*
      * Ob table client batch ops impl.
      */
     public ObTableClientBatchOpsImpl(String tableName, ObTableClient obTableClient) {
@@ -54,7 +54,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         this.batchOperation = new ObTableBatchOperation();
     }
 
-    /**
+    /*
      * Ob table client batch ops impl.
      */
     public ObTableClientBatchOpsImpl(String tableName, ObTableBatchOperation batchOperation,
@@ -64,7 +64,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         this.batchOperation = batchOperation;
     }
 
-    /**
+    /*
      * Get ob table batch operation.
      */
     @Override
@@ -72,7 +72,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         return batchOperation;
     }
 
-    /**
+    /*
      * Get.
      */
     @Override
@@ -80,7 +80,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         addObTableClientOperation(ObTableOperationType.GET, rowkeys, columns, null);
     }
 
-    /**
+    /*
      * Update.
      */
     @Override
@@ -88,7 +88,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         addObTableClientOperation(ObTableOperationType.UPDATE, rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Delete.
      */
     @Override
@@ -96,7 +96,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         addObTableClientOperation(ObTableOperationType.DEL, rowkeys, null, null);
     }
 
-    /**
+    /*
      * Insert.
      */
     @Override
@@ -104,7 +104,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         addObTableClientOperation(ObTableOperationType.INSERT, rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Replace.
      */
     @Override
@@ -112,7 +112,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         addObTableClientOperation(ObTableOperationType.REPLACE, rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Insert or update.
      */
     @Override
@@ -120,7 +120,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         addObTableClientOperation(ObTableOperationType.INSERT_OR_UPDATE, rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Increment.
      */
     @Override
@@ -129,7 +129,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         addObTableClientOperation(ObTableOperationType.INCREMENT, rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Append.
      */
     @Override
@@ -144,7 +144,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         batchOperation.addTableOperation((instance));
     }
 
-    /**
+    /*
      * Execute.
      */
     public List<Object> execute() throws Exception {
@@ -207,7 +207,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         return partitionOperationsMap;
     }
 
-    /**
+    /*
      * Partition execute.
      */
     public void partitionExecute(ObTableOperationResult[] results,
@@ -356,7 +356,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
 
     ;
 
-    /**
+    /*
      * Execute internal.
      */
     public ObTableBatchOperationResult executeInternal() throws Exception {
@@ -372,7 +372,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             for (final Map.Entry<Long, ObPair<ObTable, List<ObPair<Integer, ObTableOperation>>>> entry : partitions
                 .entrySet()) {
                 executor.execute(new ConcurrentTask() {
-                    /**
+                    /*
                      * Do task.
                      */
                     @Override
@@ -440,14 +440,14 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         return batchOperationResult;
     }
 
-    /**
+    /*
      * clear batch operations1
      */
     public void clear() {
         batchOperation = new ObTableBatchOperation();
     }
 
-    /**
+    /*
      * Set executor service.
      */
     public void setExecutorService(ExecutorService executorService) {

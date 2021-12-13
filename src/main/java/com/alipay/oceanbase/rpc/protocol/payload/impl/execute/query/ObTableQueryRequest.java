@@ -41,7 +41,7 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
 
     private ObTableQuery tableQuery;
 
-    /**
+    /*
      * Get pcode.
      */
     @Override
@@ -49,7 +49,7 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
         return Pcodes.OB_TABLE_API_EXECUTE_QUERY;
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -75,7 +75,7 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -95,7 +95,7 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -105,14 +105,14 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
                + tableQuery.getPayloadSize();
     }
 
-    /**
+    /*
      * Get table query.
      */
     public ObTableQuery getTableQuery() {
         return tableQuery;
     }
 
-    /**
+    /*
      * Set table query.
      */
     public void setTableQuery(ObTableQuery tableQuery) {

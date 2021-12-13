@@ -25,7 +25,7 @@ import java.util.Arrays;
 
 public class ObGeneratedColumn extends ObColumn {
 
-    /**
+    /*
      * Ob generated column.
      */
     public ObGeneratedColumn(String columnName, int index, ObObjType obObjType,
@@ -35,7 +35,7 @@ public class ObGeneratedColumn extends ObColumn {
             columnExpress);
     }
 
-    /**
+    /*
      * Eval value.
      */
     public Object evalValue(Object... refs) throws IllegalArgumentException {

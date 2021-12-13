@@ -19,41 +19,41 @@ package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableNotExistException extends ObTableEntryRefreshException {
 
-    /**
+    /*
      * Ob table not exist exception.
      */
     public ObTableNotExistException() {
     }
 
-    /**
+    /*
      * Ob table not exist exception.
      */
     public ObTableNotExistException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table not exist exception.
      */
     public ObTableNotExistException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table not exist exception.
      */
     public ObTableNotExistException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table not exist exception.
      */
     public ObTableNotExistException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table not exist exception.
      */
     public ObTableNotExistException(Throwable cause) {

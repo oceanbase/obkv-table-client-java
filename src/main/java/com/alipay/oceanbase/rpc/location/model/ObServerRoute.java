@@ -34,14 +34,14 @@ public class ObServerRoute {
     // black ip list
     private Set<String>         blackIpList = new HashSet<String>();
 
-    /**
+    /*
      * Construct OB Server Route.
      */
     private ObServerRoute(ObReadConsistency readConsistency) {
         this(readConsistency, ObRoutePolicy.IDC_ORDER, false);
     }
 
-    /**
+    /*
      * Construct OB Server Route.
      */
     public ObServerRoute(ObReadConsistency readConsistency, ObRoutePolicy readRoutePolicy,
@@ -52,49 +52,49 @@ public class ObServerRoute {
         this.isLdcUsed = isLdcUsed;
     }
 
-    /**
+    /*
      * Get Consistency Level.
      */
     public ObReadConsistency getReadConsistency() {
         return readConsistency;
     }
 
-    /**
+    /*
      * Get read route policy.
      */
     public ObRoutePolicy getReadRoutePolicy() {
         return readRoutePolicy;
     }
 
-    /**
+    /*
      * Check whether LDC enabled.
      */
     public boolean isLdcEnabled() {
         return isLdcUsed;
     }
 
-    /**
+    /*
      * Reset route, which will clean the black ip list.
      */
     public void reset() {
         blackIpList.clear();
     }
 
-    /**
+    /*
      * Check whether ip is in black list.
      */
     public boolean isInBlackList(String ip) {
         return blackIpList.contains(ip);
     }
 
-    /**
+    /*
      * Add ip into black list.
      */
     public void addToBlackList(String ip) {
         blackIpList.add(ip);
     }
 
-    /**
+    /*
      * set blackIpList.
      */
     public void setBlackList(Set<String> blackIpList) {

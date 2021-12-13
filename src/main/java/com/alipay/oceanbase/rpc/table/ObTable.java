@@ -65,7 +65,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     private volatile boolean      closed      = false;
     private ReentrantLock         statusLock  = new ReentrantLock();
 
-    /**
+    /*
      * Init.
      */
     public void init() throws Exception {
@@ -92,7 +92,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         }
     }
 
-    /**
+    /*
      * Close.
      */
     public void close() {
@@ -145,7 +145,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             nettyBlockingWaitInterval);
     }
 
-    /**
+    /*
      * Query.
      */
     @Override
@@ -158,7 +158,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         return new QueryByBatch(query(tableName));
     }
 
-    /**
+    /*
      * Batch.
      */
     @Override
@@ -181,7 +181,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         return entity.getSimpleProperties();
     }
 
-    /**
+    /*
      * Update.
      */
     public long update(String tableName, Object[] rowkeys, String[] columns, Object[] values)
@@ -192,7 +192,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         return result.getAffectedRows();
     }
 
-    /**
+    /*
      * Delete.
      */
     public long delete(String tableName, Object[] rowkeys) throws RemotingException,
@@ -202,7 +202,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         return result.getAffectedRows();
     }
 
-    /**
+    /*
      * Insert.
      */
     public long insert(String tableName, Object[] rowkeys, String[] columns, Object[] values)
@@ -214,7 +214,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         return result.getAffectedRows();
     }
 
-    /**
+    /*
      * Replace.
      */
     public long replace(String tableName, Object[] rowkeys, String[] columns, Object[] values)
@@ -225,7 +225,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         return result.getAffectedRows();
     }
 
-    /**
+    /*
      * Insert or update.
      */
     public long insertOrUpdate(String tableName, Object[] rowkeys, String[] columns, Object[] values)
@@ -254,7 +254,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         return entity.getSimpleProperties();
     }
 
-    /**
+    /*
      * Execute.
      */
     public ObTableOperationResult execute(String tableName, ObTableOperationType type,
@@ -273,7 +273,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         return (ObTableOperationResult) result;
     }
 
-    /**
+    /*
      * Execute.
      */
     public ObPayload execute(final ObPayload request) throws RemotingException,
@@ -312,119 +312,119 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             obTableOperationResult.getUniqueId(), obTableOperationResult.getHeader().getErrno());
     }
 
-    /**
+    /*
      * Get ip.
      */
     public String getIp() {
         return ip;
     }
 
-    /**
+    /*
      * Set ip.
      */
     public void setIp(String ip) {
         this.ip = ip;
     }
 
-    /**
+    /*
      * Get port.
      */
     public int getPort() {
         return port;
     }
 
-    /**
+    /*
      * Set port.
      */
     public void setPort(int port) {
         this.port = port;
     }
 
-    /**
+    /*
      * Get tenant name.
      */
     public String getTenantName() {
         return tenantName;
     }
 
-    /**
+    /*
      * Set tenant name.
      */
     public void setTenantName(String tenantName) {
         this.tenantName = tenantName;
     }
 
-    /**
+    /*
      * Get user name.
      */
     public String getUserName() {
         return userName;
     }
 
-    /**
+    /*
      * Set user name.
      */
     public void setUserName(String userName) {
         this.userName = userName;
     }
 
-    /**
+    /*
      * Get password.
      */
     public String getPassword() {
         return password;
     }
 
-    /**
+    /*
      * Set password.
      */
     public void setPassword(String password) {
         this.password = password;
     }
 
-    /**
+    /*
      * Get database.
      */
     public String getDatabase() {
         return database;
     }
 
-    /**
+    /*
      * Set database.
      */
     public void setDatabase(String database) {
         this.database = database;
     }
 
-    /**
+    /*
      * Get connection factory.
      */
     public ConnectionFactory getConnectionFactory() {
         return connectionFactory;
     }
 
-    /**
+    /*
      * Set connection factory.
      */
     public void setConnectionFactory(ConnectionFactory connectionFactory) {
         this.connectionFactory = connectionFactory;
     }
 
-    /**
+    /*
      * Get real client.
      */
     public ObTableRemoting getRealClient() {
         return realClient;
     }
 
-    /**
+    /*
      * Set real client.
      */
     public void setRealClient(ObTableRemoting realClient) {
         this.realClient = realClient;
     }
 
-    /**
+    /*
      * Get connection.
      */
     public ObTableConnection getConnection() {
@@ -443,7 +443,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
 
         private Properties properties = new Properties();
 
-        /**
+        /*
          * Builder.
          */
         public Builder(String ip, int port) {
@@ -451,7 +451,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             this.port = port;
         }
 
-        /**
+        /*
          * Set login info.
          */
         public Builder setLoginInfo(String tenantName, String userName, String password,
@@ -463,7 +463,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             return this;
         }
 
-        /**
+        /*
          * Add propery.
          */
         public Builder addPropery(String key, String value) {
@@ -471,7 +471,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             return this;
         }
 
-        /**
+        /*
          * Set properties.
          */
         public Builder setProperties(Properties properties) {
@@ -479,7 +479,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             return this;
         }
 
-        /**
+        /*
          * Build.
          */
         public ObTable build() throws Exception {
@@ -499,7 +499,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
 
     }
 
-    /**
+    /*
      * A simple pool for ObTableConnection with fix size.  Redesign it when we needs more.
      * The scheduling policy is round-robin. It's also simple but enough currently. Now, we promise sequential
      * consistency, while each thread call invokeSync for data access, ensuring the sequential consistency.
@@ -516,7 +516,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         // round-robin scheduling
         private AtomicLong                   turn = new AtomicLong(0);
 
-        /**
+        /*
          * Ob table connection pool.
          */
         public ObTableConnectionPool(ObTable obTable, int connectionPoolSize) {
@@ -525,7 +525,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             connectionPool = new ObTableConnection[connectionPoolSize];
         }
 
-        /**
+        /*
          * Init.
          */
         public void init() throws Exception {
@@ -535,7 +535,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             }
         }
 
-        /**
+        /*
          * Get connection.
          */
         public ObTableConnection getConnection() {
@@ -543,7 +543,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             return connectionPool[round];
         }
 
-        /**
+        /*
          * Close.
          */
         public void close() {

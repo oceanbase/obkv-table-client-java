@@ -25,7 +25,7 @@ public class ObTableProtocol implements Protocol {
     public final static byte   API_VERSION       = 1;
     public final static int    HEADER_LENGTH     = 16;
 
-    /**
+    /*
      * ob_rpc_net_handler.cpp
      * Magic Header 4 bytes
      * <p>
@@ -45,7 +45,7 @@ public class ObTableProtocol implements Protocol {
         ProtocolManager.registerProtocol(new ObTableProtocol(), MAGIC_HEADER_FLAG);
     }
 
-    /**
+    /*
      * Ob table protocol.
      */
     public ObTableProtocol() {
@@ -55,7 +55,7 @@ public class ObTableProtocol implements Protocol {
         this.commandHandler = new ObTablePacketHandler();
     }
 
-    /**
+    /*
      * Get encoder.
      */
     @Override
@@ -63,7 +63,7 @@ public class ObTableProtocol implements Protocol {
         return commandEncoder;
     }
 
-    /**
+    /*
      * Get decoder.
      */
     @Override
@@ -71,7 +71,7 @@ public class ObTableProtocol implements Protocol {
         return commandDecoder;
     }
 
-    /**
+    /*
      * Get command handler.
      */
     @Override
@@ -79,7 +79,7 @@ public class ObTableProtocol implements Protocol {
         return commandHandler;
     }
 
-    /**
+    /*
      * Get heartbeat trigger.
      */
     @Override
@@ -87,7 +87,7 @@ public class ObTableProtocol implements Protocol {
         return null;
     }
 
-    /**
+    /*
      * Get command factory.
      */
     @Override
