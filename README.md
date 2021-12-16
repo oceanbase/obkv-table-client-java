@@ -74,6 +74,6 @@ Contributions are warmly welcomed and greatly appreciated. Here are a few ways y
 In case you have any problems when using OceanBase Database, welcome reach out for help:
 
 - GitHub Issue [GitHub Issue](https://github.com/oceanbase/obkv-table-client-java/issues)
-- Official forum [Official website](https://open.oceanbase.com)
+- Official forum [Official Website](https://open.oceanbase.com)
 - Knowledge base [Coming soon]
 
