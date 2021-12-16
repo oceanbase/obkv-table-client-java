@@ -65,14 +65,14 @@ OBKV Table Client is under [MulanPSL - 2.0](http://license.coscl.org.cn/MulanPSL
 
 Contributions are warmly welcomed and greatly appreciated. Here are a few ways you can contribute:
 
-- Raise us an [Issue]("https://github.com/oceanbase/obagent/issues")
+- Raise us an [Issue](https://github.com/oceanbase/obagent/issues)
 - Submit Pull Requests. For details, see [How to contribute](CONTRIBUTING.md).
 
 ## Support
 
 In case you have any problems when using OceanBase Database, welcome reach out for help:
 
-- GitHub Issue [GitHub Issue]("https://github.com/oceanbase/obkv-table-client-java/issues")
-- Official forum [Official website]("https://open.oceanbase.com")
+- GitHub Issue [GitHub Issue](https://github.com/oceanbase/obkv-table-client-java/issues)
+- Official forum [Official website](https://open.oceanbase.com)
 - Knowledge base [Coming soon]
 
