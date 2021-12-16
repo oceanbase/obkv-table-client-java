@@ -6,7 +6,29 @@
     <artifactId>obkv-table-client</artifactId>
     <version>0.1.0</version>
 
-    <name>OBKV Table Client Framework</name>
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>OceanBase JavaClient for TableApi</description>
+    <url>https://github.com/oceanbase/obkv-table-client-java</url>
+
+    <licenses>
+        <license>
+            <name>Mulan Public License，Version 2</name>
+            <url>http://license.coscl.org.cn/MulanPSL2/</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Jiali Yang</name>
+            <email>1623359870@qq.com</email>
+            <organization>OceanBase</organization>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/oceanbase/obkv-table-client-java.git</connection>
+        <url>https://github.com/oceanbase/obkv-table-client-java</url>
+    </scm>
 
     <properties>
         <java.source.version>1.6</java.source.version>
