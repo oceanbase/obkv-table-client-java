@@ -66,7 +66,7 @@ OBKV Table Client is under [MulanPSL - 2.0](http://license.coscl.org.cn/MulanPSL
 
 Contributions are warmly welcomed and greatly appreciated. Here are a few ways you can contribute:
 
-- Raise us an [Issue](https://github.com/oceanbase/obagent/issues)
+- Raise us an [Issue](https://github.com/oceanbase/obkv-table-client-java/issues)
 - Submit Pull Requests. For details, see [How to contribute](CONTRIBUTING.md).
 
 ## Support
