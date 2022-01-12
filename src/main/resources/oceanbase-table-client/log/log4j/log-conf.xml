@@ -3,10 +3,8 @@
 
 <log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
 
-    <appender name="OCEANBASE-TABLE-CLIENT-APPENDER"
-              class="com.alibaba.common.logging.spi.log4j.DailyRollingFileAppender">
+    <appender name="OCEANBASE-TABLE-CLIENT-APPENDER" class="org.apache.log4j.RollingFileAppender">
         <param name="file" value="${logging.path.oceanbase-table-client}/oceanbase-table-client/oceanbase-table-client.log"/>
-        <param name="shouldAsync" value="true" />
         <param name="append" value="true"/>
         <param name="encoding" value="${file.encoding}"/>
         <layout class="org.apache.log4j.PatternLayout">
