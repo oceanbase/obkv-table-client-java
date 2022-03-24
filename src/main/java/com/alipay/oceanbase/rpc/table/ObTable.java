@@ -154,6 +154,10 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     }
 
     @Override
+    public TableQuery queryByBatchV2(String tableName) throws Exception {
+        return new ObTableQueryAsyncImpl(tableName, this);
+    }
+
     public TableQuery queryByBatch(String tableName) throws Exception {
         return new QueryByBatch(query(tableName));
     }

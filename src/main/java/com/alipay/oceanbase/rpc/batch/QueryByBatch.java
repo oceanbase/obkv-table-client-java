@@ -17,10 +17,12 @@
 
 package com.alipay.oceanbase.rpc.batch;
 
+import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilter;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
+import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -60,6 +62,16 @@ public class QueryByBatch implements TableQuery {
     @Override
     public QueryResultSet execute() {
         return new QueryResultSet(new QueryByBatchResultSet(this));
+    }
+
+    @Override
+    public QueryResultSet executeInit(ObPair<Long, ObTable> entry) throws Exception {
+        throw new IllegalArgumentException("not support executeInit");
+    }
+
+    @Override
+    public QueryResultSet executeNext(ObPair<Long, ObTable> entry) throws Exception {
+        throw new IllegalArgumentException("not support executeNext");
     }
 
     public TableQuery addScanRange(Object start, Object end) {
@@ -165,6 +177,11 @@ public class QueryByBatch implements TableQuery {
     public TableQuery setOperationTimeout(long operationTimeout) {
         this.tableQuery.setOperationTimeout(operationTimeout);
         return this;
+    }
+
+    @Override
+    public TableQuery setMaxResultSize(long maxResultSize) {
+        throw new IllegalArgumentException("not support setMaxResultSize");
     }
 
     @Override

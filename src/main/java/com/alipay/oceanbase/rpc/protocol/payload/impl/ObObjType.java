@@ -1783,7 +1783,8 @@ public enum ObObjType {
                 } catch (IllegalArgumentException e) {
                     throw new IllegalArgumentException(
                         obObjType.name()
-                                + "can not parseToComparable byte array to string with utf-8 charset");
+                                + "can not parseToComparable byte array to string with utf-8 charset",
+                        e);
                 }
             }
 

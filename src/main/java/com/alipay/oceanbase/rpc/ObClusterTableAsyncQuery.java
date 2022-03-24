@@ -1,8 +1,8 @@
 /*-
  * #%L
- * OBKV Table Client Framework
+ * OceanBase Table Client Framework
  * %%
- * Copyright (C) 2021 OceanBase
+ * Copyright (C) 2016 - 2022 Ant Financial Services Group
  * %%
  * OBKV Table Client Framework is licensed under Mulan PSL v2.
  * You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -17,184 +17,130 @@
 
 package com.alipay.oceanbase.rpc;
 
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObQueryOperationType;
+import com.alipay.oceanbase.rpc.stream.async.ObTableClientQueryAsyncStreamResult;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilter;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
-import com.alipay.oceanbase.rpc.stream.ObTableClientQueryStreamResult;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.AbstractTableQuery;
 import com.alipay.oceanbase.rpc.table.ObTable;
-import com.alipay.oceanbase.rpc.table.ObTableClientQueryImpl;
+import com.alipay.oceanbase.rpc.table.ObTableClientQueryAsyncImpl;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
-public class ObClusterTableQuery extends AbstractTableQuery {
+public class ObClusterTableAsyncQuery extends AbstractTableQuery {
+    private final ObTableClientQueryAsyncImpl tableClientQuerySync;
 
-    private final ObTableClientQueryImpl tableClientQuery;
-
-    ObClusterTableQuery(ObTableClientQueryImpl tableQuery) {
-        this.tableClientQuery = tableQuery;
+    ObClusterTableAsyncQuery(ObTableClientQueryAsyncImpl tableClientQuerySync) {
+        this.tableClientQuerySync = tableClientQuerySync;
     }
 
-    /*
-     * Get table name.
-     */
-    @Override
-    public String getTableName() {
-        return tableClientQuery.getTableName();
-    }
-
-    /*
-     * Get ob table query.
-     */
     @Override
     public ObTableQuery getObTableQuery() {
-        return tableClientQuery.getObTableQuery();
+        return tableClientQuerySync.getObTableQuery();
     }
 
-    /*
-     * Execute.
-     */
+    @Override
+    public String getTableName() {
+        return tableClientQuerySync.getTableName();
+    }
+
     @Override
     public QueryResultSet execute() throws Exception {
-        return tableClientQuery.execute();
+        return tableClientQuerySync.execute();
     }
 
     @Override
     public QueryResultSet executeInit(ObPair<Long, ObTable> entry) throws Exception {
-        throw new IllegalArgumentException("not support executeInit");
+        return tableClientQuerySync.executeInit(entry);
     }
 
     @Override
     public QueryResultSet executeNext(ObPair<Long, ObTable> entry) throws Exception {
-        throw new IllegalArgumentException("not support executeNext");
+        return tableClientQuerySync.executeNext(entry);
     }
 
-    /*
-     * Execute internal.
-     */
-    public ObTableClientQueryStreamResult executeInternal() throws Exception {
-        return tableClientQuery.executeInternal();
+    ObTableClientQueryAsyncStreamResult executeInternal(ObQueryOperationType type) throws Exception {
+        return tableClientQuerySync.executeInternal(type);
     }
 
-    /*
-     * Select.
-     */
     @Override
     public TableQuery select(String... columns) {
-        tableClientQuery.select(columns);
+        tableClientQuerySync.select(columns);
         return this;
     }
 
-    /*
-     * 只有 limit query 需要，其他不需要
-     * @param keys
-     * @return
-     */
     @Override
     public TableQuery setKeys(String... keys) {
         throw new IllegalArgumentException("Not needed");
     }
 
-    /*
-     * Limit.
-     */
     @Override
     public TableQuery limit(int offset, int limit) {
-        tableClientQuery.limit(offset, limit);
+        tableClientQuerySync.limit(offset, limit);
         return this;
     }
 
-    /**
-     * Add scan range.
-     */
     @Override
     public TableQuery addScanRange(Object[] start, boolean startEquals, Object[] end,
                                    boolean endEquals) {
-        tableClientQuery.addScanRange(start, startEquals, end, endEquals);
+        tableClientQuerySync.addScanRange(start, startEquals, end, endEquals);
         return this;
     }
 
-    /**
-     * Add scan range starts with.
-     */
     @Override
     public TableQuery addScanRangeStartsWith(Object[] start, boolean startEquals) {
-        tableClientQuery.addScanRangeStartsWith(start, startEquals);
+        tableClientQuerySync.addScanRangeStartsWith(start, startEquals);
         return this;
     }
 
-    /**
-     * Add scan range ends with.
-     */
     @Override
     public TableQuery addScanRangeEndsWith(Object[] end, boolean endEquals) {
-        tableClientQuery.addScanRangeEndsWith(end, endEquals);
+        tableClientQuerySync.addScanRangeStartsWith(end, endEquals);
         return this;
     }
 
-    /**
-     * Scan order.
-     */
     @Override
     public TableQuery scanOrder(boolean forward) {
-        tableClientQuery.scanOrder(forward);
+        tableClientQuerySync.scanOrder(forward);
         return this;
     }
 
-    /**
-     * Index name.
-     */
     @Override
     public TableQuery indexName(String indexName) {
-        tableClientQuery.indexName(indexName);
+        tableClientQuerySync.indexName(indexName);
         return this;
     }
 
-    /**
-     * Filter string.
-     */
     @Override
     public TableQuery filterString(String filterString) {
-        tableClientQuery.filterString(filterString);
+        tableClientQuerySync.filterString(filterString);
         return this;
     }
 
-    /**
-     * Set h table filter.
-     */
     @Override
     public TableQuery setHTableFilter(ObHTableFilter obHTableFilter) {
-        return tableClientQuery.setHTableFilter(obHTableFilter);
+        return tableClientQuerySync.setHTableFilter(obHTableFilter);
     }
 
-    /**
-     * Set batch size.
-     */
     @Override
     public TableQuery setBatchSize(int batchSize) {
-        return tableClientQuery.setBatchSize(batchSize);
+        return tableClientQuerySync.setBatchSize(batchSize);
     }
 
     @Override
     public TableQuery setMaxResultSize(long maxResultSize) {
-        return tableClientQuery.setMaxResultSize(maxResultSize);
+        return tableClientQuerySync.setMaxResultSize(maxResultSize);
     }
 
-    /**
-     * Clear.
-     */
     @Override
     public void clear() {
-        tableClientQuery.clear();
+        tableClientQuerySync.clear();
     }
 
-    /**
-     * Set entity type.
-     */
-    @Override
     public void setEntityType(ObTableEntityType entityType) {
         super.setEntityType(entityType);
-        tableClientQuery.setEntityType(entityType);
+        tableClientQuerySync.setEntityType(entityType);
     }
 }

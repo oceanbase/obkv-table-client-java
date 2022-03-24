@@ -126,3 +126,8 @@ CREATE TABLE IF NOT EXISTS `test_hbase$fn` (
     `V` varbinary(1024) DEFAULT NULL,
     PRIMARY KEY (`K`, `Q`, `T`)
 );
+
+CREATE TABLE `test_batch_query` (
+ `c1` bigint NOT NULL,
+ `c2` varchar(20) DEFAULT NULL,
+PRIMARY KEY (`c1`))partition by range(`c1`)(partition p0 values less than(200), partition p1 values less than(500), partition p2 values less than(900));

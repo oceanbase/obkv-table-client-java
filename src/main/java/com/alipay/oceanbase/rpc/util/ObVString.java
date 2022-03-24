@@ -32,7 +32,7 @@ public class ObVString {
             try {
                 bytesVal = stringVal.getBytes("UTF-8");
             } catch (UnsupportedEncodingException e) {
-                throw new IllegalArgumentException("can not encode str to u");
+                throw new IllegalArgumentException("can not encode str to u", e);
             }
         }
         this.encodeBytes = Serialization.encodeVString(stringVal);

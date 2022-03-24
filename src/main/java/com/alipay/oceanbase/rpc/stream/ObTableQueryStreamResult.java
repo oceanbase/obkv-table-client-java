@@ -21,6 +21,7 @@ import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.AbstractQueryStreamResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryResult;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
 
 public class ObTableQueryStreamResult extends AbstractQueryStreamResult {
@@ -32,5 +33,11 @@ public class ObTableQueryStreamResult extends AbstractQueryStreamResult {
         cacheStreamNext(partIdWithIndex, checkObTableQueryResult(result));
 
         return (ObTableQueryResult) result;
+    }
+
+    @Override
+    protected ObTableQueryAsyncResult executeAsync(ObPair<Long, ObTable> partIdWithObTable,
+                                                   ObPayload streamRequest) throws Exception {
+        throw new IllegalArgumentException("not support this execute");
     }
 }
