@@ -17,10 +17,12 @@
 
 package com.alipay.oceanbase.rpc.table.api;
 
+import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilter;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
+import com.alipay.oceanbase.rpc.table.ObTable;
 
 public interface TableQuery {
 
@@ -33,6 +35,10 @@ public interface TableQuery {
     ObTableEntityType getEntityType();
 
     QueryResultSet execute() throws Exception;
+
+    QueryResultSet executeInit(ObPair<Long, ObTable> entry) throws Exception;
+
+    QueryResultSet executeNext(ObPair<Long, ObTable> entry) throws Exception;
 
     TableQuery select(String... columns);
 
@@ -167,6 +173,8 @@ public interface TableQuery {
      * @return this
      */
     TableQuery setOperationTimeout(long operationTimeout);
+
+    TableQuery setMaxResultSize(long maxResultSize);
 
     void clear();
 

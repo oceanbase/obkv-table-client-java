@@ -70,7 +70,17 @@ public class ObTableQueryImpl extends AbstractTableQueryImpl {
 
     }
 
-    /*
+    @Override
+    public QueryResultSet executeInit(ObPair<Long, ObTable> entry) throws Exception {
+        throw new IllegalArgumentException("not support executeInit");
+    }
+
+    @Override
+    public QueryResultSet executeNext(ObPair<Long, ObTable> entry) throws Exception {
+        throw new IllegalArgumentException("not support executeNext");
+    }
+
+    /**
      * 只有 limit query 需要，其他不需要
      * @param keys
      * @return

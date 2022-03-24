@@ -167,4 +167,10 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         this.tableQuery.setBatchSize(batchSize);
         return this;
     }
+
+    @Override
+    public TableQuery setMaxResultSize(long maxResultSize) {
+        this.tableQuery.setMaxResultSize(maxResultSize);
+        return this;
+    }
 }

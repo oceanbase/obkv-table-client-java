@@ -24,6 +24,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableBatchOperat
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryResult;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.login.ObTableLoginResult;
 import com.alipay.remoting.CommandCode;
 
@@ -74,8 +75,15 @@ public enum ObTablePacketCode implements CommandCode {
             return new ObTableQueryAndMutateResult();
         }
     }, //
-
-    // INVALID REQUEST PCODE, no such rpc
+    OB_TABLE_API_EXECUTE_QUERY_SYNC(Pcodes.OB_TABLE_API_EXECUTE_QUERY_SYNC) {
+        /**
+         * New payload.
+         */
+        @Override
+        public ObPayload newPayload(ObRpcPacketHeader header) {
+            return new ObTableQueryAsyncResult();
+        }
+    }, //
     OB_ERROR_PACKET(Pcodes.OB_ERROR_PACKET) {
         /*
          * New payload.
@@ -114,6 +122,8 @@ public enum ObTablePacketCode implements CommandCode {
                 return OB_TABLE_API_EXECUTE_QUERY;
             case Pcodes.OB_TABLE_API_QUERY_AND_MUTATE:
                 return OB_TABLE_API_QUERY_AND_MUTATE;
+            case Pcodes.OB_TABLE_API_EXECUTE_QUERY_SYNC:
+                return OB_TABLE_API_EXECUTE_QUERY_SYNC;
             case Pcodes.OB_ERROR_PACKET:
                 return OB_ERROR_PACKET;
         }
