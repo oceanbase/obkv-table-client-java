@@ -453,4 +453,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
     public void setExecutorService(ExecutorService executorService) {
         this.executorService = executorService;
     }
+
+    public boolean isReturningAffectedEntity() {
+        return returningAffectedEntity;
+    }
+
+    public void setReturningAffectedEntity(boolean returningAffectedEntity) {
+        this.returningAffectedEntity = returningAffectedEntity;
+    }
 }

@@ -69,7 +69,7 @@ public class Serialization {
         try {
             return str.getBytes("UTF-8");
         } catch (UnsupportedEncodingException e) {
-            throw new IllegalArgumentException("can not encode str to bytes with utf-8");
+            throw new IllegalArgumentException("can not encode str to bytes with utf-8", e);
         }
     }
 
@@ -77,7 +77,7 @@ public class Serialization {
         try {
             return new String(bytes, "UTF-8");
         } catch (UnsupportedEncodingException e) {
-            throw new IllegalArgumentException("can not decode bytes to str with utf-8");
+            throw new IllegalArgumentException("can not decode bytes to str with utf-8", e);
         }
     }
 

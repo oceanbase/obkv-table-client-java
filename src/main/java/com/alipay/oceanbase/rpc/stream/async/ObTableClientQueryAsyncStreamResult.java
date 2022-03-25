@@ -1,8 +1,8 @@
 /*-
  * #%L
- * OBKV Table Client Framework
+ * OceanBase Table Client Framework
  * %%
- * Copyright (C) 2021 OceanBase
+ * Copyright (C) 2016 - 2022 Ant Financial Services Group
  * %%
  * OBKV Table Client Framework is licensed under Mulan PSL v2.
  * You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -15,40 +15,44 @@
  * #L%
  */
 
-package com.alipay.oceanbase.rpc.stream;
+package com.alipay.oceanbase.rpc.stream.async;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
-import com.alipay.oceanbase.rpc.exception.ObTableReplicaNotReadableException;
 import com.alipay.oceanbase.rpc.exception.ObTableTimeoutExcetion;
-import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.AbstractQueryStreamResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
+import com.alipay.oceanbase.rpc.stream.ObTableClientQueryStreamResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
-import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.Set;
-
-public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
-
-    private static final Logger logger = TableClientLoggerFactory
+public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResult {
+    private static final Logger logger = LoggerFactory
                                            .getLogger(ObTableClientQueryStreamResult.class);
     protected ObTableClient     client;
+    private boolean             isEnd  = true;
+    private long                sessionId;
+    private boolean             hasMore;
 
-    protected ObTableQueryResult execute(ObPair<Long, ObTable> partIdWithIndex, ObPayload request)
-                                                                                                  throws Exception {
+    @Override
+    protected ObTableQueryResult execute(ObPair<Long, ObTable> partIdWithObTable,
+                                         ObPayload streamRequest) throws Exception {
+        throw new IllegalArgumentException("not support this execute");
+    }
+
+    @Override
+    protected ObTableQueryAsyncResult executeAsync(ObPair<Long, ObTable> partIdWithObTable,
+                                                   ObPayload streamRequest) throws Exception {
         Object result;
-        ObTable subObTable = partIdWithIndex.getRight();
+        ObTable subObTable = partIdWithObTable.getRight();
         boolean needRefreshTableEntry = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
-        Set<String> failedServerList = null;
-        ObServerRoute route = null;
+
         while (true) {
             client.checkStatus();
             long currentExecute = System.currentTimeMillis();
@@ -61,32 +65,14 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
             }
             tryTimes++;
             try {
-                // 重试时重新 getTable
-                if (tryTimes > 1) {
-                    if (route == null) {
-                        route = client.getReadRoute();
-                    }
-                    if (failedServerList != null) {
-                        route.setBlackList(failedServerList);
-                    }
-                    subObTable = client.getTable(tableName, partIdWithIndex.getLeft(),
-                        needRefreshTableEntry, client.isTableEntryRefreshIntervalWait(), route)
-                        .getRight();
+                if (needRefreshTableEntry) {
+                    subObTable = client.getTable(tableName,
+                        new Long[] { partIdWithObTable.getLeft() }, true,
+                        client.isTableEntryRefreshIntervalWait()).getRight();
                 }
-                result = subObTable.execute(request);
+                result = subObTable.execute(streamRequest);
                 client.resetExecuteContinuousFailureCount(tableName);
                 break;
-            } catch (ObTableReplicaNotReadableException ex) {
-                if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
-                    logger.warn("retry when replica not readable: {}", ex.getMessage());
-                    if (failedServerList == null) {
-                        failedServerList = new HashSet<String>();
-                    }
-                    failedServerList.add(subObTable.getIp());
-                } else {
-                    logger.warn("exhaust retry when replica not readable: {}", ex.getMessage());
-                    throw ex;
-                }
             } catch (Exception e) {
                 if (e instanceof ObTableException
                     && ((ObTableException) e).isNeedRefreshTableEntry()) {
@@ -113,28 +99,51 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
             Thread.sleep(client.getRuntimeRetryInterval());
         }
 
-        cacheStreamNext(partIdWithIndex, checkObTableQueryResult(result));
+        cacheStreamNext(partIdWithObTable, checkObTableQuerySyncResult(result));
 
-        return (ObTableQueryResult) result;
+        ObTableQueryAsyncResult obTableQueryAsyncResult = (ObTableQueryAsyncResult) result;
+        if (obTableQueryAsyncResult.isEnd()) {
+            isEnd = true;
+        } else {
+            isEnd = false;
+        }
+        sessionId = obTableQueryAsyncResult.getSessionId();
+        return (ObTableQueryAsyncResult) result;
     }
 
-    @Override
-    protected ObTableQueryAsyncResult executeAsync(ObPair<Long, ObTable> partIdWithObTable,
-                                                   ObPayload streamRequest) throws Exception {
-        throw new IllegalArgumentException("not support this execute");
-    }
-
-    /**
-     * Get client.
-     */
     public ObTableClient getClient() {
         return client;
     }
 
-    /*
+    /**
      * Set client.
      */
     public void setClient(ObTableClient client) {
         this.client = client;
     }
+
+    public boolean isEnd() {
+        return isEnd;
+    }
+
+    public void setEnd(boolean end) {
+        isEnd = end;
+    }
+
+    public long getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(long sessionId) {
+        this.sessionId = sessionId;
+    }
+
+    public boolean hasMore() {
+        return hasMore;
+    }
+
+    public void setHasMore(boolean hasMore) {
+        this.hasMore = hasMore;
+    }
+
 }

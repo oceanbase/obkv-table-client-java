@@ -26,6 +26,8 @@ import java.util.Map;
 
 public class QueryResultSet {
     private final QueryStreamResult queryStreamResult;
+    private boolean                 hasMore;
+    private long                    sessionId;
 
     /*
      * Query result set.
@@ -70,4 +72,19 @@ public class QueryResultSet {
         queryStreamResult.close();
     }
 
+    public boolean isHasMore() {
+        return hasMore;
+    }
+
+    public void setHasMore(boolean hasMore) {
+        this.hasMore = hasMore;
+    }
+
+    public long getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(long sessionId) {
+        this.sessionId = sessionId;
+    }
 }

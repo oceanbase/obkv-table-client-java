@@ -32,9 +32,11 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObBorderFlag
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryRequest;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncRequest;
 import com.alipay.oceanbase.rpc.table.AbstractObTableClient;
 import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.table.ObTableClientBatchOpsImpl;
+import com.alipay.oceanbase.rpc.table.ObTableClientQueryAsyncImpl;
 import com.alipay.oceanbase.rpc.table.ObTableClientQueryImpl;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
@@ -651,7 +653,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             throw new ObTableUnexpectedException("waiting for table entry "
                                                                  + tableName + " punish interval "
                                                                  + punishInterval
-                                                                 + " is interrupted.");
+                                                                 + " is interrupted.", e);
                         }
                     }
                 } else {
@@ -969,6 +971,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     @Override
+    public TableQuery queryByBatchV2(String tableName) {
+        ObTableClientQueryAsyncImpl querySync = new ObTableClientQueryAsyncImpl(tableName, this);
+        return new ObClusterTableAsyncQuery(querySync);
+    }
+
+    @Override
     public TableQuery queryByBatch(String tableName) throws Exception {
         return new QueryByBatch(query(tableName));
     }
@@ -1188,6 +1196,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 ((ObTableQueryRequest) request).getTableQuery(), this);
             tableQuery.setEntityType(request.getEntityType());
             return new ObClusterTableQuery(tableQuery).executeInternal();
+        } else if (request instanceof ObTableQueryAsyncRequest) {
+            ObTableClientQueryAsyncImpl tableClientQuerySync = new ObTableClientQueryAsyncImpl(
+                request.getTableName(), ((ObTableQueryAsyncRequest) request)
+                    .getObTableQueryRequest().getTableQuery(), this);
+            tableClientQuerySync.setEntityType(request.getEntityType());
+            return new ObClusterTableAsyncQuery(tableClientQuerySync)
+                .executeInternal(((ObTableQueryAsyncRequest) request).getQueryType());
         } else if (request instanceof ObTableBatchOperationRequest) {
             ObTableClientBatchOpsImpl batchOps = new ObTableClientBatchOpsImpl(
                 request.getTableName(),
