@@ -343,7 +343,9 @@ public class ObTableQuery extends AbstractPayload {
      * Set max result size.
      */
     public void setMaxResultSize(long maxResultSize) {
-        this.maxResultSize = maxResultSize;
+        if (maxResultSize > 0) {
+            this.maxResultSize = maxResultSize;
+        }
     }
 
     /*

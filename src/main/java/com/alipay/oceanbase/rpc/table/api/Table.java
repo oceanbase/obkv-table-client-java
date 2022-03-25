@@ -25,6 +25,8 @@ public interface Table {
 
     TableQuery query(String tableName) throws Exception;
 
+    TableQuery queryByBatchV2(String tableName) throws Exception;
+
     TableQuery queryByBatch(String tableName) throws Exception;
 
     TableBatchOps batch(String tableName) throws Exception;

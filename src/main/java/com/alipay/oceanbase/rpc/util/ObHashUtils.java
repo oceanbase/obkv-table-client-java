@@ -48,7 +48,8 @@ public class ObHashUtils {
             try {
                 bytes = ((String) varchar).getBytes("UTF-8");
             } catch (UnsupportedEncodingException e) {
-                throw new IllegalArgumentException("Unsupported Encoding for Object = " + varchar);
+                throw new IllegalArgumentException("Unsupported Encoding for Object = " + varchar,
+                    e);
             }
         } else if (varchar instanceof byte[]) {
             bytes = (byte[]) varchar;

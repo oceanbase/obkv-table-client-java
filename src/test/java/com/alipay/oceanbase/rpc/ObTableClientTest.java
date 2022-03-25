@@ -20,9 +20,17 @@ package com.alipay.oceanbase.rpc;
 import com.alipay.oceanbase.rpc.bolt.ObTableClientTestBase;
 import com.alipay.oceanbase.rpc.location.model.ObServerAddr;
 import com.alipay.oceanbase.rpc.location.model.ServerRoster;
+import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.property.Property;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObQueryOperationType;
+import com.alipay.oceanbase.rpc.stream.QueryResultSet;
+import com.alipay.oceanbase.rpc.stream.async.ObTableQueryAsyncStreamResult;
+import com.alipay.oceanbase.rpc.table.ObTable;
+import com.alipay.oceanbase.rpc.table.ObTableClientQueryAsyncImpl;
+import com.alipay.oceanbase.rpc.table.ObTableClientQueryImpl;
 import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
+import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
 import org.junit.Assert;
@@ -36,6 +44,8 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ObTableClientTest extends ObTableClientTestBase {
     @Before
@@ -467,4 +477,114 @@ public class ObTableClientTest extends ObTableClientTestBase {
         }
     }
 
+    @Test
+    public void test_batch_query() throws Exception {
+        /*
+        * CREATE TABLE `test_batch_query` (
+             `c1` bigint NOT NULL,
+             `c2` varchar(20) DEFAULT NULL,
+            PRIMARY KEY (`c1`))partition by range(`c1`)(partition p0 values less than(200), partition p1 values less than(500), partition p2 values less than(900));
+            * alter table test_varchar_table add key `idx_test` (`c1`,`c3`);
+            )*/
+        Object[] c1 = new Object[] { 123L, 124L, 136L, 138L, 145L, 567L, 666L, 777L };
+        Object[] c2 = new Object[] { "123c2", "124c2", "136c2", "138c2", "145c2", "567c2", "666c2",
+                "777c2" };
+
+        ObTableClient client1 = new ObTableClient();
+        try {
+            client1.setMetadataRefreshInterval(100);
+            client1 = ObTableClientTestUtil.newTestClient();
+            client1.setServerAddressCachingTimeout(10000000);
+            client1.init();
+            client1.addRowKeyElement("test_batch_query", new String[] { "c1" }); //同索引列的值一样
+            for (int i = 0; i < 8; i++) {
+                client1.insert("test_batch_query", new Object[] { c1[i] }, new String[] { "c2" },
+                    new Object[] { c2[i] });
+            }
+
+            // 非阻塞query
+            TableQuery tableQuery = client1.queryByBatchV2("test_batch_query");
+            // 查询结果集
+            QueryResultSet result = tableQuery.select("c2").primaryIndex().setBatchSize(2)
+                .addScanRange(new Object[] { 123L }, new Object[] { 777L }).execute();
+
+            for (int i = 0; i < 8; i++) {
+                Assert.assertTrue(result.next());
+                Map<String, Object> value = result.getRow();
+                assertEquals(value.get("c2"), c2[i]);
+                System.out.println("c2:" + value.get("c2"));
+            }
+            Assert.assertFalse(result.next());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            for (int i = 0; i < 8; i++) {
+                client1.delete("test_batch_query", new Object[] { c1[i] });
+            }
+            client1.close();
+        }
+    }
+
+    @Test
+    public void test_batch_query_coverage() {
+        ObTableClient client1 = new ObTableClient();
+
+        TableQuery tableQuery = client1.query("test_batch_query");
+        ObTable obTable = new ObTable();
+        try {
+            tableQuery.executeInit(new ObPair<Long, ObTable>(0L, obTable));
+            fail();
+        } catch (Exception e) {
+            assertTrue(true);
+        }
+
+        try {
+            tableQuery.executeNext(new ObPair<Long, ObTable>(0L, obTable));
+            fail();
+        } catch (Exception e) {
+            assertTrue(true);
+        }
+        try {
+            tableQuery.setMaxResultSize(100000);
+        } catch (Exception e) {
+            assertTrue(true);
+        }
+        tableQuery.clear();
+
+        ObTableClientQueryImpl obTableClientQuery = new ObTableClientQueryImpl("test_batch_query",
+            client1);
+        try {
+            obTableClientQuery.executeInit(new ObPair<Long, ObTable>(0L, obTable));
+            fail();
+        } catch (Exception e) {
+            assertTrue(true);
+        }
+        try {
+            obTableClientQuery.executeNext(new ObPair<Long, ObTable>(0L, obTable));
+            fail();
+        } catch (Exception e) {
+            assertTrue(true);
+        }
+
+        ObTableClientQueryAsyncImpl obTableClientQueryAsync = new ObTableClientQueryAsyncImpl(
+            "test_batch_query", tableQuery.getObTableQuery(), client1);
+        obTableClientQueryAsync.getSessionId();
+        try {
+            obTableClientQueryAsync.setKeys("c1", "c3");
+            fail();
+        } catch (Exception e) {
+            assertTrue(true);
+        }
+        try {
+            obTableClientQueryAsync.executeInternal(ObQueryOperationType.QUERY_START);
+        } catch (Exception e) {
+            assertTrue(true);
+        }
+
+        ObTableQueryAsyncStreamResult obTableQueryAsyncStreamResult = new ObTableQueryAsyncStreamResult();
+        obTableQueryAsyncStreamResult.setSessionId(100000);
+        obTableQueryAsyncStreamResult.getSessionId();
+        obTableQueryAsyncStreamResult.setEnd(true);
+    }
 }

@@ -28,6 +28,9 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableStreamRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.QueryStreamResult;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObQueryOperationType;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncRequest;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
 import io.netty.buffer.ByteBuf;
 
@@ -171,6 +174,19 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         return (ObTableQueryResult) result;
     }
 
+    protected ObTableQueryAsyncResult checkObTableQuerySyncResult(Object result) {
+        if (result == null) {
+            throw new ObTableException("client get unexpected NULL result");
+        }
+
+        if (!(result instanceof ObTableQueryAsyncResult)) {
+            throw new ObTableException("client get unexpected result: "
+                                       + result.getClass().getName() + "expect "
+                                       + ObTableQueryAsyncResult.class.getName());
+        }
+        return (ObTableQueryAsyncResult) result;
+    }
+
     private ObTableQueryResult referToLastStreamResult(ObPair<Long, ObTable> partIdWithObTable,
                                                        ObTableQueryResult lastResult)
                                                                                      throws Exception {
@@ -214,8 +230,33 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         return execute(partIdWithObTable, request);
     }
 
+    private ObTableQueryAsyncResult referToNewPartition(ObPair<Long, ObTable> partIdWithObTable,
+                                                        ObQueryOperationType type, long sessionID)
+                                                                                                  throws Exception {
+        ObTableQueryAsyncRequest asyncRequest = new ObTableQueryAsyncRequest();
+        ObTableQueryRequest request = new ObTableQueryRequest();
+
+        request.setTableName(tableName);
+        request.setTableQuery(tableQuery);
+        request.setPartitionId(partIdWithObTable.getLeft());
+        request.setEntityType(entityType);
+        asyncRequest.setObTableQueryRequest(request);
+        asyncRequest.setQueryType(type);
+        asyncRequest.setQuerySessionId(sessionID);
+        if (operationTimeout > 0) {
+            asyncRequest.setTimeout(operationTimeout);
+        } else {
+            asyncRequest.setTimeout(partIdWithObTable.getRight().getObTableOperationTimeout());
+        }
+        return executeAsync(partIdWithObTable, asyncRequest);
+    }
+
     protected abstract ObTableQueryResult execute(ObPair<Long, ObTable> partIdWithObTable,
                                                   ObPayload streamRequest) throws Exception;
+
+    protected abstract ObTableQueryAsyncResult executeAsync(ObPair<Long, ObTable> partIdWithObTable,
+                                                            ObPayload streamRequest)
+                                                                                    throws Exception;
 
     private void cacheResultRows(ObTableQueryResult tableQueryResult) {
         cacheRows.addAll(tableQueryResult.getPropertiesRows());
@@ -231,7 +272,22 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         }
     }
 
-    /*
+    private void cacheResultRows(ObTableQueryAsyncResult tableQuerySyncResult) {
+        cacheRows.addAll(tableQuerySyncResult.getAffectedEntity().getPropertiesRows());
+        cacheProperties = tableQuerySyncResult.getAffectedEntity().getPropertiesNames();
+    }
+
+    protected void cacheStreamNext(ObPair<Long, ObTable> partIdWithObTable,
+                                   ObTableQueryAsyncResult tableQuerySyncResult) {
+        cacheResultRows(tableQuerySyncResult);
+        if (tableQuerySyncResult.getAffectedEntity().isStream()
+            && tableQuerySyncResult.getAffectedEntity().isStreamNext()) {
+            partitionLastResult.addLast(new ObPair<ObPair<Long, ObTable>, ObTableQueryResult>(
+                partIdWithObTable, tableQuerySyncResult.getAffectedEntity()));
+        }
+    }
+
+    /**
      * Get row.
      */
     public List<ObObj> getRow() {
@@ -267,7 +323,29 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         initialized = true;
     }
 
-    /*
+    public void init(ObQueryOperationType type, long sessionID) throws Exception {
+        if (initialized) {
+            return;
+        }
+        for (Map.Entry<Long, ObPair<Long, ObTable>> entry : expectant.entrySet()) {
+            // mark the refer partition
+            referToNewPartition(entry.getValue(), type, sessionID);
+        }
+        expectant.clear();
+        initialized = true;
+    }
+
+    public void init(ObQueryOperationType type, ObPair<Long, ObTable> entry, long sessionID)
+                                                                                            throws Exception {
+        if (initialized) {
+            return;
+        }
+        referToNewPartition(entry, type, sessionID);
+        expectant.clear();
+        initialized = true;
+    }
+
+    /**
      * Close.
      */
     public void close() throws Exception {
