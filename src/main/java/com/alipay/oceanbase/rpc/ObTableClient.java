@@ -75,11 +75,23 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private AtomicInteger                                     tableEntryRefreshContinuousFailureCount = new AtomicInteger(
                                                                                                           0);
     private String                                            dataSourceName;
+
     private String                                            paramURL;
+    /*
+    * rsList >> paramURL
+    */
+    private String                                            rsList;
+    private Boolean                                           useRsList;
+    /*
+    * when use rs list need to asset  region
+    */
+    private String                                            appRegion;
     /*
      * user name
      * Standard format: user@tenant#cluster
      * NonStandard format: cluster:tenant:user
+     * when use rs_list
+     * Standard format: user@tenant
      */
     private String                                            fullUserName;
     private String                                            userName;
@@ -293,7 +305,82 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         rpcLoginTimeout = parseToInt(RPC_LOGIN_TIMEOUT.getKey(), rpcLoginTimeout);
     }
 
+    private void initMetadataFromRS() throws Exception {
+
+        List<ObServerAddr> rsList = new ArrayList<ObServerAddr>();
+        for (String serverStr : getRsList().split(":")){
+            ObServerAddr serverAddr = new ObServerAddr();
+            serverAddr.setAddress(serverStr);
+            rsList.add(serverAddr);
+        }
+
+        List<ObServerAddr> servers = new ArrayList<ObServerAddr>();
+        ConcurrentHashMap<ObServerAddr, ObTable> tableRoster = new ConcurrentHashMap<ObServerAddr, ObTable>();
+
+        TableEntryKey rootServerKey = new TableEntryKey(clusterName, tenantName,
+            OCEANBASE_DATABASE, ALL_DUMMY_TABLE);
+
+
+        TableEntry tableEntry = loadTableEntryRandomly(rsList,//
+            rootServerKey,//
+            tableEntryAcquireConnectTimeout,//
+            tableEntryAcquireSocketTimeout, sysUA);
+
+        List<ReplicaLocation> replicaLocations = tableEntry.getTableLocation()
+            .getReplicaLocations();
+        for (ReplicaLocation replicaLocation : replicaLocations) {
+            ObServerInfo info = replicaLocation.getInfo();
+            ObServerAddr addr = replicaLocation.getAddr();
+            if (!info.isActive()) {
+                logger.warn("will not init location {} because status is {}", addr.toString(),
+                    info.getStatus());
+                continue;
+            }
+
+            // 忽略初始化建连失败，否则client会初始化失败，导致应用无法启动的问题
+            // 初始化建连失败(可能性较小)，如果后面这台server恢复，数据路由失败，就会重新刷新metadata
+            // 在失败100次后(RUNTIME_CONTINUOUS_FAILURE_CEILING)，重新刷新建连
+            // 本地cache 1小时超时后(SERVER_ADDRESS_CACHING_TIMEOUT)，重新刷新建连
+            // 应急可以直接observer切主
+            try {
+                ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort()) //
+                    .setLoginInfo(tenantName, userName, password, database) //
+                    .setProperties(getProperties()).build();
+                tableRoster.put(addr, obTable);
+                servers.add(addr);
+            } catch (Exception e) {
+                logger
+                    .warn(
+                        "The addr{}:{} failed to put into table roster, the node status may be wrong, Ignore",
+                        addr.getIp(), addr.getSvrPort());
+            }
+        }
+        this.tableRoster = tableRoster;
+        this.serverRoster.reset(servers);
+
+        // Get Server LDC info for weak read consistency.
+        if (StringUtil.isEmpty(currentIDC)) {
+            currentIDC = ZoneUtil.getCurrentIDC();
+        }
+        List<ObServerLdcItem> ldcServers = getServerLdc(serverRoster,
+            tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
+            serverAddressPriorityTimeout, serverAddressCachingTimeout, sysUA);
+        this.serverRoster.resetServerLdc(ObServerLdcLocation.buildLdcLocation(ldcServers,
+            currentIDC, getAppRegion()));
+
+        if (logger.isInfoEnabled()) {
+            logger.info("finish refresh serverRoster: {}", serverRoster);
+        }
+
+        this.lastRefreshMetadataTimestamp = System.currentTimeMillis();
+    }
+
     private void initMetadata() throws Exception {
+
+        if (getUseRsList().equals(true)){
+            initMetadataFromRS();
+            return;
+        }
 
         this.ocpModel = loadOcpModel(paramURL, dataSourceName, rsListAcquireConnectTimeout,
             rsListAcquireReadTimeout, rsListAcquireTryTimes, rsListAcquireRetryInterval);
@@ -527,6 +614,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (logger.isInfoEnabled()) {
                 logger.info("start refresh metadata, ts: {}, dataSourceName: {}, url: {}",
                     lastRefreshMetadataTimestamp, dataSourceName, paramURL);
+            }
+
+            if (getUseRsList().equals(true)){
+                initMetadataFromRS();
+                return;
             }
 
             this.ocpModel = loadOcpModel(paramURL, //
@@ -1365,6 +1457,59 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return paramURL;
     }
 
+    /**
+     * Get param url
+     * @return param url
+     */
+    public String getRsList() {
+        return paramURL;
+    }
+
+    /**
+     * Get useRsList
+     * @return useRsList
+     */
+    public Boolean getUseRsList() {
+        return useRsList;
+    }
+
+    /**
+     * Get param appRegion
+     * @return param appRegion
+     */
+    public String getAppRegion() {
+        return appRegion;
+    }
+
+    /**
+     * Set appRegion .
+     * @param appRegion app region 
+     * @throws IllegalArgumentException if appRegion invalid
+     */
+    public void setAppRegion(String region) throws IllegalArgumentException{
+        if (StringUtils.isBlank(region)) {
+            throw new IllegalArgumentException(String.format("region is empty, region=%s", region));
+        }
+        this.appRegion = region;
+    }
+
+    /**
+     * Set rs list.
+     * @param rsList rs list
+     * @throws IllegalArgumentException if rsList invalid
+     */
+    public void setRsList(String rsList) throws IllegalArgumentException {
+        if (StringUtils.isBlank(rsList)) {
+            throw new IllegalArgumentException(String.format("rsList is empty, rsList=%s", rsList));
+        }
+        int paramIndex = rsList.indexOf(':');
+        if (-1 == paramIndex || (paramIndex + 1) == paramURL.length()) {
+            throw new IllegalArgumentException(String.format(
+                "invalid rs list, parameters are not set. rs_list=%s", rsList));
+        }
+        this.rsList = rsList;
+        this.useRsList = Boolean.valueOf(true);
+    }
     /**
      * Set param url.
      * @param paramURL param url

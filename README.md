@@ -23,11 +23,43 @@ Import the dependency for your maven project:
 ```
 
 The code demo:
+use configurl
 ``` java
     // 1. initail ObTableClient
     ObTableClient obTableClient = new ObTableClient();
     obTableClient.setFullUserName("full_user_name");
-    obTableClient.setParamURL("param_url");
+    // one: configurl or rs_list
+    // if use rs_list ;please set Full user name format user@tenant e.g. root@sys
+    obTableClient.setParamURL("your configurl + database=xxx"); // e.g. http://ip:port/services?Action=ObRootServiceInfo&ObRegion=ocp&database=test
+    obTableClient.setPassword("password");
+    obTableClient.setSysUserName("sys_user_name");
+    obTableClient.setSysPassword("sys_user_passwd");
+    obTableClient.init();
+
+    // 2. single execute
+    // return affectedRows
+    obTableClient.insert("test_varchar_table", "foo", new String[] { "c2" }, new String[] { "bar" });
+    // return Map<String, Object>
+    obTableClient.get("test_varchar_table", "foo", new String[] { "c2" });
+    // return affectedRows
+    obTableClient.delete("test_varchar_table", "foo");
+
+    // 3. batch execute
+    TableBatchOps batchOps = obTableClient.batch("test_varchar_table");
+    batchOps.insert("foo", new String[] { "c2" }, new String[] { "bar" });
+    batchOps.get("foo", new String[] { "c2" });
+    batchOps.delete("foo");
+    
+    List<Object> results = batchOps.execute();
+    // the results include 3 item: 1. affectedRows; 2. Map; 3. affectedRows.
+```
+use rs list
+``` java
+    // 1. initail ObTableClient
+    ObTableClient obTableClient = new ObTableClient();
+    obTableClient.setFullUserName("full_user_name");
+    obTableClient.setRsList("your rs_list"); // e.g. 172.16.0.80:2882:2881;172.16.0.82:2882:2881;172.16.0.86:2882:2881
+    obTableClient.setaAppRegion("your app region"); // e.g. region
     obTableClient.setPassword("password");
     obTableClient.setSysUserName("sys_user_name");
     obTableClient.setSysPassword("sys_user_passwd");
