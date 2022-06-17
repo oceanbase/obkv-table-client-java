@@ -28,8 +28,6 @@ use configurl
     // 1. initail ObTableClient
     ObTableClient obTableClient = new ObTableClient();
     obTableClient.setFullUserName("full_user_name");
-    // one: configurl or rs_list
-    // if use rs_list ;please set Full user name format user@tenant e.g. root@sys
     obTableClient.setParamURL("your configurl + database=xxx"); // e.g. http://ip:port/services?Action=ObRootServiceInfo&ObRegion=ocp&database=test
     obTableClient.setPassword("password");
     obTableClient.setSysUserName("sys_user_name");
@@ -57,6 +55,7 @@ use rs list
 ``` java
     // 1. initail ObTableClient
     ObTableClient obTableClient = new ObTableClient();
+    // if use rs_list ;please set Full user name format user@tenant e.g. root@sys
     obTableClient.setFullUserName("full_user_name");
     obTableClient.setRsList("your rs_list"); // e.g. 172.16.0.80:2882:2881;172.16.0.82:2882:2881;172.16.0.86:2882:2881
     obTableClient.setaAppRegion("your app region"); // e.g. region
