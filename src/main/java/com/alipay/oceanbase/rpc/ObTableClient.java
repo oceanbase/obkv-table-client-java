@@ -1462,7 +1462,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return param url
      */
     public String getRsList() {
-        return paramURL;
+        return rsList;
     }
 
     /**
