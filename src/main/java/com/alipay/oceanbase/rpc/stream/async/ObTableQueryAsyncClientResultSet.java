@@ -52,7 +52,8 @@ public class ObTableQueryAsyncClientResultSet implements QueryStreamResult {
     public boolean next() throws Exception {
         boolean res = false;
         // 对于分区/非分区表，从第一个分区0开始，在每个分区内都执行init和next；如此迭代每一个分区。直到isHasMore=false且分区都遍历完
-        if (cur < partitionIndex || resultSet.isHasMore() || partitionIndex == 0) {
+        if (cur < partitionIndex || partitionIndex == 0 || resultSet == null
+            || resultSet.isHasMore()) {
             if (resultSet == null) {
                 resultSet = this.obTableClientQueryAsync.getTableQuery()
                     .executeInit(lists.get(cur));
