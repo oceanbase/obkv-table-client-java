@@ -2914,7 +2914,6 @@ public final class ObHashSortUtf8mb4 {
     }
 
     /*
-     * Please refer to : https://en.wikipedia.org/wiki/UTF-8
      * The following table shows how the Unicode code points map to UTF-8 multi-byte byte sequences,
      * and their equivalent binary values.
      * <p>
@@ -2926,8 +2925,8 @@ public final class ObHashSortUtf8mb4 {
      * U+010000-U+10FFFF    000zzzzz yyyyyyyy xxxxxxxx    11110zzz 10zzyyyy 10yyyyxx 10xxxxxx
      * <p>
      * The basic rules are as follows:
-     * （1） If a byte starts with a 0 bit, it's a single byte value less than 128.
-     * （2） If it starts with 11, it's the first byte of a multi-byte sequence
+     * (1) If a byte starts with a 0 bit, it's a single byte value less than 128.
+     * (2) If it starts with 11, it's the first byte of a multi-byte sequence
      * and the number of 1 bits at the start indicates how many bytes there are in total,
      * eg., 110xxxxx has two bytes, 1110xxxx has three and 11110xxx has four.
      * (3) If it starts with 10, it's a continuation byte.
