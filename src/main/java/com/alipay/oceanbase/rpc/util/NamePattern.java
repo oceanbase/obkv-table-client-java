@@ -116,8 +116,7 @@ public class NamePattern {
             secondValue = value % valueRangeSecond;
         }
 
-        // 技术上没必要控制得如此严格
-        // 但是为了统一 DB 层库表分布的元数据，需要控制一下
+        // 统一 DB 层库表分布的元数据
         if (value < minValue || value > maxValue) {
             throw new IllegalArgumentException("NamePattern value out of bound. value: " + value
                                                + ", minValue: " + minValue + ", maxValue: "

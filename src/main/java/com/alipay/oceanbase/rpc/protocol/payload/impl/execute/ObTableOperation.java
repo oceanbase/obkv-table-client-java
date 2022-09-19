@@ -35,7 +35,7 @@ import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderL
 public class ObTableOperation extends AbstractPayload {
 
     private ObTableOperationType operationType;
-    private ObITableEntity       entity;       // TODO 我是如何知道类型的？
+    private ObITableEntity       entity;
 
     /*
      * Encode.
