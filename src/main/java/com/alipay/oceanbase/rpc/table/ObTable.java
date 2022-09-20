@@ -509,9 +509,9 @@ public class ObTable extends AbstractObTable implements Lifecycle {
      * consistency, while each thread call invokeSync for data access, ensuring the sequential consistency.
      * <p>
      * Thread safety:
-     * （1） init and close require external synchronization or locking, which should be called only once.
-     * （2） getConnection from the pool is synchronized, thus thread-safe, .
-     * （3） ObTableConnection is shared and thread-safe, granted by underlying library.
+     * (1) init and close require external synchronization or locking, which should be called only once.
+     * (2) getConnection from the pool is synchronized, thus thread-safe, .
+     * (3) ObTableConnection is shared and thread-safe, granted by underlying library.
      */
     private static class ObTableConnectionPool {
         private final int                    obTableConnectionPoolSize;
