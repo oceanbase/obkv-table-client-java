@@ -141,6 +141,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private ObReadConsistency                                 readConsistency                         = ObReadConsistency.STRONG;
     private ObRoutePolicy                                     obRoutePolicy                           = ObRoutePolicy.IDC_ORDER;
 
+    private boolean                                           odpMode                                 = false;
+
+    private String                                            odpAddr                                 = "127.0.0.1";
+
+
+    private int                                               odpPort                                 = 2883;
+
+    private ObTable                                           odpTable                                = null;
+
+
     /*
      * Init.
      */
@@ -224,7 +234,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     private void initProperties() {
-
         // metadata.refresh.interval is preferred.
         metadataRefreshInterval = parseToLong(METADATA_REFRESH_INTERNAL.getKey(),
             metadataRefreshInterval);
@@ -295,6 +304,19 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     private void initMetadata() throws Exception {
 
+        if (odpMode) {
+            try {
+                odpTable = new ObTable.Builder(odpAddr, odpPort) //
+                        .setLoginInfo(tenantName, fullUserName, password, database) //
+                        .setProperties(getProperties()).build();
+            } catch (Exception e) {
+                logger.warn("The addr{}:{} failed to put into table roster, the node status may be wrong, Ignore",
+                            odpAddr, odpPort);
+                throw e;
+            }
+            return;
+        }
+
         this.ocpModel = loadOcpModel(paramURL, dataSourceName, rsListAcquireConnectTimeout,
             rsListAcquireReadTimeout, rsListAcquireTryTimes, rsListAcquireRetryInterval);
 
@@ -360,6 +382,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         this.lastRefreshMetadataTimestamp = System.currentTimeMillis();
     }
 
+    public boolean isOdpMode() {
+        return odpMode;
+    }
+
+    public void setOdpMode(boolean odpMode) {
+        this.odpMode = odpMode;
+    }
+
+    public ObTable getOdpTable() { return this.odpTable; }
+
     private abstract class TableExecuteCallback<T> {
         private final Object[] rowKey;
 
@@ -423,8 +455,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             tryTimes++;
             ObPair<Long, ObTable> obPair = null;
             try {
-                obPair = getTable(tableName, callback.getRowKey(), needRefreshTableEntry,
-                    tableEntryRefreshIntervalWait, route);
+                if (odpMode) {
+                    obPair = new ObPair<Long, ObTable>(0L, odpTable);
+                } else {
+                    obPair = getTable(tableName, callback.getRowKey(), needRefreshTableEntry,
+                            tableEntryRefreshIntervalWait, route);
+                }
                 T t = callback.execute(obPair);
                 resetExecuteContinuousFailureCount(tableName);
                 return t;
@@ -596,6 +632,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             List<ObServerLdcItem> ldcServers = getServerLdc(serverRoster,
                 tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
                 serverAddressPriorityTimeout, serverAddressCachingTimeout, sysUA);
+
             // reset Server LDC location.
             this.serverRoster.resetServerLdc(ObServerLdcLocation.buildLdcLocation(ldcServers,
                 currentIDC, ocpModel.getIdc2Region(currentIDC)));
@@ -735,6 +772,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
     }
 
+    /**
+     * 刷新 table entry 元数据
+     * @param tableEntry
+     * @param tableName
+     * @return
+     * @throws ObTableEntryRefreshException
+     */
     private TableEntry refreshTableEntry(TableEntry tableEntry, String tableName)
                                                                                  throws ObTableEntryRefreshException {
         TableEntryKey tableEntryKey = new TableEntryKey(clusterName, tenantName, database,
@@ -802,6 +846,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private static final Long MASK = (1L << PART_ID_BITNUM)
                                      | 1L << (PART_ID_BITNUM + PART_ID_SHIFT);
 
+    /**
+     * 根据 rowkey 获取分区 id
+     * @param tableEntry
+     * @param rowKey
+     * @return
+     */
     private long getPartition(TableEntry tableEntry, Object[] rowKey) {
         // non partition
         if (!tableEntry.isPartitionTable()
@@ -824,17 +874,43 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             route));
     }
 
+    /**
+     *
+     * @param tableEntry
+     * @param partId
+     * @param route
+     * @return
+     */
     private ReplicaLocation getPartitionLocation(TableEntry tableEntry, long partId,
                                                  ObServerRoute route) {
         return tableEntry.getPartitionEntry().getPartitionLocationWithPartId(partId)
             .getReplica(route);
     }
 
+    /**
+     *
+     * @param tableName
+     * @param rowKey
+     * @param refresh
+     * @param waitForRefresh
+     * @return
+     * @throws Exception
+     */
     public ObPair<Long, ObTable> getTable(String tableName, Object[] rowKey, boolean refresh,
                                           boolean waitForRefresh) throws Exception {
         return getTable(tableName, rowKey, refresh, waitForRefresh, getRoute(false));
     }
 
+    /**
+     *
+     * @param tableName
+     * @param rowKey
+     * @param refresh
+     * @param waitForRefresh
+     * @param route
+     * @return
+     * @throws Exception
+     */
     public ObPair<Long, ObTable> getTable(String tableName, Object[] rowKey, boolean refresh,
                                           boolean waitForRefresh, ObServerRoute route)
                                                                                       throws Exception {
@@ -845,6 +921,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return getTable(tableName, tableEntry, partId, waitForRefresh, route);
     }
 
+    /**
+     *
+     * @param tableName
+     * @param partId
+     * @param refresh
+     * @param waitForRefresh
+     * @param route
+     * @return
+     * @throws Exception
+     */
     public ObPair<Long, ObTable> getTable(String tableName, long partId, boolean refresh,
                                           boolean waitForRefresh, ObServerRoute route)
                                                                                       throws Exception {
@@ -852,6 +938,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             partId, waitForRefresh, route);
     }
 
+    /**
+     * 根据分区 id 获取 table entry 中的 addr
+     * @param tableName
+     * @param tableEntry
+     * @param partId
+     * @param waitForRefresh
+     * @param route
+     * @return
+     * @throws Exception
+     */
     public ObPair<Long, ObTable> getTable(String tableName, TableEntry tableEntry, long partId,
                                           boolean waitForRefresh, ObServerRoute route)
                                                                                       throws Exception {
@@ -871,6 +967,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (logger.isInfoEnabled() && addrExpired) {
                 logger.info("server addr {} is expired, refresh tableEntry.", addr);
             }
+
             tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh);
             replica = getPartitionReplica(tableEntry, partId, route).getRight();
             addr = replica.getAddr();
@@ -884,6 +981,17 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return new ObPair<Long, ObTable>(partitionReplica.getLeft(), obTable);
     }
 
+    /**
+     * 根据 start-end 获取 partition id 和 addr
+     * @param tableEntry
+     * @param start
+     * @param startIncluded
+     * @param end
+     * @param endIncluded
+     * @param route
+     * @return
+     * @throws Exception
+     */
     private List<ObPair<Long, ReplicaLocation>> getPartitionReplica(TableEntry tableEntry,
                                                                     Object[] start,
                                                                     boolean startIncluded,
@@ -911,6 +1019,18 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return replicas;
     }
 
+    /**
+     * 根据 start-end 获取 partition ids 和 addrs
+     * @param tableName
+     * @param start
+     * @param startInclusive
+     * @param end
+     * @param endInclusive
+     * @param refresh
+     * @param waitForRefresh
+     * @return
+     * @throws Exception
+     */
     public List<ObPair<Long, ObTable>> getTables(String tableName, Object[] start,
                                                  boolean startInclusive, Object[] end,
                                                  boolean endInclusive, boolean refresh,
@@ -919,6 +1039,19 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             waitForRefresh, getRoute(false));
     }
 
+    /**
+     *
+     * @param tableName
+     * @param start
+     * @param startInclusive
+     * @param end
+     * @param endInclusive
+     * @param refresh
+     * @param waitForRefresh
+     * @param route
+     * @return
+     * @throws Exception
+     */
     public List<ObPair<Long, ObTable>> getTables(String tableName, Object[] start,
                                                  boolean startInclusive, Object[] end,
                                                  boolean endInclusive, boolean refresh,
@@ -957,6 +1090,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
             obTables.add(new ObPair<Long, ObTable>(partId, obTable));
         }
+
         return obTables;
     }
 
@@ -1131,11 +1265,27 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         });
     }
 
+    /**
+     *
+     * @param tableName
+     * @param rowKey
+     * @param columns
+     * @param values
+     * @param withResult
+     * @return
+     * @throws Exception
+     */
     @Override
     public Map<String, Object> increment(final String tableName, final Object[] rowKey,
                                          final String[] columns, final Object[] values,
                                          final boolean withResult) throws Exception {
         return execute(tableName, new TableExecuteCallback<Map<String, Object>>(rowKey) {
+            /**
+             *
+             * @param obPair
+             * @return
+             * @throws Exception
+             */
             @Override
             public Map<String, Object> execute(ObPair<Long, ObTable> obPair) throws Exception {
                 ObTable obTable = obPair.getRight();
@@ -1339,6 +1489,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         handleFullUsername(user, tenant, cluster, username);
     }
 
+    /**
+     *
+     * @param user
+     * @param tenant
+     * @param cluster
+     * @param username
+     */
     private void handleFullUsername(String user, String tenant, String cluster, String username) {
         if (StringUtils.isBlank(user)) {
             throw new IllegalArgumentException(String.format("user has not been set, username=%s",
@@ -1588,6 +1745,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return router
      */
     public ObServerRoute getReadRoute() {
+        if (odpMode) {
+            return null;
+        }
         if (getReadConsistency().isStrong()) {
             return STRONG_READ;
         }
@@ -1606,6 +1766,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         } else {
             return STRONG_READ;
         }
+    }
+
+    public void setOdpAddr(String odpAddr) {
+        this.odpAddr = odpAddr;
+    }
+
+    public void setOdpPort(int odpPort) {
+        this.odpPort = odpPort;
     }
 
     /**

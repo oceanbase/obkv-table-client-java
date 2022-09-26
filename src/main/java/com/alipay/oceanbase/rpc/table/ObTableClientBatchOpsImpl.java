@@ -177,6 +177,17 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         List<ObTableOperation> operations = batchOperation.getTableOperations();
         Map<Long, ObPair<ObTable, List<ObPair<Integer, ObTableOperation>>>> partitionOperationsMap = new HashMap<Long, ObPair<ObTable, List<ObPair<Integer, ObTableOperation>>>>();
 
+        if (obTableClient.isOdpMode()) {
+            ObPair<ObTable, List<ObPair<Integer, ObTableOperation>>> obTableOperations = new ObPair<ObTable, List<ObPair<Integer, ObTableOperation>>>(
+                    obTableClient.getOdpTable(), new ArrayList<ObPair<Integer, ObTableOperation>>());
+            for (int i = 0; i < operations.size(); i++) {
+                ObTableOperation operation = operations.get(i);
+                obTableOperations.getRight().add(new ObPair<Integer, ObTableOperation>(i, operation));
+            }
+            partitionOperationsMap.put(0L, obTableOperations);
+            return partitionOperationsMap;
+        }
+
         for (int i = 0; i < operations.size(); i++) {
             ObTableOperation operation = operations.get(i);
             ObRowKey rowKeyObject = operation.getEntity().getRowKey();
@@ -185,9 +196,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             for (int j = 0; j < rowKeySize; j++) {
                 rowKey[j] = rowKeyObject.getObj(j).getValue();
             }
-
             ObPair<Long, ObTable> tableObPair = obTableClient.getTable(tableName, rowKey, false,
-                false, obTableClient.getRoute(batchOperation.isReadOnly()));
+                    false, obTableClient.getRoute(batchOperation.isReadOnly()));
             ObPair<ObTable, List<ObPair<Integer, ObTableOperation>>> obTableOperations = partitionOperationsMap
                 .get(tableObPair.getLeft());
             if (obTableOperations == null) {
