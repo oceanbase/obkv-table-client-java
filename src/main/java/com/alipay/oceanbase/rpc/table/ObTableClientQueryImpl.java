@@ -85,26 +85,30 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
      */
     public ObTableClientQueryStreamResult executeInternal() throws Exception {
         Map<Long, ObPair<Long, ObTable>> partitionObTables = new HashMap<Long, ObPair<Long, ObTable>>();
-        for (ObNewRange rang : tableQuery.getKeyRanges()) {
-            ObRowKey startKey = rang.getStartKey();
-            int startKeySize = startKey.getObjs().size();
-            ObRowKey endKey = rang.getEndKey();
-            int endKeySize = endKey.getObjs().size();
-            Object[] start = new Object[startKeySize];
-            Object[] end = new Object[endKeySize];
-            for (int i = 0; i < startKeySize; i++) {
-                start[i] = startKey.getObj(i).getValue();
-            }
+        if (obTableClient.isOdpMode()) {
+            partitionObTables.put(0L, new ObPair<Long, ObTable>(0L, obTableClient.getOdpTable()));
+        } else {
+            for (ObNewRange rang : tableQuery.getKeyRanges()) {
+                ObRowKey startKey = rang.getStartKey();
+                int startKeySize = startKey.getObjs().size();
+                ObRowKey endKey = rang.getEndKey();
+                int endKeySize = endKey.getObjs().size();
+                Object[] start = new Object[startKeySize];
+                Object[] end = new Object[endKeySize];
+                for (int i = 0; i < startKeySize; i++) {
+                    start[i] = startKey.getObj(i).getValue();
+                }
 
-            for (int i = 0; i < endKeySize; i++) {
-                end[i] = endKey.getObj(i).getValue();
-            }
-            ObBorderFlag borderFlag = rang.getBorderFlag();
-            List<ObPair<Long, ObTable>> pairs = obTableClient.getTables(tableName, start,
-                borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false, false,
-                obTableClient.getReadRoute());
-            for (ObPair<Long, ObTable> pair : pairs) {
-                partitionObTables.put(pair.getLeft(), pair);
+                for (int i = 0; i < endKeySize; i++) {
+                    end[i] = endKey.getObj(i).getValue();
+                }
+                ObBorderFlag borderFlag = rang.getBorderFlag();
+                List<ObPair<Long, ObTable>> pairs = obTableClient.getTables(tableName, start,
+                    borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false, false,
+                    obTableClient.getReadRoute());
+                for (ObPair<Long, ObTable> pair : pairs) {
+                    partitionObTables.put(pair.getLeft(), pair);
+                }
             }
         }
 

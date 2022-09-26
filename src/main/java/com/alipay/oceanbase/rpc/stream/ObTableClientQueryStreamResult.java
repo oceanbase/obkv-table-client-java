@@ -69,9 +69,13 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                     if (failedServerList != null) {
                         route.setBlackList(failedServerList);
                     }
-                    subObTable = client.getTable(tableName, partIdWithIndex.getLeft(),
-                        needRefreshTableEntry, client.isTableEntryRefreshIntervalWait(), route)
-                        .getRight();
+                    if (client.isOdpMode()) {
+                        subObTable = client.getOdpTable();
+                    } else {
+                        subObTable = client.getTable(tableName, partIdWithIndex.getLeft(),
+                                        needRefreshTableEntry, client.isTableEntryRefreshIntervalWait(), route)
+                                .getRight();
+                    }
                 }
                 result = subObTable.execute(request);
                 client.resetExecuteContinuousFailureCount(tableName);
@@ -88,6 +92,10 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                     throw ex;
                 }
             } catch (Exception e) {
+                if (this.client.isOdpMode()) {
+                    throw e;
+                }
+
                 if (e instanceof ObTableException
                     && ((ObTableException) e).isNeedRefreshTableEntry()) {
                     needRefreshTableEntry = true;
