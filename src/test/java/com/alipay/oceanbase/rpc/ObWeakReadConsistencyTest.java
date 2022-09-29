@@ -20,6 +20,7 @@ package com.alipay.oceanbase.rpc;
 import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.location.model.*;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
+import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
 import com.alipay.oceanbase.rpc.util.ZoneUtil;
 import org.junit.*;
@@ -32,6 +33,7 @@ public class ObWeakReadConsistencyTest {
     private static final String weakParamUrl = paramUrl
                                                + "&read_consistency=weak&ob_route_policy=follower_first";
     private static final int    dataSetSize  = 10;
+    private static String   testIdc        = "dev";
     protected ObTableClient     client;
 
     public static void initZoneClient() {
@@ -45,7 +47,7 @@ public class ObWeakReadConsistencyTest {
         obTableClient.setFullUserName(fullUserName);
         obTableClient.setParamURL(paramUrl);
         obTableClient.setPassword(password);
-        //obTableClient.setCurrentIDC(testIdc);
+        obTableClient.setCurrentIDC(testIdc);
         obTableClient.setSysUserName(ObTableClientTestUtil.PROXY_SYS_USER_NAME);
         obTableClient.setEncSysPassword(ObTableClientTestUtil.PROXY_SYS_USER_ENC_PASSWORD);
         obTableClient.init();
@@ -54,6 +56,7 @@ public class ObWeakReadConsistencyTest {
 
     @BeforeClass
     public static void init() throws Exception {
+        ThreadLocalMap.setReadConsistency(ObReadConsistency.WEAK);
         cleanup();
         ObTableClient client = getObTableClient(paramUrl);
         for (int i = 0; i < dataSetSize; i++) {
