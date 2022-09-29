@@ -143,6 +143,7 @@ public abstract class ObTableClientTestBase {
             long start = System.currentTimeMillis();
             for (int i = 0; i < 10; i++) {
                 test_longblob_get();
+                System.out.println(i);
             }
             System.err.println("cost: " + (System.currentTimeMillis() - start));
             test_longblob_update();
@@ -163,6 +164,7 @@ public abstract class ObTableClientTestBase {
         try {
             client.insert("not_exist_table", "foo", new String[] { "c2" }, new String[] { "bar" });
         } catch (ObTableException ex) {
+            ex.printStackTrace();
             exception = ex;
         }
         assertNotNull(exception);
