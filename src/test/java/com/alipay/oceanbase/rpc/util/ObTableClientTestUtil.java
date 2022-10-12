@@ -24,7 +24,7 @@ public class ObTableClientTestUtil {
     public static String PARAM_URL                   = "config-url";
     public static String PASSWORD                    = "password";
     public static String PROXY_SYS_USER_NAME         = "sys-user-name";
-    public static String PROXY_SYS_USER_ENC_PASSWORD = "sys-user-password";
+    public static String PROXY_SYS_USER_PASSWORD = "sys-user-password";
 
     public static ObTableClient newTestClient() throws Exception {
         ObTableClient obTableClient = new ObTableClient();
@@ -32,7 +32,7 @@ public class ObTableClientTestUtil {
         obTableClient.setParamURL(PARAM_URL);
         obTableClient.setPassword(PASSWORD);
         obTableClient.setSysUserName(PROXY_SYS_USER_NAME);
-        obTableClient.setEncSysPassword(PROXY_SYS_USER_ENC_PASSWORD);
+        obTableClient.setSysPassword(PROXY_SYS_USER_PASSWORD);
         return obTableClient;
     }
 }

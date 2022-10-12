@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.LCD;
+import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.RUNTIME;
 
 public class ObRangePartDesc extends ObPartDesc {
     private static final Logger logger = TableClientLoggerFactory.getLogger(ObRangePartDesc.class);
@@ -160,11 +161,11 @@ public class ObRangePartDesc extends ObPartDesc {
                                  boolean endInclusive) {
 
         // can not detail the border effect so that the range is magnified
-        long startPartId = getPartId(start);
-        long stopPartId = getPartId(end);
+        int startIdx = getBoundsIdx(start);
+        int stopIdx = getBoundsIdx(end);
         List<Long> partIds = new ArrayList<Long>();
-        for (long i = startPartId; i <= stopPartId; i++) {
-            partIds.add(i);
+        for (int i = startIdx; i <= stopIdx; i++) {
+            partIds.add(this.bounds.get(i).value);
         }
         return partIds;
     }
@@ -174,25 +175,34 @@ public class ObRangePartDesc extends ObPartDesc {
      */
     @Override
     public Long getPartId(Object... rowKey) {
+        try {
+            return this.bounds.get(getBoundsIdx(rowKey)).value;
+        } catch (IllegalArgumentException e) {
+            RUNTIME.error(LCD.convert("01-00025"), e);
+            throw new IllegalArgumentException(
+                "ObRangePartDesc get part id come across illegal params", e);
+        }
 
+    }
+
+    public int getBoundsIdx(Object... rowKey) {
         if (rowKey.length != rowKeyElement.size()) {
             throw new IllegalArgumentException("row key is consist of " + rowKeyElement
-                                               + "but found" + Arrays.toString(rowKey));
+                    + "but found" + Arrays.toString(rowKey));
         }
 
         try {
             List<Object> evalParams = evalRowKeyValues(rowKey);
             List<Comparable> comparableElement = super.initComparableElementByTypes(evalParams,
-                this.orderedCompareColumns);
+                    this.orderedCompareColumns);
             ObPartitionKey searchKey = ObPartitionKey.getInstance(orderedCompareColumns,
-                comparableElement);
-            int idx = upperBound(this.bounds, new ObComparableKV<ObPartitionKey, Long>(searchKey,
-                (long) -1));
-            return this.bounds.get(idx).value;
+                    comparableElement);
+            return upperBound(this.bounds, new ObComparableKV<ObPartitionKey, Long>(searchKey,
+                    (long) -1));
         } catch (IllegalArgumentException e) {
-            logger.error(LCD.convert("01-00025"), e);
+            RUNTIME.error(LCD.convert("01-00025"), e);
             throw new IllegalArgumentException(
-                "ObRangePartDesc get part id come across illegal params", e);
+                    "ObRangePartDesc get getBoundsIdx error", e);
         }
 
     }
