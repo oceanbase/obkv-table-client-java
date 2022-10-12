@@ -49,7 +49,7 @@ public class ObWeakReadConsistencyTest {
         obTableClient.setPassword(password);
         obTableClient.setCurrentIDC(testIdc);
         obTableClient.setSysUserName(ObTableClientTestUtil.PROXY_SYS_USER_NAME);
-        obTableClient.setEncSysPassword(ObTableClientTestUtil.PROXY_SYS_USER_ENC_PASSWORD);
+        obTableClient.setSysPassword(ObTableClientTestUtil.PROXY_SYS_USER_PASSWORD);
         obTableClient.init();
         return obTableClient;
     }
@@ -98,9 +98,9 @@ public class ObWeakReadConsistencyTest {
             String val = "xyz-" + i;
             try {
                 Map res = client.get("test_varchar_table", key, new String[] { "c1", "c2" });
-                Assert.fail("failed to get with weak read");
+                Assert.assertEquals(val, res.get("c2"));
             } catch (ObTableUnexpectedException e) {
-                Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode, e.getErrorCode());
+                Assert.fail("failed to get with weak read");
             }
         }
         Assert.assertFalse(client.getReadConsistency().isStrong());

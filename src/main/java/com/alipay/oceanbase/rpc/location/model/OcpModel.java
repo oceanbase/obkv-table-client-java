@@ -61,6 +61,10 @@ public class OcpModel {
         return idc2Region.get(idc);
     }
 
+    public HashMap<String, String> getIdc2Region() {
+        return idc2Region;
+    }
+
     /*
      * Add Idc-Region pair.
      */
