@@ -18,7 +18,10 @@
 package com.alipay.oceanbase.rpc.table;
 
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateFilterSign;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
+
+import java.util.List;
 
 public abstract class AbstractTableQuery implements TableQuery {
     private static final String PRIMARY_INDEX_NAME = "PRIMARY";
@@ -122,5 +125,35 @@ public abstract class AbstractTableQuery implements TableQuery {
     public TableQuery setOperationTimeout(long operationTimeout) {
         this.operationTimeout = operationTimeout;
         return this;
+    }
+
+    /**
+     * build Query FilterString.
+     */
+    @Override
+    public String buildQueryFilterString(List<ObTableQueryAndMutateFilterSign> signs, List<String> keys, List<String> values) {
+        if (signs.size() != keys.size() || signs.size() != values.size()) {
+            throw new IllegalArgumentException("fail to construct filter string by lists with different lengths");
+        }
+
+        StringBuilder filterString = new StringBuilder();
+        for (int i = 0; i < signs.size(); ++i) {
+            if (i != 0) {
+                filterString.append(" && ");
+            }
+            filterString.append(TABLE_COMPARE_FILTER + "(" + signs.get(i).toString() + ", '" + keys.get(i) + ":" + values.get(i) + "')");
+        }
+        return filterString.toString();
+    }
+
+    /**
+     * append Query FilterString. New value will be added into filterString
+     */
+    @Override
+    public void appendQueryFilterString(StringBuilder filterString, ObTableQueryAndMutateFilterSign sign, String key, String value) {
+        if (0 != filterString.length()) {
+            filterString.append(" && ");
+        }
+        filterString.append(TABLE_COMPARE_FILTER + "(" + sign.toString() + ", '" + key + ":" + value + "')");
     }
 }
