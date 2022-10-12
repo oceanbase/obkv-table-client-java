@@ -131,3 +131,13 @@ CREATE TABLE `test_batch_query` (
  `c1` bigint NOT NULL,
  `c2` varchar(20) DEFAULT NULL,
 PRIMARY KEY (`c1`))partition by range(`c1`)(partition p0 values less than(200), partition p1 values less than(500), partition p2 values less than(900));
+
+CREATE TABLE `test_query_filter_mutate` (
+ `c1` bigint NOT NULL,
+ `c2` varbinary(1024) DEFAULT NULL,
+ `c3` varchar(20) NOT NULL,
+ `c4` bigint DEFAULT NULL,
+  PRIMARY KEY(`c1`)) partition by range columns (`c1`) (
+      PARTITION p0 VALUES LESS THAN (300),
+      PARTITION p1 VALUES LESS THAN (1000),
+      PARTITION p2 VALUES LESS THAN MAXVALUE);

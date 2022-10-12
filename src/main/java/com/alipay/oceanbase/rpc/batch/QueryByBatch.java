@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.batch;
 
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateFilterSign;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilter;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
@@ -26,6 +27,7 @@ import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class QueryByBatch implements TableQuery {
@@ -273,4 +275,21 @@ public class QueryByBatch implements TableQuery {
     public boolean isEndEquals() {
         return endEquals;
     }
+
+    /**
+     * build Query FilterString.
+     */
+    @Override
+    public String buildQueryFilterString(List<ObTableQueryAndMutateFilterSign> signs, List<String> keys, List<String> values) {
+        throw new IllegalArgumentException("not support construct filter string for query by batch");
+    }
+
+    /**
+     * append Query FilterString.
+     */
+    @Override
+    public void appendQueryFilterString(StringBuilder filterString, ObTableQueryAndMutateFilterSign sign, String key, String value) {
+        throw new IllegalArgumentException("not support construct filter string for query by batch");
+    }
+    
 }
