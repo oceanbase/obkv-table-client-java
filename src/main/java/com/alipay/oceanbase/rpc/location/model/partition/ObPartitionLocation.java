@@ -46,6 +46,14 @@ public class ObPartitionLocation {
         return leader;
     }
 
+    public List<ReplicaLocation> getReplicas() { return replicas; }
+
+    public List<ReplicaLocation> getSameIdc() { return sameIdc; }
+
+    public List<ReplicaLocation> getSameRegion() { return sameRegion; }
+
+    public List<ReplicaLocation> getOtherRegion() { return otherRegion; }
+
     /*
      * Add replication
      *

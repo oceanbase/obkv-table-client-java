@@ -108,6 +108,8 @@ public class ServerRoster {
         return roster.get();
     }
 
+    public AtomicReference<List<ObServerAddr>> getRoster() { return roster; }
+
     /*
      * Get ServerLdcLocation.
      */

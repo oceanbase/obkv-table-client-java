@@ -54,6 +54,14 @@ public class ObPartitionKey implements Comparable<ObPartitionKey> {
     private final List<Comparable> partitionElements;
     private final List<ObColumn>   orderPartColumns;
 
+    public List<Comparable> getPartitionElements() {
+        return partitionElements;
+    }
+
+    public List<ObColumn> getOrderPartColumns() {
+        return orderPartColumns;
+    }
+
     /*
      * Ob partition key.
      */

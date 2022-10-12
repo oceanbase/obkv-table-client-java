@@ -19,14 +19,79 @@
             <Policies>
                 <!-- 按天分日志文件:重要的是 filePattern 配置到按照天 -->
                 <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
-                <SizeBasedTriggeringPolicy size="512MB"/>
             </Policies>
         </RollingFile>
     </Appenders>
 
+    <Appenders>
+        <RollingFile name="OCEANBASE-TABLE-CLIENT-RUNTIME-APPENDER"
+                     fileName="${LOG_PATH}/oceanbase-table-client/oceanbase-table-client-runtime.log" append="true"
+                     filePattern="${LOG_PATH}/oceanbase-table-client/oceanbase-table-client-runtime.log.%d{yyyy-MM-dd}">
+            <ThresholdFilter level="${LOG_LEVEL}" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout charset="${FILE_ENCODING}">
+                <pattern>%d-%m%n</pattern>
+            </PatternLayout>
+            <Policies>
+                <!-- 按天分日志文件:重要的是 filePattern 配置到按照天 -->
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingFile>
+    </Appenders>
+
+    <Appenders>
+        <RollingFile name="OCEANBASE-TABLE-CLIENT-MONITOR-APPENDER"
+                     fileName="${LOG_PATH}/oceanbase-table-client/oceanbase-table-client-monitor.log" append="true"
+                     filePattern="${LOG_PATH}/oceanbase-table-client/oceanbase-table-client-monitor.log.%d{yyyy-MM-dd}">
+            <ThresholdFilter level="${LOG_LEVEL}" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout charset="${FILE_ENCODING}">
+                <pattern>%d-%m%n</pattern>
+            </PatternLayout>
+            <Policies>
+                <!-- 按天分日志文件:重要的是 filePattern 配置到按照天 -->
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingFile>
+    </Appenders>
+
+    <Appenders>
+        <RollingFile name="OCEANBASE-TABLE-CLIENT-BOOT-APPENDER"
+                     fileName="${LOG_PATH}/oceanbase-table-client/oceanbase-table-client-boot.log" append="true"
+                     filePattern="${LOG_PATH}/oceanbase-table-client/oceanbase-table-client-boot.log.%d{yyyy-MM-dd}">
+            <ThresholdFilter level="${LOG_LEVEL}" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout charset="${FILE_ENCODING}">
+                <pattern>%d-%m%n</pattern>
+            </PatternLayout>
+            <Policies>
+                <!-- 按天分日志文件:重要的是 filePattern 配置到按照天 -->
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingFile>
+    </Appenders>
+
+
+
+
     <Loggers>
         <AsyncLogger name="com.alipay.oceanbase.rpc" level="${LOG_LEVEL}" additivity="false">
             <AppenderRef ref="OCEANBASE-TABLE-CLIENT-APPENDER"/>
+        </AsyncLogger>
+    </Loggers>
+
+    <Loggers>
+        <AsyncLogger name="OBKV-BOOT" level="${LOG_LEVEL}" additivity="false">
+            <AppenderRef ref="OCEANBASE-TABLE-CLIENT-BOOT-APPENDER"/>
+        </AsyncLogger>
+    </Loggers>
+
+    <Loggers>
+        <AsyncLogger name="OBKV-MONITOR" level="${LOG_LEVEL}" additivity="false">
+            <AppenderRef ref="OCEANBASE-TABLE-CLIENT-MONITOR-APPENDER"/>
+        </AsyncLogger>
+    </Loggers>
+
+    <Loggers>
+        <AsyncLogger name="OBKV-RUNTIME" level="${LOG_LEVEL}" additivity="false">
+            <AppenderRef ref="OCEANBASE-TABLE-CLIENT-RUNTIME-APPENDER"/>
         </AsyncLogger>
     </Loggers>
 
