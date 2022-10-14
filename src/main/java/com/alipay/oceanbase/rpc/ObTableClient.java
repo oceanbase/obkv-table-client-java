@@ -868,7 +868,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                 RUNTIME.error("partition table must has row key element key ="
                                         + tableEntryKey);
                                 throw new ObTableEntryRefreshException(
-                                    "partition table must has row key element key ="
+                                        "partition table must has row key element key ="
                                             + tableEntryKey);
                             }
                     }
@@ -1522,6 +1522,101 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /**
+     *
+     * @param tableQuery
+     * @param columns
+     * @param values
+     * @return
+     * @throws Exception
+     */
+    public ObTableQueryAndMutateRequest obTableQueryAndUpdate(final TableQuery tableQuery,
+                                                              final String[] columns,
+                                                              final Object[] values) throws Exception {
+        if (null == columns || null == values || 0 == columns.length || 0 == values.length) {
+            throw new ObTableException("client get unexpected empty columns or values");
+        }
+        return obTableQueryAndMutate(ObTableOperationType.UPDATE, tableQuery, columns, values, false);
+    }
+
+    /**
+     *
+     * @param tableQuery
+     * @return
+     * @throws Exception
+     */
+
+    public ObTableQueryAndMutateRequest obTableQueryAndDelete(final TableQuery tableQuery) throws Exception {
+        return obTableQueryAndMutate(ObTableOperationType.DEL, tableQuery, null, null, false);
+    }
+
+    /**
+     *
+     * @param tableQuery
+     * @param columns
+     * @param values
+     * @param withResult
+     * @return
+     * @throws Exception
+     */
+    public ObTableQueryAndMutateRequest obTableQueryAndIncrement(final TableQuery tableQuery,
+                                                                 final String[] columns, final Object[] values,
+                                                                 final boolean withResult) throws Exception {
+        if (null == columns || null == values || 0 == columns.length || 0 == values.length) {
+            throw new ObTableException("client get unexpected empty columns or values");
+        }
+        return obTableQueryAndMutate(ObTableOperationType.INCREMENT, tableQuery, columns, values, withResult);
+    }
+
+    /**
+     *
+     * @param tableQuery
+     * @param columns
+     * @param values
+     * @param withResult
+     * @return
+     * @throws Exception
+     */
+    public ObTableQueryAndMutateRequest obTableQueryAndAppend(final TableQuery tableQuery,
+                                                              final String[] columns, final Object[] values,
+                                                              final boolean withResult) throws Exception {
+        if (null == columns || null == values || 0 == columns.length || 0 == values.length) {
+            throw new ObTableException("client get unexpected empty columns or values");
+        }
+        return obTableQueryAndMutate(ObTableOperationType.APPEND, tableQuery, columns, values, withResult);
+    }
+
+    /**
+     *
+     * @param type
+     * @param tableQuery
+     * @param columns
+     * @param values
+     * @param withResult
+     * @return
+     * @throws Exception
+     */
+    ObTableQueryAndMutateRequest obTableQueryAndMutate(final ObTableOperationType type, final TableQuery tableQuery,
+                                                       final String[] columns, final Object[] values,
+                                                       final boolean withResult) throws Exception {
+        ObTableQuery obTableQuery = tableQuery.getObTableQuery();
+        String tableName = tableQuery.getTableName();
+
+        ObTableBatchOperation operations = new ObTableBatchOperation();
+        ObTableOperation operation = ObTableOperation.getInstance(type, new Object[] {}, columns, values);
+        operations.addTableOperation(operation);
+
+        ObTableQueryAndMutate queryAndMutate = buildObTableQueryAndMutate(obTableQuery, operations);
+
+        ObTableQueryAndMutateRequest request = buildObTableQueryAndMutateRequest(queryAndMutate, tableName);
+
+        request.setReturningRowKey(false);
+        request.setReturningAffectedEntity(withResult);
+        request.setReturningAffectedRows(true);
+
+        return request;
+    }
+
+    /**
      * Execute.
      */
     /**
@@ -1598,6 +1693,24 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         throw new FeatureNotSupportedException("request type " + request.getClass().getSimpleName()
                                                + "is not supported. make sure the correct version");
+    }
+
+    private ObTableQueryAndMutate buildObTableQueryAndMutate(ObTableQuery obTableQuery,
+                                                             ObTableBatchOperation obTableBatchOperation) {
+        ObTableQueryAndMutate queryAndMutate = new ObTableQueryAndMutate();
+        queryAndMutate.setTableQuery(obTableQuery);
+        queryAndMutate.setMutations(obTableBatchOperation);
+        return queryAndMutate;
+    }
+
+    private ObTableQueryAndMutateRequest buildObTableQueryAndMutateRequest(ObTableQueryAndMutate queryAndMutate,
+                                                                           String targetTableName) {
+        ObTableQueryAndMutateRequest request = new ObTableQueryAndMutateRequest();
+        request.setTableName(targetTableName);
+        request.setTableQueryAndMutate(queryAndMutate);
+        request.setTimeout(120 * 1000); // 120 s
+        request.setEntityType(ObTableEntityType.KV);
+        return request;
     }
 
     /**

@@ -22,6 +22,10 @@ import com.alipay.oceanbase.rpc.location.model.ObServerAddr;
 import com.alipay.oceanbase.rpc.location.model.ServerRoster;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.property.Property;
+import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateFilterSign;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateRequest;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObQueryOperationType;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.stream.async.ObTableQueryAsyncStreamResult;
@@ -38,9 +42,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -59,7 +61,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
         obTableClient.addProperty("table.connection.pool.size", "3");
         obTableClient.init();
 
-        client = obTableClient;
+        this.client = obTableClient;
         syncRefreshMetaHelper(obTableClient);
     }
 
@@ -85,7 +87,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
             long lastTime = getMaxAccessTime(client1);
             Thread.sleep(10000);
             client1.insertOrUpdate("test_varchar_table", "foo", new String[] { "c2" },
-                new String[] { "bar" });
+                    new String[] { "bar" });
             long nowTime = getMaxAccessTime(client1);
             Assert.assertTrue(nowTime - lastTime > 8000);
         } finally {
@@ -161,27 +163,27 @@ public class ObTableClientTest extends ObTableClientTestBase {
         final Table obTableClient = client;
         try {
 
-            obTableClient.insert("test_increment", "test_normal", new String[] { "c2", "c3" },
-                new Object[] { 1, 2 });
+            obTableClient.insert("test_increment", "test_normal", new String[]{"c2", "c3"},
+                    new Object[]{1, 2});
             Map<String, Object> res = obTableClient.increment("test_increment", "test_normal",
-                new String[] { "c2", "c3" }, new Object[] { 1, 2 }, true);
+                    new String[]{"c2", "c3"}, new Object[]{1, 2}, true);
             Assert.assertEquals(4, res.get("c3"));
             Assert.assertEquals(2, res.get("c2"));
 
-            obTableClient.insert("test_increment", "test_null", new String[] { "c2", "c3" },
-                new Object[] { null, null });
+            obTableClient.insert("test_increment", "test_null", new String[]{"c2", "c3"},
+                    new Object[]{null, null});
             res = obTableClient.increment("test_increment", "test_null",
-                new String[] { "c2", "c3" }, new Object[] { 1, 2 }, true);
+                    new String[]{"c2", "c3"}, new Object[]{1, 2}, true);
             Assert.assertEquals(2, res.get("c3"));
             Assert.assertEquals(1, res.get("c2"));
 
             res = obTableClient.increment("test_increment", "test_empty",
-                new String[] { "c2", "c3" }, new Object[] { 1, 2 }, true);
+                    new String[]{"c2", "c3"}, new Object[]{1, 2}, true);
             Assert.assertEquals(2, res.get("c3"));
             Assert.assertEquals(1, res.get("c2"));
 
             res = obTableClient.increment("test_increment", "test_empty",
-                new String[] { "c2", "c3" }, new Object[] { 1, 2 }, false);
+                    new String[]{"c2", "c3"}, new Object[]{1, 2}, false);
             Assert.assertTrue(res.isEmpty());
         } finally {
             obTableClient.delete("test_increment", "test_normal");
@@ -198,28 +200,28 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
         try {
 
-            client.insert("test_append", "test_normal", new String[] { "c2", "c3" }, new Object[] {
-                    new byte[] { 1 }, "P" });
-            Map<String, Object> res = client.append("test_append", "test_normal", new String[] {
-                    "c2", "c3" }, new Object[] { new byte[] { 2 }, "Y" }, true);
+            client.insert("test_append", "test_normal", new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{1}, "P"});
+            Map<String, Object> res = client.append("test_append", "test_normal", new String[]{
+                    "c2", "c3"}, new Object[]{new byte[]{2}, "Y"}, true);
 
-            Assert.assertTrue(Arrays.equals(new byte[] { 1, 2 }, (byte[]) res.get("c2")));
+            Assert.assertTrue(Arrays.equals(new byte[]{1, 2}, (byte[]) res.get("c2")));
             Assert.assertEquals("PY", res.get("c3"));
 
-            client.insert("test_append", "test_null", new String[] { "c2", "c3" }, new Object[] {
-                    null, null });
-            res = client.append("test_append", "test_null", new String[] { "c2", "c3" },
-                new Object[] { new byte[] { 1 }, "P" }, true);
-            Assert.assertTrue(Arrays.equals(new byte[] { 1 }, (byte[]) res.get("c2")));
+            client.insert("test_append", "test_null", new String[]{"c2", "c3"}, new Object[]{
+                    null, null});
+            res = client.append("test_append", "test_null", new String[]{"c2", "c3"},
+                    new Object[]{new byte[]{1}, "P"}, true);
+            Assert.assertTrue(Arrays.equals(new byte[]{1}, (byte[]) res.get("c2")));
             Assert.assertEquals("P", res.get("c3"));
 
-            res = client.append("test_append", "test_empty", new String[] { "c2", "c3" },
-                new Object[] { new byte[] { 1 }, "P" }, true);
-            Assert.assertTrue(Arrays.equals(new byte[] { 1 }, (byte[]) res.get("c2")));
+            res = client.append("test_append", "test_empty", new String[]{"c2", "c3"},
+                    new Object[]{new byte[]{1}, "P"}, true);
+            Assert.assertTrue(Arrays.equals(new byte[]{1}, (byte[]) res.get("c2")));
             Assert.assertEquals("P", res.get("c3"));
 
-            res = client.append("test_append", "test_empty", new String[] { "c2", "c3" },
-                new Object[] { new byte[] { 1 }, "P" }, false);
+            res = client.append("test_append", "test_empty", new String[]{"c2", "c3"},
+                    new Object[]{new byte[]{1}, "P"}, false);
             Assert.assertTrue(res.isEmpty());
 
         } finally {
@@ -239,15 +241,15 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
         try {
 
-            obTableClient.insert("test_increment", "test_normal", new String[] { "c2", "c3" },
-                new Object[] { 1, 2 });
+            obTableClient.insert("test_increment", "test_normal", new String[]{"c2", "c3"},
+                    new Object[]{1, 2});
             TableBatchOps batchOps = obTableClient.batch("test_increment");
-            batchOps.get("test_normal", new String[] { "c2", "c3" });
-            batchOps.insert("test_insert", new String[] { "c2", "c3" }, new Object[] { 2, 4 });
-            batchOps.increment("test_normal", new String[] { "c2", "c3" }, new Object[] { 1, 2 },
-                true);
-            batchOps.increment("test_insert", new String[] { "c2", "c3" }, new Object[] { 2, 4 },
-                true);
+            batchOps.get("test_normal", new String[]{"c2", "c3"});
+            batchOps.insert("test_insert", new String[]{"c2", "c3"}, new Object[]{2, 4});
+            batchOps.increment("test_normal", new String[]{"c2", "c3"}, new Object[]{1, 2},
+                    true);
+            batchOps.increment("test_insert", new String[]{"c2", "c3"}, new Object[]{2, 4},
+                    true);
             List<Object> res = batchOps.execute();
 
             Assert.assertTrue(res.get(0) instanceof Map);
@@ -264,12 +266,12 @@ public class ObTableClientTest extends ObTableClientTestBase {
             Assert.assertEquals(8, ((Map) res.get(3)).get("c3"));
 
             batchOps = obTableClient.batch("test_increment");
-            batchOps.get("test_normal", new String[] { "c2", "c3" });
-            batchOps.insert("test_insert_two", new String[] { "c2", "c3" }, new Object[] { 2, 4 });
-            batchOps.increment("test_normal", new String[] { "c2", "c3" }, new Object[] { 1, 2 },
-                false);
-            batchOps.increment("test_insert", new String[] { "c2", "c3" }, new Object[] { 2, 4 },
-                false);
+            batchOps.get("test_normal", new String[]{"c2", "c3"});
+            batchOps.insert("test_insert_two", new String[]{"c2", "c3"}, new Object[]{2, 4});
+            batchOps.increment("test_normal", new String[]{"c2", "c3"}, new Object[]{1, 2},
+                    false);
+            batchOps.increment("test_insert", new String[]{"c2", "c3"}, new Object[]{2, 4},
+                    false);
             res = batchOps.execute();
 
             Assert.assertTrue(res.get(0) instanceof Map);
@@ -283,45 +285,45 @@ public class ObTableClientTest extends ObTableClientTestBase {
             Assert.assertTrue(res.get(3) instanceof Map);
             Assert.assertTrue(((Map) res.get(3)).isEmpty());
 
-            obTableClient.insert("test_append", "test_normal", new String[] { "c2", "c3" },
-                new Object[] { new byte[] { 1 }, "P" });
+            obTableClient.insert("test_append", "test_normal", new String[]{"c2", "c3"},
+                    new Object[]{new byte[]{1}, "P"});
 
             batchOps = obTableClient.batch("test_append");
-            batchOps.get("test_normal", new String[] { "c2", "c3" });
-            batchOps.insert("test_append", new String[] { "c2", "c3" }, new Object[] {
-                    new byte[] { 2 }, "Q" });
-            batchOps.append("test_normal", new String[] { "c2", "c3" }, new Object[] {
-                    new byte[] { 1 }, "P" }, true);
-            batchOps.append("test_append", new String[] { "c2", "c3" }, new Object[] {
-                    new byte[] { 2 }, "Q" }, true);
+            batchOps.get("test_normal", new String[]{"c2", "c3"});
+            batchOps.insert("test_append", new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{2}, "Q"});
+            batchOps.append("test_normal", new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{1}, "P"}, true);
+            batchOps.append("test_append", new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{2}, "Q"}, true);
             res = batchOps.execute();
             Assert.assertTrue(res.get(0) instanceof Map);
             Assert
-                .assertTrue(Arrays.equals(new byte[] { 1 }, (byte[]) ((Map) res.get(0)).get("c2")));
+                    .assertTrue(Arrays.equals(new byte[]{1}, (byte[]) ((Map) res.get(0)).get("c2")));
             Assert.assertEquals("P", ((Map) res.get(0)).get("c3"));
             Assert.assertTrue(res.get(1) instanceof Long);
             Assert.assertEquals(1L, res.get(1));
             Assert.assertTrue(res.get(2) instanceof Map);
-            Assert.assertTrue(Arrays.equals(new byte[] { 1, 1 },
-                (byte[]) ((Map) res.get(2)).get("c2")));
+            Assert.assertTrue(Arrays.equals(new byte[]{1, 1},
+                    (byte[]) ((Map) res.get(2)).get("c2")));
             Assert.assertEquals("PP", ((Map) res.get(2)).get("c3"));
             Assert.assertTrue(res.get(3) instanceof Map);
-            Assert.assertTrue(Arrays.equals(new byte[] { 2, 2 },
-                (byte[]) ((Map) res.get(3)).get("c2")));
+            Assert.assertTrue(Arrays.equals(new byte[]{2, 2},
+                    (byte[]) ((Map) res.get(3)).get("c2")));
             Assert.assertEquals("QQ", ((Map) res.get(3)).get("c3"));
 
             batchOps = obTableClient.batch("test_append");
-            batchOps.get("test_normal", new String[] { "c2", "c3" });
-            batchOps.insert("test_append_two", new String[] { "c2", "c3" }, new Object[] {
-                    new byte[] { 2 }, "Q" });
-            batchOps.append("test_normal", new String[] { "c2", "c3" }, new Object[] {
-                    new byte[] { 1 }, "P" }, false);
-            batchOps.append("test_append", new String[] { "c2", "c3" }, new Object[] {
-                    new byte[] { 2 }, "Q" }, false);
+            batchOps.get("test_normal", new String[]{"c2", "c3"});
+            batchOps.insert("test_append_two", new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{2}, "Q"});
+            batchOps.append("test_normal", new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{1}, "P"}, false);
+            batchOps.append("test_append", new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{2}, "Q"}, false);
             res = batchOps.execute();
             Assert.assertTrue(res.get(0) instanceof Map);
-            Assert.assertTrue(Arrays.equals(new byte[] { 1, 1 },
-                (byte[]) ((Map) res.get(0)).get("c2")));
+            Assert.assertTrue(Arrays.equals(new byte[]{1, 1},
+                    (byte[]) ((Map) res.get(0)).get("c2")));
             Assert.assertEquals("PP", ((Map) res.get(0)).get("c3"));
             Assert.assertTrue(res.get(1) instanceof Long);
             Assert.assertEquals(1L, res.get(1));
@@ -350,15 +352,15 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
         try {
 
-            obTableClient.insert("test_increment", "test_normal", new String[] { "c2", "c3" },
-                new Object[] { 1, 2 });
+            obTableClient.insert("test_increment", "test_normal", new String[]{"c2", "c3"},
+                    new Object[]{1, 2});
             TableBatchOps batchOps = obTableClient.batch("test_increment");
-            batchOps.get("test_normal", new String[] { "c2", "c3" });
-            batchOps.insert("test_insert", new String[] { "c2", "c3" }, new Object[] { 2, 4 });
-            batchOps.increment("test_normal", new String[] { "c2", "c3" }, new Object[] { 1, 2 },
-                true);
-            batchOps.increment("test_insert", new String[] { "c2", "c3" }, new Object[] { 2, 4 },
-                true);
+            batchOps.get("test_normal", new String[]{"c2", "c3"});
+            batchOps.insert("test_insert", new String[]{"c2", "c3"}, new Object[]{2, 4});
+            batchOps.increment("test_normal", new String[]{"c2", "c3"}, new Object[]{1, 2},
+                    true);
+            batchOps.increment("test_insert", new String[]{"c2", "c3"}, new Object[]{2, 4},
+                    true);
             List<Object> res = batchOps.execute();
 
             Assert.assertTrue(res.get(0) instanceof Map);
@@ -375,12 +377,12 @@ public class ObTableClientTest extends ObTableClientTestBase {
             Assert.assertEquals(8, ((Map) res.get(3)).get("c3"));
 
             batchOps = obTableClient.batch("test_increment");
-            batchOps.get("test_normal", new String[] { "c2", "c3" });
-            batchOps.insert("test_insert_two", new String[] { "c2", "c3" }, new Object[] { 2, 4 });
-            batchOps.increment("test_normal", new String[] { "c2", "c3" }, new Object[] { 1, 2 },
-                false);
-            batchOps.increment("test_insert", new String[] { "c2", "c3" }, new Object[] { 2, 4 },
-                false);
+            batchOps.get("test_normal", new String[]{"c2", "c3"});
+            batchOps.insert("test_insert_two", new String[]{"c2", "c3"}, new Object[]{2, 4});
+            batchOps.increment("test_normal", new String[]{"c2", "c3"}, new Object[]{1, 2},
+                    false);
+            batchOps.increment("test_insert", new String[]{"c2", "c3"}, new Object[]{2, 4},
+                    false);
             res = batchOps.execute();
 
             Assert.assertTrue(res.get(0) instanceof Map);
@@ -394,45 +396,45 @@ public class ObTableClientTest extends ObTableClientTestBase {
             Assert.assertTrue(res.get(3) instanceof Map);
             Assert.assertTrue(((Map) res.get(3)).isEmpty());
 
-            obTableClient.insert("test_append", "test_normal", new String[] { "c2", "c3" },
-                new Object[] { new byte[] { 1 }, "P" });
+            obTableClient.insert("test_append", "test_normal", new String[]{"c2", "c3"},
+                    new Object[]{new byte[]{1}, "P"});
 
             batchOps = obTableClient.batch("test_append");
-            batchOps.get("test_normal", new String[] { "c2", "c3" });
-            batchOps.insert("test_append", new String[] { "c2", "c3" }, new Object[] {
-                    new byte[] { 2 }, "Q" });
-            batchOps.append("test_normal", new String[] { "c2", "c3" }, new Object[] {
-                    new byte[] { 1 }, "P" }, true);
-            batchOps.append("test_append", new String[] { "c2", "c3" }, new Object[] {
-                    new byte[] { 2 }, "Q" }, true);
+            batchOps.get("test_normal", new String[]{"c2", "c3"});
+            batchOps.insert("test_append", new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{2}, "Q"});
+            batchOps.append("test_normal", new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{1}, "P"}, true);
+            batchOps.append("test_append", new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{2}, "Q"}, true);
             res = batchOps.execute();
             Assert.assertTrue(res.get(0) instanceof Map);
             Assert
-                .assertTrue(Arrays.equals(new byte[] { 1 }, (byte[]) ((Map) res.get(0)).get("c2")));
+                    .assertTrue(Arrays.equals(new byte[]{1}, (byte[]) ((Map) res.get(0)).get("c2")));
             Assert.assertEquals("P", ((Map) res.get(0)).get("c3"));
             Assert.assertTrue(res.get(1) instanceof Long);
             Assert.assertEquals(1L, res.get(1));
             Assert.assertTrue(res.get(2) instanceof Map);
-            Assert.assertTrue(Arrays.equals(new byte[] { 1, 1 },
-                (byte[]) ((Map) res.get(2)).get("c2")));
+            Assert.assertTrue(Arrays.equals(new byte[]{1, 1},
+                    (byte[]) ((Map) res.get(2)).get("c2")));
             Assert.assertEquals("PP", ((Map) res.get(2)).get("c3"));
             Assert.assertTrue(res.get(3) instanceof Map);
-            Assert.assertTrue(Arrays.equals(new byte[] { 2, 2 },
-                (byte[]) ((Map) res.get(3)).get("c2")));
+            Assert.assertTrue(Arrays.equals(new byte[]{2, 2},
+                    (byte[]) ((Map) res.get(3)).get("c2")));
             Assert.assertEquals("QQ", ((Map) res.get(3)).get("c3"));
 
             batchOps = obTableClient.batch("test_append");
-            batchOps.get("test_normal", new String[] { "c2", "c3" });
-            batchOps.insert("test_append_two", new String[] { "c2", "c3" }, new Object[] {
-                    new byte[] { 2 }, "Q" });
-            batchOps.append("test_normal", new String[] { "c2", "c3" }, new Object[] {
-                    new byte[] { 1 }, "P" }, false);
-            batchOps.append("test_append", new String[] { "c2", "c3" }, new Object[] {
-                    new byte[] { 2 }, "Q" }, false);
+            batchOps.get("test_normal", new String[]{"c2", "c3"});
+            batchOps.insert("test_append_two", new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{2}, "Q"});
+            batchOps.append("test_normal", new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{1}, "P"}, false);
+            batchOps.append("test_append", new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{2}, "Q"}, false);
             res = batchOps.execute();
             Assert.assertTrue(res.get(0) instanceof Map);
-            Assert.assertTrue(Arrays.equals(new byte[] { 1, 1 },
-                (byte[]) ((Map) res.get(0)).get("c2")));
+            Assert.assertTrue(Arrays.equals(new byte[]{1, 1},
+                    (byte[]) ((Map) res.get(0)).get("c2")));
             Assert.assertEquals("PP", ((Map) res.get(0)).get("c3"));
             Assert.assertTrue(res.get(1) instanceof Long);
             Assert.assertEquals(1L, res.get(1));
@@ -459,16 +461,16 @@ public class ObTableClientTest extends ObTableClientTestBase {
             obTableClient.setMetadataRefreshInterval(100);
             obTableClient.init();
             assertEquals(1L, obTableClient.insert("test_varchar_table", "foo",
-                new String[] { "c2" }, new String[] { "bar" }));
+                    new String[]{"c2"}, new String[]{"bar"}));
 
             // sleep 2000 ms to let the server addr expired.
             Thread.sleep(2000);
             Map<String, Object> values = obTableClient.get("test_varchar_table", "bar",
-                new String[] { "c2" });
+                    new String[]{"c2"});
             assertNotNull(values);
             assertEquals(0, values.size());
 
-            values = obTableClient.get("test_varchar_table", "foo", new String[] { "c2" });
+            values = obTableClient.get("test_varchar_table", "foo", new String[]{"c2"});
             assertNotNull(values);
             assertEquals("bar", values.get("c2"));
         } finally {
@@ -504,6 +506,19 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
             // 非阻塞query
             TableQuery tableQuery = client1.queryByBatchV2("test_batch_query");
+
+            // 测试 filter string 生成函数
+            StringBuilder filterBuilder = new StringBuilder();
+            tableQuery.appendQueryFilterString(filterBuilder, ObTableQueryAndMutateFilterSign.EQ, "c3", "value");
+            assertEquals("TableCompareFilter(=, 'c3:value')", filterBuilder.toString());
+            List<ObTableQueryAndMutateFilterSign> signs = new ArrayList<>();
+            List<String> keys = new ArrayList<>();
+            List<String> values = new ArrayList<>();
+            signs.add(ObTableQueryAndMutateFilterSign.GT);
+            keys.add("c1");
+            values.add("0");
+            assertEquals("TableCompareFilter(>, 'c1:0')", tableQuery.buildQueryFilterString(signs, keys, values));
+
             // 查询结果集
             QueryResultSet result = tableQuery.select("c2").primaryIndex().setBatchSize(2)
                 .addScanRange(new Object[] { 123L }, new Object[] { 777L }).execute();
@@ -517,10 +532,10 @@ public class ObTableClientTest extends ObTableClientTestBase {
             Assert.assertFalse(result.next());
 
         } catch (Exception e) {
-            e.printStackTrace();
+            assertTrue(true);
         } finally {
             for (int i = 0; i < 8; i++) {
-                client1.delete("test_batch_query", new Object[] { c1[i] });
+                client1.delete("test_batch_query", new Object[]{c1[i]});
             }
             client1.close();
         }
@@ -553,7 +568,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
         tableQuery.clear();
 
         ObTableClientQueryImpl obTableClientQuery = new ObTableClientQueryImpl("test_batch_query",
-            client1);
+                client1);
         try {
             obTableClientQuery.executeInit(new ObPair<Long, ObTable>(0L, obTable));
             fail();
@@ -568,7 +583,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
         }
 
         ObTableClientQueryAsyncImpl obTableClientQueryAsync = new ObTableClientQueryAsyncImpl(
-            "test_batch_query", tableQuery.getObTableQuery(), client1);
+                "test_batch_query", tableQuery.getObTableQuery(), client1);
         obTableClientQueryAsync.getSessionId();
         try {
             obTableClientQueryAsync.setKeys("c1", "c3");
@@ -587,4 +602,371 @@ public class ObTableClientTest extends ObTableClientTestBase {
         obTableQueryAsyncStreamResult.getSessionId();
         obTableQueryAsyncStreamResult.setEnd(true);
     }
+
+    @Test
+    public void testQueryWithFilter() throws Exception {
+
+        /*create table test_append(c1 varchar(255),c2 varbinary(1024) ,c3 varchar(255),primary key(c1));  */
+        System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
+
+        ((ObTableClient) client).addRowKeyElement("test_query_filter_mutate", new String[]{"c1"}); //同索引列的值一样
+
+        client.insert("test_query_filter_mutate", new Object[]{0L}, new String[]{"c2", "c3"},
+                new Object[]{new byte[]{1}, "row1"});
+        client.insert("test_query_filter_mutate", new Object[]{1L}, new String[]{"c2", "c3"},
+                new Object[]{new byte[]{1}, "row2"});
+        client.insert("test_query_filter_mutate", new Object[]{2L}, new String[]{"c2", "c3"},
+                new Object[]{new byte[]{1}, "row3"});
+
+        TableQuery tableQuery = client.query("test_query_filter_mutate");
+        tableQuery.addScanRange(new Object[]{0L}, new Object[]{250L});
+        tableQuery.select("c1", "c2", "c3");
+
+        List<ObTableQueryAndMutateFilterSign> signs = new ArrayList<>();
+        List<String> keys = new ArrayList<>();
+        List<String> values = new ArrayList<>();
+        signs.add(ObTableQueryAndMutateFilterSign.GT);
+        keys.add("c1");
+        values.add("0");
+        String filter_0 = tableQuery.buildQueryFilterString(signs, keys, values);
+
+        StringBuilder filterBuilder = new StringBuilder();
+        tableQuery.appendQueryFilterString(filterBuilder, ObTableQueryAndMutateFilterSign.LE, "c1", "2");
+        String filter_1 = filterBuilder.toString();
+
+        tableQuery.appendQueryFilterString(filterBuilder, ObTableQueryAndMutateFilterSign.GT, "c1", "1");
+        String filter_2 = filterBuilder.toString();
+        try {
+            tableQuery.filterString(filter_0);
+            QueryResultSet result = tableQuery.execute();
+            Assert.assertEquals(2, result.cacheSize());
+
+            tableQuery.filterString(filter_1);
+            result = tableQuery.execute();
+            Assert.assertEquals(3, result.cacheSize());
+
+            tableQuery.filterString(filter_2);
+            result = tableQuery.execute();
+            Assert.assertEquals(1, result.cacheSize());
+        } finally {
+            client.delete("test_query_filter_mutate", new Object[]{0L});
+            client.delete("test_query_filter_mutate", new Object[]{1L});
+            client.delete("test_query_filter_mutate", new Object[]{2L});
+        }
+    }
+
+    @Test
+    public void testQueryAndAppend() throws Exception {
+
+        /* 
+         * CREATE TABLE `test_query_filter_mutate` (`c1` bigint NOT NULL, `c2` varbinary(1024) DEFAULT NULL,
+         *                                          `c3` varchar(20) NOT NULL,`c4` bigint DEFAULT NULL, PRIMARY KEY(`c1`))
+         *                                          partition by range columns (`c1`) ( PARTITION p0 VALUES LESS THAN (300),
+         *                                          PARTITION p1 VALUES LESS THAN (1000), PARTITION p2 VALUES LESS THAN MAXVALUE);
+         */
+        System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
+
+        ((ObTableClient) client).addRowKeyElement("test_query_filter_mutate", new String[]{"c1"}); //同索引列的值一样
+
+        client.insert("test_query_filter_mutate", new Object[]{0L}, new String[]{"c2", "c3"},
+                new Object[]{new byte[]{1}, "row1"});
+        client.insert("test_query_filter_mutate", new Object[]{1L}, new String[]{"c2", "c3"},
+                new Object[]{new byte[]{1}, "row2"});
+        client.insert("test_query_filter_mutate", new Object[]{2L}, new String[]{"c2", "c3"},
+               new Object[]{new byte[]{1}, "row3"});
+        TableQuery tableQuery = client.query("test_query_filter_mutate");
+       /* Scan range must in one partition */
+        tableQuery.addScanRange(new Object[]{0L}, new Object[]{200L});
+        tableQuery.select("c1", "c2", "c3");
+
+        /* Set Filter String */
+        List<ObTableQueryAndMutateFilterSign> signs = new ArrayList<>();
+        List<String> keys = new ArrayList<>();
+        List<String> values = new ArrayList<>();
+        signs.add(ObTableQueryAndMutateFilterSign.GT);
+        keys.add("c1");
+        values.add("0");
+        String filter_0 = tableQuery.buildQueryFilterString(signs, keys, values);
+
+        StringBuilder filterBuilder = new StringBuilder();
+        tableQuery.appendQueryFilterString(filterBuilder, ObTableQueryAndMutateFilterSign.EQ, "c3", "row3_append0");
+        String filter_1 = filterBuilder.toString();
+
+        try {
+            try {
+                ObTableQueryAndMutateRequest request = ((ObTableClient) client).obTableQueryAndAppend(tableQuery, null, null, true);
+                ObPayload res_exec = ((ObTableClient) client).execute(request);
+            } catch (Exception e) {
+                assertTrue(true);
+            }
+
+            tableQuery.filterString(filter_0);
+            ObTableQueryAndMutateRequest request_0 = ((ObTableClient) client).obTableQueryAndAppend(tableQuery, new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{1}, "_append0"}, true);
+            ObPayload res_exec_0 = ((ObTableClient) client).execute(request_0);
+            ObTableQueryAndMutateResult res = (ObTableQueryAndMutateResult) res_exec_0;
+            Assert.assertEquals(2, res.getAffectedRows());
+            /* check value before append */
+            Assert.assertEquals("row2", res.getAffectedEntity().getPropertiesRows().get(0).get(2).getValue());
+            /* To confirm changing. re-query to get the latest data */
+            StringBuilder filterBuilder_0 = new StringBuilder();
+            tableQuery.appendQueryFilterString(filterBuilder_0, ObTableQueryAndMutateFilterSign.EQ, "c3", "row2_append0");
+            String confirm_0 = filterBuilder_0.toString();
+            tableQuery.filterString(confirm_0);
+            QueryResultSet result = tableQuery.execute();
+            Assert.assertEquals(1, result.cacheSize());
+
+            tableQuery.filterString(filter_1);
+            ObTableQueryAndMutateRequest request_1 = ((ObTableClient) client).obTableQueryAndAppend(tableQuery, new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{1}, "_append1"}, true);
+            ObPayload res_exec_1 = ((ObTableClient) client).execute(request_1);
+            res = (ObTableQueryAndMutateResult) res_exec_1;
+            Assert.assertEquals(1, res.getAffectedRows());
+            StringBuilder filterBuilder_1 = new StringBuilder();
+            tableQuery.appendQueryFilterString(filterBuilder_1, ObTableQueryAndMutateFilterSign.EQ, "c3", "row3_append0_append1");
+            String confirm_1 = filterBuilder_1.toString();
+            tableQuery.filterString(confirm_1);
+            result = tableQuery.execute();
+            Assert.assertEquals(1, result.cacheSize());
+        } finally {
+            client.delete("test_query_filter_mutate", new Object[]{0L});
+            client.delete("test_query_filter_mutate", new Object[]{1L});
+            client.delete("test_query_filter_mutate", new Object[]{2L});
+        }
+    }
+
+    @Test
+    public void testQueryAndIncrement() throws Exception {
+
+        /* 
+         * CREATE TABLE `test_query_filter_mutate` (`c1` bigint NOT NULL, `c2` varbinary(1024) DEFAULT NULL,
+         *                                          `c3` varchar(20) NOT NULL,`c4` bigint DEFAULT NULL, PRIMARY KEY(`c1`))
+         *                                          partition by range columns (`c1`) ( PARTITION p0 VALUES LESS THAN (300),
+         *                                          PARTITION p1 VALUES LESS THAN (1000), PARTITION p2 VALUES LESS THAN MAXVALUE);
+         */
+        System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
+
+        ((ObTableClient) client).addRowKeyElement("test_query_filter_mutate", new String[]{"c1"}); //同索引列的值一样
+
+        client.insert("test_query_filter_mutate", new Object[]{0L}, new String[]{"c2", "c3", "c4"},
+                new Object[]{new byte[]{1}, "row1", 0L});
+        client.insert("test_query_filter_mutate", new Object[]{1L}, new String[]{"c2", "c3", "c4"},
+                new Object[]{new byte[]{1}, "row2", 10L});
+        client.insert("test_query_filter_mutate", new Object[]{2L}, new String[]{"c2", "c3", "c4"},
+                new Object[]{new byte[]{1}, "row3", 20L});
+
+        TableQuery tableQuery = client.query("test_query_filter_mutate");
+        /* Scan range must in one partition */
+        tableQuery.addScanRange(new Object[]{0L}, new Object[]{200L});
+        tableQuery.select("c1", "c2", "c3","c4");
+
+        /* Set Filter String */
+        List<ObTableQueryAndMutateFilterSign> signs = new ArrayList<>();
+        List<String> keys = new ArrayList<>();
+        List<String> values = new ArrayList<>();
+        signs.add(ObTableQueryAndMutateFilterSign.GT);
+        keys.add("c1");
+        values.add("0");
+        String filter_0 = tableQuery.buildQueryFilterString(signs, keys, values);
+
+        StringBuilder filterBuilder = new StringBuilder();
+        tableQuery.appendQueryFilterString(filterBuilder, ObTableQueryAndMutateFilterSign.LT, "c3", "row3");
+        String filter_1 = filterBuilder.toString();
+
+        try {
+            try {
+                ObTableQueryAndMutateRequest request = ((ObTableClient) client).obTableQueryAndIncrement(tableQuery, null, null, true);
+                ObPayload res_exec = ((ObTableClient) client).execute(request);
+            } catch (Exception e) {
+                assertTrue(true);
+            }
+            tableQuery.filterString(filter_0);
+            ObTableQueryAndMutateRequest request_0 = ((ObTableClient) client).obTableQueryAndIncrement(tableQuery, new String[]{"c4"}, new Object[]{
+                   5L}, true);
+            ObPayload res_exec_0 = ((ObTableClient) client).execute(request_0);
+            ObTableQueryAndMutateResult res = (ObTableQueryAndMutateResult) res_exec_0;
+            Assert.assertEquals(2, res.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            StringBuilder filterBuilder_0 = new StringBuilder();
+            tableQuery.appendQueryFilterString(filterBuilder_0, ObTableQueryAndMutateFilterSign.GE, "c4", "15");
+            String confirm_0 = filterBuilder_0.toString();
+            tableQuery.filterString(confirm_0);
+            QueryResultSet result = tableQuery.execute();
+            Assert.assertEquals(2, result.cacheSize());
+
+            tableQuery.filterString(filter_1);
+            ObTableQueryAndMutateRequest request_1 = ((ObTableClient) client).obTableQueryAndIncrement(tableQuery, new String[]{"c4"}, new Object[]{
+                    7L}, true);
+            ObPayload res_exec_1 = ((ObTableClient) client).execute(request_1);
+            res = (ObTableQueryAndMutateResult) res_exec_1;
+            Assert.assertEquals(2, res.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            StringBuilder filterBuilder_1 = new StringBuilder();
+            tableQuery.appendQueryFilterString(filterBuilder_1, ObTableQueryAndMutateFilterSign.EQ, "c4", "22");
+            String confirm_1 = filterBuilder_1.toString();
+            tableQuery.filterString(confirm_1);
+            result = tableQuery.execute();
+            Assert.assertEquals(1, result.cacheSize());
+        } finally {
+            client.delete("test_query_filter_mutate", new Object[]{0L});
+            client.delete("test_query_filter_mutate", new Object[]{1L});
+            client.delete("test_query_filter_mutate", new Object[]{2L});
+        }
+    }
+
+    @Test
+    public void testQueryAndDelete() throws Exception {
+
+        /* 
+         * CREATE TABLE `test_query_filter_mutate` (`c1` bigint NOT NULL, `c2` varbinary(1024) DEFAULT NULL,
+         *                                          `c3` varchar(20) NOT NULL,`c4` bigint DEFAULT NULL, PRIMARY KEY(`c1`))
+         *                                          partition by range columns (`c1`) ( PARTITION p0 VALUES LESS THAN (300),
+         *                                          PARTITION p1 VALUES LESS THAN (1000), PARTITION p2 VALUES LESS THAN MAXVALUE);
+         */
+        System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
+
+        ((ObTableClient) client).addRowKeyElement("test_query_filter_mutate", new String[]{"c1"}); //同索引列的值一样
+
+        client.insert("test_query_filter_mutate", new Object[]{0L}, new String[]{"c2", "c3"},
+                new Object[]{new byte[]{1}, "row1"});
+        client.insert("test_query_filter_mutate", new Object[]{1L}, new String[]{"c2", "c3"},
+                new Object[]{new byte[]{1}, "row2"});
+        client.insert("test_query_filter_mutate", new Object[]{2L}, new String[]{"c2", "c3"},
+                new Object[]{new byte[]{1}, "row3"});
+
+        TableQuery tableQuery = client.query("test_query_filter_mutate");
+        /* Scan range must in one partition */
+        tableQuery.addScanRange(new Object[]{0L}, new Object[]{200L});
+        tableQuery.select("c1", "c2", "c3");
+
+        /* Set Filter String */
+        List<ObTableQueryAndMutateFilterSign> signs = new ArrayList<>();
+        List<String> keys = new ArrayList<>();
+        List<String> values = new ArrayList<>();
+        signs.add(ObTableQueryAndMutateFilterSign.EQ);
+        keys.add("c1");
+        values.add("0");
+        String filter_0 = tableQuery.buildQueryFilterString(signs, keys, values);
+
+        StringBuilder filterBuilder = new StringBuilder();
+       tableQuery.appendQueryFilterString(filterBuilder, ObTableQueryAndMutateFilterSign.GT, "c3", "ro");
+        tableQuery.appendQueryFilterString(filterBuilder, ObTableQueryAndMutateFilterSign.LT, "c3", "row3");
+        String filter_1 = filterBuilder.toString();
+
+        try {
+            tableQuery.filterString(filter_0);
+            ObTableQueryAndMutateRequest request_0 = ((ObTableClient) client).obTableQueryAndDelete(tableQuery);
+            ObPayload res_exec_0 = ((ObTableClient) client).execute(request_0);
+            ObTableQueryAndMutateResult res = (ObTableQueryAndMutateResult) res_exec_0;
+            Assert.assertEquals(1, res.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            StringBuilder filterBuilder_0 = new StringBuilder();
+            tableQuery.appendQueryFilterString(filterBuilder_0, ObTableQueryAndMutateFilterSign.GE, "c1", "0");
+            String confirm_0 = filterBuilder_0.toString();
+            tableQuery.filterString(confirm_0);
+            QueryResultSet result = tableQuery.execute();
+            Assert.assertEquals(2, result.cacheSize());
+
+            tableQuery.filterString(filter_1);
+            ObTableQueryAndMutateRequest request_1 = ((ObTableClient) client).obTableQueryAndDelete(tableQuery);
+            ObPayload res_exec_1 = ((ObTableClient) client).execute(request_1);
+            res = (ObTableQueryAndMutateResult) res_exec_1;
+            Assert.assertEquals(1, res.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            StringBuilder filterBuilder_1 = new StringBuilder();
+            tableQuery.appendQueryFilterString(filterBuilder_1, ObTableQueryAndMutateFilterSign.GE, "c1", "0");
+            String confirm_1 = filterBuilder_1.toString();
+            tableQuery.filterString(confirm_1);
+            result = tableQuery.execute();
+            Assert.assertEquals(1, result.cacheSize());
+
+            tableQuery.filterString(null);
+            ObTableQueryAndMutateRequest request_2 = ((ObTableClient) client).obTableQueryAndDelete(tableQuery);
+            ObPayload res_exec_2 = ((ObTableClient) client).execute(request_2);
+            res = (ObTableQueryAndMutateResult) res_exec_2;
+            Assert.assertEquals(1, res.getAffectedRows());
+        } finally {
+        }
+    }
+
+    @Test
+    public void testQueryAndUpdate() throws Exception {
+
+        /* 
+         * CREATE TABLE `test_query_filter_mutate` (`c1` bigint NOT NULL, `c2` varbinary(1024) DEFAULT NULL,
+         *                                          `c3` varchar(20) NOT NULL,`c4` bigint DEFAULT NULL, PRIMARY KEY(`c1`))
+         *                                          partition by range columns (`c1`) ( PARTITION p0 VALUES LESS THAN (300),
+         *                                          PARTITION p1 VALUES LESS THAN (1000), PARTITION p2 VALUES LESS THAN MAXVALUE);
+         */
+        System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
+
+        ((ObTableClient) client).addRowKeyElement("test_query_filter_mutate", new String[]{"c1"}); //同索引列的值一样
+
+        client.insert("test_query_filter_mutate", new Object[]{0L}, new String[]{"c2", "c3"},
+                new Object[]{new byte[]{1}, "row1"});
+        client.insert("test_query_filter_mutate", new Object[]{1L}, new String[]{"c2", "c3"},
+                new Object[]{new byte[]{1}, "row2"});
+        client.insert("test_query_filter_mutate", new Object[]{2L}, new String[]{"c2", "c3"},
+                new Object[]{new byte[]{1}, "row3"});
+
+        TableQuery tableQuery = client.query("test_query_filter_mutate");
+        /* Scan range must in one partition */
+        tableQuery.addScanRange(new Object[]{0L}, new Object[]{200L});
+        tableQuery.select("c1", "c2", "c3");
+
+        /* Set Filter String */
+        List<ObTableQueryAndMutateFilterSign> signs = new ArrayList<>();
+        List<String> keys = new ArrayList<>();
+        List<String> values = new ArrayList<>();
+        signs.add(ObTableQueryAndMutateFilterSign.GT);
+        keys.add("c1");
+        values.add("0");
+        String filter_0 = tableQuery.buildQueryFilterString(signs, keys, values);
+
+        StringBuilder filterBuilder = new StringBuilder();
+        tableQuery.appendQueryFilterString(filterBuilder, ObTableQueryAndMutateFilterSign.EQ, "c3", "update1");
+        String filter_1 = filterBuilder.toString();
+
+        try {
+            try {
+                ObTableQueryAndMutateRequest request = ((ObTableClient) client).obTableQueryAndUpdate(tableQuery, null, null);
+                ObPayload res_exec = ((ObTableClient) client).execute(request);
+            } catch (Exception e) {
+                assertTrue(true);
+            }
+
+            tableQuery.filterString(filter_0);
+            ObTableQueryAndMutateRequest request_0 = ((ObTableClient) client).obTableQueryAndUpdate(tableQuery, new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{1}, "update1"});
+            ObPayload res_exec_0 = ((ObTableClient) client).execute(request_0);
+            ObTableQueryAndMutateResult res = (ObTableQueryAndMutateResult) res_exec_0;
+            Assert.assertEquals(2, res.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            StringBuilder filterBuilder_0 = new StringBuilder();
+            tableQuery.appendQueryFilterString(filterBuilder_0, ObTableQueryAndMutateFilterSign.EQ, "c3", "update1");
+            String confirm_0 = filterBuilder_0.toString();
+            tableQuery.filterString(confirm_0);
+            QueryResultSet result = tableQuery.execute();
+            Assert.assertEquals(2, result.cacheSize());
+
+            tableQuery.filterString(filter_1);
+            ObTableQueryAndMutateRequest request_1 = ((ObTableClient) client).obTableQueryAndUpdate(tableQuery, new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{1}, "update2"});
+            ObPayload res_exec_1 = ((ObTableClient) client).execute(request_1);
+            res = (ObTableQueryAndMutateResult) res_exec_1;
+            Assert.assertEquals(2, res.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            StringBuilder filterBuilder_1 = new StringBuilder();
+            tableQuery.appendQueryFilterString(filterBuilder_1, ObTableQueryAndMutateFilterSign.EQ, "c3", "update2");
+            String confirm_1 = filterBuilder_1.toString();
+            tableQuery.filterString(confirm_1);
+            result = tableQuery.execute();
+            Assert.assertEquals(2, result.cacheSize());
+        } finally {
+            client.delete("test_query_filter_mutate", new Object[]{0L});
+            client.delete("test_query_filter_mutate", new Object[]{1L});
+            client.delete("test_query_filter_mutate", new Object[]{2L});
+        }
+    }
+
 }

@@ -19,12 +19,16 @@ package com.alipay.oceanbase.rpc.table.api;
 
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateFilterSign;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilter;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.ObTable;
 
+import java.util.List;
+
 public interface TableQuery {
+    public static final String TABLE_COMPARE_FILTER = "TableCompareFilter";
 
     ObTableQuery getObTableQuery();
 
@@ -175,6 +179,26 @@ public interface TableQuery {
     TableQuery setOperationTimeout(long operationTimeout);
 
     TableQuery setMaxResultSize(long maxResultSize);
+
+    /**
+     * build Query FilterString.
+     *
+     * @param signs signs of keys and values pair
+     * @param keys
+     * @param values
+     * @return filter string
+     */
+    String buildQueryFilterString(List<ObTableQueryAndMutateFilterSign> signs, List<String> keys, List<String> values);
+
+    /**
+     * append Query FilterString.
+     *
+     * @param filterString A string builder which contain previous filter string
+     * @param sign
+     * @param key
+     * @param value
+     */
+    void appendQueryFilterString(StringBuilder filterString, ObTableQueryAndMutateFilterSign sign, String key, String value);
 
     void clear();
 
