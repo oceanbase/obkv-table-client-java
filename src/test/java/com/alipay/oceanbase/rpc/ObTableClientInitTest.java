@@ -36,7 +36,6 @@ public class ObTableClientInitTest {
         // builder = new ObTable.Builder("1,1,1,1", 123);
         // PowerMockito.whenNew(ObTable.Builder.class).withAnyArguments().thenReturn(builder);
         client = ObTableClientTestUtil.newTestClient();
-        ;
         client.init();
     }
 }

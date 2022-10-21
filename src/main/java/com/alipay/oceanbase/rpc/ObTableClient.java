@@ -1725,7 +1725,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             throw new IllegalArgumentException(String.format(
                 "full username is empty, full username=%s", fullUserName));
         }
-        if (-1 != fullUserName.indexOf('@') || -1 != fullUserName.indexOf('#')) {
+        if (this.odpMode == true) {
+            // do nothing, just pass raw username to odp
+        } else if (-1 != fullUserName.indexOf('@') || -1 != fullUserName.indexOf('#')) {
             parseStandardFullUsername(fullUserName);
         } else {
             parseNonStandardFullUsername(fullUserName);
