@@ -125,8 +125,8 @@ public class ObTableRemoting extends BaseRemoting {
             if (response.getCmdCode() instanceof ObTablePacketCode) {
                 payload = ((ObTablePacketCode) response.getCmdCode()).newPayload(response
                     .getHeader());
-                payload.setSequence(response.getHeader().getTraceId0());
-                payload.setUniqueId(response.getHeader().getTraceId1());
+                payload.setSequence(response.getHeader().getTraceId1());
+                payload.setUniqueId(response.getHeader().getTraceId0());
             } else {
                 String errMessage = TraceUtil.formatTraceMessage(conn, response,
                     "receive unexpected command code: " + response.getCmdCode().value());
