@@ -18,12 +18,14 @@
 package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.bolt.ObTableClientTestBase;
+import com.alipay.oceanbase.rpc.filter.obCompareOp;
+import com.alipay.oceanbase.rpc.filter.obTableFilterList;
+import com.alipay.oceanbase.rpc.filter.obTableValueFilter;
 import com.alipay.oceanbase.rpc.location.model.ObServerAddr;
 import com.alipay.oceanbase.rpc.location.model.ServerRoster;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateFilterSign;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObQueryOperationType;
@@ -508,16 +510,59 @@ public class ObTableClientTest extends ObTableClientTestBase {
             TableQuery tableQuery = client1.queryByBatchV2("test_batch_query");
 
             // 测试 filter string 生成函数
-            StringBuilder filterBuilder = new StringBuilder();
-            tableQuery.appendQueryFilterString(filterBuilder, ObTableQueryAndMutateFilterSign.EQ, "c3", "value");
-            assertEquals("TableCompareFilter(=, 'c3:value')", filterBuilder.toString());
-            List<ObTableQueryAndMutateFilterSign> signs = new ArrayList<>();
-            List<String> keys = new ArrayList<>();
-            List<String> values = new ArrayList<>();
-            signs.add(ObTableQueryAndMutateFilterSign.GT);
-            keys.add("c1");
-            values.add("0");
-            assertEquals("TableCompareFilter(>, 'c1:0')", tableQuery.buildQueryFilterString(signs, keys, values));
+            obTableValueFilter filter_0 = new obTableValueFilter(obCompareOp.EQ, "c3", "value");
+            assertEquals("TableCompareFilter(=, 'c3:value')", filter_0.toString());
+            obTableFilterList filterList = new obTableFilterList(obTableFilterList.operator.AND);
+            obTableValueFilter filter_1 = new obTableValueFilter(obCompareOp.LE, "c2", 5);
+            filterList.addFilter(filter_0);
+            filterList.addFilter(filter_1);
+            assertEquals("TableCompareFilter(=, 'c3:value') && TableCompareFilter(<=, 'c2:5')", filterList.toString());
+            // test param null
+            obTableValueFilter filter = new obTableValueFilter(obCompareOp.NE, null, null);
+            obTableFilterList wrongList = new obTableFilterList(obTableFilterList.operator.OR);
+            wrongList.addFilter(filter);
+            assertEquals("", wrongList.toString());
+            // test null
+            try {
+                tableQuery.setFilter(null);
+            } catch (Exception e) {
+                assertTrue(true);
+            }
+            try {
+                obTableFilterList filterListNull = new obTableFilterList(null);
+            } catch (Exception e) {
+                assertTrue(true);
+            }
+            try {
+                obTableFilterList filterListNull = new obTableFilterList(null, filter_0, null);
+            } catch (Exception e) {
+                assertTrue(true);
+            }
+            try {
+                obTableFilterList filterListNull = new obTableFilterList(obTableFilterList.operator.AND, filter_0, null);
+            } catch (Exception e) {
+                assertTrue(true);
+            }
+            try {
+                obTableFilterList filterListNull = new obTableFilterList();
+                filterListNull.addFilter(filter_0, null);
+            } catch (Exception e) {
+                assertTrue(true);
+            }
+            // test nested
+            obTableFilterList filterListNested_0 = new obTableFilterList(obTableFilterList.operator.OR);
+            obTableFilterList filterListNested_1 = new obTableFilterList(obTableFilterList.operator.AND);
+            filterListNested_0.addFilter(filter_0);
+            filterListNested_0.addFilter(filter_1);
+            filterListNested_1.addFilter(filterListNested_0);
+            filterListNested_1.addFilter(filter_0);
+            filterListNested_1.addFilter(filterListNested_0);
+            assertEquals("(TableCompareFilter(=, 'c3:value') || TableCompareFilter(<=, 'c2:5')) && TableCompareFilter(=, 'c3:value') && (TableCompareFilter(=, 'c3:value') || TableCompareFilter(<=, 'c2:5'))",
+                    filterListNested_1.toString());
+            obTableFilterList filterListNested_2 = new obTableFilterList(obTableFilterList.operator.OR, filter_0);
+            filterListNested_2.addFilter(filterListNested_1);
+            assertEquals("TableCompareFilter(=, 'c3:value') || ((TableCompareFilter(=, 'c3:value') || TableCompareFilter(<=, 'c2:5')) && TableCompareFilter(=, 'c3:value') && (TableCompareFilter(=, 'c3:value') || TableCompareFilter(<=, 'c2:5')))",
+                    filterListNested_2.toString());
 
             // 查询结果集
             QueryResultSet result = tableQuery.select("c2").primaryIndex().setBatchSize(2)
@@ -606,7 +651,12 @@ public class ObTableClientTest extends ObTableClientTestBase {
     @Test
     public void testQueryWithFilter() throws Exception {
 
-        /*create table test_append(c1 varchar(255),c2 varbinary(1024) ,c3 varchar(255),primary key(c1));  */
+        /*
+         * CREATE TABLE `test_query_filter_mutate` (`c1` bigint NOT NULL, `c2` varbinary(1024) DEFAULT NULL,
+         *                                          `c3` varchar(20) NOT NULL,`c4` bigint DEFAULT NULL, PRIMARY KEY(`c1`))
+         *                                          partition by range columns (`c1`) ( PARTITION p0 VALUES LESS THAN (300),
+         *                                          PARTITION p1 VALUES LESS THAN (1000), PARTITION p2 VALUES LESS THAN MAXVALUE);
+         */
         System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
 
         ((ObTableClient) client).addRowKeyElement("test_query_filter_mutate", new String[]{"c1"}); //同索引列的值一样
@@ -622,30 +672,20 @@ public class ObTableClientTest extends ObTableClientTestBase {
         tableQuery.addScanRange(new Object[]{0L}, new Object[]{250L});
         tableQuery.select("c1", "c2", "c3");
 
-        List<ObTableQueryAndMutateFilterSign> signs = new ArrayList<>();
-        List<String> keys = new ArrayList<>();
-        List<String> values = new ArrayList<>();
-        signs.add(ObTableQueryAndMutateFilterSign.GT);
-        keys.add("c1");
-        values.add("0");
-        String filter_0 = tableQuery.buildQueryFilterString(signs, keys, values);
+        obTableValueFilter filter_0 = new obTableValueFilter(obCompareOp.GT, "c1", 0);
+        obTableValueFilter filter_1 = new obTableValueFilter(obCompareOp.LE, "c1", 2);
+        obTableValueFilter filter_2 = new obTableValueFilter(obCompareOp.GT, "c1", 1);
 
-        StringBuilder filterBuilder = new StringBuilder();
-        tableQuery.appendQueryFilterString(filterBuilder, ObTableQueryAndMutateFilterSign.LE, "c1", "2");
-        String filter_1 = filterBuilder.toString();
-
-        tableQuery.appendQueryFilterString(filterBuilder, ObTableQueryAndMutateFilterSign.GT, "c1", "1");
-        String filter_2 = filterBuilder.toString();
         try {
-            tableQuery.filterString(filter_0);
+            tableQuery.setFilter(filter_0);
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(2, result.cacheSize());
 
-            tableQuery.filterString(filter_1);
+            tableQuery.setFilter(filter_1);
             result = tableQuery.execute();
             Assert.assertEquals(3, result.cacheSize());
 
-            tableQuery.filterString(filter_2);
+            tableQuery.setFilter(filter_2);
             result = tableQuery.execute();
             Assert.assertEquals(1, result.cacheSize());
         } finally {
@@ -680,27 +720,11 @@ public class ObTableClientTest extends ObTableClientTestBase {
         tableQuery.select("c1", "c2", "c3");
 
         /* Set Filter String */
-        List<ObTableQueryAndMutateFilterSign> signs = new ArrayList<>();
-        List<String> keys = new ArrayList<>();
-        List<String> values = new ArrayList<>();
-        signs.add(ObTableQueryAndMutateFilterSign.GT);
-        keys.add("c1");
-        values.add("0");
-        String filter_0 = tableQuery.buildQueryFilterString(signs, keys, values);
-
-        StringBuilder filterBuilder = new StringBuilder();
-        tableQuery.appendQueryFilterString(filterBuilder, ObTableQueryAndMutateFilterSign.EQ, "c3", "row3_append0");
-        String filter_1 = filterBuilder.toString();
+        obTableValueFilter filter_0 = new obTableValueFilter(obCompareOp.GT, "c1", 0);
+        obTableValueFilter filter_1 = new obTableValueFilter(obCompareOp.GE, "c3", "row3_append0");
 
         try {
-            try {
-                ObTableQueryAndMutateRequest request = ((ObTableClient) client).obTableQueryAndAppend(tableQuery, null, null, true);
-                ObPayload res_exec = ((ObTableClient) client).execute(request);
-            } catch (Exception e) {
-                assertTrue(true);
-            }
-
-            tableQuery.filterString(filter_0);
+            tableQuery.setFilter(filter_0);
             ObTableQueryAndMutateRequest request_0 = ((ObTableClient) client).obTableQueryAndAppend(tableQuery, new String[]{"c2", "c3"}, new Object[]{
                     new byte[]{1}, "_append0"}, true);
             ObPayload res_exec_0 = ((ObTableClient) client).execute(request_0);
@@ -708,24 +732,20 @@ public class ObTableClientTest extends ObTableClientTestBase {
             Assert.assertEquals(2, res.getAffectedRows());
             /* check value before append */
             Assert.assertEquals("row2", res.getAffectedEntity().getPropertiesRows().get(0).get(2).getValue());
-            /* To confirm changing. re-query to get the latest data */
-            StringBuilder filterBuilder_0 = new StringBuilder();
-            tableQuery.appendQueryFilterString(filterBuilder_0, ObTableQueryAndMutateFilterSign.EQ, "c3", "row2_append0");
-            String confirm_0 = filterBuilder_0.toString();
-            tableQuery.filterString(confirm_0);
+            /* To confirm changing. re-query to get the latest data */;
+            obTableValueFilter confirm_0 = new obTableValueFilter(obCompareOp.EQ, "c3", "row2_append0");
+            tableQuery.setFilter(confirm_0);
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(1, result.cacheSize());
 
-            tableQuery.filterString(filter_1);
+            tableQuery.setFilter(filter_1);
             ObTableQueryAndMutateRequest request_1 = ((ObTableClient) client).obTableQueryAndAppend(tableQuery, new String[]{"c2", "c3"}, new Object[]{
                     new byte[]{1}, "_append1"}, true);
             ObPayload res_exec_1 = ((ObTableClient) client).execute(request_1);
             res = (ObTableQueryAndMutateResult) res_exec_1;
             Assert.assertEquals(1, res.getAffectedRows());
-            StringBuilder filterBuilder_1 = new StringBuilder();
-            tableQuery.appendQueryFilterString(filterBuilder_1, ObTableQueryAndMutateFilterSign.EQ, "c3", "row3_append0_append1");
-            String confirm_1 = filterBuilder_1.toString();
-            tableQuery.filterString(confirm_1);
+            obTableValueFilter confirm_1 = new obTableValueFilter(obCompareOp.EQ, "c3", "row3_append0_append1");
+            tableQuery.setFilter(confirm_1);
             result = tableQuery.execute();
             Assert.assertEquals(1, result.cacheSize());
         } finally {
@@ -761,17 +781,8 @@ public class ObTableClientTest extends ObTableClientTestBase {
         tableQuery.select("c1", "c2", "c3","c4");
 
         /* Set Filter String */
-        List<ObTableQueryAndMutateFilterSign> signs = new ArrayList<>();
-        List<String> keys = new ArrayList<>();
-        List<String> values = new ArrayList<>();
-        signs.add(ObTableQueryAndMutateFilterSign.GT);
-        keys.add("c1");
-        values.add("0");
-        String filter_0 = tableQuery.buildQueryFilterString(signs, keys, values);
-
-        StringBuilder filterBuilder = new StringBuilder();
-        tableQuery.appendQueryFilterString(filterBuilder, ObTableQueryAndMutateFilterSign.LT, "c3", "row3");
-        String filter_1 = filterBuilder.toString();
+        obTableValueFilter filter_0 = new obTableValueFilter(obCompareOp.GT, "c1", 0);
+        obTableValueFilter filter_1 = new obTableValueFilter(obCompareOp.LT, "c3", "row3");
 
         try {
             try {
@@ -780,31 +791,27 @@ public class ObTableClientTest extends ObTableClientTestBase {
             } catch (Exception e) {
                 assertTrue(true);
             }
-            tableQuery.filterString(filter_0);
+            tableQuery.setFilter(filter_0);
             ObTableQueryAndMutateRequest request_0 = ((ObTableClient) client).obTableQueryAndIncrement(tableQuery, new String[]{"c4"}, new Object[]{
                    5L}, true);
             ObPayload res_exec_0 = ((ObTableClient) client).execute(request_0);
             ObTableQueryAndMutateResult res = (ObTableQueryAndMutateResult) res_exec_0;
             Assert.assertEquals(2, res.getAffectedRows());
             /* To confirm changing. re-query to get the latest data */
-            StringBuilder filterBuilder_0 = new StringBuilder();
-            tableQuery.appendQueryFilterString(filterBuilder_0, ObTableQueryAndMutateFilterSign.GE, "c4", "15");
-            String confirm_0 = filterBuilder_0.toString();
-            tableQuery.filterString(confirm_0);
+            obTableValueFilter confirm_0 = new obTableValueFilter(obCompareOp.GE, "c4", 15);
+            tableQuery.setFilter(confirm_0);
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(2, result.cacheSize());
 
-            tableQuery.filterString(filter_1);
+            tableQuery.setFilter(filter_1);
             ObTableQueryAndMutateRequest request_1 = ((ObTableClient) client).obTableQueryAndIncrement(tableQuery, new String[]{"c4"}, new Object[]{
                     7L}, true);
             ObPayload res_exec_1 = ((ObTableClient) client).execute(request_1);
             res = (ObTableQueryAndMutateResult) res_exec_1;
             Assert.assertEquals(2, res.getAffectedRows());
             /* To confirm changing. re-query to get the latest data */
-            StringBuilder filterBuilder_1 = new StringBuilder();
-            tableQuery.appendQueryFilterString(filterBuilder_1, ObTableQueryAndMutateFilterSign.EQ, "c4", "22");
-            String confirm_1 = filterBuilder_1.toString();
-            tableQuery.filterString(confirm_1);
+            obTableValueFilter confirm_1 = new obTableValueFilter(obCompareOp.EQ, "c4", 22);
+            tableQuery.setFilter(confirm_1);
             result = tableQuery.execute();
             Assert.assertEquals(1, result.cacheSize());
         } finally {
@@ -840,47 +847,38 @@ public class ObTableClientTest extends ObTableClientTestBase {
         tableQuery.select("c1", "c2", "c3");
 
         /* Set Filter String */
-        List<ObTableQueryAndMutateFilterSign> signs = new ArrayList<>();
-        List<String> keys = new ArrayList<>();
-        List<String> values = new ArrayList<>();
-        signs.add(ObTableQueryAndMutateFilterSign.EQ);
-        keys.add("c1");
-        values.add("0");
-        String filter_0 = tableQuery.buildQueryFilterString(signs, keys, values);
-
-        StringBuilder filterBuilder = new StringBuilder();
-       tableQuery.appendQueryFilterString(filterBuilder, ObTableQueryAndMutateFilterSign.GT, "c3", "ro");
-        tableQuery.appendQueryFilterString(filterBuilder, ObTableQueryAndMutateFilterSign.LT, "c3", "row3");
-        String filter_1 = filterBuilder.toString();
+        obTableValueFilter filter_0 = new obTableValueFilter(obCompareOp.EQ, "c1", 0);
+        obTableFilterList filterList = new obTableFilterList(obTableFilterList.operator.AND);
+        obTableValueFilter filter_1 = new obTableValueFilter(obCompareOp.GT, "c3", "ro");
+        obTableValueFilter filter_2 = new obTableValueFilter(obCompareOp.LT, "c3", "row3");
+        filterList.addFilter(filter_1);
+        filterList.addFilter(filter_2);
+        obTableValueFilter filter_3 = new obTableValueFilter(obCompareOp.LT, null, "row3");
 
         try {
-            tableQuery.filterString(filter_0);
+            tableQuery.setFilter(filter_0);
             ObTableQueryAndMutateRequest request_0 = ((ObTableClient) client).obTableQueryAndDelete(tableQuery);
             ObPayload res_exec_0 = ((ObTableClient) client).execute(request_0);
             ObTableQueryAndMutateResult res = (ObTableQueryAndMutateResult) res_exec_0;
             Assert.assertEquals(1, res.getAffectedRows());
             /* To confirm changing. re-query to get the latest data */
-            StringBuilder filterBuilder_0 = new StringBuilder();
-            tableQuery.appendQueryFilterString(filterBuilder_0, ObTableQueryAndMutateFilterSign.GE, "c1", "0");
-            String confirm_0 = filterBuilder_0.toString();
-            tableQuery.filterString(confirm_0);
+            obTableValueFilter confirm_0 = new obTableValueFilter(obCompareOp.GE, "c1", 0);
+            tableQuery.setFilter(confirm_0);
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(2, result.cacheSize());
 
-            tableQuery.filterString(filter_1);
+            tableQuery.setFilter(filterList);
             ObTableQueryAndMutateRequest request_1 = ((ObTableClient) client).obTableQueryAndDelete(tableQuery);
             ObPayload res_exec_1 = ((ObTableClient) client).execute(request_1);
             res = (ObTableQueryAndMutateResult) res_exec_1;
             Assert.assertEquals(1, res.getAffectedRows());
             /* To confirm changing. re-query to get the latest data */
-            StringBuilder filterBuilder_1 = new StringBuilder();
-            tableQuery.appendQueryFilterString(filterBuilder_1, ObTableQueryAndMutateFilterSign.GE, "c1", "0");
-            String confirm_1 = filterBuilder_1.toString();
-            tableQuery.filterString(confirm_1);
+            obTableValueFilter confirm_1 = new obTableValueFilter(obCompareOp.GE, "c1", 0);
+            tableQuery.setFilter(confirm_1);
             result = tableQuery.execute();
             Assert.assertEquals(1, result.cacheSize());
 
-            tableQuery.filterString(null);
+            tableQuery.setFilter(filter_3);
             ObTableQueryAndMutateRequest request_2 = ((ObTableClient) client).obTableQueryAndDelete(tableQuery);
             ObPayload res_exec_2 = ((ObTableClient) client).execute(request_2);
             res = (ObTableQueryAndMutateResult) res_exec_2;
@@ -914,18 +912,8 @@ public class ObTableClientTest extends ObTableClientTestBase {
         tableQuery.addScanRange(new Object[]{0L}, new Object[]{200L});
         tableQuery.select("c1", "c2", "c3");
 
-        /* Set Filter String */
-        List<ObTableQueryAndMutateFilterSign> signs = new ArrayList<>();
-        List<String> keys = new ArrayList<>();
-        List<String> values = new ArrayList<>();
-        signs.add(ObTableQueryAndMutateFilterSign.GT);
-        keys.add("c1");
-        values.add("0");
-        String filter_0 = tableQuery.buildQueryFilterString(signs, keys, values);
-
-        StringBuilder filterBuilder = new StringBuilder();
-        tableQuery.appendQueryFilterString(filterBuilder, ObTableQueryAndMutateFilterSign.EQ, "c3", "update1");
-        String filter_1 = filterBuilder.toString();
+        obTableValueFilter filter_0 = new obTableValueFilter(obCompareOp.GT, "c1", 0);
+        obTableValueFilter filter_1 = new obTableValueFilter(obCompareOp.EQ, "c3", "update1");
 
         try {
             try {
@@ -935,31 +923,27 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 assertTrue(true);
             }
 
-            tableQuery.filterString(filter_0);
+            tableQuery.setFilter(filter_0);
             ObTableQueryAndMutateRequest request_0 = ((ObTableClient) client).obTableQueryAndUpdate(tableQuery, new String[]{"c2", "c3"}, new Object[]{
                     new byte[]{1}, "update1"});
             ObPayload res_exec_0 = ((ObTableClient) client).execute(request_0);
             ObTableQueryAndMutateResult res = (ObTableQueryAndMutateResult) res_exec_0;
             Assert.assertEquals(2, res.getAffectedRows());
             /* To confirm changing. re-query to get the latest data */
-            StringBuilder filterBuilder_0 = new StringBuilder();
-            tableQuery.appendQueryFilterString(filterBuilder_0, ObTableQueryAndMutateFilterSign.EQ, "c3", "update1");
-            String confirm_0 = filterBuilder_0.toString();
-            tableQuery.filterString(confirm_0);
+            obTableValueFilter confirm_0 = new obTableValueFilter(obCompareOp.EQ, "c3", "update1");
+            tableQuery.setFilter(confirm_0);
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(2, result.cacheSize());
 
-            tableQuery.filterString(filter_1);
+            tableQuery.setFilter(filter_1);
             ObTableQueryAndMutateRequest request_1 = ((ObTableClient) client).obTableQueryAndUpdate(tableQuery, new String[]{"c2", "c3"}, new Object[]{
                     new byte[]{1}, "update2"});
             ObPayload res_exec_1 = ((ObTableClient) client).execute(request_1);
             res = (ObTableQueryAndMutateResult) res_exec_1;
             Assert.assertEquals(2, res.getAffectedRows());
             /* To confirm changing. re-query to get the latest data */
-            StringBuilder filterBuilder_1 = new StringBuilder();
-            tableQuery.appendQueryFilterString(filterBuilder_1, ObTableQueryAndMutateFilterSign.EQ, "c3", "update2");
-            String confirm_1 = filterBuilder_1.toString();
-            tableQuery.filterString(confirm_1);
+            obTableValueFilter confirm_1 = new obTableValueFilter(obCompareOp.EQ, "c3", "update2");
+            tableQuery.setFilter(confirm_1);
             result = tableQuery.execute();
             Assert.assertEquals(2, result.cacheSize());
         } finally {
@@ -969,4 +953,143 @@ public class ObTableClientTest extends ObTableClientTestBase {
         }
     }
 
+    @Test
+    public void testQueryAndMutateComplex() throws Exception {
+
+        /*
+         * CREATE TABLE `test_query_filter_mutate` (`c1` bigint NOT NULL, `c2` varbinary(1024) DEFAULT NULL,
+         *                                          `c3` varchar(20) NOT NULL,`c4` bigint DEFAULT NULL, PRIMARY KEY(`c1`))
+         *                                          partition by range columns (`c1`) ( PARTITION p0 VALUES LESS THAN (300),
+         *                                          PARTITION p1 VALUES LESS THAN (1000), PARTITION p2 VALUES LESS THAN MAXVALUE);
+         */
+        System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
+
+        ((ObTableClient) client).addRowKeyElement("test_query_filter_mutate", new String[]{"c1"}); //同索引列的值一样
+
+        client.insert("test_query_filter_mutate", new Object[]{0L}, new String[]{"c2", "c3"},
+                new Object[]{new byte[]{1}, "row1"});
+        client.insert("test_query_filter_mutate", new Object[]{1L}, new String[]{"c2", "c3"},
+                new Object[]{new byte[]{1}, "row2"});
+        client.insert("test_query_filter_mutate", new Object[]{2L}, new String[]{"c2", "c3"},
+                new Object[]{new byte[]{1}, "row3"});
+        client.insert("test_query_filter_mutate", new Object[]{3L}, new String[]{"c2", "c3"},
+                new Object[]{new byte[]{1}, "row4"});
+        client.insert("test_query_filter_mutate", new Object[]{4L}, new String[]{"c2", "c3"},
+                new Object[]{new byte[]{1}, "row5"});
+        client.insert("test_query_filter_mutate", new Object[]{5L}, new String[]{"c2", "c3"},
+                new Object[]{new byte[]{1}, "row6"});
+
+        TableQuery tableQuery = client.query("test_query_filter_mutate");
+        /* Scan range must in one partition */
+        tableQuery.addScanRange(new Object[]{0L}, new Object[]{200L});
+        tableQuery.select("c1", "c2", "c3");
+
+        obTableValueFilter c1_GT_0 = new obTableValueFilter(obCompareOp.GT, "c1", 0);
+        obTableValueFilter c1_EQ_0 = new obTableValueFilter(obCompareOp.EQ, "c1", 0);
+        obTableValueFilter c1_LE_0 = new obTableValueFilter(obCompareOp.LE, "c1", 0);
+        obTableValueFilter c1_LT_5 = new obTableValueFilter(obCompareOp.LT, "c1", 5);
+        obTableValueFilter c1_LE_5 = new obTableValueFilter(obCompareOp.LE, "c1", 5);
+        obTableValueFilter c1_GT_3 = new obTableValueFilter(obCompareOp.GT, "c1", 3);
+        obTableValueFilter c1_LT_2 = new obTableValueFilter(obCompareOp.LT, "c1", 2);
+        obTableValueFilter c1_EQ_5 = new obTableValueFilter(obCompareOp.EQ, "c1", 5);
+        obTableValueFilter c3_GE = new obTableValueFilter(obCompareOp.GE, "c3", "update");
+        obTableValueFilter c3_LT = new obTableValueFilter(obCompareOp.LT, "c3", "update4");
+        obTableFilterList filters_0 = new obTableFilterList();
+        obTableFilterList filters_1 = new obTableFilterList();
+        obTableFilterList filters_2 = new obTableFilterList(obTableFilterList.operator.OR);
+
+
+        try {
+            // c1 = 0 && c1 = 0
+            filters_0.addFilter(c1_EQ_0, c1_EQ_0);
+            tableQuery.setFilter(filters_0);
+            ObTableQueryAndMutateRequest request_0 = ((ObTableClient) client).obTableQueryAndUpdate(tableQuery, new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{1}, "update1"});
+            ObPayload res_exec_0 = ((ObTableClient) client).execute(request_0);
+            ObTableQueryAndMutateResult res = (ObTableQueryAndMutateResult) res_exec_0;
+            Assert.assertEquals(1, res.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            obTableValueFilter confirm_0 = new obTableValueFilter(obCompareOp.EQ, "c3", "update1");
+            tableQuery.setFilter(confirm_0);
+            QueryResultSet result = tableQuery.execute();
+            Assert.assertEquals(1, result.cacheSize());
+
+            // c1 = 0 && (c1 = 0 && c1 = 0)
+            filters_1.addFilter(c1_EQ_0, filters_0);
+            tableQuery.setFilter(filters_1);
+            ObTableQueryAndMutateRequest request_1 = ((ObTableClient) client).obTableQueryAndUpdate(tableQuery, new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{1}, "update2"});
+            ObPayload res_exec_1 = ((ObTableClient) client).execute(request_1);
+            res = (ObTableQueryAndMutateResult) res_exec_1;
+            Assert.assertEquals(1, res.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            obTableValueFilter confirm_1 = new obTableValueFilter(obCompareOp.EQ, "c3", "update2");
+            tableQuery.setFilter(confirm_1);
+            result = tableQuery.execute();
+            Assert.assertEquals(1, result.cacheSize());
+
+            // c1 = 5 || (c1 > 3 && c1 <= 5)
+            filters_0 = new obTableFilterList(obTableFilterList.operator.AND);
+            filters_0.addFilter(c1_GT_3, c1_LE_5);
+            filters_1 = new obTableFilterList(obTableFilterList.operator.OR);
+            filters_1.addFilter(c1_EQ_5, filters_0);
+            tableQuery.setFilter(filters_1);
+            ObTableQueryAndMutateRequest request_2 = ((ObTableClient) client).obTableQueryAndUpdate(tableQuery, new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{1}, "update3"});
+            ObPayload res_exec_2 = ((ObTableClient) client).execute(request_2);
+            res = (ObTableQueryAndMutateResult) res_exec_2;
+            Assert.assertEquals(2, res.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            obTableValueFilter confirm_2 = new obTableValueFilter(obCompareOp.EQ, "c3", "update3");
+            tableQuery.setFilter(confirm_2);
+            result = tableQuery.execute();
+            Assert.assertEquals(2, result.cacheSize());
+
+            // (c1 > 0 && c1 < 5) || (c1 <= 0 || c1 < 2)
+            filters_0 = new obTableFilterList(obTableFilterList.operator.AND);
+            filters_0.addFilter(c1_GT_0);
+            filters_0.addFilter(c1_LT_5);
+            filters_1 = new obTableFilterList(obTableFilterList.operator.OR);
+            filters_1.addFilter(c1_LE_0, c1_LT_2);
+            filters_2.addFilter(filters_0, filters_1);
+            tableQuery.setFilter(filters_2);
+            ObTableQueryAndMutateRequest request_3 = ((ObTableClient) client).obTableQueryAndUpdate(tableQuery, new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{1}, "update4"});
+            ObPayload res_exec_3 = ((ObTableClient) client).execute(request_3);
+            res = (ObTableQueryAndMutateResult) res_exec_3;
+            Assert.assertEquals(5, res.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            obTableValueFilter confirm_3 = new obTableValueFilter(obCompareOp.EQ, "c3", "update4");
+            tableQuery.setFilter(confirm_3);
+            result = tableQuery.execute();
+            Assert.assertEquals(5, result.cacheSize());
+
+            // (c3 >= update && c3 < update4 && c1 < 2) || (c3 < update4 && c1 > 3)
+            filters_0 = new obTableFilterList(obTableFilterList.operator.AND);
+            filters_0.addFilter(c3_GE, c3_LT, c1_LT_2);
+            filters_1 = new obTableFilterList(obTableFilterList.operator.AND);
+            filters_1.addFilter(c3_LT, c1_GT_3);
+            filters_2 = new obTableFilterList(obTableFilterList.operator.OR);
+            filters_2.addFilter(filters_0, filters_1);
+            tableQuery.setFilter(filters_2);
+            ObTableQueryAndMutateRequest request_4 = ((ObTableClient) client).obTableQueryAndUpdate(tableQuery, new String[]{"c2", "c3"}, new Object[]{
+                    new byte[]{1}, "update5"});
+            ObPayload res_exec_4 = ((ObTableClient) client).execute(request_4);
+            res = (ObTableQueryAndMutateResult) res_exec_4;
+            Assert.assertEquals(1, res.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            obTableValueFilter confirm_4 = new obTableValueFilter(obCompareOp.GE, "c3", "update5");
+            tableQuery.setFilter(confirm_4);
+            result = tableQuery.execute();
+            Assert.assertEquals(1, result.cacheSize());
+
+        } finally {
+            client.delete("test_query_filter_mutate", new Object[]{0L});
+            client.delete("test_query_filter_mutate", new Object[]{1L});
+            client.delete("test_query_filter_mutate", new Object[]{2L});
+            client.delete("test_query_filter_mutate", new Object[]{3L});
+            client.delete("test_query_filter_mutate", new Object[]{4L});
+            client.delete("test_query_filter_mutate", new Object[]{5L});
+        }
+    }
 }
