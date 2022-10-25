@@ -17,9 +17,9 @@
 
 package com.alipay.oceanbase.rpc.batch;
 
+import com.alipay.oceanbase.rpc.filter.obTableFilter;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateFilterSign;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilter;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
@@ -159,6 +159,14 @@ public class QueryByBatch implements TableQuery {
         throw new IllegalArgumentException("not support filterString for QueryByBatch");
     }
 
+    /*
+     * Set filter
+     */
+    @Override
+    public TableQuery setFilter(obTableFilter filter) {
+        throw new IllegalArgumentException("not support construct filter string for " + this.getClass().toString());
+    }
+
     @Override
     public TableQuery setHTableFilter(ObHTableFilter obHTableFilter) {
         throw new IllegalArgumentException("not support setHTableFilter for QueryByBatch");
@@ -275,21 +283,4 @@ public class QueryByBatch implements TableQuery {
     public boolean isEndEquals() {
         return endEquals;
     }
-
-    /**
-     * build Query FilterString.
-     */
-    @Override
-    public String buildQueryFilterString(List<ObTableQueryAndMutateFilterSign> signs, List<String> keys, List<String> values) {
-        throw new IllegalArgumentException("not support construct filter string for query by batch");
-    }
-
-    /**
-     * append Query FilterString.
-     */
-    @Override
-    public void appendQueryFilterString(StringBuilder filterString, ObTableQueryAndMutateFilterSign sign, String key, String value) {
-        throw new IllegalArgumentException("not support construct filter string for query by batch");
-    }
-    
 }
