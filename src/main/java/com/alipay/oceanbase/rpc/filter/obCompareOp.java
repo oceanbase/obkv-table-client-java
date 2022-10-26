@@ -1,15 +1,39 @@
-package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate;
+package com.alipay.oceanbase.rpc.filter;
 
-public enum ObTableQueryAndMutateFilterSign {
+public enum obCompareOp {
     /*
      * LT -> less than
+     */
+    LT,
+
+    /*
      * GT -> greater than
-     * LE -> less equal than
-     * GE -> greater equal than
+     */
+    GT,
+
+    /*
+     * LE -> less or equal than
+     */
+    LE,
+
+    /*
+     * GE -> greater or equal than
+     */
+    GE,
+
+    /*
      * NE -> not equal
+     */
+    NE,
+
+    /*
      * EQ -> equal
      */
-    LT, GT, LE, GE, NE, EQ;
+    EQ;
+
+    /*
+     * operator to string
+     */
     public String toString() {
         String returnString = null;
         // switch sign
@@ -38,4 +62,4 @@ public enum ObTableQueryAndMutateFilterSign {
         }
         return returnString;
     }
-};
+}
