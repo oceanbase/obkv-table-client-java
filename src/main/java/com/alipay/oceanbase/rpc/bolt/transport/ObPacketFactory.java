@@ -65,8 +65,8 @@ public class ObPacketFactory implements CommandFactory {
         rpcHeaderPacket.setTimeout(payload.getTimeout() * 1000);
         rpcHeaderPacket.setTenantId(payload.getTenantId());
         // trace
-        rpcHeaderPacket.setTraceId0(payload.getSequence());
-        rpcHeaderPacket.setTraceId1(payload.getUniqueId());
+        rpcHeaderPacket.setTraceId0(payload.getUniqueId());
+        rpcHeaderPacket.setTraceId1(payload.getSequence());
 
         if (payload instanceof ObTableStreamRequest) {
             rpcHeaderPacket.setSessionId(((ObTableStreamRequest) payload).getSessionId());
