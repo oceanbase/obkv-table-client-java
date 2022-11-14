@@ -17,11 +17,9 @@
 
 package com.alipay.oceanbase.rpc.table;
 
-import com.alipay.oceanbase.rpc.filter.obTableFilter;
+import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
-
-import java.util.List;
 
 public abstract class AbstractTableQuery implements TableQuery {
     private static final String PRIMARY_INDEX_NAME = "PRIMARY";
@@ -131,7 +129,7 @@ public abstract class AbstractTableQuery implements TableQuery {
      * Set filter
      */
     @Override
-    public TableQuery setFilter(obTableFilter filter) {
+    public TableQuery setFilter(ObTableFilter filter) {
         if (null == filter) {
             throw new IllegalArgumentException("input filter is null");
         }
