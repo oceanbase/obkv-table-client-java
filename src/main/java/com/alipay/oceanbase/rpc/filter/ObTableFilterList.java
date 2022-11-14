@@ -1,3 +1,20 @@
+/*-
+ * #%L
+ * OBKV Table Client Framework
+ * %%
+ * Copyright (C) 2021 OceanBase
+ * %%
+ * OBKV Table Client Framework is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * #L%
+ */
+
 package com.alipay.oceanbase.rpc.filter;
 
 import com.alipay.oceanbase.rpc.exception.ObTableException;
@@ -5,42 +22,42 @@ import com.alipay.oceanbase.rpc.exception.ObTableException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class obTableFilterList extends obTableFilter {
+public class ObTableFilterList extends ObTableFilter {
     public enum operator {
         AND, OR;
     };
 
     private operator op;
-    private List<obTableFilter> filters;
+    private List<ObTableFilter> filters;
 
     /*
      * default constructor with op = AND
      */
-    public obTableFilterList() {
+    public ObTableFilterList() {
         op = operator.AND;
-        filters = new ArrayList<obTableFilter>();
+        filters = new ArrayList<ObTableFilter>();
     }
 
     /*
-     * construct with obCompareOp
+     * construct with ObCompareOp
      */
-    public obTableFilterList(operator op) {
+    public ObTableFilterList(operator op) {
         if (null == op) {
             throw new ObTableException("operator is null");
         }
         this.op = op;
-        this.filters = new ArrayList<obTableFilter>();
+        this.filters = new ArrayList<ObTableFilter>();
     }
 
-    /*
-     * construct with obCompareOp / obTableFilter
+    /**
+     * construct with ObCompareOp / ObTableFilter
      */
-    public obTableFilterList(operator op, obTableFilter... filters) {
+    public ObTableFilterList(operator op, ObTableFilter... filters) {
         if (null == op) {
             throw new ObTableException("operator is null");
         }
         this.op = op;
-        this.filters = new ArrayList<obTableFilter>();
+        this.filters = new ArrayList<ObTableFilter>();
 
         for (int i = 0; i < filters.length; ++i) {
             if (null == filters[i]) {
@@ -53,7 +70,7 @@ public class obTableFilterList extends obTableFilter {
     /*
      * add filter
      */
-    public void addFilter(obTableFilter... filters) {
+    public void addFilter(ObTableFilter... filters) {
         for (int i = 0; i < filters.length; ++i) {
             if (null == filters[i] || this == filters[i]) {
                 throw new ObTableException(i + "-th input filter is illegal ");
@@ -83,12 +100,12 @@ public class obTableFilterList extends obTableFilter {
                 if (0 != i) {
                     filtersString.append(stringOp);
                 }
-                if (filters.get(i) instanceof obTableFilterList) {
+                if (filters.get(i) instanceof ObTableValueFilter) {
+                    filtersString.append(filterString);
+                } else {
                     filtersString.append("(");
                     filtersString.append(filterString);
                     filtersString.append(")");
-                } else {
-                    filtersString.append(filterString);
                 }
             }
         }

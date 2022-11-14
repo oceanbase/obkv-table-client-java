@@ -17,7 +17,7 @@
 
 package com.alipay.oceanbase.rpc.batch;
 
-import com.alipay.oceanbase.rpc.filter.obTableFilter;
+import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilter;
@@ -27,7 +27,6 @@ import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class QueryByBatch implements TableQuery {
@@ -163,7 +162,7 @@ public class QueryByBatch implements TableQuery {
      * Set filter
      */
     @Override
-    public TableQuery setFilter(obTableFilter filter) {
+    public TableQuery setFilter(ObTableFilter filter) {
         throw new IllegalArgumentException("not support construct filter string for " + this.getClass().toString());
     }
 

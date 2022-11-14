@@ -17,15 +17,13 @@
 
 package com.alipay.oceanbase.rpc.table.api;
 
-import com.alipay.oceanbase.rpc.filter.obTableFilter;
+import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilter;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.ObTable;
-
-import java.util.List;
 
 public interface TableQuery {
     public static final String TABLE_COMPARE_FILTER = "TableCompareFilter";
@@ -162,7 +160,7 @@ public interface TableQuery {
      * @param filter prepared filter
      * @return this
      */
-    TableQuery setFilter(obTableFilter filter);
+    TableQuery setFilter(ObTableFilter filter);
 
     TableQuery setHTableFilter(ObHTableFilter obHTableFilter);
 
