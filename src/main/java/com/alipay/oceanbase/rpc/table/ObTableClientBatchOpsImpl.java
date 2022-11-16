@@ -21,6 +21,7 @@ import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
+import com.alipay.oceanbase.rpc.mutation.result.*;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
@@ -168,6 +169,51 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 results.add(ExceptionUtil.convertToObTableException(result.getExecuteHost(),
                     result.getExecutePort(), result.getSequence(), result.getUniqueId(),
                     resultCodes));
+            }
+        }
+        return results;
+    }
+
+    /*
+     * Execute with result
+     */
+    public List<Object> executeWithResult() throws Exception {
+        // consistent can not be sure
+        List<Object> results = new ArrayList<Object>(batchOperation.getTableOperations().size());
+        for (ObTableOperationResult result : executeInternal().getResults()) {
+            ResultCodes resultCodes = ResultCodes.valueOf(result.getHeader().getErrno());
+            if (resultCodes == ResultCodes.OB_SUCCESS) {
+                switch (result.getOperationType()) {
+                    case GET:
+                        throw new ObTableException("Get is not a mutation");
+                    case INSERT:
+                        results.add(new InsertResult(result));
+                        break;
+                    case DEL:
+                        results.add(new DeleteResult(result));
+                        break;
+                    case UPDATE:
+                        results.add(new UpdateResult(result));
+                        break;
+                    case INSERT_OR_UPDATE:
+                        results.add(new InsertOrUpdateResult(result));
+                        break;
+                    case REPLACE:
+                        results.add(new ReplaceResult(result));
+                        break;
+                    case INCREMENT:
+                        results.add(new IncrementResult(result));
+                        break;
+                    case APPEND:
+                        results.add(new AppendResult(result));
+                        break;
+                    default:
+                        throw new ObTableException("unknown operation type " + result.getOperationType());
+                }
+            } else {
+                results.add(ExceptionUtil.convertToObTableException(result.getExecuteHost(),
+                        result.getExecutePort(), result.getSequence(), result.getUniqueId(),
+                        resultCodes));
             }
         }
         return results;

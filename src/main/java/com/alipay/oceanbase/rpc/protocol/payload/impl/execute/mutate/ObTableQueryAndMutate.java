@@ -131,4 +131,18 @@ public class ObTableQueryAndMutate extends AbstractPayload {
     public void setMutations(ObTableBatchOperation mutations) {
         this.mutations = mutations;
     }
+
+    /*
+     * Is returning affected entity.
+     */
+    public boolean isReturnAffectedEntity() {
+        return returnAffectedEntity;
+    }
+
+    /*
+     * Set returning affected entity.
+     */
+    public void setReturnAffectedEntity(boolean returnAffectedEntity) {
+        this.returnAffectedEntity = returnAffectedEntity;
+    }
 }

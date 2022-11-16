@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.stream;
 
+import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.QueryStreamResult;
 
@@ -56,6 +57,13 @@ public class QueryResultSet {
             rowValue.put(propertiesNames.get(i), row.get(i).getValue());
         }
         return rowValue;
+    }
+
+    /*
+     * get Row with Row result
+     */
+    public Row getResultRow() {
+        return new Row(getRow());
     }
 
     /*
