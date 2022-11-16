@@ -144,8 +144,7 @@ public class ObTableOperationRequest extends ObTableAbstractOperationRequest {
 
         ObTableOperationRequest request = new ObTableOperationRequest();
         request.setTableName(tableName);
-        // us
-        request.setTimeout(timeout * 1000);
+        request.setTimeout(timeout);
         request.setReturningAffectedRows(true); // TODO 可以设置参数，如果不用的话提高性能
         ObTableOperation obTableOperation = ObTableOperation.getInstance(type, rowKeys, columns,
             properties);

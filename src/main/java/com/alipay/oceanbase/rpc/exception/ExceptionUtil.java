@@ -59,7 +59,7 @@ public class ExceptionUtil {
      */
     public static ObTableException convertToObTableException(String host, int port, long sequence,
                                                              long uniqueId, ResultCodes resultCodes) {
-        String trace = String.format("Y%X-%016X", sequence, uniqueId);
+        String trace = String.format("Y%X-%016X", uniqueId, sequence);
         String server = host + ":" + port;
         switch (resultCodes) {
             case OB_ERR_PRIMARY_KEY_DUPLICATE:
