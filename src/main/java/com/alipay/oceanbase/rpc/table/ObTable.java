@@ -27,6 +27,7 @@ import com.alipay.oceanbase.rpc.exception.ObTableConnectionStatusException;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.exception.ObTableServerConnectException;
 import com.alipay.oceanbase.rpc.batch.QueryByBatch;
+import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObITableEntity;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationRequest;
@@ -185,6 +186,13 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         return entity.getSimpleProperties();
     }
 
+    /**
+     * delete.
+     */
+    public Update update(String tableName) {
+        return new Update(this, tableName);
+    }
+
     /*
      * Update.
      */
@@ -196,6 +204,13 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         return result.getAffectedRows();
     }
 
+    /**
+     * delete.
+     */
+    public Delete delete(String tableName) {
+        return new Delete(this, tableName);
+    }
+
     /*
      * Delete.
      */
@@ -204,6 +219,13 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         ObTableOperationResult result = execute(tableName, ObTableOperationType.DEL, rowkeys, null,
             null, false, false, true);
         return result.getAffectedRows();
+    }
+
+    /**
+     * Insert.
+     */
+    public Insert insert(String tableName) {
+        return new Insert(this, tableName);
     }
 
     /*
@@ -218,6 +240,13 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         return result.getAffectedRows();
     }
 
+    /**
+     * Replace.
+     */
+    public Replace replace(String tableName) {
+        return new Replace(this, tableName);
+    }
+
     /*
      * Replace.
      */
@@ -227,6 +256,13 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         ObTableOperationResult result = execute(tableName, ObTableOperationType.REPLACE, rowkeys,
             columns, values, false, false, true);
         return result.getAffectedRows();
+    }
+
+    /**
+     * Insert Or Update.
+     */
+    public InsertOrUpdate insertOrUpdate(String tableName) {
+        return new InsertOrUpdate(this, tableName);
     }
 
     /*
@@ -240,6 +276,13 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         return result.getAffectedRows();
     }
 
+    /**
+     * increment.
+     */
+    public Increment increment(String tableName) {
+        return new Increment(this, tableName);
+    }
+
     @Override
     public Map<String, Object> increment(String tableName, Object[] rowkeys, String[] columns,
                                          Object[] values, boolean withResult) throws Exception {
@@ -249,6 +292,14 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         return entity.getSimpleProperties();
     }
 
+
+    /**
+     * append.
+     */
+    public Append append(String tableName) {
+        return new Append(this, tableName);
+    }
+
     @Override
     public Map<String, Object> append(String tableName, Object[] rowkeys, String[] columns,
                                       Object[] values, boolean withResult) throws Exception {
@@ -256,6 +307,13 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             columns, values, false, withResult, true);
         ObITableEntity entity = result.getEntity();
         return entity.getSimpleProperties();
+    }
+
+    /**
+     * batch mutation.
+     */
+    public BatchMutation batchMutation(String tableName) {
+        return new BatchMutation(this, tableName);
     }
 
     /*

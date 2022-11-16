@@ -22,8 +22,12 @@ import com.alipay.oceanbase.rpc.filter.*;
 import com.alipay.oceanbase.rpc.location.model.ObServerAddr;
 import com.alipay.oceanbase.rpc.location.model.ServerRoster;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
+import com.alipay.oceanbase.rpc.mutation.*;
+import com.alipay.oceanbase.rpc.mutation.result.*;
 import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObQueryOperationType;
@@ -45,6 +49,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.*;
+import static com.alipay.oceanbase.rpc.mutation.MutationFactory.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -567,9 +572,15 @@ public class ObTableClientTest extends ObTableClientTestBase {
             QueryResultSet result = tableQuery.select("c2").primaryIndex().setBatchSize(2)
                 .addScanRange(new Object[] { 123L }, new Object[] { 777L }).execute();
 
-            for (int i = 0; i < 8; i++) {
+            for (int i = 0; i < 4; i++) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> value = result.getRow();
+                assertEquals(value.get("c2"), c2[i]);
+                System.out.println("c2:" + value.get("c2"));
+            }
+            for (int i = 4; i < 8; i++) {
+                Assert.assertTrue(result.next());
+                Row value = result.getResultRow();
                 assertEquals(value.get("c2"), c2[i]);
                 System.out.println("c2:" + value.get("c2"));
             }
@@ -975,6 +986,12 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 new Object[]{new byte[]{1}, "row5"});
         client.insert("test_query_filter_mutate", new Object[]{5L}, new String[]{"c2", "c3"},
                 new Object[]{new byte[]{1}, "row6"});
+        client.insert("test_query_filter_mutate")
+                .setRowKey(new Row("c1", 10L))
+                .addMutateColVal(new ColumnValue("c2", new byte[]{1}))
+                .addMutateColVal(new ColumnValue("c3", "z_row"))
+                .addMutateColVal(new ColumnValue("c4", 10L))
+                .execute();
 
         TableQuery tableQuery = client.query("test_query_filter_mutate");
         /* Scan range must in one partition */
@@ -1069,7 +1086,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                     .obTableQueryAndUpdate(tableQuery, new String[] { "c2" }, new Object[] {new byte[] { 1 }});
             ObPayload res_exec_nenull = ((ObTableClient) client).execute(request_nenull);
             res = (ObTableQueryAndMutateResult) res_exec_nenull;
-            Assert.assertEquals(6, res.getAffectedRows());
+            Assert.assertEquals(7, res.getAffectedRows());
 
             // (c3 >= update && c3 < update4 && c1 < 2) || (c3 < update4 && c1 > 3)
             filters_0 = andList(c3_GE, c3_LT, c1_LT_2);
@@ -1085,7 +1102,39 @@ public class ObTableClientTest extends ObTableClientTestBase {
             ObTableValueFilter confirm_4 = compareVal(ObCompareOp.GE, "c3", "update5");
             tableQuery.setFilter(confirm_4);
             result = tableQuery.execute();
-            Assert.assertEquals(1, result.cacheSize());
+            Assert.assertEquals(2, result.cacheSize());
+
+            // new test
+            // match the filter
+            ObTableValueFilter c3_EQ_rowX = compareVal(ObCompareOp.EQ, "c3", "z_row");
+            UpdateResult update_result =
+                    ((ObTableClient) client)
+                        .update("test_query_filter_mutate")
+                        .setRowKey(colVal("c1", 10L))
+                        .setFilter(c3_EQ_rowX)
+                        .addMutateRow(row(colVal("c2", new byte[]{1}), colVal("c3", "update_ur")))
+                        .execute();
+            Assert.assertEquals(1, update_result.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            ObTableValueFilter confirm_ur = compareVal(ObCompareOp.EQ, "c3", "update_ur");
+            tableQuery.setFilter(confirm_ur);
+            QueryResultSet result_ = tableQuery.execute();
+            Assert.assertEquals(1, result_.cacheSize());
+
+            // do not match the filter
+            update_result =
+                    ((ObTableClient) client)
+                            .update("test_query_filter_mutate")
+                            .setRowKey(colVal("c1", 10L))
+                            .setFilter(c3_EQ_rowX)
+                            .addMutateRow(row(colVal("c2", new byte[]{1}), colVal("c3", "update_X")))
+                            .execute();
+            Assert.assertEquals(0, update_result.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            ObTableValueFilter confirm_x = compareVal(ObCompareOp.EQ, "c3", "update_X");
+            tableQuery.setFilter(confirm_x);
+            result_ = tableQuery.execute();
+            Assert.assertEquals(0, result_.cacheSize());
 
         } finally {
             client.delete("test_query_filter_mutate", new Object[]{0L});
@@ -1094,7 +1143,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
             client.delete("test_query_filter_mutate", new Object[]{3L});
             client.delete("test_query_filter_mutate", new Object[]{4L});
             client.delete("test_query_filter_mutate", new Object[]{5L});
-            client.delete("test_query_filter_mutate", new Object[]{6L});
+            client.delete("test_query_filter_mutate", new Object[]{10L});
         }
     }
 
@@ -1111,8 +1160,12 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
         ((ObTableClient) client).addRowKeyElement("test_query_filter_mutate", new String[]{"c1"}); //同索引列的值一样
 
-        client.insert("test_query_filter_mutate", new Object[]{0L}, new String[]{"c2", "c3", "c4"},
-                new Object[]{new byte[]{1}, "row1", 10L});
+        client.insert("test_query_filter_mutate")
+                .setRowKey(new Row("c1", 0L))
+                .addMutateColVal(new ColumnValue("c2", new byte[]{1}))
+                .addMutateColVal(new ColumnValue("c3", "row1"))
+                .addMutateColVal(new ColumnValue("c4", 10L))
+                .execute();
         client.insert("test_query_filter_mutate", new Object[]{1L}, new String[]{"c2", "c3", "c4"},
                 new Object[]{new byte[]{1}, "row2", 11L});
         client.insert("test_query_filter_mutate", new Object[]{2L}, new String[]{"c2", "c3", "c4"},
@@ -1190,7 +1243,311 @@ public class ObTableClientTest extends ObTableClientTestBase {
             client.delete("test_query_filter_mutate", new Object[]{3L});
             client.delete("test_query_filter_mutate", new Object[]{4L});
             client.delete("test_query_filter_mutate", new Object[]{5L});
-            client.delete("test_query_filter_mutate", new Object[]{6L});
+        }
+    }
+
+    @Test
+    public void testMutation() throws Exception {
+        System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
+
+        TableQuery tableQuery = client.query("test_mutation");
+        tableQuery.addScanRange(new Object[]{0L, "\0"}, new Object[]{200L, "\254"});
+        tableQuery.select("c1", "c2", "c3", "c4");
+
+        try {
+            // prepare data with insert
+            client.insert("test_mutation")
+                    .setRowKey(row(colVal("c1", 0L),
+                                   colVal("c2", "row_0")))
+                    .addMutateColVal(colVal("c3", new byte[]{1}))
+                    .addMutateColVal(colVal("c4", 100L))
+                    .execute();
+            client.insert("test_mutation")
+                    .setRowKey(colVal("c1", 1L),
+                               colVal("c2", "row_1"))
+                    .addMutateColVal(colVal("c3", new byte[]{1}))
+                    .addMutateColVal(colVal("c4", 101L))
+                    .execute();
+            client.insert("test_mutation")
+                    .setRowKey(colVal("c1", 2L),
+                               colVal("c2", "row_2"))
+                    .addMutateColVal(colVal("c3", new byte[]{1}))
+                    .addMutateColVal(colVal("c4", 102L))
+                    .execute();
+            client.insert("test_mutation")
+                    .setRowKey(colVal("c1", 3L),
+                               colVal("c2", "row_3"))
+                    .addMutateColVal(colVal("c3", new byte[]{1}))
+                    .addMutateColVal(colVal("c4", 103L))
+                    .execute();
+
+            // update / match filter
+            ObTableValueFilter c4_EQ_100 = compareVal(ObCompareOp.EQ, "c4", 100L);
+            UpdateResult updateResult =
+                    client.update("test_mutation")
+                            .setRowKey(colVal("c1", 0L),
+                                       colVal("c2", "row_0"))
+                            .setFilter(c4_EQ_100)
+                            .addMutateRow(row(colVal("c3", new byte[]{1}), colVal("c4", 200L)))
+                            .execute();
+            Assert.assertEquals(1, updateResult.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            ObTableValueFilter confirm_1 = compareVal(ObCompareOp.EQ, "c4", 200L);
+            tableQuery.setFilter(confirm_1);
+            QueryResultSet result_ = tableQuery.execute();
+            Assert.assertEquals(1, result_.cacheSize());
+
+            // update / do not match filter
+            updateResult =
+                    client.update("test_mutation")
+                            .setRowKey(colVal("c1", 1L),
+                                       colVal("c2", "row_1"))
+                            .setFilter(c4_EQ_100)
+                            .addMutateRow(row(colVal("c3", new byte[]{1}), colVal("c4", 201L)))
+                            .execute();
+            Assert.assertEquals(0, updateResult.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            ObTableValueFilter confirm_2 = compareVal(ObCompareOp.EQ, "c4", 201L);
+            tableQuery.setFilter(confirm_2);
+            result_ = tableQuery.execute();
+            Assert.assertEquals(0, result_.cacheSize());
+
+            // delete / do not match filter
+            ObTableValueFilter c4_EQ_103 = compareVal(ObCompareOp.EQ, "c4", 103L);
+            DeleteResult deleteResult =
+                    client.delete("test_mutation")
+                            .setRowKey(colVal("c1", 2L),
+                                       colVal("c2", "row_2"))
+                            .setFilter(c4_EQ_103)
+                            .execute();
+            Assert.assertEquals(0, deleteResult.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            tableQuery.setFilter(c4_EQ_103);
+            result_ = tableQuery.execute();
+            Assert.assertEquals(1, result_.cacheSize());
+
+            // replace
+            ReplaceResult replaceResult =
+                    client.replace("test_mutation")
+                            .setRowKey(colVal("c1", 2L),
+                                       colVal("c2", "row_2"))
+                            .addMutateRow(row(colVal("c3", new byte[]{2}), colVal("c4", 202L)))
+                            .execute();
+            Assert.assertEquals(2, replaceResult.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            ObTableValueFilter confirm_3 = compareVal(ObCompareOp.EQ, "c4", 202L);
+            tableQuery.setFilter(confirm_3);
+            result_ = tableQuery.execute();
+            Assert.assertEquals(1, result_.cacheSize());
+
+            // InsertOrUpdate / Insert
+            InsertOrUpdateResult insertOrUpdateResult =
+                    client.insertOrUpdate("test_mutation")
+                            .setRowKey(colVal("c1", 4L),
+                                       colVal("c2", "row_4"))
+                            .addMutateRow(row(colVal("c3", new byte[]{2}), colVal("c4", 104L)))
+                            .execute();
+            Assert.assertEquals(1, insertOrUpdateResult.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            ObTableValueFilter confirm_4 = compareVal(ObCompareOp.EQ, "c4", 104L);
+            tableQuery.setFilter(confirm_4);
+            result_ = tableQuery.execute();
+            Assert.assertEquals(1, result_.cacheSize());
+
+            // InsertOrUpdate / Update
+            insertOrUpdateResult =
+                    client.insertOrUpdate("test_mutation")
+                            .setRowKey(colVal("c1", 4L),
+                                       colVal("c2", "row_4"))
+                            .addMutateRow(row(colVal("c3", new byte[1]), colVal("c4", 104L)))
+                            .execute();
+            Assert.assertEquals(1, insertOrUpdateResult.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            confirm_4 = compareVal(ObCompareOp.EQ, "c4", 104L);
+            tableQuery.setFilter(confirm_4);
+            result_ = tableQuery.execute();
+            Assert.assertEquals(1, result_.cacheSize());
+
+            // increment / without filter
+            // result will send back the latest mutated column
+            IncrementResult incrementResult =
+                    client.increment("test_mutation")
+                            .setRowKey(colVal("c1", 3L),
+                                       colVal("c2", "row_3"))
+                            .addMutateColVal(colVal("c4", 100L))
+                            .execute();
+            Assert.assertEquals(1, incrementResult.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            ObTableValueFilter confirm_5 = compareVal(ObCompareOp.EQ, "c4", 203L);
+            tableQuery.setFilter(confirm_5);
+            result_ = tableQuery.execute();
+            Assert.assertEquals(1, result_.cacheSize());
+
+            // increment / with filter hit
+            // result will send back the value before increment
+            incrementResult =
+                    client.increment("test_mutation")
+                            .setRowKey(colVal("c1", 3L),
+                                       colVal("c2", "row_3"))
+                            .addMutateColVal(colVal("c4", 100L))
+                            .setFilter(andList(compareVal(ObCompareOp.EQ, "c4", 203L)))
+                            .execute();
+            Assert.assertEquals(1, incrementResult.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            ObTableValueFilter confirm_6 = compareVal(ObCompareOp.EQ, "c4", 303L);
+            tableQuery.setFilter(confirm_6);
+            result_ = tableQuery.execute();
+            Assert.assertEquals(1, result_.cacheSize());
+
+            // increment / with filter not hit
+            incrementResult =
+                    client.increment("test_mutation")
+                            .setRowKey(colVal("c1", 3L),
+                                       colVal("c2", "row_3"))
+                            .addMutateColVal(colVal("c4", 100L))
+                            .setFilter(andList(compareVal(ObCompareOp.EQ, "c4", 203L)))
+                            .execute();
+            Assert.assertEquals(0, incrementResult.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            ObTableValueFilter confirm_7 = compareVal(ObCompareOp.EQ, "c4", 303L);
+            tableQuery.setFilter(confirm_7);
+            result_ = tableQuery.execute();
+            Assert.assertEquals(1, result_.cacheSize());
+
+            // append / without filter
+            // result will send back the latest mutated column
+            AppendResult appendResult =
+                    client.append("test_mutation")
+                            .setRowKey(colVal("c1", 4L),
+                                       colVal("c2", "row_4"))
+                            .addMutateColVal(colVal("c3", new byte[1]))
+                            .execute();
+            Assert.assertEquals(1, appendResult.getAffectedRows());
+
+            // append / with filter hit
+            // result will send back the value before append
+            appendResult =
+                    client.append("test_mutation")
+                            .setRowKey(colVal("c1", 4L),
+                                       colVal("c2", "row_4"))
+                            .addMutateColVal(colVal("c3", new byte[1]))
+                            .setFilter(andList(compareVal(ObCompareOp.EQ, "c4", 104L)))
+                            .execute();
+            Assert.assertEquals(1, appendResult.getAffectedRows());
+
+            // append / with filter not hit
+            appendResult =
+                    client.append("test_mutation")
+                            .setRowKey(colVal("c1", 3L),
+                                       colVal("c2", "row_3"))
+                            .addMutateColVal(colVal("c3", new byte[0]))
+                            .setFilter(andList(compareVal(ObCompareOp.EQ, "c4", 203L)))
+                            .execute();
+            Assert.assertEquals(0, appendResult.getAffectedRows());
+
+        } finally {
+            client.delete("test_mutation")
+                    .setRowKey(colVal("c1", 0L),
+                               colVal("c2", "row_0"))
+                    .execute();
+            client.delete("test_mutation")
+                    .setRowKey(colVal("c1", 1L),
+                               colVal("c2", "row_1"))
+                    .execute();
+            client.delete("test_mutation")
+                    .setRowKey(colVal("c1", 2L),
+                               colVal("c2", "row_2"))
+                    .execute();
+            client.delete("test_mutation")
+                    .setRowKey(colVal("c1", 3L),
+                               colVal("c2", "row_3"))
+                    .execute();
+            client.delete("test_mutation")
+                    .setRowKey(colVal("c1", 4L),
+                               colVal("c2", "row_4"))
+                    .execute();
+        }
+    }
+
+    @Test
+    public void testBatchMutation() throws Exception {
+        System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
+
+        TableQuery tableQuery = client.query("test_mutation");
+        tableQuery.addScanRange(new Object[]{0L, "\0"}, new Object[]{200L, "\254"});
+        tableQuery.select("c1", "c2", "c3", "c4");
+
+        try {
+            // prepare data with insert
+            client.insert("test_mutation")
+                    .setRowKey(row(colVal("c1", 0L),
+                            colVal("c2", "row_0")))
+                    .addMutateColVal(colVal("c3", new byte[]{1}))
+                    .addMutateColVal(colVal("c4", 100L))
+                    .execute();
+            client.insert("test_mutation")
+                    .setRowKey(colVal("c1", 1L),
+                            colVal("c2", "row_1"))
+                    .addMutateColVal(colVal("c3", new byte[]{1}))
+                    .addMutateColVal(colVal("c4", 101L))
+                    .execute();
+            client.insert("test_mutation")
+                    .setRowKey(colVal("c1", 2L),
+                            colVal("c2", "row_2"))
+                    .addMutateColVal(colVal("c3", new byte[]{1}))
+                    .addMutateColVal(colVal("c4", 102L))
+                    .execute();
+            client.insert("test_mutation")
+                    .setRowKey(colVal("c1", 3L),
+                            colVal("c2", "row_3"))
+                    .addMutateColVal(colVal("c3", new byte[]{1}))
+                    .addMutateColVal(colVal("c4", 103L))
+                    .execute();
+
+            Insert insert_0 = insert().setRowKey(row(colVal("c1", 0L),
+                                                     colVal("c2", "row_0")))
+                    .addMutateColVal(colVal("c3", new byte[]{1}))
+                    .addMutateColVal(colVal("c4", 100L));
+            Insert insert_1 = insert().setRowKey(row(colVal("c1", 4L),
+                                                     colVal("c2", "row_4")))
+                    .addMutateColVal(colVal("c3", new byte[]{1}))
+                    .addMutateColVal(colVal("c4", 104L));
+            Update update_0 = update().setRowKey(row(colVal("c1", 4L),
+                                                     colVal("c2", "row_4")))
+                    .addMutateColVal(colVal("c3", new byte[]{1}))
+                    .addMutateColVal(colVal("c4", 204L));
+
+            BatchMutationResult batchResult = client.batchMutation("test_mutation")
+                                                    .addMutation(insert_0)
+                                                    .addMutation(insert_1, update_0)
+                                                    .execute();
+            Assert.assertEquals(1, batchResult.getWrongCount());
+            Assert.assertEquals(2, batchResult.getCorrectCount());
+            Assert.assertEquals(0, batchResult.getWrongIdx()[0]);
+            Assert.assertEquals(1, batchResult.getCorrectIdx()[0]);
+            Assert.assertEquals(1, batchResult.get(1).getAffectedRows());
+            Assert.assertEquals(1, batchResult.get(2).getAffectedRows());
+        } finally {
+            client.delete("test_mutation")
+                    .setRowKey(colVal("c1", 0L),
+                            colVal("c2", "row_0"))
+                    .execute();
+            client.delete("test_mutation")
+                    .setRowKey(colVal("c1", 1L),
+                            colVal("c2", "row_1"))
+                    .execute();
+            client.delete("test_mutation")
+                    .setRowKey(colVal("c1", 2L),
+                            colVal("c2", "row_2"))
+                    .execute();
+            client.delete("test_mutation")
+                    .setRowKey(colVal("c1", 3L),
+                            colVal("c2", "row_3"))
+                    .execute();
+            client.delete("test_mutation")
+                    .setRowKey(colVal("c1", 4L),
+                            colVal("c2", "row_4"))
+                    .execute();
         }
     }
 }

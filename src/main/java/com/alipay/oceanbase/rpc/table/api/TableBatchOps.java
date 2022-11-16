@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.table.api;
 
+import com.alipay.oceanbase.rpc.mutation.result.BatchMutationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableBatchOperation;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 
@@ -101,6 +102,8 @@ public interface TableBatchOps {
     void append(Object[] rowkeys, String[] columns, Object[] values, boolean withResult);
 
     List<Object> execute() throws Exception;
+
+    List<Object> executeWithResult() throws Exception;
 
     void clear();
 
