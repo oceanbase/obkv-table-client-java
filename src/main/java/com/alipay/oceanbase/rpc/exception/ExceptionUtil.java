@@ -31,9 +31,8 @@ public class ExceptionUtil {
      * @param errorCode error code return from Ob Server
      */
     public static void throwObTableException(int errorCode) {
-        ResultCodes resultCodes = ResultCodes.valueOf(errorCode);
-        if (resultCodes != ResultCodes.OB_SUCCESS) {
-            throw convertToObTableException("", 0, 0, 0, resultCodes);
+        if (errorCode != ResultCodes.OB_SUCCESS.errorCode) {
+            throw convertToObTableException("", 0, 0, 0, errorCode);
         }
     }
 
@@ -45,9 +44,8 @@ public class ExceptionUtil {
      */
     public static void throwObTableException(String host, int port, long sequence, long uniqueId,
                                              int errorCode) {
-        ResultCodes resultCodes = ResultCodes.valueOf(errorCode);
-        if (resultCodes != ResultCodes.OB_SUCCESS) {
-            throw convertToObTableException(host, port, sequence, uniqueId, resultCodes);
+        if (errorCode != ResultCodes.OB_SUCCESS.errorCode) {
+            throw convertToObTableException(host, port, sequence, uniqueId, errorCode);
         }
     }
 
@@ -58,9 +56,14 @@ public class ExceptionUtil {
      * @param resultCodes error code return from Ob Server
      */
     public static ObTableException convertToObTableException(String host, int port, long sequence,
-                                                             long uniqueId, ResultCodes resultCodes) {
-        String trace = String.format("Y%X-%016X", sequence, uniqueId);
+                                                             long uniqueId, int errorCode) {
+        String trace = String.format("Y%X-%016X", uniqueId, sequence);
         String server = host + ":" + port;
+        ResultCodes resultCodes = ResultCodes.valueOf(errorCode);
+        if (resultCodes == null) {
+            return new ObTableUnexpectedException("[" + trace + "] [" + "unknown errcode: "
+                    + errorCode + "] server [" + server + "]", errorCode);
+        }
         switch (resultCodes) {
             case OB_ERR_PRIMARY_KEY_DUPLICATE:
                 return new ObTableDuplicateKeyException("[" + trace + "] [" + resultCodes.name()
