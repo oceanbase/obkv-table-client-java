@@ -57,7 +57,7 @@ public class ExceptionUtilTest {
 
         // convertToObTableException
         try {
-            ExceptionUtil.convertToObTableException("0.0.0.0", 0, 0L, 0L, OB_OSS_WRITE_ERROR);
+            ExceptionUtil.convertToObTableException("0.0.0.0", 0, 0L, 0L, OB_OSS_WRITE_ERROR.errorCode);
         } catch (ObTableException e) {
             Assert.assertTrue(e instanceof ObTableUnexpectedException);
             Assert.assertTrue(e.getMessage().contains("OB_OSS_WRITE_ERROR"));
