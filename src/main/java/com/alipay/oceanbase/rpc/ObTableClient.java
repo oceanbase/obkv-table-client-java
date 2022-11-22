@@ -492,37 +492,43 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 T t = callback.execute(obPair);
                 resetExecuteContinuousFailureCount(tableName);
                 return t;
-            } catch (ObTableReplicaNotReadableException ex) {
-                if (obPair != null && (tryTimes - 1) < runtimeRetryTimes) {
-                    logger.warn("retry when replica not readable: {}", ex.getMessage());
-                    route.addToBlackList(obPair.getRight().getIp());
-                } else {
-                    logger.warn("exhaust retry when replica not readable: {}", ex.getMessage());
-                    RUNTIME.error("replica not readable", ex);
-                    throw ex;
-                }
             } catch (Exception ex) {
                 RUNTIME.error("execute while meet exception", ex);
+                if (odpMode) {
+                    if ((tryTimes - 1) < runtimeRetryTimes) {
+                        logger.warn("execute while meet Exception, errorCode: {} , errorMsg: {}, try times {}",
+                                ((ObTableException) ex).getErrorCode(), ex.getMessage(), tryTimes);
+                    } else {
+                        throw ex;
+                    }
+                } else {
+                    if (ex instanceof ObTableReplicaNotReadableException) {
+                        if (obPair != null && (tryTimes - 1) < runtimeRetryTimes) {
+                            logger.warn("retry when replica not readable: {}", ex.getMessage());
+                            if (!odpMode) {
+                                route.addToBlackList(obPair.getRight().getIp());
+                            }
+                        } else {
+                            logger.warn("exhaust retry when replica not readable: {}", ex.getMessage());
+                            RUNTIME.error("replica not readable", ex);
+                            throw ex;
+                        }
+                    } else if (ex instanceof ObTableException && ((ObTableException) ex).isNeedRefreshTableEntry()) {
+                        needRefreshTableEntry = true;
 
-                if (ex instanceof ObTableException
-                    && ((ObTableException) ex).isNeedRefreshTableEntry()) {
-                    needRefreshTableEntry = true;
-
-                    logger.warn(
-                        "refresh table while meet Exception needing refresh, errorCode: {}, errorMsg: {}",
-                            ((ObTableException) ex).getErrorCode(), ex.getMessage());
-                    if (retryOnChangeMasterTimes && (tryTimes - 1) < runtimeRetryTimes) {
-                        logger
-                            .warn(
-                                "retry while meet Exception needing refresh, errorCode: {} , errorMsg: {}, retry times {}",
+                        logger.warn("refresh table while meet Exception needing refresh, errorCode: {}, errorMsg: {}",
+                                ((ObTableException) ex).getErrorCode(), ex.getMessage());
+                        if (retryOnChangeMasterTimes && (tryTimes - 1) < runtimeRetryTimes) {
+                            logger.warn("retry while meet Exception needing refresh, errorCode: {} , errorMsg: {},retry times {}",
                                     ((ObTableException) ex).getErrorCode(), ex.getMessage(), tryTimes);
+                        } else {
+                            calculateContinuousFailure(tableName, ex.getMessage());
+                            throw ex;
+                        }
                     } else {
                         calculateContinuousFailure(tableName, ex.getMessage());
                         throw ex;
                     }
-                } else {
-                    calculateContinuousFailure(tableName, ex.getMessage());
-                    throw ex;
                 }
             }
             Thread.sleep(runtimeRetryInterval);
