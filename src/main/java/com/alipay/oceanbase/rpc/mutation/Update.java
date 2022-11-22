@@ -19,11 +19,9 @@ package com.alipay.oceanbase.rpc.mutation;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
-import com.alipay.oceanbase.rpc.filter.ObTableFilter;
-import com.alipay.oceanbase.rpc.mutation.result.UpdateResult;
+import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
 import com.alipay.oceanbase.rpc.table.api.Table;
-import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -138,7 +136,7 @@ public class Update extends Mutation<Update> {
     /*
      * execute
      */
-    public UpdateResult execute() throws Exception {
+    public MutationResult execute() throws Exception {
         if (null == getTableName()) {
             throw new ObTableException("table name is null");
         } else if (null == getClient()) {
@@ -147,7 +145,7 @@ public class Update extends Mutation<Update> {
 
         if (null == getQuery()) {
             // simple update, without filter
-            return new UpdateResult(
+            return new MutationResult(
                     ((ObTableClient) getClient()).
                             updateWithResult(getTableName(),
                                     getRowKeys(),
@@ -156,7 +154,7 @@ public class Update extends Mutation<Update> {
         } else {
             // QueryAndUpdate
             getQuery().select(getSelectedColumns());
-            return new UpdateResult(((ObTableClient) getClient()).execute(
+            return new MutationResult(((ObTableClient) getClient()).execute(
                     ((ObTableClient) getClient()).obTableQueryAndUpdate(
                             getQuery(), columns.toArray(new String[0]), values.toArray())));
         }

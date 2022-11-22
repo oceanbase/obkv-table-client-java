@@ -19,11 +19,9 @@ package com.alipay.oceanbase.rpc.mutation;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
-import com.alipay.oceanbase.rpc.filter.ObTableFilter;
-import com.alipay.oceanbase.rpc.mutation.result.InsertOrUpdateResult;
+import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
 import com.alipay.oceanbase.rpc.table.api.Table;
-import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -114,7 +112,7 @@ public class InsertOrUpdate extends Mutation<InsertOrUpdate> {
     /*
      * execute
      */
-    public InsertOrUpdateResult execute() throws Exception {
+    public MutationResult execute() throws Exception {
         if (null == getTableName()) {
             throw new ObTableException("table name is null");
         } else if (null == getClient()) {
@@ -123,7 +121,7 @@ public class InsertOrUpdate extends Mutation<InsertOrUpdate> {
 
         if (null == getQuery()) {
             // simple Insert, without filter
-            return new InsertOrUpdateResult(
+            return new MutationResult(
                     ((ObTableClient) getClient()).
                             insertOrUpdateWithResult(getTableName(),
                                     getRowKeys(),

@@ -25,7 +25,6 @@ import com.alipay.oceanbase.rpc.location.model.*;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionLevel;
 import com.alipay.oceanbase.rpc.mutation.*;
-import com.alipay.oceanbase.rpc.mutation.result.UpdateResult;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;

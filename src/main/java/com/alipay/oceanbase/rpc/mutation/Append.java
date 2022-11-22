@@ -19,11 +19,9 @@ package com.alipay.oceanbase.rpc.mutation;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
-import com.alipay.oceanbase.rpc.filter.ObTableFilter;
-import com.alipay.oceanbase.rpc.mutation.result.AppendResult;
+import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
 import com.alipay.oceanbase.rpc.table.api.Table;
-import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -141,7 +139,7 @@ public class Append extends Mutation<Append> {
     /*
      * execute
      */
-    public AppendResult execute() throws Exception {
+    public MutationResult execute() throws Exception {
         if (null == getTableName()) {
             throw new ObTableException("table name is null");
         } else if (null == getClient()) {
@@ -150,7 +148,7 @@ public class Append extends Mutation<Append> {
 
         if (null == getQuery()) {
             // simple update, without filter
-            return new AppendResult(
+            return new MutationResult(
                     ((ObTableClient) getClient()).
                             appendWithResult(getTableName(),
                                     getRowKeys(),
@@ -160,7 +158,7 @@ public class Append extends Mutation<Append> {
         } else {
             // QueryAndAppend
             getQuery().select(getSelectedColumns());
-            return new AppendResult(((ObTableClient) getClient()).execute(
+            return new MutationResult(((ObTableClient) getClient()).execute(
                     ((ObTableClient) getClient()).obTableQueryAndAppend(
                             getQuery(), columns.toArray(new String[0]), values.toArray(), withResult)));
         }

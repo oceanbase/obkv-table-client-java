@@ -19,12 +19,9 @@ package com.alipay.oceanbase.rpc.mutation;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
-import com.alipay.oceanbase.rpc.filter.ObTableFilter;
-import com.alipay.oceanbase.rpc.mutation.result.AppendResult;
-import com.alipay.oceanbase.rpc.mutation.result.DeleteResult;
+import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
 import com.alipay.oceanbase.rpc.table.api.Table;
-import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +52,7 @@ public class Delete extends Mutation<Delete> {
     /*
      * execute
      */
-    public DeleteResult execute() throws Exception {
+    public MutationResult execute() throws Exception {
         if (null == getTableName()) {
             throw new ObTableException("table name is null");
         } else if (null == getClient()) {
@@ -64,14 +61,14 @@ public class Delete extends Mutation<Delete> {
 
         if (null == getQuery()) {
             // simple Insert, without filter
-            return new DeleteResult(
+            return new MutationResult(
                     ((ObTableClient) getClient()).
                             deleteWithResult(getTableName(),
                                     getRowKeys()));
         } else {
             // QueryAndDelete
             getQuery().select(getSelectedColumns());
-            return new DeleteResult(((ObTableClient) getClient()).execute(
+            return new MutationResult(((ObTableClient) getClient()).execute(
                     ((ObTableClient) getClient()).obTableQueryAndDelete(getQuery())));
         }
     }
