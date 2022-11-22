@@ -20,11 +20,11 @@ package com.alipay.oceanbase.rpc.util;
 import com.alipay.oceanbase.rpc.ObTableClient;
 
 public class ObTableClientTestUtil {
-    public static String FULL_USER_NAME              = "full-user-name";
-    public static String PARAM_URL                   = "config-url";
-    public static String PASSWORD                    = "password";
-    public static String PROXY_SYS_USER_NAME         = "sys-user-name";
-    public static String PROXY_SYS_USER_PASSWORD     = "sys-user-password";
+    public static String FULL_USER_NAME          = "full-user-name";
+    public static String PARAM_URL               = "config-url";
+    public static String PASSWORD                = "password";
+    public static String PROXY_SYS_USER_NAME     = "sys-user-name";
+    public static String PROXY_SYS_USER_PASSWORD = "sys-user-password";
 
     public static ObTableClient newTestClient() throws Exception {
         ObTableClient obTableClient = new ObTableClient();
