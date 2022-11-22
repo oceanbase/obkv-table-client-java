@@ -17,15 +17,27 @@
 
 package com.alipay.oceanbase.rpc.filter;
 
+import com.alipay.oceanbase.rpc.exception.ObTableException;
+
 public class ObTableValueFilter extends ObTableFilter {
     private ObCompareOp op;
-    private String columnName;
-    private Object value;
+    private String      columnName;
+    private Object      value;
 
     /*
      * construct with ObCompareOp / String / Object
      */
-    public ObTableValueFilter(ObCompareOp op, String columnName, Object value) {
+    public ObTableValueFilter(ObCompareOp op, String columnName, Object value) throws ObTableException {
+        if (op == ObCompareOp.IS || op == ObCompareOp.IS_NOT) {
+            if (value != null) {
+                throw new ObTableException(String.format("the value of compare op %s must be null",
+                    op.toString()));
+            }
+        } else if (value == null) {
+            throw new ObTableException(String.format(
+                "the value of comparer op %s must not be null", op.toString()));
+        }
+
         this.op = op;
         this.columnName = columnName;
         this.value = value;
@@ -34,7 +46,16 @@ public class ObTableValueFilter extends ObTableFilter {
     /*
      * set filter
      */
-    public void set(ObCompareOp op, String columnName, Object value) {
+    public void set(ObCompareOp op, String columnName, Object value) throws ObTableException {
+        if (op == ObCompareOp.IS || op == ObCompareOp.IS_NOT) {
+            if (value != null) {
+                throw new ObTableException(String.format("the value of %s must be null",
+                    op.toString()));
+            }
+        } else if (value == null) {
+            throw new ObTableException(String.format("the value of %s must not be null",
+                op.toString()));
+        }
         this.op = op;
         this.columnName = columnName;
         this.value = value;
@@ -64,7 +85,9 @@ public class ObTableValueFilter extends ObTableFilter {
         filterString.append(", '");
         filterString.append(columnName);
         filterString.append(":");
-        filterString.append(String.valueOf(value));
+        if (value != null) {
+            filterString.append(String.valueOf(value));
+        }
         filterString.append("')");
 
         return filterString.toString();

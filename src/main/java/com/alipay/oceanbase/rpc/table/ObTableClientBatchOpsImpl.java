@@ -154,8 +154,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         // consistent can not be sure
         List<Object> results = new ArrayList<Object>(batchOperation.getTableOperations().size());
         for (ObTableOperationResult result : executeInternal().getResults()) {
-            ResultCodes resultCodes = ResultCodes.valueOf(result.getHeader().getErrno());
-            if (resultCodes == ResultCodes.OB_SUCCESS) {
+            int errCode = result.getHeader().getErrno();
+            if (errCode == ResultCodes.OB_SUCCESS.errorCode) {
                 switch (result.getOperationType()) {
                     case GET:
                     case INCREMENT:
@@ -167,8 +167,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 }
             } else {
                 results.add(ExceptionUtil.convertToObTableException(result.getExecuteHost(),
-                    result.getExecutePort(), result.getSequence(), result.getUniqueId(),
-                    resultCodes));
+                    result.getExecutePort(), result.getSequence(), result.getUniqueId(), errCode));
             }
         }
         return results;
@@ -336,20 +335,26 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                     .execute(subRequest);
                 obTableClient.resetExecuteContinuousFailureCount(tableName);
                 break;
-            } catch (ObTableReplicaNotReadableException ex) {
-                if ((tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
-                    logger.warn("tablename:{} partition id:{} retry when replica not readable: {}", tableName, partId, ex.getMessage());
-                    if (failedServerList == null) {
-                        failedServerList = new HashSet<String>();
-                    }
-                    failedServerList.add(subObTable.getIp());
-                } else {
-                    logger.warn("exhaust retry when replica not readable: {}", ex.getMessage());
-                    throw ex;
-                }
             } catch (Exception ex) {
-                if (ex instanceof ObTableException
-                    && ((ObTableException) ex).isNeedRefreshTableEntry()) {
+                if (obTableClient.isOdpMode()) {
+                    if ((tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
+                        logger.warn("batch ops execute while meet Exception, tablename:{}, errorCode: {} , errorMsg: {}, try times {}",
+                                tableName, ((ObTableException) ex).getErrorCode(), ex.getMessage(), tryTimes);
+                    } else {
+                        throw ex;
+                    }
+                } else if (ex instanceof ObTableReplicaNotReadableException) {
+                    if ((tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
+                        logger.warn("tablename:{} partition id:{} retry when replica not readable: {}", tableName, partId, ex.getMessage());
+                        if (failedServerList == null) {
+                            failedServerList = new HashSet<String>();
+                        }
+                        failedServerList.add(subObTable.getIp());
+                    } else {
+                        logger.warn("exhaust retry when replica not readable: {}", ex.getMessage());
+                        throw ex;
+                    }
+                } else if (ex instanceof ObTableException && ((ObTableException) ex).isNeedRefreshTableEntry()) {
                     needRefreshTableEntry = true;
                     logger
                         .warn(

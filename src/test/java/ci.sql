@@ -135,7 +135,7 @@ PRIMARY KEY (`c1`))partition by range(`c1`)(partition p0 values less than(200), 
 CREATE TABLE `test_query_filter_mutate` (
  `c1` bigint NOT NULL,
  `c2` varbinary(1024) DEFAULT NULL,
- `c3` varchar(20) NOT NULL,
+ `c3` varchar(20) DEFAULT NULL,
  `c4` bigint DEFAULT NULL,
   PRIMARY KEY(`c1`)) partition by range columns (`c1`) (
       PARTITION p0 VALUES LESS THAN (300),

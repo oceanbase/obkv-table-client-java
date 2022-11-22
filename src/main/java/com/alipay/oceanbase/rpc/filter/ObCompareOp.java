@@ -46,7 +46,17 @@ public enum ObCompareOp {
     /*
      * EQ -> equal
      */
-    EQ;
+    EQ,
+
+    /*
+     * IS -> IS NULL
+     */
+    IS,
+
+    /*
+     * IS_NOT ->  IS NOT NULL
+     */
+    IS_NOT;
 
     /*
      * operator to string
@@ -59,7 +69,7 @@ public enum ObCompareOp {
                 returnString = "<";
                 break;
             case GT:
-                returnString =  ">";
+                returnString = ">";
                 break;
             case LE:
                 returnString = "<=";
@@ -72,6 +82,12 @@ public enum ObCompareOp {
                 break;
             case EQ:
                 returnString = "=";
+                break;
+            case IS:
+                returnString = "IS";
+                break;
+            case IS_NOT:
+                returnString = "IS_NOT";
                 break;
             default:
                 returnString = "";
