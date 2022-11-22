@@ -19,11 +19,9 @@ package com.alipay.oceanbase.rpc.mutation;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
-import com.alipay.oceanbase.rpc.filter.ObTableFilter;
-import com.alipay.oceanbase.rpc.mutation.result.IncrementResult;
+import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
 import com.alipay.oceanbase.rpc.table.api.Table;
-import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -142,7 +140,7 @@ public class Increment extends Mutation<Increment> {
     /*
      * execute
      */
-    public IncrementResult execute() throws Exception {
+    public MutationResult execute() throws Exception {
         if (null == getTableName()) {
             throw new ObTableException("table name is null");
         } else if (null == getClient()) {
@@ -151,7 +149,7 @@ public class Increment extends Mutation<Increment> {
 
         if (null == getQuery()) {
             // simple update, without filter
-            return new IncrementResult(
+            return new MutationResult(
                     ((ObTableClient) getClient()).
                             incrementWithResult(getTableName(),
                                     getRowKeys(),
@@ -161,9 +159,14 @@ public class Increment extends Mutation<Increment> {
         } else {
             // QueryAndIncrement
             getQuery().select(getSelectedColumns());
-            return new IncrementResult(((ObTableClient) getClient()).execute(
-                    ((ObTableClient) getClient()).obTableQueryAndIncrement(
-                            getQuery(), columns.toArray(new String[0]), values.toArray(), withResult)));
+            return new MutationResult(
+                    ((ObTableClient) getClient()).
+                            mutationWithFilter(getQuery(),
+                                    getRowKeys(),
+                                    ObTableOperationType.INCREMENT,
+                                    columns.toArray(new String[0]),
+                                    values.toArray(),
+                                    withResult));
         }
     }
 }
