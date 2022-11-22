@@ -36,8 +36,8 @@ public class TraceUtil {
      */
     public static String formatTraceMessage(final ObTableConnection conn, final ObPayload payload,
                                             final String msg) {
-        return String.format("[Y%X-%016X] server [%s:%d] %s", payload.getSequence(),
-            payload.getUniqueId(), conn.getObTable().getIp(), conn.getObTable().getPort(), msg);
+        return String.format("[Y%X-%016X] server [%s:%d] %s", payload.getUniqueId(),
+            payload.getSequence(), conn.getObTable().getIp(), conn.getObTable().getPort(), msg);
     }
 
     /*
