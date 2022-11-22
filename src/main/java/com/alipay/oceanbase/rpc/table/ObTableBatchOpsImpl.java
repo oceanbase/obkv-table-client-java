@@ -171,31 +171,19 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         List<ObTableOperationResult> realResults = obTableOperationResult.getResults();
         List<Object> results = new ArrayList<Object>(realResults.size());
         for (ObTableOperationResult realResult : realResults) {
-            ResultCodes resultCodes = ResultCodes.valueOf(realResult.getHeader().getErrno());
-            if (resultCodes == ResultCodes.OB_SUCCESS) {
+            int errCode = realResult.getHeader().getErrno();
+            if (errCode == ResultCodes.OB_SUCCESS.errorCode) {
                 switch (realResult.getOperationType()) {
                     case GET:
                         throw new ObTableException("Get is not a mutation");
                     case INSERT:
-                        results.add(new InsertResult(realResult));
-                        break;
                     case DEL:
-                        results.add(new DeleteResult(realResult));
-                        break;
                     case UPDATE:
-                        results.add(new UpdateResult(realResult));
-                        break;
                     case INSERT_OR_UPDATE:
-                        results.add(new InsertOrUpdateResult(realResult));
-                        break;
                     case REPLACE:
-                        results.add(new ReplaceResult(realResult));
-                        break;
                     case INCREMENT:
-                        results.add(new IncrementResult(realResult));
-                        break;
                     case APPEND:
-                        results.add(new AppendResult(realResult));
+                        results.add(new MutationResult(realResult));
                         break;
                     default:
                         throw new ObTableException("unknown operation type " + realResult.getOperationType());
@@ -203,7 +191,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
             } else {
                 results.add(ExceptionUtil.convertToObTableException(obTable.getIp(),
                         obTable.getPort(), realResult.getSequence(), realResult.getUniqueId(),
-                        resultCodes));
+                        errCode));
             }
         }
         return results;

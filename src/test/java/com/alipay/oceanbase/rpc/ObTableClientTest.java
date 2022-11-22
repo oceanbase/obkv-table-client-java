@@ -26,11 +26,8 @@ import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.mutation.result.*;
 import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateResult;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObQueryOperationType;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.stream.async.ObTableQueryAsyncStreamResult;
@@ -801,7 +798,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
             try {
                 ObTableQueryAndMutateRequest request = ((ObTableClient) client)
-                    .obTableQueryAndIncrement(tableQuery, null, null, true);
+                    .obTableQueryAndIncrement(tableQuery, null, null,  true);
                 ObPayload res_exec = ((ObTableClient) client).execute(request);
             } catch (Exception e) {
                 assertTrue(true);
@@ -821,7 +818,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
             tableQuery.setFilter(filter_1);
             ObTableQueryAndMutateRequest request_1 = ((ObTableClient) client)
                 .obTableQueryAndIncrement(tableQuery, new String[] { "c4" }, new Object[] { 7L },
-                    true);
+                         true);
             ObPayload res_exec_1 = ((ObTableClient) client).execute(request_1);
             res = (ObTableQueryAndMutateResult) res_exec_1;
             Assert.assertEquals(2, res.getAffectedRows());
@@ -1107,7 +1104,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
             // new test
             // match the filter
             ObTableValueFilter c3_EQ_rowX = compareVal(ObCompareOp.EQ, "c3", "z_row");
-            UpdateResult update_result =
+            MutationResult update_result =
                     ((ObTableClient) client)
                         .update("test_query_filter_mutate")
                         .setRowKey(colVal("c1", 10L))
@@ -1587,7 +1584,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
             // update / match filter
             ObTableValueFilter c4_EQ_100 = compareVal(ObCompareOp.EQ, "c4", 100L);
-            UpdateResult updateResult =
+            MutationResult updateResult =
                     client.update("test_mutation")
                             .setRowKey(colVal("c1", 0L),
                                        colVal("c2", "row_0"))
@@ -1618,7 +1615,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
             // delete / do not match filter
             ObTableValueFilter c4_EQ_103 = compareVal(ObCompareOp.EQ, "c4", 103L);
-            DeleteResult deleteResult =
+            MutationResult deleteResult =
                     client.delete("test_mutation")
                             .setRowKey(colVal("c1", 2L),
                                        colVal("c2", "row_2"))
@@ -1631,7 +1628,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
             Assert.assertEquals(1, result_.cacheSize());
 
             // replace
-            ReplaceResult replaceResult =
+            MutationResult replaceResult =
                     client.replace("test_mutation")
                             .setRowKey(colVal("c1", 2L),
                                        colVal("c2", "row_2"))
@@ -1645,7 +1642,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
             Assert.assertEquals(1, result_.cacheSize());
 
             // InsertOrUpdate / Insert
-            InsertOrUpdateResult insertOrUpdateResult =
+            MutationResult insertOrUpdateResult =
                     client.insertOrUpdate("test_mutation")
                             .setRowKey(colVal("c1", 4L),
                                        colVal("c2", "row_4"))
@@ -1674,7 +1671,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
             // increment / without filter
             // result will send back the latest mutated column
-            IncrementResult incrementResult =
+            MutationResult incrementResult =
                     client.increment("test_mutation")
                             .setRowKey(colVal("c1", 3L),
                                        colVal("c2", "row_3"))
@@ -1720,7 +1717,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
             // append / without filter
             // result will send back the latest mutated column
-            AppendResult appendResult =
+            MutationResult appendResult =
                     client.append("test_mutation")
                             .setRowKey(colVal("c1", 4L),
                                        colVal("c2", "row_4"))

@@ -18,7 +18,6 @@
 package com.alipay.oceanbase.rpc.mutation;
 
 import com.alipay.oceanbase.rpc.exception.ObTableException;
-import com.alipay.oceanbase.rpc.mutation.result.AppendResult;
 import com.alipay.oceanbase.rpc.mutation.result.BatchMutationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
 import com.alipay.oceanbase.rpc.table.api.Table;

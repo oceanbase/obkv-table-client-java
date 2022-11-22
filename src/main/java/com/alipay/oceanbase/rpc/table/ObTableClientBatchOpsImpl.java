@@ -180,31 +180,19 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         // consistent can not be sure
         List<Object> results = new ArrayList<Object>(batchOperation.getTableOperations().size());
         for (ObTableOperationResult result : executeInternal().getResults()) {
-            ResultCodes resultCodes = ResultCodes.valueOf(result.getHeader().getErrno());
-            if (resultCodes == ResultCodes.OB_SUCCESS) {
+            int errCode = result.getHeader().getErrno();
+            if (errCode == ResultCodes.OB_SUCCESS.errorCode) {
                 switch (result.getOperationType()) {
                     case GET:
                         throw new ObTableException("Get is not a mutation");
                     case INSERT:
-                        results.add(new InsertResult(result));
-                        break;
                     case DEL:
-                        results.add(new DeleteResult(result));
-                        break;
                     case UPDATE:
-                        results.add(new UpdateResult(result));
-                        break;
                     case INSERT_OR_UPDATE:
-                        results.add(new InsertOrUpdateResult(result));
-                        break;
                     case REPLACE:
-                        results.add(new ReplaceResult(result));
-                        break;
                     case INCREMENT:
-                        results.add(new IncrementResult(result));
-                        break;
                     case APPEND:
-                        results.add(new AppendResult(result));
+                        results.add(new MutationResult(result));
                         break;
                     default:
                         throw new ObTableException("unknown operation type " + result.getOperationType());
@@ -212,7 +200,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             } else {
                 results.add(ExceptionUtil.convertToObTableException(result.getExecuteHost(),
                         result.getExecutePort(), result.getSequence(), result.getUniqueId(),
-                        resultCodes));
+                        errCode));
             }
         }
         return results;

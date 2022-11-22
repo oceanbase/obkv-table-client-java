@@ -19,7 +19,6 @@ package com.alipay.oceanbase.rpc.mutation.result;
 
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.mutation.Mutation;
-import org.checkerframework.checker.units.qual.A;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,11 +37,11 @@ public class BatchMutationResult {
     /*
      * get result
      */
-    public MutationResult<?> get(int pos) {
+    public MutationResult get(int pos) {
         if (pos >= results.size()) {
             throw new IllegalArgumentException("Invalid pos: " + pos + ", while size of results is: " + results.size());
         }
-        return (MutationResult<?>) results.get(pos);
+        return (MutationResult) results.get(pos);
     }
 
     /*
