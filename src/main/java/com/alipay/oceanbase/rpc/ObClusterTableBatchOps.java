@@ -113,6 +113,14 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
     }
 
     /*
+     * Execute with result
+     */
+    @Override
+    public List<Object> executeWithResult() throws Exception {
+        return tableBatchOps.executeWithResult();
+    }
+
+    /*
      * Execute internal.
      */
     public ObTableBatchOperationResult executeInternal() throws Exception {

@@ -64,6 +64,14 @@ public class ObTableNotInFilter extends ObTableFilter {
         this.values = values.toArray();
     }
 
+    /**
+     * get column name
+     * @return column name
+     */
+    public String getColumnName() {
+        return columnName;
+    }
+
     public String toString() {
         ObTableFilterList filterList = andList();
 

@@ -111,4 +111,19 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
         this.tableQueryAndMutate = tableQueryAndMutate;
     }
 
+    /*
+     * Is returning affected entity.
+     */
+    @Override
+    public boolean isReturningAffectedEntity() {
+        return tableQueryAndMutate.isReturnAffectedEntity();
+    }
+
+    /*
+     * Set returning affected entity.
+     */
+    @Override
+    public void setReturningAffectedEntity(boolean returningAffectedEntity) {
+        tableQueryAndMutate.setReturnAffectedEntity(returningAffectedEntity);
+    }
 }
