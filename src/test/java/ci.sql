@@ -141,3 +141,13 @@ CREATE TABLE `test_query_filter_mutate` (
       PARTITION p0 VALUES LESS THAN (300),
       PARTITION p1 VALUES LESS THAN (1000),
       PARTITION p2 VALUES LESS THAN MAXVALUE);
+
+CREATE TABLE `test_mutation` (
+    `c1` bigint NOT NULL,
+    `c2` varchar(20) NOT NULL,
+    `c3` varbinary(1024) DEFAULT NULL,
+    `c4` bigint DEFAULT NULL,
+    PRIMARY KEY(`c1`, `c2`)) partition by range columns (`c1`) (
+          PARTITION p0 VALUES LESS THAN (300),
+          PARTITION p1 VALUES LESS THAN (1000),
+          PARTITION p2 VALUES LESS THAN MAXVALUE);

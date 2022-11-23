@@ -62,6 +62,13 @@ public class ObTableValueFilter extends ObTableFilter {
     }
 
     /*
+     * get column name
+     */
+    public String getColumnName() {
+        return columnName;
+    }
+
+    /*
      * to string
      */
     public String toString() {

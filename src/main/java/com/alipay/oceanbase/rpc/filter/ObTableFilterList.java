@@ -80,6 +80,23 @@ public class ObTableFilterList extends ObTableFilter {
     }
 
     /*
+     * get the size of filter list
+     */
+    public int size() {
+        return filters.size();
+    }
+
+    /*
+     * get the pos-th filter of filter list
+     */
+    public ObTableFilter get(int pos) {
+        if (pos >= size()) {
+            throw new ObTableException("pos:" + pos + " is out of range: " + size());
+        }
+        return filters.get(pos);
+    }
+
+    /*
      * to string
      */
     public String toString() {

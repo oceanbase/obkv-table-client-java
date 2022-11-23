@@ -19,6 +19,8 @@ package com.alipay.oceanbase.rpc.table;
 
 import com.alipay.oceanbase.rpc.exception.ExceptionUtil;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.mutation.*;
+import com.alipay.oceanbase.rpc.mutation.result.*;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.remoting.exception.RemotingException;
@@ -151,6 +153,45 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
             } else {
                 results.add(ExceptionUtil.convertToObTableException(obTable.getIp(),
                     obTable.getPort(), realResult.getSequence(), realResult.getUniqueId(), errCode));
+            }
+        }
+        return results;
+    }
+
+    /*
+     * Execute with result
+     */
+    public List<Object> executeWithResult() throws Exception {
+
+        request.setBatchOperationAsAtomic(isAtomicOperation());
+        Object result = obTable.execute(request);
+        checkObTableOperationResult(result);
+
+        ObTableBatchOperationResult obTableOperationResult = (ObTableBatchOperationResult) result;
+        List<ObTableOperationResult> realResults = obTableOperationResult.getResults();
+        List<Object> results = new ArrayList<Object>(realResults.size());
+        for (ObTableOperationResult realResult : realResults) {
+            int errCode = realResult.getHeader().getErrno();
+            if (errCode == ResultCodes.OB_SUCCESS.errorCode) {
+                switch (realResult.getOperationType()) {
+                    case GET:
+                        throw new ObTableException("Get is not a mutation");
+                    case INSERT:
+                    case DEL:
+                    case UPDATE:
+                    case INSERT_OR_UPDATE:
+                    case REPLACE:
+                    case INCREMENT:
+                    case APPEND:
+                        results.add(new MutationResult(realResult));
+                        break;
+                    default:
+                        throw new ObTableException("unknown operation type " + realResult.getOperationType());
+                }
+            } else {
+                results.add(ExceptionUtil.convertToObTableException(obTable.getIp(),
+                        obTable.getPort(), realResult.getSequence(), realResult.getUniqueId(),
+                        errCode));
             }
         }
         return results;

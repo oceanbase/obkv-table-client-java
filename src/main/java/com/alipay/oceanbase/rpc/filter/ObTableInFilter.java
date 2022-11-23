@@ -68,6 +68,14 @@ public class ObTableInFilter extends ObTableFilter{
     }
 
     /**
+     * get column name
+     * @return column name
+     */
+    public String getColumnName() {
+        return columnName;
+    }
+
+    /**
      * TO STRING
      * @return Filter represent the in expression
      */
