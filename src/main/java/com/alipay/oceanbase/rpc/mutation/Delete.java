@@ -64,14 +64,14 @@ public class Delete extends Mutation<Delete> {
             return new MutationResult(
                     ((ObTableClient) getClient()).
                             deleteWithResult(getTableName(),
-                                    getRowKeys()));
+                                    getRowKey()));
         } else {
             // QueryAndDelete
             getQuery().select(getSelectedColumns());
             return new MutationResult(
                     ((ObTableClient) getClient()).
                             mutationWithFilter(getQuery(),
-                                    getRowKeys(),
+                                    getRowKey(),
                                     ObTableOperationType.DEL,
                                     null, null, false));
         }

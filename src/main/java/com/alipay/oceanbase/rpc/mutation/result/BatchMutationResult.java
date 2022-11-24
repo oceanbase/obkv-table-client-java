@@ -45,6 +45,13 @@ public class BatchMutationResult {
     }
 
     /*
+     * get size
+     */
+    public int size() {
+        return results.size();
+    }
+
+    /*
      * get wrong count in result
      */
     public long getWrongCount() {
