@@ -31,6 +31,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutate;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateRequest;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObBorderFlag;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
@@ -446,6 +447,23 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 .throwObTableException(ip, port, obTableOperationResult.getSequence(),
                     obTableOperationResult.getUniqueId(), obTableOperationResult.getHeader()
                         .getErrno());
+        }
+
+        void checkObTableQueryAndMutateResult(String ip, int port, ObPayload result) {
+
+            if (result == null) {
+                RUNTIME.error("client get unexpected NULL result");
+                throw new ObTableException("client get unexpected NULL result");
+            }
+
+            if (!(result instanceof ObTableQueryAndMutateResult)) {
+                RUNTIME.error("client get unexpected result: "
+                        + result.getClass().getName());
+                throw new ObTableException("client get unexpected result: "
+                        + result.getClass().getName());
+            }
+            // TODO: Add func like throwObTableException()
+            //       which will output the ip / port / error information
         }
 
         abstract T execute(ObPair<Long, ObTable> obTable) throws Exception;
@@ -1351,6 +1369,24 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     private String logMessage(String tableName, String methodName, String endpoint, Object[] rowKeys,
+                              ObTableQueryAndMutateResult result, long routeTableTime, long executeTime) {
+        if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
+            endpoint = endpoint.replaceAll(",", "#");
+        }
+
+        String argsValue = buildParamsString(Arrays.asList(rowKeys));
+
+        // TODO: Add error no and change the log message
+        String res = String.valueOf(result.getAffectedRows());
+
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(",").append(database).append(",").append(tableName).append(",").append(methodName).append(",").append(endpoint).append(",").append(argsValue)
+                .append(",").append(result.toString()).append(",").append(res).append(",")
+                .append(routeTableTime).append(",").append(executeTime).append(",").append(executeTime + routeTableTime);
+        return stringBuilder.toString();
+    }
+
+    private String logMessage(String tableName, String methodName, String endpoint, Object[] rowKeys,
                               ObTableOperationResult result, long routeTableTime, long executeTime) {
         if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
             endpoint = endpoint.replaceAll(",", "#");
@@ -1787,6 +1823,37 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /**
+     * execute mutation with filter
+     */
+    public ObPayload mutationWithFilter(final TableQuery tableQuery, final Object[] rowKey,
+                                        final ObTableOperationType type, final String[] columns,
+                                        final Object[] values, final boolean withResult) throws Exception {
+        final long start = System.currentTimeMillis();
+        return execute(tableQuery.getTableName(), new TableExecuteCallback<ObPayload>(rowKey) {
+            /**
+             * Execute.
+             */
+            @Override
+            public ObPayload execute(ObPair<Long, ObTable> obPair) throws Exception {
+                long TableTime = System.currentTimeMillis();
+                long partId = obPair.getLeft();
+                ObTable obTable = obPair.getRight();
+                ObTableQueryAndMutateRequest request = obTableQueryAndMutate(type,
+                        tableQuery, columns, values, false);
+                request.setTimeout(obTable.getObTableOperationTimeout());
+                request.setReturningAffectedEntity(withResult);
+                request.setPartitionId(partId);
+                ObPayload result = obTable.execute(request);
+                String endpoint = obTable.getIp() + ":" + obTable.getPort();
+                MONITOR.info(logMessage(tableQuery.toString(), type.toString(),
+                        endpoint, rowKey, (ObTableQueryAndMutateResult) result, TableTime - start, System.currentTimeMillis() - TableTime));
+                checkObTableQueryAndMutateResult(obTable.getIp(), obTable.getPort(), result);
+                return result;
+            }
+        });
+    }
+
+    /**
      *
      * @param tableQuery
      * @param columns
@@ -1842,7 +1909,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws Exception
      */
     public ObTableQueryAndMutateRequest obTableQueryAndAppend(final TableQuery tableQuery,
-                                                              final String[] columns, final Object[] values,
+                                                              final String[] columns,
+                                                              final Object[] values,
                                                               final boolean withResult) throws Exception {
         if (null == columns || null == values || 0 == columns.length || 0 == values.length) {
             throw new ObTableException("client get unexpected empty columns or values");
@@ -1952,6 +2020,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
             for (Long partId : partIdMapObTable.keySet()) {
                 request.setPartitionId(partId);
+                request.setTimeout(partIdMapObTable.get(partId).getObTableOperationTimeout());
                 return partIdMapObTable.get(partId).execute(request);
             }
         }
@@ -1973,7 +2042,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         ObTableQueryAndMutateRequest request = new ObTableQueryAndMutateRequest();
         request.setTableName(targetTableName);
         request.setTableQueryAndMutate(queryAndMutate);
-        request.setTimeout(120 * 1000); // 120 s
         request.setEntityType(ObTableEntityType.KV);
         return request;
     }

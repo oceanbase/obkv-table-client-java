@@ -124,7 +124,7 @@ public class Replace extends Mutation<Replace> {
             return new MutationResult(
                     ((ObTableClient) getClient()).
                             replaceWithResult(getTableName(),
-                                    getRowKeys(),
+                                    getRowKey(),
                                     columns.toArray(new String[0]),
                                     values.toArray()));
         } else {

@@ -31,11 +31,11 @@ import java.util.Map;
 public class Mutation <T> {
     private String tableName;
     private Table client;
-    private Object[] rowKeys;
+    private Object[] rowKey;
     private TableQuery query;
 
     // TODO: remove rowKeysName and filter after implement schema
-    private List<String> rowKeysName;
+    private List<String> rowKeyName;
     private ObTableFilter filter;
 
     /*
@@ -45,8 +45,8 @@ public class Mutation <T> {
     public Mutation() {
         tableName = null;
         client = null;
-        rowKeys = null;
-        rowKeysName = null;
+        rowKey = null;
+        rowKeyName = null;
         query = null;
         filter = null;
     }
@@ -62,8 +62,8 @@ public class Mutation <T> {
 
         this.client = client;
         this.tableName = tableName;
-        this.rowKeys = null;
-        this.rowKeysName = null;
+        this.rowKey = null;
+        this.rowKeyName = null;
         this.query = null;
     }
 
@@ -82,7 +82,7 @@ public class Mutation <T> {
     }
 
     /*
-     * get rowKeys
+     * get query
      */
     protected TableQuery getQuery() {
         return query;
@@ -91,15 +91,15 @@ public class Mutation <T> {
     /*
      * get row key
      */
-    protected Object[] getRowKeys() {
-        return rowKeys;
+    protected Object[] getRowKey() {
+        return rowKey;
     }
 
     /*
      * get row key name
      */
-    protected List<String> getRowKeysName() {
-        return rowKeysName;
+    protected List<String> getRowKeyName() {
+        return rowKeyName;
     }
 
     /*
@@ -153,7 +153,7 @@ public class Mutation <T> {
         }
 
         // add name of row key
-        List<String> selectedColumns = new ArrayList<>(rowKeysName);
+        List<String> selectedColumns = new ArrayList<>(rowKeyName);
         // add name from filter
         addSelectedColumn(selectedColumns, filter);
 
@@ -193,22 +193,22 @@ public class Mutation <T> {
      * set the Row Key of mutation with Row
      */
     @SuppressWarnings("unchecked")
-    public T setRowKey(Row rowKeys) {
-        if (null == rowKeys) {
+    public T setRowKey(Row rowKey) {
+        if (null == rowKey) {
             throw new IllegalArgumentException("Invalid null rowKey set into Mutation");
-        } else if (0 == rowKeys.getMap().size()) {
+        } else if (0 == rowKey.getMap().size()) {
             throw new IllegalArgumentException("input row key should not be empty");
         }
 
         // set row key name into client and set rowKeys
         List<String> columnNames = new ArrayList<String>();
         List<Object> Keys = new ArrayList<Object>();
-        for (Map.Entry<String, Object> entry : rowKeys.getMap().entrySet()) {
+        for (Map.Entry<String, Object> entry : rowKey.getMap().entrySet()) {
             columnNames.add(entry.getKey());
             Keys.add(entry.getValue());
         }
-        this.rowKeysName = columnNames;
-        this.rowKeys = Keys.toArray();
+        this.rowKeyName = columnNames;
+        this.rowKey = Keys.toArray();
 
         // set row key in table
         if (null != tableName) {
@@ -217,7 +217,7 @@ public class Mutation <T> {
 
         // renew scan range of QueryAndMutate
         if (null != query) {
-            query.addScanRange(this.rowKeys, this.rowKeys);
+            query.addScanRange(this.rowKey, this.rowKey);
         }
 
         return (T) this;
@@ -227,23 +227,23 @@ public class Mutation <T> {
      * set the Row Key of mutation with ColumnValues
      */
     @SuppressWarnings("unchecked")
-    public T setRowKey(ColumnValue... rowKeys) {
-        if (null == rowKeys) {
+    public T setRowKey(ColumnValue... rowKey) {
+        if (null == rowKey) {
             throw new IllegalArgumentException("Invalid null rowKey set into Mutation");
         }
 
-        // set row key name into client and set rowKeys
+        // set row key name into client and set rowKey
         List<String> columnNames = new ArrayList<String>();
         List<Object> Keys = new ArrayList<Object>();
-        for (ColumnValue columnValue : rowKeys) {
+        for (ColumnValue columnValue : rowKey) {
             if (columnNames.contains(columnValue.getColumnName())) {
                 throw new ObTableException("Duplicate column in Row Key");
             }
             columnNames.add(columnValue.getColumnName());
             Keys.add(columnValue.getValue());
         }
-        this.rowKeysName = columnNames;
-        this.rowKeys = Keys.toArray();
+        this.rowKeyName = columnNames;
+        this.rowKey = Keys.toArray();
 
         // set row key in table
         if (null != tableName) {
@@ -252,7 +252,7 @@ public class Mutation <T> {
 
         // renew scan range of QueryAndMutate
         if (null != query) {
-            query.addScanRange(rowKeys, rowKeys);
+            query.addScanRange(rowKey, rowKey);
         }
 
         return (T) this;
@@ -269,9 +269,9 @@ public class Mutation <T> {
 
         if (null == query) {
             query = client.query(tableName);
-            // set scan range if rowKeys exist
-            if (null != rowKeys) {
-                query.addScanRange(rowKeys, rowKeys);
+            // set scan range if rowKey exist
+            if (null != rowKey) {
+                query.addScanRange(rowKey, rowKey);
             }
         }
 

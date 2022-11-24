@@ -124,7 +124,7 @@ public class InsertOrUpdate extends Mutation<InsertOrUpdate> {
             return new MutationResult(
                     ((ObTableClient) getClient()).
                             insertOrUpdateWithResult(getTableName(),
-                                    getRowKeys(),
+                                    getRowKey(),
                                     columns.toArray(new String[0]),
                                     values.toArray()));
         } else {

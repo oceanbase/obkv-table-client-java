@@ -123,7 +123,7 @@ public class Append extends Mutation<Append> {
         }
 
         // add name of row key
-        List<String> selectedColumns = new ArrayList<>(getRowKeysName());
+        List<String> selectedColumns = new ArrayList<>(getRowKeyName());
         // add name from filter
         addSelectedColumn(selectedColumns, getFilter());
         // add name from mutated row
@@ -151,16 +151,22 @@ public class Append extends Mutation<Append> {
             return new MutationResult(
                     ((ObTableClient) getClient()).
                             appendWithResult(getTableName(),
-                                    getRowKeys(),
+                                    getRowKey(),
                                     columns.toArray(new String[0]),
                                     values.toArray(),
                                     withResult));
         } else {
             // QueryAndAppend
             getQuery().select(getSelectedColumns());
-            return new MutationResult(((ObTableClient) getClient()).execute(
-                    ((ObTableClient) getClient()).obTableQueryAndAppend(
-                            getQuery(), columns.toArray(new String[0]), values.toArray(), withResult)));
+            return new MutationResult(
+                    ((ObTableClient) getClient()).
+                            mutationWithFilter(getQuery(),
+                                    getRowKey(),
+                                    ObTableOperationType.APPEND,
+                                    columns.toArray(new String[0]),
+                                    values.toArray(),
+                                    withResult));
+
         }
     }
 }

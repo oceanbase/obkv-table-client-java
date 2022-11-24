@@ -798,7 +798,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
             try {
                 ObTableQueryAndMutateRequest request = ((ObTableClient) client)
-                    .obTableQueryAndIncrement(tableQuery, null, null, true);
+                    .obTableQueryAndIncrement(tableQuery, null, null,  true);
                 ObPayload res_exec = ((ObTableClient) client).execute(request);
             } catch (Exception e) {
                 assertTrue(true);
@@ -818,7 +818,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
             tableQuery.setFilter(filter_1);
             ObTableQueryAndMutateRequest request_1 = ((ObTableClient) client)
                 .obTableQueryAndIncrement(tableQuery, new String[] { "c4" }, new Object[] { 7L },
-                    true);
+                         true);
             ObPayload res_exec_1 = ((ObTableClient) client).execute(request_1);
             res = (ObTableQueryAndMutateResult) res_exec_1;
             Assert.assertEquals(2, res.getAffectedRows());
