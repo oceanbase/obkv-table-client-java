@@ -124,7 +124,7 @@ public class Insert extends Mutation<Insert> {
             return new MutationResult(
                     ((ObTableClient) getClient()).
                             insertWithResult(getTableName(),
-                                             getRowKeys(),
+                                             getRowKey(),
                                              columns.toArray(new String[0]),
                                              values.toArray()));
         } else {

@@ -87,36 +87,36 @@ public class BatchMutation {
                 case GET:
                     throw new IllegalArgumentException("Invalid type in batch operation, " + type);
                 case INSERT:
-                    batchOps.insert(mutation.getRowKeys(),
+                    batchOps.insert(mutation.getRowKey(),
                             ((Insert) mutation).getColumns(),
                             ((Insert) mutation).getValues());
                     break;
                 case DEL:
-                    batchOps.delete(mutation.getRowKeys());
+                    batchOps.delete(mutation.getRowKey());
                     break;
                 case UPDATE:
-                    batchOps.update(mutation.getRowKeys(),
+                    batchOps.update(mutation.getRowKey(),
                             ((Update) mutation).getColumns(),
                             ((Update) mutation).getValues());
                     break;
                 case INSERT_OR_UPDATE:
-                    batchOps.insertOrUpdate(mutation.getRowKeys(),
+                    batchOps.insertOrUpdate(mutation.getRowKey(),
                             ((InsertOrUpdate) mutation).getColumns(),
                             ((InsertOrUpdate) mutation).getValues());
                     break;
                 case REPLACE:
-                    batchOps.replace(mutation.getRowKeys(),
+                    batchOps.replace(mutation.getRowKey(),
                             ((Replace) mutation).getColumns(),
                             ((Replace) mutation).getValues());
                     break;
                 case INCREMENT:
-                    batchOps.increment(mutation.getRowKeys(),
+                    batchOps.increment(mutation.getRowKey(),
                             ((Increment) mutation).getColumns(),
                             ((Increment) mutation).getValues(),
                             withResult);
                     break;
                 case APPEND:
-                    batchOps.append(mutation.getRowKeys(),
+                    batchOps.append(mutation.getRowKey(),
                             ((Append) mutation).getColumns(),
                             ((Append) mutation).getValues(),
                             withResult);

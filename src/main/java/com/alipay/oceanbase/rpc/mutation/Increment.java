@@ -124,7 +124,7 @@ public class Increment extends Mutation<Increment> {
         }
 
         // add name of row key
-        List<String> selectedColumns = new ArrayList<>(getRowKeysName());
+        List<String> selectedColumns = new ArrayList<>(getRowKeyName());
         // add name from filter
         addSelectedColumn(selectedColumns, getFilter());
         // add name from mutated row
@@ -152,7 +152,7 @@ public class Increment extends Mutation<Increment> {
             return new MutationResult(
                     ((ObTableClient) getClient()).
                             incrementWithResult(getTableName(),
-                                    getRowKeys(),
+                                    getRowKey(),
                                     columns.toArray(new String[0]),
                                     values.toArray(),
                                     withResult));
@@ -162,7 +162,7 @@ public class Increment extends Mutation<Increment> {
             return new MutationResult(
                     ((ObTableClient) getClient()).
                             mutationWithFilter(getQuery(),
-                                    getRowKeys(),
+                                    getRowKey(),
                                     ObTableOperationType.INCREMENT,
                                     columns.toArray(new String[0]),
                                     values.toArray(),
