@@ -1991,37 +1991,42 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObTableQueryAndMutate tableQueryAndMutate = ((ObTableQueryAndMutateRequest) request)
                 .getTableQueryAndMutate();
             ObTableQuery tableQuery = tableQueryAndMutate.getTableQuery();
-            Map<Long, ObTable> partIdMapObTable = new HashMap<Long, ObTable>();
-            for (ObNewRange rang : tableQuery.getKeyRanges()) {
-                ObRowKey startKey = rang.getStartKey();
-                int startKeySize = startKey.getObjs().size();
-                ObRowKey endKey = rang.getEndKey();
-                int endKeySize = endKey.getObjs().size();
-                Object[] start = new Object[startKeySize];
-                Object[] end = new Object[endKeySize];
-                for (int i = 0; i < startKeySize; i++) {
-                    start[i] = startKey.getObj(i).getValue();
+            if (isOdpMode()) {
+                request.setTimeout(getOdpTable().getObTableOperationTimeout());
+                return getOdpTable().execute(request);
+            } else {
+                Map<Long, ObTable> partIdMapObTable = new HashMap<Long, ObTable>();
+                for (ObNewRange rang : tableQuery.getKeyRanges()) {
+                    ObRowKey startKey = rang.getStartKey();
+                    int startKeySize = startKey.getObjs().size();
+                    ObRowKey endKey = rang.getEndKey();
+                    int endKeySize = endKey.getObjs().size();
+                    Object[] start = new Object[startKeySize];
+                    Object[] end = new Object[endKeySize];
+                    for (int i = 0; i < startKeySize; i++) {
+                        start[i] = startKey.getObj(i).getValue();
+                    }
+
+                    for (int i = 0; i < endKeySize; i++) {
+                        end[i] = endKey.getObj(i).getValue();
+                    }
+                    ObBorderFlag borderFlag = rang.getBorderFlag();
+                    List<ObPair<Long, ObTable>> pairList = getTables(request.getTableName(), start,
+                            borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false, false);
+                    for (ObPair<Long, ObTable> pair : pairList) {
+                        partIdMapObTable.put(pair.getLeft(), pair.getRight());
+                    }
+                }
+                if (partIdMapObTable.size() > 1) {
+                    throw new ObTablePartitionConsistentException(
+                            "query and mutate must be a atomic operation");
                 }
 
-                for (int i = 0; i < endKeySize; i++) {
-                    end[i] = endKey.getObj(i).getValue();
+                for (Long partId : partIdMapObTable.keySet()) {
+                    request.setPartitionId(partId);
+                    request.setTimeout(partIdMapObTable.get(partId).getObTableOperationTimeout());
+                    return partIdMapObTable.get(partId).execute(request);
                 }
-                ObBorderFlag borderFlag = rang.getBorderFlag();
-                List<ObPair<Long, ObTable>> pairList = getTables(request.getTableName(), start,
-                    borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false, false);
-                for (ObPair<Long, ObTable> pair : pairList) {
-                    partIdMapObTable.put(pair.getLeft(), pair.getRight());
-                }
-            }
-            if (partIdMapObTable.size() > 1) {
-                throw new ObTablePartitionConsistentException(
-                    "query and mutate must be a atomic operation");
-            }
-
-            for (Long partId : partIdMapObTable.keySet()) {
-                request.setPartitionId(partId);
-                request.setTimeout(partIdMapObTable.get(partId).getObTableOperationTimeout());
-                return partIdMapObTable.get(partId).execute(request);
             }
         }
 
