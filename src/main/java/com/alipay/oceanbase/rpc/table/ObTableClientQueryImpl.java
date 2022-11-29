@@ -32,6 +32,7 @@ import java.util.Map;
 
 import static com.alipay.oceanbase.rpc.ObTableClient.buildParamsString;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.MONITOR;
+import static com.alipay.oceanbase.rpc.location.model.TableEntry.HBASE_ROW_KEY_ELEMENT;
 
 public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
@@ -92,6 +93,13 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         Map<Long, ObPair<Long, ObTable>> partitionObTables = new HashMap<Long, ObPair<Long, ObTable>>();
         List<Object> params = new ArrayList<>();
         if (obTableClient.isOdpMode()) {
+            List<String> rowKeyElement = null;
+            if (obTableClient.getRunningMode() == ObTableClient.RunningMode.HBASE) {
+                rowKeyElement = new ArrayList<>(HBASE_ROW_KEY_ELEMENT.keySet());
+            } else if (obTableClient.getRowKeyElement(tableName) != null) {
+               rowKeyElement = new ArrayList<>(obTableClient.getRowKeyElement(tableName).keySet());
+            }
+            tableQuery.setKeyRangeColumns(rowKeyElement);
             partitionObTables.put(0L, new ObPair<Long, ObTable>(0L, obTableClient.getOdpTable()));
         } else {
             for (ObNewRange rang : tableQuery.getKeyRanges()) {
