@@ -26,17 +26,17 @@ import com.alipay.remoting.config.Configs;
 public enum Property {
 
     //remote call related
-    RPC_CONNECT_TIMEOUT("rpc.connect.timeout", 5000, "建立RPC连接的超时时间"),
+    RPC_CONNECT_TIMEOUT("rpc.connect.timeout", 10000, "建立RPC连接的超时时间"),
 
     RPC_CONNECT_TRY_TIMES("rpc.connect.try.times", 1, "建立RPC连接的尝试次数"),
 
-    RPC_EXECUTE_TIMEOUT("rpc.execute.timeout", 10000, "执行RPC请求的socket超时时间"),
+    RPC_EXECUTE_TIMEOUT("rpc.execute.timeout", 100000, "执行RPC请求的socket超时时间"),
 
     RPC_LOGIN_TIMEOUT("rpc.login.timeout", 1000, "请求RPC登录的超时时间"),
 
     RPC_LOGIN_TRY_TIMES("rpc.login.try.times", 1, "请求RPC登录的尝试次数"),
 
-    RPC_OPERATION_TIMEOUT("rpc.operation.timeout", 10000L, "OB内部执行RPC请求的超时时间"),
+    RPC_OPERATION_TIMEOUT("rpc.operation.timeout", 20000L, "OB内部执行RPC请求的超时时间"),
 
     METADATA_REFRESH_INTERVAL("metadata.refresh.interval", 60000L, "刷新METADATA的时间间隔"),
 

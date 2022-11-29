@@ -155,14 +155,16 @@ public class ObTableClientPartitionKeyTest {
     @Test
     public void testQuery() throws Exception {
         long timeStamp = System.currentTimeMillis();
-        obTableClient.insert("testPartition",
+        // TODO: generated column is not supported in ODP mode
+        String tableName = obTableClient.isOdpMode() ? "testKey" : "testPartition";
+        obTableClient.insert(tableName,
             new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
             new String[] { "V" }, new Object[] { "value1".getBytes() });
-        obTableClient.insert("testPartition",
+        obTableClient.insert(tableName,
             new Object[] { "key1_5".getBytes(), "partition".getBytes(), timeStamp },
             new String[] { "V" }, new Object[] { "value2".getBytes() });
 
-        TableQuery tableQuery = obTableClient.query("testPartition");
+        TableQuery tableQuery = obTableClient.query(tableName);
         tableQuery.addScanRange(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
                 timeStamp },
             new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp });
@@ -171,9 +173,10 @@ public class ObTableClientPartitionKeyTest {
             tableQuery.execute();
             Assert.fail();
         } catch (Exception e) {
+            e.printStackTrace();
             Assert.assertTrue(e instanceof ObTablePartitionConsistentException);
         }
-        tableQuery = obTableClient.query("testPartition");
+        tableQuery = obTableClient.query(tableName);
         tableQuery.addScanRange(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
                 timeStamp },
             new Object[] { "key1_3".getBytes(), "partition".getBytes(), timeStamp });
@@ -187,7 +190,7 @@ public class ObTableClientPartitionKeyTest {
         Assert.assertEquals(timeStamp, row.get("T"));
         Assert.assertEquals("value1", new String((byte[]) row.get("V")));
 
-        tableQuery = obTableClient.query("testPartition");
+        tableQuery = obTableClient.query(tableName);
         tableQuery.addScanRange(
             new Object[] { "key1_1".getBytes(), ObObj.getMin(), ObObj.getMin() }, new Object[] {
                     "key1_8".getBytes(), ObObj.getMax(), ObObj.getMax() });

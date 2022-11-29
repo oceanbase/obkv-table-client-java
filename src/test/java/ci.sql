@@ -93,6 +93,14 @@ CREATE TABLE IF NOT EXISTS `testPartition` (
     PRIMARY KEY(`K`, `Q`, `T`)
 ) partition by key(K_PREFIX) partitions 15;
 
+CREATE TABLE IF NOT EXISTS `testKey` (
+    `K` varbinary(1024),
+    `Q` varbinary(256),
+    `T` bigint,
+    `V` varbinary(1024),
+    PRIMARY KEY(`K`, `Q`, `T`)
+) partition by key(K) partitions 15;
+
 CREATE TABLE IF NOT EXISTS `test_increment` (
     `c1` varchar(255),
     `c2` int,

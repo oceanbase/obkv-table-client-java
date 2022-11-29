@@ -47,8 +47,8 @@ public class ObTableClientPartitionHashTest {
         final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
         obTableClient.setMetadataRefreshInterval(100);
         obTableClient.setTableEntryAcquireSocketTimeout(10000);
-        obTableClient.addProperty("connectTimeout", "100000");
-        obTableClient.addProperty("socketTimeout", "100000");
+        obTableClient.addProperty("connectTimeout", "1000000");
+        obTableClient.addProperty("socketTimeout", "1000000");
         obTableClient.setRunningMode(ObTableClient.RunningMode.HBASE);
         obTableClient.init();
 
