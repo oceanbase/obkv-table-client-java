@@ -39,7 +39,8 @@ OB_UNIS_DEF_SERIALIZE(ObTableQuery,
      index_name_,
      batch_size_,
      max_result_size_,
-     htable_filter_));
+     htable_filter_,
+     key_range_columns));
  *
  */
 public class ObTableQuery extends AbstractPayload {
@@ -57,6 +58,7 @@ public class ObTableQuery extends AbstractPayload {
 
     private static final byte[] HTABLE_FILTER_DUMMY_BYTES = new byte[] { 0x01, 0x00 };
     private boolean             isHbaseQuery              = false;
+    private List<String>        keyRangeColumns          = new LinkedList<String>();
 
     /*
      * Encode.
@@ -122,6 +124,16 @@ public class ObTableQuery extends AbstractPayload {
             len = HTABLE_FILTER_DUMMY_BYTES.length;
             System.arraycopy(HTABLE_FILTER_DUMMY_BYTES, 0, bytes, idx, len);
         }
+        idx += len;
+
+        len = Serialization.getNeedBytes(keyRangeColumns.size());
+        System.arraycopy(Serialization.encodeVi64(keyRangeColumns.size()), 0, bytes, idx, len);
+        idx += len;
+        for (String keyRangeColumn : keyRangeColumns) {
+            len = Serialization.getNeedBytes(keyRangeColumn);
+            System.arraycopy(Serialization.encodeVString(keyRangeColumn), 0, bytes, idx, len);
+            idx += len;
+        }
 
         return bytes;
     }
@@ -169,6 +181,7 @@ public class ObTableQuery extends AbstractPayload {
             buf.readByte();
             buf.readByte();
         }
+        // todo@dazhi: decode key range columns, maybe bug exist here
 
         return this;
     }
@@ -201,6 +214,11 @@ public class ObTableQuery extends AbstractPayload {
         } else {
             contentSize += HTABLE_FILTER_DUMMY_BYTES.length;
         }
+        contentSize += Serialization.getNeedBytes(keyRangeColumns.size());
+        for (String keyRangeColumn : keyRangeColumns) {
+            contentSize += Serialization.getNeedBytes(keyRangeColumn);
+        }
+
         return contentSize;
     }
 
@@ -375,5 +393,19 @@ public class ObTableQuery extends AbstractPayload {
      */
     public void setHbaseQuery(boolean hbaseQuery) {
         isHbaseQuery = hbaseQuery;
+    }
+
+    /*
+     * Get select columns.
+     */
+    public List<String> getKeyRangeColumns() {
+        return selectColumns;
+    }
+
+    /*
+     * Set select columns.
+     */
+    public void setKeyRangeColumns(List<String> keyRangeColumns) {
+        this.keyRangeColumns = keyRangeColumns;
     }
 }
