@@ -98,6 +98,7 @@ CREATE TABLE IF NOT EXISTS `testKey` (
     `Q` varbinary(256),
     `T` bigint,
     `V` varbinary(1024),
+    INDEX i1(`K`, `V`) local,
     PRIMARY KEY(`K`, `Q`, `T`)
 ) partition by key(K) partitions 15;
 
