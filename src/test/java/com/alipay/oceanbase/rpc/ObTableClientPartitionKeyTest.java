@@ -295,6 +295,7 @@ public class ObTableClientPartitionKeyTest {
             obTableClient.addRowKeyElement(tableName, new String[]{"K", "V"});
             tableQuery.addScanRange(new Object[] { "key2_1".getBytes(), "value0".getBytes() },
                                     new Object[] { "key2_1".getBytes(), "value9".getBytes() });
+            tableQuery.indexName("i1");
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(3, result.cacheSize());
             for (int i = 1; i <= 3; i++) {
