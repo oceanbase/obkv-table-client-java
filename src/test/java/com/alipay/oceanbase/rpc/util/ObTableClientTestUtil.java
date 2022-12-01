@@ -20,11 +20,11 @@ package com.alipay.oceanbase.rpc.util;
 import com.alipay.oceanbase.rpc.ObTableClient;
 
 public class ObTableClientTestUtil {
-    public static String FULL_USER_NAME          = "full-user-name";
-    public static String PARAM_URL               = "config-url";
-    public static String PASSWORD                = "password";
-    public static String PROXY_SYS_USER_NAME     = "sys-user-name";
-    public static String PROXY_SYS_USER_PASSWORD = "sys-user-password";
+    public static String FULL_USER_NAME          = "root@mysql#ob12.shenyunlong.syl.11.158.77.144";
+    public static String PARAM_URL               = "http://ocp-cfg.alibaba.net:8080/services?User_ID=alibaba&UID=test&Action=ObRootServiceInfo&ObCluster=ob12.shenyunlong.syl.11.158.77.144&database=test";
+    public static String PASSWORD                = "";
+    public static String PROXY_SYS_USER_NAME     = "root";
+    public static String PROXY_SYS_USER_PASSWORD = "";
 
     public static ObTableClient newTestClient() throws Exception {
         ObTableClient obTableClient = new ObTableClient();

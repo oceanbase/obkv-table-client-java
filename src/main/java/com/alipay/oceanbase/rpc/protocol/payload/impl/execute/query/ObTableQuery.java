@@ -17,6 +17,8 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
+import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.mutation.ColumnValue;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
@@ -399,12 +401,19 @@ public class ObTableQuery extends AbstractPayload {
      * Get select columns.
      */
     public List<String> getKeyRangeColumns() {
-        return selectColumns;
+        return keyRangeColumns;
     }
 
     /*
      * Set select columns.
      */
+    public void setKeyRangeColumns(String... keyRangeColumns) {
+        this.keyRangeColumns.clear();
+        for (String keyRangeCol : keyRangeColumns) {
+            this.keyRangeColumns.add(keyRangeCol);
+        }
+    }
+
     public void setKeyRangeColumns(List<String> keyRangeColumns) {
         this.keyRangeColumns = keyRangeColumns;
     }
