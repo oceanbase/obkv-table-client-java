@@ -247,16 +247,6 @@ public class ObTableClientPartitionKeyTest {
                 Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
                 Assert.assertEquals(timeStamp + 1, row.get("T"));
                 Assert.assertEquals("value2", new String((byte[]) row.get("V")));
-
-                // Use local index to execute query
-                obTableClient.addRowKeyElement(tableName, new String[] {"K", "V"});
-                obTableClient.setRunningMode(ObTableClient.RunningMode.NORMAL);
-                tableQuery = obTableClient.query(tableName);
-                tableQuery.addScanRange(new Object[] { "key1_1".getBytes(), "value0".getBytes() },
-                        new Object[] { "key1_1".getBytes(), "value9".getBytes() });
-                tableQuery.select("K", "Q", "T", "V");
-                result = tableQuery.execute();
-
             } catch (Exception e){
                 e.printStackTrace();
             } finally {
@@ -276,45 +266,96 @@ public class ObTableClientPartitionKeyTest {
         String tableName = obTableClient.isOdpMode() ? "testKey" : "testPartition";
         try {
             obTableClient.insert(tableName,
-                    new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp },
+                    new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 1},
                     new String[] { "V" }, new Object[] { "value1".getBytes() });
             obTableClient.insert(tableName,
-                    new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp },
+                    new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 2},
                     new String[] { "V" }, new Object[] { "value2".getBytes() });
             obTableClient.insert(tableName,
-                    new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp },
-                    new String[] { "V" }, new Object[] { "value3".getBytes() });
+                    new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 1},
+                    new String[] { "V" }, new Object[] { "value2".getBytes() });
             obTableClient.insert(tableName,
-                    new Object[] { "key2_2".getBytes(), "partition".getBytes(), timeStamp },
+                    new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 2},
                     new String[] { "V" }, new Object[] { "value1".getBytes() });
-            obTableClient.insert(tableName,
-                    new Object[] { "key2_2".getBytes(), "partition".getBytes(), timeStamp },
-                    new String[] { "V" }, new Object[] { "value2".getBytes() });
 
+            // key partitioned table do not support range query
+
+            // query key2_1
             TableQuery tableQuery = obTableClient.query(tableName);
             tableQuery.addScanRange(new Object[] { "key2_1".getBytes(), "value0".getBytes() },
                                     new Object[] { "key2_1".getBytes(), "value9".getBytes() });
+            // TODO: do param check, must specify select columns
+            tableQuery.select("K", "Q", "T", "V");
             tableQuery.indexName("i1");
+            tableQuery.getObTableQuery().setKeyRangeColumns("K", "V");
             QueryResultSet result = tableQuery.execute();
-            Assert.assertEquals(3, result.cacheSize());
-            for (int i = 1; i <= 3; i++) {
+            Assert.assertEquals(2, result.cacheSize());
+            for (int i = 1; i <= 2; i++) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();
                 Assert.assertEquals("key2_1", new String((byte[]) row.get("K")));
                 Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
-                Assert.assertEquals(timeStamp, row.get("T"));
+                Assert.assertEquals(timeStamp + i, row.get("T"));
+                Assert.assertEquals("value" + i, new String((byte[]) row.get("V")));
+            }
+            Assert.assertFalse(result.next());
+
+            tableQuery.scanOrder(false);
+            result = tableQuery.execute();
+            Assert.assertEquals(2, result.cacheSize());
+            for (int i = 2; i >= 1; i--) {
+                Assert.assertTrue(result.next());
+                Map<String, Object> row = result.getRow();
+                Assert.assertEquals("key2_1", new String((byte[]) row.get("K")));
+                Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
+                Assert.assertEquals(timeStamp + i, row.get("T"));
+                Assert.assertEquals("value" + i, new String((byte[]) row.get("V")));
+            }
+            Assert.assertFalse(result.next());
+
+            // query key3_1
+            tableQuery = obTableClient.query(tableName);
+            tableQuery.addScanRange(new Object[] { "key3_1".getBytes(), "value0".getBytes() },
+                                    new Object[] { "key3_1".getBytes(), "value9".getBytes() });
+            tableQuery.select("K", "Q", "T", "V");
+            tableQuery.indexName("i1");
+            tableQuery.getObTableQuery().setKeyRangeColumns("K", "V");
+            result = tableQuery.execute();
+            Assert.assertEquals(2, result.cacheSize());
+            for (int i = 1; i <= 2; i++) {
+                Assert.assertTrue(result.next());
+                Map<String, Object> row = result.getRow();
+                Assert.assertEquals("key3_1", new String((byte[]) row.get("K")));
+                Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
+                Assert.assertEquals(timeStamp + 3 - i, row.get("T"));
+                Assert.assertEquals("value" + i, new String((byte[]) row.get("V")));
+            }
+            Assert.assertFalse(result.next());
+
+            tableQuery.scanOrder(false);
+            result = tableQuery.execute();
+            Assert.assertEquals(2, result.cacheSize());
+            for (int i = 2; i >= 1; i--) {
+                Assert.assertTrue(result.next());
+                Map<String, Object> row = result.getRow();
+                Assert.assertEquals("key3_1", new String((byte[]) row.get("K")));
+                Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
+                Assert.assertEquals(timeStamp + 3 - i, row.get("T"));
                 Assert.assertEquals("value" + i, new String((byte[]) row.get("V")));
             }
             Assert.assertFalse(result.next());
         } catch (Exception e){
             e.printStackTrace();
+            Assert.assertTrue(false);
         } finally {
             obTableClient.delete(tableName,
-                    new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp });
+                    new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 1 });
             obTableClient.delete(tableName,
-                    new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp + 1 });
+                    new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 2 });
             obTableClient.delete(tableName,
-                    new Object[] { "key1_2".getBytes(), "partition".getBytes(), timeStamp });
+                    new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 1});
+            obTableClient.delete(tableName,
+                    new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 2});
         }
     }
 

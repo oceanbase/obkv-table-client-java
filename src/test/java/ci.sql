@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS `testHash`(
     `Q` varbinary(256),
     `T` bigint,
     `V` varbinary(1024),
+    INDEX i1(`K`, `V`) local,
     PRIMARY KEY(`K`, `Q`, `T`)
 ) partition by hash(`K`) partitions 16;
 

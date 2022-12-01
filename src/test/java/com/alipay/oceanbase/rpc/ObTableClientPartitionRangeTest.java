@@ -164,7 +164,7 @@ public class ObTableClientPartitionRangeTest {
             // single partition query
             TableQuery tableQuery = obTableClient.query("testRange");
             tableQuery.addScanRange(new Object[] { "ah", "partition".getBytes(), timeStamp },
-                    new Object[] { "az", "partition".getBytes(), timeStamp });
+                                    new Object[] { "az", "partition".getBytes(), timeStamp });
             tableQuery.select("K", "Q", "T", "V");
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(1, result.cacheSize());
@@ -178,7 +178,7 @@ public class ObTableClientPartitionRangeTest {
             // multiply partition query
             tableQuery = obTableClient.query("testRange");
             tableQuery.addScanRange(new Object[] { "0", "partition".getBytes(), timeStamp },
-                    new Object[] { "xz", "partition".getBytes(), timeStamp });
+                                    new Object[] { "xz", "partition".getBytes(), timeStamp });
             tableQuery.select("K", "Q", "T", "V");
             result = tableQuery.execute();
             Assert.assertEquals(4, result.cacheSize());
@@ -271,14 +271,14 @@ public class ObTableClientPartitionRangeTest {
 
             // multiply partition query with index
             tableQuery = obTableClient.query("testRange");
-            tableQuery.addScanRange(new Object[] { "a0" }, new Object[] { "z9" } );
+            tableQuery.addScanRange(new Object[] { "a0", "value1" }, new Object[] { "z9", "value9" } );
             tableQuery.select("K", "Q", "T", "V");
             tableQuery.indexName("i1");
             tableQuery.getObTableQuery().setKeyRangeColumns("K", "V");
             result = tableQuery.execute();
             Assert.assertEquals(4, result.cacheSize());
 
-            // sort result by K
+            // sort result by K, T
             List<Map<String, Object>> resultList = new ArrayList<>();
             for (int i = 0; i < 4; i++) {
                 Assert.assertTrue(result.next());
@@ -290,17 +290,18 @@ public class ObTableClientPartitionRangeTest {
                 public int compare(Map<String, Object> o1, Map<String, Object> o2) {
                     int firstCmp = new String((byte[])o1.get("K")).compareTo(new String((byte[])o2.get("K")));
                     if (firstCmp == 0) {
-                       return ((int)o1.get("T")) - ((int)o2.get("T"));
+                       return (int)(((long)o1.get("T")) - ((long)o2.get("T")));
                     }
                     return firstCmp;
                 }
             });
             String[] orderedKeys = {"a1", "a1", "a1", "x1"};
+            int[] orderedDeltaTs = {1, 2, 3, 1};
             String[] orderedValues = {"value1", "value3", "value2", "value1"};
             for (int i = 0; i < 4; i++) {
                 Assert.assertEquals(orderedKeys[i], new String((byte[])resultList.get(i).get("K")));
                 Assert.assertEquals("partition", new String((byte[]) resultList.get(i).get("Q")));
-                Assert.assertEquals(timeStamp, resultList.get(i).get("T"));
+                Assert.assertEquals(timeStamp + orderedDeltaTs[i], resultList.get(i).get("T"));
                 Assert.assertEquals(orderedValues[i], new String((byte[]) resultList.get(i).get("V")));
             }
         } catch (Exception e) {
