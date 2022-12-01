@@ -93,18 +93,16 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         final long startTime = System.currentTimeMillis();
         Map<Long, ObPair<Long, ObTable>> partitionObTables = new HashMap<Long, ObPair<Long, ObTable>>();
         List<Object> params = new ArrayList<>();
-        if (tableQuery.getKeyRangeColumns() == null) {
+        if (tableQuery.getKeyRangeColumns().isEmpty()) {
             if (tableQuery.getIndexName() != null &&
                     !tableQuery.getIndexName().equalsIgnoreCase("primary")) {
                 throw new ObTableException("key range columns must be specified when use index");
             }
-            List<String> rowKeyElement = null;
             if (obTableClient.getRunningMode() == ObTableClient.RunningMode.HBASE) {
-                rowKeyElement = new ArrayList<>(HBASE_ROW_KEY_ELEMENT.keySet());
+                tableQuery.setKeyRangeColumns(new ArrayList<>(HBASE_ROW_KEY_ELEMENT.keySet()));
             } else if (obTableClient.getRowKeyElement(tableName) != null) {
-                rowKeyElement = new ArrayList<>(obTableClient.getRowKeyElement(tableName).keySet());
+                tableQuery.setKeyRangeColumns(new ArrayList<>(obTableClient.getRowKeyElement(tableName).keySet()));
             }
-            tableQuery.setKeyRangeColumns(rowKeyElement);
         }
         if (obTableClient.isOdpMode()) {
 //            if (tableQuery.getKeyRangeColumns() == null) {
