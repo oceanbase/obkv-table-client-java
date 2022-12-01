@@ -205,6 +205,7 @@ public class ObTableClientPartitionRangeTest {
             }
         } catch (Exception e) {
            e.printStackTrace();
+           Assert.assertTrue(false);
         } finally {
             obTableClient.delete("testRange", new Object[] { "0", "partition".getBytes(), timeStamp });
             obTableClient.delete("testRange", new Object[] { "ah", "partition".getBytes(), timeStamp });
@@ -217,40 +218,39 @@ public class ObTableClientPartitionRangeTest {
     public void testQueryLocalIndex() throws Exception {
         long timeStamp = System.currentTimeMillis();
         try {
+            // the client's route sucks, cannot work in non-odp mode currently
             // p1
             obTableClient.insert("testRange",
-                    new Object[] { "a1", "partition".getBytes(), timeStamp },
+                    new Object[] { "a1", "partition".getBytes(), timeStamp + 1 },
                     new String[] { "V" }, new Object[] { "value1".getBytes() });
             obTableClient.insert("testRange",
-                    new Object[] { "a2", "partition".getBytes(), timeStamp },
+                    new Object[] { "a1", "partition".getBytes(), timeStamp + 2},
                     new String[] { "V" }, new Object[] { "value3".getBytes() });
             obTableClient.insert("testRange",
-                    new Object[] { "a3", "partition".getBytes(), timeStamp },
+                    new Object[] { "a1", "partition".getBytes(), timeStamp + 3},
                     new String[] { "V" }, new Object[] { "value2".getBytes() });
             // p2
             obTableClient.insert("testRange",
-                    new Object[] { "x1", "partition".getBytes(), timeStamp },
+                    new Object[] { "x1", "partition".getBytes(), timeStamp + 1 },
                     new String[] { "V" }, new Object[] { "value1".getBytes() });
 
             // single partition query with index
             TableQuery tableQuery = obTableClient.query("testRange");
-            obTableClient.setRunningMode(ObTableClient.RunningMode.NORMAL);
-            obTableClient.addRowKeyElement("testRange", new String[]{ "K", "V" });
-
-            tableQuery.addScanRange(new Object[] { "a0", "partition".getBytes(), timeStamp },
-                                    new Object[] { "a9", "partition".getBytes(), timeStamp });
+            tableQuery.addScanRange(new Object[] { "a1", "value1".getBytes() },
+                                    new Object[] { "a1", "value9".getBytes() });
             tableQuery.select("K", "Q", "T", "V");
             tableQuery.indexName("i1");
+            tableQuery.getObTableQuery().setKeyRangeColumns("K", "V");
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(3, result.cacheSize());
 
-            String indexOrderKeys[] = {"a1", "a3", "a2"};
+            int[] tsDelta = {1, 3, 2};
             for (int i = 1; i <= 3; i++) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();
-                Assert.assertEquals(indexOrderKeys[i - 1], new String((byte[]) row.get("K")));
+                Assert.assertEquals("a1", new String((byte[]) row.get("K")));
                 Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
-                Assert.assertEquals(timeStamp, row.get("T"));
+                Assert.assertEquals(timeStamp + tsDelta[i - 1], row.get("T"));
                 Assert.assertEquals("value" + i, new String((byte[]) row.get("V")));
             }
             Assert.assertFalse(result.next());
@@ -262,9 +262,9 @@ public class ObTableClientPartitionRangeTest {
             for (int i = 3; i >= 1; i--) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();
-                Assert.assertEquals(indexOrderKeys[i - 1], new String((byte[]) row.get("K")));
+                Assert.assertEquals("a1", new String((byte[]) row.get("K")));
                 Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
-                Assert.assertEquals(timeStamp, row.get("T"));
+                Assert.assertEquals(timeStamp + tsDelta[i - 1], row.get("T"));
                 Assert.assertEquals("value" + i, new String((byte[]) row.get("V")));
             }
             Assert.assertFalse(result.next());
@@ -274,6 +274,7 @@ public class ObTableClientPartitionRangeTest {
             tableQuery.addScanRange(new Object[] { "a0" }, new Object[] { "z9" } );
             tableQuery.select("K", "Q", "T", "V");
             tableQuery.indexName("i1");
+            tableQuery.getObTableQuery().setKeyRangeColumns("K", "V");
             result = tableQuery.execute();
             Assert.assertEquals(4, result.cacheSize());
 
@@ -287,10 +288,14 @@ public class ObTableClientPartitionRangeTest {
             Collections.sort(resultList, new Comparator<Map<String, Object>>() {
                 @Override
                 public int compare(Map<String, Object> o1, Map<String, Object> o2) {
-                    return new String((byte[])o1.get("K")).compareTo(new String((byte[])o2.get("K")));
+                    int firstCmp = new String((byte[])o1.get("K")).compareTo(new String((byte[])o2.get("K")));
+                    if (firstCmp == 0) {
+                       return ((int)o1.get("T")) - ((int)o2.get("T"));
+                    }
+                    return firstCmp;
                 }
             });
-            String[] orderedKeys = {"a1", "a2", "a3", "x1"};
+            String[] orderedKeys = {"a1", "a1", "a1", "x1"};
             String[] orderedValues = {"value1", "value3", "value2", "value1"};
             for (int i = 0; i < 4; i++) {
                 Assert.assertEquals(orderedKeys[i], new String((byte[])resultList.get(i).get("K")));
@@ -300,11 +305,12 @@ public class ObTableClientPartitionRangeTest {
             }
         } catch (Exception e) {
             e.printStackTrace();
+            Assert.assertTrue(false);
         } finally {
-            obTableClient.delete("testRange", new Object[] { "0", "partition".getBytes(), timeStamp });
-            obTableClient.delete("testRange", new Object[] { "ah", "partition".getBytes(), timeStamp });
-            obTableClient.delete("testRange", new Object[] { "uh", "partition".getBytes(), timeStamp });
-            obTableClient.delete("testRange", new Object[] { "xh", "partition".getBytes(), timeStamp });
+            obTableClient.delete("testRange", new Object[] { "a1", "partition".getBytes(), timeStamp + 1 });
+            obTableClient.delete("testRange", new Object[] { "a1", "partition".getBytes(), timeStamp + 2 });
+            obTableClient.delete("testRange", new Object[] { "a1", "partition".getBytes(), timeStamp + 3 });
+            obTableClient.delete("testRange", new Object[] { "x1", "partition".getBytes(), timeStamp + 1 });
         }
     }
 

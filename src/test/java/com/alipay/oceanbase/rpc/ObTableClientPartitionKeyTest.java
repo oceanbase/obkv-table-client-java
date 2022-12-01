@@ -270,6 +270,7 @@ public class ObTableClientPartitionKeyTest {
         }
     }
 
+    @Test
     public void testQueryLocalIndex() throws Exception {
         long timeStamp = System.currentTimeMillis();
         String tableName = obTableClient.isOdpMode() ? "testKey" : "testPartition";
@@ -291,8 +292,6 @@ public class ObTableClientPartitionKeyTest {
                     new String[] { "V" }, new Object[] { "value2".getBytes() });
 
             TableQuery tableQuery = obTableClient.query(tableName);
-            obTableClient.setRunningMode(ObTableClient.RunningMode.NORMAL);
-            obTableClient.addRowKeyElement(tableName, new String[]{"K", "V"});
             tableQuery.addScanRange(new Object[] { "key2_1".getBytes(), "value0".getBytes() },
                                     new Object[] { "key2_1".getBytes(), "value9".getBytes() });
             tableQuery.indexName("i1");
