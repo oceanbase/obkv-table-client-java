@@ -250,7 +250,7 @@ public class ObTableClientPartitionRangeTest {
             tableQuery.addScanRange(new Object[] { "a1", "value1".getBytes() },
                                     new Object[] { "a1", "value9".getBytes() });
             tableQuery.select("K", "Q", "T", "V");
-            tableQuery.useIndex("i1", new String[] {"K", "V"});
+            tableQuery.setScanRangeColumns("K", "V");
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(3, result.cacheSize());
 
@@ -283,7 +283,7 @@ public class ObTableClientPartitionRangeTest {
             tableQuery = obTableClient.query("testRange");
             tableQuery.addScanRange(new Object[] { "a0", "value1" }, new Object[] { "z9", "value9" } );
             tableQuery.select("K", "Q", "T", "V");
-            tableQuery.useIndex("i1", new String[] {"K", "V"});
+            tableQuery.setScanRangeColumns("K", "V");
             result = tableQuery.execute();
             Assert.assertEquals(4, result.cacheSize());
 

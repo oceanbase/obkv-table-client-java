@@ -139,15 +139,8 @@ public abstract class AbstractTableQuery implements TableQuery {
 
 
     @Override
-    public TableQuery setKeyRangeColumns(String... columns) {
-        this.getObTableQuery().setKeyRangeColumns(columns);
-        return this;
-    }
-
-    @Override
-    public TableQuery useIndex(String indexName, String[] indexColumns) {
-        this.indexName(indexName);
-        this.setKeyRangeColumns(indexColumns);
+    public TableQuery setScanRangeColumns(String... columns) {
+        this.getObTableQuery().setScanRangeColumns(columns);
         return this;
     }
 }

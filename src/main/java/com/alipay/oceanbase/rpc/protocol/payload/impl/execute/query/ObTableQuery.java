@@ -410,14 +410,14 @@ public class ObTableQuery extends AbstractPayload {
     /*
      * Set select columns.
      */
-    public void setKeyRangeColumns(String... keyRangeColumns) {
+    public void setScanRangeColumns(String... keyRangeColumns) {
         this.keyRangeColumns.clear();
         for (String keyRangeCol : keyRangeColumns) {
             this.keyRangeColumns.add(keyRangeCol);
         }
     }
 
-    public void setKeyRangeColumns(List<String> keyRangeColumns) {
+    public void setScanRangeColumns(List<String> keyRangeColumns) {
         this.keyRangeColumns = keyRangeColumns;
     }
 }

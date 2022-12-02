@@ -219,7 +219,7 @@ public class ObTableClientPartitionHashTest {
                                     new Object[] { timeStamp + 1, "value9".getBytes() });
             tableQuery.select("K", "Q", "T", "V");
             tableQuery.scanOrder(false);
-            tableQuery.useIndex("i1", new String[] {"K", "V"});
+            tableQuery.setScanRangeColumns("K", "V");
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(2, result.cacheSize());
             for (int i = 1; i <= 2; i++) {
@@ -237,7 +237,7 @@ public class ObTableClientPartitionHashTest {
             tableQuery.addScanRange(new Object[] { timeStamp + 1, "value0".getBytes() },
                                     new Object[] { timeStamp + 3, "value9".getBytes() });
             tableQuery.select("K", "Q", "T", "V");
-            tableQuery.useIndex("i1", new String[] {"K", "V"});
+            tableQuery.setScanRangeColumns("K", "V");
             result = tableQuery.execute();
             Assert.assertEquals(4, result.cacheSize());
 
