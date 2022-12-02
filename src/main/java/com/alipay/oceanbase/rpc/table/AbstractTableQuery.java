@@ -136,4 +136,11 @@ public abstract class AbstractTableQuery implements TableQuery {
         this.getObTableQuery().setFilterString(filter.toString());
         return this;
     }
+
+
+    @Override
+    public TableQuery setScanRangeColumns(String... columns) {
+        this.getObTableQuery().setScanRangeColumns(columns);
+        return this;
+    }
 }

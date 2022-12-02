@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.table;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
+import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.*;
@@ -32,6 +33,7 @@ import java.util.Map;
 
 import static com.alipay.oceanbase.rpc.ObTableClient.buildParamsString;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.MONITOR;
+import static com.alipay.oceanbase.rpc.location.model.TableEntry.HBASE_ROW_KEY_ELEMENT;
 
 public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
@@ -92,6 +94,17 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         Map<Long, ObPair<Long, ObTable>> partitionObTables = new HashMap<Long, ObPair<Long, ObTable>>();
         List<Object> params = new ArrayList<>();
         if (obTableClient.isOdpMode()) {
+            if (tableQuery.getKeyRangeColumns().isEmpty()) {
+                if (tableQuery.getIndexName() != null &&
+                        !tableQuery.getIndexName().equalsIgnoreCase("primary")) {
+                    throw new ObTableException("key range columns must be specified when use index");
+                }
+                if (obTableClient.getRunningMode() == ObTableClient.RunningMode.HBASE) {
+                    tableQuery.setScanRangeColumns(new ArrayList<>(HBASE_ROW_KEY_ELEMENT.keySet()));
+                } else if (obTableClient.getRowKeyElement(tableName) != null) {
+                    tableQuery.setScanRangeColumns(new ArrayList<>(obTableClient.getRowKeyElement(tableName).keySet()));
+                }
+            }
             partitionObTables.put(0L, new ObPair<Long, ObTable>(0L, obTableClient.getOdpTable()));
         } else {
             for (ObNewRange rang : tableQuery.getKeyRanges()) {
