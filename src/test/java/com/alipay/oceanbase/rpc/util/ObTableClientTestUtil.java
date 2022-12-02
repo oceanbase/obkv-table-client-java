@@ -33,7 +33,6 @@ public class ObTableClientTestUtil {
         obTableClient.setPassword(PASSWORD);
         obTableClient.setSysUserName(PROXY_SYS_USER_NAME);
         obTableClient.setSysPassword(PROXY_SYS_USER_PASSWORD);
-
         return obTableClient;
     }
 }
