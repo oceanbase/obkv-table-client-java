@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS `testHash`(
     `Q` varbinary(256),
     `T` bigint,
     `V` varbinary(1024),
+    INDEX i1(`K`, `V`) local,
     PRIMARY KEY(`K`, `Q`, `T`)
 ) partition by hash(`K`) partitions 16;
 
@@ -92,6 +93,15 @@ CREATE TABLE IF NOT EXISTS `testPartition` (
     K_PREFIX varbinary(1024) generated always as (substring(`K`, 1, 4)),
     PRIMARY KEY(`K`, `Q`, `T`)
 ) partition by key(K_PREFIX) partitions 15;
+
+CREATE TABLE IF NOT EXISTS `testKey` (
+    `K` varbinary(1024),
+    `Q` varbinary(256),
+    `T` bigint,
+    `V` varbinary(1024),
+    INDEX i1(`K`, `V`) local,
+    PRIMARY KEY(`K`, `Q`, `T`)
+) partition by key(K) partitions 15;
 
 CREATE TABLE IF NOT EXISTS `test_increment` (
     `c1` varchar(255),
@@ -111,7 +121,8 @@ CREATE TABLE IF NOT EXISTS `testRange` (
     `K` varbinary(1024),
     `Q` varbinary(256),
     `T` bigint,
-    `V` varbinary(102400),
+    `V` varbinary(10240),
+    INDEX i1(`K`, `V`) local,
     PRIMARY KEY(`K`, `Q`, `T`)
 ) partition by range columns (`K`) (
     PARTITION p0 VALUES LESS THAN ('a'),

@@ -194,6 +194,12 @@ public class QueryByBatch implements TableQuery {
     }
 
     @Override
+    public TableQuery setScanRangeColumns(String... columns) {
+        this.getTableQuery().setScanRangeColumns(columns);
+        return this;
+    }
+
+    @Override
     public void clear() {
         this.tableQuery.clear();
     }
