@@ -115,8 +115,8 @@ public class ObTableRemoting extends BaseRemoting {
 
             if (resultCode.getRcode() != 0) {
                 ExceptionUtil.throwObTableException(conn.getObTable().getIp(), conn.getObTable()
-                    .getPort(), response.getHeader().getTraceId0(), response.getHeader()
-                    .getTraceId1(), resultCode.getRcode());
+                    .getPort(), response.getHeader().getTraceId1(), response.getHeader()
+                    .getTraceId0(), resultCode.getRcode());
                 return null;
             }
 
