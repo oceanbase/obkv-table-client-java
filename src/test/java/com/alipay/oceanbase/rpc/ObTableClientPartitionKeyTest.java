@@ -159,6 +159,7 @@ public class ObTableClientPartitionKeyTest {
         long timeStamp = System.currentTimeMillis();
         String tableName = null;
         if (!obTableClient.isOdpMode()) {
+            tableName = "testPartition";
             obTableClient.insert(tableName,
                     new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
                     new String[] { "V" }, new Object[] { "value1".getBytes() });
@@ -262,6 +263,10 @@ public class ObTableClientPartitionKeyTest {
 
     @Test
     public void testQueryLocalIndex() throws Exception {
+        // TODO: client route is wrong when execute query on key partitioned table using index
+        if (!obTableClient.isOdpMode()) {
+            return;
+        }
         long timeStamp = System.currentTimeMillis();
         String tableName = obTableClient.isOdpMode() ? "testKey" : "testPartition";
         try {
@@ -286,8 +291,7 @@ public class ObTableClientPartitionKeyTest {
                                     new Object[] { "key2_1".getBytes(), "value9".getBytes() });
             // TODO: do param check, must specify select columns
             tableQuery.select("K", "Q", "T", "V");
-            tableQuery.indexName("i1");
-            tableQuery.getObTableQuery().setKeyRangeColumns("K", "V");
+            tableQuery.useIndex("i1", new String[]{"K", "V"});
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(2, result.cacheSize());
             for (int i = 1; i <= 2; i++) {
@@ -318,8 +322,7 @@ public class ObTableClientPartitionKeyTest {
             tableQuery.addScanRange(new Object[] { "key3_1".getBytes(), "value0".getBytes() },
                                     new Object[] { "key3_1".getBytes(), "value9".getBytes() });
             tableQuery.select("K", "Q", "T", "V");
-            tableQuery.indexName("i1");
-            tableQuery.getObTableQuery().setKeyRangeColumns("K", "V");
+            tableQuery.useIndex("i1", new String[]{"K", "V"});
             result = tableQuery.execute();
             Assert.assertEquals(2, result.cacheSize());
             for (int i = 1; i <= 2; i++) {

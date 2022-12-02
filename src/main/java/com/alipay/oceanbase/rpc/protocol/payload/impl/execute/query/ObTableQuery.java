@@ -183,7 +183,10 @@ public class ObTableQuery extends AbstractPayload {
             buf.readByte();
             buf.readByte();
         }
-        // todo@dazhi: decode key range columns, maybe bug exist here
+        size = Serialization.decodeVi64(buf);
+        for (int i = 0; i < size; i++) {
+            this.keyRangeColumns.add(Serialization.decodeVString(buf));
+        }
 
         return this;
     }
