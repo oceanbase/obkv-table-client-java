@@ -186,9 +186,7 @@ public interface TableQuery {
 
     TableQuery setMaxResultSize(long maxResultSize);
 
-    TableQuery setKeyRangeColumns(String... columns);
-
-    TableQuery useIndex(String indexName, String[] indexColumns);
+    TableQuery setScanRangeColumns(String... columns);
 
     void clear();
 }
