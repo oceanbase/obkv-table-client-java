@@ -308,16 +308,20 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             }
             tryTimes++;
             try {
-                // 重试时重新 getTable
-                if (tryTimes > 1) {
-                    if (route == null) {
-                        route = obTableClient.getRoute(batchOperation.isReadOnly());
+                if (obTableClient.isOdpMode()) {
+                    subObTable = obTableClient.getOdpTable();
+                } else {
+                    // 重试时重新 getTable
+                    if (tryTimes > 1) {
+                        if (route == null) {
+                            route = obTableClient.getRoute(batchOperation.isReadOnly());
+                        }
+                        if (failedServerList != null) {
+                            route.setBlackList(failedServerList);
+                        }
+                        subObTable = obTableClient.getTable(tableName, partId, needRefreshTableEntry,
+                                obTableClient.isTableEntryRefreshIntervalWait(), route).getRight();
                     }
-                    if (failedServerList != null) {
-                        route.setBlackList(failedServerList);
-                    }
-                    subObTable = obTableClient.getTable(tableName, partId, needRefreshTableEntry,
-                        obTableClient.isTableEntryRefreshIntervalWait(), route).getRight();
                 }
                 subObTableBatchOperationResult = (ObTableBatchOperationResult) subObTable
                     .execute(subRequest);

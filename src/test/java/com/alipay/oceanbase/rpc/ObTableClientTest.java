@@ -63,9 +63,10 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
         final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
         obTableClient.setMetadataRefreshInterval(100);
-        obTableClient.addProperty("connectTimeout", "100000");
-        obTableClient.addProperty("socketTimeout", "100000");
-        obTableClient.addProperty("table.connection.pool.size", "3");
+        obTableClient.addProperty(Property.RPC_CONNECT_TIMEOUT.getKey(), "500");
+        obTableClient.addProperty(Property.RPC_LOGIN_TIMEOUT.getKey(), "500");
+        obTableClient.addProperty(Property.SERVER_CONNECTION_POOL_SIZE.getKey(), "1");
+        obTableClient.addProperty(Property.RPC_EXECUTE_TIMEOUT.getKey(), "1000");
         obTableClient.init();
 
         this.client = obTableClient;
@@ -87,18 +88,20 @@ public class ObTableClientTest extends ObTableClientTestBase {
     @Test
     public void testMetadataRefresh() throws Exception {
         final ObTableClient client1 = ObTableClientTestUtil.newTestClient();
-        try {
-            client1.setMetadataRefreshInterval(100);
-            client1.setServerAddressCachingTimeout(8000);
-            client1.init();
-            long lastTime = getMaxAccessTime(client1);
-            Thread.sleep(10000);
-            client1.insertOrUpdate("test_varchar_table", "foo", new String[] { "c2" },
-                new String[] { "bar" });
-            long nowTime = getMaxAccessTime(client1);
-            Assert.assertTrue(nowTime - lastTime > 8000);
-        } finally {
-            client1.delete("test_varchar_table", "foo");
+        if (!client1.isOdpMode()) {
+            try {
+                client1.setMetadataRefreshInterval(100);
+                client1.setServerAddressCachingTimeout(8000);
+                client1.init();
+                long lastTime = getMaxAccessTime(client1);
+                Thread.sleep(10000);
+                client1.insertOrUpdate("test_varchar_table", "foo", new String[]{"c2"},
+                        new String[]{"bar"});
+                long nowTime = getMaxAccessTime(client1);
+                Assert.assertTrue(nowTime - lastTime > 8000);
+            } finally {
+                client1.delete("test_varchar_table", "foo");
+            }
         }
     }
 
@@ -568,6 +571,18 @@ public class ObTableClientTest extends ObTableClientTestBase {
             filterListNested_2.addFilter(filterListNested_1);
             assertEquals("TableCompareFilter(=, 'c3:value') || ((TableCompareFilter(=, 'c3:value') || TableCompareFilter(<=, 'c2:5')) && TableCompareFilter(=, 'c3:value') && (TableCompareFilter(=, 'c3:value') || TableCompareFilter(<=, 'c2:5')))",
                     filterListNested_2.toString());
+
+            // test query with batchsize
+            try {
+                TableQuery tableQuery_error = client1.query("test_batch_query");
+                tableQuery_error.addScanRange(new Object[]{0L}, new Object[]{250L});
+                tableQuery_error.select("c1", "c2", "c3");
+                tableQuery_error.setFilter(null);
+                tableQuery_error.setBatchSize(3);
+            } catch (Exception e) {
+                System.out.println(e);
+                assertTrue(e instanceof ObTableException);
+            }
 
             // 查询结果集
             QueryResultSet result = tableQuery.select("c2").primaryIndex().setBatchSize(2)

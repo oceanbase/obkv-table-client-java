@@ -17,11 +17,13 @@
 
 package com.alipay.oceanbase.rpc;
 
+import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,12 +48,20 @@ public class ObTableClientPartitionHashTest {
         final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
         obTableClient.setMetadataRefreshInterval(100);
         obTableClient.setTableEntryAcquireSocketTimeout(10000);
-        obTableClient.addProperty("connectTimeout", "1000000");
-        obTableClient.addProperty("socketTimeout", "1000000");
+        obTableClient.addProperty("connectTimeout", "100000");
+        obTableClient.addProperty("socketTimeout", "100000");
+        obTableClient.addProperty(Property.RPC_EXECUTE_TIMEOUT.getKey(), "5000");
         obTableClient.setRunningMode(ObTableClient.RunningMode.HBASE);
         obTableClient.init();
 
         this.obTableClient = obTableClient;
+    }
+
+    @After
+    public void close() throws Exception {
+        if (null != this.obTableClient) {
+            ((ObTableClient) this.obTableClient).close();
+        }
     }
 
     @Test
