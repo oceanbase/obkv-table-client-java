@@ -29,6 +29,7 @@ import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -43,6 +44,13 @@ import static org.junit.Assert.assertNotNull;
 public abstract class ObTableClientTestBase {
 
     public Table client;
+
+    @After
+    public void close() throws Exception {
+        if (null != this.client) {
+            ((ObTableClient) this.client).close();
+        }
+    }
 
     @Test
     public void test_batch() throws Exception {
@@ -168,7 +176,11 @@ public abstract class ObTableClientTestBase {
             exception = ex;
         }
         assertNotNull(exception);
-        assertEquals(ResultCodes.OB_ERR_UNKNOWN_TABLE.errorCode, exception.getErrorCode());
+        if (((ObTableClient) client).isOdpMode()) {
+            assertEquals(ResultCodes.OB_TABLE_NOT_EXIST.errorCode, exception.getErrorCode());
+        } else {
+            assertEquals(ResultCodes.OB_ERR_UNKNOWN_TABLE.errorCode, exception.getErrorCode());
+        }
 
         exception = null;
         try {
@@ -526,37 +538,41 @@ public abstract class ObTableClientTestBase {
     public void test_limit_query_1() throws Exception {
         Object[] c1 = new Object[] { "123", "124", "234", "456", "567" };
         Object[] c2 = new Object[] { "123c2", "124c2", "234c2", "456c2", "567c2" };
-        try {
-            for (int i = 0; i < 5; i++) {
-                client.insert("test_varchar_table", c1[i], new String[] { "c2" },
-                    new Object[] { c2[i] });
-            }
-            // 123 <= xxx <= 567
-            TableQuery tableQuery = client.queryByBatch("test_varchar_table");
-            QueryResultSet result = tableQuery.setKeys("c1").select("c2").setBatchSize(1)
-                .addScanRange("123", true, "567", true).execute();
-            for (int i = 0; i < 5; i++) {
-                Assert.assertTrue(result.next());
-                Map<String, Object> value = result.getRow();
-                assertEquals(value.get("c2"), c2[i]);
-            }
-            Assert.assertFalse(result.next());
+        if (((ObTableClient) client).isOdpMode()) {
+            // TODO: support stream result
+        } else {
+            try {
+                for (int i = 0; i < 5; i++) {
+                    client.insert("test_varchar_table", c1[i], new String[]{"c2"},
+                            new Object[]{c2[i]});
+                }
+                // 123 <= xxx <= 567
+                TableQuery tableQuery = client.queryByBatch("test_varchar_table");
+                QueryResultSet result = tableQuery.setKeys("c1").select("c2").setBatchSize(1)
+                        .addScanRange("123", true, "567", true).execute();
+                for (int i = 0; i < 5; i++) {
+                    Assert.assertTrue(result.next());
+                    Map<String, Object> value = result.getRow();
+                    assertEquals(value.get("c2"), c2[i]);
+                }
+                Assert.assertFalse(result.next());
 
-            // 123 <= xxx < 567
-            tableQuery = client.queryByBatch("test_varchar_table");
-            result = tableQuery.setKeys("c1").select("c1", "c2").setBatchSize(1)
-                .addScanRange("123", true, "567", false).execute();
-            for (int i = 0; i < 4; i++) {
-                Assert.assertTrue(result.next());
-                assertEquals(0, result.cacheSize());
-                Map<String, Object> value = result.getRow();
-                assertEquals(value.get("c2"), c2[i]);
-            }
-            Assert.assertFalse(result.next());
-            result.close();
-        } finally {
-            for (int i = 0; i < 5; i++) {
-                client.delete("test_varchar_table", c1[i]);
+                // 123 <= xxx < 567
+                tableQuery = client.queryByBatch("test_varchar_table");
+                result = tableQuery.setKeys("c1").select("c1", "c2").setBatchSize(1)
+                        .addScanRange("123", true, "567", false).execute();
+                for (int i = 0; i < 4; i++) {
+                    Assert.assertTrue(result.next());
+                    assertEquals(0, result.cacheSize());
+                    Map<String, Object> value = result.getRow();
+                    assertEquals(value.get("c2"), c2[i]);
+                }
+                Assert.assertFalse(result.next());
+                result.close();
+            } finally {
+                for (int i = 0; i < 5; i++) {
+                    client.delete("test_varchar_table", c1[i]);
+                }
             }
         }
     }
@@ -646,19 +662,23 @@ public abstract class ObTableClientTestBase {
             assertTrue(true);
         }
 
-        ObTable obTable = new ObTable();
-        try {
-            tableQuery.executeInit(new ObPair<Long, ObTable>(0L, obTable));
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
+        if (((ObTableClient) client).isOdpMode()) {
+            // TODO: support stream result
+        } else {
+            ObTable obTable = new ObTable();
+            try {
+                tableQuery.executeInit(new ObPair<Long, ObTable>(0L, obTable));
+                fail();
+            } catch (Exception e) {
+                assertTrue(true);
+            }
 
-        try {
-            tableQuery.executeNext(new ObPair<Long, ObTable>(0L, obTable));
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
+            try {
+                tableQuery.executeNext(new ObPair<Long, ObTable>(0L, obTable));
+                fail();
+            } catch (Exception e) {
+                assertTrue(true);
+            }
         }
 
         tableQuery.clear();
@@ -999,30 +1019,24 @@ public abstract class ObTableClientTestBase {
             assertEquals(0, resultSet.cacheSize());
 
             tableQuery.clear();
-            resultSet = tableQuery.select("c2").primaryIndex().addScanRange("12", "126")
-                .addScanRange("456", "567").setBatchSize(1).execute();
-            assertEquals(0, resultSet.cacheSize());
-            for (int i = 0; i < 4; i++) {
-                Assert.assertTrue(resultSet.next());
-                Map<String, Object> value = resultSet.getRow();
-                switch (i) {
-                    case 0:
-                        assertEquals("123c2", value.get("c2"));
-                        break;
-                    case 1:
-                        assertEquals("124c2", value.get("c2"));
-                        break;
-                    case 2:
-                        assertEquals("456c2", value.get("c2"));
-                        break;
-                    case 3:
-                        assertEquals("567c2", value.get("c2"));
-                        break;
+            try {
+                tableQuery.select("c2").primaryIndex().addScanRange("12", "126")
+                        .addScanRange("456", "567").setBatchSize(1).execute();
+            } catch (Exception e) {
+                if (e instanceof ObTableException) {
+                    assertTrue(true);
+                } else {
+                    System.out.println("Wrong Exception: " + e);
+                    fail();
                 }
             }
 
-            Assert.assertFalse(resultSet.next());
+            if (((ObTableClient) client).isOdpMode()) {
+                // TODO: ODP support stream result
+                return;
+            }
 
+            tableQuery = client.queryByBatchV2("test_varchar_table");
             resultSet = tableQuery.select("c2").primaryIndex().addScanRange("12", "126")
                 .addScanRange("456", "567").setBatchSize(1).execute();
             assertEquals(0, resultSet.cacheSize());
@@ -1141,18 +1155,22 @@ public abstract class ObTableClientTestBase {
     }
 
     public void syncRefreshMetaHelper(final ObTableClient obTableClient) {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                for (int i = 0; i < 10; i++) {
-                    try {
-                        obTableClient.syncRefreshMetadata();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        Assert.fail();
+        if (obTableClient.isOdpMode()) {
+            // do noting
+        } else {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    for (int i = 0; i < 10; i++) {
+                        try {
+                            obTableClient.syncRefreshMetadata();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            Assert.fail();
+                        }
                     }
                 }
-            }
-        }).start();
+            }).start();
+        }
     }
 }
