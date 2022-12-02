@@ -36,7 +36,7 @@ public enum Property {
 
     RPC_LOGIN_TRY_TIMES("rpc.login.try.times", 1, "请求RPC登录的尝试次数"),
 
-    RPC_OPERATION_TIMEOUT("rpc.operation.timeout", 20000L, "OB内部执行RPC请求的超时时间"),
+    RPC_OPERATION_TIMEOUT("rpc.operation.timeout", 2000000000L, "OB内部执行RPC请求的超时时间"),
 
     METADATA_REFRESH_INTERVAL("metadata.refresh.interval", 60000L, "刷新METADATA的时间间隔"),
 

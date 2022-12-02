@@ -194,6 +194,19 @@ public class QueryByBatch implements TableQuery {
     }
 
     @Override
+    public TableQuery setKeyRangeColumns(String... columns) {
+        this.getTableQuery().setKeyRangeColumns(columns);
+        return this;
+    }
+
+    @Override
+    public TableQuery useIndex(String indexName, String[] indexColumns) {
+        this.indexName(indexName);
+        this.setKeyRangeColumns(indexColumns);
+        return this;
+    }
+
+    @Override
     public void clear() {
         this.tableQuery.clear();
     }

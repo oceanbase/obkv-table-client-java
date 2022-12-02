@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.bolt.ObTableClientTestBase;
+import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.filter.*;
 import com.alipay.oceanbase.rpc.location.model.ObServerAddr;
 import com.alipay.oceanbase.rpc.location.model.ServerRoster;
@@ -26,6 +27,7 @@ import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.mutation.result.*;
 import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObQueryOperationType;
@@ -43,6 +45,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.awt.event.WindowStateListener;
 import java.lang.reflect.Field;
 import java.util.*;
 
@@ -1746,6 +1749,87 @@ public class ObTableClientTest extends ObTableClientTestBase {
                             .execute();
             Assert.assertEquals(0, appendResult.getAffectedRows());
 
+            // increment non-integer column without filter
+            try {
+                incrementResult =
+                        client.increment("test_mutation")
+                                .setRowKey(colVal("c1", 0L),
+                                           colVal("c2", "row_0"))
+                                .addMutateColVal(colVal("c3", 100L))
+                                .execute();
+                Assert.assertTrue(false);
+            } catch (Exception e) {
+                Assert.assertTrue(e instanceof ObTableException);
+                Assert.assertEquals(ResultCodes.OB_OBJ_TYPE_ERROR.errorCode, ((ObTableException) e).getErrorCode());
+            }
+            // increment non-integer column with filter
+            try {
+                incrementResult =
+                        client.increment("test_mutation")
+                                .setRowKey(colVal("c1", 0L),
+                                           colVal("c2", "row_0"))
+                                .addMutateColVal(colVal("c3", 100L))
+                                .setFilter(compareVal(ObCompareOp.EQ, "c4", 200L))
+                                .execute();
+            } catch (Exception e) {
+                Assert.assertTrue(e instanceof ObTableException);
+                Assert.assertEquals(ResultCodes.OB_OBJ_TYPE_ERROR.errorCode, ((ObTableException) e).getErrorCode());
+            }
+
+            // increment integer column with string
+            try {
+                incrementResult =
+                        client.increment("test_mutation")
+                                .setRowKey(colVal("c1", 0L),
+                                        colVal("c2", "row_0"))
+                                .addMutateColVal(colVal("c4", "hello world"))
+                                .setFilter(compareVal(ObCompareOp.EQ, "c4", 200L))
+                                .execute();
+            } catch (Exception e) {
+                Assert.assertTrue(e instanceof ObTableException);
+                Assert.assertEquals(ResultCodes.OB_OBJ_TYPE_ERROR.errorCode, ((ObTableException) e).getErrorCode());
+            }
+
+            // append non-string column without filter
+            try {
+                appendResult =
+                        client.append("test_mutation")
+                                .setRowKey(colVal("c1", 0L),
+                                           colVal("c2", "row_0"))
+                                .addMutateColVal(colVal("c4", new byte[1]))
+                                .execute();
+            } catch (Exception e) {
+                Assert.assertTrue(e instanceof ObTableException);
+                Assert.assertEquals(ResultCodes.OB_OBJ_TYPE_ERROR.errorCode, ((ObTableException) e).getErrorCode());
+            }
+
+            // append non-string column with filter
+            try {
+                appendResult =
+                        client.append("test_mutation")
+                                .setRowKey(colVal("c1", 0L),
+                                        colVal("c2", "row_0"))
+                                .addMutateColVal(colVal("c4", new byte[1]))
+                                .setFilter(compareVal(ObCompareOp.EQ, "c4", 200L))
+                                .execute();
+            } catch (Exception e) {
+                Assert.assertTrue(e instanceof ObTableException);
+                Assert.assertEquals(ResultCodes.OB_OBJ_TYPE_ERROR.errorCode, ((ObTableException) e).getErrorCode());
+            }
+
+            // append string column with integer
+            try {
+                appendResult =
+                        client.append("test_mutation")
+                                .setRowKey(colVal("c1", 0L),
+                                        colVal("c2", "row_0"))
+                                .addMutateColVal(colVal("c3", new byte[1]))
+                                .setFilter(compareVal(ObCompareOp.EQ, "c4", 200L))
+                                .execute();
+            } catch (Exception e) {
+                Assert.assertTrue(e instanceof ObTableException);
+                Assert.assertEquals(ResultCodes.OB_OBJ_TYPE_ERROR.errorCode, ((ObTableException) e).getErrorCode());
+            }
         } finally {
             client.delete("test_mutation")
                     .setRowKey(colVal("c1", 0L),
