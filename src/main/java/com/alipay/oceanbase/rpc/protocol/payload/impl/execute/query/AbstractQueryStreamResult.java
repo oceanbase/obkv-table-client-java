@@ -319,6 +319,10 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                 referToNewPartition(entry.getValue());
             }
             expectant.clear();
+        } else {
+            // query not support BatchSize, use queryByBatch instead queryByBatchV2
+            throw new ObTableException("query not support BatchSize, use queryByBatch / queryByBatchV2" +
+                    " instead, BatchSize:" + tableQuery.getBatchSize());
         }
         initialized = true;
     }

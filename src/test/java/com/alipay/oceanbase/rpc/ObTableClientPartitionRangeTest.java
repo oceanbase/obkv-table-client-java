@@ -22,6 +22,7 @@ import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,6 +52,13 @@ public class ObTableClientPartitionRangeTest {
         obTableClient.init();
 
         this.obTableClient = obTableClient;
+    }
+
+    @After
+    public void close() throws Exception {
+        if (null != this.obTableClient) {
+            ((ObTableClient) this.obTableClient).close();
+        }
     }
 
     @Test
