@@ -17,6 +17,8 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
+import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.mutation.ColumnValue;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
@@ -39,7 +41,8 @@ OB_UNIS_DEF_SERIALIZE(ObTableQuery,
      index_name_,
      batch_size_,
      max_result_size_,
-     htable_filter_));
+     htable_filter_,
+     key_range_columns));
  *
  */
 public class ObTableQuery extends AbstractPayload {
@@ -57,6 +60,7 @@ public class ObTableQuery extends AbstractPayload {
 
     private static final byte[] HTABLE_FILTER_DUMMY_BYTES = new byte[] { 0x01, 0x00 };
     private boolean             isHbaseQuery              = false;
+    private List<String>        keyRangeColumns          = new LinkedList<String>();
 
     /*
      * Encode.
@@ -122,6 +126,16 @@ public class ObTableQuery extends AbstractPayload {
             len = HTABLE_FILTER_DUMMY_BYTES.length;
             System.arraycopy(HTABLE_FILTER_DUMMY_BYTES, 0, bytes, idx, len);
         }
+        idx += len;
+
+        len = Serialization.getNeedBytes(keyRangeColumns.size());
+        System.arraycopy(Serialization.encodeVi64(keyRangeColumns.size()), 0, bytes, idx, len);
+        idx += len;
+        for (String keyRangeColumn : keyRangeColumns) {
+            len = Serialization.getNeedBytes(keyRangeColumn);
+            System.arraycopy(Serialization.encodeVString(keyRangeColumn), 0, bytes, idx, len);
+            idx += len;
+        }
 
         return bytes;
     }
@@ -169,6 +183,10 @@ public class ObTableQuery extends AbstractPayload {
             buf.readByte();
             buf.readByte();
         }
+        size = Serialization.decodeVi64(buf);
+        for (int i = 0; i < size; i++) {
+            this.keyRangeColumns.add(Serialization.decodeVString(buf));
+        }
 
         return this;
     }
@@ -201,6 +219,11 @@ public class ObTableQuery extends AbstractPayload {
         } else {
             contentSize += HTABLE_FILTER_DUMMY_BYTES.length;
         }
+        contentSize += Serialization.getNeedBytes(keyRangeColumns.size());
+        for (String keyRangeColumn : keyRangeColumns) {
+            contentSize += Serialization.getNeedBytes(keyRangeColumn);
+        }
+
         return contentSize;
     }
 
@@ -375,5 +398,26 @@ public class ObTableQuery extends AbstractPayload {
      */
     public void setHbaseQuery(boolean hbaseQuery) {
         isHbaseQuery = hbaseQuery;
+    }
+
+    /*
+     * Get select columns.
+     */
+    public List<String> getKeyRangeColumns() {
+        return keyRangeColumns;
+    }
+
+    /*
+     * Set select columns.
+     */
+    public void setScanRangeColumns(String... keyRangeColumns) {
+        this.keyRangeColumns.clear();
+        for (String keyRangeCol : keyRangeColumns) {
+            this.keyRangeColumns.add(keyRangeCol);
+        }
+    }
+
+    public void setScanRangeColumns(List<String> keyRangeColumns) {
+        this.keyRangeColumns = keyRangeColumns;
     }
 }
