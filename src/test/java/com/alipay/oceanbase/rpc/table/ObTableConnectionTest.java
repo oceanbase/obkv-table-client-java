@@ -48,9 +48,16 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
 
     @Test
     public void testVarcharConcurrent() throws Exception {
-        test_varchar_helper_thread("T101", 100);
-        test_varchar_helper_thread("T102", 100);
-        test_varchar_helper_thread("T103", 100);
+        obTableClient = ObTableClientTestUtil.newTestClient();
+        obTableClient.setMetadataRefreshInterval(100);
+        obTableClient.addProperty(Property.SERVER_CONNECTION_POOL_SIZE.getKey(),
+                Integer.toString(TEST_CONNECTION_POOL_SIZE));
+        obTableClient.init();
+        syncRefreshMetaHelper(obTableClient);
+
+        test_varchar_helper_thread(obTableClient, "T101", 100);
+        test_varchar_helper_thread(obTableClient, "T102", 100);
+        test_varchar_helper_thread(obTableClient, "T103", 100);
     }
 
     @Test
