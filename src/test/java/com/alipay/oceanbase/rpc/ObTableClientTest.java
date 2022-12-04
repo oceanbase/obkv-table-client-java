@@ -41,6 +41,7 @@ import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

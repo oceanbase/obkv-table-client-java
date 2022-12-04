@@ -60,7 +60,7 @@ public class ObTableQuery extends AbstractPayload {
 
     private static final byte[] HTABLE_FILTER_DUMMY_BYTES = new byte[] { 0x01, 0x00 };
     private boolean             isHbaseQuery              = false;
-    private List<String>        keyRangeColumns          = new LinkedList<String>();
+    private List<String>        scanRangeColumns          = new LinkedList<String>();
 
     /*
      * Encode.
@@ -128,10 +128,10 @@ public class ObTableQuery extends AbstractPayload {
         }
         idx += len;
 
-        len = Serialization.getNeedBytes(keyRangeColumns.size());
-        System.arraycopy(Serialization.encodeVi64(keyRangeColumns.size()), 0, bytes, idx, len);
+        len = Serialization.getNeedBytes(scanRangeColumns.size());
+        System.arraycopy(Serialization.encodeVi64(scanRangeColumns.size()), 0, bytes, idx, len);
         idx += len;
-        for (String keyRangeColumn : keyRangeColumns) {
+        for (String keyRangeColumn : scanRangeColumns) {
             len = Serialization.getNeedBytes(keyRangeColumn);
             System.arraycopy(Serialization.encodeVString(keyRangeColumn), 0, bytes, idx, len);
             idx += len;
@@ -185,7 +185,7 @@ public class ObTableQuery extends AbstractPayload {
         }
         size = Serialization.decodeVi64(buf);
         for (int i = 0; i < size; i++) {
-            this.keyRangeColumns.add(Serialization.decodeVString(buf));
+            this.scanRangeColumns.add(Serialization.decodeVString(buf));
         }
 
         return this;
@@ -219,9 +219,9 @@ public class ObTableQuery extends AbstractPayload {
         } else {
             contentSize += HTABLE_FILTER_DUMMY_BYTES.length;
         }
-        contentSize += Serialization.getNeedBytes(keyRangeColumns.size());
-        for (String keyRangeColumn : keyRangeColumns) {
-            contentSize += Serialization.getNeedBytes(keyRangeColumn);
+        contentSize += Serialization.getNeedBytes(scanRangeColumns.size());
+        for (String scanRangeColumn : scanRangeColumns) {
+            contentSize += Serialization.getNeedBytes(scanRangeColumn);
         }
 
         return contentSize;
@@ -403,21 +403,21 @@ public class ObTableQuery extends AbstractPayload {
     /*
      * Get select columns.
      */
-    public List<String> getKeyRangeColumns() {
-        return keyRangeColumns;
+    public List<String> getScanRangeColumns() {
+        return scanRangeColumns;
     }
 
     /*
      * Set select columns.
      */
-    public void setScanRangeColumns(String... keyRangeColumns) {
-        this.keyRangeColumns.clear();
-        for (String keyRangeCol : keyRangeColumns) {
-            this.keyRangeColumns.add(keyRangeCol);
+    public void setScanRangeColumns(String... scanRangeColumns) {
+        this.scanRangeColumns.clear();
+        for (String scanRangeCol : scanRangeColumns) {
+            this.scanRangeColumns.add(scanRangeCol);
         }
     }
 
-    public void setScanRangeColumns(List<String> keyRangeColumns) {
-        this.keyRangeColumns = keyRangeColumns;
+    public void setScanRangeColumns(List<String> scanRangeColumns) {
+        this.scanRangeColumns = scanRangeColumns;
     }
 }

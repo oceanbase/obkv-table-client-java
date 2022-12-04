@@ -94,15 +94,10 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         Map<Long, ObPair<Long, ObTable>> partitionObTables = new HashMap<Long, ObPair<Long, ObTable>>();
         List<Object> params = new ArrayList<>();
         if (obTableClient.isOdpMode()) {
-            if (tableQuery.getKeyRangeColumns().isEmpty()) {
+            if (tableQuery.getScanRangeColumns().isEmpty()) {
                 if (tableQuery.getIndexName() != null &&
                         !tableQuery.getIndexName().equalsIgnoreCase("primary")) {
                     throw new ObTableException("key range columns must be specified when use index");
-                }
-                if (obTableClient.getRunningMode() == ObTableClient.RunningMode.HBASE) {
-                    tableQuery.setScanRangeColumns(new ArrayList<>(HBASE_ROW_KEY_ELEMENT.keySet()));
-                } else if (obTableClient.getRowKeyElement(tableName) != null) {
-                    tableQuery.setScanRangeColumns(new ArrayList<>(obTableClient.getRowKeyElement(tableName).keySet()));
                 }
             }
             partitionObTables.put(0L, new ObPair<Long, ObTable>(0L, obTableClient.getOdpTable()));

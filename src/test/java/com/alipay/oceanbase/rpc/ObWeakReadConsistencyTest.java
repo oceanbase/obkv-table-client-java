@@ -56,6 +56,8 @@ public class ObWeakReadConsistencyTest {
 
     @BeforeClass
     public static void init() throws Exception {
+        // TODO: this test need refactored
+        Assert.assertTrue(false);
         ThreadLocalMap.setReadConsistency(ObReadConsistency.WEAK);
         cleanup();
         ObTableClient client = getObTableClient(paramUrl);
@@ -68,11 +70,13 @@ public class ObWeakReadConsistencyTest {
 
     @AfterClass
     public static void cleanup() throws Exception {
-        ObTableClient client = getObTableClient(paramUrl);
-        for (int i = 0; i < dataSetSize; i++) {
-            String key = "abc-" + i;
-            client.delete("test_varchar_table", key);
-        }
+        // TODO: this test need refactored
+        return;
+//        ObTableClient client = getObTableClient(paramUrl);
+//        for (int i = 0; i < dataSetSize; i++) {
+//            String key = "abc-" + i;
+//            client.delete("test_varchar_table", key);
+//        }
     }
 
     @Before
