@@ -121,7 +121,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     /*
      * TableName -> rowKey element
      */
-    private Map<String, LinkedHashMap<String, Integer>>       tableRowKeyElement                      = new ConcurrentHashMap<String, LinkedHashMap<String, Integer>>();
+    private Map<String, Map<String, Integer>>       tableRowKeyElement                      = new ConcurrentHashMap<String, Map<String, Integer>>();
     private boolean                                           retryOnChangeMasterTimes                = true;
     /*
      * TableName -> Failures/Lock
@@ -2375,7 +2375,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             throw new IllegalArgumentException("add row key element error table " + tableName
                                                + " column " + Arrays.toString(columns));
         }
-        LinkedHashMap<String, Integer> rowKeyElement = new LinkedHashMap<String, Integer>();
+        Map<String, Integer> rowKeyElement = new HashMap<String, Integer>();
         for (int i = 0; i < columns.length; i++) {
             rowKeyElement.put(columns[i], i);
         }
@@ -2392,10 +2392,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     public void setRunningMode(RunningMode runningMode) {
         this.runningMode = runningMode;
-    }
-
-    public RunningMode getRunningMode() {
-        return this.runningMode;
     }
 
     public enum RunningMode {

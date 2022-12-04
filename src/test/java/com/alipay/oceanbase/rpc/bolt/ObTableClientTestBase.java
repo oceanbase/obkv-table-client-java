@@ -692,6 +692,11 @@ public abstract class ObTableClientTestBase {
              `c2` varchar(20) DEFAULT NULL,
             PRIMARY KEY (`c1`)); partition by KEY(`c1`) partitions 3;
             )*/
+
+        // TODO: stream query is not supported in ODP mode
+        if (((ObTableClient) client).isOdpMode()) {
+            return;
+        }
         Object[] c1 = new Object[] { "123", "124", "234", "456", "567" };
         Object[] c2 = new Object[] { "123c2", "124c2", "234c2", "456c2", "567c2" };
         try {
