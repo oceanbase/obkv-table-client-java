@@ -41,8 +41,6 @@ public class ObTableConnection {
     private final ObTable        obTable;
     private long                uniqueId; // as trace0 in rpc header
     private AtomicLong          sequence; // as trace1 in rpc header
-    private int                 serverCapabilities;
-    public static final int      HANDLE_KEY_RANGE_COLUMNS = 1 << 0; // server has ability to handle key range columns
 
     public static long ipToLong(String strIp) {
         String[] ip = strIp.split("\\.");
@@ -136,7 +134,6 @@ public class ObTableConnection {
                     && result.getCredential().length() > 0) {
                     credential = result.getCredential();
                     tenantId = result.getTenantId();
-                    serverCapabilities = result.getServerCapabilities();
                     break;
                 }
             } catch (Exception e) {
@@ -276,10 +273,4 @@ public class ObTableConnection {
         return sequence.incrementAndGet();
     }
 
-    /*
-     * Can server handle key range columns.
-     */
-    public boolean canHandleKeyRangeColumns() {
-        return (serverCapabilities & HANDLE_KEY_RANGE_COLUMNS) != 0;
-    }
 }
