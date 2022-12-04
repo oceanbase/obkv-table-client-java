@@ -231,12 +231,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     public void checkStatus() throws IllegalStateException {
         if (!initialized) {
-            throw new IllegalStateException("param url " + paramURL + "fullUserName" + fullUserName
+            throw new IllegalStateException("param url " + paramURL +  "fullUserName " + fullUserName
                                             + " is not initialized");
         }
 
         if (closed) {
-            throw new IllegalStateException("param url " + paramURL + "fullUserName" + fullUserName
+            throw new IllegalStateException("param url " + paramURL + " fullUserName " + fullUserName
                                             + " is closed");
         }
     }

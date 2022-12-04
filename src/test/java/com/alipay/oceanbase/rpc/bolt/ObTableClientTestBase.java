@@ -1018,28 +1018,9 @@ public abstract class ObTableClientTestBase {
             resultSet = tableQuery.select("c2").primaryIndex().addScanRange("124", "123").execute();
             assertEquals(0, resultSet.cacheSize());
 
-            tableQuery.clear();
-            try {
-                tableQuery.select("c2").primaryIndex().addScanRange("12", "126")
-                        .addScanRange("456", "567").setBatchSize(1).execute();
-            } catch (Exception e) {
-                if (e instanceof ObTableException) {
-                    assertTrue(true);
-                } else {
-                    System.out.println("Wrong Exception: " + e);
-                    fail();
-                }
-            }
-
-            if (((ObTableClient) client).isOdpMode()) {
-                // TODO: ODP support stream result
-                return;
-            }
-
-            tableQuery = client.queryByBatchV2("test_varchar_table");
             resultSet = tableQuery.select("c2").primaryIndex().addScanRange("12", "126")
-                .addScanRange("456", "567").setBatchSize(1).execute();
-            assertEquals(0, resultSet.cacheSize());
+                .addScanRange("456", "567").execute();
+            assertEquals(4, resultSet.cacheSize());
             for (int i = 0; i < 1; i++) {
                 Assert.assertTrue(resultSet.next());
                 Map<String, Object> value = resultSet.getRow();
@@ -1058,94 +1039,96 @@ public abstract class ObTableClientTestBase {
                 Assert.assertTrue(e.getMessage().contains("closed"));
             }
 
+            // TODO: add test to check query timeout
+
             tableQuery.clear();
             resultSet = tableQuery.select("c2").primaryIndex().addScanRange("12", "126")
-                .addScanRange("456", "567").setBatchSize(1).setOperationTimeout(1000).execute();
-            assertEquals(0, resultSet.cacheSize());
+                .addScanRange("456", "567").setOperationTimeout(3000).execute();
+            assertEquals(4, resultSet.cacheSize());
             Assert.assertTrue(resultSet.next());
             Thread.sleep(2000);
+            resultSet.next();
+            resultSet.close();
+
+            tableQuery.clear();
+            resultSet = tableQuery.select("c2").primaryIndex().scanOrder(true)
+                .addScanRangeStartsWith(new Object[] { "12" })
+                .setOperationTimeout(3000).execute();
+            assertEquals(5, resultSet.cacheSize());
+            Assert.assertTrue(resultSet.next());
+            Thread.sleep(2000);
+            resultSet.next();
+            resultSet.close();
+
+            tableQuery.clear();
+            resultSet = tableQuery.select("c2").primaryIndex().scanOrder(true)
+                .addScanRangeEndsWith(new Object[] { "126" })
+                .setOperationTimeout(3000).execute();
+            assertEquals(2, resultSet.cacheSize());
+            Assert.assertTrue(resultSet.next());
+            Thread.sleep(2000);
+            resultSet.next();
+            resultSet.close();
+
+            tableQuery.clear();
             try {
-                resultSet.next();
-                fail();
-            } catch (ObTableException e) {
-                // ob 1.x 版本和 ob 2.x 版本 errorCode 不一致
-                Assert.assertTrue(e.getErrorCode() == ResultCodes.OB_TRANS_TIMEOUT.errorCode
-                                  || e.getErrorCode() == ResultCodes.OB_TRANS_ROLLBACKED.errorCode);
+                tableQuery.select("c2").addScanRange("12", "126")
+                        .addScanRange("456", "567").setBatchSize(1).execute();
+            } catch (Exception e) {
+                if (e instanceof ObTableException) {
+                    assertTrue(true);
+                } else {
+                    System.out.println("Wrong Exception: " + e);
+                    fail();
+                }
             }
-
-            tableQuery.clear();
-            resultSet = tableQuery.select("c2").primaryIndex().addScanRange("12", "126")
-                .addScanRange("456", "567").setBatchSize(1).setOperationTimeout(3000).execute();
-            assertEquals(0, resultSet.cacheSize());
-            Assert.assertTrue(resultSet.next());
-            Thread.sleep(2000);
-            resultSet.next();
-            resultSet.close();
-
-            tableQuery.clear();
-            resultSet = tableQuery.select("c2").primaryIndex().scanOrder(true)
-                .addScanRangeStartsWith(new Object[] { "12" }).setBatchSize(1)
-                .setOperationTimeout(3000).execute();
-            assertEquals(0, resultSet.cacheSize());
-            Assert.assertTrue(resultSet.next());
-            Thread.sleep(2000);
-            resultSet.next();
-            resultSet.close();
-
-            tableQuery.clear();
-            resultSet = tableQuery.select("c2").primaryIndex().scanOrder(true)
-                .addScanRangeEndsWith(new Object[] { "126" }).setBatchSize(1)
-                .setOperationTimeout(3000).execute();
-            assertEquals(0, resultSet.cacheSize());
-            Assert.assertTrue(resultSet.next());
-            Thread.sleep(2000);
-            resultSet.next();
-            resultSet.close();
         } finally {
             client.delete("test_varchar_table", "123");
             client.delete("test_varchar_table", "124");
+            client.delete("test_varchar_table", "125");
             client.delete("test_varchar_table", "234");
             client.delete("test_varchar_table", "456");
             client.delete("test_varchar_table", "567");
         }
     }
 
-    private void test_varchar_get_helper(String key, String value) throws Exception {
-        Map<String, Object> values = client.get("test_varchar_table", key, new String[] { "c2" });
+    private void test_varchar_get_helper(ObTableClient obTableClient, String key, String value) throws Exception {
+        Map<String, Object> values = obTableClient.get("test_varchar_table", key, new String[] { "c2" });
         assertNotNull(values);
         assertEquals(value, values.get("c2"));
     }
 
-    private void test_varchar_insert_helper(String key, String value) throws Exception {
-        long affectedRows = client.insert("test_varchar_table", key, new String[] { "c2" },
+    private void test_varchar_insert_helper(ObTableClient obTableClient, String key, String value) throws Exception {
+        long affectedRows = obTableClient.insert("test_varchar_table", key, new String[] { "c2" },
             new String[] { value });
         assertEquals(1L, affectedRows);
     }
 
-    public void test_varchar_helper(String prefix, int count) throws Exception {
+    public void test_varchar_helper(ObTableClient obTableClient, String prefix, int count) throws Exception {
         String keyPrefix = "K" + prefix;
         String valPrefix = "V" + prefix;
         try {
             for (int i = 0; i < count; i++) {
-                test_varchar_insert_helper(keyPrefix + i, valPrefix + i);
+                test_varchar_insert_helper(obTableClient, keyPrefix + i, valPrefix + i);
             }
             for (int i = 0; i < count; i++) {
-                test_varchar_get_helper(keyPrefix + i, valPrefix + i);
+                test_varchar_get_helper(obTableClient, keyPrefix + i, valPrefix + i);
             }
         } finally {
             for (int i = 0; i < count; i++) {
-                client.delete("test_varchar_table", keyPrefix + i);
+                long affectedRows = obTableClient.delete("test_varchar_table", keyPrefix + i);
+                assertEquals(1, affectedRows);
             }
         }
     }
 
-    public void test_varchar_helper_thread(final String prefix, final int count) throws Exception {
+    public void test_varchar_helper_thread(final ObTableClient obTableClient, final String prefix, final int count) throws Exception {
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
                     long start = System.currentTimeMillis();
-                    test_varchar_helper(prefix, count);
+                    test_varchar_helper(obTableClient, prefix, count);
                     System.err.println("cost: " + (System.currentTimeMillis() - start));
                 } catch (Exception e) {
                     e.printStackTrace();
