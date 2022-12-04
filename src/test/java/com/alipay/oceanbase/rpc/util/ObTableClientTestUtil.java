@@ -28,26 +28,11 @@ public class ObTableClientTestUtil {
 
     public static ObTableClient newTestClient() throws Exception {
         ObTableClient obTableClient = new ObTableClient();
-//        obTableClient.setFullUserName(FULL_USER_NAME);
-//        obTableClient.setParamURL(PARAM_URL);
-//        obTableClient.setPassword(PASSWORD);
-//        obTableClient.setSysUserName(PROXY_SYS_USER_NAME);
-//        obTableClient.setSysPassword(PROXY_SYS_USER_PASSWORD);
-       // dazhi's obproxy
-        obTableClient.setOdpAddr("11.162.218.236");
-        obTableClient.setOdpPort(2885);
-        obTableClient.setFullUserName("root@mysql#ob11.shenyunlong.syl.11.158.77.144");
-        obTableClient.setPassword("");
-        obTableClient.setDatabase("test");
-        obTableClient.setOdpMode(true);
-
-        // baigui's obproxy
-//        obTableClient.setOdpAddr("100.88.147.30");
-//        obTableClient.setOdpPort(2885);
-//        obTableClient.setFullUserName("test@mysql#ob96.heshi.zhs");
-//        obTableClient.setPassword("test");
-//        obTableClient.setDatabase("test");
-//        obTableClient.setOdpMode(true);
+        obTableClient.setFullUserName(FULL_USER_NAME);
+        obTableClient.setParamURL(PARAM_URL);
+        obTableClient.setPassword(PASSWORD);
+        obTableClient.setSysUserName(PROXY_SYS_USER_NAME);
+        obTableClient.setSysPassword(PROXY_SYS_USER_PASSWORD);
         return obTableClient;
     }
 }
