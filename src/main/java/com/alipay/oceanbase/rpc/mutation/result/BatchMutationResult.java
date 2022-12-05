@@ -39,7 +39,8 @@ public class BatchMutationResult {
      */
     public MutationResult get(int pos) {
         if (pos >= results.size()) {
-            throw new IllegalArgumentException("Invalid pos: " + pos + ", while size of results is: " + results.size());
+            throw new IllegalArgumentException("Invalid pos: " + pos
+                                               + ", while size of results is: " + results.size());
         }
         return (MutationResult) results.get(pos);
     }

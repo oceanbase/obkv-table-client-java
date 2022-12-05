@@ -27,7 +27,8 @@ public class ObTableValueFilter extends ObTableFilter {
     /*
      * construct with ObCompareOp / String / Object
      */
-    public ObTableValueFilter(ObCompareOp op, String columnName, Object value) throws ObTableException {
+    public ObTableValueFilter(ObCompareOp op, String columnName, Object value)
+                                                                              throws ObTableException {
         if (op == ObCompareOp.IS || op == ObCompareOp.IS_NOT) {
             if (value != null) {
                 throw new ObTableException(String.format("the value of compare op %s must be null",

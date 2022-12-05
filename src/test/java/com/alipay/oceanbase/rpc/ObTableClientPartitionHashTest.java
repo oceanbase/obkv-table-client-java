@@ -150,26 +150,21 @@ public class ObTableClientPartitionHashTest {
     @Test
     public void testQuery() throws Exception {
         long timeStamp = System.currentTimeMillis();
-        obTableClient.insert("testHash",
-                new Object[] { timeStamp, "partition".getBytes(), timeStamp },
-                new String[] { "V" }, new Object[] { "value0".getBytes() });
-        obTableClient.insert("testHash",
-                new Object[] { timeStamp + 1, "partition".getBytes(), timeStamp + 1 },
-                new String[] { "V" }, new Object[] { "value1".getBytes() });
-        obTableClient.insert("testHash",
-                new Object[] { timeStamp + 2, "partition".getBytes(), timeStamp + 2 },
-                new String[] { "V" }, new Object[] { "value2".getBytes() });
-        obTableClient.insert("testHash",
-                new Object[] { timeStamp + 3, "partition".getBytes(), timeStamp + 3 },
-                new String[] { "V" }, new Object[] { "value3".getBytes() });
-        obTableClient.insert("testHash",
-                new Object[] { timeStamp + 4, "partition".getBytes(), timeStamp + 4 },
-                new String[] { "V" }, new Object[] { "value4".getBytes() });
+        obTableClient.insert("testHash", new Object[] { timeStamp, "partition".getBytes(),
+                timeStamp }, new String[] { "V" }, new Object[] { "value0".getBytes() });
+        obTableClient.insert("testHash", new Object[] { timeStamp + 1, "partition".getBytes(),
+                timeStamp + 1 }, new String[] { "V" }, new Object[] { "value1".getBytes() });
+        obTableClient.insert("testHash", new Object[] { timeStamp + 2, "partition".getBytes(),
+                timeStamp + 2 }, new String[] { "V" }, new Object[] { "value2".getBytes() });
+        obTableClient.insert("testHash", new Object[] { timeStamp + 3, "partition".getBytes(),
+                timeStamp + 3 }, new String[] { "V" }, new Object[] { "value3".getBytes() });
+        obTableClient.insert("testHash", new Object[] { timeStamp + 4, "partition".getBytes(),
+                timeStamp + 4 }, new String[] { "V" }, new Object[] { "value4".getBytes() });
 
         // query with one partition
         TableQuery tableQuery = obTableClient.query("testHash");
-        tableQuery.addScanRange(new Object[] { timeStamp, "partition".getBytes(), timeStamp},
-                                new Object[] { timeStamp, "partition".getBytes(), timeStamp});
+        tableQuery.addScanRange(new Object[] { timeStamp, "partition".getBytes(), timeStamp },
+            new Object[] { timeStamp, "partition".getBytes(), timeStamp });
         tableQuery.select("K", "Q", "T", "V");
         QueryResultSet result = tableQuery.execute();
         Assert.assertEquals(1L, result.cacheSize());
@@ -185,7 +180,7 @@ public class ObTableClientPartitionHashTest {
         // query with multiply partitions
         tableQuery = obTableClient.query("testHash");
         tableQuery.addScanRange(new Object[] { timeStamp, "partition".getBytes(), timeStamp },
-                                new Object[] { timeStamp + 10, "partition".getBytes(), timeStamp });
+            new Object[] { timeStamp + 10, "partition".getBytes(), timeStamp });
         tableQuery.select("K", "Q", "T", "V");
         result = tableQuery.execute();
         Assert.assertEquals(5, result.cacheSize());

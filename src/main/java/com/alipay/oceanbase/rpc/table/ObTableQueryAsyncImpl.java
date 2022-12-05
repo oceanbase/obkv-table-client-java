@@ -69,6 +69,7 @@ public class ObTableQueryAsyncImpl extends AbstractTableQueryImpl {
 
     /**
      * Get table.
+     * @return table
      */
     public ObTable getTable() {
         return table;
