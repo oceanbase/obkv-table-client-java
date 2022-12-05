@@ -24,18 +24,17 @@ import java.util.List;
  * Suggest all filter should create by this util class
  */
 public class ObTableFilterFactory {
-    public static ObTableFilterList andList(ObTableFilter... filters)  {
+    public static ObTableFilterList andList(ObTableFilter... filters) {
         return new ObTableFilterList(ObTableFilterList.operator.AND, filters);
     }
 
-    public static ObTableFilterList orList(ObTableFilter... filters)  {
+    public static ObTableFilterList orList(ObTableFilter... filters) {
         return new ObTableFilterList(ObTableFilterList.operator.OR, filters);
     }
 
-    public static ObTableValueFilter compareVal(ObCompareOp op,
-                                                String columnName, Object value) {
+    public static ObTableValueFilter compareVal(ObCompareOp op, String columnName, Object value) {
         return new ObTableValueFilter(op, columnName, value);
-}
+    }
 
     public static ObTableInFilter in(String columnName, Object... values) {
         return new ObTableInFilter(columnName, values);

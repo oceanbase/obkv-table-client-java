@@ -117,6 +117,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
 
     /**
      * Set client.
+     * @param client client want to set
      */
     public void setClient(ObTableClient client) {
         this.client = client;

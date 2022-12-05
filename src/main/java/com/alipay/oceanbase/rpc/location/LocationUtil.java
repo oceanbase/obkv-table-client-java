@@ -379,7 +379,7 @@ public class LocationUtil {
                                                     final long socketTimeout,
                                                     final ObUserAuth sysUA,
                                                     final boolean initialized)
-                                                                                                     throws ObTableEntryRefreshException {
+                                                                              throws ObTableEntryRefreshException {
         return callTableEntryRefresh(randomObServers(rsList), key, connectTimeout, socketTimeout,
             sysUA, initialized, new TableEntryRefreshCallback<TableEntry>() {
                 @Override
@@ -389,8 +389,9 @@ public class LocationUtil {
             });
     }
 
-    private static TableEntry getTableEntryFromRemote(Connection connection, TableEntryKey key, boolean initialized)
-                                                                                               throws ObTableEntryRefreshException {
+    private static TableEntry getTableEntryFromRemote(Connection connection, TableEntryKey key,
+                                                      boolean initialized)
+                                                                          throws ObTableEntryRefreshException {
         PreparedStatement ps = null;
         ResultSet rs = null;
         TableEntry tableEntry;
@@ -555,16 +556,16 @@ public class LocationUtil {
                 Map<ObPartitionKey, Long> sets = parseFirstPartSets(rs, tableEntry);
                 ((ObListPartDesc) tableEntry.getPartitionInfo().getFirstPartDesc()).setSets(sets);
                 if (logger.isInfoEnabled()) {
-                    logger.info(format(
-                        "uuid:%s, get first list sets from remote for %s, sets=%s", uuid, tableName, JSON.toJSON(sets)));
+                    logger.info(format("uuid:%s, get first list sets from remote for %s, sets=%s",
+                        uuid, tableName, JSON.toJSON(sets)));
                 }
             }
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00011"), tableEntry, obPartFuncType, e);
 
             throw new ObTablePartitionInfoRefreshException(format(
-                "fail to get first part from remote for %s, tableEntry=%s partFuncType=%s", tableName, tableEntry,
-                obPartFuncType), e);
+                "fail to get first part from remote for %s, tableEntry=%s partFuncType=%s",
+                tableName, tableEntry, obPartFuncType), e);
         } finally {
             try {
                 if (null != rs) {
@@ -605,14 +606,14 @@ public class LocationUtil {
                     .setBounds(bounds);
                 if (logger.isInfoEnabled()) {
                     logger.info(format("uuid:%s, get sub ranges from remote for %s, bounds=%s",
-                            uuid, tableName, JSON.toJSON(bounds)));
+                        uuid, tableName, JSON.toJSON(bounds)));
                 }
             } else if (subPartFuncType.isListPart()) {
                 Map<ObPartitionKey, Long> sets = parseSubPartSets(rs, tableEntry);
                 ((ObListPartDesc) tableEntry.getPartitionInfo().getSubPartDesc()).setSets(sets);
                 if (logger.isInfoEnabled()) {
-                    logger.info(format(
-                            "uuid:%s, get sub list sets from remote, sets=%s", uuid, JSON.toJSON(sets)));
+                    logger.info(format("uuid:%s, get sub list sets from remote, sets=%s", uuid,
+                        JSON.toJSON(sets)));
                 }
             }
         } catch (Exception e) {
@@ -704,8 +705,8 @@ public class LocationUtil {
             if (location == null) {
                 RUNTIME.error(LCD.convert("01-00013"), i, partitionEntry, tableEntry);
                 RUNTIME.error(format(
-                        "partition num=%d is not exist partitionEntry=%s original tableEntry=%s", i,
-                        partitionEntry, tableEntry));
+                    "partition num=%d is not exist partitionEntry=%s original tableEntry=%s", i,
+                    partitionEntry, tableEntry));
                 throw new ObTablePartitionNotExistException(format(
                     "partition num=%d is not exist partitionEntry=%s original tableEntry=%s", i,
                     partitionEntry, tableEntry));
@@ -713,8 +714,8 @@ public class LocationUtil {
             if (location.getLeader() == null) {
                 RUNTIME.error(LCD.convert("01-00028"), i, partitionEntry, tableEntry);
                 RUNTIME.error(format(
-                        "partition num=%d has no leader partitionEntry=%s original tableEntry=%s", i,
-                        partitionEntry, tableEntry));
+                    "partition num=%d has no leader partitionEntry=%s original tableEntry=%s", i,
+                    partitionEntry, tableEntry));
                 throw new ObTablePartitionNoMasterException(format(
                     "partition num=%d has no leader partitionEntry=%s original tableEntry=%s", i,
                     partitionEntry, tableEntry));
@@ -1088,8 +1089,7 @@ public class LocationUtil {
             setsStr = (null == setsStr) ? "" : setsStr.trim();
             if (setsStr.length() < 2) {
                 RUNTIME.error(LCD.convert("01-00016"), setsStr, tableEntry.toString());
-                RUNTIME.error(format(
-                        "high_bound_val value is error, high_bound_val=%s", setsStr));
+                RUNTIME.error(format("high_bound_val value is error, high_bound_val=%s", setsStr));
                 // if partition value format is wrong, directly throw exception
                 throw new IllegalArgumentException(format(
                     "high_bound_val value is error, high_bound_val=%s, tableEntry=%s", setsStr,
@@ -1165,8 +1165,8 @@ public class LocationUtil {
         }
 
         if (obServerAddrs.isEmpty()) {
-            RUNTIME.error("load rs list failed dataSource: " + dataSourceName
-                    + " paramURL:" + paramURL + " response:" + ocpResponse);
+            RUNTIME.error("load rs list failed dataSource: " + dataSourceName + " paramURL:"
+                          + paramURL + " response:" + ocpResponse);
             throw new RuntimeException("load rs list failed dataSource: " + dataSourceName
                                        + " paramURL:" + paramURL + " response:" + ocpResponse);
         }
@@ -1216,7 +1216,8 @@ public class LocationUtil {
         }
 
         if (tries >= tryTimes) {
-            RUNTIME.error("Fail to get OCP response after " + tryTimes + " tries from [" + paramURL);
+            RUNTIME
+                .error("Fail to get OCP response after " + tryTimes + " tries from [" + paramURL);
             throw new ObTableRetryExhaustedException("Fail to get OCP response after " + tryTimes
                                                      + " tries from [" + paramURL
                                                      + "], the content is [" + content + "]", cause);
@@ -1259,8 +1260,8 @@ public class LocationUtil {
 
         if (tries >= tryTimes) {
             RUNTIME.error(LCD.convert("01-00017"), "OCP IdcRegion after" + tryTimes
-                                                  + " tries from [" + paramURL
-                                                  + "], the content is [" + content + "]");
+                                                   + " tries from [" + paramURL
+                                                   + "], the content is [" + content + "]");
         }
         return null;
     }

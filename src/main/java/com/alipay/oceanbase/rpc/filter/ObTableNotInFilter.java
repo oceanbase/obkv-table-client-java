@@ -25,7 +25,7 @@ import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.andList;
 import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.compareVal;
 
 public class ObTableNotInFilter extends ObTableFilter {
-    private String columnName;
+    private String   columnName;
     private Object[] values;
 
     /**
@@ -38,7 +38,7 @@ public class ObTableNotInFilter extends ObTableFilter {
             throw new ObTableException("column name is null");
         }
 
-        if (null == values || values.length == 0){
+        if (null == values || values.length == 0) {
             throw new ObTableException("not in filter values should not be empty");
         }
 
@@ -47,7 +47,7 @@ public class ObTableNotInFilter extends ObTableFilter {
     }
 
     /**
-     * construct with String / List<Object>
+     * construct with String / List of Object
      * @param columnName column name
      * @param values values
      */
@@ -56,7 +56,7 @@ public class ObTableNotInFilter extends ObTableFilter {
             throw new ObTableException("column name is null");
         }
 
-        if (null == values || values.isEmpty()){
+        if (null == values || values.isEmpty()) {
             throw new ObTableException("not in filter values should not be empty");
         }
 
