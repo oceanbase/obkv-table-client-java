@@ -284,13 +284,6 @@ public class ObTableClientPartitionKeyTest {
                 tableQuery.select("K", "Q", "T", "V");
                 result = tableQuery.execute();
                 Assert.assertEquals(3, result.cacheSize());
-
-                Assert.assertEquals(true, result.next());
-                row = result.getRow();
-                Assert.assertEquals("key1_1", new String((byte[]) row.get("K")));
-                Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
-                Assert.assertEquals(timeStamp + 1, row.get("T"));
-                Assert.assertEquals("value2", new String((byte[]) row.get("V")));
             } catch (Exception e) {
                 e.printStackTrace();
                 Assert.assertTrue(false);
