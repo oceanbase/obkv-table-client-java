@@ -24,6 +24,8 @@ public abstract class ObTableFilter {
     /*
      * to string
      */
-    public String toString() { return null; };
+    public String toString() {
+        return null;
+    };
 
 }

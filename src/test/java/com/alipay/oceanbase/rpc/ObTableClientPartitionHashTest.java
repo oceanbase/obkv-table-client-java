@@ -240,7 +240,6 @@ public class ObTableClientPartitionHashTest {
             obTableClient.delete("testHash",
                     new Object[] { timeStamp + 4, "partition".getBytes(), timeStamp + 4 });
         }
-
     }
 
     @Test

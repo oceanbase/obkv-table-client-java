@@ -33,7 +33,7 @@ public class ObWeakReadConsistencyTest {
     private static final String weakParamUrl = paramUrl
                                                + "&read_consistency=weak&ob_route_policy=follower_first";
     private static final int    dataSetSize  = 10;
-    private static String   testIdc        = "dev";
+    private static String       testIdc      = "dev";
     protected ObTableClient     client;
 
     public static void initZoneClient() {
@@ -72,11 +72,11 @@ public class ObWeakReadConsistencyTest {
     public static void cleanup() throws Exception {
         // TODO: this test need refactored
         return;
-//        ObTableClient client = getObTableClient(paramUrl);
-//        for (int i = 0; i < dataSetSize; i++) {
-//            String key = "abc-" + i;
-//            client.delete("test_varchar_table", key);
-//        }
+        //        ObTableClient client = getObTableClient(paramUrl);
+        //        for (int i = 0; i < dataSetSize; i++) {
+        //            String key = "abc-" + i;
+        //            client.delete("test_varchar_table", key);
+        //        }
     }
 
     @Before

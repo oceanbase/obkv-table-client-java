@@ -38,16 +38,14 @@ public class ObTableConnection {
     private ObBytesString       credential;
     private long                tenantId = 1;                                    //默认值切勿不要随意改动
     private Connection          connection;
-    private final ObTable        obTable;
-    private long                uniqueId; // as trace0 in rpc header
-    private AtomicLong          sequence; // as trace1 in rpc header
+    private final ObTable       obTable;
+    private long                uniqueId;                                        // as trace0 in rpc header
+    private AtomicLong          sequence;                                        // as trace1 in rpc header
 
     public static long ipToLong(String strIp) {
         String[] ip = strIp.split("\\.");
-        return (Long.parseLong(ip[0]) << 24) +
-               (Long.parseLong(ip[1]) << 16) +
-               (Long.parseLong(ip[2]) << 8) +
-               (Long.parseLong(ip[3]));
+        return (Long.parseLong(ip[0]) << 24) + (Long.parseLong(ip[1]) << 16)
+               + (Long.parseLong(ip[2]) << 8) + (Long.parseLong(ip[3]));
     }
 
     /*
@@ -73,10 +71,10 @@ public class ObTableConnection {
          * reserved_: 14;
          */
         long ip = ipToLong(connection.getLocalIP());
-        long port = (long)connection.getLocalPort() << 32;
+        long port = (long) connection.getLocalPort() << 32;
         long isUserRequest = (1l << (32 + 16));
         long reserved = 0;
-        uniqueId = ip|port|isUserRequest|reserved;
+        uniqueId = ip | port | isUserRequest | reserved;
     }
 
     private synchronized boolean connect() throws Exception {

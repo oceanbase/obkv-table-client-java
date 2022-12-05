@@ -145,23 +145,14 @@ public class Update extends Mutation<Update> {
 
         if (null == getQuery()) {
             // simple update, without filter
-            return new MutationResult(
-                    ((ObTableClient) getClient()).
-                            updateWithResult(getTableName(),
-                                    getRowKey(),
-                                    columns.toArray(new String[0]),
-                                    values.toArray()));
+            return new MutationResult(((ObTableClient) getClient()).updateWithResult(
+                getTableName(), getRowKey(), columns.toArray(new String[0]), values.toArray()));
         } else {
             // QueryAndUpdate
             getQuery().select(getSelectedColumns());
-            return new MutationResult(
-                    ((ObTableClient) getClient()).
-                            mutationWithFilter(getQuery(),
-                                    getRowKey(),
-                                    ObTableOperationType.UPDATE,
-                                    columns.toArray(new String[0]),
-                                    values.toArray(),
-                                    false));
+            return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
+                getRowKey(), ObTableOperationType.UPDATE, columns.toArray(new String[0]),
+                values.toArray(), false));
         }
     }
 }
