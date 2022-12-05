@@ -213,7 +213,7 @@ public class ObNewRange implements ObSimplePayload {
     {
         ObNewRange range = new ObNewRange();
         range.startKey = ObRowKey.getMinRow();
-        range.endKey = ObRowKey.getMinRow();
+        range.endKey = ObRowKey.getMaxRow();
         range.borderFlag.unsetInclusiveStart();
         range.borderFlag.unsetInclusiveEnd();
         return range;
