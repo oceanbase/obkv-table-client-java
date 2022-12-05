@@ -34,12 +34,12 @@ public class TableClientLoggerFactory {
     public static LogCode2Description LCD                                 = LogCode2Description
                                                                               .create(OCEANBASE_TABLE_CLIENT_LOGGER_SPACE);
 
-    public static Logger               BOOT                               = NOPLogger.NOP_LOGGER;
-    public static Logger               MONITOR                            = NOPLogger.NOP_LOGGER;
-    public static Logger               RUNTIME                            = NOPLogger.NOP_LOGGER;
+    public static Logger              BOOT                                = NOPLogger.NOP_LOGGER;
+    public static Logger              MONITOR                             = NOPLogger.NOP_LOGGER;
+    public static Logger              RUNTIME                             = NOPLogger.NOP_LOGGER;
 
     static {
-        BOOT    = getBootLogger();
+        BOOT = getBootLogger();
         MONITOR = getMonitorLogger();
         RUNTIME = getRUNTIMELogger();
     }
@@ -54,7 +54,8 @@ public class TableClientLoggerFactory {
             MultiAppLoggerSpaceManager.init(OCEANBASE_TABLE_CLIENT_LOGGER_SPACE, null);
         }
 
-        return MultiAppLoggerSpaceManager.getLoggerBySpace(name, OCEANBASE_TABLE_CLIENT_LOGGER_SPACE);
+        return MultiAppLoggerSpaceManager.getLoggerBySpace(name,
+            OCEANBASE_TABLE_CLIENT_LOGGER_SPACE);
     }
 
     public static Logger getLogger(Class<?> klass) {
@@ -97,6 +98,6 @@ public class TableClientLoggerFactory {
 
     public static void changeLevel(String name, String level) {
         MultiAppLoggerSpaceManager.setLoggerLevel(name, OCEANBASE_TABLE_CLIENT_LOGGER_SPACE,
-                AdapterLevel.getAdapterLevel(level));
+            AdapterLevel.getAdapterLevel(level));
     }
 }

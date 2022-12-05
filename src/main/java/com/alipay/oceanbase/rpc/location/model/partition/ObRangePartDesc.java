@@ -188,21 +188,20 @@ public class ObRangePartDesc extends ObPartDesc {
     public int getBoundsIdx(Object... rowKey) {
         if (rowKey.length != rowKeyElement.size()) {
             throw new IllegalArgumentException("row key is consist of " + rowKeyElement
-                    + "but found" + Arrays.toString(rowKey));
+                                               + "but found" + Arrays.toString(rowKey));
         }
 
         try {
             List<Object> evalParams = evalRowKeyValues(rowKey);
             List<Comparable> comparableElement = super.initComparableElementByTypes(evalParams,
-                    this.orderedCompareColumns);
+                this.orderedCompareColumns);
             ObPartitionKey searchKey = ObPartitionKey.getInstance(orderedCompareColumns,
-                    comparableElement);
+                comparableElement);
             return upperBound(this.bounds, new ObComparableKV<ObPartitionKey, Long>(searchKey,
-                    (long) -1));
+                (long) -1));
         } catch (IllegalArgumentException e) {
             RUNTIME.error(LCD.convert("01-00025"), e);
-            throw new IllegalArgumentException(
-                    "ObRangePartDesc get getBoundsIdx error", e);
+            throw new IllegalArgumentException("ObRangePartDesc get getBoundsIdx error", e);
         }
 
     }

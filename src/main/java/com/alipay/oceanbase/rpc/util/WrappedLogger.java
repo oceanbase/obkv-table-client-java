@@ -1,3 +1,20 @@
+/*-
+ * #%L
+ * com.oceanbase:obkv-table-client
+ * %%
+ * Copyright (C) 2021 - 2022 OceanBase
+ * %%
+ * OBKV Table Client Framework is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * #L%
+ */
+
 package com.alipay.oceanbase.rpc.util;
 
 import org.slf4j.Logger;
@@ -5,8 +22,6 @@ import org.slf4j.Marker;
 import com.alipay.remoting.util.StringUtils;
 
 /**
- * <p>
- * </p>
  * <p> Date: 2016-08-17 Time: 10:22 </p>
  *
  * @author jiyong.jy
@@ -23,7 +38,7 @@ public class WrappedLogger implements Logger {
         StringBuilder stringBuilder = new StringBuilder();
         String traceId = getTraceId();
         if (StringUtils.isNotBlank(traceId)) {
-            stringBuilder.append(traceId).append("-");   
+            stringBuilder.append(traceId).append("-");
         }
         stringBuilder.append(s);
         return stringBuilder.toString();

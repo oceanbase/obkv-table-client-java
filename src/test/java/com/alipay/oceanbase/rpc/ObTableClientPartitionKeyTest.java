@@ -169,16 +169,16 @@ public class ObTableClientPartitionKeyTest {
         if (!obTableClient.isOdpMode()) {
             tableName = "testPartition";
             obTableClient.insert(tableName,
-                    new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
-                    new String[] { "V" }, new Object[] { "value1".getBytes() });
+                new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
+                new String[] { "V" }, new Object[] { "value1".getBytes() });
             obTableClient.insert(tableName,
-                    new Object[] { "key1_5".getBytes(), "partition".getBytes(), timeStamp },
-                    new String[] { "V" }, new Object[] { "value2".getBytes() });
+                new Object[] { "key1_5".getBytes(), "partition".getBytes(), timeStamp },
+                new String[] { "V" }, new Object[] { "value2".getBytes() });
 
             TableQuery tableQuery = obTableClient.query(tableName);
             tableQuery.addScanRange(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
-                            timeStamp },
-                    new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp });
+                    timeStamp }, new Object[] { "key2_1".getBytes(), "partition".getBytes(),
+                    timeStamp });
             tableQuery.select("K", "Q", "T", "V", "K_PREFIX");
             try {
                 tableQuery.execute();
@@ -188,8 +188,8 @@ public class ObTableClientPartitionKeyTest {
             }
             tableQuery = obTableClient.query(tableName);
             tableQuery.addScanRange(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
-                            timeStamp },
-                    new Object[] { "key1_3".getBytes(), "partition".getBytes(), timeStamp });
+                    timeStamp }, new Object[] { "key1_3".getBytes(), "partition".getBytes(),
+                    timeStamp });
             tableQuery.select("K", "Q", "T", "V");
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(1, result.cacheSize());
@@ -202,8 +202,8 @@ public class ObTableClientPartitionKeyTest {
 
             tableQuery = obTableClient.query(tableName);
             tableQuery.addScanRange(
-                    new Object[] { "key1_1".getBytes(), ObObj.getMin(), ObObj.getMin() }, new Object[] {
-                            "key1_8".getBytes(), ObObj.getMax(), ObObj.getMax() });
+                new Object[] { "key1_1".getBytes(), ObObj.getMin(), ObObj.getMin() }, new Object[] {
+                        "key1_8".getBytes(), ObObj.getMax(), ObObj.getMax() });
             tableQuery.select("K", "Q", "T", "V");
             result = tableQuery.execute();
             Assert.assertTrue(result.cacheSize() >= 2);
@@ -213,19 +213,19 @@ public class ObTableClientPartitionKeyTest {
             tableName = "testKey";
             try {
                 obTableClient.insert(tableName,
-                        new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
-                        new String[] { "V" }, new Object[] { "value1".getBytes() });
+                    new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
+                    new String[] { "V" }, new Object[] { "value1".getBytes() });
                 obTableClient.insert(tableName,
-                        new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp + 1 },
-                        new String[] { "V" }, new Object[] { "value2".getBytes() });
+                    new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp + 1 },
+                    new String[] { "V" }, new Object[] { "value2".getBytes() });
                 obTableClient.insert(tableName,
-                        new Object[] { "key1_2".getBytes(), "partition".getBytes(), timeStamp },
-                        new String[] { "V" }, new Object[] { "value3".getBytes() });
+                    new Object[] { "key1_2".getBytes(), "partition".getBytes(), timeStamp },
+                    new String[] { "V" }, new Object[] { "value3".getBytes() });
 
                 TableQuery tableQuery = obTableClient.query(tableName);
                 tableQuery.addScanRange(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
-                                timeStamp },
-                        new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp });
+                        timeStamp }, new Object[] { "key2_1".getBytes(), "partition".getBytes(),
+                        timeStamp });
                 tableQuery.select("K", "Q", "T", "V", "K_PREFIX");
                 try {
                     tableQuery.execute();
@@ -233,11 +233,12 @@ public class ObTableClientPartitionKeyTest {
                 } catch (Exception e) {
                     Assert.assertTrue(e instanceof ObTableUnexpectedException);
                     Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
-                            ((ObTableUnexpectedException) e).getErrorCode());
+                        ((ObTableUnexpectedException) e).getErrorCode());
                 }
                 tableQuery = obTableClient.query(tableName);
-                tableQuery.addScanRange(new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
-                        new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp + 1 });
+                tableQuery.addScanRange(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
+                        timeStamp }, new Object[] { "key1_1".getBytes(), "partition".getBytes(),
+                        timeStamp + 1 });
                 tableQuery.select("K", "Q", "T", "V");
                 QueryResultSet result = tableQuery.execute();
                 Assert.assertEquals(2, result.cacheSize());
@@ -255,16 +256,16 @@ public class ObTableClientPartitionKeyTest {
                 Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
                 Assert.assertEquals(timeStamp + 1, row.get("T"));
                 Assert.assertEquals("value2", new String((byte[]) row.get("V")));
-            } catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
                 Assert.assertTrue(false);
             } finally {
                 obTableClient.delete(tableName,
-                        new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp });
+                    new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp });
                 obTableClient.delete(tableName,
-                        new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp + 1 });
+                    new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp + 1 });
                 obTableClient.delete(tableName,
-                        new Object[] { "key1_2".getBytes(), "partition".getBytes(), timeStamp });
+                    new Object[] { "key1_2".getBytes(), "partition".getBytes(), timeStamp });
             }
         }
     }
@@ -279,24 +280,24 @@ public class ObTableClientPartitionKeyTest {
         String tableName = obTableClient.isOdpMode() ? "testKey" : "testPartition";
         try {
             obTableClient.insert(tableName,
-                    new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 1},
-                    new String[] { "V" }, new Object[] { "value1".getBytes() });
+                new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 1 },
+                new String[] { "V" }, new Object[] { "value1".getBytes() });
             obTableClient.insert(tableName,
-                    new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 2},
-                    new String[] { "V" }, new Object[] { "value2".getBytes() });
+                new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 2 },
+                new String[] { "V" }, new Object[] { "value2".getBytes() });
             obTableClient.insert(tableName,
-                    new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 1},
-                    new String[] { "V" }, new Object[] { "value2".getBytes() });
+                new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 1 },
+                new String[] { "V" }, new Object[] { "value2".getBytes() });
             obTableClient.insert(tableName,
-                    new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 2},
-                    new String[] { "V" }, new Object[] { "value1".getBytes() });
+                new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 2 },
+                new String[] { "V" }, new Object[] { "value1".getBytes() });
 
             // key partitioned table do not support range query
 
             // query key2_1
             TableQuery tableQuery = obTableClient.query(tableName);
             tableQuery.addScanRange(new Object[] { "key2_1".getBytes(), "value0".getBytes() },
-                                    new Object[] { "key2_1".getBytes(), "value9".getBytes() });
+                new Object[] { "key2_1".getBytes(), "value9".getBytes() });
             // TODO: do param check, must specify select columns
             tableQuery.select("K", "Q", "T", "V");
             tableQuery.setScanRangeColumns("K", "V");
@@ -329,7 +330,7 @@ public class ObTableClientPartitionKeyTest {
             // query key3_1
             tableQuery = obTableClient.query(tableName);
             tableQuery.addScanRange(new Object[] { "key3_1".getBytes(), "value0".getBytes() },
-                                    new Object[] { "key3_1".getBytes(), "value9".getBytes() });
+                new Object[] { "key3_1".getBytes(), "value9".getBytes() });
             tableQuery.select("K", "Q", "T", "V");
             tableQuery.setScanRangeColumns("K", "V");
             tableQuery.indexName("i1");
@@ -357,18 +358,18 @@ public class ObTableClientPartitionKeyTest {
                 Assert.assertEquals("value" + i, new String((byte[]) row.get("V")));
             }
             Assert.assertFalse(result.next());
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             Assert.assertTrue(false);
         } finally {
             obTableClient.delete(tableName,
-                    new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 1 });
+                new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 1 });
             obTableClient.delete(tableName,
-                    new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 2 });
+                new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 2 });
             obTableClient.delete(tableName,
-                    new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 1});
+                new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 1 });
             obTableClient.delete(tableName,
-                    new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 2});
+                new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 2 });
         }
     }
 
@@ -378,20 +379,18 @@ public class ObTableClientPartitionKeyTest {
         String tableName = obTableClient.isOdpMode() ? "testKey" : "testPartition";
         try {
             obTableClient.insert(tableName,
-                    new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
-                    new String[] { "V" }, new Object[] { "value1".getBytes() });
+                new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
+                new String[] { "V" }, new Object[] { "value1".getBytes() });
             obTableClient.insert(tableName,
-                    new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp },
-                    new String[] { "V" }, new Object[] { "value1".getBytes() });
+                new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp },
+                new String[] { "V" }, new Object[] { "value1".getBytes() });
             TableBatchOps tableBatchOps = obTableClient.batch(tableName);
-            tableBatchOps
-                    .delete(new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp });
-            tableBatchOps.insert(
-                    new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp },
-                    new String[] { "V" }, new Object[] { "value2".getBytes() });
-            tableBatchOps.replace(
-                    new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp },
-                    new String[] { "V" }, new Object[] { "value2".getBytes() });
+            tableBatchOps.delete(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
+                    timeStamp });
+            tableBatchOps.insert(new Object[] { "key2_1".getBytes(), "partition".getBytes(),
+                    timeStamp }, new String[] { "V" }, new Object[] { "value2".getBytes() });
+            tableBatchOps.replace(new Object[] { "key3_1".getBytes(), "partition".getBytes(),
+                    timeStamp }, new String[] { "V" }, new Object[] { "value2".getBytes() });
             List<Object> batchResult = tableBatchOps.execute();
             Assert.assertEquals(3, batchResult.size());
             Assert.assertEquals(1L, batchResult.get(0));
@@ -399,8 +398,8 @@ public class ObTableClientPartitionKeyTest {
             Assert.assertEquals(2L, batchResult.get(2));
 
             Map<String, Object> getResult = obTableClient.get(tableName,
-                    new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp }, new String[] {
-                            "K", "Q", "T", "V" });
+                new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
+                new String[] { "K", "Q", "T", "V" });
 
             Assert.assertEquals(0, getResult.size());
 
@@ -427,9 +426,12 @@ public class ObTableClientPartitionKeyTest {
             e.printStackTrace();
             Assert.assertTrue(false);
         } finally {
-            obTableClient.delete(tableName, new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp });
-            obTableClient.delete(tableName, new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp });
-            obTableClient.delete(tableName, new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp });
+            obTableClient.delete(tableName,
+                new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp });
+            obTableClient.delete(tableName,
+                new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp });
+            obTableClient.delete(tableName,
+                new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp });
         }
     }
 
@@ -441,20 +443,18 @@ public class ObTableClientPartitionKeyTest {
         obTableClient.setRuntimeBatchExecutor(Executors.newFixedThreadPool(3));
         try {
             obTableClient.insert(tableName,
-                    new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
-                    new String[] { "V" }, new Object[] { "value1".getBytes() });
+                new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
+                new String[] { "V" }, new Object[] { "value1".getBytes() });
             obTableClient.insert(tableName,
-                    new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp },
-                    new String[] { "V" }, new Object[] { "value1".getBytes() });
+                new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp },
+                new String[] { "V" }, new Object[] { "value1".getBytes() });
             TableBatchOps tableBatchOps = obTableClient.batch(tableName);
-            tableBatchOps
-                    .delete(new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp });
-            tableBatchOps.insert(
-                    new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp },
-                    new String[] { "V" }, new Object[] { "value2".getBytes() });
-            tableBatchOps.replace(
-                    new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp },
-                    new String[] { "V" }, new Object[] { "value2".getBytes() });
+            tableBatchOps.delete(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
+                    timeStamp });
+            tableBatchOps.insert(new Object[] { "key2_1".getBytes(), "partition".getBytes(),
+                    timeStamp }, new String[] { "V" }, new Object[] { "value2".getBytes() });
+            tableBatchOps.replace(new Object[] { "key3_1".getBytes(), "partition".getBytes(),
+                    timeStamp }, new String[] { "V" }, new Object[] { "value2".getBytes() });
             List<Object> batchResult = tableBatchOps.execute();
             Assert.assertEquals(3, batchResult.size());
             Assert.assertEquals(1L, batchResult.get(0));
@@ -462,8 +462,8 @@ public class ObTableClientPartitionKeyTest {
             Assert.assertEquals(2L, batchResult.get(2));
 
             Map<String, Object> getResult = obTableClient.get(tableName,
-                    new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp }, new String[] {
-                            "K", "Q", "T", "V" });
+                new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
+                new String[] { "K", "Q", "T", "V" });
 
             Assert.assertEquals(0, getResult.size());
 
@@ -488,12 +488,15 @@ public class ObTableClientPartitionKeyTest {
             Assert.assertEquals("value2", new String((byte[]) getResult.get("V")));
 
         } catch (Exception e) {
-           e.printStackTrace();
-           Assert.assertTrue(false);
+            e.printStackTrace();
+            Assert.assertTrue(false);
         } finally {
-            obTableClient.delete(tableName, new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp });
-            obTableClient.delete(tableName, new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp });
-            obTableClient.delete(tableName, new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp });
+            obTableClient.delete(tableName,
+                new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp });
+            obTableClient.delete(tableName,
+                new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp });
+            obTableClient.delete(tableName,
+                new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp });
         }
     }
 
@@ -506,20 +509,18 @@ public class ObTableClientPartitionKeyTest {
         obTableClient.setRuntimeBatchExecutor(Executors.newFixedThreadPool(3));
         try {
             obTableClient.insert(tableName,
-                    new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
-                    new String[] { "V" }, new Object[] { "value1".getBytes() });
+                new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
+                new String[] { "V" }, new Object[] { "value1".getBytes() });
             obTableClient.insert(tableName,
-                    new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp },
-                    new String[] { "V" }, new Object[] { "value1".getBytes() });
+                new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp },
+                new String[] { "V" }, new Object[] { "value1".getBytes() });
             TableBatchOps tableBatchOps = obTableClient.batch(tableName);
-            tableBatchOps
-                    .delete(new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp });
-            tableBatchOps.insert(
-                    new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp },
-                    new String[] { "V" }, new Object[] { "value2".getBytes() });
-            tableBatchOps.replace(
-                    new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp },
-                    new String[] { "V" }, new Object[] { "value2".getBytes() });
+            tableBatchOps.delete(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
+                    timeStamp });
+            tableBatchOps.insert(new Object[] { "key2_1".getBytes(), "partition".getBytes(),
+                    timeStamp }, new String[] { "V" }, new Object[] { "value2".getBytes() });
+            tableBatchOps.replace(new Object[] { "key3_1".getBytes(), "partition".getBytes(),
+                    timeStamp }, new String[] { "V" }, new Object[] { "value2".getBytes() });
             List<Object> batchResult = tableBatchOps.execute();
             Assert.assertEquals(3, batchResult.size());
             Assert.assertEquals(1L, batchResult.get(0));
@@ -527,8 +528,8 @@ public class ObTableClientPartitionKeyTest {
             Assert.assertEquals(2L, batchResult.get(2));
 
             Map<String, Object> getResult = obTableClient.get(tableName,
-                    new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp }, new String[] {
-                            "K", "Q", "T", "V" });
+                new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
+                new String[] { "K", "Q", "T", "V" });
 
             Assert.assertEquals(0, getResult.size());
 
@@ -556,9 +557,12 @@ public class ObTableClientPartitionKeyTest {
             e.printStackTrace();
             Assert.assertTrue(false);
         } finally {
-            obTableClient.delete(tableName, new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp });
-            obTableClient.delete(tableName, new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp });
-            obTableClient.delete(tableName, new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp });
+            obTableClient.delete(tableName,
+                new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp });
+            obTableClient.delete(tableName,
+                new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp });
+            obTableClient.delete(tableName,
+                new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp });
         }
     }
 

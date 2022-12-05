@@ -28,14 +28,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class Mutation <T> {
-    private String tableName;
-    private Table client;
-    private Object[] rowKey;
-    private TableQuery query;
+public class Mutation<T> {
+    private String        tableName;
+    private Table         client;
+    private Object[]      rowKey;
+    private TableQuery    query;
 
     // TODO: remove rowKeysName and filter after implement schema
-    private List<String> rowKeyName;
+    private List<String>  rowKeyName;
     private ObTableFilter filter;
 
     /*
@@ -120,22 +120,23 @@ public class Mutation <T> {
      * add selected Column from filter
      * TODO: remove this function after implement table schema
      */
-    protected void addSelectedColumn(List<String> selectedColumns, ObTableFilter filter) throws Exception {
+    protected void addSelectedColumn(List<String> selectedColumns, ObTableFilter filter)
+                                                                                        throws Exception {
         if (filter instanceof ObTableFilterList) {
-            for (int i = 0; i < ((ObTableFilterList)filter).size(); ++i) {
-                addSelectedColumn(selectedColumns, ((ObTableFilterList)filter).get(i));
+            for (int i = 0; i < ((ObTableFilterList) filter).size(); ++i) {
+                addSelectedColumn(selectedColumns, ((ObTableFilterList) filter).get(i));
             }
         } else if (filter instanceof ObTableNotInFilter) {
-            if (!selectedColumns.contains(((ObTableNotInFilter)filter).getColumnName())) {
-                selectedColumns.add(((ObTableNotInFilter)filter).getColumnName());
+            if (!selectedColumns.contains(((ObTableNotInFilter) filter).getColumnName())) {
+                selectedColumns.add(((ObTableNotInFilter) filter).getColumnName());
             }
         } else if (filter instanceof ObTableInFilter) {
-            if (!selectedColumns.contains(((ObTableInFilter)filter).getColumnName())) {
-                selectedColumns.add(((ObTableInFilter)filter).getColumnName());
+            if (!selectedColumns.contains(((ObTableInFilter) filter).getColumnName())) {
+                selectedColumns.add(((ObTableInFilter) filter).getColumnName());
             }
         } else if (filter instanceof ObTableValueFilter) {
-            if (!selectedColumns.contains(((ObTableValueFilter)filter).getColumnName())) {
-                selectedColumns.add(((ObTableValueFilter)filter).getColumnName());
+            if (!selectedColumns.contains(((ObTableValueFilter) filter).getColumnName())) {
+                selectedColumns.add(((ObTableValueFilter) filter).getColumnName());
             }
         } else {
             throw new ObTableException("unknown filter type " + filter.toString());
@@ -181,7 +182,7 @@ public class Mutation <T> {
     public T setTable(String tableName) {
         if (null == tableName || tableName.isEmpty()) {
             throw new IllegalArgumentException("Invalid table name to create Mutation in table"
-                    + tableName);
+                                               + tableName);
         }
 
         this.tableName = tableName;
@@ -212,7 +213,8 @@ public class Mutation <T> {
 
         // set row key in table
         if (null != tableName) {
-            ((ObTableClient) client).addRowKeyElement(tableName, columnNames.toArray(new String[0]));
+            ((ObTableClient) client)
+                .addRowKeyElement(tableName, columnNames.toArray(new String[0]));
         }
 
         // renew scan range of QueryAndMutate
@@ -247,7 +249,8 @@ public class Mutation <T> {
 
         // set row key in table
         if (null != tableName) {
-            ((ObTableClient) client).addRowKeyElement(tableName, columnNames.toArray(new String[0]));
+            ((ObTableClient) client)
+                .addRowKeyElement(tableName, columnNames.toArray(new String[0]));
         }
 
         // renew scan range of QueryAndMutate

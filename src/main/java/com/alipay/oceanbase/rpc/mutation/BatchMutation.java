@@ -28,9 +28,9 @@ import java.util.Arrays;
 import java.util.List;
 
 public class BatchMutation {
-    private String tableName;
-    private Table client;
-    boolean withResult;
+    private String         tableName;
+    private Table          client;
+    boolean                withResult;
     private List<Mutation> mutations;
 
     /*
@@ -77,7 +77,6 @@ public class BatchMutation {
         return this;
     }
 
-
     public BatchMutationResult execute() throws Exception {
         TableBatchOps batchOps = client.batch(tableName);
 
@@ -87,39 +86,32 @@ public class BatchMutation {
                 case GET:
                     throw new IllegalArgumentException("Invalid type in batch operation, " + type);
                 case INSERT:
-                    batchOps.insert(mutation.getRowKey(),
-                            ((Insert) mutation).getColumns(),
-                            ((Insert) mutation).getValues());
+                    batchOps.insert(mutation.getRowKey(), ((Insert) mutation).getColumns(),
+                        ((Insert) mutation).getValues());
                     break;
                 case DEL:
                     batchOps.delete(mutation.getRowKey());
                     break;
                 case UPDATE:
-                    batchOps.update(mutation.getRowKey(),
-                            ((Update) mutation).getColumns(),
-                            ((Update) mutation).getValues());
+                    batchOps.update(mutation.getRowKey(), ((Update) mutation).getColumns(),
+                        ((Update) mutation).getValues());
                     break;
                 case INSERT_OR_UPDATE:
                     batchOps.insertOrUpdate(mutation.getRowKey(),
-                            ((InsertOrUpdate) mutation).getColumns(),
-                            ((InsertOrUpdate) mutation).getValues());
+                        ((InsertOrUpdate) mutation).getColumns(),
+                        ((InsertOrUpdate) mutation).getValues());
                     break;
                 case REPLACE:
-                    batchOps.replace(mutation.getRowKey(),
-                            ((Replace) mutation).getColumns(),
-                            ((Replace) mutation).getValues());
+                    batchOps.replace(mutation.getRowKey(), ((Replace) mutation).getColumns(),
+                        ((Replace) mutation).getValues());
                     break;
                 case INCREMENT:
-                    batchOps.increment(mutation.getRowKey(),
-                            ((Increment) mutation).getColumns(),
-                            ((Increment) mutation).getValues(),
-                            withResult);
+                    batchOps.increment(mutation.getRowKey(), ((Increment) mutation).getColumns(),
+                        ((Increment) mutation).getValues(), withResult);
                     break;
                 case APPEND:
-                    batchOps.append(mutation.getRowKey(),
-                            ((Append) mutation).getColumns(),
-                            ((Append) mutation).getValues(),
-                            withResult);
+                    batchOps.append(mutation.getRowKey(), ((Append) mutation).getColumns(),
+                        ((Append) mutation).getValues(), withResult);
                     break;
                 default:
                     throw new ObTableException("unknown operation type " + type);

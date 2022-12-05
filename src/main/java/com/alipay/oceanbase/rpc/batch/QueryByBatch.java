@@ -163,7 +163,8 @@ public class QueryByBatch implements TableQuery {
      */
     @Override
     public TableQuery setFilter(ObTableFilter filter) {
-        throw new IllegalArgumentException("not support construct filter string for " + this.getClass().toString());
+        throw new IllegalArgumentException("not support construct filter string for "
+                                           + this.getClass().toString());
     }
 
     @Override

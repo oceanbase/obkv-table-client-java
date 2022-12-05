@@ -30,7 +30,7 @@ import java.util.Map;
 public class Append extends Mutation<Append> {
     private List<String> columns;
     private List<Object> values;
-    boolean withResult;
+    boolean              withResult;
 
     /*
      * default constructor
@@ -148,24 +148,15 @@ public class Append extends Mutation<Append> {
 
         if (null == getQuery()) {
             // simple update, without filter
-            return new MutationResult(
-                    ((ObTableClient) getClient()).
-                            appendWithResult(getTableName(),
-                                    getRowKey(),
-                                    columns.toArray(new String[0]),
-                                    values.toArray(),
-                                    withResult));
+            return new MutationResult(((ObTableClient) getClient()).appendWithResult(
+                getTableName(), getRowKey(), columns.toArray(new String[0]), values.toArray(),
+                withResult));
         } else {
             // QueryAndAppend
             getQuery().select(getSelectedColumns());
-            return new MutationResult(
-                    ((ObTableClient) getClient()).
-                            mutationWithFilter(getQuery(),
-                                    getRowKey(),
-                                    ObTableOperationType.APPEND,
-                                    columns.toArray(new String[0]),
-                                    values.toArray(),
-                                    withResult));
+            return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
+                getRowKey(), ObTableOperationType.APPEND, columns.toArray(new String[0]),
+                values.toArray(), withResult));
 
         }
     }
