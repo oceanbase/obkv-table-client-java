@@ -27,8 +27,8 @@ import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.*;
  * columnName's value is in values
  * Notice that values should not be empty in ObTableInFilter
  */
-public class ObTableInFilter extends ObTableFilter{
-    private String columnName;
+public class ObTableInFilter extends ObTableFilter {
+    private String   columnName;
     private Object[] values;
 
     /**
@@ -41,7 +41,7 @@ public class ObTableInFilter extends ObTableFilter{
             throw new ObTableException("column name is null");
         }
 
-        if (null == values || values.length == 0){
+        if (null == values || values.length == 0) {
             throw new ObTableException("in filter values should not be empty");
         }
 
@@ -50,7 +50,7 @@ public class ObTableInFilter extends ObTableFilter{
     }
 
     /**
-     * construct with String / List<Object>
+     * construct with String / List of Object
      * @param columnName column name
      * @param values values
      */
@@ -59,7 +59,7 @@ public class ObTableInFilter extends ObTableFilter{
             throw new ObTableException("column name is null");
         }
 
-        if (null == values || values.isEmpty()){
+        if (null == values || values.isEmpty()) {
             throw new ObTableException("in filter values should not be empty");
         }
 

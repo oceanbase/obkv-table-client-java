@@ -62,7 +62,8 @@ public class ExceptionUtil {
         ResultCodes resultCodes = ResultCodes.valueOf(errorCode);
         if (resultCodes == null) {
             return new ObTableUnexpectedException("[" + trace + "] [" + "unknown errcode: "
-                    + errorCode + "] server [" + server + "]", errorCode);
+                                                  + errorCode + "] server [" + server + "]",
+                errorCode);
         }
         switch (resultCodes) {
             case OB_ERR_PRIMARY_KEY_DUPLICATE:

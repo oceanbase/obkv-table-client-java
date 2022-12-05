@@ -24,11 +24,11 @@ public class MutationFactory {
         return new ColumnValue(columnName, value);
     }
 
-    public static Row row(ColumnValue... columnValue)  {
+    public static Row row(ColumnValue... columnValue) {
         return new Row(columnValue);
     }
 
-    public static Insert insert()  {
+    public static Insert insert() {
         return new Insert();
     }
 
@@ -36,7 +36,7 @@ public class MutationFactory {
         return new Delete();
     }
 
-    public static Update update()  {
+    public static Update update() {
         return new Update();
     }
 

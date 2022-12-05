@@ -51,13 +51,13 @@ public class MutationResult {
     public long getAffectedRows() {
         long affectedRows = 0;
         switch (result.getPcode()) {
-            case Pcodes.OB_TABLE_API_EXECUTE :
-                affectedRows =((ObTableOperationResult) result).getAffectedRows();
+            case Pcodes.OB_TABLE_API_EXECUTE:
+                affectedRows = ((ObTableOperationResult) result).getAffectedRows();
                 break;
             case Pcodes.OB_TABLE_API_QUERY_AND_MUTATE:
                 affectedRows = ((ObTableQueryAndMutateResult) result).getAffectedRows();
                 break;
-            default :
+            default:
                 throw new ObTableException("unknown result type: " + result.getPcode());
         }
         return affectedRows;

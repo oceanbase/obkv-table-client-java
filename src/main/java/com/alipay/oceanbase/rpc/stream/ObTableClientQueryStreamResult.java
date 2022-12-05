@@ -73,8 +73,8 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                             route.setBlackList(failedServerList);
                         }
                         subObTable = client.getTable(tableName, partIdWithIndex.getLeft(),
-                                        needRefreshTableEntry, client.isTableEntryRefreshIntervalWait(), route)
-                                .getRight();
+                            needRefreshTableEntry, client.isTableEntryRefreshIntervalWait(), route)
+                            .getRight();
                     }
                 }
                 result = subObTable.execute(request);
@@ -83,32 +83,46 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
             } catch (Exception e) {
                 if (client.isOdpMode()) {
                     if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
-                        logger.warn("tablename:{} stream query execute while meet Exception needing retry, errorCode: {}, errorMsg: {}, try times {}",
-                                tableName, ((ObTableException) e).getErrorCode(), e.getMessage(), tryTimes);
+                        logger
+                            .warn(
+                                "tablename:{} stream query execute while meet Exception needing retry, errorCode: {}, errorMsg: {}, try times {}",
+                                tableName, ((ObTableException) e).getErrorCode(), e.getMessage(),
+                                tryTimes);
                     } else {
                         throw e;
                     }
                 } else {
                     if (e instanceof ObTableReplicaNotReadableException) {
                         if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
-                            logger.warn("tablename:{} partition id:{} retry when replica not readable: {}",
-                                    tableName, partIdWithIndex.getLeft(), e.getMessage(), e);
+                            logger.warn(
+                                "tablename:{} partition id:{} retry when replica not readable: {}",
+                                tableName, partIdWithIndex.getLeft(), e.getMessage(), e);
                             if (failedServerList == null) {
                                 failedServerList = new HashSet<String>();
                             }
                             failedServerList.add(subObTable.getIp());
                         } else {
-                            logger.warn("tablename:{} partition id:{} exhaust retry when replica not readable: {}",
+                            logger
+                                .warn(
+                                    "tablename:{} partition id:{} exhaust retry when replica not readable: {}",
                                     tableName, partIdWithIndex.getLeft(), e.getMessage(), e);
                             throw e;
                         }
-                    } else if (e instanceof ObTableException && ((ObTableException) e).isNeedRefreshTableEntry()) {
+                    } else if (e instanceof ObTableException
+                               && ((ObTableException) e).isNeedRefreshTableEntry()) {
                         needRefreshTableEntry = true;
-                        logger.warn("tablename:{} partition id:{} stream query refresh table while meet Exception needing refresh, errorCode: {}",
-                                tableName, partIdWithIndex.getLeft(), ((ObTableException) e).getErrorCode(), e);
-                        if (client.isRetryOnChangeMasterTimes() && (tryTimes - 1) < client.getRuntimeRetryTimes()) {
-                            logger.warn("tablename:{} partition id:{} stream query retry while meet Exception needing refresh, errorCode: {} , retry times {}",
-                                    tableName, partIdWithIndex.getLeft(), ((ObTableException) e).getErrorCode(), tryTimes, e);
+                        logger
+                            .warn(
+                                "tablename:{} partition id:{} stream query refresh table while meet Exception needing refresh, errorCode: {}",
+                                tableName, partIdWithIndex.getLeft(),
+                                ((ObTableException) e).getErrorCode(), e);
+                        if (client.isRetryOnChangeMasterTimes()
+                            && (tryTimes - 1) < client.getRuntimeRetryTimes()) {
+                            logger
+                                .warn(
+                                    "tablename:{} partition id:{} stream query retry while meet Exception needing refresh, errorCode: {} , retry times {}",
+                                    tableName, partIdWithIndex.getLeft(),
+                                    ((ObTableException) e).getErrorCode(), tryTimes, e);
                         } else {
                             client.calculateContinuousFailure(tableName, e.getMessage());
                             throw e;
@@ -135,6 +149,7 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
 
     /**
      * Get client.
+     * @return client
      */
     public ObTableClient getClient() {
         return client;
