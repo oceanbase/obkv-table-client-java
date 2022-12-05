@@ -27,7 +27,7 @@ public class ObTableFilterList extends ObTableFilter {
         AND, OR;
     };
 
-    private operator op;
+    private operator            op;
     private List<ObTableFilter> filters;
 
     /*
@@ -51,6 +51,8 @@ public class ObTableFilterList extends ObTableFilter {
 
     /**
      * construct with ObCompareOp / ObTableFilter
+     * @param op filter operation
+     * @param filters table filters
      */
     public ObTableFilterList(operator op, ObTableFilter... filters) {
         if (null == op) {
@@ -111,7 +113,7 @@ public class ObTableFilterList extends ObTableFilter {
 
         for (int i = 0; i < filters.size(); ++i) {
             String filterString = filters.get(i).toString();
-            if (null == filterString || filterString.isEmpty() ) {
+            if (null == filterString || filterString.isEmpty()) {
                 continue;
             } else {
                 if (0 != i) {

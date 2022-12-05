@@ -62,13 +62,13 @@ public class Row {
     public Row(ColumnValue... columnValues) {
         values = new HashMap<String, Object>();
 
-         for (ColumnValue columnValue : columnValues) {
-             if (values.containsKey(columnValue.getColumnName())) {
+        for (ColumnValue columnValue : columnValues) {
+            if (values.containsKey(columnValue.getColumnName())) {
                 throw new ObTableException("Duplicate column in row");
-             }
+            }
 
             values.put(columnValue.getColumnName(), columnValue.getValue());
-         }
+        }
     }
 
     /*

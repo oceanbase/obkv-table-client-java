@@ -121,7 +121,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     /*
      * TableName -> rowKey element
      */
-    private Map<String, Map<String, Integer>>       tableRowKeyElement                      = new ConcurrentHashMap<String, Map<String, Integer>>();
+    private Map<String, Map<String, Integer>>                 tableRowKeyElement                      = new ConcurrentHashMap<String, Map<String, Integer>>();
     private boolean                                           retryOnChangeMasterTimes                = true;
     /*
      * TableName -> Failures/Lock
@@ -146,11 +146,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     private String                                            odpAddr                                 = "127.0.0.1";
 
-
     private int                                               odpPort                                 = 2883;
 
     private ObTable                                           odpTable                                = null;
-
 
     /*
      * Init.
@@ -231,13 +229,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     public void checkStatus() throws IllegalStateException {
         if (!initialized) {
-            throw new IllegalStateException("param url " + paramURL +  "fullUserName " + fullUserName
-                                            + " is not initialized");
+            throw new IllegalStateException("param url " + paramURL + "fullUserName "
+                                            + fullUserName + " is not initialized");
         }
 
         if (closed) {
-            throw new IllegalStateException("param url " + paramURL + " fullUserName " + fullUserName
-                                            + " is closed");
+            throw new IllegalStateException("param url " + paramURL + " fullUserName "
+                                            + fullUserName + " is closed");
         }
     }
 
@@ -316,11 +314,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (odpMode) {
             try {
                 odpTable = new ObTable.Builder(odpAddr, odpPort) //
-                        .setLoginInfo(tenantName, fullUserName, password, database) //
-                        .setProperties(getProperties()).build();
+                    .setLoginInfo(tenantName, fullUserName, password, database) //
+                    .setProperties(getProperties()).build();
             } catch (Exception e) {
-                logger.warn("The addr{}:{} failed to put into table roster, the node status may be wrong, Ignore",
-                            odpAddr, odpPort);
+                logger
+                    .warn(
+                        "The addr{}:{} failed to put into table roster, the node status may be wrong, Ignore",
+                        odpAddr, odpPort);
                 throw e;
             }
             return;
@@ -336,18 +336,20 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             OCEANBASE_DATABASE, ALL_DUMMY_TABLE);
 
         List<ObServerAddr> rsList = ocpModel.getObServerAddrs();
-        BOOT.info("{} success to get rsList, paramURL: {}, rsList: {}，idc2Region: {}", this.database, paramURL, JSON.toJSON(rsList), JSON.toJSON(ocpModel.getIdc2Region()));
+        BOOT.info("{} success to get rsList, paramURL: {}, rsList: {}，idc2Region: {}",
+            this.database, paramURL, JSON.toJSON(rsList), JSON.toJSON(ocpModel.getIdc2Region()));
 
         TableEntry tableEntry = loadTableEntryRandomly(rsList,//
             rootServerKey,//
             tableEntryAcquireConnectTimeout,//
-            tableEntryAcquireSocketTimeout,
-            sysUA, initialized);
-        BOOT.info("{} success to get tableEntry with rootServerKey all_dummy_tables {}", this.database, JSON.toJSON(tableEntry));
+            tableEntryAcquireSocketTimeout, sysUA, initialized);
+        BOOT.info("{} success to get tableEntry with rootServerKey all_dummy_tables {}",
+            this.database, JSON.toJSON(tableEntry));
 
         List<ReplicaLocation> replicaLocations = tableEntry.getTableLocation()
             .getReplicaLocations();
-        BOOT.info("{} success to get replicaLocation {}", this.database, JSON.toJSON(replicaLocations));
+        BOOT.info("{} success to get replicaLocation {}", this.database,
+            JSON.toJSON(replicaLocations));
 
         for (ReplicaLocation replicaLocation : replicaLocations) {
             ObServerInfo info = replicaLocation.getInfo();
@@ -370,15 +372,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 tableRoster.put(addr, obTable);
                 servers.add(addr);
             } catch (Exception e) {
-                BOOT
-                    .warn(
-                        "The addr{}:{} failed to put into table roster, the node status may be wrong, Ignore",
-                            addr.getIp(), addr.getSvrPort());
+                BOOT.warn(
+                    "The addr{}:{} failed to put into table roster, the node status may be wrong, Ignore",
+                    addr.getIp(), addr.getSvrPort());
                 RUNTIME.warn("initMetadata meet exception", e);
             }
         }
         if (servers.isEmpty()) {
-            BOOT.error("{} failed to connect any replicaLocation server: {}", this.database, JSON.toJSON(replicaLocations));
+            BOOT.error("{} failed to connect any replicaLocation server: {}", this.database,
+                JSON.toJSON(replicaLocations));
             throw new Exception("failed to connect any replicaLocation server");
         }
 
@@ -391,7 +393,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             currentIDC = ZoneUtil.getCurrentIDC();
         }
         String regionFromOcp = ocpModel.getIdc2Region(currentIDC);
-        BOOT.info("{} success get currentIDC {}, regionFromOcp {}", this.database, currentIDC, regionFromOcp);
+        BOOT.info("{} success get currentIDC {}, regionFromOcp {}", this.database, currentIDC,
+            regionFromOcp);
 
         List<ObServerLdcItem> ldcServers = getServerLdc(serverRoster,
             tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
@@ -401,9 +404,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             currentIDC, regionFromOcp));
 
         if (BOOT.isInfoEnabled()) {
-            BOOT.info("{} finish refresh serverRoster: {}", this.database, JSON.toJSON(serverRoster));
+            BOOT.info("{} finish refresh serverRoster: {}", this.database,
+                JSON.toJSON(serverRoster));
             BOOT.info("finish initMetadata for all tables for database {}", this.database);
-         }
+        }
 
         this.lastRefreshMetadataTimestamp = System.currentTimeMillis();
     }
@@ -416,7 +420,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         this.odpMode = odpMode;
     }
 
-    public ObTable getOdpTable() { return this.odpTable; }
+    public ObTable getOdpTable() {
+        return this.odpTable;
+    }
 
     private abstract class TableExecuteCallback<T> {
         private final Object[] rowKey;
@@ -433,8 +439,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
 
             if (!(result instanceof ObTableOperationResult)) {
-                RUNTIME.error("client get unexpected result: "
-                        + result.getClass().getName());
+                RUNTIME.error("client get unexpected result: " + result.getClass().getName());
                 throw new ObTableException("client get unexpected result: "
                                            + result.getClass().getName());
             }
@@ -456,10 +461,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
 
             if (!(result instanceof ObTableQueryAndMutateResult)) {
-                RUNTIME.error("client get unexpected result: "
-                        + result.getClass().getName());
+                RUNTIME.error("client get unexpected result: " + result.getClass().getName());
                 throw new ObTableException("client get unexpected result: "
-                        + result.getClass().getName());
+                                           + result.getClass().getName());
             }
             // TODO: Add func like throwObTableException()
             //       which will output the ip / port / error information
@@ -505,7 +509,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     obPair = new ObPair<Long, ObTable>(0L, odpTable);
                 } else {
                     obPair = getTable(tableName, callback.getRowKey(), needRefreshTableEntry,
-                            tableEntryRefreshIntervalWait, route);
+                        tableEntryRefreshIntervalWait, route);
                 }
                 T t = callback.execute(obPair);
                 resetExecuteContinuousFailureCount(tableName);
@@ -514,7 +518,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 RUNTIME.error("execute while meet exception", ex);
                 if (odpMode) {
                     if ((tryTimes - 1) < runtimeRetryTimes) {
-                        logger.warn("execute while meet Exception, errorCode: {} , errorMsg: {}, try times {}",
+                        logger
+                            .warn(
+                                "execute while meet Exception, errorCode: {} , errorMsg: {}, try times {}",
                                 ((ObTableException) ex).getErrorCode(), ex.getMessage(), tryTimes);
                     } else {
                         throw ex;
@@ -527,18 +533,25 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                 route.addToBlackList(obPair.getRight().getIp());
                             }
                         } else {
-                            logger.warn("exhaust retry when replica not readable: {}", ex.getMessage());
+                            logger.warn("exhaust retry when replica not readable: {}",
+                                ex.getMessage());
                             RUNTIME.error("replica not readable", ex);
                             throw ex;
                         }
-                    } else if (ex instanceof ObTableException && ((ObTableException) ex).isNeedRefreshTableEntry()) {
+                    } else if (ex instanceof ObTableException
+                               && ((ObTableException) ex).isNeedRefreshTableEntry()) {
                         needRefreshTableEntry = true;
 
-                        logger.warn("refresh table while meet Exception needing refresh, errorCode: {}, errorMsg: {}",
+                        logger
+                            .warn(
+                                "refresh table while meet Exception needing refresh, errorCode: {}, errorMsg: {}",
                                 ((ObTableException) ex).getErrorCode(), ex.getMessage());
                         if (retryOnChangeMasterTimes && (tryTimes - 1) < runtimeRetryTimes) {
-                            logger.warn("retry while meet Exception needing refresh, errorCode: {} , errorMsg: {},retry times {}",
-                                    ((ObTableException) ex).getErrorCode(), ex.getMessage(), tryTimes);
+                            logger
+                                .warn(
+                                    "retry while meet Exception needing refresh, errorCode: {} , errorMsg: {},retry times {}",
+                                    ((ObTableException) ex).getErrorCode(), ex.getMessage(),
+                                    tryTimes);
                         } else {
                             calculateContinuousFailure(tableName, ex.getMessage());
                             throw ex;
@@ -565,7 +578,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         failures = (failures == null) ? tempFailures : failures; // check the first failure
         if (failures.incrementAndGet() > runtimeContinuousFailureCeiling) {
             logger.warn("refresh table entry {} while execute failed times exceeded {}, msg: {}",
-                    tableName, runtimeContinuousFailureCeiling, errorMsg);
+                tableName, runtimeContinuousFailureCeiling, errorMsg);
             getOrRefreshTableEntry(tableName, true, isTableEntryRefreshIntervalWait());
             failures.set(0);
         }
@@ -604,9 +617,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         if (!acquired) {
             // TODO exception should be classified
-            String errMsg = "try to lock metadata refreshing timeout "
-                    + "dataSource:" + dataSourceName + " + refresh timeout:"
-                    + tableEntryRefreshLockTimeout + ".";
+            String errMsg = "try to lock metadata refreshing timeout " + "dataSource:"
+                            + dataSourceName + " + refresh timeout:" + tableEntryRefreshLockTimeout
+                            + ".";
             RUNTIME.error(errMsg);
             throw new ObTableGetException(errMsg);
         }
@@ -615,7 +628,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
             if (System.currentTimeMillis() - lastRefreshMetadataTimestamp < metadataRefreshInterval) {
                 logger.warn("it has refresh metadata at: {}, dataSourceName: {}, url: {}",
-                   lastRefreshMetadataTimestamp, dataSourceName, paramURL);
+                    lastRefreshMetadataTimestamp, dataSourceName, paramURL);
                 return;
             }
             if (logger.isInfoEnabled()) {
@@ -638,8 +651,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             TableEntry tableEntry = loadTableEntryRandomly(rsList,//
                 allDummyKey,//
                 tableEntryAcquireConnectTimeout,//
-                tableEntryAcquireSocketTimeout,
-                sysUA, initialized);
+                tableEntryAcquireSocketTimeout, sysUA, initialized);
 
             List<ReplicaLocation> replicaLocations = tableEntry.getTableLocation()
                 .getReplicaLocations();
@@ -653,7 +665,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 ObServerInfo info = replicaLocation.getInfo();
                 if (!info.isActive()) {
                     logger.warn("will not refresh location {} because status is {} stop time {}",
-                            addr.toString(), info.getStatus(), info.getStopTime());
+                        addr.toString(), info.getStatus(), info.getStopTime());
                     continue;
                 }
 
@@ -704,7 +716,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         } finally {
             refreshMetadataLock.unlock();
             logger.warn("finish refresh all ob servers, ts: {}, dataSourceName: {}, url: {}",
-                    lastRefreshMetadataTimestamp, dataSourceName, paramURL);
+                lastRefreshMetadataTimestamp, dataSourceName, paramURL);
         }
     }
 
@@ -739,17 +751,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     logger
                         .info(
                             "punish table entry {} : table entry refresh time {} punish interval {} current time {}. wait for refresh times {}",
-                            tableName, tableEntry.getRefreshTimeMills(), punishInterval,
-                            current, toHoldTime);
+                            tableName, tableEntry.getRefreshTimeMills(), punishInterval, current,
+                            toHoldTime);
                     try {
                         // may have more elegant method ?
                         Thread.sleep(toHoldTime);
                     } catch (InterruptedException e) {
                         RUNTIME.error(LCD.convert("01-00018"), tableName, punishInterval, e);
-                        throw new ObTableUnexpectedException("waiting for table entry "
-                                + tableName + " punish interval "
-                                + punishInterval
-                                + " is interrupted.");
+                        throw new ObTableUnexpectedException("waiting for table entry " + tableName
+                                                             + " punish interval " + punishInterval
+                                                             + " is interrupted.");
                     }
                 } else {
                     return tableEntry;
@@ -766,11 +777,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         boolean acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
 
         if (!acquired) {
-            String errMsg = "try to lock table-entry refreshing timeout "
-                    + "dataSource:" + dataSourceName
-                    + " ,tableName:" + tableName + ", refresh:"
-                    + refresh + " , timeout:"
-                    + tableEntryRefreshLockTimeout + ".";
+            String errMsg = "try to lock table-entry refreshing timeout " + "dataSource:"
+                            + dataSourceName + " ,tableName:" + tableName + ", refresh:" + refresh
+                            + " , timeout:" + tableEntryRefreshLockTimeout + ".";
             RUNTIME.error(errMsg);
             throw new ObTableEntryRefreshException(errMsg);
         }
@@ -794,9 +803,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (tableEntry == null || refresh) {// not exist or need refresh, create new table entry
                 if (logger.isInfoEnabled()) {
                     if (tableEntry == null) {
-                        logger.info("tableEntry not exist, create new table entry, tablename: {}", tableName);
+                        logger.info("tableEntry not exist, create new table entry, tablename: {}",
+                            tableName);
                     } else {
-                        logger.info("tableEntry need refresh, create new table entry, tablename: {}", tableName);
+                        logger.info(
+                            "tableEntry need refresh, create new table entry, tablename: {}",
+                            tableName);
                     }
                 }
 
@@ -890,9 +902,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                 tableEntry.setRowKeyElement(rowKeyElement);
                             } else {
                                 RUNTIME.error("partition table must has row key element key ="
-                                        + tableEntryKey);
+                                              + tableEntryKey);
                                 throw new ObTableEntryRefreshException(
-                                        "partition table must has row key element key ="
+                                    "partition table must has row key element key ="
                                             + tableEntryKey);
                             }
                     }
@@ -960,20 +972,18 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return ((partId1 << PART_ID_SHIFT) | partId2 | MASK);
     }
 
-    private List<Long> getPartitionsForLevelTwo(TableEntry tableEntry,
-                                          Object[] start,
-                                          boolean startIncluded,
-                                          Object[] end,
-                                          boolean endIncluded) throws Exception {
+    private List<Long> getPartitionsForLevelTwo(TableEntry tableEntry, Object[] start,
+                                                boolean startIncluded, Object[] end,
+                                                boolean endIncluded) throws Exception {
         if (tableEntry.getPartitionInfo().getLevel() != ObPartitionLevel.LEVEL_TWO) {
             RUNTIME.error("getPartitionsForLevelTwo need ObPartitionLevel LEVEL_TWO");
             throw new Exception("getPartitionsForLevelTwo need ObPartitionLevel LEVEL_TWO");
         }
 
         List<Long> partIds1 = tableEntry.getPartitionInfo().getFirstPartDesc()
-                .getPartIds(start, startIncluded, end, endIncluded);
+            .getPartIds(start, startIncluded, end, endIncluded);
         List<Long> partIds2 = tableEntry.getPartitionInfo().getSubPartDesc()
-                .getPartIds(start, startIncluded, end, endIncluded);
+            .getPartIds(start, startIncluded, end, endIncluded);
 
         List<Long> partIds = new ArrayList<Long>();
         for (int i = 0; i < partIds1.size(); i++) {
@@ -988,7 +998,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private ObPair<Long, ReplicaLocation> getPartitionReplica(TableEntry tableEntry, long partId,
                                                               ObServerRoute route) {
         long logicID = partId;
-        if (tableEntry != null && tableEntry.getPartitionInfo() != null && tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
+        if (tableEntry != null && tableEntry.getPartitionInfo() != null
+            && tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
             logicID = extractSubpartIdx(partId);
         }
         return new ObPair<Long, ReplicaLocation>(partId, getPartitionLocation(tableEntry, logicID,
@@ -1010,12 +1021,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      *
-     * @param tableName
-     * @param rowKey
-     * @param refresh
-     * @param waitForRefresh
-     * @return
-     * @throws Exception
+     * @param tableName table want to get
+     * @param rowKey row key
+     * @param refresh whether to refresh
+     * @param waitForRefresh whether wait for refresh
+     * @return ObPair of partId and table
+     * @throws Exception exception
      */
     public ObPair<Long, ObTable> getTable(String tableName, Object[] rowKey, boolean refresh,
                                           boolean waitForRefresh) throws Exception {
@@ -1024,13 +1035,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      *
-     * @param tableName
-     * @param rowKey
-     * @param refresh
-     * @param waitForRefresh
-     * @param route
-     * @return
-     * @throws Exception
+     * @param tableName table want to get
+     * @param rowKey row key
+     * @param refresh whether to refresh
+     * @param waitForRefresh whether wait for refresh
+     * @param route ObServer route
+     * @return ObPair of partId and table
+     * @throws Exception exception
      */
     public ObPair<Long, ObTable> getTable(String tableName, Object[] rowKey, boolean refresh,
                                           boolean waitForRefresh, ObServerRoute route)
@@ -1043,14 +1054,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /**
-     *
-     * @param tableName
-     * @param partId
-     * @param refresh
-     * @param waitForRefresh
-     * @param route
-     * @return
-     * @throws Exception
+     * get addr by pardId
+     * @param tableName table want to get
+     * @param partId partId where table located
+     * @param refresh whether to refresh
+     * @param waitForRefresh whether wait for refresh
+     * @param route ObServer route
+     * @return ObPair of partId and table
+     * @throws Exception exception
      */
     public ObPair<Long, ObTable> getTable(String tableName, long partId, boolean refresh,
                                           boolean waitForRefresh, ObServerRoute route)
@@ -1060,14 +1071,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /**
-     * 根据分区 id 获取 table entry 中的 addr
-     * @param tableName
-     * @param tableEntry
-     * @param partId
-     * @param waitForRefresh
-     * @param route
-     * @return
-     * @throws Exception
+     * get addr from table entry by pardId
+     * @param tableName table want to get
+     * @param tableEntry tableEntry
+     * @param partId partId where table located
+     * @param waitForRefresh whether wait for refresh
+     * @param route ObServer route
+     * @return ObPair of partId and table
+     * @throws Exception exception
      */
     public ObPair<Long, ObTable> getTable(String tableName, TableEntry tableEntry, long partId,
                                           boolean waitForRefresh, ObServerRoute route)
@@ -1119,7 +1130,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                                     boolean startIncluded,
                                                                     Object[] end,
                                                                     boolean endIncluded,
-                                                                    ObServerRoute route) throws Exception {
+                                                                    ObServerRoute route)
+                                                                                        throws Exception {
         // non partition
         List<ObPair<Long, ReplicaLocation>> replicas = new ArrayList<ObPair<Long, ReplicaLocation>>();
         if (!tableEntry.isPartitionTable()
@@ -1134,12 +1146,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 replicas.add(new ObPair<Long, ReplicaLocation>(partId, getPartitionLocation(
                     tableEntry, partId, route)));
             }
-        }  else if (tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
-            List<Long> partIds = getPartitionsForLevelTwo(tableEntry, start, startIncluded, end, endIncluded);
+        } else if (tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
+            List<Long> partIds = getPartitionsForLevelTwo(tableEntry, start, startIncluded, end,
+                endIncluded);
             for (Long partId : partIds) {
                 long logicID = extractSubpartIdx(partId);
                 replicas.add(new ObPair<Long, ReplicaLocation>(partId, getPartitionLocation(
-                        tableEntry, logicID, route)));
+                    tableEntry, logicID, route)));
             }
         } else {
             RUNTIME.error("not allowed bigger than level two");
@@ -1151,15 +1164,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * 根据 start-end 获取 partition ids 和 addrs
-     * @param tableName
-     * @param start
-     * @param startInclusive
-     * @param end
-     * @param endInclusive
-     * @param refresh
-     * @param waitForRefresh
-     * @return
-     * @throws Exception
+     * @param tableName table want to get
+     * @param start start key
+     * @param startInclusive whether include start key
+     * @param end end key
+     * @param endInclusive whether include end key
+     * @param refresh whether to refresh
+     * @param waitForRefresh whether wait for refresh
+     * @return list of ObPair of partId and table
+     * @throws Exception exception
      */
     public List<ObPair<Long, ObTable>> getTables(String tableName, Object[] start,
                                                  boolean startInclusive, Object[] end,
@@ -1170,17 +1183,17 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /**
-     *
-     * @param tableName
-     * @param start
-     * @param startInclusive
-     * @param end
-     * @param endInclusive
-     * @param refresh
-     * @param waitForRefresh
-     * @param route
-     * @return
-     * @throws Exception
+     * 根据 start-end 获取 partition id 和 addr
+     * @param tableName table want to get
+     * @param start start key
+     * @param startInclusive whether include start key
+     * @param end end key
+     * @param endInclusive whether include end key
+     * @param refresh whether to refresh
+     * @param waitForRefresh whether wait for refresh
+     * @param route server route
+     * @return list of ObPair of partId and table
+     * @throws Exception exception
      */
     public List<ObPair<Long, ObTable>> getTables(String tableName, Object[] start,
                                                  boolean startInclusive, Object[] end,
@@ -1205,7 +1218,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 logger
                     .warn(
                         "server address {} is expired={} or can not get ob table. So that will sync refresh metadata",
-                            addr, addrExpired);
+                        addr, addrExpired);
                 syncRefreshMetadata();
                 tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh);
                 replica = getPartitionLocation(tableEntry, partId, route);
@@ -1275,8 +1288,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
 
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
-                MONITOR.info(logMessage(tableName, "GET",
-                        endpoint, rowKey, (ObTableOperationResult) result, getTableTime - startTime, System.currentTimeMillis() - getTableTime));
+                MONITOR.info(logMessage(tableName, "GET", endpoint, rowKey,
+                    (ObTableOperationResult) result, getTableTime - startTime,
+                    System.currentTimeMillis() - getTableTime));
                 return ((ObTableOperationResult) result).getEntity().getSimpleProperties();
             }
         }, getReadRoute());
@@ -1310,8 +1324,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 request.setPartitionId(partId);
                 ObPayload result = obPair.getRight().execute(request);
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
-                MONITOR.info(logMessage(tableName, "UPDATE",
-                        endpoint, rowKey, (ObTableOperationResult) result, getTableTime - start, System.currentTimeMillis() - getTableTime));
+                MONITOR.info(logMessage(tableName, "UPDATE", endpoint, rowKey,
+                    (ObTableOperationResult) result, getTableTime - start,
+                    System.currentTimeMillis() - getTableTime));
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
                 return ((ObTableOperationResult) result).getAffectedRows();
             }
@@ -1320,9 +1335,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * Update with result
+     * @param tableName which table to update
+     * @param rowKey update row key
+     * @param columns columns name to update
+     * @param values new values
+     * @return execute result
+     * @throws Exception exception
      */
-    public ObPayload updateWithResult(final String tableName, final Object[] rowKey, final String[] columns,
-                                         final Object[] values) throws Exception {
+    public ObPayload updateWithResult(final String tableName, final Object[] rowKey,
+                                      final String[] columns, final Object[] values)
+                                                                                    throws Exception {
         final long start = System.currentTimeMillis();
         return execute(tableName, new TableExecuteCallback<ObPayload>(rowKey) {
             /**
@@ -1334,12 +1356,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 ObTable obTable = obPair.getRight();
                 long partId = obPair.getLeft();
                 ObTableOperationRequest request = ObTableOperationRequest.getInstance(tableName,
-                        UPDATE, rowKey, columns, values, obTable.getObTableOperationTimeout());
+                    UPDATE, rowKey, columns, values, obTable.getObTableOperationTimeout());
                 request.setPartitionId(partId);
                 ObPayload result = obTable.execute(request);
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
-                MONITOR.info(logMessage(tableName, "UPDATE",
-                        endpoint, rowKey, (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis() - TableTime));
+                MONITOR.info(logMessage(tableName, "UPDATE", endpoint, rowKey,
+                    (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis()
+                                                                        - TableTime));
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
                 return result;
             }
@@ -1367,8 +1390,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return stringBuilder.toString();
     }
 
-    private String logMessage(String tableName, String methodName, String endpoint, Object[] rowKeys,
-                              ObTableQueryAndMutateResult result, long routeTableTime, long executeTime) {
+    private String logMessage(String tableName, String methodName, String endpoint,
+                              Object[] rowKeys, ObTableQueryAndMutateResult result,
+                              long routeTableTime, long executeTime) {
         if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
             endpoint = endpoint.replaceAll(",", "#");
         }
@@ -1379,14 +1403,17 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         String res = String.valueOf(result.getAffectedRows());
 
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(",").append(database).append(",").append(tableName).append(",").append(methodName).append(",").append(endpoint).append(",").append(argsValue)
-                .append(",").append(result.toString()).append(",").append(res).append(",")
-                .append(routeTableTime).append(",").append(executeTime).append(",").append(executeTime + routeTableTime);
+        stringBuilder.append(",").append(database).append(",").append(tableName).append(",")
+            .append(methodName).append(",").append(endpoint).append(",").append(argsValue)
+            .append(",").append(result.toString()).append(",").append(res).append(",")
+            .append(routeTableTime).append(",").append(executeTime).append(",")
+            .append(executeTime + routeTableTime);
         return stringBuilder.toString();
     }
 
-    private String logMessage(String tableName, String methodName, String endpoint, Object[] rowKeys,
-                              ObTableOperationResult result, long routeTableTime, long executeTime) {
+    private String logMessage(String tableName, String methodName, String endpoint,
+                              Object[] rowKeys, ObTableOperationResult result, long routeTableTime,
+                              long executeTime) {
         if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
             endpoint = endpoint.replaceAll(",", "#");
         }
@@ -1409,9 +1436,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         String errorCodeStringValue = resultCode.toString();
 
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(",").append(database).append(",").append(tableName).append(",").append(methodName).append(",").append(endpoint).append(",").append(argsValue)
-                .append(",").append(errorCodeStringValue).append(",").append(res).append(",")
-                .append(routeTableTime).append(",").append(executeTime).append(",").append(executeTime + routeTableTime);
+        stringBuilder.append(",").append(database).append(",").append(tableName).append(",")
+            .append(methodName).append(",").append(endpoint).append(",").append(argsValue)
+            .append(",").append(errorCodeStringValue).append(",").append(res).append(",")
+            .append(routeTableTime).append(",").append(executeTime).append(",")
+            .append(executeTime + routeTableTime);
         return stringBuilder.toString();
     }
 
@@ -1443,8 +1472,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 request.setPartitionId(partId);
                 ObPayload result = obPair.getRight().execute(request);
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
-                MONITOR.info(logMessage(tableName, "DELETE",
-                        endpoint, rowKey, (ObTableOperationResult) result, getTableTime - start, System.currentTimeMillis() - getTableTime));
+                MONITOR.info(logMessage(tableName, "DELETE", endpoint, rowKey,
+                    (ObTableOperationResult) result, getTableTime - start,
+                    System.currentTimeMillis() - getTableTime));
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
                 return ((ObTableOperationResult) result).getAffectedRows();
             }
@@ -1453,8 +1483,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * Delete with result
+     * @param tableName which table to delete
+     * @param rowKey delete row key
+     * @return execute result
+     * @throws Exception exception
      */
-    public ObPayload deleteWithResult(final String tableName, final Object[] rowKey) throws Exception {
+    public ObPayload deleteWithResult(final String tableName, final Object[] rowKey)
+                                                                                    throws Exception {
         final long start = System.currentTimeMillis();
         return execute(tableName, new TableExecuteCallback<ObPayload>(rowKey) {
 
@@ -1467,12 +1502,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 ObTable obTable = obPair.getRight();
                 long partId = obPair.getLeft();
                 ObTableOperationRequest request = ObTableOperationRequest.getInstance(tableName,
-                        DEL, rowKey, null, null, obTable.getObTableOperationTimeout());
+                    DEL, rowKey, null, null, obTable.getObTableOperationTimeout());
                 request.setPartitionId(partId);
                 ObPayload result = obTable.execute(request);
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
-                MONITOR.info(logMessage(tableName, "DELETE",
-                        endpoint, rowKey, (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis() - TableTime));
+                MONITOR.info(logMessage(tableName, "DELETE", endpoint, rowKey,
+                    (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis()
+                                                                        - TableTime));
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
                 return result;
             }
@@ -1507,8 +1543,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 request.setPartitionId(partId);
                 ObPayload result = obPair.getRight().execute(request);
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
-                MONITOR.info(logMessage(tableName, "INSERT",
-                        endpoint, rowKey, (ObTableOperationResult) result, getTableTime - start, System.currentTimeMillis() - getTableTime));
+                MONITOR.info(logMessage(tableName, "INSERT", endpoint, rowKey,
+                    (ObTableOperationResult) result, getTableTime - start,
+                    System.currentTimeMillis() - getTableTime));
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
                 return ((ObTableOperationResult) result).getAffectedRows();
             }
@@ -1517,9 +1554,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * Insert with result
+     * @param tableName which table to insert
+     * @param rowKey insert row key
+     * @param columns columns name to insert
+     * @param values new values
+     * @return execute result
+     * @throws Exception exception
      */
-    public ObPayload insertWithResult(final String tableName, final Object[] rowKey, final String[] columns,
-                       final Object[] values) throws Exception {
+    public ObPayload insertWithResult(final String tableName, final Object[] rowKey,
+                                      final String[] columns, final Object[] values)
+                                                                                    throws Exception {
         final long start = System.currentTimeMillis();
         return execute(tableName, new TableExecuteCallback<ObPayload>(rowKey) {
             /**
@@ -1531,12 +1575,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 long partId = obPair.getLeft();
                 ObTable obTable = obPair.getRight();
                 ObTableOperationRequest request = ObTableOperationRequest.getInstance(tableName,
-                        INSERT, rowKey, columns, values, obTable.getObTableOperationTimeout());
+                    INSERT, rowKey, columns, values, obTable.getObTableOperationTimeout());
                 request.setPartitionId(partId);
                 ObPayload result = obTable.execute(request);
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
-                MONITOR.info(logMessage(tableName, "INSERT",
-                        endpoint, rowKey, (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis() - TableTime));
+                MONITOR.info(logMessage(tableName, "INSERT", endpoint, rowKey,
+                    (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis()
+                                                                        - TableTime));
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
                 return result;
             }
@@ -1549,7 +1594,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     public Replace replace(String tableName) {
         return new Replace(this, tableName);
     }
-
 
     /**
      * Replace.
@@ -1572,8 +1616,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 request.setPartitionId(partId);
                 ObPayload result = obPair.getRight().execute(request);
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
-                MONITOR.info(logMessage(tableName, "REPLACE",
-                        endpoint, rowKey, (ObTableOperationResult) result, getTableTime - start, System.currentTimeMillis() - getTableTime));
+                MONITOR.info(logMessage(tableName, "REPLACE", endpoint, rowKey,
+                    (ObTableOperationResult) result, getTableTime - start,
+                    System.currentTimeMillis() - getTableTime));
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
                 return ((ObTableOperationResult) result).getAffectedRows();
             }
@@ -1582,9 +1627,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * Replace with result
+     * @param tableName which table to replace
+     * @param rowKey replace row key
+     * @param columns columns name to replace
+     * @param values new values
+     * @return execute result
+     * @throws Exception exception
      */
-    public ObPayload replaceWithResult(final String tableName, final Object[] rowKey, final String[] columns,
-                        final Object[] values) throws Exception {
+    public ObPayload replaceWithResult(final String tableName, final Object[] rowKey,
+                                       final String[] columns, final Object[] values)
+                                                                                     throws Exception {
         final long start = System.currentTimeMillis();
         return execute(tableName, new TableExecuteCallback<ObPayload>(rowKey) {
             /**
@@ -1596,12 +1648,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 ObTable obTable = obPair.getRight();
                 long partId = obPair.getLeft();
                 ObTableOperationRequest request = ObTableOperationRequest.getInstance(tableName,
-                        REPLACE, rowKey, columns, values, obTable.getObTableOperationTimeout());
+                    REPLACE, rowKey, columns, values, obTable.getObTableOperationTimeout());
                 request.setPartitionId(partId);
                 ObPayload result = obTable.execute(request);
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
-                MONITOR.info(logMessage(tableName, "REPLACE",
-                        endpoint, rowKey, (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis() - TableTime));
+                MONITOR.info(logMessage(tableName, "REPLACE", endpoint, rowKey,
+                    (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis()
+                                                                        - TableTime));
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
                 return result;
             }
@@ -1636,8 +1689,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 request.setPartitionId(partId);
                 ObPayload result = obPair.getRight().execute(request);
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
-                MONITOR.info(logMessage(tableName, "INERT_OR_UPDATE",
-                        endpoint, rowKey, (ObTableOperationResult) result, getTableTime - start, System.currentTimeMillis() - getTableTime));
+                MONITOR.info(logMessage(tableName, "INERT_OR_UPDATE", endpoint, rowKey,
+                    (ObTableOperationResult) result, getTableTime - start,
+                    System.currentTimeMillis() - getTableTime));
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
                 return ((ObTableOperationResult) result).getAffectedRows();
             }
@@ -1645,10 +1699,17 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /**
-     * Insert or update with result
+     * InsertOrUpdate with result
+     * @param tableName which table to InsertOrUpdate
+     * @param rowKey InsertOrUpdate row key
+     * @param columns columns name to InsertOrUpdate
+     * @param values new values
+     * @return execute result
+     * @throws Exception exception
      */
     public ObPayload insertOrUpdateWithResult(final String tableName, final Object[] rowKey,
-                               final String[] columns, final Object[] values) throws Exception {
+                                              final String[] columns, final Object[] values)
+                                                                                            throws Exception {
         final long start = System.currentTimeMillis();
         return execute(tableName, new TableExecuteCallback<ObPayload>(rowKey) {
             /**
@@ -1660,12 +1721,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 ObTable obTable = obPair.getRight();
                 long partId = obPair.getLeft();
                 ObTableOperationRequest request = ObTableOperationRequest.getInstance(tableName,
-                        INSERT_OR_UPDATE, rowKey, columns, values, obTable.getObTableOperationTimeout());
+                    INSERT_OR_UPDATE, rowKey, columns, values, obTable.getObTableOperationTimeout());
                 request.setPartitionId(partId);
                 ObPayload result = obTable.execute(request);
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
-                MONITOR.info(logMessage(tableName, "INERT_OR_UPDATE",
-                        endpoint, rowKey, (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis() - TableTime));
+                MONITOR.info(logMessage(tableName, "INERT_OR_UPDATE", endpoint, rowKey,
+                    (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis()
+                                                                        - TableTime));
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
                 return result;
             }
@@ -1681,13 +1743,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      *
-     * @param tableName
-     * @param rowKey
-     * @param columns
-     * @param values
-     * @param withResult
-     * @return
-     * @throws Exception
+     * @param tableName which table to increment
+     * @param rowKey increment row key
+     * @param columns columns name to increment
+     * @param values new valuess
+     * @param withResult whether to bring back result
+     * @return execute result
+     * @throws Exception exception
      */
     @Override
     public Map<String, Object> increment(final String tableName, final Object[] rowKey,
@@ -1712,8 +1774,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 request.setPartitionId(partId);
                 ObPayload result = obPair.getRight().execute(request);
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
-                MONITOR.info(logMessage(tableName, "INCREMENT",
-                        endpoint, rowKey, (ObTableOperationResult) result, getTableTime - start, System.currentTimeMillis() - getTableTime));
+                MONITOR.info(logMessage(tableName, "INCREMENT", endpoint, rowKey,
+                    (ObTableOperationResult) result, getTableTime - start,
+                    System.currentTimeMillis() - getTableTime));
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
                 return ((ObTableOperationResult) result).getEntity().getSimpleProperties();
             }
@@ -1721,7 +1784,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /**
-     * increment with result
+     * Increment with result
+     * @param tableName which table to increment
+     * @param rowKey increment row key
+     * @param columns columns name to increment
+     * @param values new values
+     * @param withResult whether to bring back result
+     * @return execute result
+     * @throws Exception exception
      */
     public ObPayload incrementWithResult(final String tableName, final Object[] rowKey,
                                          final String[] columns, final Object[] values,
@@ -1740,13 +1810,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 ObTable obTable = obPair.getRight();
                 long partId = obPair.getLeft();
                 ObTableOperationRequest request = ObTableOperationRequest.getInstance(tableName,
-                        INCREMENT, rowKey, columns, values, obTable.getObTableOperationTimeout());
+                    INCREMENT, rowKey, columns, values, obTable.getObTableOperationTimeout());
                 request.setReturningAffectedEntity(withResult);
                 request.setPartitionId(partId);
                 ObPayload result = obTable.execute(request);
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
-                MONITOR.info(logMessage(tableName, "INCREMENT",
-                        endpoint, rowKey, (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis() - TableTime));
+                MONITOR.info(logMessage(tableName, "INCREMENT", endpoint, rowKey,
+                    (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis()
+                                                                        - TableTime));
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
                 return result;
             }
@@ -1778,16 +1849,24 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 request.setPartitionId(partId);
                 ObPayload result = obPair.getRight().execute(request);
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
-                MONITOR.info(logMessage(tableName, "APPEND",
-                        endpoint, rowKey, (ObTableOperationResult) result, getTableTime - start, System.currentTimeMillis() - getTableTime));
+                MONITOR.info(logMessage(tableName, "APPEND", endpoint, rowKey,
+                    (ObTableOperationResult) result, getTableTime - start,
+                    System.currentTimeMillis() - getTableTime));
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
                 return ((ObTableOperationResult) result).getEntity().getSimpleProperties();
             }
         });
     }
 
-    /*
-     * append with result
+    /**
+     * Append with result
+     * @param tableName which table to append
+     * @param rowKey append row key
+     * @param columns columns name to append
+     * @param values new values
+     * @param withResult whether to bring back row result
+     * @return execute result
+     * @throws Exception exception
      */
     public ObPayload appendWithResult(final String tableName, final Object[] rowKey,
                                       final String[] columns, final Object[] values,
@@ -1801,13 +1880,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 ObTable obTable = obPair.getRight();
                 long partId = obPair.getLeft();
                 ObTableOperationRequest request = ObTableOperationRequest.getInstance(tableName,
-                        APPEND, rowKey, columns, values, obTable.getObTableOperationTimeout());
+                    APPEND, rowKey, columns, values, obTable.getObTableOperationTimeout());
                 request.setReturningAffectedEntity(withResult);
                 request.setPartitionId(partId);
                 ObPayload result = obTable.execute(request);
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
-                MONITOR.info(logMessage(tableName, "APPEND",
-                        endpoint, rowKey, (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis() - TableTime));
+                MONITOR.info(logMessage(tableName, "APPEND", endpoint, rowKey,
+                    (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis()
+                                                                        - TableTime));
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
                 return result;
             }
@@ -1823,10 +1903,19 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * execute mutation with filter
+     * @param tableQuery table query
+     * @param rowKey row key which want to mutate
+     * @param type type of operation
+     * @param columns columns name
+     * @param values new values
+     * @param withResult whether to bring back result
+     * @return execute result
+     * @throws Exception exception
      */
     public ObPayload mutationWithFilter(final TableQuery tableQuery, final Object[] rowKey,
                                         final ObTableOperationType type, final String[] columns,
-                                        final Object[] values, final boolean withResult) throws Exception {
+                                        final Object[] values, final boolean withResult)
+                                                                                        throws Exception {
         final long start = System.currentTimeMillis();
         return execute(tableQuery.getTableName(), new TableExecuteCallback<ObPayload>(rowKey) {
             /**
@@ -1837,15 +1926,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 long TableTime = System.currentTimeMillis();
                 long partId = obPair.getLeft();
                 ObTable obTable = obPair.getRight();
-                ObTableQueryAndMutateRequest request = obTableQueryAndMutate(type,
-                        tableQuery, columns, values, false);
+                ObTableQueryAndMutateRequest request = obTableQueryAndMutate(type, tableQuery,
+                    columns, values, false);
                 request.setTimeout(obTable.getObTableOperationTimeout());
                 request.setReturningAffectedEntity(withResult);
                 request.setPartitionId(partId);
                 ObPayload result = obTable.execute(request);
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
-                MONITOR.info(logMessage(tableQuery.toString(), type.toString(),
-                        endpoint, rowKey, (ObTableQueryAndMutateResult) result, TableTime - start, System.currentTimeMillis() - TableTime));
+                MONITOR.info(logMessage(tableQuery.toString(), type.toString(), endpoint, rowKey,
+                    (ObTableQueryAndMutateResult) result, TableTime - start,
+                    System.currentTimeMillis() - TableTime));
                 checkObTableQueryAndMutateResult(obTable.getIp(), obTable.getPort(), result);
                 return result;
             }
@@ -1854,92 +1944,104 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      *
-     * @param tableQuery
-     * @param columns
-     * @param values
-     * @return
-     * @throws Exception
+     * @param tableQuery table query
+     * @param columns columns name
+     * @param values new value
+     * @return mutate request
+     * @throws Exception exceotion
      */
     public ObTableQueryAndMutateRequest obTableQueryAndUpdate(final TableQuery tableQuery,
                                                               final String[] columns,
-                                                              final Object[] values) throws Exception {
+                                                              final Object[] values)
+                                                                                    throws Exception {
         if (null == columns || null == values || 0 == columns.length || 0 == values.length) {
             throw new ObTableException("client get unexpected empty columns or values");
         }
-        return obTableQueryAndMutate(ObTableOperationType.UPDATE, tableQuery, columns, values, false);
+        return obTableQueryAndMutate(ObTableOperationType.UPDATE, tableQuery, columns, values,
+            false);
     }
 
     /**
      *
-     * @param tableQuery
-     * @return
-     * @throws Exception
+     * @param tableQuery table query
+     * @return delete request
+     * @throws Exception exception
      */
 
-    public ObTableQueryAndMutateRequest obTableQueryAndDelete(final TableQuery tableQuery) throws Exception {
+    public ObTableQueryAndMutateRequest obTableQueryAndDelete(final TableQuery tableQuery)
+                                                                                          throws Exception {
         return obTableQueryAndMutate(ObTableOperationType.DEL, tableQuery, null, null, false);
     }
 
     /**
      *
-     * @param tableQuery
-     * @param columns
-     * @param values
-     * @param withResult
-     * @return
-     * @throws Exception
+     * @param tableQuery table query
+     * @param columns columns name
+     * @param values new values
+     * @param withResult whether to bring back result
+     * @return increment result
+     * @throws Exception exception
      */
     public ObTableQueryAndMutateRequest obTableQueryAndIncrement(final TableQuery tableQuery,
-                                                                 final String[] columns, final Object[] values,
-                                                                 final boolean withResult) throws Exception {
+                                                                 final String[] columns,
+                                                                 final Object[] values,
+                                                                 final boolean withResult)
+                                                                                          throws Exception {
         if (null == columns || null == values || 0 == columns.length || 0 == values.length) {
             throw new ObTableException("client get unexpected empty columns or values");
         }
-        return obTableQueryAndMutate(ObTableOperationType.INCREMENT, tableQuery, columns, values, withResult);
+        return obTableQueryAndMutate(ObTableOperationType.INCREMENT, tableQuery, columns, values,
+            withResult);
     }
 
     /**
      *
-     * @param tableQuery
-     * @param columns
-     * @param values
-     * @param withResult
-     * @return
-     * @throws Exception
+     * @param tableQuery table query
+     * @param columns columns name
+     * @param values new values
+     * @param withResult whether to bring back result
+     * @return append result
+     * @throws Exception exception
      */
     public ObTableQueryAndMutateRequest obTableQueryAndAppend(final TableQuery tableQuery,
                                                               final String[] columns,
                                                               final Object[] values,
-                                                              final boolean withResult) throws Exception {
+                                                              final boolean withResult)
+                                                                                       throws Exception {
         if (null == columns || null == values || 0 == columns.length || 0 == values.length) {
             throw new ObTableException("client get unexpected empty columns or values");
         }
-        return obTableQueryAndMutate(ObTableOperationType.APPEND, tableQuery, columns, values, withResult);
+        return obTableQueryAndMutate(ObTableOperationType.APPEND, tableQuery, columns, values,
+            withResult);
     }
 
     /**
      *
-     * @param type
-     * @param tableQuery
-     * @param columns
-     * @param values
-     * @param withResult
+     * @param type type of operation
+     * @param tableQuery table query
+     * @param columns columns name
+     * @param values new values
+     * @param withResult whether to bring back result
      * @return
      * @throws Exception
      */
-    ObTableQueryAndMutateRequest obTableQueryAndMutate(final ObTableOperationType type, final TableQuery tableQuery,
-                                                       final String[] columns, final Object[] values,
+    ObTableQueryAndMutateRequest obTableQueryAndMutate(final ObTableOperationType type,
+                                                       final TableQuery tableQuery,
+                                                       final String[] columns,
+                                                       final Object[] values,
                                                        final boolean withResult) throws Exception {
         ObTableQuery obTableQuery = tableQuery.getObTableQuery();
         String tableName = tableQuery.getTableName();
 
         ObTableBatchOperation operations = new ObTableBatchOperation();
-        ObTableOperation operation = ObTableOperation.getInstance(type, new Object[] {}, columns, values);
+        ObTableOperation operation = ObTableOperation.getInstance(type, new Object[] {}, columns,
+            values);
         operations.addTableOperation(operation);
 
         ObTableQueryAndMutate queryAndMutate = buildObTableQueryAndMutate(obTableQuery, operations);
 
-        ObTableQueryAndMutateRequest request = buildObTableQueryAndMutateRequest(queryAndMutate, tableName);
+        ObTableQueryAndMutateRequest request = buildObTableQueryAndMutateRequest(queryAndMutate,
+            tableName);
 
         request.setReturningRowKey(false);
         request.setReturningAffectedEntity(withResult);
@@ -2011,14 +2113,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     }
                     ObBorderFlag borderFlag = rang.getBorderFlag();
                     List<ObPair<Long, ObTable>> pairList = getTables(request.getTableName(), start,
-                            borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false, false);
+                        borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false,
+                        false);
                     for (ObPair<Long, ObTable> pair : pairList) {
                         partIdMapObTable.put(pair.getLeft(), pair.getRight());
                     }
                 }
                 if (partIdMapObTable.size() > 1) {
                     throw new ObTablePartitionConsistentException(
-                            "query and mutate must be a atomic operation");
+                        "query and mutate must be a atomic operation");
                 }
 
                 for (Long partId : partIdMapObTable.keySet()) {
@@ -2057,8 +2160,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     public void setFullUserName(String fullUserName) throws IllegalArgumentException {
         if (StringUtils.isBlank(fullUserName)) {
-            RUNTIME.error(String.format(
-                    "full username is empty, full username=%s", fullUserName));
+            RUNTIME.error(String.format("full username is empty, full username=%s", fullUserName));
             throw new IllegalArgumentException(String.format(
                 "full username is empty, full username=%s", fullUserName));
         }
@@ -2103,8 +2205,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         utIndex = username.indexOf('@');
         tcIndex = username.indexOf('#');
         if (-1 == utIndex || -1 == tcIndex || utIndex >= tcIndex) {
-            RUNTIME.error(String.format("invalid full username, username=%s",
-                    username));
+            RUNTIME.error(String.format("invalid full username, username=%s", username));
             throw new IllegalArgumentException(String.format("invalid full username, username=%s",
                 username));
         }
@@ -2118,7 +2219,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private void parseNonStandardFullUsername(String username) {
         if (StringUtils.isBlank(usernameSeparators)) {
             RUNTIME.error(String.format(
-                    "non standard username separators has not been set, full username=%s", username));
+                "non standard username separators has not been set, full username=%s", username));
             throw new IllegalArgumentException(String.format(
                 "non standard username separators has not been set, full username=%s", username));
         }
@@ -2136,9 +2237,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
 
         if (-1 == ctIndex || -1 == tuIndex || (ctIndex == tuIndex)) {
-            RUNTIME.error(String.format(
-                    "invalid full username, username=%s, userSeparators=%s", username,
-                    usernameSeparators));
+            RUNTIME.error(String.format("invalid full username, username=%s, userSeparators=%s",
+                username, usernameSeparators));
             throw new IllegalArgumentException(String.format(
                 "invalid full username, username=%s, userSeparators=%s", username,
                 usernameSeparators));
@@ -2159,20 +2259,17 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     private void handleFullUsername(String user, String tenant, String cluster, String username) {
         if (StringUtils.isBlank(user)) {
-            RUNTIME.error(String.format("user has not been set, username=%s",
-                    username));
+            RUNTIME.error(String.format("user has not been set, username=%s", username));
             throw new IllegalArgumentException(String.format("user has not been set, username=%s",
                 username));
         }
         if (StringUtils.isBlank(tenant)) {
-            RUNTIME.error(String.format(
-                    "tenant has not been set, username=%s", username));
+            RUNTIME.error(String.format("tenant has not been set, username=%s", username));
             throw new IllegalArgumentException(String.format(
                 "tenant has not been set, username=%s", username));
         }
         if (StringUtils.isBlank(cluster)) {
-            RUNTIME.error(String.format(
-                    "cluster has not been set, username=%s", username));
+            RUNTIME.error(String.format("cluster has not been set, username=%s", username));
             throw new IllegalArgumentException(String.format(
                 "cluster has not been set, username=%s", username));
         }
@@ -2201,8 +2298,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
         int paramIndex = paramURL.indexOf('?');
         if (-1 == paramIndex || (paramIndex + 1) == paramURL.length()) {
-            RUNTIME.error(String.format(
-                    "invalid zdal url, parameters are not set. url=%s", paramURL));
+            RUNTIME.error(String.format("invalid zdal url, parameters are not set. url=%s",
+                paramURL));
             throw new IllegalArgumentException(String.format(
                 "invalid zdal url, parameters are not set. url=%s", paramURL));
         }
@@ -2213,8 +2310,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         for (String param : params) {
             String kv[] = param.split("=");
             if (2 != kv.length) {
-                RUNTIME.error(String.format(
-                        "invalid parameter format. url=%s", paramURL));
+                RUNTIME.error(String.format("invalid parameter format. url=%s", paramURL));
                 throw new IllegalArgumentException(String.format(
                     "invalid parameter format. url=%s", paramURL));
             }
@@ -2370,8 +2466,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     public void addRowKeyElement(String tableName, String[] columns) {
         if (columns == null || columns.length == 0) {
-            RUNTIME.error("add row key element error table "+ tableName
-                    + " column " + Arrays.toString(columns));
+            RUNTIME.error("add row key element error table " + tableName + " column "
+                          + Arrays.toString(columns));
             throw new IllegalArgumentException("add row key element error table " + tableName
                                                + " column " + Arrays.toString(columns));
         }

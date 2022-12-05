@@ -44,6 +44,7 @@ public interface Table {
 
     long update(String tableName, Object[] rowkeys, String[] columns, Object[] values)
                                                                                       throws Exception;
+
     Delete delete(String tableName);
 
     long delete(String tableName, Object rowkey) throws Exception;

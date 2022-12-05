@@ -30,7 +30,7 @@ import java.util.Map;
 public class Increment extends Mutation<Increment> {
     private List<String> columns;
     private List<Object> values;
-    boolean withResult;
+    boolean              withResult;
 
     /*
      * default constructor
@@ -112,7 +112,6 @@ public class Increment extends Mutation<Increment> {
         return this;
     }
 
-
     /*
      * only using by execute()
      * get the selected columns of this mutation
@@ -149,24 +148,15 @@ public class Increment extends Mutation<Increment> {
 
         if (null == getQuery()) {
             // simple update, without filter
-            return new MutationResult(
-                    ((ObTableClient) getClient()).
-                            incrementWithResult(getTableName(),
-                                    getRowKey(),
-                                    columns.toArray(new String[0]),
-                                    values.toArray(),
-                                    withResult));
+            return new MutationResult(((ObTableClient) getClient()).incrementWithResult(
+                getTableName(), getRowKey(), columns.toArray(new String[0]), values.toArray(),
+                withResult));
         } else {
             // QueryAndIncrement
             getQuery().select(getSelectedColumns());
-            return new MutationResult(
-                    ((ObTableClient) getClient()).
-                            mutationWithFilter(getQuery(),
-                                    getRowKey(),
-                                    ObTableOperationType.INCREMENT,
-                                    columns.toArray(new String[0]),
-                                    values.toArray(),
-                                    withResult));
+            return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
+                getRowKey(), ObTableOperationType.INCREMENT, columns.toArray(new String[0]),
+                values.toArray(), withResult));
         }
     }
 }

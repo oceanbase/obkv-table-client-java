@@ -82,8 +82,8 @@ public class ObTableQueryImpl extends AbstractTableQueryImpl {
 
     /**
      * 只有 limit query 需要，其他不需要
-     * @param keys
-     * @return
+     * @param keys keys
+     * @return query
      */
     @Override
     public TableQuery setKeys(String... keys) {

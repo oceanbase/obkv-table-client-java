@@ -292,7 +292,6 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         return entity.getSimpleProperties();
     }
 
-
     /**
      * append.
      */

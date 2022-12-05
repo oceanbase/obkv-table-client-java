@@ -195,12 +195,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         results.add(new MutationResult(result));
                         break;
                     default:
-                        throw new ObTableException("unknown operation type " + result.getOperationType());
+                        throw new ObTableException("unknown operation type "
+                                                   + result.getOperationType());
                 }
             } else {
                 results.add(ExceptionUtil.convertToObTableException(result.getExecuteHost(),
-                        result.getExecutePort(), result.getSequence(), result.getUniqueId(),
-                        errCode));
+                    result.getExecutePort(), result.getSequence(), result.getUniqueId(), errCode));
             }
         }
         return results;
@@ -214,10 +214,11 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
 
         if (obTableClient.isOdpMode()) {
             ObPair<ObTable, List<ObPair<Integer, ObTableOperation>>> obTableOperations = new ObPair<ObTable, List<ObPair<Integer, ObTableOperation>>>(
-                    obTableClient.getOdpTable(), new ArrayList<ObPair<Integer, ObTableOperation>>());
+                obTableClient.getOdpTable(), new ArrayList<ObPair<Integer, ObTableOperation>>());
             for (int i = 0; i < operations.size(); i++) {
                 ObTableOperation operation = operations.get(i);
-                obTableOperations.getRight().add(new ObPair<Integer, ObTableOperation>(i, operation));
+                obTableOperations.getRight().add(
+                    new ObPair<Integer, ObTableOperation>(i, operation));
             }
             partitionOperationsMap.put(0L, obTableOperations);
             return partitionOperationsMap;
@@ -232,7 +233,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 rowKey[j] = rowKeyObject.getObj(j).getValue();
             }
             ObPair<Long, ObTable> tableObPair = obTableClient.getTable(tableName, rowKey, false,
-                    false, obTableClient.getRoute(batchOperation.isReadOnly()));
+                false, obTableClient.getRoute(batchOperation.isReadOnly()));
             ObPair<ObTable, List<ObPair<Integer, ObTableOperation>>> obTableOperations = partitionOperationsMap
                 .get(tableObPair.getLeft());
             if (obTableOperations == null) {
@@ -296,11 +297,11 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             long currentExecute = System.currentTimeMillis();
             long costMillis = currentExecute - startExecute;
             if (costMillis > obTableClient.getRuntimeMaxWait()) {
-                logger.error("tablename:{} partition id:{} it has tried " + tryTimes
-                        + " times and it has waited " + costMillis
-                        + "/ms which exceeds response timeout "
-                        + obTableClient.getRuntimeMaxWait() + "/ms",
-                        tableName, partId);
+                logger.error(
+                    "tablename:{} partition id:{} it has tried " + tryTimes
+                            + " times and it has waited " + costMillis
+                            + "/ms which exceeds response timeout "
+                            + obTableClient.getRuntimeMaxWait() + "/ms", tableName, partId);
                 throw new ObTableTimeoutExcetion("it has tried " + tryTimes
                                                  + " times and it has waited " + costMillis
                                                  + "/ms which exceeds response timeout "
@@ -319,8 +320,9 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
-                        subObTable = obTableClient.getTable(tableName, partId, needRefreshTableEntry,
-                                obTableClient.isTableEntryRefreshIntervalWait(), route).getRight();
+                        subObTable = obTableClient.getTable(tableName, partId,
+                            needRefreshTableEntry, obTableClient.isTableEntryRefreshIntervalWait(),
+                            route).getRight();
                     }
                 }
                 subObTableBatchOperationResult = (ObTableBatchOperationResult) subObTable
@@ -330,14 +332,19 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             } catch (Exception ex) {
                 if (obTableClient.isOdpMode()) {
                     if ((tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
-                        logger.warn("batch ops execute while meet Exception, tablename:{}, errorCode: {} , errorMsg: {}, try times {}",
-                                tableName, ((ObTableException) ex).getErrorCode(), ex.getMessage(), tryTimes);
+                        logger
+                            .warn(
+                                "batch ops execute while meet Exception, tablename:{}, errorCode: {} , errorMsg: {}, try times {}",
+                                tableName, ((ObTableException) ex).getErrorCode(), ex.getMessage(),
+                                tryTimes);
                     } else {
                         throw ex;
                     }
                 } else if (ex instanceof ObTableReplicaNotReadableException) {
                     if ((tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
-                        logger.warn("tablename:{} partition id:{} retry when replica not readable: {}", tableName, partId, ex.getMessage());
+                        logger.warn(
+                            "tablename:{} partition id:{} retry when replica not readable: {}",
+                            tableName, partId, ex.getMessage());
                         if (failedServerList == null) {
                             failedServerList = new HashSet<String>();
                         }
@@ -346,18 +353,20 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         logger.warn("exhaust retry when replica not readable: {}", ex.getMessage());
                         throw ex;
                     }
-                } else if (ex instanceof ObTableException && ((ObTableException) ex).isNeedRefreshTableEntry()) {
+                } else if (ex instanceof ObTableException
+                           && ((ObTableException) ex).isNeedRefreshTableEntry()) {
                     needRefreshTableEntry = true;
                     logger
                         .warn(
                             "tablename:{} partition id:{} batch ops refresh table while meet ObTableMasterChangeException, errorCode: {}",
-                                tableName, partId, ((ObTableException) ex).getErrorCode(), ex);
+                            tableName, partId, ((ObTableException) ex).getErrorCode(), ex);
                     if (obTableClient.isRetryOnChangeMasterTimes()
                         && (tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
                         logger
                             .warn(
                                 "tablename:{} partition id:{} batch ops retry while meet ObTableMasterChangeException, errorCode: {} , retry times {}",
-                                    tableName, partId, ((ObTableException) ex).getErrorCode(), tryTimes, ex);
+                                tableName, partId, ((ObTableException) ex).getErrorCode(),
+                                tryTimes, ex);
                     } else {
                         obTableClient.calculateContinuousFailure(tableName, ex.getMessage());
                         throw ex;
@@ -373,7 +382,10 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         long endExecute = System.currentTimeMillis();
 
         if (subObTableBatchOperationResult == null) {
-            RUNTIME.error("tablename:{} partition id:{} check batch operation result error: client get unexpected NULL result", tableName, partId);
+            RUNTIME
+                .error(
+                    "tablename:{} partition id:{} check batch operation result error: client get unexpected NULL result",
+                    tableName, partId);
             throw new ObTableUnexpectedException(
                 "check batch operation result error: client get unexpected NULL result");
         }
@@ -381,9 +393,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         List<ObTableOperationResult> subObTableOperationResults = subObTableBatchOperationResult
             .getResults();
         String endpoint = subObTable.getIp() + ":" + subObTable.getPort();
-        logMessage0(tableName, "BATCH-partitionExecute-",
-                endpoint, subOperations, partId, subObTableOperationResults.size(), endExecute - startExecute);
-
+        logMessage0(tableName, "BATCH-partitionExecute-", endpoint, subOperations, partId,
+            subObTableOperationResults.size(), endExecute - startExecute);
 
         if (subObTableOperationResults.size() < subOperations.getTableOperations().size()) {
             // only one result when it across failed
@@ -444,8 +455,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         }
     }
 
-    private String logMessage(String tableName, String methodName, String endpoint, List<Object> rowKeys,
-                              int resultSize, long executeTime) {
+    private String logMessage(String tableName, String methodName, String endpoint,
+                              List<Object> rowKeys, int resultSize, long executeTime) {
         if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
             endpoint = endpoint.replaceAll(",", "#");
         }
@@ -453,11 +464,10 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         String argsValue = buildParamsString(rowKeys);
 
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(",").append(obTableClient.getDatabase()).append(",").append(tableName).append(",").append(methodName).append(",").append(endpoint).append(",").append(argsValue)
-                .append(",").append(",").append(resultSize).append(",")
-                .append(0).append(",")
-                .append(executeTime).append(",")
-                .append(executeTime);
+        stringBuilder.append(",").append(obTableClient.getDatabase()).append(",").append(tableName)
+            .append(",").append(methodName).append(",").append(endpoint).append(",")
+            .append(argsValue).append(",").append(",").append(resultSize).append(",").append(0)
+            .append(",").append(executeTime).append(",").append(executeTime);
         return stringBuilder.toString();
     }
 
@@ -547,23 +557,23 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             batchOperationResult.addResult(obTableOperationResult);
         }
 
-        MONITOR.info(logMessage(tableName, "BATCH",
-                "", obTableOperationResults.length, getTableTime - start, System.currentTimeMillis() - getTableTime));
+        MONITOR.info(logMessage(tableName, "BATCH", "", obTableOperationResults.length,
+            getTableTime - start, System.currentTimeMillis() - getTableTime));
 
         return batchOperationResult;
     }
 
-    private String logMessage(String tableName, String methodName, String endpoint,
-                              int resultSize, long routeTableTime, long executeTime) {
+    private String logMessage(String tableName, String methodName, String endpoint, int resultSize,
+                              long routeTableTime, long executeTime) {
         if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
             endpoint = endpoint.replaceAll(",", "#");
         }
 
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(",").append(obTableClient.getDatabase()).append(tableName).append(",").append(methodName).append(",").append(endpoint)
-                .append(",").append(",").append(",").append(resultSize).append(",")
-                .append(routeTableTime).append(",").append(executeTime)
-                .append(",").append(routeTableTime + executeTime);
+        stringBuilder.append(",").append(obTableClient.getDatabase()).append(tableName).append(",")
+            .append(methodName).append(",").append(endpoint).append(",").append(",").append(",")
+            .append(resultSize).append(",").append(routeTableTime).append(",").append(executeTime)
+            .append(",").append(routeTableTime + executeTime);
         return stringBuilder.toString();
     }
 

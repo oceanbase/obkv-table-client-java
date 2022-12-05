@@ -151,8 +151,10 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
                         results.add(realResult.getAffectedRows());
                 }
             } else {
-                results.add(ExceptionUtil.convertToObTableException(obTable.getIp(),
-                    obTable.getPort(), realResult.getSequence(), realResult.getUniqueId(), errCode));
+                results
+                    .add(ExceptionUtil.convertToObTableException(obTable.getIp(),
+                        obTable.getPort(), realResult.getSequence(), realResult.getUniqueId(),
+                        errCode));
             }
         }
         return results;
@@ -186,10 +188,12 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
                         results.add(new MutationResult(realResult));
                         break;
                     default:
-                        throw new ObTableException("unknown operation type " + realResult.getOperationType());
+                        throw new ObTableException("unknown operation type "
+                                                   + realResult.getOperationType());
                 }
             } else {
-                results.add(ExceptionUtil.convertToObTableException(obTable.getIp(),
+                results
+                    .add(ExceptionUtil.convertToObTableException(obTable.getIp(),
                         obTable.getPort(), realResult.getSequence(), realResult.getUniqueId(),
                         errCode));
             }

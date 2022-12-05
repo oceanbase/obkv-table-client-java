@@ -543,13 +543,13 @@ public abstract class ObTableClientTestBase {
         } else {
             try {
                 for (int i = 0; i < 5; i++) {
-                    client.insert("test_varchar_table", c1[i], new String[]{"c2"},
-                            new Object[]{c2[i]});
+                    client.insert("test_varchar_table", c1[i], new String[] { "c2" },
+                        new Object[] { c2[i] });
                 }
                 // 123 <= xxx <= 567
                 TableQuery tableQuery = client.queryByBatch("test_varchar_table");
                 QueryResultSet result = tableQuery.setKeys("c1").select("c2").setBatchSize(1)
-                        .addScanRange("123", true, "567", true).execute();
+                    .addScanRange("123", true, "567", true).execute();
                 for (int i = 0; i < 5; i++) {
                     Assert.assertTrue(result.next());
                     Map<String, Object> value = result.getRow();
@@ -560,7 +560,7 @@ public abstract class ObTableClientTestBase {
                 // 123 <= xxx < 567
                 tableQuery = client.queryByBatch("test_varchar_table");
                 result = tableQuery.setKeys("c1").select("c1", "c2").setBatchSize(1)
-                        .addScanRange("123", true, "567", false).execute();
+                    .addScanRange("123", true, "567", false).execute();
                 for (int i = 0; i < 4; i++) {
                     Assert.assertTrue(result.next());
                     assertEquals(0, result.cacheSize());
@@ -1057,8 +1057,7 @@ public abstract class ObTableClientTestBase {
 
             tableQuery.clear();
             resultSet = tableQuery.select("c2").primaryIndex().scanOrder(true)
-                .addScanRangeStartsWith(new Object[] { "12" })
-                .setOperationTimeout(3000).execute();
+                .addScanRangeStartsWith(new Object[] { "12" }).setOperationTimeout(3000).execute();
             assertEquals(5, resultSet.cacheSize());
             Assert.assertTrue(resultSet.next());
             Thread.sleep(2000);
@@ -1067,8 +1066,7 @@ public abstract class ObTableClientTestBase {
 
             tableQuery.clear();
             resultSet = tableQuery.select("c2").primaryIndex().scanOrder(true)
-                .addScanRangeEndsWith(new Object[] { "126" })
-                .setOperationTimeout(3000).execute();
+                .addScanRangeEndsWith(new Object[] { "126" }).setOperationTimeout(3000).execute();
             assertEquals(2, resultSet.cacheSize());
             Assert.assertTrue(resultSet.next());
             Thread.sleep(2000);
@@ -1077,8 +1075,8 @@ public abstract class ObTableClientTestBase {
 
             tableQuery.clear();
             try {
-                tableQuery.select("c2").addScanRange("12", "126")
-                        .addScanRange("456", "567").setBatchSize(1).execute();
+                tableQuery.select("c2").addScanRange("12", "126").addScanRange("456", "567")
+                    .setBatchSize(1).execute();
             } catch (Exception e) {
                 if (e instanceof ObTableException) {
                     assertTrue(true);
@@ -1097,19 +1095,23 @@ public abstract class ObTableClientTestBase {
         }
     }
 
-    private void test_varchar_get_helper(ObTableClient obTableClient, String key, String value) throws Exception {
-        Map<String, Object> values = obTableClient.get("test_varchar_table", key, new String[] { "c2" });
+    private void test_varchar_get_helper(ObTableClient obTableClient, String key, String value)
+                                                                                               throws Exception {
+        Map<String, Object> values = obTableClient.get("test_varchar_table", key,
+            new String[] { "c2" });
         assertNotNull(values);
         assertEquals(value, values.get("c2"));
     }
 
-    private void test_varchar_insert_helper(ObTableClient obTableClient, String key, String value) throws Exception {
+    private void test_varchar_insert_helper(ObTableClient obTableClient, String key, String value)
+                                                                                                  throws Exception {
         long affectedRows = obTableClient.insert("test_varchar_table", key, new String[] { "c2" },
             new String[] { value });
         assertEquals(1L, affectedRows);
     }
 
-    public void test_varchar_helper(ObTableClient obTableClient, String prefix, int count) throws Exception {
+    public void test_varchar_helper(ObTableClient obTableClient, String prefix, int count)
+                                                                                          throws Exception {
         String keyPrefix = "K" + prefix;
         String valPrefix = "V" + prefix;
         try {
@@ -1127,7 +1129,8 @@ public abstract class ObTableClientTestBase {
         }
     }
 
-    public void test_varchar_helper_thread(final ObTableClient obTableClient, final String prefix, final int count) throws Exception {
+    public void test_varchar_helper_thread(final ObTableClient obTableClient, final String prefix,
+                                           final int count) throws Exception {
         new Thread(new Runnable() {
             @Override
             public void run() {

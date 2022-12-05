@@ -78,8 +78,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
     /**
      * 只有 limit query 需要，其他不需要
-     * @param keys
-     * @return
+     * @param keys keys want to set
+     * @return table query
      */
     @Override
     public TableQuery setKeys(String... keys) {
@@ -152,8 +152,9 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         return obTableClientQueryStreamResult;
     }
 
-    private String logMessage(String tableName, String methodName, String endpoint, List<Object> params,
-                              ObTableClientQueryStreamResult result, long routeTableTime, long executeTime) {
+    private String logMessage(String tableName, String methodName, String endpoint,
+                              List<Object> params, ObTableClientQueryStreamResult result,
+                              long routeTableTime, long executeTime) {
         if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
             endpoint = endpoint.replaceAll(",", "#");
         }
@@ -163,8 +164,10 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         String res = String.valueOf(result.getCacheRows().size());
 
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(",").append(obTableClient.getDatabase()).append(",").append(tableName).append(",").append(methodName).append(",").append(endpoint).append(",").append(argsValue)
-                .append(",").append(res).append(",").append(routeTableTime).append(",").append(executeTime);
+        stringBuilder.append(",").append(obTableClient.getDatabase()).append(",").append(tableName)
+            .append(",").append(methodName).append(",").append(endpoint).append(",")
+            .append(argsValue).append(",").append(res).append(",").append(routeTableTime)
+            .append(",").append(executeTime);
         return stringBuilder.toString();
     }
 
