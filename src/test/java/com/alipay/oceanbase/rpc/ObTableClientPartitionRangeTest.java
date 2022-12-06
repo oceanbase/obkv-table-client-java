@@ -244,6 +244,30 @@ public class ObTableClientPartitionRangeTest {
                 Assert.assertEquals(timeStamp, resultList.get(i).get("T"));
                 Assert.assertEquals("value1", new String((byte[]) resultList.get(i).get("V")));
             }
+            Assert.assertFalse(result.next());
+
+            if (obTableClient.isOdpMode()) {
+                // single partition query using prefix
+                tableQuery = obTableClient.query("testRange");
+                tableQuery.setScanRangeColumns("K");
+                tableQuery.addScanRange(new Object[] { "ah" },
+                        new Object[] { "az" });
+                tableQuery.select("K", "Q", "T", "V");
+                result = tableQuery.execute();
+                Assert.assertEquals(1, result.cacheSize());
+                Assert.assertTrue(result.next());
+                row = result.getRow();
+                Assert.assertEquals("ah", new String((byte[]) row.get("K")));
+                Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
+                Assert.assertEquals(timeStamp, row.get("T"));
+                Assert.assertEquals("value1", new String((byte[]) row.get("V")));
+
+                // query use empty scan range
+                tableQuery = obTableClient.query("testRange");
+                tableQuery.select("K", "Q", "T", "V");
+                result = tableQuery.execute();
+                Assert.assertEquals(4, result.cacheSize());
+            }
         } catch (Exception e) {
            e.printStackTrace();
            Assert.assertTrue(false);
@@ -314,6 +338,26 @@ public class ObTableClientPartitionRangeTest {
             }
             Assert.assertFalse(result.next());
 
+            // single partition query with index prefix
+            tableQuery = obTableClient.query("testRange");
+            tableQuery.setScanRangeColumns("K");
+            tableQuery.addScanRange(new Object[] { "a1" },
+                                    new Object[] { "a1" });
+            tableQuery.select("K", "Q", "T", "V");
+            tableQuery.indexName("i1");
+            result = tableQuery.execute();
+            Assert.assertEquals(3, result.cacheSize());
+
+            for (int i = 1; i <= 3; i++) {
+                Assert.assertTrue(result.next());
+                Map<String, Object> row = result.getRow();
+                Assert.assertEquals("a1", new String((byte[]) row.get("K")));
+                Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
+                Assert.assertEquals(timeStamp + tsDelta[i - 1], row.get("T"));
+                Assert.assertEquals("value" + i, new String((byte[]) row.get("V")));
+            }
+            Assert.assertFalse(result.next());
+
             // multiply partition query with index
             tableQuery = obTableClient.query("testRange");
             tableQuery.addScanRange(new Object[] { "a0", "value1" }, new Object[] { "z9", "value9" } );
@@ -349,6 +393,14 @@ public class ObTableClientPartitionRangeTest {
                 Assert.assertEquals(timeStamp + orderedDeltaTs[i], resultList.get(i).get("T"));
                 Assert.assertEquals(orderedValues[i], new String((byte[]) resultList.get(i).get("V")));
             }
+
+            // query with empty scan range
+            tableQuery = obTableClient.query("testRange");
+            tableQuery.select("K", "Q", "T", "V");
+            tableQuery.setScanRangeColumns("K", "V");
+            tableQuery.indexName("i1");
+            result = tableQuery.execute();
+            Assert.assertEquals(4, result.cacheSize());
         } catch (Exception e) {
             e.printStackTrace();
             Assert.assertTrue(false);
