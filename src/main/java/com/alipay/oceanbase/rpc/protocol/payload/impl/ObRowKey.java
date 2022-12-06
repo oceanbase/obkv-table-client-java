@@ -131,15 +131,4 @@ public class ObRowKey {
         return Objects.hashCode(objs);
     }
 
-    public static ObRowKey getMinRow() {
-        ObRowKey rowKey = new ObRowKey();
-        rowKey.addObj(ObObj.getMin());
-        return rowKey;
-    }
-
-    public static ObRowKey getMaxRow() {
-        ObRowKey rowKey = new ObRowKey();
-        rowKey.addObj(ObObj.getMax());
-        return rowKey;
-    }
 }
