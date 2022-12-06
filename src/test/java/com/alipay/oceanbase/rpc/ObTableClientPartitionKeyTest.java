@@ -17,10 +17,12 @@
 
 package com.alipay.oceanbase.rpc;
 
+import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.exception.ObTablePartitionConsistentException;
 import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
@@ -33,6 +35,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -235,27 +238,52 @@ public class ObTableClientPartitionKeyTest {
                     Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
                         ((ObTableUnexpectedException) e).getErrorCode());
                 }
+
                 tableQuery = obTableClient.query(tableName);
-                tableQuery.addScanRange(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
-                        timeStamp }, new Object[] { "key1_1".getBytes(), "partition".getBytes(),
-                        timeStamp + 1 });
+                tableQuery.addScanRange(new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
+                                        new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp + 1 });
                 tableQuery.select("K", "Q", "T", "V");
                 QueryResultSet result = tableQuery.execute();
                 Assert.assertEquals(2, result.cacheSize());
 
-                Assert.assertEquals(true, result.next());
-                Map<String, Object> row = result.getRow();
-                Assert.assertEquals("key1_1", new String((byte[]) row.get("K")));
-                Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
-                Assert.assertEquals(timeStamp, row.get("T"));
-                Assert.assertEquals("value1", new String((byte[]) row.get("V")));
+                long expTimeStamp[] = {timeStamp, timeStamp + 1};
+                String expValues [] = {"value1", "value2"};
 
-                Assert.assertEquals(true, result.next());
-                row = result.getRow();
-                Assert.assertEquals("key1_1", new String((byte[]) row.get("K")));
-                Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
-                Assert.assertEquals(timeStamp + 1, row.get("T"));
-                Assert.assertEquals("value2", new String((byte[]) row.get("V")));
+                for (int i = 0; i < 2; i++) {
+                    Assert.assertEquals(true, result.next());
+                    Map<String, Object> row = result.getRow();
+                    Assert.assertEquals("key1_1", new String((byte[]) row.get("K")));
+                    Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
+                    Assert.assertEquals(expTimeStamp[i], row.get("T"));
+                    Assert.assertEquals(expValues[i], new String((byte[]) row.get("V")));
+                }
+                Assert.assertFalse(result.next());
+
+                // prefix range scan with scan range columns K
+                tableQuery = obTableClient.query(tableName);
+                tableQuery.addScanRange(new Object[] { "key1_1".getBytes()},
+                                        new Object[] { "key1_1".getBytes()});
+                tableQuery.setScanRangeColumns("K");
+                tableQuery.select("K", "Q", "T", "V");
+                result = tableQuery.execute();
+                Assert.assertEquals(2, result.cacheSize());
+
+                for (int i = 0; i < 2; i++) {
+                    Assert.assertEquals(true, result.next());
+                    Map<String, Object> row = result.getRow();
+                    Assert.assertEquals("key1_1", new String((byte[]) row.get("K")));
+                    Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
+                    Assert.assertEquals(expTimeStamp[i], row.get("T"));
+                    Assert.assertEquals(expValues[i], new String((byte[]) row.get("V")));
+                }
+                Assert.assertFalse(result.next());
+
+                // scan using empty range on key partitioned table
+                tableQuery = obTableClient.query(tableName);
+                tableQuery.setScanRangeColumns("K");
+                tableQuery.select("K", "Q", "T", "V");
+                result = tableQuery.execute();
+                Assert.assertEquals(3, result.cacheSize());
             } catch (Exception e) {
                 e.printStackTrace();
                 Assert.assertTrue(false);
@@ -355,6 +383,24 @@ public class ObTableClientPartitionKeyTest {
                 Assert.assertEquals("key3_1", new String((byte[]) row.get("K")));
                 Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
                 Assert.assertEquals(timeStamp + 3 - i, row.get("T"));
+                Assert.assertEquals("value" + i, new String((byte[]) row.get("V")));
+            }
+
+            // query key2_1 using K prefix
+            tableQuery = obTableClient.query(tableName);
+            tableQuery.addScanRange(new Object[] { "key2_1".getBytes()},
+                                    new Object[] { "key2_1".getBytes()});
+            tableQuery.select("K", "Q", "T", "V");
+            tableQuery.setScanRangeColumns("K");
+            tableQuery.indexName("i1");
+            result = tableQuery.execute();
+            Assert.assertEquals(2, result.cacheSize());
+            for (int i = 1; i <= 2; i++) {
+                Assert.assertTrue(result.next());
+                Map<String, Object> row = result.getRow();
+                Assert.assertEquals("key2_1", new String((byte[]) row.get("K")));
+                Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
+                Assert.assertEquals(timeStamp + i, row.get("T"));
                 Assert.assertEquals("value" + i, new String((byte[]) row.get("V")));
             }
             Assert.assertFalse(result.next());

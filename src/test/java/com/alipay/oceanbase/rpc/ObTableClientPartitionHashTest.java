@@ -150,40 +150,96 @@ public class ObTableClientPartitionHashTest {
     @Test
     public void testQuery() throws Exception {
         long timeStamp = System.currentTimeMillis();
-        obTableClient.insert("testHash", new Object[] { timeStamp, "partition".getBytes(),
-                timeStamp }, new String[] { "V" }, new Object[] { "value0".getBytes() });
-        obTableClient.insert("testHash", new Object[] { timeStamp + 1, "partition".getBytes(),
-                timeStamp + 1 }, new String[] { "V" }, new Object[] { "value1".getBytes() });
-        obTableClient.insert("testHash", new Object[] { timeStamp + 2, "partition".getBytes(),
-                timeStamp + 2 }, new String[] { "V" }, new Object[] { "value2".getBytes() });
-        obTableClient.insert("testHash", new Object[] { timeStamp + 3, "partition".getBytes(),
-                timeStamp + 3 }, new String[] { "V" }, new Object[] { "value3".getBytes() });
-        obTableClient.insert("testHash", new Object[] { timeStamp + 4, "partition".getBytes(),
-                timeStamp + 4 }, new String[] { "V" }, new Object[] { "value4".getBytes() });
+        try {
+            obTableClient.insert("testHash",
+                    new Object[] { timeStamp, "partition".getBytes(), timeStamp },
+                    new String[] { "V" }, new Object[] { "value0".getBytes() });
+            obTableClient.insert("testHash",
+                    new Object[] { timeStamp + 1, "partition".getBytes(), timeStamp + 1 },
+                    new String[] { "V" }, new Object[] { "value1".getBytes() });
+            obTableClient.insert("testHash",
+                    new Object[] { timeStamp + 2, "partition".getBytes(), timeStamp + 2 },
+                    new String[] { "V" }, new Object[] { "value2".getBytes() });
+            obTableClient.insert("testHash",
+                    new Object[] { timeStamp + 3, "partition".getBytes(), timeStamp + 3 },
+                    new String[] { "V" }, new Object[] { "value3".getBytes() });
+            obTableClient.insert("testHash",
+                    new Object[] { timeStamp + 4, "partition".getBytes(), timeStamp + 4 },
+                    new String[] { "V" }, new Object[] { "value4".getBytes() });
 
-        // query with one partition
-        TableQuery tableQuery = obTableClient.query("testHash");
-        tableQuery.addScanRange(new Object[] { timeStamp, "partition".getBytes(), timeStamp },
-            new Object[] { timeStamp, "partition".getBytes(), timeStamp });
-        tableQuery.select("K", "Q", "T", "V");
-        QueryResultSet result = tableQuery.execute();
-        Assert.assertEquals(1L, result.cacheSize());
+            // query with one partition
+            TableQuery tableQuery = obTableClient.query("testHash");
+            tableQuery.addScanRange(new Object[] { timeStamp, "partition".getBytes(), timeStamp},
+                    new Object[] { timeStamp, "partition".getBytes(), timeStamp});
+            tableQuery.select("K", "Q", "T", "V");
+            QueryResultSet result = tableQuery.execute();
+            Assert.assertEquals(1L, result.cacheSize());
 
-        Assert.assertTrue(result.next());
-        Map<String, Object> row = result.getRow();
-        Assert.assertEquals(timeStamp, row.get("K"));
-        Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
-        Assert.assertEquals(timeStamp, row.get("T"));
-        Assert.assertEquals("value0", new String((byte[]) row.get("V")));
-        Assert.assertFalse(result.next());
+            Assert.assertTrue(result.next());
+            Map<String, Object> row = result.getRow();
+            Assert.assertEquals(timeStamp, row.get("K"));
+            Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
+            Assert.assertEquals(timeStamp, row.get("T"));
+            Assert.assertEquals("value0", new String((byte[]) row.get("V")));
+            Assert.assertFalse(result.next());
 
-        // query with multiply partitions
-        tableQuery = obTableClient.query("testHash");
-        tableQuery.addScanRange(new Object[] { timeStamp, "partition".getBytes(), timeStamp },
-            new Object[] { timeStamp + 10, "partition".getBytes(), timeStamp });
-        tableQuery.select("K", "Q", "T", "V");
-        result = tableQuery.execute();
-        Assert.assertEquals(5, result.cacheSize());
+            if (obTableClient.isOdpMode()) {
+                // query with one partition using prefix
+                tableQuery = obTableClient.query("testHash");
+                tableQuery.addScanRange(new Object[] { timeStamp },
+                        new Object[] { timeStamp });
+                tableQuery.setScanRangeColumns("K");
+                tableQuery.select("K", "Q", "T", "V");
+                result = tableQuery.execute();
+                Assert.assertEquals(1L, result.cacheSize());
+
+                Assert.assertTrue(result.next());
+                row = result.getRow();
+                Assert.assertEquals(timeStamp, row.get("K"));
+                Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
+                Assert.assertEquals(timeStamp, row.get("T"));
+                Assert.assertEquals("value0", new String((byte[]) row.get("V")));
+                Assert.assertFalse(result.next());
+
+                // query with multiply partitions
+                tableQuery = obTableClient.query("testHash");
+                tableQuery.addScanRange(new Object[] { timeStamp, "partition".getBytes(), timeStamp },
+                        new Object[] { timeStamp + 10, "partition".getBytes(), timeStamp });
+                tableQuery.select("K", "Q", "T", "V");
+                result = tableQuery.execute();
+                Assert.assertEquals(5, result.cacheSize());
+
+                // query with multiply partitions using prefix K
+                tableQuery = obTableClient.query("testHash");
+                tableQuery.setScanRangeColumns("K");
+                tableQuery.addScanRange(new Object[] { timeStamp},
+                        new Object[] { timeStamp + 10 });
+                tableQuery.select("K", "Q", "T", "V");
+                result = tableQuery.execute();
+                Assert.assertEquals(5, result.cacheSize());
+
+                // query with empty scan range
+                tableQuery = obTableClient.query("testHash");
+                tableQuery.select("K", "Q", "T", "V");
+                result = tableQuery.execute();
+                // TODO: too many rows of testHash is not deleted
+                Assert.assertTrue(result.cacheSize() > 0);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        } finally {
+            obTableClient.delete("testHash",
+                    new Object[] { timeStamp, "partition".getBytes(), timeStamp });
+            obTableClient.delete("testHash",
+                    new Object[] { timeStamp + 1, "partition".getBytes(), timeStamp + 1 });
+            obTableClient.delete("testHash",
+                    new Object[] { timeStamp + 2, "partition".getBytes(), timeStamp + 2 });
+            obTableClient.delete("testHash",
+                    new Object[] { timeStamp + 3, "partition".getBytes(), timeStamp + 3 });
+            obTableClient.delete("testHash",
+                    new Object[] { timeStamp + 4, "partition".getBytes(), timeStamp + 4 });
+        }
     }
 
     @Test
@@ -217,6 +273,26 @@ public class ObTableClientPartitionHashTest {
             tableQuery.setScanRangeColumns("K", "V");
             tableQuery.indexName("i1");
             QueryResultSet result = tableQuery.execute();
+            Assert.assertEquals(2, result.cacheSize());
+            for (int i = 1; i <= 2; i++) {
+                Assert.assertTrue(result.next());
+                Map<String, Object> row = result.getRow();
+                Assert.assertEquals(timeStamp + 1, row.get("K"));
+                Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
+                Assert.assertEquals(timeStamp + i, row.get("T"));
+                Assert.assertEquals("value" + ( 3 - i), new String((byte[]) row.get("V")));
+            }
+            Assert.assertFalse(result.next());
+
+            // query timestamp + 1 using prefix
+            tableQuery = obTableClient.query(tableName);
+            tableQuery.addScanRange(new Object[] { timeStamp + 1 },
+                                    new Object[] { timeStamp + 1 });
+            tableQuery.select("K", "Q", "T", "V");
+            tableQuery.setScanRangeColumns("K");
+            tableQuery.scanOrder(false);
+            tableQuery.indexName("i1");
+            result = tableQuery.execute();
             Assert.assertEquals(2, result.cacheSize());
             for (int i = 1; i <= 2; i++) {
                 Assert.assertTrue(result.next());
