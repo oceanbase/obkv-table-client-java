@@ -48,6 +48,12 @@
             <groupId>com.alipay.sofa</groupId>
             <artifactId>bolt</artifactId>
             <version>1.5.2</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>netty-all</artifactId>
+                    <groupId>io.netty</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
