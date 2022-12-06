@@ -240,14 +240,15 @@ public class ObTableClientPartitionKeyTest {
                 }
 
                 tableQuery = obTableClient.query(tableName);
-                tableQuery.addScanRange(new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
-                                        new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp + 1 });
+                tableQuery.addScanRange(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
+                        timeStamp }, new Object[] { "key1_1".getBytes(), "partition".getBytes(),
+                        timeStamp + 1 });
                 tableQuery.select("K", "Q", "T", "V");
                 QueryResultSet result = tableQuery.execute();
                 Assert.assertEquals(2, result.cacheSize());
 
-                long expTimeStamp[] = {timeStamp, timeStamp + 1};
-                String expValues [] = {"value1", "value2"};
+                long expTimeStamp[] = { timeStamp, timeStamp + 1 };
+                String expValues[] = { "value1", "value2" };
 
                 for (int i = 0; i < 2; i++) {
                     Assert.assertEquals(true, result.next());
@@ -261,8 +262,8 @@ public class ObTableClientPartitionKeyTest {
 
                 // prefix range scan with scan range columns K
                 tableQuery = obTableClient.query(tableName);
-                tableQuery.addScanRange(new Object[] { "key1_1".getBytes()},
-                                        new Object[] { "key1_1".getBytes()});
+                tableQuery.addScanRange(new Object[] { "key1_1".getBytes() },
+                    new Object[] { "key1_1".getBytes() });
                 tableQuery.setScanRangeColumns("K");
                 tableQuery.select("K", "Q", "T", "V");
                 result = tableQuery.execute();
@@ -388,8 +389,8 @@ public class ObTableClientPartitionKeyTest {
 
             // query key2_1 using K prefix
             tableQuery = obTableClient.query(tableName);
-            tableQuery.addScanRange(new Object[] { "key2_1".getBytes()},
-                                    new Object[] { "key2_1".getBytes()});
+            tableQuery.addScanRange(new Object[] { "key2_1".getBytes() },
+                new Object[] { "key2_1".getBytes() });
             tableQuery.select("K", "Q", "T", "V");
             tableQuery.setScanRangeColumns("K");
             tableQuery.indexName("i1");
