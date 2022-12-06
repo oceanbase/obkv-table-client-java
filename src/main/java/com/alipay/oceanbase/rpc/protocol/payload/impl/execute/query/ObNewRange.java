@@ -212,8 +212,8 @@ public class ObNewRange implements ObSimplePayload {
     public static ObNewRange getWholeRange()
     {
         ObNewRange range = new ObNewRange();
-        range.startKey = ObRowKey.getMinRow();
-        range.endKey = ObRowKey.getMaxRow();
+        range.startKey = ObRowKey.getInstance(ObObj.getMin());
+        range.endKey = ObRowKey.getInstance(ObObj.getMax());
         range.borderFlag.unsetInclusiveStart();
         range.borderFlag.unsetInclusiveEnd();
         return range;
