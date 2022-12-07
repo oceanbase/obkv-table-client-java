@@ -19,8 +19,8 @@
 
     <developers>
         <developer>
-            <name>Jiali Yang</name>
-            <email>1623359870@qq.com</email>
+            <id>oceanbaseJdbcDevelopers</id>
+            <name>oceanbase jdbc developers</name>
             <organization>OceanBase</organization>
         </developer>
     </developers>
@@ -30,12 +30,21 @@
         <url>https://github.com/oceanbase/obkv-table-client-java</url>
     </scm>
 
+    <distributionManagement>
+        <repository>
+            <id>obkv-table-client</id>
+            <name>${project.name}</name>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+        </repository>
+    </distributionManagement>
+
     <properties>
         <java.source.version>1.8</java.source.version>
         <java.target.version>1.8</java.target.version>
         <project.build.sourceEncoding>${project.encoding}</project.build.sourceEncoding>
         <project.encoding>UTF-8</project.encoding>
     </properties>
+
 
     <dependencies>
         <dependency>
@@ -59,7 +68,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
-            <version>4.1.42.Final</version>
+            <version>4.1.45.Final</version>
         </dependency>
 
         <dependency>
@@ -91,13 +100,13 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
-            <version>1.2.79</version>
+            <version>1.2.83</version>
         </dependency>
 
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.49</version>
+            <version>8.0.28</version>
         </dependency>
 
         <dependency>
