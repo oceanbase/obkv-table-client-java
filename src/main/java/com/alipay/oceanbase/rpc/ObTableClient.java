@@ -47,6 +47,7 @@ import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.*;
 import com.alipay.remoting.util.StringUtils;
+import javafx.util.Pair;
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -566,6 +567,161 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
     }
 
+    private abstract class MutationExecuteCallback<T> {
+        private final Object[] rowKey;
+        private final List<ObNewRange> keyRanges;
+
+        MutationExecuteCallback(Object[] rowKey, List<ObNewRange> keyRanges) {
+            this.rowKey = rowKey;
+            this.keyRanges = keyRanges;
+        }
+
+        void checkResult(String ip, int port, ObPayload result) {
+            if (result == null) {
+                RUNTIME.error("client get unexpected NULL result");
+                throw new ObTableException("client get unexpected NULL result");
+            }
+
+            if (result instanceof ObTableOperationResult) {
+                ObTableOperationResult obTableOperationResult = (ObTableOperationResult) result;
+                obTableOperationResult.setExecuteHost(ip);
+                obTableOperationResult.setExecutePort(port);
+                ExceptionUtil
+                        .throwObTableException(ip, port, obTableOperationResult.getSequence(),
+                                obTableOperationResult.getUniqueId(), obTableOperationResult.getHeader()
+                                        .getErrno());
+            } else if (result instanceof ObTableQueryAndMutateResult) {
+                 // TODO: Add func like throwObTableException()
+                 //       which will output the ip / port / error information
+            } else {
+                RUNTIME.error("client get unexpected result: " + result.getClass().getName());
+                throw new ObTableException("client get unexpected result: "
+                        + result.getClass().getName());
+            }
+        }
+
+        abstract T execute(ObPair<Long, ObTable> obTable) throws Exception;
+
+        /*
+         * Get row key.
+         */
+        public Object[] getRowKey() {
+            return rowKey;
+        }
+
+        /*
+         * Get key ranges.
+         */
+        public List<ObNewRange> getKeyRanges() {
+            return keyRanges;
+        }
+
+
+    }
+
+    /**
+     * For mutation
+     */
+    private <T> T executeMutation(String tableName, MutationExecuteCallback<T> callback) throws Exception {
+        // force strong read by default, for backward compatibility.
+        return executeMutation(tableName, callback, getRoute(false));
+    }
+
+    /**
+     * Execute with a route strategy for mutation
+     */
+    private <T> T executeMutation(String tableName, MutationExecuteCallback<T> callback, ObServerRoute route)
+            throws Exception {
+        boolean needRefreshTableEntry = false;
+        int tryTimes = 0;
+        long startExecute = System.currentTimeMillis();
+        while (true) {
+            checkStatus();
+            long currentExecute = System.currentTimeMillis();
+            long costMillis = currentExecute - startExecute;
+            if (costMillis > runtimeMaxWait) {
+                throw new ObTableTimeoutExcetion("it has tried " + tryTimes
+                        + " times and it has waited " + costMillis
+                        + "/ms which exceeds response timeout "
+                        + runtimeMaxWait + "/ms");
+            }
+            tryTimes++;
+            ObPair<Long, ObTable> obPair = null;
+            try {
+                if (odpMode) {
+                    obPair = new ObPair<Long, ObTable>(0L, odpTable);
+                } else {
+                    if (null != callback.getRowKey()) {
+                        // using row key
+                        obPair = getTable(tableName, callback.getRowKey(), needRefreshTableEntry,
+                                tableEntryRefreshIntervalWait, route);
+                    } else if (null != callback.getKeyRanges()) {
+                        // using scan range
+                        obPair = getTable(tableName, callback.getKeyRanges(), needRefreshTableEntry,
+                                tableEntryRefreshIntervalWait, route);
+                    } else {
+                        throw new ObTableException("rowkey and scan range are null in mutation");
+                    }
+                }
+                T t = callback.execute(obPair);
+                resetExecuteContinuousFailureCount(tableName);
+                return t;
+            } catch (Exception ex) {
+                RUNTIME.error("execute while meet exception", ex);
+                if (odpMode) {
+                    if ((tryTimes - 1) < runtimeRetryTimes) {
+                        if (ex instanceof ObTableException) {
+                            logger
+                                    .warn(
+                                            "execute while meet Exception, errorCode: {} , errorMsg: {}, try times {}",
+                                            ((ObTableException) ex).getErrorCode(), ex.getMessage(), tryTimes);
+                        } else {
+                            throw ex;
+                        }
+                    } else {
+                        throw ex;
+                    }
+                } else {
+                    if (ex instanceof ObTableReplicaNotReadableException) {
+                        if (obPair != null && (tryTimes - 1) < runtimeRetryTimes) {
+                            logger.warn("retry when replica not readable: {}", ex.getMessage());
+                            if (!odpMode) {
+                                route.addToBlackList(obPair.getRight().getIp());
+                            }
+                        } else {
+                            logger.warn("exhaust retry when replica not readable: {}",
+                                    ex.getMessage());
+                            RUNTIME.error("replica not readable", ex);
+                            throw ex;
+                        }
+                    } else if (ex instanceof ObTableException
+                            && ((ObTableException) ex).isNeedRefreshTableEntry()) {
+                        needRefreshTableEntry = true;
+
+                        logger
+                                .warn(
+                                        "refresh table while meet Exception needing refresh, errorCode: {}, errorMsg: {}",
+                                        ((ObTableException) ex).getErrorCode(), ex.getMessage());
+                        if (retryOnChangeMasterTimes && (tryTimes - 1) < runtimeRetryTimes) {
+                            logger
+                                    .warn(
+                                            "retry while meet Exception needing refresh, errorCode: {} , errorMsg: {},retry times {}",
+                                            ((ObTableException) ex).getErrorCode(), ex.getMessage(),
+                                            tryTimes);
+                        } else {
+                            calculateContinuousFailure(tableName, ex.getMessage());
+                            throw ex;
+                        }
+                    } else {
+                        calculateContinuousFailure(tableName, ex.getMessage());
+                        throw ex;
+                    }
+                }
+            }
+            Thread.sleep(runtimeRetryInterval);
+        }
+    }
+
     /**
      * Calculate continuous failure.
      * @param tableName table name
@@ -1054,6 +1210,57 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /**
+     * For mutation (queryWithFilter)
+     * @param tableName table want to get
+     * @param keyRanges key
+     * @param refresh whether to refresh
+     * @param waitForRefresh whether wait for refresh
+     * @param route ObServer route
+     * @return ObPair of partId and table
+     * @throws Exception exception
+     */
+    public ObPair<Long, ObTable> getTable(String tableName, List<ObNewRange> keyRanges, boolean refresh,
+                                          boolean waitForRefresh, ObServerRoute route)
+            throws Exception {
+        Map<Long, ObTable> partIdMapObTable = new HashMap<Long, ObTable>();
+        for (ObNewRange rang : keyRanges) {
+            ObRowKey startKey = rang.getStartKey();
+            int startKeySize = startKey.getObjs().size();
+            ObRowKey endKey = rang.getEndKey();
+            int endKeySize = endKey.getObjs().size();
+            Object[] start = new Object[startKeySize];
+            Object[] end = new Object[endKeySize];
+            for (int i = 0; i < startKeySize; i++) {
+                start[i] = startKey.getObj(i).getValue();
+            }
+
+            for (int i = 0; i < endKeySize; i++) {
+                end[i] = endKey.getObj(i).getValue();
+            }
+            ObBorderFlag borderFlag = rang.getBorderFlag();
+            List<ObPair<Long, ObTable>> pairList = getTables(tableName, start,
+                    borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false,
+                    false);
+            for (ObPair<Long, ObTable> pair : pairList) {
+                partIdMapObTable.put(pair.getLeft(), pair.getRight());
+            }
+        }
+
+        if (partIdMapObTable.size() > 1) {
+            throw new ObTablePartitionConsistentException(
+                    "query and mutate must be a atomic operation");
+        } else if (partIdMapObTable.size() < 1) {
+            throw new ObTableException("could not find part id of range");
+        }
+
+        ObPair<Long, ObTable> ans = null;
+        for (Long partId: partIdMapObTable.keySet()) {
+            ans = new ObPair<>(partId, partIdMapObTable.get(partId));
+        }
+        return ans;
+    }
+
+    /**
      * get addr by pardId
      * @param tableName table want to get
      * @param partId partId where table located
@@ -1343,10 +1550,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws Exception exception
      */
     public ObPayload updateWithResult(final String tableName, final Object[] rowKey,
+                                      final List<ObNewRange> keyRanges,
                                       final String[] columns, final Object[] values)
                                                                                     throws Exception {
         final long start = System.currentTimeMillis();
-        return execute(tableName, new TableExecuteCallback<ObPayload>(rowKey) {
+        return executeMutation(tableName, new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {
             /**
              * Execute.
              */
@@ -1363,7 +1571,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 MONITOR.info(logMessage(tableName, "UPDATE", endpoint, rowKey,
                     (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis()
                                                                         - TableTime));
-                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                checkResult(obTable.getIp(), obTable.getPort(), result);
                 return result;
             }
         });
@@ -1488,10 +1696,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return execute result
      * @throws Exception exception
      */
-    public ObPayload deleteWithResult(final String tableName, final Object[] rowKey)
+    public ObPayload deleteWithResult(final String tableName, final Object[] rowKey, final List<ObNewRange> keyRanges)
                                                                                     throws Exception {
         final long start = System.currentTimeMillis();
-        return execute(tableName, new TableExecuteCallback<ObPayload>(rowKey) {
+        return executeMutation(tableName, new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {
 
             /**
              * Execute.
@@ -1509,7 +1717,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 MONITOR.info(logMessage(tableName, "DELETE", endpoint, rowKey,
                     (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis()
                                                                         - TableTime));
-                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                checkResult(obTable.getIp(), obTable.getPort(), result);
                 return result;
             }
         });
@@ -1562,10 +1770,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws Exception exception
      */
     public ObPayload insertWithResult(final String tableName, final Object[] rowKey,
+                                      final List<ObNewRange> keyRanges,
                                       final String[] columns, final Object[] values)
                                                                                     throws Exception {
         final long start = System.currentTimeMillis();
-        return execute(tableName, new TableExecuteCallback<ObPayload>(rowKey) {
+        return executeMutation(tableName, new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {
             /**
              * Execute.
              */
@@ -1582,7 +1791,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 MONITOR.info(logMessage(tableName, "INSERT", endpoint, rowKey,
                     (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis()
                                                                         - TableTime));
-                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                checkResult(obTable.getIp(), obTable.getPort(), result);
                 return result;
             }
         });
@@ -1635,10 +1844,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws Exception exception
      */
     public ObPayload replaceWithResult(final String tableName, final Object[] rowKey,
+                                       final List<ObNewRange> keyRanges,
                                        final String[] columns, final Object[] values)
                                                                                      throws Exception {
         final long start = System.currentTimeMillis();
-        return execute(tableName, new TableExecuteCallback<ObPayload>(rowKey) {
+        return executeMutation(tableName, new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {
             /**
              * Execute.
              */
@@ -1655,7 +1865,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 MONITOR.info(logMessage(tableName, "REPLACE", endpoint, rowKey,
                     (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis()
                                                                         - TableTime));
-                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                checkResult(obTable.getIp(), obTable.getPort(), result);
                 return result;
             }
         });
@@ -1708,10 +1918,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws Exception exception
      */
     public ObPayload insertOrUpdateWithResult(final String tableName, final Object[] rowKey,
+                                              final List<ObNewRange> keyRanges,
                                               final String[] columns, final Object[] values)
                                                                                             throws Exception {
         final long start = System.currentTimeMillis();
-        return execute(tableName, new TableExecuteCallback<ObPayload>(rowKey) {
+        return executeMutation(tableName, new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {
             /**
              * Execute.
              */
@@ -1728,7 +1939,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 MONITOR.info(logMessage(tableName, "INERT_OR_UPDATE", endpoint, rowKey,
                     (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis()
                                                                         - TableTime));
-                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                checkResult(obTable.getIp(), obTable.getPort(), result);
                 return result;
             }
         });
@@ -1794,10 +2005,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws Exception exception
      */
     public ObPayload incrementWithResult(final String tableName, final Object[] rowKey,
+                                         final List<ObNewRange> keyRanges,
                                          final String[] columns, final Object[] values,
                                          final boolean withResult) throws Exception {
         final long start = System.currentTimeMillis();
-        return execute(tableName, new TableExecuteCallback<ObPayload>(rowKey) {
+        return executeMutation(tableName, new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {
             /**
              *
              * @param obPair
@@ -1818,7 +2030,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 MONITOR.info(logMessage(tableName, "INCREMENT", endpoint, rowKey,
                     (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis()
                                                                         - TableTime));
-                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                checkResult(obTable.getIp(), obTable.getPort(), result);
                 return result;
             }
         });
@@ -1869,10 +2081,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws Exception exception
      */
     public ObPayload appendWithResult(final String tableName, final Object[] rowKey,
+                                      final List<ObNewRange> keyRanges,
                                       final String[] columns, final Object[] values,
                                       final boolean withResult) throws Exception {
         final long start = System.currentTimeMillis();
-        return execute(tableName, new TableExecuteCallback<ObPayload>(rowKey) {
+        return executeMutation(tableName, new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {
             @Override
             public ObPayload execute(ObPair<Long, ObTable> obPair) throws Exception {
                 long TableTime = System.currentTimeMillis();
@@ -1888,7 +2101,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 MONITOR.info(logMessage(tableName, "APPEND", endpoint, rowKey,
                     (ObTableOperationResult) result, TableTime - start, System.currentTimeMillis()
                                                                         - TableTime));
-                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                checkResult(obTable.getIp(), obTable.getPort(), result);
                 return result;
             }
         });
@@ -1912,12 +2125,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return execute result
      * @throws Exception exception
      */
-    public ObPayload mutationWithFilter(final TableQuery tableQuery, final Object[] rowKey,
+    public ObPayload mutationWithFilter(final TableQuery tableQuery,
+                                        final Object[] rowKey, final List<ObNewRange> keyRanges,
                                         final ObTableOperationType type, final String[] columns,
                                         final Object[] values, final boolean withResult)
                                                                                         throws Exception {
         final long start = System.currentTimeMillis();
-        return execute(tableQuery.getTableName(), new TableExecuteCallback<ObPayload>(rowKey) {
+        return executeMutation(tableQuery.getTableName(), new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {
             /**
              * Execute.
              */
@@ -1933,10 +2147,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 request.setPartitionId(partId);
                 ObPayload result = obTable.execute(request);
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
-                MONITOR.info(logMessage(tableQuery.toString(), type.toString(), endpoint, rowKey,
+                Object[] curRowKey;
+                if (rowKey == null) {
+                    curRowKey = new Object[] { "" };
+                } else {
+                    curRowKey = rowKey;
+                }
+                MONITOR.info(logMessage(tableQuery.toString(), type.toString(), endpoint, curRowKey,
                     (ObTableQueryAndMutateResult) result, TableTime - start,
                     System.currentTimeMillis() - TableTime));
-                checkObTableQueryAndMutateResult(obTable.getIp(), obTable.getPort(), result);
+                checkResult(obTable.getIp(), obTable.getPort(), result);
                 return result;
             }
         });
@@ -2049,6 +2269,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         return request;
     }
+
+
 
     /**
      * Execute.
