@@ -19,10 +19,7 @@ package com.alipay.oceanbase.rpc.mutation;
 
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Row {
     private Map<String, Object> values;
@@ -31,7 +28,7 @@ public class Row {
      * default constructor
      */
     public Row() {
-        values = new HashMap<String, Object>();
+        values = new LinkedHashMap<String, Object>();
     }
 
     /*
@@ -52,7 +49,7 @@ public class Row {
             throw new ObTableException("column name is null");
         }
 
-        values = new HashMap<String, Object>();
+        values = new LinkedHashMap<String, Object>();
         values.put(columnName, value);
     }
 
@@ -60,7 +57,7 @@ public class Row {
      * construct with ColumnValue
      */
     public Row(ColumnValue... columnValues) {
-        values = new HashMap<String, Object>();
+        values = new LinkedHashMap<String, Object>();
 
         for (ColumnValue columnValue : columnValues) {
             if (values.containsKey(columnValue.getColumnName())) {

@@ -21,10 +21,12 @@ import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.filter.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -36,6 +38,7 @@ public class Mutation<T> {
 
     // TODO: remove rowKeysName and filter after implement schema
     private List<String>  rowKeyName;
+    // Only Query in filter works
     private ObTableFilter filter;
 
     /*
@@ -93,6 +96,16 @@ public class Mutation<T> {
      */
     protected Object[] getRowKey() {
         return rowKey;
+    }
+
+    /*
+     * get key ranges
+     */
+    protected List<ObNewRange> getKeyRanges() {
+        if (null != query) {
+            return query.getObTableQuery().getKeyRanges();
+        }
+        return null;
     }
 
     /*
@@ -268,19 +281,105 @@ public class Mutation<T> {
     public T setFilter(ObTableFilter filter) throws Exception {
         if (null == filter) {
             throw new IllegalArgumentException("Invalid null filter set into Mutation");
+        } else if (null == client) {
+            // do nothing
+        } else {
+            if (null == query) {
+                query = client.query(tableName);
+                // set scan range if rowKey exist
+                if (null != rowKey) {
+                    query.addScanRange(rowKey, rowKey);
+                }
+            }
+            // only filter string in query works
+            query.setFilter(filter);
+        }
+        this.filter = filter;
+        return (T) this;
+    }
+
+    /*
+     * used for scan range (not ODP)
+     */
+    @SuppressWarnings("unchecked")
+    public T setScanRangeColumns(String... columnNames) throws Exception {
+        if (null == columnNames) {
+            throw new IllegalArgumentException("Invalid null column names set into Mutation");
         }
 
         if (null == query) {
             query = client.query(tableName);
-            // set scan range if rowKey exist
-            if (null != rowKey) {
-                query.addScanRange(rowKey, rowKey);
-            }
         }
 
-        // only filter string in query works
-        this.filter = filter;
-        query.setFilter(filter);
+        query.setScanRangeColumns(columnNames);
+
+        // set row key in table
+        if (null != tableName && null != client) {
+            if (!((ObTableClient) client).isOdpMode()) {
+                // TODO: adapt OCP
+                //      OCP must conclude all rowkey now
+                rowKeyName = Arrays.asList(columnNames);
+                ((ObTableClient) client).addRowKeyElement(tableName, columnNames);
+            }
+        } else {
+            throw new ObTableException("invalid table name: " + tableName + ", or invalid client: " + client
+                + " while setting scan range columns");
+        }
+
+        return (T) this;
+    }
+
+    /*
+     * add scan range
+     */
+    @SuppressWarnings("unchecked")
+    public T addScanRange(Object start, Object end) throws Exception {
+        if (null == start || null == end) {
+            throw new IllegalArgumentException("Invalid null range set into Mutation");
+        }
+
+        return addScanRange(new Object[] { start }, true, new Object[] { end }, true);
+    }
+
+    /*
+     * add list of scan range
+     */
+    @SuppressWarnings("unchecked")
+    public T addScanRange(Object[] start, Object[] end) throws Exception {
+        if (null == start || null == end) {
+            throw new IllegalArgumentException("Invalid null range set into Mutation");
+        }
+
+        return addScanRange(start, true, end, true);
+    }
+
+    /*
+     * add scan range with boundary
+     */
+    @SuppressWarnings("unchecked")
+    public T addScanRange(Object start, boolean startEquals, Object end, boolean endEquals) throws Exception {
+        if (null == start || null == end) {
+            throw new IllegalArgumentException("Invalid null range set into Mutation");
+        }
+
+        return addScanRange(new Object[] { start }, startEquals, new Object[] { end }, endEquals);
+    }
+
+    /*
+     * add list of scan range with boundary
+     */
+    @SuppressWarnings("unchecked")
+    public T addScanRange(Object[] start, boolean startEquals, Object[] end, boolean endEquals) throws Exception {
+        if (null == start || null == end) {
+            throw new IllegalArgumentException("Invalid null range set into Mutation");
+        }
+
+        if (null == query) {
+            query = client.query(tableName);
+        }
+
+        rowKey = null;
+        query.addScanRange(start, startEquals, end, endEquals);
 
         return (T) this;
     }

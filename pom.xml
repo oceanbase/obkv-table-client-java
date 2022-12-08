@@ -19,8 +19,8 @@
 
     <developers>
         <developer>
-            <id>oceanbaseJdbcDevelopers</id>
-            <name>oceanbase jdbc developers</name>
+            <id>oceanbaseObkvDevelopers</id>
+            <name>oceanbase obkv developers</name>
             <organization>OceanBase</organization>
         </developer>
     </developers>
@@ -44,7 +44,6 @@
         <project.build.sourceEncoding>${project.encoding}</project.build.sourceEncoding>
         <project.encoding>UTF-8</project.encoding>
     </properties>
-
 
     <dependencies>
         <dependency>
