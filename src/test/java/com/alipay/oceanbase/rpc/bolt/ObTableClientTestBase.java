@@ -47,7 +47,7 @@ public abstract class ObTableClientTestBase {
 
     @After
     public void close() throws Exception {
-        if (null != this.client) {
+        if (null != this.client && this.client instanceof ObTableClient) {
             ((ObTableClient) this.client).close();
         }
     }
@@ -176,7 +176,7 @@ public abstract class ObTableClientTestBase {
             exception = ex;
         }
         assertNotNull(exception);
-        if (((ObTableClient) client).isOdpMode()) {
+        if ((client instanceof ObTableClient) && ((ObTableClient) client).isOdpMode()) {
             assertEquals(ResultCodes.OB_TABLE_NOT_EXIST.errorCode, exception.getErrorCode());
         } else {
             assertEquals(ResultCodes.OB_ERR_UNKNOWN_TABLE.errorCode, exception.getErrorCode());
@@ -538,7 +538,7 @@ public abstract class ObTableClientTestBase {
     public void test_limit_query_1() throws Exception {
         Object[] c1 = new Object[] { "123", "124", "234", "456", "567" };
         Object[] c2 = new Object[] { "123c2", "124c2", "234c2", "456c2", "567c2" };
-        if (((ObTableClient) client).isOdpMode()) {
+        if ((client instanceof ObTableClient) && ((ObTableClient) client).isOdpMode()) {
             // TODO: support stream result
         } else {
             try {
@@ -662,7 +662,7 @@ public abstract class ObTableClientTestBase {
             assertTrue(true);
         }
 
-        if (((ObTableClient) client).isOdpMode()) {
+        if ((client instanceof ObTableClient) && ((ObTableClient) client).isOdpMode()) {
             // TODO: support stream result
         } else {
             ObTable obTable = new ObTable();
@@ -694,7 +694,7 @@ public abstract class ObTableClientTestBase {
             )*/
 
         // TODO: stream query is not supported in ODP mode
-        if (((ObTableClient) client).isOdpMode()) {
+        if ((client instanceof ObTableClient) && ((ObTableClient) client).isOdpMode()) {
             return;
         }
         Object[] c1 = new Object[] { "123", "124", "234", "456", "567" };

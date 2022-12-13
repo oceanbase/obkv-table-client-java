@@ -31,10 +31,11 @@ import java.util.List;
 import java.util.Map;
 
 public class Mutation<T> {
-    private String        tableName;
-    private Table         client;
-    private Object[]      rowKey;
-    private TableQuery    query;
+    private String     tableName;
+    private Table      client;
+    private Object[]   rowKey;
+    private TableQuery query;
+    private boolean hasSetRowKey = false;
 
     /*
      * default constructor
@@ -141,7 +142,9 @@ public class Mutation<T> {
      */
     @SuppressWarnings("unchecked")
     public T setRowKey(Row rowKey) {
-        if (null == rowKey) {
+        if (hasSetRowKey) {
+            throw new IllegalArgumentException("Could not set row key (scan range) twice");
+        } else if (null == rowKey) {
             throw new IllegalArgumentException("Invalid null rowKey set into Mutation");
         } else if (0 == rowKey.getMap().size()) {
             throw new IllegalArgumentException("input row key should not be empty");
@@ -166,7 +169,7 @@ public class Mutation<T> {
         if (null != query) {
             query.addScanRange(this.rowKey, this.rowKey);
         }
-
+        hasSetRowKey = true;
         return (T) this;
     }
 
@@ -175,7 +178,9 @@ public class Mutation<T> {
      */
     @SuppressWarnings("unchecked")
     public T setRowKey(ColumnValue... rowKey) {
-        if (null == rowKey) {
+        if (hasSetRowKey) {
+            throw new IllegalArgumentException("Could not set row key (scan range) twice");
+        } else if (null == rowKey) {
             throw new IllegalArgumentException("Invalid null rowKey set into Mutation");
         }
 
@@ -201,7 +206,7 @@ public class Mutation<T> {
         if (null != query) {
             query.addScanRange(rowKey, rowKey);
         }
-
+        hasSetRowKey = true;
         return (T) this;
     }
 
@@ -251,8 +256,8 @@ public class Mutation<T> {
                 ((ObTableClient) client).addRowKeyElement(tableName, columnNames);
             }
         } else {
-            throw new ObTableException("invalid table name: " + tableName + ", or invalid client: " + client
-                + " while setting scan range columns");
+            throw new ObTableException("invalid table name: " + tableName + ", or invalid client: "
+                                       + client + " while setting scan range columns");
         }
 
         return (T) this;
@@ -286,7 +291,8 @@ public class Mutation<T> {
      * add scan range with boundary
      */
     @SuppressWarnings("unchecked")
-    public T addScanRange(Object start, boolean startEquals, Object end, boolean endEquals) throws Exception {
+    public T addScanRange(Object start, boolean startEquals, Object end, boolean endEquals)
+                                                                                           throws Exception {
         if (null == start || null == end) {
             throw new IllegalArgumentException("Invalid null range set into Mutation");
         }
@@ -298,8 +304,11 @@ public class Mutation<T> {
      * add list of scan range with boundary
      */
     @SuppressWarnings("unchecked")
-    public T addScanRange(Object[] start, boolean startEquals, Object[] end, boolean endEquals) throws Exception {
-        if (null == start || null == end) {
+    public T addScanRange(Object[] start, boolean startEquals, Object[] end, boolean endEquals)
+                                                                                               throws Exception {
+        if (this.rowKey != null) {
+            throw new IllegalArgumentException("Invalid scan range with row key");
+        } else if (null == start || null == end) {
             throw new IllegalArgumentException("Invalid null range set into Mutation");
         }
 
@@ -310,6 +319,7 @@ public class Mutation<T> {
         rowKey = null;
         query.addScanRange(start, startEquals, end, endEquals);
 
+        hasSetRowKey = true;
         return (T) this;
     }
 }

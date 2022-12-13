@@ -66,8 +66,7 @@ public class Delete extends Mutation<Delete> {
         } else {
             // QueryAndDelete
             return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
-                    getRowKey(), getKeyRanges(), ObTableOperationType.DEL,
-                    null, null, false));
+                getRowKey(), getKeyRanges(), ObTableOperationType.DEL, null, null, false));
         }
     }
 }

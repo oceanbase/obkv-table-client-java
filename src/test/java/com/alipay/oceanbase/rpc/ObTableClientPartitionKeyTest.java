@@ -182,7 +182,6 @@ public class ObTableClientPartitionKeyTest {
             tableQuery.addScanRange(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
                     timeStamp }, new Object[] { "key2_1".getBytes(), "partition".getBytes(),
                     timeStamp });
-            tableQuery.select("K", "Q", "T", "V", "K_PREFIX");
             try {
                 tableQuery.execute();
                 Assert.fail();
@@ -193,11 +192,12 @@ public class ObTableClientPartitionKeyTest {
             tableQuery.addScanRange(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
                     timeStamp }, new Object[] { "key1_3".getBytes(), "partition".getBytes(),
                     timeStamp });
-            tableQuery.select("K", "Q", "T", "V");
+            tableQuery.select("T", "V", "Q", "K");
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(1, result.cacheSize());
             result.next();
             Map<String, Object> row = result.getRow();
+            Assert.assertEquals(4, row.size());
             Assert.assertEquals("key1_1", new String((byte[]) row.get("K")));
             Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
             Assert.assertEquals(timeStamp, row.get("T"));
@@ -207,7 +207,6 @@ public class ObTableClientPartitionKeyTest {
             tableQuery.addScanRange(
                 new Object[] { "key1_1".getBytes(), ObObj.getMin(), ObObj.getMin() }, new Object[] {
                         "key1_8".getBytes(), ObObj.getMax(), ObObj.getMax() });
-            tableQuery.select("K", "Q", "T", "V");
             result = tableQuery.execute();
             Assert.assertTrue(result.cacheSize() >= 2);
         } else {
@@ -229,7 +228,6 @@ public class ObTableClientPartitionKeyTest {
                 tableQuery.addScanRange(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
                         timeStamp }, new Object[] { "key2_1".getBytes(), "partition".getBytes(),
                         timeStamp });
-                tableQuery.select("K", "Q", "T", "V", "K_PREFIX");
                 try {
                     tableQuery.execute();
                     Assert.fail();
@@ -243,7 +241,6 @@ public class ObTableClientPartitionKeyTest {
                 tableQuery.addScanRange(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
                         timeStamp }, new Object[] { "key1_1".getBytes(), "partition".getBytes(),
                         timeStamp + 1 });
-                tableQuery.select("K", "Q", "T", "V");
                 QueryResultSet result = tableQuery.execute();
                 Assert.assertEquals(2, result.cacheSize());
 
@@ -253,6 +250,7 @@ public class ObTableClientPartitionKeyTest {
                 for (int i = 0; i < 2; i++) {
                     Assert.assertEquals(true, result.next());
                     Map<String, Object> row = result.getRow();
+                    Assert.assertEquals(4, row.size());
                     Assert.assertEquals("key1_1", new String((byte[]) row.get("K")));
                     Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
                     Assert.assertEquals(expTimeStamp[i], row.get("T"));
@@ -265,15 +263,15 @@ public class ObTableClientPartitionKeyTest {
                 tableQuery.addScanRange(new Object[] { "key1_1".getBytes() },
                     new Object[] { "key1_1".getBytes() });
                 tableQuery.setScanRangeColumns("K");
-                tableQuery.select("K", "Q", "T", "V");
+                tableQuery.select("T", "K", "V");
                 result = tableQuery.execute();
                 Assert.assertEquals(2, result.cacheSize());
 
                 for (int i = 0; i < 2; i++) {
                     Assert.assertEquals(true, result.next());
                     Map<String, Object> row = result.getRow();
+                    Assert.assertEquals(3, row.size());
                     Assert.assertEquals("key1_1", new String((byte[]) row.get("K")));
-                    Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
                     Assert.assertEquals(expTimeStamp[i], row.get("T"));
                     Assert.assertEquals(expValues[i], new String((byte[]) row.get("V")));
                 }
@@ -281,10 +279,10 @@ public class ObTableClientPartitionKeyTest {
 
                 // scan using empty range on key partitioned table
                 tableQuery = obTableClient.query(tableName);
-                tableQuery.setScanRangeColumns("K");
-                tableQuery.select("K", "Q", "T", "V");
                 result = tableQuery.execute();
                 Assert.assertEquals(3, result.cacheSize());
+                Assert.assertTrue(result.next());
+                Assert.assertEquals(4, result.getRow().size());
             } catch (Exception e) {
                 e.printStackTrace();
                 Assert.assertTrue(false);
@@ -328,16 +326,16 @@ public class ObTableClientPartitionKeyTest {
             tableQuery.addScanRange(new Object[] { "key2_1".getBytes(), "value0".getBytes() },
                 new Object[] { "key2_1".getBytes(), "value9".getBytes() });
             // TODO: do param check, must specify select columns
-            tableQuery.select("K", "Q", "T", "V");
             tableQuery.setScanRangeColumns("K", "V");
+            tableQuery.select("K", "V", "T");
             tableQuery.indexName("i1");
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(2, result.cacheSize());
             for (int i = 1; i <= 2; i++) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();
+                Assert.assertEquals(3, row.size());
                 Assert.assertEquals("key2_1", new String((byte[]) row.get("K")));
-                Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
                 Assert.assertEquals(timeStamp + i, row.get("T"));
                 Assert.assertEquals("value" + i, new String((byte[]) row.get("V")));
             }
@@ -350,7 +348,6 @@ public class ObTableClientPartitionKeyTest {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();
                 Assert.assertEquals("key2_1", new String((byte[]) row.get("K")));
-                Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
                 Assert.assertEquals(timeStamp + i, row.get("T"));
                 Assert.assertEquals("value" + i, new String((byte[]) row.get("V")));
             }
@@ -368,6 +365,7 @@ public class ObTableClientPartitionKeyTest {
             for (int i = 1; i <= 2; i++) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();
+                Assert.assertEquals(4, row.size());
                 Assert.assertEquals("key3_1", new String((byte[]) row.get("K")));
                 Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
                 Assert.assertEquals(timeStamp + 3 - i, row.get("T"));
@@ -381,6 +379,7 @@ public class ObTableClientPartitionKeyTest {
             for (int i = 2; i >= 1; i--) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();
+                Assert.assertEquals(4, row.size());
                 Assert.assertEquals("key3_1", new String((byte[]) row.get("K")));
                 Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
                 Assert.assertEquals(timeStamp + 3 - i, row.get("T"));
@@ -391,7 +390,6 @@ public class ObTableClientPartitionKeyTest {
             tableQuery = obTableClient.query(tableName);
             tableQuery.addScanRange(new Object[] { "key2_1".getBytes() },
                 new Object[] { "key2_1".getBytes() });
-            tableQuery.select("K", "Q", "T", "V");
             tableQuery.setScanRangeColumns("K");
             tableQuery.indexName("i1");
             result = tableQuery.execute();
@@ -399,6 +397,7 @@ public class ObTableClientPartitionKeyTest {
             for (int i = 1; i <= 2; i++) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();
+                Assert.assertEquals(4, row.size());
                 Assert.assertEquals("key2_1", new String((byte[]) row.get("K")));
                 Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
                 Assert.assertEquals(timeStamp + i, row.get("T"));
