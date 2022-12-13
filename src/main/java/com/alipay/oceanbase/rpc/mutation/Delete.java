@@ -65,15 +65,9 @@ public class Delete extends Mutation<Delete> {
                 getTableName(), getRowKey(), getKeyRanges()));
         } else {
             // QueryAndDelete
-            // getQuery().select(getSelectedColumns());
             return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
                     getRowKey(), getKeyRanges(), ObTableOperationType.DEL,
                     null, null, false));
         }
-    }
-
-    public Delete select(String... columnNames) throws Exception {
-        getQuery().select(columnNames);
-        return this;
     }
 }
