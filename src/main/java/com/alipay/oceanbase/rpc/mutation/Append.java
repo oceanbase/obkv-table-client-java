@@ -125,13 +125,13 @@ public class Append extends Mutation<Append> {
         if (null == getQuery()) {
             // simple update, without filter
             return new MutationResult(((ObTableClient) getClient()).appendWithResult(
-                    getTableName(), getRowKey(), getKeyRanges(),
-                    columns.toArray(new String[0]), values.toArray(), withResult));
+                getTableName(), getRowKey(), getKeyRanges(), columns.toArray(new String[0]),
+                values.toArray(), withResult));
         } else {
             // QueryAndAppend
             return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
-                    getRowKey(), getKeyRanges(), ObTableOperationType.APPEND,
-                    columns.toArray(new String[0]), values.toArray(), withResult));
+                getRowKey(), getKeyRanges(), ObTableOperationType.APPEND,
+                columns.toArray(new String[0]), values.toArray(), withResult));
 
         }
     }

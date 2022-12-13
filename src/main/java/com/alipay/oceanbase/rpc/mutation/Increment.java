@@ -125,13 +125,13 @@ public class Increment extends Mutation<Increment> {
         if (null == getQuery()) {
             // simple update, without filter
             return new MutationResult(((ObTableClient) getClient()).incrementWithResult(
-                    getTableName(), getRowKey(), getKeyRanges(),
-                    columns.toArray(new String[0]), values.toArray(), withResult));
+                getTableName(), getRowKey(), getKeyRanges(), columns.toArray(new String[0]),
+                values.toArray(), withResult));
         } else {
             // QueryAndIncrement
             return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
-                    getRowKey(), getKeyRanges(),ObTableOperationType.INCREMENT,
-                    columns.toArray(new String[0]), values.toArray(), withResult));
+                getRowKey(), getKeyRanges(), ObTableOperationType.INCREMENT,
+                columns.toArray(new String[0]), values.toArray(), withResult));
         }
     }
 }

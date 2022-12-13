@@ -57,8 +57,7 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                 long uniqueId = request.getUniqueId();
                 long sequence = request.getSequence();
                 String trace = String.format("Y%X-%016X", uniqueId, sequence);
-                throw new ObTableTimeoutExcetion("[" + trace + "]"
-                                                 + " has tried " + tryTimes
+                throw new ObTableTimeoutExcetion("[" + trace + "]" + " has tried " + tryTimes
                                                  + " times and it has waited " + costMillis
                                                  + "/ms which exceeds response timeout "
                                                  + client.getRuntimeMaxWait() + "/ms");

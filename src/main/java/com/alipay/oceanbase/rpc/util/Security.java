@@ -32,8 +32,7 @@ import java.security.NoSuchAlgorithmException;
 import static com.alipay.oceanbase.rpc.util.StringUtil.isNotBlank;
 
 /**
- * {@link com.mysql.jdbc.MysqlIO#secureAuth}
- *
+ * com.mysql.jdbc.MysqlIO#secureAuth
  */
 public class Security {
 

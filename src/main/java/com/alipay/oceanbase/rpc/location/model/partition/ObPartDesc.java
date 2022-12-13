@@ -202,7 +202,7 @@ public abstract class ObPartDesc {
             Object[] partKey;
             if (rowKey.length < rowKeyElement.size()) {
                 throw new IllegalArgumentException("row key is consist of " + rowKeyElement
-                        + "but found" + Arrays.toString(rowKey));
+                                                   + "but found" + Arrays.toString(rowKey));
             } else {
                 partKey = Arrays.copyOfRange(rowKey, 0, rowKeyElement.size());
             }
