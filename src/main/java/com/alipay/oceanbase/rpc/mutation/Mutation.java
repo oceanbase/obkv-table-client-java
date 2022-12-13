@@ -36,11 +36,6 @@ public class Mutation<T> {
     private Object[]      rowKey;
     private TableQuery    query;
 
-    // TODO: remove rowKeysName and filter after implement schema
-    private List<String>  rowKeyName;
-    // Only Query in filter works
-    private ObTableFilter filter;
-
     /*
      * default constructor
      * recommend for batch operation
@@ -49,9 +44,7 @@ public class Mutation<T> {
         tableName = null;
         client = null;
         rowKey = null;
-        rowKeyName = null;
         query = null;
-        filter = null;
     }
 
     /*
@@ -66,7 +59,6 @@ public class Mutation<T> {
         this.client = client;
         this.tableName = tableName;
         this.rowKey = null;
-        this.rowKeyName = null;
         this.query = null;
     }
 
@@ -109,69 +101,10 @@ public class Mutation<T> {
     }
 
     /*
-     * get row key name
-     */
-    protected List<String> getRowKeyName() {
-        return rowKeyName;
-    }
-
-    /*
-     * get filter
-     */
-    protected ObTableFilter getFilter() {
-        return filter;
-    }
-
-    /*
      * get operation type
      */
     public ObTableOperationType getOperationType() {
         return null;
-    }
-
-    /*
-     * add selected Column from filter
-     * TODO: remove this function after implement table schema
-     */
-    protected void addSelectedColumn(List<String> selectedColumns, ObTableFilter filter)
-                                                                                        throws Exception {
-        if (filter instanceof ObTableFilterList) {
-            for (int i = 0; i < ((ObTableFilterList) filter).size(); ++i) {
-                addSelectedColumn(selectedColumns, ((ObTableFilterList) filter).get(i));
-            }
-        } else if (filter instanceof ObTableNotInFilter) {
-            if (!selectedColumns.contains(((ObTableNotInFilter) filter).getColumnName())) {
-                selectedColumns.add(((ObTableNotInFilter) filter).getColumnName());
-            }
-        } else if (filter instanceof ObTableInFilter) {
-            if (!selectedColumns.contains(((ObTableInFilter) filter).getColumnName())) {
-                selectedColumns.add(((ObTableInFilter) filter).getColumnName());
-            }
-        } else if (filter instanceof ObTableValueFilter) {
-            if (!selectedColumns.contains(((ObTableValueFilter) filter).getColumnName())) {
-                selectedColumns.add(((ObTableValueFilter) filter).getColumnName());
-            }
-        } else {
-            throw new ObTableException("unknown filter type " + filter.toString());
-        }
-    }
-
-    /*
-     * only using by execute()
-     * get the selected columns of this mutation
-     * TODO: can be removed after implement schema
-     */
-    protected String[] getSelectedColumns() throws Exception {
-        if (null == filter) {
-            throw new ObTableException("filter is empty, only QueryAndMutate need selected columns");
-        }
-
-        // add name of row key
-        List<String> selectedColumns = new ArrayList<>(rowKeyName);
-        // add name from filter
-        addSelectedColumn(selectedColumns, filter);
-
-        return selectedColumns.toArray(new String[0]);
     }
 
     /*
@@ -221,7 +154,6 @@ public class Mutation<T> {
             columnNames.add(entry.getKey());
             Keys.add(entry.getValue());
         }
-        this.rowKeyName = columnNames;
         this.rowKey = Keys.toArray();
 
         // set row key in table
@@ -257,7 +189,6 @@ public class Mutation<T> {
             columnNames.add(columnValue.getColumnName());
             Keys.add(columnValue.getValue());
         }
-        this.rowKeyName = columnNames;
         this.rowKey = Keys.toArray();
 
         // set row key in table
@@ -294,7 +225,6 @@ public class Mutation<T> {
             // only filter string in query works
             query.setFilter(filter);
         }
-        this.filter = filter;
         return (T) this;
     }
 
@@ -318,7 +248,6 @@ public class Mutation<T> {
             if (!((ObTableClient) client).isOdpMode()) {
                 // TODO: adapt OCP
                 //      OCP must conclude all rowkey now
-                rowKeyName = Arrays.asList(columnNames);
                 ((ObTableClient) client).addRowKeyElement(tableName, columnNames);
             }
         } else {
