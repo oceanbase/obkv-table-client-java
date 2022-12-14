@@ -113,30 +113,6 @@ public class Append extends Mutation<Append> {
     }
 
     /*
-     * only using by execute()
-     * get the selected columns of this mutation
-     * TODO: can be removed after implement schema
-     */
-    protected String[] getSelectedColumns() throws Exception {
-        if (null == getFilter()) {
-            throw new ObTableException("filter is empty, only QueryAndMutate need selected columns");
-        }
-
-        // add name of row key
-        List<String> selectedColumns = new ArrayList<>(getRowKeyName());
-        // add name from filter
-        addSelectedColumn(selectedColumns, getFilter());
-        // add name from mutated row
-        for (String column : columns) {
-            if (!selectedColumns.contains(column)) {
-                selectedColumns.add(column);
-            }
-        }
-
-        return selectedColumns.toArray(new String[0]);
-    }
-
-    /*
      * execute
      */
     public MutationResult execute() throws Exception {
@@ -149,14 +125,13 @@ public class Append extends Mutation<Append> {
         if (null == getQuery()) {
             // simple update, without filter
             return new MutationResult(((ObTableClient) getClient()).appendWithResult(
-                getTableName(), getRowKey(), columns.toArray(new String[0]), values.toArray(),
-                withResult));
+                getTableName(), getRowKey(), getKeyRanges(), columns.toArray(new String[0]),
+                values.toArray(), withResult));
         } else {
             // QueryAndAppend
-            getQuery().select(getSelectedColumns());
             return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
-                getRowKey(), ObTableOperationType.APPEND, columns.toArray(new String[0]),
-                values.toArray(), withResult));
+                getRowKey(), getKeyRanges(), ObTableOperationType.APPEND,
+                columns.toArray(new String[0]), values.toArray(), withResult));
 
         }
     }

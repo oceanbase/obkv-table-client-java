@@ -54,7 +54,10 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
             long currentExecute = System.currentTimeMillis();
             long costMillis = currentExecute - startExecute;
             if (costMillis > client.getRuntimeMaxWait()) {
-                throw new ObTableTimeoutExcetion("it has tried " + tryTimes
+                long uniqueId = request.getUniqueId();
+                long sequence = request.getSequence();
+                String trace = String.format("Y%X-%016X", uniqueId, sequence);
+                throw new ObTableTimeoutExcetion("[" + trace + "]" + " has tried " + tryTimes
                                                  + " times and it has waited " + costMillis
                                                  + "/ms which exceeds response timeout "
                                                  + client.getRuntimeMaxWait() + "/ms");
