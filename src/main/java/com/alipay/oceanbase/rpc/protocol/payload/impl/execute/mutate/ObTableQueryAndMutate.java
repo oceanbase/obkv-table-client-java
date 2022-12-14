@@ -38,7 +38,7 @@ public class ObTableQueryAndMutate extends AbstractPayload {
 
     private ObTableQuery          tableQuery;
     private ObTableBatchOperation mutations;
-    private boolean               returnAffectedEntity = true;
+    private boolean               returnAffectedEntity = false;
 
     /*
      * Get pcode.

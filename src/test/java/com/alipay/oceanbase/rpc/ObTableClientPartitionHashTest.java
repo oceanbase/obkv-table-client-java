@@ -23,6 +23,7 @@ import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
+import net.bytebuddy.implementation.auxiliary.MethodCallProxy;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -166,12 +167,12 @@ public class ObTableClientPartitionHashTest {
             TableQuery tableQuery = obTableClient.query("testHash");
             tableQuery.addScanRange(new Object[] { timeStamp, "partition".getBytes(), timeStamp },
                 new Object[] { timeStamp, "partition".getBytes(), timeStamp });
-            tableQuery.select("K", "Q", "T", "V");
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(1L, result.cacheSize());
 
             Assert.assertTrue(result.next());
             Map<String, Object> row = result.getRow();
+            Assert.assertEquals(4, row.size());
             Assert.assertEquals(timeStamp, row.get("K"));
             Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
             Assert.assertEquals(timeStamp, row.get("T"));
@@ -189,6 +190,7 @@ public class ObTableClientPartitionHashTest {
 
                 Assert.assertTrue(result.next());
                 row = result.getRow();
+                Assert.assertEquals(4, row.size());
                 Assert.assertEquals(timeStamp, row.get("K"));
                 Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
                 Assert.assertEquals(timeStamp, row.get("T"));
@@ -200,7 +202,7 @@ public class ObTableClientPartitionHashTest {
                 tableQuery.addScanRange(
                     new Object[] { timeStamp, "partition".getBytes(), timeStamp }, new Object[] {
                             timeStamp + 10, "partition".getBytes(), timeStamp });
-                tableQuery.select("K", "Q", "T", "V");
+                tableQuery.select("K", "Q", "T");
                 result = tableQuery.execute();
                 Assert.assertEquals(5, result.cacheSize());
 
@@ -209,13 +211,12 @@ public class ObTableClientPartitionHashTest {
                 tableQuery.setScanRangeColumns("K");
                 tableQuery
                     .addScanRange(new Object[] { timeStamp }, new Object[] { timeStamp + 10 });
-                tableQuery.select("K", "Q", "T", "V");
+                tableQuery.select("Q", "V");
                 result = tableQuery.execute();
                 Assert.assertEquals(5, result.cacheSize());
 
                 // query with empty scan range
                 tableQuery = obTableClient.query("testHash");
-                tableQuery.select("K", "Q", "T", "V");
                 result = tableQuery.execute();
                 // TODO: too many rows of testHash is not deleted
                 Assert.assertTrue(result.cacheSize() > 0);
@@ -263,7 +264,6 @@ public class ObTableClientPartitionHashTest {
             TableQuery tableQuery = obTableClient.query(tableName);
             tableQuery.addScanRange(new Object[] { timeStamp + 1, "value0".getBytes() },
                                     new Object[] { timeStamp + 1, "value9".getBytes() });
-            tableQuery.select("K", "Q", "T", "V");
             tableQuery.scanOrder(false);
             tableQuery.setScanRangeColumns("K", "V");
             tableQuery.indexName("i1");
@@ -272,6 +272,7 @@ public class ObTableClientPartitionHashTest {
             for (int i = 1; i <= 2; i++) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();
+                Assert.assertEquals(4, row.size());
                 Assert.assertEquals(timeStamp + 1, row.get("K"));
                 Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
                 Assert.assertEquals(timeStamp + i, row.get("T"));
@@ -283,7 +284,7 @@ public class ObTableClientPartitionHashTest {
             tableQuery = obTableClient.query(tableName);
             tableQuery.addScanRange(new Object[] { timeStamp + 1 },
                                     new Object[] { timeStamp + 1 });
-            tableQuery.select("K", "Q", "T", "V");
+            tableQuery.select("K", "T", "V");
             tableQuery.setScanRangeColumns("K");
             tableQuery.scanOrder(false);
             tableQuery.indexName("i1");
@@ -292,8 +293,8 @@ public class ObTableClientPartitionHashTest {
             for (int i = 1; i <= 2; i++) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();
+                Assert.assertEquals(3, row.size());
                 Assert.assertEquals(timeStamp + 1, row.get("K"));
-                Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
                 Assert.assertEquals(timeStamp + i, row.get("T"));
                 Assert.assertEquals("value" + ( 3 - i), new String((byte[]) row.get("V")));
             }
@@ -303,7 +304,6 @@ public class ObTableClientPartitionHashTest {
             tableQuery = obTableClient.query(tableName);
             tableQuery.addScanRange(new Object[] { timeStamp + 1, "value0".getBytes() },
                                     new Object[] { timeStamp + 3, "value9".getBytes() });
-            tableQuery.select("K", "Q", "T", "V");
             tableQuery.setScanRangeColumns("K", "V");
             tableQuery.indexName("i1");
             result = tableQuery.execute();
@@ -313,6 +313,7 @@ public class ObTableClientPartitionHashTest {
             List<Map<String, Object>> resultList = new ArrayList<>();
             for (int i = 0; i < 4; i++) {
                 Assert.assertTrue(result.next());
+                Assert.assertEquals(4, result.getRow().size());
                 resultList.add(result.getRow());
             }
             Assert.assertFalse(result.next());

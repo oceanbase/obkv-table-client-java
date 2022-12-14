@@ -199,17 +199,19 @@ public abstract class ObPartDesc {
         for (int i = 0; i < partRefColumnSize; i++) {
             ObPair<ObColumn, List<Integer>> orderedPartRefColumnRowKeyRelation = orderedPartRefColumnRowKeyRelations
                 .get(i);
-
-            if (rowKey.length != rowKeyElement.size()) {
+            Object[] partKey;
+            if (rowKey.length < rowKeyElement.size()) {
                 throw new IllegalArgumentException("row key is consist of " + rowKeyElement
                                                    + "but found" + Arrays.toString(rowKey));
+            } else {
+                partKey = Arrays.copyOfRange(rowKey, 0, rowKeyElement.size());
             }
             // row key is consists of multi column
             List<Integer> refIndex = orderedPartRefColumnRowKeyRelation.getRight();
             Object[] evalParams = new Object[refIndex.size()];
             for (int j = 0; j < refIndex.size(); j++) {
                 //TODO where get the type of ref column ?
-                evalParams[j] = rowKey[refIndex.get(j)];
+                evalParams[j] = partKey[refIndex.get(j)];
             }
             evalValues.add(orderedPartRefColumnRowKeyRelation.getLeft().evalValue(evalParams));
         }

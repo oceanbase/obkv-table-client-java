@@ -62,12 +62,11 @@ public class Delete extends Mutation<Delete> {
         if (null == getQuery()) {
             // simple Insert, without filter
             return new MutationResult(((ObTableClient) getClient()).deleteWithResult(
-                getTableName(), getRowKey()));
+                getTableName(), getRowKey(), getKeyRanges()));
         } else {
             // QueryAndDelete
-            getQuery().select(getSelectedColumns());
             return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
-                getRowKey(), ObTableOperationType.DEL, null, null, false));
+                getRowKey(), getKeyRanges(), ObTableOperationType.DEL, null, null, false));
         }
     }
 }

@@ -21,22 +21,21 @@ import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.filter.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 public class Mutation<T> {
-    private String        tableName;
-    private Table         client;
-    private Object[]      rowKey;
-    private TableQuery    query;
-
-    // TODO: remove rowKeysName and filter after implement schema
-    private List<String>  rowKeyName;
-    private ObTableFilter filter;
+    private String     tableName;
+    private Table      client;
+    private Object[]   rowKey;
+    private TableQuery query;
+    private boolean hasSetRowKey = false;
 
     /*
      * default constructor
@@ -46,9 +45,7 @@ public class Mutation<T> {
         tableName = null;
         client = null;
         rowKey = null;
-        rowKeyName = null;
         query = null;
-        filter = null;
     }
 
     /*
@@ -63,7 +60,6 @@ public class Mutation<T> {
         this.client = client;
         this.tableName = tableName;
         this.rowKey = null;
-        this.rowKeyName = null;
         this.query = null;
     }
 
@@ -96,17 +92,13 @@ public class Mutation<T> {
     }
 
     /*
-     * get row key name
+     * get key ranges
      */
-    protected List<String> getRowKeyName() {
-        return rowKeyName;
-    }
-
-    /*
-     * get filter
-     */
-    protected ObTableFilter getFilter() {
-        return filter;
+    protected List<ObNewRange> getKeyRanges() {
+        if (null != query) {
+            return query.getObTableQuery().getKeyRanges();
+        }
+        return null;
     }
 
     /*
@@ -114,51 +106,6 @@ public class Mutation<T> {
      */
     public ObTableOperationType getOperationType() {
         return null;
-    }
-
-    /*
-     * add selected Column from filter
-     * TODO: remove this function after implement table schema
-     */
-    protected void addSelectedColumn(List<String> selectedColumns, ObTableFilter filter)
-                                                                                        throws Exception {
-        if (filter instanceof ObTableFilterList) {
-            for (int i = 0; i < ((ObTableFilterList) filter).size(); ++i) {
-                addSelectedColumn(selectedColumns, ((ObTableFilterList) filter).get(i));
-            }
-        } else if (filter instanceof ObTableNotInFilter) {
-            if (!selectedColumns.contains(((ObTableNotInFilter) filter).getColumnName())) {
-                selectedColumns.add(((ObTableNotInFilter) filter).getColumnName());
-            }
-        } else if (filter instanceof ObTableInFilter) {
-            if (!selectedColumns.contains(((ObTableInFilter) filter).getColumnName())) {
-                selectedColumns.add(((ObTableInFilter) filter).getColumnName());
-            }
-        } else if (filter instanceof ObTableValueFilter) {
-            if (!selectedColumns.contains(((ObTableValueFilter) filter).getColumnName())) {
-                selectedColumns.add(((ObTableValueFilter) filter).getColumnName());
-            }
-        } else {
-            throw new ObTableException("unknown filter type " + filter.toString());
-        }
-    }
-
-    /*
-     * only using by execute()
-     * get the selected columns of this mutation
-     * TODO: can be removed after implement schema
-     */
-    protected String[] getSelectedColumns() throws Exception {
-        if (null == filter) {
-            throw new ObTableException("filter is empty, only QueryAndMutate need selected columns");
-        }
-
-        // add name of row key
-        List<String> selectedColumns = new ArrayList<>(rowKeyName);
-        // add name from filter
-        addSelectedColumn(selectedColumns, filter);
-
-        return selectedColumns.toArray(new String[0]);
     }
 
     /*
@@ -195,7 +142,9 @@ public class Mutation<T> {
      */
     @SuppressWarnings("unchecked")
     public T setRowKey(Row rowKey) {
-        if (null == rowKey) {
+        if (hasSetRowKey) {
+            throw new IllegalArgumentException("Could not set row key (scan range) twice");
+        } else if (null == rowKey) {
             throw new IllegalArgumentException("Invalid null rowKey set into Mutation");
         } else if (0 == rowKey.getMap().size()) {
             throw new IllegalArgumentException("input row key should not be empty");
@@ -208,7 +157,6 @@ public class Mutation<T> {
             columnNames.add(entry.getKey());
             Keys.add(entry.getValue());
         }
-        this.rowKeyName = columnNames;
         this.rowKey = Keys.toArray();
 
         // set row key in table
@@ -221,7 +169,7 @@ public class Mutation<T> {
         if (null != query) {
             query.addScanRange(this.rowKey, this.rowKey);
         }
-
+        hasSetRowKey = true;
         return (T) this;
     }
 
@@ -230,7 +178,9 @@ public class Mutation<T> {
      */
     @SuppressWarnings("unchecked")
     public T setRowKey(ColumnValue... rowKey) {
-        if (null == rowKey) {
+        if (hasSetRowKey) {
+            throw new IllegalArgumentException("Could not set row key (scan range) twice");
+        } else if (null == rowKey) {
             throw new IllegalArgumentException("Invalid null rowKey set into Mutation");
         }
 
@@ -244,7 +194,6 @@ public class Mutation<T> {
             columnNames.add(columnValue.getColumnName());
             Keys.add(columnValue.getValue());
         }
-        this.rowKeyName = columnNames;
         this.rowKey = Keys.toArray();
 
         // set row key in table
@@ -257,7 +206,7 @@ public class Mutation<T> {
         if (null != query) {
             query.addScanRange(rowKey, rowKey);
         }
-
+        hasSetRowKey = true;
         return (T) this;
     }
 
@@ -268,20 +217,109 @@ public class Mutation<T> {
     public T setFilter(ObTableFilter filter) throws Exception {
         if (null == filter) {
             throw new IllegalArgumentException("Invalid null filter set into Mutation");
+        } else if (null == client) {
+            // do nothing
+        } else {
+            if (null == query) {
+                query = client.query(tableName);
+                // set scan range if rowKey exist
+                if (null != rowKey) {
+                    query.addScanRange(rowKey, rowKey);
+                }
+            }
+            // only filter string in query works
+            query.setFilter(filter);
+        }
+        return (T) this;
+    }
+
+    /*
+     * used for scan range (not ODP)
+     */
+    @SuppressWarnings("unchecked")
+    public T setScanRangeColumns(String... columnNames) throws Exception {
+        if (null == columnNames) {
+            throw new IllegalArgumentException("Invalid null column names set into Mutation");
         }
 
         if (null == query) {
             query = client.query(tableName);
-            // set scan range if rowKey exist
-            if (null != rowKey) {
-                query.addScanRange(rowKey, rowKey);
-            }
         }
 
-        // only filter string in query works
-        this.filter = filter;
-        query.setFilter(filter);
+        query.setScanRangeColumns(columnNames);
 
+        // set row key in table
+        if (null != tableName && null != client) {
+            if (!((ObTableClient) client).isOdpMode()) {
+                // TODO: adapt OCP
+                //      OCP must conclude all rowkey now
+                ((ObTableClient) client).addRowKeyElement(tableName, columnNames);
+            }
+        } else {
+            throw new ObTableException("invalid table name: " + tableName + ", or invalid client: "
+                                       + client + " while setting scan range columns");
+        }
+
+        return (T) this;
+    }
+
+    /*
+     * add scan range
+     */
+    @SuppressWarnings("unchecked")
+    public T addScanRange(Object start, Object end) throws Exception {
+        if (null == start || null == end) {
+            throw new IllegalArgumentException("Invalid null range set into Mutation");
+        }
+
+        return addScanRange(new Object[] { start }, true, new Object[] { end }, true);
+    }
+
+    /*
+     * add list of scan range
+     */
+    @SuppressWarnings("unchecked")
+    public T addScanRange(Object[] start, Object[] end) throws Exception {
+        if (null == start || null == end) {
+            throw new IllegalArgumentException("Invalid null range set into Mutation");
+        }
+
+        return addScanRange(start, true, end, true);
+    }
+
+    /*
+     * add scan range with boundary
+     */
+    @SuppressWarnings("unchecked")
+    public T addScanRange(Object start, boolean startEquals, Object end, boolean endEquals)
+                                                                                           throws Exception {
+        if (null == start || null == end) {
+            throw new IllegalArgumentException("Invalid null range set into Mutation");
+        }
+
+        return addScanRange(new Object[] { start }, startEquals, new Object[] { end }, endEquals);
+    }
+
+    /*
+     * add list of scan range with boundary
+     */
+    @SuppressWarnings("unchecked")
+    public T addScanRange(Object[] start, boolean startEquals, Object[] end, boolean endEquals)
+                                                                                               throws Exception {
+        if (this.rowKey != null) {
+            throw new IllegalArgumentException("Invalid scan range with row key");
+        } else if (null == start || null == end) {
+            throw new IllegalArgumentException("Invalid null range set into Mutation");
+        }
+
+        if (null == query) {
+            query = client.query(tableName);
+        }
+
+        rowKey = null;
+        query.addScanRange(start, startEquals, end, endEquals);
+
+        hasSetRowKey = true;
         return (T) this;
     }
 }
