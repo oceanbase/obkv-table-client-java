@@ -35,7 +35,7 @@ public class Mutation<T> {
     private Table      client;
     private Object[]   rowKey;
     private TableQuery query;
-    private boolean hasSetRowKey = false;
+    private boolean    hasSetRowKey = false;
 
     /*
      * default constructor

@@ -184,7 +184,6 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             if (errCode == ResultCodes.OB_SUCCESS.errorCode) {
                 switch (result.getOperationType()) {
                     case GET:
-                        throw new ObTableException("Get is not a mutation");
                     case INSERT:
                     case DEL:
                     case UPDATE:
