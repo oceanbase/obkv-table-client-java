@@ -17,7 +17,6 @@
 
 package com.alipay.oceanbase.rpc.table.api;
 
-import com.alipay.oceanbase.rpc.mutation.result.BatchMutationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableBatchOperation;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 

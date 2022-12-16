@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
+import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilter;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
@@ -28,11 +29,13 @@ import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.table.ObTableClientQueryImpl;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
+import java.util.List;
+
 public class ObClusterTableQuery extends AbstractTableQuery {
 
     private final ObTableClientQueryImpl tableClientQuery;
 
-    ObClusterTableQuery(ObTableClientQueryImpl tableQuery) {
+    public ObClusterTableQuery(ObTableClientQueryImpl tableQuery) {
         this.tableClientQuery = tableQuery;
     }
 
@@ -50,6 +53,20 @@ public class ObClusterTableQuery extends AbstractTableQuery {
     @Override
     public ObTableQuery getObTableQuery() {
         return tableClientQuery.getObTableQuery();
+    }
+
+    /*
+     * Get select columns (used by BatchOperation)
+     */
+    public List<String> getSelectColumns() {
+        return tableClientQuery.getSelectColumns();
+    }
+
+    /*
+     * Get row key (used by BatchOperation)
+     */
+    public Row getRowKey() {
+        return tableClientQuery.getRowKey();
     }
 
     /*
@@ -94,6 +111,14 @@ public class ObClusterTableQuery extends AbstractTableQuery {
     @Override
     public TableQuery setKeys(String... keys) {
         throw new IllegalArgumentException("Not needed");
+    }
+
+    /*
+     * set row key into query (only used bt BatchOperation)
+     */
+    public TableQuery setRowKey(Row row) throws Exception {
+        tableClientQuery.setRowKey(row);
+        return this;
     }
 
     /*
