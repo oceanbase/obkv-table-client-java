@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.table;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
+import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.stream.async.ObTableClientQueryAsyncStreamResult;
 import com.alipay.oceanbase.rpc.stream.async.ObTableQueryAsyncClientResultSet;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;

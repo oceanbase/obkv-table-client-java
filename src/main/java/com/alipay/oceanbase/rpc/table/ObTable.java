@@ -311,8 +311,8 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     /**
      * batch mutation.
      */
-    public BatchMutation batchMutation(String tableName) {
-        return new BatchMutation(this, tableName);
+    public BatchOperation batchOperation(String tableName) {
+        return new BatchOperation(this, tableName);
     }
 
     /*

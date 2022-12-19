@@ -17,9 +17,13 @@
 
 package com.alipay.oceanbase.rpc.table;
 
+import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.filter.ObTableFilter;
+import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
+
+import java.util.List;
 
 public abstract class AbstractTableQuery implements TableQuery {
     private static final String PRIMARY_INDEX_NAME = "PRIMARY";
@@ -141,5 +145,20 @@ public abstract class AbstractTableQuery implements TableQuery {
     public TableQuery setScanRangeColumns(String... columns) {
         this.getObTableQuery().setScanRangeColumns(columns);
         return this;
+    }
+
+    @Override
+    public List<String> getSelectColumns() {
+        throw new ObTableException("only query from BatchOperation support getSelectColumns");
+    }
+
+    @Override
+    public Row getRowKey() throws Exception {
+        throw new ObTableException("only query from BatchOperation support row key");
+    }
+
+    @Override
+    public TableQuery setRowKey(Row row) throws Exception {
+        throw new ObTableException("only query from BatchOperation support row key");
     }
 }

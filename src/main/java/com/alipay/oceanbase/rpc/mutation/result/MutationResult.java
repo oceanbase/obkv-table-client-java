@@ -18,24 +18,23 @@
 package com.alipay.oceanbase.rpc.mutation.result;
 
 import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateResult;
 
-public class MutationResult {
-    private final ObPayload result;
+import java.util.Map;
+
+public class MutationResult extends OperationResult {
+
 
     /*
      * construct with ObPayload
      */
     public MutationResult(ObPayload result) {
-        if (null == result) {
-            throw new IllegalArgumentException("Invalid null result");
-        }
-
-        this.result = result;
+        super(result);
     }
 
     /*
@@ -61,5 +60,22 @@ public class MutationResult {
                 throw new ObTableException("unknown result type: " + result.getPcode());
         }
         return affectedRows;
+    }
+
+    /*
+     * get the result rows of operation
+     */
+    public Row getOperationRow() {
+        Map<String, Object> rowsMap;
+        switch (result.getPcode()) {
+            case Pcodes.OB_TABLE_API_EXECUTE:
+                rowsMap = ((ObTableOperationResult) result).getEntity().getSimpleProperties();
+                break;
+            case Pcodes.OB_TABLE_API_QUERY_AND_MUTATE:
+                throw new ObTableException("could not get query and mutate result now" + result.getPcode());
+            default:
+                throw new ObTableException("unknown result type: " + result.getPcode());
+        }
+        return new Row(rowsMap);
     }
 }

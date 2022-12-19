@@ -26,6 +26,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
 import java.util.Arrays;
+import java.util.List;
 
 public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
 
@@ -38,6 +39,13 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
     public TableQuery select(String... columns) {
         this.tableQuery.setSelectColumns(Arrays.asList(columns));
         return this;
+    }
+
+    /*
+     * get select columns' name
+     */
+    public List<String> getSelectColumns() {
+        return this.tableQuery.getSelectColumns();
     }
 
     /*

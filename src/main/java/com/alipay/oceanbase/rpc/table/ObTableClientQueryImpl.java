@@ -20,6 +20,7 @@ package com.alipay.oceanbase.rpc.table;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
+import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.*;
 import com.alipay.oceanbase.rpc.stream.ObTableClientQueryStreamResult;
@@ -40,6 +41,18 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     private final String        tableName;
     private final ObTableClient obTableClient;
 
+    private Row rowKey; // only used by BatchOperation
+
+    /*
+     * Ob table client query impl construct only with tableName
+     */
+    public ObTableClientQueryImpl() {
+        this.tableName = null;
+        this.obTableClient = null;
+        this.tableQuery = new ObTableQuery();
+        this.rowKey = null;
+    }
+
     /*
      * Ob table client query impl.
      */
@@ -47,6 +60,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         this.tableName = tableName;
         this.obTableClient = client;
         this.tableQuery = new ObTableQuery();
+        this.rowKey = null;
     }
 
     /*
@@ -56,6 +70,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         this.tableName = tableName;
         this.obTableClient = client;
         this.tableQuery = tableQuery;
+        this.rowKey = null;
     }
 
     /*
@@ -87,9 +102,20 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     }
 
     /*
+     * set row key of query (only used by BatchOperation)
+     */
+    public TableQuery setRowKey(Row rowKey) throws Exception {
+        this.rowKey = rowKey;
+        return this;
+    }
+
+    /*
      * Execute internal.
      */
     public ObTableClientQueryStreamResult executeInternal() throws Exception {
+        if (null == obTableClient) {
+            throw new ObTableException("table client is null");
+        }
         final long startTime = System.currentTimeMillis();
         Map<Long, ObPair<Long, ObTable>> partitionObTables = new HashMap<Long, ObPair<Long, ObTable>>();
         List<Object> params = new ArrayList<>();
@@ -196,5 +222,12 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
      */
     public String getTableName() {
         return tableName;
+    }
+
+    /*
+     * Get row key (used by BatchOperation)
+     */
+    public Row getRowKey() {
+        return this.rowKey;
     }
 }

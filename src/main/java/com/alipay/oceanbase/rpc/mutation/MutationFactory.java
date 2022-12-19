@@ -17,7 +17,12 @@
 
 package com.alipay.oceanbase.rpc.mutation;
 
+import com.alipay.oceanbase.rpc.ObClusterTableQuery;
 import com.alipay.oceanbase.rpc.mutation.*;
+import com.alipay.oceanbase.rpc.table.ObTableClientQueryImpl;
+import com.alipay.oceanbase.rpc.table.api.TableQuery;
+
+import javax.management.Query;
 
 public class MutationFactory {
     public static ColumnValue colVal(String columnName, Object value) {
@@ -26,6 +31,11 @@ public class MutationFactory {
 
     public static Row row(ColumnValue... columnValue) {
         return new Row(columnValue);
+    }
+
+    public static TableQuery query() {
+        ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl();
+        return new ObClusterTableQuery(tableQuery);
     }
 
     public static Insert insert() {

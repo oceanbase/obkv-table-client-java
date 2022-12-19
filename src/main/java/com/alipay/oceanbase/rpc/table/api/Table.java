@@ -91,7 +91,7 @@ public interface Table {
     Map<String, Object> append(String tableName, Object[] rowkeys, String[] columns,
                                Object[] values, boolean withResult) throws Exception;
 
-    BatchMutation batchMutation(String tableName);
+    BatchOperation batchOperation(String tableName);
 
     void addProperty(String property, String value);
 
