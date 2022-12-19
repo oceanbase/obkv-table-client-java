@@ -1883,11 +1883,11 @@ public class ObTableClientTest extends ObTableClientTestBase {
             Assert.assertEquals(1, batchResult.get(1).getAffectedRows());
             Assert.assertEquals(1, batchResult.get(2).getAffectedRows());
             OperationResult opResult = batchResult.get(3);
-            Assert.assertEquals(204L, opResult.getOperationRows().get("c4"));
-            Assert.assertEquals(204L, batchResult.get(3).getOperationRows().get("c4"));
+            Assert.assertEquals(204L, opResult.getOperationRow().get("c4"));
+            Assert.assertEquals(204L, batchResult.get(3).getOperationRow().get("c4"));
             opResult = batchResult.get(2);
-            Assert.assertNull(opResult.getOperationRows().get("c4"));
-            Assert.assertNull(batchResult.get(2).getOperationRows().get("c4"));
+            Assert.assertNull(opResult.getOperationRow().get("c4"));
+            Assert.assertNull(batchResult.get(2).getOperationRow().get("c4"));
         } finally {
             client.delete("test_mutation").setRowKey(colVal("c1", 0L), colVal("c2", "row_0"))
                 .execute();

@@ -52,7 +52,7 @@ public class OperationResult {
     /*
      * get the result rows of operation
      */
-    public Row getOperationRows() {
+    public Row getOperationRow() {
         return null;
     }
 }
