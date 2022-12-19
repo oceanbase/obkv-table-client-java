@@ -73,9 +73,17 @@ public class BatchOperation {
     }
 
     /*
+     * add queries
+     */
+    public BatchOperation addOperation(TableQuery... queries) {
+        this.operations.addAll(Arrays.asList(queries));
+        return this;
+    }
+
+    /*
      * add mutations
      */
-    public BatchOperation addOperation(Object... mutations) {
+    public BatchOperation addOperation(Mutation... mutations) {
         this.operations.addAll(Arrays.asList(mutations));
         return this;
     }
