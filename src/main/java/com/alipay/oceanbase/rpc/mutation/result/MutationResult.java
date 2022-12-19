@@ -65,7 +65,7 @@ public class MutationResult extends OperationResult {
     /*
      * get the result rows of operation
      */
-    public Row getOperationRows() {
+    public Row getOperationRow() {
         Map<String, Object> rowsMap;
         switch (result.getPcode()) {
             case Pcodes.OB_TABLE_API_EXECUTE:
