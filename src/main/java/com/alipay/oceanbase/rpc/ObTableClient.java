@@ -47,7 +47,6 @@ import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.*;
 import com.alipay.remoting.util.StringUtils;
-import javafx.util.Pair;
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -2129,8 +2128,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     /**
      * batch mutation.
      */
-    public BatchMutation batchMutation(String tableName) {
-        return new BatchMutation(this, tableName);
+    public BatchOperation batchOperation(String tableName) {
+        return new BatchOperation(this, tableName);
     }
 
     /**

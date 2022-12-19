@@ -41,12 +41,12 @@ import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
-import org.junit.After;
+import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.awt.event.WindowStateListener;
+import javax.management.Query;
 import java.lang.reflect.Field;
 import java.util.*;
 
@@ -1871,15 +1871,23 @@ public class ObTableClientTest extends ObTableClientTestBase {
             Update update_0 = update().setRowKey(row(colVal("c1", 4L), colVal("c2", "row_4")))
                 .addMutateColVal(colVal("c3", new byte[] { 1 }))
                 .addMutateColVal(colVal("c4", 204L));
+            TableQuery query_0 = query().setRowKey(row(colVal("c1", 4L), colVal("c2", "row_4")))
+                .select("c3", "c4");
 
-            BatchMutationResult batchResult = client.batchMutation("test_mutation")
-                .addMutation(insert_0).addMutation(insert_1, update_0).execute();
+            BatchOperationResult batchResult = client.batchOperation("test_mutation")
+                .addOperation(insert_0).addOperation(insert_1, update_0, query_0).execute();
             Assert.assertEquals(1, batchResult.getWrongCount());
-            Assert.assertEquals(2, batchResult.getCorrectCount());
+            Assert.assertEquals(3, batchResult.getCorrectCount());
             Assert.assertEquals(0, batchResult.getWrongIdx()[0]);
             Assert.assertEquals(1, batchResult.getCorrectIdx()[0]);
             Assert.assertEquals(1, batchResult.get(1).getAffectedRows());
             Assert.assertEquals(1, batchResult.get(2).getAffectedRows());
+            OperationResult opResult = batchResult.get(3);
+            Assert.assertEquals(204L, opResult.getOperationRow().get("c4"));
+            Assert.assertEquals(204L, batchResult.get(3).getOperationRow().get("c4"));
+            opResult = batchResult.get(2);
+            Assert.assertNull(opResult.getOperationRow().get("c4"));
+            Assert.assertNull(batchResult.get(2).getOperationRow().get("c4"));
         } finally {
             client.delete("test_mutation").setRowKey(colVal("c1", 0L), colVal("c2", "row_0"))
                 .execute();
@@ -1936,19 +1944,11 @@ public class ObTableClientTest extends ObTableClientTestBase {
             tableQuery.addScanRange(new Object[] { 0L, "A" }, new Object[] { 200L, "z" });
             tableQuery.select("c1", "c2", "c3", "c4");
 
-            ObTableValueFilter c1_GT_0 = compareVal(ObCompareOp.GT, "c1", 0);
             ObTableValueFilter c1_EQ_0 = compareVal(ObCompareOp.EQ, "c1", 0);
-            ObTableValueFilter c1_LE_0 = compareVal(ObCompareOp.LE, "c1", 0);
-            ObTableValueFilter c1_LT_5 = compareVal(ObCompareOp.LT, "c1", 5);
             ObTableValueFilter c1_LE_4 = compareVal(ObCompareOp.LE, "c1", 4);
             ObTableValueFilter c1_GE_3 = compareVal(ObCompareOp.GE, "c1", 3);
-            ObTableValueFilter c1_LT_2 = compareVal(ObCompareOp.LT, "c1", 2);
-            ObTableValueFilter c1_EQ_5 = compareVal(ObCompareOp.EQ, "c1", 5);
-            ObTableValueFilter c3_GE = compareVal(ObCompareOp.GE, "c3", "update");
-            ObTableValueFilter c3_LT = compareVal(ObCompareOp.LT, "c3", "update4");
             ObTableFilterList filters_0 = andList();
             ObTableFilterList filters_1 = andList();
-            ObTableFilterList filters_2 = orList();
 
             // c1 = 0 && c1 = 0
             if (((ObTableClient) client).isOdpMode()) {
