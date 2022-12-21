@@ -119,7 +119,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         final long startTime = System.currentTimeMillis();
         Map<Long, ObPair<Long, ObTable>> partitionObTables = new HashMap<Long, ObPair<Long, ObTable>>();
         List<Object> params = new ArrayList<>();
-        // fill a whole range if not range is add explicitly.
+        // fill a whole range if no range is added explicitly.
         if (tableQuery.getKeyRanges().isEmpty()) {
             tableQuery.addKeyRange(ObNewRange.getWholeRange());
         }

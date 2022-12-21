@@ -2150,6 +2150,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                         final Object[] values, final boolean withResult)
                                                                                         throws Exception {
         final long start = System.currentTimeMillis();
+        if (tableQuery != null && tableQuery.getObTableQuery().getKeyRanges().isEmpty()) {
+            // fill a whole range if no range is added explicitly.
+            tableQuery.getObTableQuery().addKeyRange(ObNewRange.getWholeRange());
+        }
         return executeMutation(tableQuery.getTableName(), new MutationExecuteCallback<ObPayload>(
             rowKey, keyRanges) {
             /**
@@ -2332,6 +2336,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObTableQueryAndMutate tableQueryAndMutate = ((ObTableQueryAndMutateRequest) request)
                 .getTableQueryAndMutate();
             ObTableQuery tableQuery = tableQueryAndMutate.getTableQuery();
+            // fill a whole range if no range is added explicitly.
+            if (tableQuery.getKeyRanges().isEmpty()) {
+                tableQuery.addKeyRange(ObNewRange.getWholeRange());
+            }
             if (isOdpMode()) {
                 request.setTimeout(getOdpTable().getObTableOperationTimeout());
                 return getOdpTable().execute(request);
