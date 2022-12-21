@@ -1888,6 +1888,29 @@ public class ObTableClientTest extends ObTableClientTestBase {
             opResult = batchResult.get(2);
             Assert.assertNull(opResult.getOperationRow().get("c4"));
             Assert.assertNull(batchResult.get(2).getOperationRow().get("c4"));
+
+            long c1Vals[] = {0L, 1L, 2L};
+            String c2Vals[] = {"row_0", "row_1", "row_2"};
+            byte[] c3Val = new byte[]{1};
+            long c4Vals[] = {100L, 101L, 102L};
+            BatchOperation batchOperation = client.batchOperation("test_mutation");
+            for (int i = 0; i < c1Vals.length; i++) {
+                Row rowKey1 = row(colVal("c1", c1Vals[i]), colVal("c2", c2Vals[i]));
+                TableQuery query = query().setRowKey(rowKey1);
+                batchOperation.addOperation(query);
+            }
+            BatchOperationResult result = batchOperation.execute();
+            for (int i = 0; i < c2Vals.length; i++) {
+                Row row = result.get(i).getOperationRow();
+                Assert.assertEquals(4, row.size());
+                Assert.assertEquals(c1Vals[i], row.get("c1"));
+                Assert.assertEquals(c2Vals[i], row.get("c2"));
+                Assert.assertTrue(Arrays.equals(c3Val, (byte[])row.get("c3")));
+                Assert.assertEquals(c4Vals[i], row.get("c4"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
         } finally {
             client.delete("test_mutation").setRowKey(colVal("c1", 0L), colVal("c2", "row_0"))
                 .execute();
