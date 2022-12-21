@@ -1010,6 +1010,23 @@ public class ObTableClientTest extends ObTableClientTestBase {
             tableQuery.setFilter(confirm_1);
             result = tableQuery.execute();
             Assert.assertEquals(2, result.cacheSize());
+
+            if (client instanceof ObTableClient && ((ObTableClient) client).isOdpMode()) {
+                try {
+                    tableQuery = client.query("test_query_filter_mutate");
+                    tableQuery.select("c1", "c2", "c3");
+                    tableQuery.setFilter(filter_0);
+                    ObTableQueryAndMutateRequest request_2 = ((ObTableClient) client)
+                            .obTableQueryAndUpdate(tableQuery, new String[] { "c2", "c3" }, new Object[] {
+                                    new byte[] { 1 }, "update1" });
+                    ObPayload res_exec_2 = ((ObTableClient) client).execute(request_2);
+                    Assert.assertTrue(false);
+                } catch (Exception e) {
+                    Assert.assertTrue(e instanceof ObTableException);
+                    Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode, ((ObTableException) e).getErrorCode());
+                }
+
+            }
         } finally {
             client.delete("test_query_filter_mutate", new Object[] { 0L });
             client.delete("test_query_filter_mutate", new Object[] { 1L });
@@ -2041,6 +2058,18 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 tableQuery.setFilter(confirm_2);
                 QueryResultSet result = tableQuery.execute();
                 Assert.assertEquals(2, result.cacheSize());
+
+                try {
+                    updateResult = client.update("test_mutation_with_range")
+                            .addMutateRow(row(colVal("c2", new byte[] { 1 }), colVal("c3", "update2")))
+                            .setFilter(filters_0)
+                            .execute();
+                    Assert.assertTrue(false);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Assert.assertTrue(e instanceof ObTableException);
+                    Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode, ((ObTableException) e).getErrorCode());
+                }
             } else {
                 MutationResult updateResult = client.update("test_mutation_with_range")
                     .addMutateRow(row(colVal("c2", new byte[] { 1 }), colVal("c3", "update2")))
@@ -2053,7 +2082,6 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 QueryResultSet result = tableQuery.execute();
                 Assert.assertEquals(2, result.cacheSize());
             }
-
         } finally {
             client.delete("test_mutation_with_range", new Object[] { 0L, "c0" });
             client.delete("test_mutation_with_range", new Object[] { 1L, "c1" });
