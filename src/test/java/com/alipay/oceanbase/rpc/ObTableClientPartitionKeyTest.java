@@ -420,6 +420,45 @@ public class ObTableClientPartitionKeyTest {
     }
 
     @Test
+    public void testLargeQuery() throws Exception {
+        String tableName = null;
+        tableName = "testKey";
+        int batchSize = 120;
+        String key = "key";
+        String qualifier = "partition";
+        String value = "V";
+        try {
+            for (long i = 0; i < batchSize; i++) {
+                obTableClient.insert(tableName, new Object[] { key.getBytes(), qualifier.getBytes(), i },
+                        new String[] { "V" }, new Object[] { value .getBytes() });
+            }
+            TableQuery tableQuery = obTableClient.query(tableName);
+            tableQuery.setScanRangeColumns("K");
+            tableQuery.addScanRange(new Object[] { "key".getBytes() }, new Object[] { "key".getBytes() });
+            QueryResultSet result = tableQuery.execute();
+            Assert.assertEquals(batchSize, result.cacheSize());
+
+            for (long i = 0; i < batchSize; i++) {
+                Assert.assertEquals(true, result.next());
+                Map<String, Object> row = result.getRow();
+                Assert.assertEquals(4, row.size());
+                Assert.assertEquals(key, new String((byte[]) row.get("K")));
+                Assert.assertEquals(qualifier, new String((byte[]) row.get("Q")));
+                Assert.assertEquals(i, row.get("T"));
+                Assert.assertEquals(value, new String((byte[]) row.get("V")));
+            }
+            Assert.assertFalse(result.next());
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        } finally {
+            for (long i = 0; i < batchSize; i++) {
+                obTableClient.delete(tableName, new Object[] { key.getBytes(), qualifier.getBytes(), i });
+            }
+        }
+    }
+
+    @Test
     public void testBatch() throws Exception {
         long timeStamp = System.currentTimeMillis();
         String tableName = obTableClient.isOdpMode() ? "testKey" : "testPartition";
