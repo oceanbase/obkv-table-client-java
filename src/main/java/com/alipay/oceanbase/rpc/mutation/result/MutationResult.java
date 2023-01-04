@@ -28,7 +28,6 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQuer
 import java.util.Map;
 
 public class MutationResult extends OperationResult {
-
     /*
      * construct with ObPayload
      */

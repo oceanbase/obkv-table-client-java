@@ -173,3 +173,15 @@ CREATE TABLE `test_mutation` (
           PARTITION p0 VALUES LESS THAN (300),
           PARTITION p1 VALUES LESS THAN (1000),
           PARTITION p2 VALUES LESS THAN MAXVALUE);
+
+CREATE TABLE `test_throttle` (
+    `c1` bigint NOT NULL,
+    `c2` varchar(20) NOT NULL,
+    `c3` varbinary(1024) DEFAULT NULL,
+    `c4` bigint DEFAULT NULL,
+    PRIMARY KEY(`c1`, `c2`)) partition by range columns (`c1`) (
+        PARTITION p0 VALUES LESS THAN (500000),
+        PARTITION p1 VALUES LESS THAN (1000000),
+        PARTITION p2 VALUES LESS THAN MAXVALUE);
+
+alter system set kv_hotkey_throttle_threshold = 50;
