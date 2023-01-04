@@ -122,13 +122,13 @@ public class Update extends Mutation<Update> {
         if (null == getQuery()) {
             // simple update, without filter
             return new MutationResult(((ObTableClient) getClient()).updateWithResult(
-                    getTableName(), getRowKey(), getKeyRanges(), columns.toArray(new String[0]),
-                    values.toArray()));
+                getTableName(), getRowKey(), getKeyRanges(), columns.toArray(new String[0]),
+                values.toArray()));
         } else {
             // QueryAndUpdate
             return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
-                    getRowKey(), getKeyRanges(), ObTableOperationType.UPDATE,
-                    columns.toArray(new String[0]), values.toArray(), false));
+                getRowKey(), getKeyRanges(), ObTableOperationType.UPDATE,
+                columns.toArray(new String[0]), values.toArray(), false));
         }
     }
 }

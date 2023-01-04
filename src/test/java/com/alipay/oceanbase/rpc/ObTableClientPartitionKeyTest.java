@@ -429,12 +429,14 @@ public class ObTableClientPartitionKeyTest {
         String value = "V";
         try {
             for (long i = 0; i < batchSize; i++) {
-                obTableClient.insert(tableName, new Object[] { key.getBytes(), qualifier.getBytes(), i },
-                        new String[] { "V" }, new Object[] { value .getBytes() });
+                obTableClient.insert(tableName, new Object[] { key.getBytes(),
+                        qualifier.getBytes(), i }, new String[] { "V" },
+                    new Object[] { value.getBytes() });
             }
             TableQuery tableQuery = obTableClient.query(tableName);
             tableQuery.setScanRangeColumns("K");
-            tableQuery.addScanRange(new Object[] { "key".getBytes() }, new Object[] { "key".getBytes() });
+            tableQuery.addScanRange(new Object[] { "key".getBytes() },
+                new Object[] { "key".getBytes() });
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(batchSize, result.cacheSize());
 
@@ -453,7 +455,8 @@ public class ObTableClientPartitionKeyTest {
             Assert.assertTrue(false);
         } finally {
             for (long i = 0; i < batchSize; i++) {
-                obTableClient.delete(tableName, new Object[] { key.getBytes(), qualifier.getBytes(), i });
+                obTableClient.delete(tableName, new Object[] { key.getBytes(),
+                        qualifier.getBytes(), i });
             }
         }
     }
