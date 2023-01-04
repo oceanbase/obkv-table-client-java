@@ -70,7 +70,8 @@ public class MutationResult extends OperationResult {
                 rowsMap = ((ObTableOperationResult) result).getEntity().getSimpleProperties();
                 break;
             case Pcodes.OB_TABLE_API_QUERY_AND_MUTATE:
-                throw new ObTableException("could not get query and mutate result now" + result.getPcode());
+                throw new ObTableException("could not get query and mutate result now"
+                                           + result.getPcode());
             default:
                 throw new ObTableException("unknown result type: " + result.getPcode());
         }

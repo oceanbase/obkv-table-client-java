@@ -1015,13 +1015,14 @@ public class ObTableClientTest extends ObTableClientTestBase {
                     tableQuery.select("c1", "c2", "c3");
                     tableQuery.setFilter(filter_0);
                     ObTableQueryAndMutateRequest request_2 = ((ObTableClient) client)
-                            .obTableQueryAndUpdate(tableQuery, new String[] { "c2", "c3" }, new Object[] {
-                                    new byte[] { 1 }, "update1" });
+                        .obTableQueryAndUpdate(tableQuery, new String[] { "c2", "c3" },
+                            new Object[] { new byte[] { 1 }, "update1" });
                     ObPayload res_exec_2 = ((ObTableClient) client).execute(request_2);
                     Assert.assertTrue(false);
                 } catch (Exception e) {
                     Assert.assertTrue(e instanceof ObTableException);
-                    Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode, ((ObTableException) e).getErrorCode());
+                    Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
+                        ((ObTableException) e).getErrorCode());
                 }
 
             }
@@ -1890,7 +1891,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 .select("c3", "c4");
 
             BatchOperationResult batchResult = client.batchOperation("test_mutation")
-                .addOperation(insert_0, insert_1,update_0).addOperation(query_0).execute();
+                .addOperation(insert_0, insert_1, update_0).addOperation(query_0).execute();
             Assert.assertEquals(1, batchResult.getWrongCount());
             Assert.assertEquals(3, batchResult.getCorrectCount());
             Assert.assertEquals(0, batchResult.getWrongIdx()[0]);
@@ -1904,10 +1905,10 @@ public class ObTableClientTest extends ObTableClientTestBase {
             Assert.assertNull(opResult.getOperationRow().get("c4"));
             Assert.assertNull(batchResult.get(2).getOperationRow().get("c4"));
 
-            long c1Vals[] = {0L, 1L, 2L};
-            String c2Vals[] = {"row_0", "row_1", "row_2"};
-            byte[] c3Val = new byte[]{1};
-            long c4Vals[] = {100L, 101L, 102L};
+            long c1Vals[] = { 0L, 1L, 2L };
+            String c2Vals[] = { "row_0", "row_1", "row_2" };
+            byte[] c3Val = new byte[] { 1 };
+            long c4Vals[] = { 100L, 101L, 102L };
             BatchOperation batchOperation = client.batchOperation("test_mutation");
             for (int i = 0; i < c1Vals.length; i++) {
                 Row rowKey1 = row(colVal("c1", c1Vals[i]), colVal("c2", c2Vals[i]));
@@ -1920,7 +1921,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 Assert.assertEquals(4, row.size());
                 Assert.assertEquals(c1Vals[i], row.get("c1"));
                 Assert.assertEquals(c2Vals[i], row.get("c2"));
-                Assert.assertTrue(Arrays.equals(c3Val, (byte[])row.get("c3")));
+                Assert.assertTrue(Arrays.equals(c3Val, (byte[]) row.get("c3")));
                 Assert.assertEquals(c4Vals[i], row.get("c4"));
             }
         } catch (Exception e) {
@@ -2059,14 +2060,14 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
                 try {
                     updateResult = client.update("test_mutation_with_range")
-                            .addMutateRow(row(colVal("c2", new byte[] { 1 }), colVal("c3", "update2")))
-                            .setFilter(filters_0)
-                            .execute();
+                        .addMutateRow(row(colVal("c2", new byte[] { 1 }), colVal("c3", "update2")))
+                        .setFilter(filters_0).execute();
                     Assert.assertTrue(false);
                 } catch (Exception e) {
                     e.printStackTrace();
                     Assert.assertTrue(e instanceof ObTableException);
-                    Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode, ((ObTableException) e).getErrorCode());
+                    Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
+                        ((ObTableException) e).getErrorCode());
                 }
             } else {
                 MutationResult updateResult = client.update("test_mutation_with_range")

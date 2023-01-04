@@ -41,7 +41,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     private final String        tableName;
     private final ObTableClient obTableClient;
 
-    private Row rowKey; // only used by BatchOperation
+    private Row                 rowKey;       // only used by BatchOperation
 
     /*
      * Ob table client query impl construct only with tableName
