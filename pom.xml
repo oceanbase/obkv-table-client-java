@@ -4,7 +4,7 @@
 
     <groupId>com.oceanbase</groupId>
     <artifactId>obkv-table-client</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
 
     <name>${project.groupId}:${project.artifactId}</name>
     <description>OceanBase JavaClient for TableApi</description>
@@ -32,10 +32,15 @@
 
     <distributionManagement>
         <repository>
-            <id>obkv-table-client</id>
+            <id>obkv-table-client-staging</id>
             <name>${project.name}</name>
-            <url>https://s01.oss.sonatype.org/content/repositories/releases/</url>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
+        <snapshotRepository>
+            <id>obkv-table-client-snapshot</id>
+            <name>${project.name}</name>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+        </snapshotRepository>
     </distributionManagement>
 
     <properties>
