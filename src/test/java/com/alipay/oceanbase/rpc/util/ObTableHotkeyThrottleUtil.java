@@ -17,7 +17,6 @@
 
 package com.alipay.oceanbase.rpc.util;
 
-
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.filter.ObCompareOp;
@@ -37,20 +36,24 @@ import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
 
 public class ObTableHotkeyThrottleUtil extends Thread {
     int testNum = 500;
+
     public enum TestType {
         random, specifiedKey
     }
+
     public enum OperationType {
         insert, update, insertOrUpdate, query, queryAndMutate
     }
-    TestType testType;
-    OperationType operationType;
-    public Table client;
-    Row rowKey;
-    int throttleNum = 0;
-    int passNum = 0;
 
-    public void init(TestType testType, OperationType operationType, ColumnValue... rowKeyColumnValues) throws Exception {
+    TestType      testType;
+    OperationType operationType;
+    public Table  client;
+    Row           rowKey;
+    int           throttleNum = 0;
+    int           passNum     = 0;
+
+    public void init(TestType testType, OperationType operationType,
+                     ColumnValue... rowKeyColumnValues) throws Exception {
         System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
 
         switch (testType) {
@@ -84,7 +87,8 @@ public class ObTableHotkeyThrottleUtil extends Thread {
 
         this.client = obTableClient;
         syncRefreshMetaHelper(obTableClient);
-        ((ObTableClient) this.client).addRowKeyElement("test_throttle", new String[] { "c1", "c2" });
+        ((ObTableClient) this.client)
+            .addRowKeyElement("test_throttle", new String[] { "c1", "c2" });
     }
 
     @Override
@@ -98,7 +102,8 @@ public class ObTableHotkeyThrottleUtil extends Thread {
                     runSpecifiedKey();
                     break;
                 default:
-                    System.out.println(Thread.currentThread().getName() + " has no test type to run");
+                    System.out.println(Thread.currentThread().getName()
+                                       + " has no test type to run");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -108,24 +113,24 @@ public class ObTableHotkeyThrottleUtil extends Thread {
     private void runRandom() throws Exception {
         System.out.println(Thread.currentThread().getName() + " begin to run random test");
         for (int i = 0; i < testNum; ++i) {
-            long randomNum = (long)(Math.random() * 2000000);
+            long randomNum = (long) (Math.random() * 2000000);
             String rowKeyString = "Test" + randomNum;
             Row rowKey = row(colVal("c1", randomNum), colVal("c2", rowKeyString));
             switch (operationType) {
                 case insert:
-                    insertTest(rowKey, colVal("c3", new byte[] {1}), colVal("c4", 0L));
+                    insertTest(rowKey, colVal("c3", new byte[] { 1 }), colVal("c4", 0L));
                     break;
                 case update:
-                    updateTest(rowKey, colVal("c3", new byte[] {1}), colVal("c4", 0L));
+                    updateTest(rowKey, colVal("c3", new byte[] { 1 }), colVal("c4", 0L));
                     break;
                 case insertOrUpdate:
-                    insertOrUpdateTest(rowKey, colVal("c3", new byte[] {1}), colVal("c4", 0L));
+                    insertOrUpdateTest(rowKey, colVal("c3", new byte[] { 1 }), colVal("c4", 0L));
                     break;
                 case query:
                     queryTest(rowKey);
                     break;
                 case queryAndMutate:
-                    queryAndMutateTest(rowKey, colVal("c3", new byte[] {1}), colVal("c4", 0L));
+                    queryAndMutateTest(rowKey, colVal("c3", new byte[] { 1 }), colVal("c4", 0L));
                     break;
             }
         }
@@ -136,44 +141,40 @@ public class ObTableHotkeyThrottleUtil extends Thread {
         for (int i = 0; i < testNum; ++i) {
             switch (operationType) {
                 case insert:
-                    insertTest(this.rowKey, colVal("c3", new byte[] {1}), colVal("c4", 0L));
+                    insertTest(this.rowKey, colVal("c3", new byte[] { 1 }), colVal("c4", 0L));
                     break;
                 case update:
-                    updateTest(this.rowKey, colVal("c3", new byte[] {1}), colVal("c4", 0L));
+                    updateTest(this.rowKey, colVal("c3", new byte[] { 1 }), colVal("c4", 0L));
                     break;
                 case insertOrUpdate:
-                    insertOrUpdateTest(this.rowKey, colVal("c3", new byte[] {1}), colVal("c4", 0L));
+                    insertOrUpdateTest(this.rowKey, colVal("c3", new byte[] { 1 }),
+                        colVal("c4", 0L));
                     break;
                 case query:
                     queryTest(this.rowKey);
                     break;
                 case queryAndMutate:
-                    queryAndMutateTest(this.rowKey, colVal("c3", new byte[] {1}), colVal("c4", 0L));
+                    queryAndMutateTest(this.rowKey, colVal("c3", new byte[] { 1 }),
+                        colVal("c4", 0L));
                     break;
             }
         }
     }
 
     private void insertTest(Row rowkey, ColumnValue... columnValues) throws Exception {
-        MutationResult insertResult = client.insert("test_throttle")
-                .setRowKey(rowkey)
-                .addMutateColVal(columnValues)
-                .execute();
+        MutationResult insertResult = client.insert("test_throttle").setRowKey(rowkey)
+            .addMutateColVal(columnValues).execute();
 
     }
 
     private void updateTest(Row rowkey, ColumnValue... columnValues) throws Exception {
-        MutationResult updateResult = client.update("test_throttle")
-                .setRowKey(rowKey)
-                .addMutateColVal(columnValues)
-                .execute();
+        MutationResult updateResult = client.update("test_throttle").setRowKey(rowKey)
+            .addMutateColVal(columnValues).execute();
     }
 
     private void insertOrUpdateTest(Row rowkey, ColumnValue... columnValues) throws Exception {
         MutationResult insertOrUpdateResult = client.insertOrUpdate("test_throttle")
-                .setRowKey(rowkey)
-                .addMutateColVal(columnValues)
-                .execute();
+            .setRowKey(rowkey).addMutateColVal(columnValues).execute();
     }
 
     private void queryTest(Row rowkey) throws Exception {
@@ -187,8 +188,10 @@ public class ObTableHotkeyThrottleUtil extends Thread {
             if (e instanceof ObTableUnexpectedException) {
                 if (((ObTableUnexpectedException) e).getErrorCode() == -4039) {
                     if (++throttleNum % 50 == 0) {
-                        System.out.println(Thread.currentThread().getName() + " rowkey num is " + rowkey.get("c1")+ " has pass "
-                                + passNum + " operations, and has throttle " + throttleNum + " operations");
+                        System.out.println(Thread.currentThread().getName() + " rowkey num is "
+                                           + rowkey.get("c1") + " has pass " + passNum
+                                           + " operations, and has throttle " + throttleNum
+                                           + " operations");
                     }
                 } else {
                     e.printStackTrace();
@@ -201,13 +204,9 @@ public class ObTableHotkeyThrottleUtil extends Thread {
 
     private void queryAndMutateTest(Row rowkey, ColumnValue... columnValues) throws Exception {
         ObTableValueFilter c4_EQ_0 = compareVal(ObCompareOp.EQ, "c4", 0L);
-        MutationResult updateResult = client.update("test_throttle")
-                .setRowKey(rowkey)
-                .setFilter(c4_EQ_0)
-                .addMutateColVal(columnValues)
-                .execute();
+        MutationResult updateResult = client.update("test_throttle").setRowKey(rowkey)
+            .setFilter(c4_EQ_0).addMutateColVal(columnValues).execute();
     }
-
 
     public void syncRefreshMetaHelper(final ObTableClient obTableClient) {
         if (obTableClient.isOdpMode()) {
