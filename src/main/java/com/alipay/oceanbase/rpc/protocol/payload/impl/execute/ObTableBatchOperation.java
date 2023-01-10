@@ -35,7 +35,7 @@ public class ObTableBatchOperation extends AbstractPayload {
 
     private List<ObTableOperation> tableOperations = new ArrayList<ObTableOperation>();
     private boolean                isReadOnly      = true;
-    private boolean                isSameType;
+    private boolean                isSameType      = true;
     private boolean                isSamePropertiesNames;
 
     /*
@@ -125,9 +125,16 @@ public class ObTableBatchOperation extends AbstractPayload {
      * Add table operation.
      */
     public void addTableOperation(ObTableOperation tableOperation) {
+        int length = this.tableOperations.size();
         this.tableOperations.add(tableOperation);
         if (isReadOnly && !tableOperation.isReadonly()) {
             isReadOnly = false;
+        }
+        if (isSameType
+            && length > 1
+            && tableOperations.get(length - 1).getOperationType() != tableOperations
+                .get(length - 2).getOperationType()) {
+            isSameType = false;
         }
     }
 
@@ -137,9 +144,19 @@ public class ObTableBatchOperation extends AbstractPayload {
     public void setTableOperations(List<ObTableOperation> tableOperations) {
         this.tableOperations = tableOperations;
         this.isReadOnly = true;
+        this.isSameType = true;
+        ObTableOperationType prevType = null;
         for (ObTableOperation o : tableOperations) {
-            if (!o.isReadonly()) {
-                this.isReadOnly = false;
+            if (this.isReadOnly || this.isSameType) {
+                if (!o.isReadonly()) {
+                    this.isReadOnly = false;
+                }
+                if (prevType != null && prevType != o.getOperationType()) {
+                    this.isSameType = false;
+                } else {
+                    prevType = o.getOperationType();
+                }
+            } else {
                 return;
             }
         }
