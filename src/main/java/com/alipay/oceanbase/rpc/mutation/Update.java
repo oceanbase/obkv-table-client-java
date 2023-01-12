@@ -118,7 +118,7 @@ public class Update extends Mutation<Update> {
         } else if (null == getClient()) {
             throw new ObTableException("client is null");
         }
-
+        removeRowkeyFromMutateColval(this.columns, this.values, this.rowKeyNames);
         if (null == getQuery()) {
             // simple update, without filter
             return new MutationResult(((ObTableClient) getClient()).updateWithResult(

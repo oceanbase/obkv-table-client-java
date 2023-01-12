@@ -118,9 +118,9 @@ public class InsertOrUpdate extends Mutation<InsertOrUpdate> {
         } else if (null == getClient()) {
             throw new ObTableException("client is null");
         }
-
+        removeRowkeyFromMutateColval(this.columns, this.values, this.rowKeyNames);
         if (null == getQuery()) {
-            // simple Insert, without filter
+            // simple InsertOrUpdate, without filter
             return new MutationResult(((ObTableClient) getClient()).insertOrUpdateWithResult(
                 getTableName(), getRowKey(), getKeyRanges(), columns.toArray(new String[0]),
                 values.toArray()));

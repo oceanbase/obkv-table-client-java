@@ -31,11 +31,12 @@ import java.util.List;
 import java.util.Map;
 
 public class Mutation<T> {
-    private String     tableName;
-    private Table      client;
-    private Object[]   rowKey;
-    private TableQuery query;
-    private boolean    hasSetRowKey = false;
+    private String         tableName;
+    private Table          client;
+    protected Object[]     rowKey;
+    private TableQuery     query;
+    private boolean        hasSetRowKey = false;
+    protected List<String> rowKeyNames  = null; // for removeRowkeyFromMutateColval
 
     /*
      * default constructor
@@ -46,6 +47,7 @@ public class Mutation<T> {
         client = null;
         rowKey = null;
         query = null;
+        rowKeyNames = null;
     }
 
     /*
@@ -61,6 +63,7 @@ public class Mutation<T> {
         this.tableName = tableName;
         this.rowKey = null;
         this.query = null;
+        this.rowKeyNames = null;
     }
 
     /*
@@ -158,6 +161,7 @@ public class Mutation<T> {
             Keys.add(entry.getValue());
         }
         this.rowKey = Keys.toArray();
+        this.rowKeyNames = columnNames;
 
         // set row key in table
         if (null != tableName) {
@@ -195,6 +199,7 @@ public class Mutation<T> {
             Keys.add(columnValue.getValue());
         }
         this.rowKey = Keys.toArray();
+        this.rowKeyNames = columnNames;
 
         // set row key in table
         if (null != tableName) {
@@ -321,5 +326,18 @@ public class Mutation<T> {
 
         hasSetRowKey = true;
         return (T) this;
+    }
+
+    static void removeRowkeyFromMutateColval(List<String> columns, List<Object> values,
+                                             List<String> rowKeyNames) {
+        if (null == columns || null == rowKeyNames) {
+            return;
+        }
+        for (int i = values.size() - 1; i >= 0; --i) {
+            if (rowKeyNames.contains(columns.get(i))) {
+                columns.remove(i);
+                values.remove(i);
+            }
+        }
     }
 }

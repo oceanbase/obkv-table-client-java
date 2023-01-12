@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Map;
 
 public class Insert extends Mutation<Insert> {
-    private List<String> columns;
-    private List<Object> values;
+    private List<String> columns = null;
+    private List<Object> values  = null;
 
     /*
      * default constructor
@@ -92,7 +92,7 @@ public class Insert extends Mutation<Insert> {
     /*
      * add mutated ColumnValues
      */
-    public Insert addMutateColVal(ColumnValue... columnValues) {
+    public Insert addMutateColVal(ColumnValue... columnValues) throws Exception {
         if (null == columnValues) {
             throw new IllegalArgumentException("Invalid null columnValues set into Insert");
         }
@@ -118,7 +118,7 @@ public class Insert extends Mutation<Insert> {
         } else if (null == getClient()) {
             throw new ObTableException("client is null");
         }
-
+        removeRowkeyFromMutateColval(this.columns, this.values, this.rowKeyNames);
         if (null == getQuery()) {
             // simple Insert, without filter
             return new MutationResult(((ObTableClient) getClient()).insertWithResult(
