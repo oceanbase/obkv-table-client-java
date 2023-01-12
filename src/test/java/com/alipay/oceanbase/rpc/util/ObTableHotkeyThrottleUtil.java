@@ -19,10 +19,8 @@ package com.alipay.oceanbase.rpc.util;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
-import com.alipay.oceanbase.rpc.filter.ObCompareOp;
-import com.alipay.oceanbase.rpc.filter.ObTableValueFilter;
-import com.alipay.oceanbase.rpc.mutation.Row;
-import com.alipay.oceanbase.rpc.mutation.ColumnValue;
+import com.alipay.oceanbase.rpc.mutation.*;
+import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
@@ -30,29 +28,31 @@ import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import org.junit.Assert;
 
-import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.compareVal;
-import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
-import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.alipay.oceanbase.rpc.mutation.MutationFactory.*;
 
 public class ObTableHotkeyThrottleUtil extends Thread {
-    int testNum = 500;
+    int testNum = 100;
 
     public enum TestType {
         random, specifiedKey
     }
 
     public enum OperationType {
-        insert, update, insertOrUpdate, query, queryAndMutate
+        insert, update, insertOrUpdate, query, queryAndMutate, batchOperation
     }
 
     TestType      testType;
     OperationType operationType;
-    public Table  client;
+    public Table  client      = null;
     Row           rowKey;
     int           throttleNum = 0;
     int           passNum     = 0;
+    int           batchSize   = 64;
 
-    public void init(TestType testType, OperationType operationType,
+    public void init(TestType testType, OperationType operationType, Table client, int batchSize,
                      ColumnValue... rowKeyColumnValues) throws Exception {
         System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
 
@@ -76,17 +76,22 @@ public class ObTableHotkeyThrottleUtil extends Thread {
         }
 
         this.operationType = operationType;
+        this.batchSize = batchSize;
 
-        final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
-        obTableClient.setMetadataRefreshInterval(100);
-        obTableClient.addProperty(Property.RPC_CONNECT_TIMEOUT.getKey(), "800");
-        obTableClient.addProperty(Property.RPC_LOGIN_TIMEOUT.getKey(), "800");
-        obTableClient.addProperty(Property.SERVER_CONNECTION_POOL_SIZE.getKey(), "1");
-        obTableClient.addProperty(Property.RPC_EXECUTE_TIMEOUT.getKey(), "2000");
-        obTableClient.init();
+        if (null == client) {
+            final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
+            obTableClient.setMetadataRefreshInterval(100);
+            obTableClient.addProperty(Property.RPC_CONNECT_TIMEOUT.getKey(), "800");
+            obTableClient.addProperty(Property.RPC_LOGIN_TIMEOUT.getKey(), "800");
+            obTableClient.addProperty(Property.SERVER_CONNECTION_POOL_SIZE.getKey(), "1");
+            obTableClient.addProperty(Property.RPC_EXECUTE_TIMEOUT.getKey(), "2000");
+            obTableClient.init();
 
-        this.client = obTableClient;
-        syncRefreshMetaHelper(obTableClient);
+            this.client = obTableClient;
+            syncRefreshMetaHelper(obTableClient);
+        } else {
+            this.client = client;
+        }
         ((ObTableClient) this.client)
             .addRowKeyElement("test_throttle", new String[] { "c1", "c2" });
     }
@@ -131,6 +136,9 @@ public class ObTableHotkeyThrottleUtil extends Thread {
                     break;
                 case queryAndMutate:
                     queryAndMutateTest(rowKey, colVal("c3", new byte[] { 1 }), colVal("c4", 0L));
+                    break;
+                case batchOperation:
+                    batchOperationTest();
                     break;
             }
         }
@@ -195,17 +203,54 @@ public class ObTableHotkeyThrottleUtil extends Thread {
                     }
                 } else {
                     e.printStackTrace();
+                    Assert.assertNull(e);
                 }
             } else {
                 e.printStackTrace();
+                Assert.assertNull(e);
             }
         }
     }
 
     private void queryAndMutateTest(Row rowkey, ColumnValue... columnValues) throws Exception {
-        ObTableValueFilter c4_EQ_0 = compareVal(ObCompareOp.EQ, "c4", 0L);
         MutationResult updateResult = client.update("test_throttle").setRowKey(rowkey)
-            .setFilter(c4_EQ_0).addMutateColVal(columnValues).execute();
+            .addMutateColVal(columnValues).execute();
+    }
+
+    private List<Mutation> generateBatchOpertaionIoU() {
+        List<Mutation> rowList = new ArrayList<>();
+        for (int i = 0; i < batchSize; ++i) {
+            long randomNum = (long) (Math.random() * 2000000);
+            String rowKeyString = "Test" + randomNum;
+            rowList.add(insertOrUpdate().setRowKey(colVal("c1", randomNum), colVal("c2", rowKeyString))
+                    .addMutateColVal(colVal("c3", new byte[] { 1 }))
+                    .addMutateColVal(colVal("c4", randomNum)));
+        }
+        return rowList;
+    }
+
+    private void batchOperationTest() throws Exception {
+        try {
+            BatchOperationResult batchResult = client.batchOperation("test_throttle")
+                .addOperation(generateBatchOpertaionIoU()).execute();
+            ++passNum;
+        } catch (Exception e) {
+            if (e instanceof ObTableUnexpectedException) {
+                if (((ObTableUnexpectedException) e).getErrorCode() == -4039) {
+                    if (++throttleNum % 50 == 0) {
+                        System.out.println(Thread.currentThread().getName() + " has pass "
+                                           + passNum + " batch operations, and has throttle "
+                                           + throttleNum + " batch operations");
+                    }
+                } else {
+                    e.printStackTrace();
+                    Assert.assertNull(e);
+                }
+            } else {
+                e.printStackTrace();
+                Assert.assertNull(e);
+            }
+        }
     }
 
     public void syncRefreshMetaHelper(final ObTableClient obTableClient) {

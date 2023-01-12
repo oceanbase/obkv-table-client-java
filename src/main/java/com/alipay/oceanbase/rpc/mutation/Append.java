@@ -121,9 +121,9 @@ public class Append extends Mutation<Append> {
         } else if (null == getClient()) {
             throw new ObTableException("client is null");
         }
-
+        removeRowkeyFromMutateColval(this.columns, this.values, this.rowKeyNames);
         if (null == getQuery()) {
-            // simple update, without filter
+            // simple append, without filter
             return new MutationResult(((ObTableClient) getClient()).appendWithResult(
                 getTableName(), getRowKey(), getKeyRanges(), columns.toArray(new String[0]),
                 values.toArray(), withResult));

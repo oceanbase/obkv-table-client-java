@@ -30,19 +30,19 @@ public class ObTableHotkeyThrottleTest {
     public int repeatKeyNum = 4;
 
     @Test
-    public void testThrottle() throws Exception {
+    public void testSimpleThrottle() throws Exception {
         try {
             List<ObTableHotkeyThrottleUtil> allWorkers = new ArrayList<>();
             for (int i = 0; i < threadNum; ++i) {
                 ObTableHotkeyThrottleUtil worker = new ObTableHotkeyThrottleUtil();
                 if (i < threadNum/4) {
-                    worker.init(ObTableHotkeyThrottleUtil.TestType.random, ObTableHotkeyThrottleUtil.OperationType.insertOrUpdate);
+                    worker.init(ObTableHotkeyThrottleUtil.TestType.random, ObTableHotkeyThrottleUtil.OperationType.insertOrUpdate, null, 0);
                 } else if (i < threadNum/3) {
-                    worker.init(ObTableHotkeyThrottleUtil.TestType.random, ObTableHotkeyThrottleUtil.OperationType.query);
+                    worker.init(ObTableHotkeyThrottleUtil.TestType.random, ObTableHotkeyThrottleUtil.OperationType.query, null, 0);
                 } else {
                     long rowKeyNum = i % repeatKeyNum;
                     String rowkeyString = "Test" + rowKeyNum;
-                    worker.init(ObTableHotkeyThrottleUtil.TestType.specifiedKey, ObTableHotkeyThrottleUtil.OperationType.query,
+                    worker.init(ObTableHotkeyThrottleUtil.TestType.specifiedKey, ObTableHotkeyThrottleUtil.OperationType.query, null, 0,
                             colVal("c1", rowKeyNum), colVal("c2", rowkeyString));
                 }
                 allWorkers.add(worker);
