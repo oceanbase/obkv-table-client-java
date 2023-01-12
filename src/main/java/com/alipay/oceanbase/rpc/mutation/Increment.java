@@ -121,9 +121,9 @@ public class Increment extends Mutation<Increment> {
         } else if (null == getClient()) {
             throw new ObTableException("client is null");
         }
-
+        removeRowkeyFromMutateColval(this.columns, this.values, this.rowKeyNames);
         if (null == getQuery()) {
-            // simple update, without filter
+            // simple increment, without filter
             return new MutationResult(((ObTableClient) getClient()).incrementWithResult(
                 getTableName(), getRowKey(), getKeyRanges(), columns.toArray(new String[0]),
                 values.toArray(), withResult));

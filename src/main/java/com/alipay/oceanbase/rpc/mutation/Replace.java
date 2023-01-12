@@ -118,9 +118,9 @@ public class Replace extends Mutation<Replace> {
         } else if (null == getClient()) {
             throw new ObTableException("client is null");
         }
-
+        removeRowkeyFromMutateColval(this.columns, this.values, this.rowKeyNames);
         if (null == getQuery()) {
-            // simple Insert, without filter
+            // simple replace, without filter
             return new MutationResult(((ObTableClient) getClient()).replaceWithResult(
                 getTableName(), getRowKey(), getKeyRanges(), columns.toArray(new String[0]),
                 values.toArray()));

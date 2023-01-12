@@ -41,6 +41,7 @@ import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
+import com.alipay.oceanbase.rpc.util.ObTableHotkeyThrottleUtil;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -65,7 +66,10 @@ public class ObTableClientTest extends ObTableClientTestBase {
         obTableClient.addProperty(Property.RPC_CONNECT_TIMEOUT.getKey(), "800");
         obTableClient.addProperty(Property.RPC_LOGIN_TIMEOUT.getKey(), "800");
         obTableClient.addProperty(Property.SERVER_CONNECTION_POOL_SIZE.getKey(), "1");
-        obTableClient.addProperty(Property.RPC_EXECUTE_TIMEOUT.getKey(), "2000");
+        obTableClient.addProperty(Property.RPC_EXECUTE_TIMEOUT.getKey(), "3000");
+        obTableClient.addProperty(Property.RUNTIME_BATCH_MAX_WAIT.getKey(), "3000");
+        obTableClient.addProperty(Property.RUNTIME_BATCH_EXECUTOR.getKey(), "32");
+        obTableClient.addProperty(Property.RPC_OPERATION_TIMEOUT.getKey(), "3000");
         obTableClient.init();
 
         this.client = obTableClient;
@@ -1644,6 +1648,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 .addMutateColVal(colVal("c3", new byte[] { 1 }))
                 .addMutateColVal(colVal("c4", 102L)).execute();
             client.insert("test_mutation").setRowKey(colVal("c1", 3L), colVal("c2", "row_3"))
+                .addMutateColVal(colVal("c1", 3L)).addMutateColVal(colVal("c2", "row_3"))
                 .addMutateColVal(colVal("c3", new byte[] { 1 }))
                 .addMutateColVal(colVal("c4", 103L)).execute();
 
@@ -1666,6 +1671,18 @@ public class ObTableClientTest extends ObTableClientTestBase {
             Assert.assertEquals(0, updateResult.getAffectedRows());
             /* To confirm changing. re-query to get the latest data */
             ObTableValueFilter confirm_2 = compareVal(ObCompareOp.EQ, "c4", 201L);
+            tableQuery.setFilter(confirm_2);
+            result_ = tableQuery.execute();
+            Assert.assertEquals(0, result_.cacheSize());
+
+            // update / duplicate rowkey between setrowkey and mutatecolumns
+            updateResult = client.update("test_mutation")
+                .setRowKey(colVal("c1", 1L), colVal("c2", "row_1")).setFilter(c4_EQ_100)
+                .addMutateColVal(colVal("c1", 1L), colVal("c2", "row_1"))
+                .addMutateRow(row(colVal("c3", new byte[] { 1 }), colVal("c4", 201L))).execute();
+            Assert.assertEquals(0, updateResult.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            confirm_2 = compareVal(ObCompareOp.EQ, "c4", 201L);
             tableQuery.setFilter(confirm_2);
             result_ = tableQuery.execute();
             Assert.assertEquals(0, result_.cacheSize());
@@ -1705,6 +1722,18 @@ public class ObTableClientTest extends ObTableClientTestBase {
             // InsertOrUpdate / Update
             insertOrUpdateResult = client.insertOrUpdate("test_mutation")
                 .setRowKey(colVal("c1", 4L), colVal("c2", "row_4"))
+                .addMutateRow(row(colVal("c3", new byte[1]), colVal("c4", 104L))).execute();
+            Assert.assertEquals(1, insertOrUpdateResult.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            confirm_4 = compareVal(ObCompareOp.EQ, "c4", 104L);
+            tableQuery.setFilter(confirm_4);
+            result_ = tableQuery.execute();
+            Assert.assertEquals(1, result_.cacheSize());
+
+            // InsertOrUpdate / Update / duplicate rowkey between setrowkey and mutatecolumns
+            insertOrUpdateResult = client.insertOrUpdate("test_mutation")
+                .setRowKey(colVal("c1", 4L), colVal("c2", "row_4"))
+                .addMutateColVal(colVal("c1", 4L), colVal("c2", "row_4"))
                 .addMutateRow(row(colVal("c3", new byte[1]), colVal("c4", 104L))).execute();
             Assert.assertEquals(1, insertOrUpdateResult.getAffectedRows());
             /* To confirm changing. re-query to get the latest data */
@@ -2089,6 +2118,26 @@ public class ObTableClientTest extends ObTableClientTestBase {
             client.delete("test_mutation_with_range", new Object[] { 4L, "c4" });
             client.delete("test_mutation_with_range", new Object[] { 5L, "c5" });
             client.delete("test_mutation_with_range", new Object[] { 10L, "c10" });
+        }
+    }
+
+    @Test
+    public void testMultiThreadBatchOperation() throws Exception {
+        try {
+            int threadNum = 16;
+            List<ObTableHotkeyThrottleUtil> allWorkers = new ArrayList<>();
+            for (int i = 0; i < threadNum; ++i) {
+                ObTableHotkeyThrottleUtil worker = new ObTableHotkeyThrottleUtil();
+                worker.init(ObTableHotkeyThrottleUtil.TestType.random, ObTableHotkeyThrottleUtil.OperationType.batchOperation, this.client, 16);
+                allWorkers.add(worker);
+                worker.start();
+            }
+            for (int i = 0; i < threadNum; ++i) {
+                allWorkers.get(i).join();
+                System.out.println("Thread " + i + "th has finished");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

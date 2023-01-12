@@ -88,6 +88,14 @@ public class BatchOperation {
         return this;
     }
 
+    /*
+     * add mutations
+     */
+    public BatchOperation addOperation(List<Mutation> mutations) {
+        this.operations.addAll(mutations);
+        return this;
+    }
+
     public BatchOperationResult execute() throws Exception {
         TableBatchOps batchOps = client.batch(tableName);
 

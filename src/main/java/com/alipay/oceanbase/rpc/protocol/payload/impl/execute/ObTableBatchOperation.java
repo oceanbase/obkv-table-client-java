@@ -125,8 +125,8 @@ public class ObTableBatchOperation extends AbstractPayload {
      * Add table operation.
      */
     public void addTableOperation(ObTableOperation tableOperation) {
-        int length = this.tableOperations.size();
         this.tableOperations.add(tableOperation);
+        int length = this.tableOperations.size();
         if (isReadOnly && !tableOperation.isReadonly()) {
             isReadOnly = false;
         }
