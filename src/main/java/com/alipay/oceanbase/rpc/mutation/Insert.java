@@ -110,6 +110,14 @@ public class Insert extends Mutation<Insert> {
     }
 
     /*
+     * Remove rowkey from mutateColval
+     */
+    public Insert removeRowkeyFromMutateColval() {
+        removeRowkeyFromMutateColval(this.columns, this.values, this.rowKeyNames);
+        return this;
+    }
+
+    /*
      * execute
      */
     public MutationResult execute() throws Exception {
