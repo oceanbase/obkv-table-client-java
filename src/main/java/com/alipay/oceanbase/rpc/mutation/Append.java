@@ -113,6 +113,14 @@ public class Append extends Mutation<Append> {
     }
 
     /*
+     * Remove rowkey from mutateColval
+     */
+    public Append removeRowkeyFromMutateColval() {
+        removeRowkeyFromMutateColval(this.columns, this.values, this.rowKeyNames);
+        return this;
+    }
+
+    /*
      * execute
      */
     public MutationResult execute() throws Exception {

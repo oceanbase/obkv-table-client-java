@@ -110,6 +110,14 @@ public class Replace extends Mutation<Replace> {
     }
 
     /*
+     * Remove rowkey from mutateColval
+     */
+    public Replace removeRowkeyFromMutateColval() {
+        removeRowkeyFromMutateColval(this.columns, this.values, this.rowKeyNames);
+        return this;
+    }
+
+    /*
      * execute
      */
     public MutationResult execute() throws Exception {
