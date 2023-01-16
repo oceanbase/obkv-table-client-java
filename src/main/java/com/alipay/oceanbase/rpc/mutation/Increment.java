@@ -113,6 +113,14 @@ public class Increment extends Mutation<Increment> {
     }
 
     /*
+     * Remove rowkey from mutateColval
+     */
+    public Increment removeRowkeyFromMutateColval() {
+        removeRowkeyFromMutateColval(this.columns, this.values, this.rowKeyNames);
+        return this;
+    }
+
+    /*
      * execute
      */
     public MutationResult execute() throws Exception {

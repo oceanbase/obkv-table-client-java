@@ -330,7 +330,7 @@ public class Mutation<T> {
 
     static void removeRowkeyFromMutateColval(List<String> columns, List<Object> values,
                                              List<String> rowKeyNames) {
-        if (null == columns || null == rowKeyNames) {
+        if (null == columns || null == rowKeyNames || columns.size() != values.size()) {
             return;
         }
         for (int i = values.size() - 1; i >= 0; --i) {
