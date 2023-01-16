@@ -1934,10 +1934,10 @@ public class ObTableClientTest extends ObTableClientTestBase {
             Assert.assertNull(opResult.getOperationRow().get("c4"));
             Assert.assertNull(batchResult.get(2).getOperationRow().get("c4"));
 
-            long c1Vals[] = { 0L, 1L, 2L };
-            String c2Vals[] = { "row_0", "row_1", "row_2" };
+            long[] c1Vals = { 0L, 1L, 2L };
+            String[] c2Vals = { "row_0", "row_1", "row_2" };
             byte[] c3Val = new byte[] { 1 };
-            long c4Vals[] = { 100L, 101L, 102L };
+            long[] c4Vals = { 100L, 101L, 102L };
             BatchOperation batchOperation = client.batchOperation("test_mutation");
             for (int i = 0; i < c1Vals.length; i++) {
                 Row rowKey1 = row(colVal("c1", c1Vals[i]), colVal("c2", c2Vals[i]));
@@ -1953,6 +1953,26 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 Assert.assertTrue(Arrays.equals(c3Val, (byte[]) row.get("c3")));
                 Assert.assertEquals(c4Vals[i], row.get("c4"));
             }
+
+            // test duplicate rowkey in mutatecolval and rowkey
+            Insert insert_2 = insert().setRowKey(row(colVal("c1", 5L), colVal("c2", "row_5")))
+                .addMutateColVal(colVal("c1", 5L), colVal("c2", "row_5"))
+                .addMutateColVal(colVal("c3", new byte[] { 1 })).addMutateColVal(colVal("c4", 5L));
+            Update update_1 = update().setRowKey(row(colVal("c1", 0L), colVal("c2", "row_0")))
+                .addMutateRow(row(colVal("c1", 0L), colVal("c2", "row_0")))
+                .addMutateColVal(colVal("c3", new byte[] { 1 })).addMutateColVal(colVal("c4", 0L));
+            InsertOrUpdate iou_0 = insertOrUpdate()
+                .setRowKey(row(colVal("c1", 1L), colVal("c2", "row_1")))
+                .addMutateColVal(colVal("c2", "row_1"))
+                .addMutateColVal(colVal("c3", new byte[] { 1 })).addMutateColVal(colVal("c4", 0L));
+
+            batchResult = client.batchOperation("test_mutation")
+                .addOperation(insert_2, update_1, iou_0).execute();
+            Assert.assertEquals(0, batchResult.getWrongCount());
+            Assert.assertEquals(3, batchResult.getCorrectCount());
+            Assert.assertEquals(0, batchResult.getCorrectIdx()[0]);
+            Assert.assertEquals(1, batchResult.get(1).getAffectedRows());
+            Assert.assertEquals(1, batchResult.get(2).getAffectedRows());
         } catch (Exception e) {
             e.printStackTrace();
             Assert.assertTrue(false);
@@ -1966,6 +1986,8 @@ public class ObTableClientTest extends ObTableClientTestBase {
             client.delete("test_mutation").setRowKey(colVal("c1", 3L), colVal("c2", "row_3"))
                 .execute();
             client.delete("test_mutation").setRowKey(colVal("c1", 4L), colVal("c2", "row_4"))
+                .execute();
+            client.delete("test_mutation").setRowKey(colVal("c1", 5L), colVal("c2", "row_5"))
                 .execute();
         }
     }
