@@ -1,0 +1,35 @@
+##########################################################
+#            OBFlow Secret Scan Ignore List              #
+##########################################################
+# Above the segmentation lines there are suspected privacy information #
+# Please use the file name as the first line and the igored information #
+# should be started with tab. #
+# Under the segmentation lines there are the folders which you need to ignore #
+##########################################################
+**
+  http://license.coscl.org.cn/MulanPSL2
+  https://open.oceanbase.com/
+  https://open.oceanbase.com
+  https://github.com/oceanbase/oceanbase
+  https://github.com/oceanbase/oceanbase/issues
+  https://open.oceanbase.com
+  https://www.contributor-covenant.org/*
+  http://reveng.sourceforge.net/crc-catalogue/17plus.htm
+  http://murmurhash.googlepages.com/
+**/*.cpp
+  http://www.gnu.org/licenses/
+--------------------------------------------------------
+# Should use GLOB wildcard to config and analysis the ignored folder
+# The root patch should start with '/'
+/README.md
+/.git/hooks/fsmonitor-watchman.sample
+/pom.xml
+/example/simple-table-demo/pom.xml
+/example/simple-kv-demo/pom.xml
+/CONTRIBUTING.md
+/src/test/java/com/alipay/oceanbase/rpc/location/model/ObUserAuthTest.java
+/src/main/java/com/alipay/oceanbase/rpc/util/Base64.java
+/.oceanbase-common/**
+/src/main/resources/oceanbase-table-client/log/log4j/**
+--------------------------------------------------------
+# Config the ignored fold to escape the Chinese scan by GLOB wildcard
