@@ -885,7 +885,6 @@ public enum ObObjType {
         }
     },
 
-    // https://dev.mysql.com/doc/refman/5.7/en/datetime.html
     // The DATETIME type is used for values that contain both date and time parts.
     // MySQL retrieves and displays DATETIME values in 'YYYY-MM-DD HH:MM:SS' format. The supported range is '1000-01-01 00:00:00' to '9999-12-31 23:59:59'.
     ObDateTimeType(17) {
@@ -940,7 +939,6 @@ public enum ObObjType {
          */
         @Override
         public byte[] encode(Object obj) {
-            // TODO 为什么是 Long
             return Serialization.encodeVi64(((Date) obj).getTime() * 1000L);
         }
 
@@ -987,7 +985,6 @@ public enum ObObjType {
          */
         @Override
         public byte[] encode(Object obj) {
-            // TODO 为什么是 Int
             return Serialization.encodeVi32((int) ((Date) obj).getTime());
         }
 

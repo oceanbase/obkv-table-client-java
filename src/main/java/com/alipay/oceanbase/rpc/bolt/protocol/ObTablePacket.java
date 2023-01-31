@@ -137,7 +137,6 @@ public class ObTablePacket implements RemotingCommand {
      * Release byte buf.
      */
     public void releaseByteBuf() {
-        // http://netty.io/wiki/reference-counted-objects.html
         if (packetContentBuf != null) {
             packetContentBuf.release();
         }

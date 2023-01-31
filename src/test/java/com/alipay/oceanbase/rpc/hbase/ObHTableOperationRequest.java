@@ -123,7 +123,7 @@ public class ObHTableOperationRequest {
                     ObTableOperationType.INSERT, new Object[] { rowKey, qualifierName, timestamp },
                     V_COLUMNS, new Object[] { value }, 10 * 1000);
                 break;
-            case DEL: // TODO 如何 DEL？
+            case DEL:
                 request = ObTableOperationRequest.getInstance(getTargetTableName(),
                     ObTableOperationType.DEL, new Object[] { rowKey, qualifierName, timestamp },
                     null, null, 10 * 1000);
