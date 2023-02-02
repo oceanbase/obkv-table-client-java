@@ -206,6 +206,7 @@ public class ObTableClientPartitionRangeTest {
             TableQuery tableQuery = obTableClient.query("testRange");
             tableQuery.addScanRange(new Object[] { "ah", "partition".getBytes(), timeStamp },
                                     new Object[] { "az", "partition".getBytes(), timeStamp });
+            tableQuery.select("Q", "T", "K", "V");
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(1, result.cacheSize());
             Assert.assertTrue(result.next());
