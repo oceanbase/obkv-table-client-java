@@ -207,6 +207,7 @@ public class ObTableClientPartitionKeyTest {
             tableQuery.addScanRange(
                 new Object[] { "key1_1".getBytes(), ObObj.getMin(), ObObj.getMin() }, new Object[] {
                         "key1_8".getBytes(), ObObj.getMax(), ObObj.getMax() });
+            tableQuery.select("Q", "T", "K", "V");
             result = tableQuery.execute();
             Assert.assertTrue(result.cacheSize() >= 2);
         } else {
