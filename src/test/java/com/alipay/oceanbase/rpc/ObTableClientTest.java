@@ -1941,7 +1941,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
             BatchOperation batchOperation = client.batchOperation("test_mutation");
             for (int i = 0; i < c1Vals.length; i++) {
                 Row rowKey1 = row(colVal("c1", c1Vals[i]), colVal("c2", c2Vals[i]));
-                TableQuery query = query().setRowKey(rowKey1);
+                TableQuery query = query().setRowKey(rowKey1).select("c1", "c2", "c3", "c4");
                 batchOperation.addOperation(query);
             }
             BatchOperationResult result = batchOperation.execute();

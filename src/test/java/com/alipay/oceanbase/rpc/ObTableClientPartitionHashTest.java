@@ -167,6 +167,7 @@ public class ObTableClientPartitionHashTest {
             TableQuery tableQuery = obTableClient.query("testHash");
             tableQuery.addScanRange(new Object[] { timeStamp, "partition".getBytes(), timeStamp },
                 new Object[] { timeStamp, "partition".getBytes(), timeStamp });
+            tableQuery.select("Q", "T", "K", "V");
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(1L, result.cacheSize());
 
