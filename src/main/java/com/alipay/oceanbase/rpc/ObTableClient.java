@@ -431,7 +431,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             this.rowKey = rowKey;
         }
 
-        void checkObTableOperationResult(String ip, int port, ObPayload result) {
+        void checkObTableOperationResult(String ip, int port, ObPayload request, ObPayload result) {
 
             if (result == null) {
                 RUNTIME.error("client get unexpected NULL result");
@@ -445,12 +445,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
 
             ObTableOperationResult obTableOperationResult = (ObTableOperationResult) result;
+            ObTableOperationRequest obTableOperationRequest = (ObTableOperationRequest) request;
             obTableOperationResult.setExecuteHost(ip);
             obTableOperationResult.setExecutePort(port);
-            ExceptionUtil
-                .throwObTableException(ip, port, obTableOperationResult.getSequence(),
-                    obTableOperationResult.getUniqueId(), obTableOperationResult.getHeader()
-                        .getErrno());
+            long sequence = obTableOperationResult.getSequence() == 0 ? obTableOperationRequest.getSequence() : obTableOperationResult.getSequence();
+            long uniqueId = obTableOperationResult.getUniqueId() == 0 ? obTableOperationRequest.getUniqueId() : obTableOperationResult.getUniqueId();
+            ExceptionUtil.throwObTableException(ip, port, sequence, uniqueId, obTableOperationResult.getHeader().getErrno());
         }
 
         void checkObTableQueryAndMutateResult(String ip, int port, ObPayload result) {
@@ -575,7 +575,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             this.keyRanges = keyRanges;
         }
 
-        void checkResult(String ip, int port, ObPayload result) {
+        void checkResult(String ip, int port, ObPayload request, ObPayload result) {
             if (result == null) {
                 RUNTIME.error("client get unexpected NULL result");
                 throw new ObTableException("client get unexpected NULL result");
@@ -583,11 +583,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
             if (result instanceof ObTableOperationResult) {
                 ObTableOperationResult obTableOperationResult = (ObTableOperationResult) result;
+                ObTableOperationRequest obTableOperationRequest = (ObTableOperationRequest) request;
                 obTableOperationResult.setExecuteHost(ip);
                 obTableOperationResult.setExecutePort(port);
-                ExceptionUtil.throwObTableException(ip, port, obTableOperationResult.getSequence(),
-                    obTableOperationResult.getUniqueId(), obTableOperationResult.getHeader()
-                        .getErrno());
+                long sequence = obTableOperationResult.getSequence() == 0 ? obTableOperationRequest.getSequence() : obTableOperationResult.getSequence();
+                long uniqueId = obTableOperationResult.getUniqueId() == 0 ? obTableOperationRequest.getUniqueId() : obTableOperationResult.getUniqueId();
+                ExceptionUtil.throwObTableException(ip, port, sequence, uniqueId, obTableOperationResult.getHeader().getErrno());
             } else if (result instanceof ObTableQueryAndMutateResult) {
                 // TODO: Add func like throwObTableException()
                 //       which will output the ip / port / error information
@@ -1493,7 +1494,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 request.setPartitionId(partId);
                 request.setConsistencyLevel(obReadConsistency.toObTableConsistencyLevel());
                 ObPayload result = obPair.getRight().execute(request);
-                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), request, result);
 
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
                 MONITOR.info(logMessage(tableName, "GET", endpoint, rowKey,
@@ -1535,7 +1536,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 MONITOR.info(logMessage(tableName, "UPDATE", endpoint, rowKey,
                     (ObTableOperationResult) result, getTableTime - start,
                     System.currentTimeMillis() - getTableTime));
-                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), request, result);
                 return ((ObTableOperationResult) result).getAffectedRows();
             }
         });
@@ -1574,7 +1575,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     MONITOR.info(logMessage(tableName, "UPDATE", endpoint, rowKey,
                         (ObTableOperationResult) result, TableTime - start,
                         System.currentTimeMillis() - TableTime));
-                    checkResult(obTable.getIp(), obTable.getPort(), result);
+                    checkResult(obTable.getIp(), obTable.getPort(), request, result);
                     return result;
                 }
             });
@@ -1686,7 +1687,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 MONITOR.info(logMessage(tableName, "DELETE", endpoint, rowKey,
                     (ObTableOperationResult) result, getTableTime - start,
                     System.currentTimeMillis() - getTableTime));
-                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), request, result);
                 return ((ObTableOperationResult) result).getAffectedRows();
             }
         });
@@ -1722,7 +1723,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     MONITOR.info(logMessage(tableName, "DELETE", endpoint, rowKey,
                         (ObTableOperationResult) result, TableTime - start,
                         System.currentTimeMillis() - TableTime));
-                    checkResult(obTable.getIp(), obTable.getPort(), result);
+                    checkResult(obTable.getIp(), obTable.getPort(), request, result);
                     return result;
                 }
             });
@@ -1759,7 +1760,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 MONITOR.info(logMessage(tableName, "INSERT", endpoint, rowKey,
                     (ObTableOperationResult) result, getTableTime - start,
                     System.currentTimeMillis() - getTableTime));
-                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), request, result);
                 return ((ObTableOperationResult) result).getAffectedRows();
             }
         });
@@ -1798,7 +1799,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     MONITOR.info(logMessage(tableName, "INSERT", endpoint, rowKey,
                         (ObTableOperationResult) result, TableTime - start,
                         System.currentTimeMillis() - TableTime));
-                    checkResult(obTable.getIp(), obTable.getPort(), result);
+                    checkResult(obTable.getIp(), obTable.getPort(), request, result);
                     return result;
                 }
             });
@@ -1835,7 +1836,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 MONITOR.info(logMessage(tableName, "REPLACE", endpoint, rowKey,
                     (ObTableOperationResult) result, getTableTime - start,
                     System.currentTimeMillis() - getTableTime));
-                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), request, result);
                 return ((ObTableOperationResult) result).getAffectedRows();
             }
         });
@@ -1874,7 +1875,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     MONITOR.info(logMessage(tableName, "REPLACE", endpoint, rowKey,
                         (ObTableOperationResult) result, TableTime - start,
                         System.currentTimeMillis() - TableTime));
-                    checkResult(obTable.getIp(), obTable.getPort(), result);
+                    checkResult(obTable.getIp(), obTable.getPort(), request, result);
                     return result;
                 }
             });
@@ -1911,7 +1912,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 MONITOR.info(logMessage(tableName, "INERT_OR_UPDATE", endpoint, rowKey,
                     (ObTableOperationResult) result, getTableTime - start,
                     System.currentTimeMillis() - getTableTime));
-                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), request, result);
                 return ((ObTableOperationResult) result).getAffectedRows();
             }
         });
@@ -1951,7 +1952,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     MONITOR.info(logMessage(tableName, "INERT_OR_UPDATE", endpoint, rowKey,
                         (ObTableOperationResult) result, TableTime - start,
                         System.currentTimeMillis() - TableTime));
-                    checkResult(obTable.getIp(), obTable.getPort(), result);
+                    checkResult(obTable.getIp(), obTable.getPort(), request, result);
                     return result;
                 }
             });
@@ -2000,7 +2001,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 MONITOR.info(logMessage(tableName, "INCREMENT", endpoint, rowKey,
                     (ObTableOperationResult) result, getTableTime - start,
                     System.currentTimeMillis() - getTableTime));
-                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), request, result);
                 return ((ObTableOperationResult) result).getEntity().getSimpleProperties();
             }
         });
@@ -2045,7 +2046,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     MONITOR.info(logMessage(tableName, "INCREMENT", endpoint, rowKey,
                         (ObTableOperationResult) result, TableTime - start,
                         System.currentTimeMillis() - TableTime));
-                    checkResult(obTable.getIp(), obTable.getPort(), result);
+                    checkResult(obTable.getIp(), obTable.getPort(), request, result);
                     return result;
                 }
             });
@@ -2079,7 +2080,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 MONITOR.info(logMessage(tableName, "APPEND", endpoint, rowKey,
                     (ObTableOperationResult) result, getTableTime - start,
                     System.currentTimeMillis() - getTableTime));
-                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), result);
+                checkObTableOperationResult(obTable.getIp(), obTable.getPort(), request, result);
                 return ((ObTableOperationResult) result).getEntity().getSimpleProperties();
             }
         });
@@ -2119,7 +2120,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     MONITOR.info(logMessage(tableName, "APPEND", endpoint, rowKey,
                         (ObTableOperationResult) result, TableTime - start,
                         System.currentTimeMillis() - TableTime));
-                    checkResult(obTable.getIp(), obTable.getPort(), result);
+                    checkResult(obTable.getIp(), obTable.getPort(), request, result);
                     return result;
                 }
             });
@@ -2180,7 +2181,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 MONITOR.info(logMessage(tableQuery.toString(), type.toString(), endpoint,
                     curRowKey, (ObTableQueryAndMutateResult) result, TableTime - start,
                     System.currentTimeMillis() - TableTime));
-                checkResult(obTable.getIp(), obTable.getPort(), result);
+                checkResult(obTable.getIp(), obTable.getPort(), request, result);
                 return result;
             }
         });
