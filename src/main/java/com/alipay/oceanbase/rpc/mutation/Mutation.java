@@ -26,7 +26,6 @@ import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -36,7 +35,7 @@ public class Mutation<T> {
     protected Object[]     rowKey;
     private TableQuery     query;
     private boolean        hasSetRowKey = false;
-    protected List<String> rowKeyNames  = null; // for removeRowkeyFromMutateColval
+    protected List<String> rowKeyNames  = null;
 
     /*
      * default constructor
@@ -109,6 +108,13 @@ public class Mutation<T> {
      */
     public ObTableOperationType getOperationType() {
         return null;
+    }
+
+    /*
+     * get rowkey names
+     */
+    public List<String> getRowKeyNames() {
+        return rowKeyNames;
     }
 
     /*
