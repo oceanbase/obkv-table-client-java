@@ -17,11 +17,10 @@
 
 package com.alipay.oceanbase.rpc.mutation;
 
-import com.alipay.oceanbase.rpc.ObClusterTableQuery;
+import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
-import com.alipay.oceanbase.rpc.table.ObTableClientQueryImpl;
 import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
@@ -97,11 +96,17 @@ public class BatchOperation {
     }
 
     public BatchOperationResult execute() throws Exception {
+        // add rowkeyElement
+        boolean hasSetRowkeyElement = false;
         TableBatchOps batchOps = client.batch(tableName);
 
         for (Object operation : operations) {
             if (operation instanceof Mutation) {
                 Mutation mutation = (Mutation) operation;
+                if (!hasSetRowkeyElement && mutation.getRowKeyNames() != null) {
+                    ((ObTableClient) client).addRowKeyElement(tableName, (String[]) mutation.getRowKeyNames().toArray(new String[0]));
+                    hasSetRowkeyElement = true;
+                }
                 ObTableOperationType type = mutation.getOperationType();
                 switch (type) {
                     case GET:
