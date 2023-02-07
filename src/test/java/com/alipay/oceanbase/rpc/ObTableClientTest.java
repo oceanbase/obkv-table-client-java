@@ -2148,9 +2148,10 @@ public class ObTableClientTest extends ObTableClientTestBase {
         try {
             int threadNum = 16;
             List<ObTableHotkeyThrottleUtil> allWorkers = new ArrayList<>();
+            long startTime = System.currentTimeMillis();
             for (int i = 0; i < threadNum; ++i) {
                 ObTableHotkeyThrottleUtil worker = new ObTableHotkeyThrottleUtil();
-                worker.init(ObTableHotkeyThrottleUtil.TestType.random, ObTableHotkeyThrottleUtil.OperationType.batchOperation, this.client, 16);
+                worker.init(threadNum, i, startTime, "test_throttle", new String[] { "c1", "c2" }, ObTableHotkeyThrottleUtil.TestType.random, ObTableHotkeyThrottleUtil.OperationType.batchOperation, 100, this.client, 16);
                 allWorkers.add(worker);
                 worker.start();
             }
