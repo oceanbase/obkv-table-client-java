@@ -448,9 +448,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObTableOperationRequest obTableOperationRequest = (ObTableOperationRequest) request;
             obTableOperationResult.setExecuteHost(ip);
             obTableOperationResult.setExecutePort(port);
-            long sequence = obTableOperationResult.getSequence() == 0 ? obTableOperationRequest.getSequence() : obTableOperationResult.getSequence();
-            long uniqueId = obTableOperationResult.getUniqueId() == 0 ? obTableOperationRequest.getUniqueId() : obTableOperationResult.getUniqueId();
-            ExceptionUtil.throwObTableException(ip, port, sequence, uniqueId, obTableOperationResult.getHeader().getErrno());
+            long sequence = obTableOperationResult.getSequence() == 0 ? obTableOperationRequest
+                .getSequence() : obTableOperationResult.getSequence();
+            long uniqueId = obTableOperationResult.getUniqueId() == 0 ? obTableOperationRequest
+                .getUniqueId() : obTableOperationResult.getUniqueId();
+            ExceptionUtil.throwObTableException(ip, port, sequence, uniqueId,
+                obTableOperationResult.getHeader().getErrno());
         }
 
         void checkObTableQueryAndMutateResult(String ip, int port, ObPayload result) {
@@ -586,9 +589,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 ObTableOperationRequest obTableOperationRequest = (ObTableOperationRequest) request;
                 obTableOperationResult.setExecuteHost(ip);
                 obTableOperationResult.setExecutePort(port);
-                long sequence = obTableOperationResult.getSequence() == 0 ? obTableOperationRequest.getSequence() : obTableOperationResult.getSequence();
-                long uniqueId = obTableOperationResult.getUniqueId() == 0 ? obTableOperationRequest.getUniqueId() : obTableOperationResult.getUniqueId();
-                ExceptionUtil.throwObTableException(ip, port, sequence, uniqueId, obTableOperationResult.getHeader().getErrno());
+                long sequence = obTableOperationResult.getSequence() == 0 ? obTableOperationRequest
+                    .getSequence() : obTableOperationResult.getSequence();
+                long uniqueId = obTableOperationResult.getUniqueId() == 0 ? obTableOperationRequest
+                    .getUniqueId() : obTableOperationResult.getUniqueId();
+                ExceptionUtil.throwObTableException(ip, port, sequence, uniqueId,
+                    obTableOperationResult.getHeader().getErrno());
             } else if (result instanceof ObTableQueryAndMutateResult) {
                 // TODO: Add func like throwObTableException()
                 //       which will output the ip / port / error information
