@@ -26,8 +26,8 @@ import java.util.ArrayList;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
 
 public class ObTableHotkeyThrottleTest {
-    public int threadNum    = 32;
-    public int repeatKeyNum = 4;
+    public int  threadNum    = 32;
+    public int  repeatKeyNum = 4;
     public long startTime;
 
     @Test

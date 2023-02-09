@@ -34,17 +34,16 @@ import java.util.List;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.*;
 
 public class ObTableHotkeyThrottleUtil extends Thread {
-    int threadIdx;
-    int testNum;
-    String tableName = null;
-    String[] rowKeyColumnName = null;
+    int                         threadIdx;
+    int                         testNum;
+    String                      tableName           = null;
+    String[]                    rowKeyColumnName    = null;
 
-    public int threadNum;
-    public static List<Integer> unitOperationTimes = null;
-    public static List<Integer> unitBlockTimes = null;
+    public int                  threadNum;
+    public static List<Integer> unitOperationTimes  = null;
+    public static List<Integer> unitBlockTimes      = null;
     public static List<Integer> totalOperationTimes = null;
-    public static List<Integer> totalBlockTimes = null;
-
+    public static List<Integer> totalBlockTimes     = null;
 
     public enum TestType {
         random, specifiedKey
@@ -56,18 +55,19 @@ public class ObTableHotkeyThrottleUtil extends Thread {
 
     TestType      testType;
     OperationType operationType;
-    public Table  client      = null;
+    public Table  client            = null;
     Row           rowKey;
-    int           throttleNum = 0;
-    int           passNum     = 0;
-    int           batchSize   = 64;
-    long          startTime   = 0;
-    int           unitBlockTime = 0;
+    int           throttleNum       = 0;
+    int           passNum           = 0;
+    int           batchSize         = 64;
+    long          startTime         = 0;
+    int           unitBlockTime     = 0;
     int           unitOperationTime = 0;
 
-    public void init(int threadNum,int threadIdx, long startTime, String tableName, String[] rowKeyColumnName,
-                     TestType testType, OperationType operationType, int testNum,
-                     Table client, int batchSize, ColumnValue... rowKeyColumnValues) throws Exception {
+    public void init(int threadNum, int threadIdx, long startTime, String tableName,
+                     String[] rowKeyColumnName, TestType testType, OperationType operationType,
+                     int testNum, Table client, int batchSize, ColumnValue... rowKeyColumnValues)
+                                                                                                 throws Exception {
         System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
         this.threadNum = threadNum;
         this.threadIdx = threadIdx;
@@ -120,19 +120,19 @@ public class ObTableHotkeyThrottleUtil extends Thread {
         }
         if (null == unitBlockTimes || threadIdx == 0) {
             unitBlockTimes = new ArrayList<Integer>(threadNum);
-            for(int i = 0; i < threadNum; ++i) {
+            for (int i = 0; i < threadNum; ++i) {
                 unitBlockTimes.add(0);
             }
         }
         if (null == totalOperationTimes || threadIdx == 0) {
             totalOperationTimes = new ArrayList<Integer>(threadNum);
-            for(int i = 0; i < threadNum; ++i) {
+            for (int i = 0; i < threadNum; ++i) {
                 totalOperationTimes.add(0);
             }
         }
         if (null == totalBlockTimes || threadIdx == 0) {
             totalBlockTimes = new ArrayList<Integer>(threadNum);
-            for(int i = 0; i < threadNum; ++i) {
+            for (int i = 0; i < threadNum; ++i) {
                 totalBlockTimes.add(0);
             }
         }
@@ -189,7 +189,8 @@ public class ObTableHotkeyThrottleUtil extends Thread {
                 unitBlockTimes.set(threadIdx, unitBlockTime);
                 unitOperationTime = 0;
                 unitBlockTime = 0;
-                while (System.currentTimeMillis() - startTime > 2000) startTime += 2000;
+                while (System.currentTimeMillis() - startTime > 2000)
+                    startTime += 2000;
             }
         }
         totalOperationTimes.set(threadIdx, throttleNum + passNum);
@@ -224,7 +225,8 @@ public class ObTableHotkeyThrottleUtil extends Thread {
                 unitBlockTimes.set(threadIdx, unitBlockTime);
                 unitOperationTime = 0;
                 unitBlockTime = 0;
-                while (System.currentTimeMillis() - startTime > 2000) startTime += 2000;
+                while (System.currentTimeMillis() - startTime > 2000)
+                    startTime += 2000;
             }
         }
         totalOperationTimes.set(threadIdx, throttleNum + passNum);
