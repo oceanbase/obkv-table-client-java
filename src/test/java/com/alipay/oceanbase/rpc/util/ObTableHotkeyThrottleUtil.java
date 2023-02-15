@@ -234,39 +234,76 @@ public class ObTableHotkeyThrottleUtil extends Thread {
     }
 
     private void insertTest(Row rowkey, ColumnValue... columnValues) throws Exception {
-        MutationResult insertResult = client.insert("test_throttle").setRowKey(rowkey)
-            .addMutateColVal(columnValues).execute();
+        try {
+            ++unitOperationTime;
+            MutationResult insertResult = client.insert(this.tableName).setRowKey(rowkey)
+                    .addMutateColVal(columnValues).execute();
+            ++passNum;
+        } catch (Exception e) {
+            if (e instanceof ObTableUnexpectedException) {
+                if (((ObTableUnexpectedException) e).getErrorCode() == -4039) {
+                    ++throttleNum;
+                    ++unitBlockTime;
+                } else {
+                    e.printStackTrace();
+                    Assert.assertNull(e);
+                }
+            } else {
+                e.printStackTrace();
+                Assert.assertNull(e);
+            }
+        }
 
     }
 
     private void updateTest(Row rowkey, ColumnValue... columnValues) throws Exception {
-        ++unitOperationTime;
-        MutationResult updateResult = client.update("test_throttle").setRowKey(rowKey)
-            .addMutateColVal(columnValues).execute();
-        if (updateResult.getAffectedRows() != 1) {
-            ++unitBlockTime;
-            ++throttleNum;
-        } else {
+        try {
+            ++unitOperationTime;
+            MutationResult updateResult = client.update(this.tableName).setRowKey(rowKey)
+                .addMutateColVal(columnValues).execute();
             ++passNum;
+        } catch (Exception e) {
+            if (e instanceof ObTableUnexpectedException) {
+                if (((ObTableUnexpectedException) e).getErrorCode() == -4039) {
+                    ++throttleNum;
+                    ++unitBlockTime;
+                } else {
+                    e.printStackTrace();
+                    Assert.assertNull(e);
+                }
+            } else {
+                e.printStackTrace();
+                Assert.assertNull(e);
+            }
         }
     }
 
     private void insertOrUpdateTest(Row rowkey, ColumnValue... columnValues) throws Exception {
-        ++unitOperationTime;
-        MutationResult insertOrUpdateResult = client.insertOrUpdate("test_throttle")
-            .setRowKey(rowkey).addMutateColVal(columnValues).execute();
-        if (insertOrUpdateResult.getAffectedRows() != 1) {
-            ++unitBlockTime;
-            ++throttleNum;
-        } else {
+        try {
+            ++unitOperationTime;
+            MutationResult insertOrUpdateResult = client.insertOrUpdate(this.tableName)
+                    .setRowKey(rowkey).addMutateColVal(columnValues).execute();
             ++passNum;
+        } catch (Exception e) {
+            if (e instanceof ObTableUnexpectedException) {
+                if (((ObTableUnexpectedException) e).getErrorCode() == -4039) {
+                    ++throttleNum;
+                    ++unitBlockTime;
+                } else {
+                    e.printStackTrace();
+                    Assert.assertNull(e);
+                }
+            } else {
+                e.printStackTrace();
+                Assert.assertNull(e);
+            }
         }
     }
 
     private void queryTest(Row rowkey) throws Exception {
         try {
             ++unitOperationTime;
-            TableQuery tableQuery = client.query("test_throttle");
+            TableQuery tableQuery = client.query(this.tableName);
             tableQuery.addScanRange(rowkey.getValues(), rowkey.getValues());
             tableQuery.select("c1", "c2", "c3", "c4");
             QueryResultSet result_ = tableQuery.execute();
@@ -288,8 +325,25 @@ public class ObTableHotkeyThrottleUtil extends Thread {
     }
 
     private void queryAndMutateTest(Row rowkey, ColumnValue... columnValues) throws Exception {
-        MutationResult updateResult = client.update("test_throttle").setRowKey(rowkey)
-            .addMutateColVal(columnValues).execute();
+        try {
+            ++unitOperationTime;
+            MutationResult updateResult = client.update(this.tableName).setRowKey(rowkey)
+                    .setFilter(null).addMutateColVal(columnValues).execute();
+            ++passNum;
+        } catch (Exception e) {
+            if (e instanceof ObTableUnexpectedException) {
+                if (((ObTableUnexpectedException) e).getErrorCode() == -4039) {
+                    ++throttleNum;
+                    ++unitBlockTime;
+                } else {
+                    e.printStackTrace();
+                    Assert.assertNull(e);
+                }
+            } else {
+                e.printStackTrace();
+                Assert.assertNull(e);
+            }
+        }
     }
 
     private List<Mutation> generateBatchOpertaionIoU() {
@@ -307,7 +361,7 @@ public class ObTableHotkeyThrottleUtil extends Thread {
     private void batchOperationTest() throws Exception {
         try {
             ++unitOperationTime;
-            BatchOperationResult batchResult = client.batchOperation("test_throttle")
+            BatchOperationResult batchResult = client.batchOperation(this.tableName)
                 .addOperation(generateBatchOpertaionIoU()).execute();
             ++passNum;
         } catch (Exception e) {

@@ -68,6 +68,7 @@ public class ObTableClientPartitionKeyTest {
             TEST_TABLE = "testKey";
         } else {
             TEST_TABLE = "testPartition";
+            obTableClient.addRowKeyElement("testPartition", new String[] { "K", "Q", "T" });
         }
 
         this.obTableClient = obTableClient;
