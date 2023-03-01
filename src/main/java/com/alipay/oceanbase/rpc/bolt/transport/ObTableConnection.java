@@ -187,7 +187,7 @@ public class ObTableConnection {
         }
     }
 
-    private void reconnect(String msg) throws Exception {
+    private synchronized void reconnect(String msg) throws Exception {
         if (connect()) {
             LOGGER.warn("reconnect success. reconnect reason: [{}]", msg);
         } else {
