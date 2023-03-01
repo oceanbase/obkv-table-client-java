@@ -248,12 +248,14 @@ public class ObTableConnection {
         }
 
         if (!connection.getChannel().isActive()) {
-            System.out.println("my debug: connection's channel is inactive, need do create connection");
+            System.out
+                .println("my debug: connection's channel is inactive, need do create connection");
             return false;
         }
 
         if (credential == null) {
-            System.out.println("my debug: connection's credential is null, need do create connection");
+            System.out
+                .println("my debug: connection's credential is null, need do create connection");
             return false;
         }
         return true;

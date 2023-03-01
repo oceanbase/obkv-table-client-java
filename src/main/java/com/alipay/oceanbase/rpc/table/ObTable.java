@@ -492,7 +492,8 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     public ObTableConnection getConnection() throws Exception {
         ObTableConnection conn = connectionPool.getConnection();
         int count = 0;
-        while (conn.getConnection() != null && (conn.getCredential() == null || conn.getCredential().length() == 0)
+        while (conn.getConnection() != null
+               && (conn.getCredential() == null || conn.getCredential().length() == 0)
                && count < obTableConnectionPoolSize) {
             conn = connectionPool.getConnection();
             count++;

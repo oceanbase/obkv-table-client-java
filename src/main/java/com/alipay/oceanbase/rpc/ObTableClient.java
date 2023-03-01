@@ -218,6 +218,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     throw new ObTableCloseException(sb.toString(), throwException);
                 }
             }
+            if (odpTable != null) {
+                odpTable.close();
+            }
         } finally {
             BOOT.info("ObTableClient is closed");
             statusLock.unlock();
