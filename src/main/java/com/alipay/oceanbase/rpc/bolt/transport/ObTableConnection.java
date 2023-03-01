@@ -239,12 +239,21 @@ public class ObTableConnection {
 
     private boolean checkAvailable() {
         if (connection == null) {
+            System.out.println("my debug: connection is null, need do create connection");
             return false;
         }
-        if (connection.getChannel() == null || !connection.getChannel().isActive()) {
+        if (connection.getChannel() == null) {
+            System.out.println("my debug: connection's channel is null, need do create connection");
             return false;
         }
+
+        if (!connection.getChannel().isActive()) {
+            System.out.println("my debug: connection's channel is inactive, need do create connection");
+            return false;
+        }
+
         if (credential == null) {
+            System.out.println("my debug: connection's credential is null, need do create connection");
             return false;
         }
         return true;
