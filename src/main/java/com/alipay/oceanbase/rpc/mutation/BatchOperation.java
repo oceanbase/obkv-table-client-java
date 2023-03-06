@@ -34,6 +34,7 @@ public class BatchOperation {
     private Table        client;
     boolean              withResult;
     private List<Object> operations;
+    boolean              isAtomic   = false;
 
     /*
      * default constructor
@@ -92,6 +93,11 @@ public class BatchOperation {
      */
     public BatchOperation addOperation(List<Mutation> mutations) {
         this.operations.addAll(mutations);
+        return this;
+    }
+
+    public BatchOperation setIsAtomic(boolean isAtomic) {
+        this.isAtomic = isAtomic;
         return this;
     }
 
@@ -159,7 +165,7 @@ public class BatchOperation {
                 throw new ObTableException("unknown operation " + operation);
             }
         }
-
+        batchOps.setAtomicOperation(isAtomic);
         return new BatchOperationResult(batchOps.executeWithResult());
     }
 }
