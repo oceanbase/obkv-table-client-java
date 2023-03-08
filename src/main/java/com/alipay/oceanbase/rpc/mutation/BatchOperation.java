@@ -34,7 +34,7 @@ public class BatchOperation {
     private Table        client;
     boolean              withResult;
     private List<Object> operations;
-    boolean              isAtomic   = false;
+    boolean              isAtomic = false;
 
     /*
      * default constructor

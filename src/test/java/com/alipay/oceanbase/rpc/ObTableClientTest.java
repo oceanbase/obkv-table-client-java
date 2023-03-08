@@ -19,6 +19,8 @@ package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.bolt.ObTableClientTestBase;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.exception.ObTablePartitionConsistentException;
+import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.filter.*;
 import com.alipay.oceanbase.rpc.location.model.ObServerAddr;
 import com.alipay.oceanbase.rpc.location.model.ServerRoster;
@@ -747,7 +749,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
     @Test
     public void testQueryAndAppend() throws Exception {
 
-        /* 
+        /*
          * CREATE TABLE `test_query_filter_mutate` (`c1` bigint NOT NULL, `c2` varbinary(1024) DEFAULT NULL,
          *                                          `c3` varchar(20) DEFAULT NULL,`c4` bigint DEFAULT NULL, PRIMARY KEY(`c1`))
          *                                          partition by range columns (`c1`) ( PARTITION p0 VALUES LESS THAN (300),
@@ -811,7 +813,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
     @Test
     public void testQueryAndIncrement() throws Exception {
 
-        /* 
+        /*
          * CREATE TABLE `test_query_filter_mutate` (`c1` bigint NOT NULL, `c2` varbinary(1024) DEFAULT NULL,
          *                                          `c3` varchar(20) DEFAULT NULL,`c4` bigint DEFAULT NULL, PRIMARY KEY(`c1`))
          *                                          partition by range columns (`c1`) ( PARTITION p0 VALUES LESS THAN (300),
@@ -881,7 +883,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
     @Test
     public void testQueryAndDelete() throws Exception {
 
-        /* 
+        /*
          * CREATE TABLE `test_query_filter_mutate` (`c1` bigint NOT NULL, `c2` varbinary(1024) DEFAULT NULL,
          *                                          `c3` varchar(20) DEFAULT NULL,`c4` bigint DEFAULT NULL, PRIMARY KEY(`c1`))
          *                                          partition by range columns (`c1`) ( PARTITION p0 VALUES LESS THAN (300),
@@ -952,7 +954,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
     @Test
     public void testQueryAndUpdate() throws Exception {
 
-        /* 
+        /*
          * CREATE TABLE `test_query_filter_mutate` (`c1` bigint NOT NULL, `c2` varbinary(1024) DEFAULT NULL,
          *                                          `c3` varchar(20) DEFAULT NULL,`c4` bigint DEFAULT NULL, PRIMARY KEY(`c1`))
          *                                          partition by range columns (`c1`) ( PARTITION p0 VALUES LESS THAN (300),
@@ -1025,8 +1027,13 @@ public class ObTableClientTest extends ObTableClientTestBase {
                     Assert.assertTrue(false);
                 } catch (Exception e) {
                     Assert.assertTrue(e instanceof ObTableException);
-                    Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
-                        ((ObTableException) e).getErrorCode());
+                    if (client instanceof ObTableClient && ((ObTableClient)client).isOdpMode()) {
+                        Assert.assertEquals(ResultCodes.OB_ERR_UNEXPECTED.errorCode,
+                                ((ObTableUnexpectedException) e).getErrorCode());
+                    } else {
+                        Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
+                                ((ObTableException) e).getErrorCode());
+                    }
                 }
 
             }
@@ -2117,8 +2124,13 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 } catch (Exception e) {
                     e.printStackTrace();
                     Assert.assertTrue(e instanceof ObTableException);
-                    Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
-                        ((ObTableException) e).getErrorCode());
+                    if (client instanceof ObTableClient && ((ObTableClient)client).isOdpMode()) {
+                        Assert.assertEquals(ResultCodes.OB_ERR_UNEXPECTED.errorCode,
+                                ((ObTableUnexpectedException) e).getErrorCode());
+                    } else {
+                        Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
+                                ((ObTableException) e).getErrorCode());
+                    }
                 }
             } else {
                 MutationResult updateResult = client.update("test_mutation_with_range")
@@ -2161,6 +2173,54 @@ public class ObTableClientTest extends ObTableClientTestBase {
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testAtomicBatchMutation() throws Exception {
+        try {
+            // atomic batch operation can not span partitions
+            BatchOperation batchOperation = client.batchOperation("test_mutation");
+            Insert insert_0 = insert().setRowKey(row(colVal("c1", 100L), colVal("c2", "row_0")))
+                .addMutateColVal(colVal("c3", new byte[] { 1 }))
+                .addMutateColVal(colVal("c4", 100L));
+            Insert insert_1 = insert().setRowKey(row(colVal("c1", 400L), colVal("c2", "row_1")))
+                .addMutateColVal(colVal("c3", new byte[] { 1 }))
+                .addMutateColVal(colVal("c4", 100L));
+            BatchOperationResult result = batchOperation.addOperation(insert_0, insert_1)
+                .setIsAtomic(true).execute();
+            assertTrue(false);
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (client instanceof ObTableClient && ((ObTableClient) client).isOdpMode()) {
+                Assert.assertTrue(e instanceof ObTableUnexpectedException);
+            }
+            Assert.assertTrue(e instanceof ObTablePartitionConsistentException);
+        } finally {
+            client.delete("test_mutation").setRowKey(colVal("c1", 100L), colVal("c2", "row_0"))
+                .execute();
+            client.delete("test_mutation").setRowKey(colVal("c1", 400L), colVal("c2", "row_1"))
+                .execute();
+        }
+
+        try {
+            BatchOperation batchOperation = client.batchOperation("test_mutation");
+            Insert insert_0 = insert().setRowKey(row(colVal("c1", 100L), colVal("c2", "row_0")))
+                .addMutateColVal(colVal("c3", new byte[] { 1 }))
+                .addMutateColVal(colVal("c4", 100L));
+            Insert insert_1 = insert().setRowKey(row(colVal("c1", 200L), colVal("c2", "row_1")))
+                .addMutateColVal(colVal("c3", new byte[] { 1 }))
+                .addMutateColVal(colVal("c4", 100L));
+            BatchOperationResult result = batchOperation.addOperation(insert_0, insert_1)
+                .setIsAtomic(true).execute();
+        } catch (Exception e) {
+            e.printStackTrace();
+            assertTrue(false);
+        } finally {
+            client.delete("test_mutation").setRowKey(colVal("c1", 100L), colVal("c2", "row_0"))
+                .execute();
+            client.delete("test_mutation").setRowKey(colVal("c1", 200L), colVal("c2", "row_1"))
+                .execute();
         }
     }
 }

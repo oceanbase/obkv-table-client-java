@@ -35,4 +35,8 @@ public class ObTableClientTestUtil {
         obTableClient.setSysPassword(PROXY_SYS_USER_PASSWORD);
         return obTableClient;
     }
+
+    static {
+        System.setProperty("logging.path", System.getProperty("user.dir") + "/logs");
+    }
 }

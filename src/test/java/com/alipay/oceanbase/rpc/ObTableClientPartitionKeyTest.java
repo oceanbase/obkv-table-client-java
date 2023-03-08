@@ -234,8 +234,14 @@ public class ObTableClientPartitionKeyTest {
                     Assert.fail();
                 } catch (Exception e) {
                     Assert.assertTrue(e instanceof ObTableUnexpectedException);
-                    Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
-                        ((ObTableUnexpectedException) e).getErrorCode());
+
+                    if (obTableClient.isOdpMode()) {
+                        Assert.assertEquals(ResultCodes.OB_ERR_UNEXPECTED.errorCode,
+                                ((ObTableUnexpectedException) e).getErrorCode());
+                    } else {
+                        Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
+                                ((ObTableUnexpectedException) e).getErrorCode());
+                    }
                 }
 
                 tableQuery = obTableClient.query(TEST_TABLE);
