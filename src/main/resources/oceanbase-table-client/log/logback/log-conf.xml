@@ -5,7 +5,7 @@
         <file>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client.log</file>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
                 <pattern>
-                    %d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [%X{traceId}] %logger{50} - [%C{0}#%L] - %msg%n
+                    %d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] - [%C{0}#%L] - %msg%n
                 </pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -22,7 +22,7 @@
         <file>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client-boot.log</file>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <Pattern>
-                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [%X{traceId}] %logger{50} - [%C{0}#%L] - %msg%n</pattern>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{50} - [%C{0}#%L] - %msg%n</pattern>
             </Pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -39,7 +39,7 @@
         <file>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client-monitor.log</file>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <Pattern>
-                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [%X{traceId}] %logger{50} - [%C{0}#%L] - %msg%n</pattern>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{50} - [%C{0}#%L] - %msg%n</pattern>
             </Pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -56,7 +56,7 @@
         <file>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client-runtime.log</file>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <Pattern>
-                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [%X{traceId}] %logger{50} - [%C{0}#%L] - %msg%n</pattern>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{50} - [%C{0}#%L] - %msg%n</pattern>
             </Pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">

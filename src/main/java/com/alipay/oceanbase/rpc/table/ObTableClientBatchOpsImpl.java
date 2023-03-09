@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.alipay.oceanbase.rpc.ObTableClient.buildParamsString;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
+import static com.alipay.oceanbase.rpc.util.TraceUtil.formatTraceMessage;
 
 public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
 
@@ -392,7 +393,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         List<ObTableOperationResult> subObTableOperationResults = subObTableBatchOperationResult
             .getResults();
         String endpoint = subObTable.getIp() + ":" + subObTable.getPort();
-        logMessage0(tableName, "BATCH-partitionExecute-", endpoint, subOperations, partId,
+        logMessage0(formatTraceMessage(subRequest), tableName, "BATCH-partitionExecute-", endpoint, subOperations, partId,
             subObTableOperationResults.size(), endExecute - startExecute);
 
         if (subObTableOperationResults.size() < subOperations.getTableOperations().size()) {
@@ -431,7 +432,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         }
     }
 
-    private void logMessage0(String tableName, String methodName, String endpoint, ObTableBatchOperation subOperations,
+    private void logMessage0(String traceId, String tableName, String methodName, String endpoint, ObTableBatchOperation subOperations,
                               long partId, int resultSize, long executeTime) {
         List<ObTableOperation> ops = subOperations.getTableOperations();
         for (ObTableOperation op : ops) {
@@ -450,11 +451,11 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                     }
                 }
             }
-            MONITOR.info(logMessage(tableName, methodName+type+"-"+partId, endpoint, rowKeys, resultSize, executeTime));
+            MONITOR.info(logMessage(traceId, tableName, methodName+type+"-"+partId, endpoint, rowKeys, resultSize, executeTime));
         }
     }
 
-    private String logMessage(String tableName, String methodName, String endpoint,
+    private String logMessage(String traceId, String tableName, String methodName, String endpoint,
                               List<Object> rowKeys, int resultSize, long executeTime) {
         if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
             endpoint = endpoint.replaceAll(",", "#");
@@ -463,7 +464,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         String argsValue = buildParamsString(rowKeys);
 
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(",").append(obTableClient.getDatabase()).append(",").append(tableName)
+        stringBuilder.append(traceId).append(",").append(obTableClient.getDatabase()).append(",").append(tableName)
             .append(",").append(methodName).append(",").append(endpoint).append(",")
             .append(argsValue).append(",").append(",").append(resultSize).append(",").append(0)
             .append(",").append(executeTime).append(",").append(executeTime);
@@ -556,20 +557,20 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             batchOperationResult.addResult(obTableOperationResult);
         }
 
-        MONITOR.info(logMessage(tableName, "BATCH", "", obTableOperationResults.length,
+        MONITOR.info(logMessage(formatTraceMessage(batchOperationResult), tableName , "BATCH", "", obTableOperationResults.length,
             getTableTime - start, System.currentTimeMillis() - getTableTime));
 
         return batchOperationResult;
     }
 
-    private String logMessage(String tableName, String methodName, String endpoint, int resultSize,
+    private String logMessage(String traceId, String tableName, String methodName, String endpoint, int resultSize,
                               long routeTableTime, long executeTime) {
         if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
             endpoint = endpoint.replaceAll(",", "#");
         }
 
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(",").append(obTableClient.getDatabase()).append(tableName).append(",")
+        stringBuilder.append(traceId).append(",").append(obTableClient.getDatabase()).append(tableName).append(",")
             .append(methodName).append(",").append(endpoint).append(",").append(",").append(",")
             .append(resultSize).append(",").append(routeTableTime).append(",").append(executeTime)
             .append(",").append(routeTableTime + executeTime);
