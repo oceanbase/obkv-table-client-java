@@ -28,8 +28,10 @@ import com.alipay.oceanbase.rpc.util.TraceUtil;
 import com.alipay.remoting.Connection;
 import org.slf4j.Logger;
 
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.MONITOR;
+import static com.alipay.oceanbase.rpc.util.TraceUtil.formatTraceMessage;
 
 public class ObTableConnection {
 
@@ -81,6 +83,7 @@ public class ObTableConnection {
         if (checkAvailable()) { // double check status available
             return false;
         }
+        final long start = System.currentTimeMillis();
         Exception cause = null;
         int tries = 0;
         int maxTryTimes = obTable.getObTableConnectTryTimes();
@@ -95,6 +98,8 @@ public class ObTableConnection {
                     "connect failed at " + tries + " try " + TraceUtil.formatIpPort(obTable), e);
             }
         }
+        String endpoint = obTable.getIp() + ":" + obTable.getPort();
+        MONITOR.info(logMessage("", "CONNECT", endpoint, System.currentTimeMillis() - start));
 
         if (tries >= maxTryTimes) {
             throw new ObTableServerConnectException("connect failed after max " + maxTryTimes
@@ -113,6 +118,7 @@ public class ObTableConnection {
     }
 
     private synchronized void login() throws Exception {
+        final long start = System.currentTimeMillis();
         ObTableLoginRequest request = new ObTableLoginRequest();
         request.setTenantName(obTable.getTenantName());
         request.setUserName(obTable.getUserName());
@@ -146,6 +152,8 @@ public class ObTableConnection {
             }
         }
 
+        String endpoint = obTable.getIp() + ":" + obTable.getPort();
+        MONITOR.info(logMessage(formatTraceMessage(request), "LOGIN", endpoint, System.currentTimeMillis() - start));
         if (tries >= maxTryTimes) {
             throw new ObTableServerConnectException("login failed after max " + maxTryTimes
                                                     + " tries " + TraceUtil.formatIpPort(obTable),
@@ -187,7 +195,7 @@ public class ObTableConnection {
         }
     }
 
-    private void reconnect(String msg) throws Exception {
+    private synchronized void reconnect(String msg) throws Exception {
         if (connect()) {
             LOGGER.warn("reconnect success. reconnect reason: [{}]", msg);
         } else {
@@ -241,9 +249,14 @@ public class ObTableConnection {
         if (connection == null) {
             return false;
         }
-        if (connection.getChannel() == null || !connection.getChannel().isActive()) {
+        if (connection.getChannel() == null) {
             return false;
         }
+
+        if (!connection.getChannel().isActive()) {
+            return false;
+        }
+
         if (credential == null) {
             return false;
         }
@@ -269,6 +282,16 @@ public class ObTableConnection {
      */
     public long getNextSequence() {
         return sequence.incrementAndGet();
+    }
+
+    private String logMessage(String traceId, String methodName, String endpoint, long executeTime) {
+        if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
+            endpoint = endpoint.replaceAll(",", "#");
+        }
+
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(traceId).append(",").append(methodName).append(",").append(endpoint).append(",").append(executeTime);
+        return stringBuilder.toString();
     }
 
 }

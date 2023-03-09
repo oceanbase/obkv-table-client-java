@@ -340,8 +340,9 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     public ObPayload execute(final ObPayload request) throws RemotingException,
                                                      InterruptedException {
 
-        ObTableConnection connection = getConnection();
+        ObTableConnection connection = null;
         try {
+            connection = getConnection();
             // check connection is available, if not available, reconnect it
             connection.checkStatus();
         } catch (ConnectException ex) {
@@ -488,8 +489,19 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     /*
      * Get connection.
      */
-    public ObTableConnection getConnection() {
-        return connectionPool.getConnection();
+    public ObTableConnection getConnection() throws Exception {
+        ObTableConnection conn = connectionPool.getConnection();
+        int count = 0;
+        while (conn.getConnection() != null
+               && (conn.getCredential() == null || conn.getCredential().length() == 0)
+               && count < obTableConnectionPoolSize) {
+            conn = connectionPool.getConnection();
+            count++;
+        }
+        if (count == obTableConnectionPoolSize) {
+            throw new ObTableException("all connection's credential is null");
+        }
+        return conn;
     }
 
     public static class Builder {
