@@ -153,7 +153,8 @@ public class ObTableConnection {
         }
 
         String endpoint = obTable.getIp() + ":" + obTable.getPort();
-        MONITOR.info(logMessage(formatTraceMessage(request), "LOGIN", endpoint, System.currentTimeMillis() - start));
+        MONITOR.info(logMessage(formatTraceMessage(request), "LOGIN", endpoint,
+            System.currentTimeMillis() - start));
         if (tries >= maxTryTimes) {
             throw new ObTableServerConnectException("login failed after max " + maxTryTimes
                                                     + " tries " + TraceUtil.formatIpPort(obTable),
@@ -290,7 +291,8 @@ public class ObTableConnection {
         }
 
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(traceId).append(",").append(methodName).append(",").append(endpoint).append(",").append(executeTime);
+        stringBuilder.append(traceId).append(",").append(methodName).append(",").append(endpoint)
+            .append(",").append(executeTime);
         return stringBuilder.toString();
     }
 

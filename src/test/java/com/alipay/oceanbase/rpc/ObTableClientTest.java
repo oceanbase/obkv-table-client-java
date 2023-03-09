@@ -1927,7 +1927,8 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 .select("c3", "c4");
 
             BatchOperationResult batchResult = client.batchOperation("test_mutation")
-                .addOperation(insert_0, insert_1, update_0).addOperation(query_0).setIsAtomic(false).execute();
+                .addOperation(insert_0, insert_1, update_0).addOperation(query_0)
+                .setIsAtomic(false).execute();
             Assert.assertEquals(1, batchResult.getWrongCount());
             Assert.assertEquals(3, batchResult.getCorrectCount());
             Assert.assertEquals(0, batchResult.getWrongIdx()[0]);
