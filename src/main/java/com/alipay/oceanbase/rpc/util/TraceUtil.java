@@ -63,4 +63,8 @@ public class TraceUtil {
     public static String formatIpPort(final ObTable obTable) {
         return String.format("server [%s:%d]", obTable.getIp(), obTable.getPort());
     }
+
+    public static String formatTraceMessage(final ObPayload payload) {
+        return String.format("[Y%X-%016X]", payload.getUniqueId(), payload.getSequence());
+    }
 }

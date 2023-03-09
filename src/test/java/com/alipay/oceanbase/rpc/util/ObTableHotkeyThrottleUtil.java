@@ -237,7 +237,7 @@ public class ObTableHotkeyThrottleUtil extends Thread {
         try {
             ++unitOperationTime;
             MutationResult insertResult = client.insert(this.tableName).setRowKey(rowkey)
-                    .addMutateColVal(columnValues).execute();
+                .addMutateColVal(columnValues).execute();
             ++passNum;
         } catch (Exception e) {
             if (e instanceof ObTableUnexpectedException) {
@@ -282,7 +282,7 @@ public class ObTableHotkeyThrottleUtil extends Thread {
         try {
             ++unitOperationTime;
             MutationResult insertOrUpdateResult = client.insertOrUpdate(this.tableName)
-                    .setRowKey(rowkey).addMutateColVal(columnValues).execute();
+                .setRowKey(rowkey).addMutateColVal(columnValues).execute();
             ++passNum;
         } catch (Exception e) {
             if (e instanceof ObTableUnexpectedException) {
@@ -328,7 +328,7 @@ public class ObTableHotkeyThrottleUtil extends Thread {
         try {
             ++unitOperationTime;
             MutationResult updateResult = client.update(this.tableName).setRowKey(rowkey)
-                    .setFilter(null).addMutateColVal(columnValues).execute();
+                .setFilter(null).addMutateColVal(columnValues).execute();
             ++passNum;
         } catch (Exception e) {
             if (e instanceof ObTableUnexpectedException) {
