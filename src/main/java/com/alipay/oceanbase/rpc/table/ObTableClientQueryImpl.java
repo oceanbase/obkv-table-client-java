@@ -34,7 +34,7 @@ import java.util.Map;
 
 import static com.alipay.oceanbase.rpc.ObTableClient.buildParamsString;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.MONITOR;
-import static com.alipay.oceanbase.rpc.location.model.TableEntry.HBASE_ROW_KEY_ELEMENT;
+import static com.alipay.oceanbase.rpc.util.TraceUtil.formatTraceMessage;
 
 public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
@@ -175,14 +175,14 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         obTableClientQueryStreamResult.setReadConsistency(obTableClient.getReadConsistency());
         obTableClientQueryStreamResult.init();
 
-        MONITOR.info(logMessage(tableName, "QUERY",
+        MONITOR.info(logMessage(formatTraceMessage(obTableClientQueryStreamResult), tableName, "QUERY",
                 endpoint, params, obTableClientQueryStreamResult, getTableTime - startTime, System.currentTimeMillis() - getTableTime));
 
 
         return obTableClientQueryStreamResult;
     }
 
-    private String logMessage(String tableName, String methodName, String endpoint,
+    private String logMessage(String traceId, String tableName, String methodName, String endpoint,
                               List<Object> params, ObTableClientQueryStreamResult result,
                               long routeTableTime, long executeTime) {
         if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
@@ -194,7 +194,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         String res = String.valueOf(result.getCacheRows().size());
 
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(",").append(obTableClient.getDatabase()).append(",").append(tableName)
+        stringBuilder.append(traceId).append(",").append(obTableClient.getDatabase()).append(",").append(tableName)
             .append(",").append(methodName).append(",").append(endpoint).append(",")
             .append(argsValue).append(",").append(res).append(",").append(routeTableTime)
             .append(",").append(executeTime);

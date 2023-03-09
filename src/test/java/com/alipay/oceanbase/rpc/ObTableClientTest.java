@@ -1927,7 +1927,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 .select("c3", "c4");
 
             BatchOperationResult batchResult = client.batchOperation("test_mutation")
-                .addOperation(insert_0, insert_1, update_0).addOperation(query_0).execute();
+                .addOperation(insert_0, insert_1, update_0).addOperation(query_0).setIsAtomic(false).execute();
             Assert.assertEquals(1, batchResult.getWrongCount());
             Assert.assertEquals(3, batchResult.getCorrectCount());
             Assert.assertEquals(0, batchResult.getWrongIdx()[0]);
@@ -2194,8 +2194,9 @@ public class ObTableClientTest extends ObTableClientTestBase {
             e.printStackTrace();
             if (client instanceof ObTableClient && ((ObTableClient) client).isOdpMode()) {
                 Assert.assertTrue(e instanceof ObTableUnexpectedException);
+            } else {
+                Assert.assertTrue(e instanceof ObTablePartitionConsistentException);
             }
-            Assert.assertTrue(e instanceof ObTablePartitionConsistentException);
         } finally {
             client.delete("test_mutation").setRowKey(colVal("c1", 100L), colVal("c2", "row_0"))
                 .execute();
