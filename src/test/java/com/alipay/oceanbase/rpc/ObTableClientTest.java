@@ -1027,12 +1027,12 @@ public class ObTableClientTest extends ObTableClientTestBase {
                     Assert.assertTrue(false);
                 } catch (Exception e) {
                     Assert.assertTrue(e instanceof ObTableException);
-                    if (client instanceof ObTableClient && ((ObTableClient)client).isOdpMode()) {
+                    if (client instanceof ObTableClient && ((ObTableClient) client).isOdpMode()) {
                         Assert.assertEquals(ResultCodes.OB_ERR_UNEXPECTED.errorCode,
-                                ((ObTableUnexpectedException) e).getErrorCode());
+                            ((ObTableUnexpectedException) e).getErrorCode());
                     } else {
                         Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
-                                ((ObTableException) e).getErrorCode());
+                            ((ObTableException) e).getErrorCode());
                     }
                 }
 
@@ -2124,12 +2124,12 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 } catch (Exception e) {
                     e.printStackTrace();
                     Assert.assertTrue(e instanceof ObTableException);
-                    if (client instanceof ObTableClient && ((ObTableClient)client).isOdpMode()) {
+                    if (client instanceof ObTableClient && ((ObTableClient) client).isOdpMode()) {
                         Assert.assertEquals(ResultCodes.OB_ERR_UNEXPECTED.errorCode,
-                                ((ObTableUnexpectedException) e).getErrorCode());
+                            ((ObTableUnexpectedException) e).getErrorCode());
                     } else {
                         Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
-                                ((ObTableException) e).getErrorCode());
+                            ((ObTableException) e).getErrorCode());
                     }
                 }
             } else {
