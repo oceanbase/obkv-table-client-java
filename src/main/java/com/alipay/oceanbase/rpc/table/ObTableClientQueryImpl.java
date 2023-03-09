@@ -194,10 +194,10 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         String res = String.valueOf(result.getCacheRows().size());
 
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(traceId).append(",").append(obTableClient.getDatabase()).append(",").append(tableName)
-            .append(",").append(methodName).append(",").append(endpoint).append(",")
-            .append(argsValue).append(",").append(res).append(",").append(routeTableTime)
-            .append(",").append(executeTime);
+        stringBuilder.append(traceId).append(",").append(obTableClient.getDatabase()).append(",")
+            .append(tableName).append(",").append(methodName).append(",").append(endpoint)
+            .append(",").append(argsValue).append(",").append(res).append(",")
+            .append(routeTableTime).append(",").append(executeTime);
         return stringBuilder.toString();
     }
 

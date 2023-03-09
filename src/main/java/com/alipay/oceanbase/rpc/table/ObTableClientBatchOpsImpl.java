@@ -393,8 +393,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         List<ObTableOperationResult> subObTableOperationResults = subObTableBatchOperationResult
             .getResults();
         String endpoint = subObTable.getIp() + ":" + subObTable.getPort();
-        logMessage0(formatTraceMessage(subRequest), tableName, "BATCH-partitionExecute-", endpoint, subOperations, partId,
-            subObTableOperationResults.size(), endExecute - startExecute);
+        logMessage0(formatTraceMessage(subRequest), tableName, "BATCH-partitionExecute-", endpoint,
+            subOperations, partId, subObTableOperationResults.size(), endExecute - startExecute);
 
         if (subObTableOperationResults.size() < subOperations.getTableOperations().size()) {
             // only one result when it across failed
@@ -464,10 +464,10 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         String argsValue = buildParamsString(rowKeys);
 
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(traceId).append(",").append(obTableClient.getDatabase()).append(",").append(tableName)
-            .append(",").append(methodName).append(",").append(endpoint).append(",")
-            .append(argsValue).append(",").append(",").append(resultSize).append(",").append(0)
-            .append(",").append(executeTime).append(",").append(executeTime);
+        stringBuilder.append(traceId).append(",").append(obTableClient.getDatabase()).append(",")
+            .append(tableName).append(",").append(methodName).append(",").append(endpoint)
+            .append(",").append(argsValue).append(",").append(",").append(resultSize).append(",")
+            .append(0).append(",").append(executeTime).append(",").append(executeTime);
         return stringBuilder.toString();
     }
 
@@ -557,23 +557,25 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             batchOperationResult.addResult(obTableOperationResult);
         }
 
-        MONITOR.info(logMessage(formatTraceMessage(batchOperationResult), tableName , "BATCH", "", obTableOperationResults.length,
-            getTableTime - start, System.currentTimeMillis() - getTableTime));
+        MONITOR.info(logMessage(formatTraceMessage(batchOperationResult), tableName, "BATCH", "",
+            obTableOperationResults.length, getTableTime - start, System.currentTimeMillis()
+                                                                  - getTableTime));
 
         return batchOperationResult;
     }
 
-    private String logMessage(String traceId, String tableName, String methodName, String endpoint, int resultSize,
-                              long routeTableTime, long executeTime) {
+    private String logMessage(String traceId, String tableName, String methodName, String endpoint,
+                              int resultSize, long routeTableTime, long executeTime) {
         if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
             endpoint = endpoint.replaceAll(",", "#");
         }
 
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(traceId).append(",").append(obTableClient.getDatabase()).append(tableName).append(",")
-            .append(methodName).append(",").append(endpoint).append(",").append(",").append(",")
-            .append(resultSize).append(",").append(routeTableTime).append(",").append(executeTime)
-            .append(",").append(routeTableTime + executeTime);
+        stringBuilder.append(traceId).append(",").append(obTableClient.getDatabase())
+            .append(tableName).append(",").append(methodName).append(",").append(endpoint)
+            .append(",").append(",").append(",").append(resultSize).append(",")
+            .append(routeTableTime).append(",").append(executeTime).append(",")
+            .append(routeTableTime + executeTime);
         return stringBuilder.toString();
     }
 
