@@ -21,10 +21,7 @@ import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.login.ObTableLoginRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.login.ObTableLoginResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
-import com.alipay.oceanbase.rpc.util.ObBytesString;
-import com.alipay.oceanbase.rpc.util.Security;
-import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
-import com.alipay.oceanbase.rpc.util.TraceUtil;
+import com.alipay.oceanbase.rpc.util.*;
 import com.alipay.remoting.Connection;
 import org.slf4j.Logger;
 
@@ -99,9 +96,11 @@ public class ObTableConnection {
             }
         }
         String endpoint = obTable.getIp() + ":" + obTable.getPort();
-        MONITOR.info(logMessage("", "CONNECT", endpoint, System.currentTimeMillis() - start));
+        MONITOR.info(logMessage(null, "CONNECT", endpoint, System.currentTimeMillis() - start));
 
         if (tries >= maxTryTimes) {
+            LOGGER.warn("connect failed after max " + maxTryTimes + " tries "
+                        + TraceUtil.formatIpPort(obTable));
             throw new ObTableServerConnectException("connect failed after max " + maxTryTimes
                                                     + " tries " + TraceUtil.formatIpPort(obTable),
                 cause);
@@ -156,6 +155,8 @@ public class ObTableConnection {
         MONITOR.info(logMessage(formatTraceMessage(request), "LOGIN", endpoint,
             System.currentTimeMillis() - start));
         if (tries >= maxTryTimes) {
+            LOGGER.warn("login failed after max " + maxTryTimes + " tries "
+                        + TraceUtil.formatIpPort(obTable));
             throw new ObTableServerConnectException("login failed after max " + maxTryTimes
                                                     + " tries " + TraceUtil.formatIpPort(obTable),
                 cause);
@@ -291,8 +292,11 @@ public class ObTableConnection {
         }
 
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(traceId).append(",").append(methodName).append(",").append(endpoint)
-            .append(",").append(executeTime);
+        if (traceId != null) {
+            stringBuilder.append(traceId).append(" - ");
+        }
+        stringBuilder.append(methodName).append(",").append(endpoint).append(",")
+            .append(executeTime);
         return stringBuilder.toString();
     }
 
