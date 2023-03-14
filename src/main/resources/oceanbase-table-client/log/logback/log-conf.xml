@@ -8,9 +8,9 @@
                     %d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] - [%C{0}#%L] - %msg%n
                 </pattern>
         </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <!-- rollover daily -->
-            <fileNamePattern>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client.%d{yyyy-MM-dd}.log </fileNamePattern>
+            <fileNamePattern>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client.%d{yyyy-MM-dd}.%i.log </fileNamePattern>
             <cleanHistoryOnStart>false</cleanHistoryOnStart>
             <maxHistory>30</maxHistory>
             <maxFileSize>100MB</maxFileSize>
@@ -25,9 +25,9 @@
                 <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{50} - [%C{0}#%L] - %msg%n</pattern>
             </Pattern>
         </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <!-- rollover daily -->
-            <fileNamePattern>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client-boot.%d{yyyy-MM-dd}.log </fileNamePattern>
+            <fileNamePattern>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client-boot.%d{yyyy-MM-dd}.%i.log </fileNamePattern>
             <cleanHistoryOnStart>false</cleanHistoryOnStart>
             <maxHistory>30</maxHistory>
             <maxFileSize>100MB</maxFileSize>
@@ -39,16 +39,26 @@
         <file>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client-monitor.log</file>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <Pattern>
-                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{50} - [%C{0}#%L] - %msg%n</pattern>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{50} - %msg%n</pattern>
             </Pattern>
         </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <!-- rollover daily -->
-            <fileNamePattern>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client-monitor.%d{yyyy-MM-dd}.log </fileNamePattern>
+            <fileNamePattern>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client-monitor.%d{yyyy-MM-dd}.%i.log </fileNamePattern>
             <cleanHistoryOnStart>false</cleanHistoryOnStart>
             <maxHistory>30</maxHistory>
-            <maxFileSize>100MB</maxFileSize>
+            <maxFileSize>500MB</maxFileSize>
+            <totalSizeCap>20GB</totalSizeCap>
         </rollingPolicy>
+    </appender>
+
+    <appender name="OCEANBASE-TABLE-CLIENT-MONITOR-APPENDER-ASYNC"
+              class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>false</neverBlock>
+        <queueSize>10240</queueSize>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="OCEANBASE-TABLE-CLIENT-MONITOR-APPENDER"/>
     </appender>
 
     <appender name="OCEANBASE-TABLE-CLIENT-RUNTIME-APPENDER"
@@ -59,9 +69,9 @@
                 <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{50} - [%C{0}#%L] - %msg%n</pattern>
             </Pattern>
         </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <!-- rollover daily -->
-            <fileNamePattern>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client-runtime.%d{yyyy-MM-dd}.log </fileNamePattern>
+            <fileNamePattern>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client-runtime.%d{yyyy-MM-dd}.%i.log </fileNamePattern>
             <cleanHistoryOnStart>false</cleanHistoryOnStart>
             <maxHistory>30</maxHistory>
             <maxFileSize>100MB</maxFileSize>
@@ -81,7 +91,7 @@
 
     <logger name="OBKV-MONITOR" additivity="false">
         <level value="${logging.level:-INFO}"/>
-        <appender-ref ref="OCEANBASE-TABLE-CLIENT-MONITOR-APPENDER"/>
+        <appender-ref ref="OCEANBASE-TABLE-CLIENT-MONITOR-APPENDER-ASYNC"/>
     </logger>
 
     <logger name="OBKV-RUNTIME" additivity="false">

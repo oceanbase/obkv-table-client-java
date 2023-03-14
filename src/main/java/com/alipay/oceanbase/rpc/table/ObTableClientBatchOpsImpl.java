@@ -27,6 +27,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
+import com.alipay.oceanbase.rpc.util.MonitorUtil;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
 import org.slf4j.Logger;
 
@@ -34,7 +35,6 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static com.alipay.oceanbase.rpc.ObTableClient.buildParamsString;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
 import static com.alipay.oceanbase.rpc.util.TraceUtil.formatTraceMessage;
 
@@ -392,9 +392,6 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
 
         List<ObTableOperationResult> subObTableOperationResults = subObTableBatchOperationResult
             .getResults();
-        String endpoint = subObTable.getIp() + ":" + subObTable.getPort();
-        logMessage0(formatTraceMessage(subRequest), tableName, "BATCH-partitionExecute-", endpoint,
-            subOperations, partId, subObTableOperationResults.size(), endExecute - startExecute);
 
         if (subObTableOperationResults.size() < subOperations.getTableOperations().size()) {
             // only one result when it across failed
@@ -430,48 +427,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 results[subOperationWithIndexList.get(i).getLeft()] = subObTableOperationResult;
             }
         }
+        String endpoint = subObTable.getIp() + ":" + subObTable.getPort();
+        MonitorUtil.info(subRequest, subObTable.getDatabase(), tableName,
+            "BATCH-partitionExecute-", endpoint, subOperations, partId,
+            subObTableOperationResults.size(), endExecute - startExecute,
+            obTableClient.getslowQueryMonitorThreshold());
     }
-
-    private void logMessage0(String traceId, String tableName, String methodName, String endpoint, ObTableBatchOperation subOperations,
-                              long partId, int resultSize, long executeTime) {
-        List<ObTableOperation> ops = subOperations.getTableOperations();
-        for (ObTableOperation op : ops) {
-            List<Object> rowKeys = new ArrayList<>();
-            ObTableOperationType type = op.getOperationType();
-            ObITableEntity entity = op.getEntity();
-            if (entity != null) {
-                long rowkeySize = entity.getRowKeySize();
-                ObRowKey rowKey = entity.getRowKey();
-                if (rowKey != null && rowkeySize != 0) {
-                    for (int i = 0; i < rowkeySize; i++) {
-                        ObObj obObj = entity.getRowKeyValue(i);
-                        if (obObj != null) {
-                            rowKeys.add(obObj.getValue());
-                        }
-                    }
-                }
-            }
-            MONITOR.info(logMessage(traceId, tableName, methodName+type+"-"+partId, endpoint, rowKeys, resultSize, executeTime));
-        }
-    }
-
-    private String logMessage(String traceId, String tableName, String methodName, String endpoint,
-                              List<Object> rowKeys, int resultSize, long executeTime) {
-        if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
-            endpoint = endpoint.replaceAll(",", "#");
-        }
-
-        String argsValue = buildParamsString(rowKeys);
-
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(traceId).append(",").append(obTableClient.getDatabase()).append(",")
-            .append(tableName).append(",").append(methodName).append(",").append(endpoint)
-            .append(",").append(argsValue).append(",").append(",").append(resultSize).append(",")
-            .append(0).append(",").append(executeTime).append(",").append(executeTime);
-        return stringBuilder.toString();
-    }
-
-    ;
 
     /*
      * Execute internal.
@@ -557,26 +518,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             batchOperationResult.addResult(obTableOperationResult);
         }
 
-        MONITOR.info(logMessage(formatTraceMessage(batchOperationResult), tableName, "BATCH", "",
+        MonitorUtil.info(batchOperationResult, obTableClient.getDatabase(), tableName, "BATCH", "",
             obTableOperationResults.length, getTableTime - start, System.currentTimeMillis()
-                                                                  - getTableTime));
+                                                                  - getTableTime,
+            obTableClient.getslowQueryMonitorThreshold());
 
         return batchOperationResult;
-    }
-
-    private String logMessage(String traceId, String tableName, String methodName, String endpoint,
-                              int resultSize, long routeTableTime, long executeTime) {
-        if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
-            endpoint = endpoint.replaceAll(",", "#");
-        }
-
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(traceId).append(",").append(obTableClient.getDatabase())
-            .append(tableName).append(",").append(methodName).append(",").append(endpoint)
-            .append(",").append(",").append(",").append(resultSize).append(",")
-            .append(routeTableTime).append(",").append(executeTime).append(",")
-            .append(routeTableTime + executeTime);
-        return stringBuilder.toString();
     }
 
     /*
