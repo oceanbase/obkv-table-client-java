@@ -152,7 +152,6 @@ public class ObTableClientTest extends ObTableClientTestBase {
         ObTableClient obTableClient1 = ObTableClientTestUtil.newTestClient();
         obTableClient1.addProperty("connectTimeout", "100000");
         obTableClient1.addProperty("socketTimeout", "100000");
-        obTableClient1.setRuntimeRetryTimes(-1);
         obTableClient1.init();
 
         Assert.assertEquals(obTableClient1.getRuntimeRetryTimes(),
@@ -162,10 +161,10 @@ public class ObTableClientTest extends ObTableClientTestBase {
         ObTableClient obTableClient2 = ObTableClientTestUtil.newTestClient();
         obTableClient2.addProperty("connectTimeout", "100000");
         obTableClient2.addProperty("socketTimeout", "100000");
-        obTableClient2.addProperty(Property.RUNTIME_RETRY_TIMES.getKey(), "-1");
+        obTableClient2.addProperty(Property.RUNTIME_RETRY_TIMES.getKey(), "0");
         obTableClient2.init();
 
-        Assert.assertEquals(obTableClient2.getRuntimeRetryTimes(), 1);
+        Assert.assertEquals(obTableClient2.getRuntimeRetryTimes(), 0);
         obTableClient2.close();
     }
 

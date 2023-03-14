@@ -125,7 +125,9 @@ public enum Property {
     // that is, flush the buffer from high_watermark(1M) to low_watermark(512k) by default.
     // So before throw Exception when buffer is full, sleep 1ms by default for the scenario
     // when a big package is blocking the buffer but the server is OK.
-    NETTY_BLOCKING_WAIT_INTERVAL("bolt.netty.blocking.wait.interval", 1, "netty写缓存满后等待时间");
+    NETTY_BLOCKING_WAIT_INTERVAL("bolt.netty.blocking.wait.interval", 1, "netty写缓存满后等待时间"),
+
+    SLOW_QUERY_MONITOR_THRESHOLD("slow.query.monitor.threshold", 10L, "记录到 MONITOR 日志中的慢操作的运行时间阈值");
 
     private final String key;
     private final Object defaultV;
