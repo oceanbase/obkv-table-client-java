@@ -26,15 +26,12 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.*;
 import com.alipay.oceanbase.rpc.stream.ObTableClientQueryStreamResult;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
+import com.alipay.oceanbase.rpc.util.MonitorUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.alipay.oceanbase.rpc.ObTableClient.buildParamsString;
-import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.MONITOR;
-import static com.alipay.oceanbase.rpc.util.TraceUtil.formatTraceMessage;
 
 public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
@@ -118,15 +115,14 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         }
         final long startTime = System.currentTimeMillis();
         Map<Long, ObPair<Long, ObTable>> partitionObTables = new HashMap<Long, ObPair<Long, ObTable>>();
-        List<Object> params = new ArrayList<>();
         // fill a whole range if no range is added explicitly.
         if (tableQuery.getKeyRanges().isEmpty()) {
             tableQuery.addKeyRange(ObNewRange.getWholeRange());
         }
         if (obTableClient.isOdpMode()) {
             if (tableQuery.getScanRangeColumns().isEmpty()) {
-                if (tableQuery.getIndexName() != null &&
-                        !tableQuery.getIndexName().equalsIgnoreCase("primary")) {
+                if (tableQuery.getIndexName() != null
+                    && !tableQuery.getIndexName().equalsIgnoreCase("primary")) {
                     throw new ObTableException("key range columns must be specified when use index");
                 }
             }
@@ -141,12 +137,10 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                 Object[] end = new Object[endKeySize];
                 for (int i = 0; i < startKeySize; i++) {
                     start[i] = startKey.getObj(i).getValue();
-                    params.add(start[i]);
                 }
 
                 for (int i = 0; i < endKeySize; i++) {
                     end[i] = endKey.getObj(i).getValue();
-                    params.add(end[i]);
                 }
                 ObBorderFlag borderFlag = rang.getBorderFlag();
                 List<ObPair<Long, ObTable>> pairs = obTableClient.getTables(tableName, start,
@@ -160,7 +154,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
         StringBuilder stringBuilder = new StringBuilder();
         for (Map.Entry<Long, ObPair<Long, ObTable>> entry : partitionObTables.entrySet()) {
-            stringBuilder.append("#").append(entry.getValue().getRight().getIp()).append(":").append(entry.getValue().getRight().getPort());
+            stringBuilder.append("#").append(entry.getValue().getRight().getIp()).append(":")
+                .append(entry.getValue().getRight().getPort());
         }
         String endpoint = stringBuilder.toString();
         long getTableTime = System.currentTimeMillis();
@@ -175,30 +170,12 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         obTableClientQueryStreamResult.setReadConsistency(obTableClient.getReadConsistency());
         obTableClientQueryStreamResult.init();
 
-        MONITOR.info(logMessage(formatTraceMessage(obTableClientQueryStreamResult), tableName, "QUERY",
-                endpoint, params, obTableClientQueryStreamResult, getTableTime - startTime, System.currentTimeMillis() - getTableTime));
-
+        MonitorUtil.info(obTableClientQueryStreamResult, obTableClient.getDatabase(), tableName,
+            "QUERY", endpoint, tableQuery, obTableClientQueryStreamResult,
+            getTableTime - startTime, System.currentTimeMillis() - getTableTime,
+            obTableClient.getslowQueryMonitorThreshold());
 
         return obTableClientQueryStreamResult;
-    }
-
-    private String logMessage(String traceId, String tableName, String methodName, String endpoint,
-                              List<Object> params, ObTableClientQueryStreamResult result,
-                              long routeTableTime, long executeTime) {
-        if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
-            endpoint = endpoint.replaceAll(",", "#");
-        }
-
-        String argsValue = buildParamsString(params);
-
-        String res = String.valueOf(result.getCacheRows().size());
-
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(traceId).append(",").append(obTableClient.getDatabase()).append(",")
-            .append(tableName).append(",").append(methodName).append(",").append(endpoint)
-            .append(",").append(argsValue).append(",").append(res).append(",")
-            .append(routeTableTime).append(",").append(executeTime);
-        return stringBuilder.toString();
     }
 
     /*

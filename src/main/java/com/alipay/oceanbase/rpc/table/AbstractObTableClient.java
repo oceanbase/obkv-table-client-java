@@ -92,6 +92,8 @@ public abstract class AbstractObTableClient extends AbstractTable {
                                                                             .getDefaultInt();
     protected int             rpcLoginTimeout                           = RPC_LOGIN_TIMEOUT
                                                                             .getDefaultInt();
+    protected long            slowQueryMonitorThreshold                 = SLOW_QUERY_MONITOR_THRESHOLD
+                                                                            .getDefaultLong();
 
     @Deprecated
     /*
@@ -361,6 +363,8 @@ public abstract class AbstractObTableClient extends AbstractTable {
      */
     public void setRuntimeMaxWait(long runtimeMaxWait) {
         this.runtimeMaxWait = runtimeMaxWait;
+        this.properties.put(RUNTIME_MAX_WAIT.getKey(), String.valueOf(runtimeMaxWait));
+
     }
 
     /*
@@ -388,10 +392,8 @@ public abstract class AbstractObTableClient extends AbstractTable {
      * Set runtime retry times.
      */
     public void setRuntimeRetryTimes(int runtimeRetryTimes) {
-        // ignore the illegal param
-        if (runtimeRetryTimes >= 1) {
-            this.runtimeRetryTimes = runtimeRetryTimes;
-        }
+        this.properties.put(RUNTIME_RETRY_TIMES.getKey(), String.valueOf(runtimeRetryTimes));
+        this.runtimeRetryTimes = runtimeRetryTimes;
     }
 
     /*
@@ -464,6 +466,7 @@ public abstract class AbstractObTableClient extends AbstractTable {
      * Set runtime batch max wait.
      */
     public void setRuntimeBatchMaxWait(long runtimeBatchMaxWait) {
+        this.properties.put(RUNTIME_BATCH_MAX_WAIT.getKey(), String.valueOf(runtimeBatchMaxWait));
         this.runtimeBatchMaxWait = runtimeBatchMaxWait;
     }
 
@@ -479,5 +482,21 @@ public abstract class AbstractObTableClient extends AbstractTable {
      */
     public void setRuntimeBatchExecutor(ExecutorService runtimeBatchExecutor) {
         this.runtimeBatchExecutor = runtimeBatchExecutor;
+    }
+
+    /*
+     * Get slow query threshold.
+     */
+    public long getslowQueryMonitorThreshold() {
+        return slowQueryMonitorThreshold;
+    }
+
+    /*
+     * Set slow query threshold.
+     */
+    public void setslowQueryMonitorThreshold(long slowQueryMonitorThreshold) {
+        this.properties.put(SLOW_QUERY_MONITOR_THRESHOLD.getKey(),
+            String.valueOf(slowQueryMonitorThreshold));
+        this.slowQueryMonitorThreshold = slowQueryMonitorThreshold;
     }
 }
