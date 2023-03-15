@@ -115,6 +115,12 @@ public abstract class ObTableClientTestBase {
         PRIMARY KEY (`c1`)
         ) DEFAULT CHARSET = utf8mb4 COMPRESSION = 'lz4_1.0' REPLICA_NUM = 3 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 10
         * */
+
+        // NOTE: Use the default test_varchar_table ObTable to insert data for test_blob_table will causes OB_NOT_MASTER error
+        // when their partition leader is not in the same observer
+        if (client instanceof ObTable) {
+            return;
+        }
         try {
             test_blob_insert();
             long start = System.currentTimeMillis();
@@ -146,6 +152,11 @@ public abstract class ObTableClientTestBase {
         PRIMARY KEY (`c1`)
         ) DEFAULT CHARSET = utf8mb4 COMPRESSION = 'lz4_1.0' REPLICA_NUM = 3 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 10
         * */
+        // NOTE: Use the default test_varchar_table ObTable to insert data for test_blob_table will causes OB_NOT_MASTER error
+        // when their partition leader is not in the same observer
+        if (client instanceof ObTable) {
+            return;
+        }
         try {
             test_longblob_insert();
             long start = System.currentTimeMillis();
