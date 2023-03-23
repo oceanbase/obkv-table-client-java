@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.Credentialable;
@@ -32,7 +33,7 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
     protected ObBytesString           credential;                                              // the credential returned when login. 登陆时返回的证书
     protected String                  tableName;                                               // table name. 待访问的表名
     protected long                    tableId                 = Constants.OB_INVALID_ID;       // table id. 如果知道表id，可以用于优化，如果不知道，设定为OB_INVALID_ID
-    protected long                    partitionId             = Constants.OB_INVALID_ID;       // Constants.OB_INVALID_ID; // partition id. 如果知道表分区id，可以用于优化，如果不知道，设定为OB_INVALID_ID
+    protected long                    partitionId             = Constants.INVALID_TABLET_ID;       // Constants.OB_INVALID_ID; // partition id / tabletId. 如果知道表分区id，可以用于优化，如果不知道，设定为OB_INVALID_ID
     protected ObTableEntityType       entityType              = ObTableEntityType.DYNAMIC;     // entity type. 如果明确entity类型，可以用于优化，如果不知道，设定为ObTableEntityType::DYNAMIC
     protected ObTableConsistencyLevel consistencyLevel        = ObTableConsistencyLevel.STRONG; // read consistency level. 读一致性，是否要强一致性等（必须读到刚写入的数据）. 目前只支持STRONG.
     protected boolean                 returningRowKey         = false;
@@ -44,9 +45,14 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
      */
     @Override
     public long getPayloadContentSize() {
-        return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
-               + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId) + 2
-               + 3;
+        if (ObGlobal.OB_VERSION >= 4)
+            return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
+                   + Serialization.getNeedBytes(tableId) + 8 + 2
+                   + 3;
+        else
+            return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
+                    + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId) + 2
+                    + 3;
     }
 
     protected int encodeHeader(byte[] bytes, int idx) {
@@ -64,6 +70,9 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
         return idx;
     }
 
+    /*
+     * tabletId also be treated as patitionId.
+     */
     protected int encodeTableMetaWithPartitionId(byte[] bytes, int idx) {
         byte[] strbytes = Serialization.encodeVString(tableName);
         System.arraycopy(strbytes, 0, bytes, idx, strbytes.length);
@@ -71,9 +80,14 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
         int len = Serialization.getNeedBytes(tableId);
         System.arraycopy(Serialization.encodeVi64(tableId), 0, bytes, idx, len);
         idx += len;
-        len = Serialization.getNeedBytes(partitionId);
-        System.arraycopy(Serialization.encodeVi64(partitionId), 0, bytes, idx, len);
-        idx += len;
+        if (ObGlobal.OB_VERSION >= 4) {
+            System.arraycopy(Serialization.encodeI64(partitionId), 0, bytes, idx, 8);
+            idx += 8;
+        } else {
+            len = Serialization.getNeedBytes(partitionId);
+            System.arraycopy(Serialization.encodeVi64(partitionId), 0, bytes, idx, len);
+            idx += len;
+        }
         System.arraycopy(Serialization.encodeI8(entityType.getByteValue()), 0, bytes, idx, 1);
         idx += 1;
         return idx;

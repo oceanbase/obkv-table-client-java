@@ -26,6 +26,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilt
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryRequest;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.ObTable;
+import com.alipay.oceanbase.rpc.table.ObTableParam;
 import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
@@ -678,14 +679,14 @@ public abstract class ObTableClientTestBase {
         } else {
             ObTable obTable = new ObTable();
             try {
-                tableQuery.executeInit(new ObPair<Long, ObTable>(0L, obTable));
+                tableQuery.executeInit(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
                 fail();
             } catch (Exception e) {
                 assertTrue(true);
             }
 
             try {
-                tableQuery.executeNext(new ObPair<Long, ObTable>(0L, obTable));
+                tableQuery.executeNext(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
                 fail();
             } catch (Exception e) {
                 assertTrue(true);
@@ -786,14 +787,14 @@ public abstract class ObTableClientTestBase {
 
         ObTable obTable = new ObTable();
         try {
-            tableQuery.executeInit(new ObPair<Long, ObTable>(0L, obTable));
+            tableQuery.executeInit(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
             fail();
         } catch (Exception e) {
             assertTrue(true);
         }
 
         try {
-            tableQuery.executeNext(new ObPair<Long, ObTable>(0L, obTable));
+            tableQuery.executeNext(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
             fail();
         } catch (Exception e) {
             assertTrue(true);
@@ -834,14 +835,14 @@ public abstract class ObTableClientTestBase {
 
             ObTable obTable = new ObTable();
             try {
-                tableQuery.executeInit(new ObPair<Long, ObTable>(0L, obTable));
+                tableQuery.executeInit(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
                 fail();
             } catch (Exception e) {
                 assertTrue(true);
             }
 
             try {
-                tableQuery.executeNext(new ObPair<Long, ObTable>(0L, obTable));
+                tableQuery.executeNext(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
                 fail();
             } catch (Exception e) {
                 assertTrue(true);

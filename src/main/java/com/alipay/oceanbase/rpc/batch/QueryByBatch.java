@@ -26,6 +26,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilt
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.ObTable;
+import com.alipay.oceanbase.rpc.table.ObTableParam;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -69,12 +70,12 @@ public class QueryByBatch implements TableQuery {
     }
 
     @Override
-    public QueryResultSet executeInit(ObPair<Long, ObTable> entry) throws Exception {
+    public QueryResultSet executeInit(ObPair<Long, ObTableParam> entry) throws Exception {
         throw new IllegalArgumentException("not support executeInit");
     }
 
     @Override
-    public QueryResultSet executeNext(ObPair<Long, ObTable> entry) throws Exception {
+    public QueryResultSet executeNext(ObPair<Long, ObTableParam> entry) throws Exception {
         throw new IllegalArgumentException("not support executeNext");
     }
 

@@ -25,6 +25,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilt
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.ObTable;
+import com.alipay.oceanbase.rpc.table.ObTableParam;
 
 import java.util.List;
 
@@ -47,9 +48,9 @@ public interface TableQuery {
 
     QueryResultSet execute() throws Exception;
 
-    QueryResultSet executeInit(ObPair<Long, ObTable> entry) throws Exception;
+    QueryResultSet executeInit(ObPair<Long, ObTableParam> entry) throws Exception;
 
-    QueryResultSet executeNext(ObPair<Long, ObTable> entry) throws Exception;
+    QueryResultSet executeNext(ObPair<Long, ObTableParam> entry) throws Exception;
 
     TableQuery select(String... columns);
 

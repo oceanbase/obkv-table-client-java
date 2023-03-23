@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.protocol.packet;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -52,8 +53,20 @@ public class ObRpcPacketHeader {
                                                                          + ObRpcCostTime.ENCODED_SIZE //
                                                                          + 8 // 8 is clusterId
                                                                          + 4 // obCompressType
-                                                                         + 4;                              // originalLen
-
+                                                                         + 4; // originalLen
+    private static final int ENCODE_SIZE_V4                            = HEADER_SIZE
+                                                                        + ObRpcCostTime.ENCODED_SIZE //
+                                                                        + 8 // 8 is dst clusterId
+                                                                        + 4 // obCompressType
+                                                                        + 4 // originalLen
+                                                                        + 8 // src clusterId
+                                                                        + 8 // unis version
+                                                                        + 4 // request level
+                                                                        + 8 // seq no
+                                                                        + 4 // group id
+                                                                        + 8 // trace id2
+                                                                        + 8 // trace id3
+                                                                        + 8; //clusterNameHash
     public static final int  RESP_FLAG                                 = 1 << 15;
 
     public static final int  STREAM_FLAG                               = 1 << 14;
@@ -66,7 +79,7 @@ public class ObRpcPacketHeader {
     public static final int  REQUIRE_REROUTING_FLAG                    = 1 << 9;
 
     private int              pcode;
-    private short            hlen                                      = (short) ENCODE_SIZE;
+    private short            hlen                                      = 0;
     private short            priority                                  = 5;
 
     private short            flag                                      = 0;
@@ -80,11 +93,19 @@ public class ObRpcPacketHeader {
                                                                            .getDefaultLong() * 1000;       // OB server timeout (us)
     private long             timestamp                                 = System.currentTimeMillis() * 1000; // us
     private ObRpcCostTime    obRpcCostTime                             = new ObRpcCostTime();
-    private long             clusterId                                 = -1;                               // FIXME
+    private long             dstClusterId                              = -1;                               // FIXME
 
     private ObCompressType   obCompressType                            = INVALID_COMPRESSOR;
 
     private int              originalLen                               = 0;
+    private long             srcClusterId                              = -1;
+    private long             unisVersion                               = 0;
+    private int              requestLevel                              = 0;
+    private long             seqNo                                     = 0;
+    private int              groupId                                   = 0;
+    private long             traceId2;
+    private long             traceId3;
+    private long             clusterNameHash;
 
     /*
      * Ob rpc packet header.
@@ -107,7 +128,16 @@ public class ObRpcPacketHeader {
      * Encode.
      */
     public byte[] encode() {
-        byte[] bytes = new byte[ENCODE_SIZE];
+        byte[] bytes = null;
+        if (hlen != 0) {
+            bytes = new byte[ENCODE_SIZE];
+        } else if (ObGlobal.OB_VERSION >= 4) {
+            bytes = new byte[ENCODE_SIZE_V4];
+            hlen = (short) ENCODE_SIZE_V4;
+        } else {
+            bytes = new byte[ENCODE_SIZE];
+            hlen = (short) ENCODE_SIZE;
+        }
         int idx = 0;
 
         System.arraycopy(Serialization.encodeI32(pcode), 0, bytes, idx, 4);
@@ -136,11 +166,30 @@ public class ObRpcPacketHeader {
         idx += 8;
         System.arraycopy(obRpcCostTime.encode(), 0, bytes, idx, ObRpcCostTime.ENCODED_SIZE);
         idx += ObRpcCostTime.ENCODED_SIZE;
-        System.arraycopy(Serialization.encodeI64(clusterId), 0, bytes, idx, 8);
+        System.arraycopy(Serialization.encodeI64(dstClusterId), 0, bytes, idx, 8);
         idx += 8;
         System.arraycopy(Serialization.encodeI32(obCompressType.getCode()), 0, bytes, idx, 4);
         idx += 4;
         System.arraycopy(Serialization.encodeI32(originalLen), 0, bytes, idx, 4);
+        if (ObGlobal.OB_VERSION >= 4 && hlen >= ENCODE_SIZE_V4) {
+            idx += 4;
+            System.arraycopy(Serialization.encodeI64(srcClusterId), 0, bytes, idx, 8);
+            idx += 8;
+            System.arraycopy(Serialization.encodeI64(unisVersion), 0, bytes, idx, 8);
+            idx += 8;
+            System.arraycopy(Serialization.encodeI32(requestLevel), 0, bytes, idx, 4);
+            idx += 4;
+            System.arraycopy(Serialization.encodeI64(seqNo), 0, bytes, idx, 8);
+            idx += 8;
+            System.arraycopy(Serialization.encodeI32(groupId), 0, bytes, idx, 4);
+            idx += 4;
+            System.arraycopy(Serialization.encodeI64(traceId2), 0, bytes, idx, 8);
+            idx += 8;
+            System.arraycopy(Serialization.encodeI64(traceId3), 0, bytes, idx, 8);
+            idx += 8;
+            System.arraycopy(Serialization.encodeI64(clusterNameHash), 0, bytes, idx, 8);
+        }
+
         return bytes;
     }
 
@@ -161,15 +210,30 @@ public class ObRpcPacketHeader {
         this.timeout = Serialization.decodeI64(buf);
         this.timestamp = Serialization.decodeI64(buf);
 
-        if (hlen >= ENCODE_SIZE) {
+
+        if (hlen >= ENCODE_SIZE_V4) {
             obRpcCostTime.decode(buf);
-            this.clusterId = Serialization.decodeI64(buf);
+            this.dstClusterId = Serialization.decodeI64(buf);
+            this.obCompressType = ObCompressType.valueOf(Serialization.decodeI32(buf));
+            this.originalLen = Serialization.decodeI32(buf);
+            this.srcClusterId = Serialization.decodeI64(buf);
+            this.unisVersion = Serialization.decodeI64(buf);
+            this.requestLevel = Serialization.decodeI32(buf);
+            this.seqNo = Serialization.decodeI64(buf);
+            this.groupId = Serialization.decodeI32(buf);
+            this.traceId2 = Serialization.decodeI64(buf);
+            this.traceId3 = Serialization.decodeI64(buf);
+            this.clusterNameHash = Serialization.decodeI64(buf);
+            ignoreUnresolvedBytes(buf, hlen, ENCODE_SIZE_V4);
+        } else if (hlen >= ENCODE_SIZE) {
+            obRpcCostTime.decode(buf);
+            this.dstClusterId = Serialization.decodeI64(buf);
             this.obCompressType = ObCompressType.valueOf(Serialization.decodeI32(buf));
             this.originalLen = Serialization.decodeI32(buf);
             ignoreUnresolvedBytes(buf, hlen, ENCODE_SIZE);
         } else if (hlen >= ENCODE_SIZE_WITH_COST_TIME_AND_CLUSTER_ID) {
             obRpcCostTime.decode(buf);
-            this.clusterId = Serialization.decodeI64(buf);
+            this.dstClusterId = Serialization.decodeI64(buf);
             ignoreUnresolvedBytes(buf, hlen, ENCODE_SIZE_WITH_COST_TIME_AND_CLUSTER_ID);
         } else if (hlen >= ENCODE_SIZE_WITH_COST_TIME) {
             obRpcCostTime.decode(buf);
@@ -433,15 +497,15 @@ public class ObRpcPacketHeader {
     /*
      * Get cluster id.
      */
-    public long getClusterId() {
-        return clusterId;
+    public long getDstClusterId() {
+        return dstClusterId;
     }
 
     /*
      * Set cluster id.
      */
-    public void setClusterId(long clusterId) {
-        this.clusterId = clusterId;
+    public void setDstClusterId(long dstClusterId) {
+        this.dstClusterId = dstClusterId;
     }
 
     /*

@@ -27,6 +27,7 @@ import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.AbstractTableQuery;
 import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.table.ObTableClientQueryImpl;
+import com.alipay.oceanbase.rpc.table.ObTableParam;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
 import java.util.List;
@@ -78,12 +79,12 @@ public class ObClusterTableQuery extends AbstractTableQuery {
     }
 
     @Override
-    public QueryResultSet executeInit(ObPair<Long, ObTable> entry) throws Exception {
+    public QueryResultSet executeInit(ObPair<Long, ObTableParam> entry) throws Exception {
         throw new IllegalArgumentException("not support executeInit");
     }
 
     @Override
-    public QueryResultSet executeNext(ObPair<Long, ObTable> entry) throws Exception {
+    public QueryResultSet executeNext(ObPair<Long, ObTableParam> entry) throws Exception {
         throw new IllegalArgumentException("not support executeNext");
     }
 

@@ -79,12 +79,12 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     }
 
     @Override
-    public QueryResultSet executeInit(ObPair<Long, ObTable> entry) throws Exception {
+    public QueryResultSet executeInit(ObPair<Long, ObTableParam> entry) throws Exception {
         throw new IllegalArgumentException("not support executeInit");
     }
 
     @Override
-    public QueryResultSet executeNext(ObPair<Long, ObTable> entry) throws Exception {
+    public QueryResultSet executeNext(ObPair<Long, ObTableParam> entry) throws Exception {
         throw new IllegalArgumentException("not support executeInit");
     }
 
@@ -114,7 +114,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             throw new ObTableException("table client is null");
         }
         final long startTime = System.currentTimeMillis();
-        Map<Long, ObPair<Long, ObTable>> partitionObTables = new HashMap<Long, ObPair<Long, ObTable>>();
+        Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new HashMap<Long, ObPair<Long, ObTableParam>>();
         // fill a whole range if no range is added explicitly.
         if (tableQuery.getKeyRanges().isEmpty()) {
             tableQuery.addKeyRange(ObNewRange.getWholeRange());
@@ -126,7 +126,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                     throw new ObTableException("key range columns must be specified when use index");
                 }
             }
-            partitionObTables.put(0L, new ObPair<Long, ObTable>(0L, obTableClient.getOdpTable()));
+            partitionObTables.put(0L, new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTableClient.getOdpTable())));
         } else {
             for (ObNewRange rang : tableQuery.getKeyRanges()) {
                 ObRowKey startKey = rang.getStartKey();
@@ -143,19 +143,19 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                     end[i] = endKey.getObj(i).getValue();
                 }
                 ObBorderFlag borderFlag = rang.getBorderFlag();
-                List<ObPair<Long, ObTable>> pairs = obTableClient.getTables(tableName, start,
+                List<ObPair<Long, ObTableParam>> pairs = obTableClient.getTables(tableName, start,
                     borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false, false,
                     obTableClient.getReadRoute());
-                for (ObPair<Long, ObTable> pair : pairs) {
+                for (ObPair<Long, ObTableParam> pair : pairs) {
                     partitionObTables.put(pair.getLeft(), pair);
                 }
             }
         }
 
         StringBuilder stringBuilder = new StringBuilder();
-        for (Map.Entry<Long, ObPair<Long, ObTable>> entry : partitionObTables.entrySet()) {
-            stringBuilder.append("#").append(entry.getValue().getRight().getIp()).append(":")
-                .append(entry.getValue().getRight().getPort());
+        for (Map.Entry<Long, ObPair<Long, ObTableParam>> entry : partitionObTables.entrySet()) {
+            stringBuilder.append("#").append(entry.getValue().getRight().getObTable().getIp()).append(":")
+                .append(entry.getValue().getRight().getObTable().getPort());
         }
         String endpoint = stringBuilder.toString();
         long getTableTime = System.currentTimeMillis();

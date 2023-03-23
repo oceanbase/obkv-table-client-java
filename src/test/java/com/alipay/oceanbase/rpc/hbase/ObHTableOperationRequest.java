@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.hbase;
 
+import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableAbstractOperationRequest;
@@ -148,7 +149,7 @@ public class ObHTableOperationRequest {
 
                 request.setTableName(getTargetTableName());
                 ((ObTableQueryRequest) request).setTableQuery(obTableQuery);
-                ((ObTableQueryRequest) request).setPartitionId(0);
+                ((ObTableQueryRequest) request).setPartitionId(Constants.INVALID_TABLET_ID);
 
                 break;
             default:

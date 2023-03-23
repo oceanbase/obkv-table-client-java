@@ -66,9 +66,9 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
             assertEquals(TEST_CONNECTION_POOL_SIZE, obTableClient.getOdpTable()
                 .getObTableConnectionPoolSize());
         } else {
-            ObPair<Long, ObTable> obPair = obTableClient.getTable("test_varchar_table",
+            ObPair<Long, ObTableParam> obPair = obTableClient.getTable("test_varchar_table",
                 new String[] { "abc" }, false, false);
-            int poolSize = obPair.getRight().getObTableConnectionPoolSize();
+            int poolSize = obPair.getRight().getObTable().getObTableConnectionPoolSize();
             assertEquals(TEST_CONNECTION_POOL_SIZE, poolSize);
         }
     }
@@ -93,11 +93,11 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
             assertEquals(TEST_NETTY_WAIT_INTERVAL, obTableClient.getOdpTable()
                 .getNettyBlockingWaitInterval());
         } else {
-            ObPair<Long, ObTable> obPair = obTableClient.getTable("test_varchar_table",
+            ObPair<Long, ObTableParam> obPair = obTableClient.getTable("test_varchar_table",
                 new String[] { "abc" }, false, false);
-            int lowWatermark = obPair.getRight().getNettyBufferLowWatermark();
-            int highWatermark = obPair.getRight().getNettyBufferHighWatermark();
-            int waitInterval = obPair.getRight().getNettyBlockingWaitInterval();
+            int lowWatermark = obPair.getRight().getObTable().getNettyBufferLowWatermark();
+            int highWatermark = obPair.getRight().getObTable().getNettyBufferHighWatermark();
+            int waitInterval = obPair.getRight().getObTable().getNettyBlockingWaitInterval();
 
             assertEquals(TEST_NETTY_LOW_WATERMARK, lowWatermark);
             assertEquals(TEST_NETTY_HIGH_WATERMARK, highWatermark);
@@ -110,11 +110,11 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
         if (obTableClient.isOdpMode()) {
             // do nothing
         } else {
-            ObPair<Long, ObTable> obPair = obTableClient.getTable("test_varchar_table",
+            ObPair<Long, ObTableParam> obPair = obTableClient.getTable("test_varchar_table",
                 new String[] { "abc" }, false, false);
-            int lowWatermark = obPair.getRight().getNettyBufferLowWatermark();
-            int highWatermark = obPair.getRight().getNettyBufferHighWatermark();
-            int waitInterval = obPair.getRight().getNettyBlockingWaitInterval();
+            int lowWatermark = obPair.getRight().getObTable().getNettyBufferLowWatermark();
+            int highWatermark = obPair.getRight().getObTable().getNettyBufferHighWatermark();
+            int waitInterval = obPair.getRight().getObTable().getNettyBlockingWaitInterval();
 
             assertEquals(Property.NETTY_BUFFER_LOW_WATERMARK.getDefaultInt(), lowWatermark);
             assertEquals(Property.NETTY_BUFFER_HIGH_WATERMARK.getDefaultInt(), highWatermark);

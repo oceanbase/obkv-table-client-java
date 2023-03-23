@@ -21,6 +21,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.ParserConfig;
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.constant.Constants;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.model.*;
@@ -55,6 +56,8 @@ public class LocationUtil {
     static {
         ParserConfig.getGlobalInstance().setSafeMode(true);
     }
+
+    private static final String OB_VERSION_SQL                = "SELECT /*+READ_CONSISTENCY(WEAK)*/ OB_VERSION() AS CLUSTER_VERSION;";
 
     @Deprecated
     @SuppressWarnings("unused")
@@ -106,6 +109,56 @@ public class LocationUtil {
     private static final String PROXY_SERVER_STATUS_INFO      = "SELECT ss.svr_ip, ss.zone, zs.region, zs.spare4 as idc "
                                                                 + "FROM oceanbase.__all_virtual_proxy_server_stat ss, oceanbase.__all_virtual_zone_stat zs "
                                                                 + "WHERE zs.zone = ss.zone ;";
+
+    @Deprecated
+    @SuppressWarnings("unused")
+    private static final String PROXY_PLAIN_SCHEMA_SQL_FORMAT_V4 =  "SELECT /*+READ_CONSISTENCY(WEAK)*/ tablet_id, svr_ip, sql_port, table_id, role, part_num, replica_num, schema_version, spare1 "
+                                                                    + "FROM oceanbase.__all_virtual_proxy_schema "
+                                                                    + "WHERE tenant_name = ? AND database_name = ?  AND table_name = ? AND tablet_id in ({0}) AND sql_port > 0 "
+                                                                    + "ORDER BY role ASC LIMIT ?";
+
+    private static final String PROXY_PART_INFO_SQL_V4           =  "SELECT /*+READ_CONSISTENCY(WEAK)*/ part_level, part_num, part_type, part_space, part_expr, "
+                                                                    + "part_range_type, sub_part_num, sub_part_type, sub_part_space, sub_part_range_type, sub_part_expr, "
+                                                                    + "part_key_name, part_key_type, part_key_idx, part_key_extra, part_key_collation_type "
+                                                                    + "FROM oceanbase.__all_virtual_proxy_partition_info "
+                                                                    + "WHERE tenant_name = ? and table_id = ? group by part_key_name order by part_key_name LIMIT ?;";
+    @Deprecated
+    @SuppressWarnings("unused")
+    private static final String PROXY_TENANT_SCHEMA_SQL_V4       =  "SELECT /*+READ_CONSISTENCY(WEAK)*/ svr_ip, sql_port, table_id, role, part_num, replica_num, spare1 "
+                                                                    + "FROM oceanbase.__all_virtual_proxy_schema "
+                                                                    + "WHERE tenant_name = ? AND database_name = ?  AND table_name = ? AND sql_port > 0 "
+                                                                    + "ORDER BY tablet_id ASC, role ASC LIMIT ?";
+
+    private static final String PROXY_DUMMY_LOCATION_SQL_V4      =  "SELECT /*+READ_CONSISTENCY(WEAK)*/ A.tablet_id as tablet_id, A.svr_ip as svr_ip, A.sql_port as sql_port, "
+                                                                    + "A.table_id as table_id, A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, B.stop_time as stop_time "
+                                                                    + ", A.spare1 as replica_type "
+                                                                    + "FROM oceanbase.__all_virtual_proxy_schema A inner join oceanbase.__all_server B on A.svr_ip = B.svr_ip and A.sql_port = B.inner_port "
+                                                                    + "WHERE tenant_name = ? and database_name=? and table_name = ?";
+
+    private static final String PROXY_LOCATION_SQL_V4            =  "SELECT /*+READ_CONSISTENCY(WEAK)*/ A.tablet_id as tablet_id, A.svr_ip as svr_ip, A.sql_port as sql_port, "
+                                                                    + "A.table_id as table_id, A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, B.stop_time as stop_time "
+                                                                    + ", A.spare1 as replica_type "
+                                                                    + "FROM oceanbase.__all_virtual_proxy_schema A inner join oceanbase.__all_server B on A.svr_ip = B.svr_ip and A.sql_port = B.inner_port "
+                                                                    + "WHERE tenant_name = ? and database_name=? and table_name = ? and tablet_id = 0";
+
+    private static final String PROXY_LOCATION_SQL_PARTITION_V4  =  "SELECT /*+READ_CONSISTENCY(WEAK)*/ A.tablet_id as tablet_id, A.svr_ip as svr_ip, A.sql_port as sql_port, "
+                                                                    + "A.table_id as table_id, A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, B.stop_time as stop_time "
+                                                                    + ", A.spare1 as replica_type "
+                                                                    + "FROM oceanbase.__all_virtual_proxy_schema A inner join oceanbase.__all_server B on A.svr_ip = B.svr_ip and A.sql_port = B.inner_port "
+                                                                    + "WHERE tenant_name = ? and database_name=? and table_name = ? and tablet_id in ({0})";
+
+    private static final String PROXY_FIRST_PARTITION_SQL_V4     =  "SELECT /*+READ_CONSISTENCY(WEAK)*/ part_id, part_name, tablet_id, high_bound_val, sub_part_num "
+                                                                    + "FROM oceanbase.__all_virtual_proxy_partition "
+                                                                    + "WHERE tenant_name = ? and table_id = ? LIMIT ?;";
+
+    private static final String PROXY_SUB_PARTITION_SQL_V4       =  "SELECT /*+READ_CONSISTENCY(WEAK)*/ sub_part_id, part_name, tablet_id, high_bound_val "
+                                                                    + "FROM oceanbase.__all_virtual_proxy_sub_partition "
+                                                                    + "WHERE tenant_name = ? and table_id = ? LIMIT ?;";
+
+    private static final String PROXY_SERVER_STATUS_INFO_V4      =  "SELECT ss.svr_ip, ss.zone, zs.region, zs.idc as idc "
+                                                                    + "FROM DBA_OB_SERVERS ss, DBA_OB_ZONES zs "
+                                                                    + "WHERE zs.zone = ss.zone ;";
+
 
     private static final String home                          = System.getProperty("user.home",
                                                                   "/home/admin");
@@ -224,7 +277,8 @@ public class LocationUtil {
      */
     private static List<ObServerLdcItem> callServerLdcRefresh(ObServerAddr obServerAddr,
                                                               long connectTimeout,
-                                                              long socketTimeout, ObUserAuth sysUA)
+                                                              long socketTimeout,
+                                                              ObUserAuth sysUA)
                                                                                                    throws ObTableEntryRefreshException {
         String url = formatObServerUrl(obServerAddr, connectTimeout, socketTimeout);
         List<ObServerLdcItem> ss = new ArrayList<ObServerLdcItem>();
@@ -233,7 +287,11 @@ public class LocationUtil {
         ResultSet rs = null;
         try {
             connection = getMetaRefreshConnection(url, sysUA);
-            ps = connection.prepareStatement(PROXY_SERVER_STATUS_INFO);
+            if (ObGlobal.OB_VERSION >=4) {
+                ps = connection.prepareStatement(PROXY_SERVER_STATUS_INFO_V4);
+            } else {
+                ps = connection.prepareStatement(PROXY_SERVER_STATUS_INFO);
+            }
             rs = ps.executeQuery();
             while (rs.next()) {
                 String ip = rs.getString("svr_ip");
@@ -389,6 +447,47 @@ public class LocationUtil {
             });
     }
 
+    private static Long parseObVersionString(String obVersionString) {
+        long version = 0L;
+        for (int i = 0; i < obVersionString.length() && obVersionString.charAt(i) != '.'; i++) {
+            char c = obVersionString.charAt(i);
+            if (!Character.isDigit(c)) {
+                return null;
+            }
+            version = version * 10 + (c - '0');
+        }
+        return version;
+    }
+
+    private static Long getObVersionFromRemote(Connection connection)
+                                                                        throws ObTableEntryRefreshException {
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            ps = connection.prepareStatement(OB_VERSION_SQL);
+            rs = ps.executeQuery();
+            if (rs.next()) {
+                String versionString = rs.getString("CLUSTER_VERSION");
+                return parseObVersionString(versionString);
+            } else {
+                throw new ObTableEntryRefreshException("fail to get ob version from remote");
+            }
+        } catch (Exception e) {
+            throw new ObTableEntryRefreshException("fail to get ob version from remote", e);
+        } finally {
+            try {
+                if (null != rs) {
+                    rs.close();
+                }
+                if (null != ps) {
+                    ps.close();
+                }
+            } catch (SQLException e) {
+                // ignore
+            }
+        }
+    }
+
     private static TableEntry getTableEntryFromRemote(Connection connection, TableEntryKey key,
                                                       boolean initialized)
                                                                           throws ObTableEntryRefreshException {
@@ -396,23 +495,40 @@ public class LocationUtil {
         ResultSet rs = null;
         TableEntry tableEntry;
         try {
-            if (key.getTableName().equals(Constants.ALL_DUMMY_TABLE)) {
-                ps = connection.prepareStatement(PROXY_DUMMY_LOCATION_SQL);
-                ps.setString(1, key.getTenantName());
-                ps.setString(2, key.getDatabaseName());
-                ps.setString(3, key.getTableName());
+            if (ObGlobal.OB_VERSION == 0) {
+                ObGlobal.OB_VERSION = getObVersionFromRemote(connection);
+            }
+            if (ObGlobal.OB_VERSION >= 4) {
+                if (key.getTableName().equals(Constants.ALL_DUMMY_TABLE)) {
+                    ps = connection.prepareStatement(PROXY_DUMMY_LOCATION_SQL_V4);
+                    ps.setString(1, key.getTenantName());
+                    ps.setString(2, key.getDatabaseName());
+                    ps.setString(3, key.getTableName());
+                } else {
+                    ps = connection.prepareStatement(PROXY_LOCATION_SQL_V4);
+                    ps.setString(1, key.getTenantName());
+                    ps.setString(2, key.getDatabaseName());
+                    ps.setString(3, key.getTableName());
+                }
             } else {
-                ps = connection.prepareStatement(PROXY_LOCATION_SQL);
-                ps.setString(1, key.getTenantName());
-                ps.setString(2, key.getDatabaseName());
-                ps.setString(3, key.getTableName());
+                if (key.getTableName().equals(Constants.ALL_DUMMY_TABLE)) {
+                    ps = connection.prepareStatement(PROXY_DUMMY_LOCATION_SQL);
+                    ps.setString(1, key.getTenantName());
+                    ps.setString(2, key.getDatabaseName());
+                    ps.setString(3, key.getTableName());
+                } else {
+                    ps = connection.prepareStatement(PROXY_LOCATION_SQL);
+                    ps.setString(1, key.getTenantName());
+                    ps.setString(2, key.getDatabaseName());
+                    ps.setString(3, key.getTableName());
+                }
             }
             rs = ps.executeQuery();
             tableEntry = getTableEntryFromResultSet(key, rs);
             if (null != tableEntry) {
                 tableEntry.setTableEntryKey(key);
-                getTableEntryLocationFromRemote(connection, key, tableEntry);
                 // TODO: check capacity flag later
+                // fetch tablet ids when table is partition table
                 if (tableEntry.isPartitionTable()) {
                     // fetch partition info
                     fetchPartitionInfo(connection, tableEntry);
@@ -421,23 +537,19 @@ public class LocationUtil {
                         if (null != tableEntry.getPartitionInfo().getFirstPartDesc()) {
                             ObPartFuncType obPartFuncType = tableEntry.getPartitionInfo()
                                 .getFirstPartDesc().getPartFuncType();
-                            if (obPartFuncType.isRangePart() || obPartFuncType.isListPart()) {
-                                fetchFirstPart(connection, tableEntry, obPartFuncType);
-                            }
+                            fetchFirstPart(connection, tableEntry, obPartFuncType);
                         }
                         // fetch sub range part
                         if (null != tableEntry.getPartitionInfo().getSubPartDesc()) {
                             ObPartFuncType subPartFuncType = tableEntry.getPartitionInfo()
                                 .getSubPartDesc().getPartFuncType();
-                            if (subPartFuncType.isRangePart() || subPartFuncType.isListPart()) {
-                                fetchSubPart(connection, tableEntry, subPartFuncType);
-                            }
+                            fetchSubPart(connection, tableEntry, subPartFuncType);
                         }
-                        // build partition name-id map
-                        tableEntry.getPartitionInfo().setPartNameIdMap(
-                            buildPartNameIdMap(tableEntry.getPartitionInfo()));
                     }
                 }
+
+                // get location info
+                getTableEntryLocationFromRemote(connection, key, tableEntry);
 
                 if (!initialized) {
                     if (BOOT.isInfoEnabled()) {
@@ -484,14 +596,36 @@ public class LocationUtil {
         ResultSet rs = null;
         long partitionNum = tableEntry.getPartitionNum();
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < partitionNum; i++) {
-            if (i > 0) {
-                sb.append(", ");
-            }
-            sb.append(i);
-        }
         ObPartitionEntry partitionEntry;
-        String sql = MessageFormat.format(PROXY_LOCATION_SQL_PARTITION, sb.toString());
+        String sql = null;
+        if (ObGlobal.OB_VERSION >= 4) {
+            if (tableEntry.isPartitionTable()){
+                Map<Long, Long> partTabletIdMap = tableEntry.getPartitionInfo().getPartTabletIdMap();
+                int i = 0;
+                for (Long tabletId : partTabletIdMap.values()) {
+                    if (i++ > 0) {
+                        sb.append(", ");
+                    }
+                    sb.append(tabletId);
+                }
+            } else {
+                for (int i = 0; i < partitionNum; i++) {
+                    if (i > 0) {
+                        sb.append(", ");
+                    }
+                    sb.append(i);
+                }
+            }
+            sql = MessageFormat.format(PROXY_LOCATION_SQL_PARTITION_V4, sb.toString());
+        } else {
+            for (int i = 0; i < partitionNum; i++) {
+                if (i > 0) {
+                    sb.append(", ");
+                }
+                sb.append(i);
+            }
+            sql = MessageFormat.format(PROXY_LOCATION_SQL_PARTITION, sb.toString());
+        }
         try {
             ps = connection.prepareStatement(sql);
             ps.setString(1, key.getTenantName());
@@ -536,10 +670,16 @@ public class LocationUtil {
         PreparedStatement ps = null;
         ResultSet rs = null;
         try {
-            ps = connection.prepareStatement(PROXY_FIRST_PARTITION_SQL);
-            ps.setLong(1, tableEntry.getTableId());
-            ps.setInt(2, Integer.MAX_VALUE);
-
+            if (ObGlobal.OB_VERSION >= 4) {
+                ps = connection.prepareStatement(PROXY_FIRST_PARTITION_SQL_V4);
+                ps.setString(1, key.getTenantName());
+                ps.setLong(2, tableEntry.getTableId());
+                ps.setInt(3, Integer.MAX_VALUE);
+            } else {
+                ps = connection.prepareStatement(PROXY_FIRST_PARTITION_SQL);
+                ps.setLong(1, tableEntry.getTableId());
+                ps.setInt(2, Integer.MAX_VALUE);
+            }
             rs = ps.executeQuery();
             if (obPartFuncType.isRangePart()) {
                 List<ObComparableKV<ObPartitionKey, Long>> bounds = parseFirstPartRange(rs,
@@ -559,6 +699,8 @@ public class LocationUtil {
                     logger.info(format("uuid:%s, get first list sets from remote for %s, sets=%s",
                         uuid, tableName, JSON.toJSON(sets)));
                 }
+            } else if (ObGlobal.OB_VERSION >= 4 && (obPartFuncType.isKeyPart() || obPartFuncType.isHashPart())) {
+                tableEntry.getPartitionInfo().setPartTabletIdMap(parseFirstPartKeyHash(rs));
             }
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00011"), tableEntry, obPartFuncType, e);
@@ -593,10 +735,17 @@ public class LocationUtil {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         try {
-            pstmt = connection.prepareStatement(PROXY_SUB_PARTITION_SQL);
-            pstmt.setLong(1, tableEntry.getTableId());
-            pstmt.setLong(2, TEMPLATE_PART_ID);
-            pstmt.setInt(3, Integer.MAX_VALUE);
+            if (ObGlobal.OB_VERSION >= 4) {
+                pstmt = connection.prepareStatement(PROXY_SUB_PARTITION_SQL_V4);
+                pstmt.setString(1, key.getTenantName());
+                pstmt.setLong(2, tableEntry.getTableId());
+                pstmt.setInt(3, Integer.MAX_VALUE);
+            } else {
+                pstmt = connection.prepareStatement(PROXY_SUB_PARTITION_SQL);
+                pstmt.setLong(1, tableEntry.getTableId());
+                pstmt.setLong(2, TEMPLATE_PART_ID);
+                pstmt.setInt(3, Integer.MAX_VALUE);
+            }
 
             rs = pstmt.executeQuery();
             if (subPartFuncType.isRangePart()) {
@@ -615,6 +764,8 @@ public class LocationUtil {
                     logger.info(format("uuid:%s, get sub list sets from remote, sets=%s", uuid,
                         JSON.toJSON(sets)));
                 }
+            } else if (ObGlobal.OB_VERSION >= 4 && (subPartFuncType.isKeyPart() || subPartFuncType.isHashPart())) {
+                tableEntry.getPartitionInfo().setPartTabletIdMap(parseSubPartKeyHash(rs));
             }
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00012"), tableEntry, subPartFuncType, e);
@@ -682,10 +833,15 @@ public class LocationUtil {
         Map<Long, ObPartitionLocation> partitionLocation = new HashMap<Long, ObPartitionLocation>();
         while (rs.next()) {
             ReplicaLocation replica = buildReplicaLocation(rs);
-            long partitionId = rs.getLong("partition_id");
+            long partitionId;
+            if (ObGlobal.OB_VERSION >= 4) {
+                partitionId = rs.getLong("tablet_id");
+            } else {
+                partitionId = rs.getLong("partition_id");
+            }
             if (!replica.isValid()) {
                 RUNTIME.warn(format(
-                    "replica is invalid, continue, replica=%s, partitionId=%d, tableId=%d",
+                    "replica is invalid, continue, replica=%s, partitionId/tabletId=%d, tableId=%d",
                     replica, partitionId, tableEntry.getTableId()));
                 continue;
             }
@@ -700,25 +856,27 @@ public class LocationUtil {
         ObPartitionEntry partitionEntry = new ObPartitionEntry();
         partitionEntry.setPartitionLocation(partitionLocation);
 
-        for (long i = 0; i < tableEntry.getPartitionNum(); i++) {
-            ObPartitionLocation location = partitionEntry.getPartitionLocationWithPartId(i);
-            if (location == null) {
-                RUNTIME.error(LCD.convert("01-00013"), i, partitionEntry, tableEntry);
-                RUNTIME.error(format(
-                    "partition num=%d is not exist partitionEntry=%s original tableEntry=%s", i,
-                    partitionEntry, tableEntry));
-                throw new ObTablePartitionNotExistException(format(
-                    "partition num=%d is not exist partitionEntry=%s original tableEntry=%s", i,
-                    partitionEntry, tableEntry));
-            }
-            if (location.getLeader() == null) {
-                RUNTIME.error(LCD.convert("01-00028"), i, partitionEntry, tableEntry);
-                RUNTIME.error(format(
-                    "partition num=%d has no leader partitionEntry=%s original tableEntry=%s", i,
-                    partitionEntry, tableEntry));
-                throw new ObTablePartitionNoMasterException(format(
-                    "partition num=%d has no leader partitionEntry=%s original tableEntry=%s", i,
-                    partitionEntry, tableEntry));
+        if (ObGlobal.OB_VERSION < 4) {
+            for (long i = 0; i < tableEntry.getPartitionNum(); i++) {
+                ObPartitionLocation location = partitionEntry.getPartitionLocationWithPartId(i);
+                if (location == null) {
+                    RUNTIME.error(LCD.convert("01-00013"), i, partitionEntry, tableEntry);
+                    RUNTIME.error(format(
+                            "partition num=%d is not exist partitionEntry=%s original tableEntry=%s", i,
+                            partitionEntry, tableEntry));
+                    throw new ObTablePartitionNotExistException(format(
+                            "partition num=%d is not exist partitionEntry=%s original tableEntry=%s", i,
+                            partitionEntry, tableEntry));
+                }
+                if (location.getLeader() == null) {
+                    RUNTIME.error(LCD.convert("01-00028"), i, partitionEntry, tableEntry);
+                    RUNTIME.error(format(
+                            "partition num=%d has no leader partitionEntry=%s original tableEntry=%s", i,
+                            partitionEntry, tableEntry));
+                    throw new ObTablePartitionNoMasterException(format(
+                            "partition num=%d has no leader partitionEntry=%s original tableEntry=%s", i,
+                            partitionEntry, tableEntry));
+                }
             }
         }
 
@@ -764,9 +922,16 @@ public class LocationUtil {
         ResultSet rs = null;
         ObPartitionInfo info = null;
         try {
-            pstmt = connection.prepareStatement(PROXY_PART_INFO_SQL);
-            pstmt.setLong(1, tableEntry.getTableId());
-            pstmt.setLong(2, Long.MAX_VALUE);
+            if (ObGlobal.OB_VERSION >= 4) {
+                pstmt = connection.prepareStatement(PROXY_PART_INFO_SQL_V4);
+                pstmt.setString(1, tableEntry.getTableEntryKey().getTenantName());
+                pstmt.setLong(2, tableEntry.getTableId());
+                pstmt.setLong(3, Long.MAX_VALUE);
+            } else {
+                pstmt = connection.prepareStatement(PROXY_PART_INFO_SQL);
+                pstmt.setLong(1, tableEntry.getTableId());
+                pstmt.setLong(2, Long.MAX_VALUE);
+            }
 
             rs = pstmt.executeQuery();
             info = parsePartitionInfo(rs);
@@ -833,18 +998,24 @@ public class LocationUtil {
             String partKeyExtra = rs.getString("part_key_extra");
             partKeyExtra = partKeyExtra.replace("`", ""); // '`' is not supported by druid
             ObColumn column;
+            String collationTypeLabel = null;
+            if (ObGlobal.OB_VERSION >= 4L) {
+                collationTypeLabel = "part_key_collation_type";
+            } else {
+                collationTypeLabel = "spare1";
+            }
             if (!partKeyExtra.isEmpty()) {
                 column = new ObGeneratedColumn(
                     rs.getString("part_key_name"),//
                     rs.getInt("part_key_idx"),//
                     ObObjType.valueOf(rs.getInt("part_key_type")),//
-                    ObCollationType.valueOf(rs.getInt("spare1")),
+                    ObCollationType.valueOf(rs.getInt(collationTypeLabel)),
                     new ObGeneratedColumnExpressParser(getPlainString(partKeyExtra)).parse());
             } else {
                 column = new ObSimpleColumn(rs.getString("part_key_name"),//
                     rs.getInt("part_key_idx"),//
                     ObObjType.valueOf(rs.getInt("part_key_type")),//
-                    ObCollationType.valueOf(rs.getInt("spare1")));
+                    ObCollationType.valueOf(rs.getInt(collationTypeLabel)));
             }
 
             info.addColumn(column);
@@ -902,8 +1073,10 @@ public class LocationUtil {
             hashDesc.setPartFuncType(partType);
             hashDesc.setPartNum(rs.getInt(partLevelPrefix + "part_num"));
             hashDesc.setPartSpace(rs.getInt(partLevelPrefix + "part_space"));
-            Map<String, Long> partNameIdMap = buildDefaultPartNameIdMap(hashDesc.getPartNum());
-            hashDesc.setPartNameIdMap(partNameIdMap);
+            if (ObGlobal.OB_VERSION < 4L) {
+                Map<String, Long> partNameIdMap = buildDefaultPartNameIdMap(hashDesc.getPartNum());
+                hashDesc.setPartNameIdMap(partNameIdMap);
+            }
             partDesc = hashDesc;
         } else if (partType.isKeyPart()) {
             ObKeyPartDesc keyPartDesc = new ObKeyPartDesc();
@@ -911,8 +1084,10 @@ public class LocationUtil {
             keyPartDesc.setPartExpr(partExpr);
             keyPartDesc.setPartNum(rs.getInt(partLevelPrefix + "part_num"));
             keyPartDesc.setPartSpace(rs.getInt(partLevelPrefix + "part_space"));
-            Map<String, Long> partNameIdMap = buildDefaultPartNameIdMap(keyPartDesc.getPartNum());
-            keyPartDesc.setPartNameIdMap(partNameIdMap);
+            if (ObGlobal.OB_VERSION < 4L) {
+                Map<String, Long> partNameIdMap = buildDefaultPartNameIdMap(keyPartDesc.getPartNum());
+                keyPartDesc.setPartNameIdMap(partNameIdMap);
+            }
             partDesc = keyPartDesc;
         } else {
             RUNTIME.error(LCD.convert("01-00015"), partType);
@@ -987,6 +1162,13 @@ public class LocationUtil {
         return partNameIdMap;
     }
 
+    private static Map<Long, Long> parseFirstPartKeyHash(ResultSet rs)
+            throws SQLException,
+            IllegalArgumentException,
+            FeatureNotSupportedException {
+        return parseKeyHashPart(rs);
+    }
+
     private static List<ObComparableKV<ObPartitionKey, Long>> parseFirstPartRange(ResultSet rs,
                                                                                   TableEntry tableEntry)
                                                                                                         throws SQLException,
@@ -1017,6 +1199,26 @@ public class LocationUtil {
         return parseListPartSets(rs, tableEntry, true);
     }
 
+    private static Map<Long, Long> parseSubPartKeyHash(ResultSet rs)
+            throws SQLException,
+            IllegalArgumentException,
+            FeatureNotSupportedException {
+        return parseKeyHashPart(rs);
+    }
+
+    private static Map<Long, Long> parseKeyHashPart(ResultSet rs)
+            throws SQLException,
+            IllegalArgumentException,
+            FeatureNotSupportedException {
+        long idx = 0L;
+        Map<Long, Long> partTabletIdMap = new HashMap<Long, Long>();
+        while (rs.next()) {
+            Long tabletId = rs.getLong("tablet_id");
+            partTabletIdMap.put(idx++, tabletId);
+        }
+        return partTabletIdMap;
+    }
+
     private static List<ObComparableKV<ObPartitionKey, Long>> parseRangePart(ResultSet rs,
                                                                              TableEntry tableEntry,
                                                                              boolean isSubPart)
@@ -1033,6 +1235,8 @@ public class LocationUtil {
         List<ObColumn> orderPartColumns = ((ObRangePartDesc) partDesc).getOrderedCompareColumns();
         List<ObComparableKV<ObPartitionKey, Long>> bounds = new ArrayList<ObComparableKV<ObPartitionKey, Long>>();
         Map<String, Long> partNameIdMap = new HashMap<String, Long>();
+        Map<Long, Long> partTabletIdMap = new HashMap<Long, Long>();
+        long idx = 0L;
         while (rs.next()) {
             String highBoundVal = rs.getString("high_bound_val");
             String[] splits = highBoundVal.split(",");
@@ -1054,15 +1258,57 @@ public class LocationUtil {
                 }
             }
             ObPartitionKey partitionKey = new ObPartitionKey(orderPartColumns, partElements);
-            Long partId = rs.getLong(partIdColumnName);
-            String partName = rs.getString("part_name");
-            bounds.add(new ObComparableKV<ObPartitionKey, Long>(partitionKey, partId));
-            partNameIdMap.put(partName.toLowerCase(), partId);
+            if (ObGlobal.OB_VERSION >= 4) {
+                long tabletId = rs.getLong("tablet_id");
+                bounds.add(new ObComparableKV<ObPartitionKey, Long>(partitionKey, idx));
+                partTabletIdMap.put(idx, tabletId);
+                idx++;
+            } else {
+                long partId = rs.getLong(partIdColumnName);
+                String partName = rs.getString("part_name");
+                bounds.add(new ObComparableKV<ObPartitionKey, Long>(partitionKey, partId));
+                partNameIdMap.put(partName.toLowerCase(), partId);
+            }
         }
-        //set single level partition name-id mapping
-        partDesc.setPartNameIdMap(partNameIdMap);
+        if (ObGlobal.OB_VERSION >= 4) {
+            //set single level partition tablet-id mapping
+            tableEntry.getPartitionInfo().setPartTabletIdMap(partTabletIdMap);
+        } else {
+            //set single level partition name-id mapping
+            partDesc.setPartNameIdMap(partNameIdMap);
+        }
         Collections.sort(bounds);
         return bounds;
+    }
+
+    private static String[] parseListPartSetsCommon(ResultSet rs, TableEntry tableEntry)
+                                                                                throws SQLException,
+                                                                                IllegalArgumentException,
+                                                                                FeatureNotSupportedException {
+        // multi-columns: '(1,2),(1,3),(1,4),(default)'
+        // single-columns: '(1),(2),(3)' or '1,2,3'
+        String setsStr = rs.getString("high_bound_val");
+        setsStr = (null == setsStr) ? "" : setsStr.trim();
+        if (setsStr.length() < 2) {
+            RUNTIME.error(LCD.convert("01-00016"), setsStr, tableEntry.toString());
+            RUNTIME.error(format("high_bound_val value is error, high_bound_val=%s", setsStr));
+            // if partition value format is wrong, directly throw exception
+            throw new IllegalArgumentException(format(
+                    "high_bound_val value is error, high_bound_val=%s, tableEntry=%s", setsStr,
+                    tableEntry.toString()));
+        }
+        // skip the first character '(' and the last ')' if exist
+        if (setsStr.startsWith("(") && setsStr.endsWith(")")) {
+            setsStr = setsStr.substring(1, setsStr.length() - 1);
+        }
+
+        String[] setArray = null;
+        if (setsStr.contains("),(")) { // multi-column format
+            setArray = setsStr.split("\\),\\(");
+        } else { // single-column format
+            setArray = setsStr.split(",");
+        }
+        return setArray;
     }
 
     private static Map<ObPartitionKey, Long> parseListPartSets(ResultSet rs, TableEntry tableEntry,
@@ -1081,57 +1327,65 @@ public class LocationUtil {
 
         List<ObColumn> columns = ((ObListPartDesc) partDesc).getOrderCompareColumns();
         Map<ObPartitionKey, Long> sets = new HashMap<ObPartitionKey, Long>();
-        Map<String, Long> partNameIdMap = new HashMap<String, Long>();
-        while (rs.next()) {
-            // multi-columns: '(1,2),(1,3),(1,4),(default)'
-            // single-columns: '(1),(2),(3)' or '1,2,3'
-            String setsStr = rs.getString("high_bound_val");
-            setsStr = (null == setsStr) ? "" : setsStr.trim();
-            if (setsStr.length() < 2) {
-                RUNTIME.error(LCD.convert("01-00016"), setsStr, tableEntry.toString());
-                RUNTIME.error(format("high_bound_val value is error, high_bound_val=%s", setsStr));
-                // if partition value format is wrong, directly throw exception
-                throw new IllegalArgumentException(format(
-                    "high_bound_val value is error, high_bound_val=%s, tableEntry=%s", setsStr,
-                    tableEntry.toString()));
-            }
-            // skip the first character '(' and the last ')' if exist
-            if (setsStr.startsWith("(") && setsStr.endsWith(")")) {
-                setsStr = setsStr.substring(1, setsStr.length() - 1);
-            }
+        if (ObGlobal.OB_VERSION >= 4) {
+            Map<Long, Long> partTabletIdMap = new HashMap<Long, Long>();
+            long idx = 0L;
+            while (rs.next()) {
+                String[] setArray = parseListPartSetsCommon(rs, tableEntry);
+                ObPartitionKey key = null;
+                // setArray can not be null
+                for (String set : setArray) {
+                    if ("default".equalsIgnoreCase(set)) {
+                        key = ObPartDesc.DEFAULT_PART_KEY;
+                    } else {
+                        String[] splits = set.split(",");
 
-            String[] setArray = null;
-            if (setsStr.contains("),(")) { // multi-column format
-                setArray = setsStr.split("\\),\\(");
-            } else { // single-column format
-                setArray = setsStr.split(",");
-            }
-
-            ObPartitionKey key = null;
-            Long partId = null;
-            String partName = null;
-            // setArray can not be null
-            for (String set : setArray) {
-                if ("default".equalsIgnoreCase(set)) {
-                    key = ObPartDesc.DEFAULT_PART_KEY;
-                } else {
-                    String[] splits = set.split(",");
-
-                    List<Comparable> partElements = new ArrayList<Comparable>();
-                    for (int i = 0; i < splits.length; i++) {
-                        partElements.add(columns.get(i).getObObjType()
-                            .parseToComparable(splits[i], columns.get(i).getObCollationType()));
+                        List<Comparable> partElements = new ArrayList<Comparable>();
+                        for (int i = 0; i < splits.length; i++) {
+                            partElements.add(columns.get(i).getObObjType()
+                                    .parseToComparable(splits[i], columns.get(i).getObCollationType()));
+                        }
+                        key = new ObPartitionKey(columns, partElements);
                     }
-                    key = new ObPartitionKey(columns, partElements);
+                    sets.put(key, idx);
                 }
-                partId = rs.getLong(partIdColumnName);
-                partName = rs.getString("part_name");
-                sets.put(key, partId);
-                partNameIdMap.put(partName.toLowerCase(), partId);
+                long tabletId = rs.getLong("tablet_id");
+                partTabletIdMap.put(idx++, tabletId);
             }
+            //set single level partition tablet-id mapping
+            tableEntry.getPartitionInfo().setPartTabletIdMap(partTabletIdMap);
+
+        } else {
+            Map<String, Long> partNameIdMap = new HashMap<String, Long>();
+            while (rs.next()) {
+                String[] setArray = parseListPartSetsCommon(rs, tableEntry);
+                ObPartitionKey key = null;
+                Long partId = null;
+                String partName = null;
+                // setArray can not be null
+                for (String set : setArray) {
+                    if ("default".equalsIgnoreCase(set)) {
+                        key = ObPartDesc.DEFAULT_PART_KEY;
+                    } else {
+                        String[] splits = set.split(",");
+
+                        List<Comparable> partElements = new ArrayList<Comparable>();
+                        for (int i = 0; i < splits.length; i++) {
+                            partElements.add(columns.get(i).getObObjType()
+                                    .parseToComparable(splits[i], columns.get(i).getObCollationType()));
+                        }
+                        key = new ObPartitionKey(columns, partElements);
+                    }
+                    partId = rs.getLong(partIdColumnName);
+                    partName = rs.getString("part_name");
+                    sets.put(key, partId);
+                    partNameIdMap.put(partName.toLowerCase(), partId);
+                }
+            }
+            //set single level partition name-id mapping
+            partDesc.setPartNameIdMap(partNameIdMap);
         }
-        //set single level partition name-id mapping
-        partDesc.setPartNameIdMap(partNameIdMap);
+
         return sets;
     }
 

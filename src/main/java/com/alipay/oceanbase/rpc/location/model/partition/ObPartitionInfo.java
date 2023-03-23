@@ -30,6 +30,7 @@ public class ObPartitionInfo {
     private ObPartDesc           firstPartDesc = null;
     private ObPartDesc           subPartDesc   = null;
     private List<ObColumn>       partColumns   = new ArrayList<ObColumn>(1);
+    private Map<Long, Long>      partTabletIdMap = null;
     private Map<String, Long>    partNameIdMap = null;
     private Map<String, Integer> rowKeyElement = null;
 
@@ -149,5 +150,16 @@ public class ObPartitionInfo {
      */
     public void setPartNameIdMap(Map<String, Long> partNameIdMap) {
         this.partNameIdMap = partNameIdMap;
+    }
+
+    public Map<Long, Long> getPartTabletIdMap() {
+        return this.partTabletIdMap;
+    }
+
+    /*
+     * Set part tablet id map.
+     */
+    public void setPartTabletIdMap(Map<Long, Long> partTabletIdMap) {
+        this.partTabletIdMap = partTabletIdMap;
     }
 }
