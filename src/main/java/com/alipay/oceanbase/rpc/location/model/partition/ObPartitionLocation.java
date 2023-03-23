@@ -37,12 +37,6 @@ public class ObPartitionLocation {
      * Get leader.
      */
     public ReplicaLocation getLeader() {
-        if (leader == null) {
-            // Previously, exception is thrown when get table meta with any no leader partition,
-            // thus might prevent us from updating other partitions.
-            // Now, put off the exception until we need to access the leader server instead.
-            throw new ObTablePartitionNoMasterException("partition has no leader.");
-        }
         return leader;
     }
 

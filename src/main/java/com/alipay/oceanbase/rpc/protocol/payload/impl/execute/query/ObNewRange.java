@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.ObSimplePayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
@@ -50,6 +51,7 @@ public class ObNewRange implements ObSimplePayload {
     private ObBorderFlag borderFlag = new ObBorderFlag();
     private ObRowKey     startKey;
     private ObRowKey     endKey;
+    private long         flag = 0L;
 
     /*
      * Ob new range.
@@ -95,6 +97,12 @@ public class ObNewRange implements ObSimplePayload {
             idx += objBytes.length;
         }
 
+        if (ObGlobal.OB_VERSION >= 4) {
+            len = Serialization.getNeedBytes(flag);
+            System.arraycopy(Serialization.encodeVi64(flag), 0, bytes, idx, len);
+            idx += len;
+        }
+
         return bytes;
     }
 
@@ -122,6 +130,10 @@ public class ObNewRange implements ObSimplePayload {
             this.endKey.addObj(obObj);
         }
 
+        if (ObGlobal.OB_VERSION >= 4) {
+            this.flag = Serialization.decodeVi64(buf);
+        }
+
         return this;
     }
 
@@ -145,6 +157,10 @@ public class ObNewRange implements ObSimplePayload {
         for (int i = 0; i < rowkeySize; i++) {
             ObObj obObj = endKey.getObj(i);
             encodedSize += obObj.getEncodedSize();
+        }
+
+        if (ObGlobal.OB_VERSION >= 4) {
+            encodedSize += Serialization.getNeedBytes(flag);
         }
 
         return encodedSize;

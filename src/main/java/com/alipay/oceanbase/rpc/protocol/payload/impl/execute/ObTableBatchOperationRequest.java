@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
@@ -84,10 +85,15 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
         System.arraycopy(Serialization.encodeI8(returningAffectedRows ? (byte) 1 : (byte) 0), 0,
             bytes, idx, 1);
         idx++;
-        len = Serialization.getNeedBytes(partitionId);
-        System.arraycopy(Serialization.encodeVi64(partitionId), 0, bytes, idx, len);
+        if (ObGlobal.OB_VERSION >= 4) {
+            System.arraycopy(Serialization.encodeI64(partitionId), 0, bytes, idx, 8);
+            idx += 8;
+        } else {
+            len = Serialization.getNeedBytes(partitionId);
+            System.arraycopy(Serialization.encodeVi64(partitionId), 0, bytes, idx, len);
+            idx += len;
+        }
 
-        idx += len;
         System.arraycopy(Serialization.encodeI8(batchOperationAsAtomic ? (byte) 1 : (byte) 0), 0,
             bytes, idx, 1);
 
@@ -112,7 +118,10 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
         this.returningRowKey = Serialization.decodeI8(buf) != 0;
         this.returningAffectedEntity = Serialization.decodeI8(buf) != 0;
         this.returningAffectedRows = Serialization.decodeI8(buf) != 0;
-        this.partitionId = Serialization.decodeVi64(buf);
+        if (ObGlobal.OB_VERSION >= 4)
+            this.partitionId = Serialization.decodeI64(buf);
+        else
+            this.partitionId = Serialization.decodeVi64(buf);
         this.batchOperationAsAtomic = Serialization.decodeI8(buf) != 0;
 
         return this;

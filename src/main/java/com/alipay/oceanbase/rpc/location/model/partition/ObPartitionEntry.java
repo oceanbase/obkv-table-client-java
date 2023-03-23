@@ -52,6 +52,21 @@ public class ObPartitionEntry {
     }
 
     /*
+     * Get partition location with tablet id.
+     */
+    public ObPartitionLocation getPartitionLocationWithTabletId(long tabletId) {
+        return partitionLocation.get(tabletId);
+    }
+
+    /*
+     * Put partition location with part id.
+     */
+    public ObPartitionLocation putPartitionLocationWithTabletId(long tabletId,
+                                                                ObPartitionLocation ObpartitionLocation) {
+        return partitionLocation.put(tabletId, ObpartitionLocation);
+    }
+
+    /*
      * Prepare for weak read.
      * @param ldcLocation
      */

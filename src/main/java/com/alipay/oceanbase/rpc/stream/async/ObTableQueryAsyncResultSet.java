@@ -22,6 +22,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.QueryStreamResult;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.ObTable;
+import com.alipay.oceanbase.rpc.table.ObTableParam;
 import com.alipay.oceanbase.rpc.table.ObTableQueryAsyncImpl;
 
 import java.util.HashMap;
@@ -33,13 +34,13 @@ public class ObTableQueryAsyncResultSet implements QueryStreamResult {
     private final ObTableQueryAsyncImpl obTableQueryAsync;
     private QueryResultSet              resultSet = null;
     private int                         resultSize;
-    private ObPair<Long, ObTable>       tableEntry;
+    private ObPair<Long, ObTableParam>  tableEntry;
 
     public ObTableQueryAsyncResultSet(ObTableQueryAsyncImpl obTableQueryAsync) {
         this.obTableQueryAsync = obTableQueryAsync;
-        Map<Long, ObPair<Long, ObTable>> partitionObTable = new HashMap<Long, ObPair<Long, ObTable>>();
-        this.tableEntry = partitionObTable.put(0L, new ObPair<Long, ObTable>(0L,
-            this.obTableQueryAsync.getTable()));
+        Map<Long, ObPair<Long, ObTableParam>> partitionObTable = new HashMap<Long, ObPair<Long, ObTableParam>>();
+        this.tableEntry = partitionObTable.put(0L, new ObPair<Long, ObTableParam>(0L,
+            new ObTableParam(this.obTableQueryAsync.getTable())));
     }
 
     @Override
