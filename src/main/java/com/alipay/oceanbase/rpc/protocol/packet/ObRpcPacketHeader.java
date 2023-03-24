@@ -53,20 +53,20 @@ public class ObRpcPacketHeader {
                                                                          + ObRpcCostTime.ENCODED_SIZE //
                                                                          + 8 // 8 is clusterId
                                                                          + 4 // obCompressType
-                                                                         + 4; // originalLen
+                                                                         + 4;                              // originalLen
     private static final int ENCODE_SIZE_V4                            = HEADER_SIZE
-                                                                        + ObRpcCostTime.ENCODED_SIZE //
-                                                                        + 8 // 8 is dst clusterId
-                                                                        + 4 // obCompressType
-                                                                        + 4 // originalLen
-                                                                        + 8 // src clusterId
-                                                                        + 8 // unis version
-                                                                        + 4 // request level
-                                                                        + 8 // seq no
-                                                                        + 4 // group id
-                                                                        + 8 // trace id2
-                                                                        + 8 // trace id3
-                                                                        + 8; //clusterNameHash
+                                                                         + ObRpcCostTime.ENCODED_SIZE //
+                                                                         + 8 // 8 is dst clusterId
+                                                                         + 4 // obCompressType
+                                                                         + 4 // originalLen
+                                                                         + 8 // src clusterId
+                                                                         + 8 // unis version
+                                                                         + 4 // request level
+                                                                         + 8 // seq no
+                                                                         + 4 // group id
+                                                                         + 8 // trace id2
+                                                                         + 8 // trace id3
+                                                                         + 8;                              //clusterNameHash
     public static final int  RESP_FLAG                                 = 1 << 15;
 
     public static final int  STREAM_FLAG                               = 1 << 14;
@@ -209,7 +209,6 @@ public class ObRpcPacketHeader {
         this.traceId1 = Serialization.decodeI64(buf);
         this.timeout = Serialization.decodeI64(buf);
         this.timestamp = Serialization.decodeI64(buf);
-
 
         if (hlen >= ENCODE_SIZE_V4) {
             obRpcCostTime.decode(buf);

@@ -62,6 +62,7 @@ public class ObTablePacketProcessor implements RemotingProcessor<ObTablePacket> 
                     .warn("Cannot find InvokeFuture, maybe already timeout, id={}, from={} ",
                         msg.getId(),
                         RemotingUtil.parseRemoteAddress(ctx.getChannelContext().channel()));
+                msg.releaseByteBuf();
             }
         } finally {
             if (null != oldClassLoader) {

@@ -106,12 +106,11 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
     public long getPayloadContentSize() {
         if (ObGlobal.OB_VERSION >= 4)
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
-                    + Serialization.getNeedBytes(tableId) + 8 + 2
-                    + tableQuery.getPayloadSize();
+                   + Serialization.getNeedBytes(tableId) + 8 + 2 + tableQuery.getPayloadSize();
         else
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
-                   + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId) + 2
-                   + tableQuery.getPayloadSize();
+                   + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId)
+                   + 2 + tableQuery.getPayloadSize();
     }
 
     /*

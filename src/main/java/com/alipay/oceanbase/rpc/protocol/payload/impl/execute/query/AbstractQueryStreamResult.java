@@ -44,21 +44,20 @@ import java.util.concurrent.locks.ReentrantLock;
 public abstract class AbstractQueryStreamResult extends AbstractPayload implements
                                                                        QueryStreamResult {
 
-    private ReentrantLock                                                 lock                = new ReentrantLock();
-    private volatile boolean                                              initialized         = false;
-    private volatile boolean                                              closed              = false;
-    protected volatile List<ObObj>                                        row                 = null;
-    protected volatile int                                                rowIndex            = -1;
-    protected ObTableQuery                                                tableQuery;
-    protected long                                                        operationTimeout    = -1;
-    protected String                                                      tableName;
-    protected ObTableEntityType                                           entityType;
-    private Map<Long, ObPair<Long, ObTableParam>>                         expectant;
-    private List<String>                                                  cacheProperties     = new LinkedList<String>();
-    private LinkedList<List<ObObj>>                                       cacheRows           = new LinkedList<List<ObObj>>();
-    private LinkedList<ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>> partitionLastResult
-                                                                                              = new LinkedList<ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>>();
-    private ObReadConsistency                                             readConsistency     = ObReadConsistency.STRONG;
+    private ReentrantLock                                                      lock                = new ReentrantLock();
+    private volatile boolean                                                   initialized         = false;
+    private volatile boolean                                                   closed              = false;
+    protected volatile List<ObObj>                                             row                 = null;
+    protected volatile int                                                     rowIndex            = -1;
+    protected ObTableQuery                                                     tableQuery;
+    protected long                                                             operationTimeout    = -1;
+    protected String                                                           tableName;
+    protected ObTableEntityType                                                entityType;
+    private Map<Long, ObPair<Long, ObTableParam>>                              expectant;
+    private List<String>                                                       cacheProperties     = new LinkedList<String>();
+    private LinkedList<List<ObObj>>                                            cacheRows           = new LinkedList<List<ObObj>>();
+    private LinkedList<ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>> partitionLastResult = new LinkedList<ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>>();
+    private ObReadConsistency                                                  readConsistency     = ObReadConsistency.STRONG;
 
     /*
      * Get pcode.
@@ -198,7 +197,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         if (operationTimeout > 0) {
             streamRequest.setTimeout(operationTimeout);
         } else {
-            streamRequest.setTimeout(partIdWithObTable.getRight().getObTable().getObTableOperationTimeout());
+            streamRequest.setTimeout(partIdWithObTable.getRight().getObTable()
+                .getObTableOperationTimeout());
         }
         return execute(partIdWithObTable, streamRequest);
     }
@@ -211,13 +211,14 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         if (operationTimeout > 0) {
             streamRequest.setTimeout(operationTimeout);
         } else {
-            streamRequest.setTimeout(partIdWithObTable.getRight().getObTable().getObTableOperationTimeout());
+            streamRequest.setTimeout(partIdWithObTable.getRight().getObTable()
+                .getObTableOperationTimeout());
         }
         partIdWithObTable.getRight().getObTable().execute(streamRequest);
     }
 
     private ObTableQueryResult referToNewPartition(ObPair<Long, ObTableParam> partIdWithObTable)
-                                                                                           throws Exception {
+                                                                                                throws Exception {
         ObTableQueryRequest request = new ObTableQueryRequest();
         request.setTableName(tableName);
         request.setTableQuery(tableQuery);
@@ -227,7 +228,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         if (operationTimeout > 0) {
             request.setTimeout(operationTimeout);
         } else {
-            request.setTimeout(partIdWithObTable.getRight().getObTable().getObTableOperationTimeout());
+            request.setTimeout(partIdWithObTable.getRight().getObTable()
+                .getObTableOperationTimeout());
         }
         request.setConsistencyLevel(getReadConsistency().toObTableConsistencyLevel());
         return execute(partIdWithObTable, request);
@@ -250,7 +252,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         if (operationTimeout > 0) {
             asyncRequest.setTimeout(operationTimeout);
         } else {
-            asyncRequest.setTimeout(partIdWithObTable.getRight().getObTable().getObTableOperationTimeout());
+            asyncRequest.setTimeout(partIdWithObTable.getRight().getObTable()
+                .getObTableOperationTimeout());
         }
         return executeAsync(partIdWithObTable, asyncRequest);
     }
@@ -345,7 +348,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     }
 
     public void init(ObQueryOperationType type, ObPair<Long, ObTableParam> entry, long sessionID)
-                                                                                            throws Exception {
+                                                                                                 throws Exception {
         if (initialized) {
             return;
         }

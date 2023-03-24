@@ -126,7 +126,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                     throw new ObTableException("key range columns must be specified when use index");
                 }
             }
-            partitionObTables.put(0L, new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTableClient.getOdpTable())));
+            partitionObTables.put(0L, new ObPair<Long, ObTableParam>(0L, new ObTableParam(
+                obTableClient.getOdpTable())));
         } else {
             for (ObNewRange rang : tableQuery.getKeyRanges()) {
                 ObRowKey startKey = rang.getStartKey();
@@ -154,8 +155,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
         StringBuilder stringBuilder = new StringBuilder();
         for (Map.Entry<Long, ObPair<Long, ObTableParam>> entry : partitionObTables.entrySet()) {
-            stringBuilder.append("#").append(entry.getValue().getRight().getObTable().getIp()).append(":")
-                .append(entry.getValue().getRight().getObTable().getPort());
+            stringBuilder.append("#").append(entry.getValue().getRight().getObTable().getIp())
+                .append(":").append(entry.getValue().getRight().getObTable().getPort());
         }
         String endpoint = stringBuilder.toString();
         long getTableTime = System.currentTimeMillis();

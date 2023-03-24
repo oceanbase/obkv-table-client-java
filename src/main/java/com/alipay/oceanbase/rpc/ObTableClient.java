@@ -1182,9 +1182,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                  ObServerRoute route) {
         if (ObGlobal.OB_VERSION >= 4 && tableEntry.isPartitionTable()) {
             long TabletId = tableEntry.getPartitionInfo().getPartTabletIdMap().get(partId);
-            return tableEntry.getPartitionEntry().getPartitionLocationWithTabletId(TabletId).getReplica(route);
+            return tableEntry.getPartitionEntry().getPartitionLocationWithTabletId(TabletId)
+                .getReplica(route);
         } else {
-            return tableEntry.getPartitionEntry().getPartitionLocationWithPartId(partId).getReplica(route);
+            return tableEntry.getPartitionEntry().getPartitionLocationWithPartId(partId)
+                .getReplica(route);
 
         }
     }
@@ -1199,7 +1201,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws Exception exception
      */
     public ObPair<Long, ObTableParam> getTable(String tableName, Object[] rowKey, boolean refresh,
-                                          boolean waitForRefresh) throws Exception {
+                                               boolean waitForRefresh) throws Exception {
         return getTable(tableName, rowKey, refresh, waitForRefresh, getRoute(false));
     }
 
@@ -1215,7 +1217,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     public ObPair<Long, ObTableParam> getTable(String tableName, Object[] rowKey, boolean refresh,
                                                boolean waitForRefresh, ObServerRoute route)
-                                                                                      throws Exception {
+                                                                                           throws Exception {
         TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh);
 
         long partId = getPartition(tableEntry, rowKey);
@@ -1286,7 +1288,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     public ObPair<Long, ObTableParam> getTable(String tableName, long partId, boolean refresh,
                                                boolean waitForRefresh, ObServerRoute route)
-                                                                                      throws Exception {
+                                                                                           throws Exception {
         return getTable(tableName, getOrRefreshTableEntry(tableName, refresh, waitForRefresh),
             partId, waitForRefresh, route);
     }
@@ -1301,9 +1303,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return ObPair of partId and table
      * @throws Exception exception
      */
-    public ObPair<Long, ObTableParam> getTable(String tableName, TableEntry tableEntry, long partId,
-                                               boolean waitForRefresh, ObServerRoute route)
-                                                                                      throws Exception {
+    public ObPair<Long, ObTableParam> getTable(String tableName, TableEntry tableEntry,
+                                               long partId, boolean waitForRefresh,
+                                               ObServerRoute route) throws Exception {
         ObPair<Long, ReplicaLocation> partitionReplica = getPartitionReplica(tableEntry, partId,
             route);
 
@@ -1334,7 +1336,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         ObTableParam param = new ObTableParam(obTable);
         if (ObGlobal.OB_VERSION >= 4) {
-            partId = tableEntry.isPartitionTable() ? tableEntry.getPartitionInfo().getPartTabletIdMap().get(partId) : partId;
+            partId = tableEntry.isPartitionTable() ? tableEntry.getPartitionInfo()
+                .getPartTabletIdMap().get(partId) : partId;
         }
 
         param.setTableId(tableEntry.getTableId());
@@ -1429,7 +1432,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                       boolean startInclusive, Object[] end,
                                                       boolean endInclusive, boolean refresh,
                                                       boolean waitForRefresh, ObServerRoute route)
-                                                                                             throws Exception {
+                                                                                                  throws Exception {
 
         // 1. get TableEntry information
         TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh);
@@ -1463,7 +1466,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
             ObTableParam param = new ObTableParam(obTable);
             if (ObGlobal.OB_VERSION >= 4) {
-                partId = tableEntry.isPartitionTable() ? tableEntry.getPartitionInfo().getPartTabletIdMap().get(partId) : partId;
+                partId = tableEntry.isPartitionTable() ? tableEntry.getPartitionInfo()
+                    .getPartTabletIdMap().get(partId) : partId;
             }
 
             param.setTableId(tableEntry.getTableId());
@@ -2012,7 +2016,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 public ObPayload execute(ObPair<Long, ObTableParam> obPair) throws Exception {
                     long TableTime = System.currentTimeMillis();
                     ObTableParam tableParam = obPair.getRight();
-                    ObTable obTable =tableParam.getObTable();
+                    ObTable obTable = tableParam.getObTable();
                     ObTableOperationRequest request = ObTableOperationRequest.getInstance(
                         tableName, INCREMENT, rowKey, columns, values,
                         obTable.getObTableOperationTimeout());
@@ -2346,9 +2350,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         end[i] = endKey.getObj(i).getValue();
                     }
                     ObBorderFlag borderFlag = rang.getBorderFlag();
-                    List<ObPair<Long, ObTableParam>> pairList = getTables(request.getTableName(), start,
-                        borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false,
-                        false);
+                    List<ObPair<Long, ObTableParam>> pairList = getTables(request.getTableName(),
+                        start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(),
+                        false, false);
                     for (ObPair<Long, ObTableParam> pair : pairList) {
                         partIdMapObTable.put(pair.getLeft(), pair.getRight());
                     }

@@ -35,11 +35,11 @@ import java.util.List;
 import java.util.Map;
 
 public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
-    private final String                     tableName;
-    private final ObTableClient              obTableClient;
-    private long                             sessionId;
+    private final String                          tableName;
+    private final ObTableClient                   obTableClient;
+    private long                                  sessionId;
     private Map<Long, ObPair<Long, ObTableParam>> partitionObTables;
-    private boolean                          hasMore;
+    private boolean                               hasMore;
 
     public ObTableClientQueryAsyncImpl(String tableName, ObTableClient client) {
         this.tableName = tableName;
@@ -74,7 +74,7 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
     }
 
     public QueryResultSet execute(ObQueryOperationType type, ObPair<Long, ObTableParam> entry)
-                                                                                         throws Exception {
+                                                                                              throws Exception {
         ObTableClientQueryAsyncStreamResult obTableClientQueryAsyncStreamResult = executeInternal(
             type, entry);
         QueryResultSet queryResultSet = new QueryResultSet(obTableClientQueryAsyncStreamResult);
@@ -127,7 +127,7 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
 
     public ObTableClientQueryAsyncStreamResult executeInternal(ObQueryOperationType type,
                                                                ObPair<Long, ObTableParam> entry)
-                                                                                           throws Exception {
+                                                                                                throws Exception {
         ObTableClientQueryAsyncStreamResult obTableClientQueryASyncStreamResult = new ObTableClientQueryAsyncStreamResult();
         obTableClientQueryASyncStreamResult.setTableQuery(tableQuery);
         obTableClientQueryASyncStreamResult.setEntityType(entityType);
@@ -164,8 +164,9 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
                 end[i] = endKey.getObj(i).getValue();
             }
             ObBorderFlag borderFlag = rang.getBorderFlag();
-            List<ObPair<Long, ObTableParam>> pairs = this.obTableClient.getTables(this.tableName, start,
-                borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false, false);
+            List<ObPair<Long, ObTableParam>> pairs = this.obTableClient.getTables(this.tableName,
+                start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false,
+                false);
             for (ObPair<Long, ObTableParam> pair : pairs) {
                 partitionObTables.put(pair.getLeft(), pair);
             }

@@ -86,18 +86,18 @@ public class ObTableClientPartitionKeyTest {
         long timestamp = System.currentTimeMillis();
         try {
             long affectRow = obTableClient.insert(TEST_TABLE, new Object[] { "partitionKey",
-                            "partition".getBytes(), timestamp }, new String[] { "V" },
-                    new Object[] { "aa".getBytes() });
+                    "partition".getBytes(), timestamp }, new String[] { "V" },
+                new Object[] { "aa".getBytes() });
             Assert.assertEquals(1, affectRow);
 
             affectRow = obTableClient.insertOrUpdate(TEST_TABLE,
-                    new Object[] { "partitionKey".getBytes(), "partition".getBytes(), timestamp },
-                    new String[] { "V" }, new Object[] { "bb".getBytes() });
+                new Object[] { "partitionKey".getBytes(), "partition".getBytes(), timestamp },
+                new String[] { "V" }, new Object[] { "bb".getBytes() });
             Assert.assertEquals(1, affectRow);
 
-            Map<String, Object> result = obTableClient.get(TEST_TABLE,
-                    new Object[] { "partitionKey".getBytes(), "partition".getBytes(), timestamp },
-                    new String[] { "K", "Q", "T", "V" });
+            Map<String, Object> result = obTableClient.get(TEST_TABLE, new Object[] {
+                    "partitionKey".getBytes(), "partition".getBytes(), timestamp }, new String[] {
+                    "K", "Q", "T", "V" });
             Assert.assertEquals("partitionKey", new String((byte[]) result.get("K"), "UTF-8"));
             Assert.assertEquals("partition", new String((byte[]) result.get("Q"), "UTF-8"));
             Assert.assertEquals(timestamp, result.get("T"));
@@ -106,7 +106,8 @@ public class ObTableClientPartitionKeyTest {
             e.printStackTrace();
             Assert.assertTrue(false);
         } finally {
-            obTableClient.delete(TEST_TABLE, new Object[]{"partitionKey", "partition".getBytes(), timestamp});
+            obTableClient.delete(TEST_TABLE, new Object[] { "partitionKey", "partition".getBytes(),
+                    timestamp });
         }
     }
 
@@ -115,11 +116,11 @@ public class ObTableClientPartitionKeyTest {
         long timeStamp = System.currentTimeMillis();
         try {
             obTableClient.insert(TEST_TABLE,
-                    new Object[] { "partitionKey".getBytes(), "partition".getBytes(), timeStamp },
-                    new String[] { "V" }, new Object[] { "value".getBytes() });
-            Map<String, Object> result = obTableClient.get(TEST_TABLE,
-                    new Object[] { "partitionKey".getBytes(), "partition".getBytes(), timeStamp },
-                    new String[] { "K", "Q", "T", "V" });
+                new Object[] { "partitionKey".getBytes(), "partition".getBytes(), timeStamp },
+                new String[] { "V" }, new Object[] { "value".getBytes() });
+            Map<String, Object> result = obTableClient.get(TEST_TABLE, new Object[] {
+                    "partitionKey".getBytes(), "partition".getBytes(), timeStamp }, new String[] {
+                    "K", "Q", "T", "V" });
             Assert.assertEquals("partitionKey", new String((byte[]) result.get("K"), "UTF-8"));
             Assert.assertEquals("partition", new String((byte[]) result.get("Q"), "UTF-8"));
             Assert.assertEquals(timeStamp, result.get("T"));
@@ -128,7 +129,8 @@ public class ObTableClientPartitionKeyTest {
             e.printStackTrace();
             Assert.assertTrue(false);
         } finally {
-            obTableClient.delete(TEST_TABLE, new Object[]{"partitionKey", "partition".getBytes(), timeStamp});
+            obTableClient.delete(TEST_TABLE, new Object[] { "partitionKey", "partition".getBytes(),
+                    timeStamp });
         }
     }
 
@@ -143,40 +145,42 @@ public class ObTableClientPartitionKeyTest {
                 new Object[] { "partitionKey".getBytes(), "partition".getBytes(), timeStamp },
                 new String[] { "V" }, new Object[] { "value1".getBytes() });
             Assert.assertEquals(1, affectedRow);
-            Map<String, Object> result = obTableClient.get(TEST_TABLE,
-                new Object[] { "partitionKey".getBytes(), "partition".getBytes(), timeStamp },
-                new String[] { "K", "Q", "T", "V" });
+            Map<String, Object> result = obTableClient.get(TEST_TABLE, new Object[] {
+                    "partitionKey".getBytes(), "partition".getBytes(), timeStamp }, new String[] {
+                    "K", "Q", "T", "V" });
             Assert.assertEquals(timeStamp, result.get("T"));
             Assert.assertEquals("value1", new String((byte[]) result.get("V"), "UTF-8"));
         } catch (Exception e) {
             e.printStackTrace();
             Assert.assertTrue(false);
         } finally {
-            obTableClient.delete(TEST_TABLE, new Object[]{"partitionKey", "partition".getBytes(), timeStamp});
+            obTableClient.delete(TEST_TABLE, new Object[] { "partitionKey", "partition".getBytes(),
+                    timeStamp });
         }
-}
+    }
 
     @Test
     public void testReplace() throws Exception {
         long timeStamp = System.currentTimeMillis();
         try {
             obTableClient.insert(TEST_TABLE,
-                    new Object[]{"partitionKey".getBytes(), "partition".getBytes(), timeStamp},
-                    new String[]{"V"}, new Object[]{"value".getBytes()});
+                new Object[] { "partitionKey".getBytes(), "partition".getBytes(), timeStamp },
+                new String[] { "V" }, new Object[] { "value".getBytes() });
             long affectedRow = obTableClient.replace(TEST_TABLE,
-                    new Object[]{"partitionKey".getBytes(), "partition".getBytes(), timeStamp},
-                    new String[]{"V"}, new Object[]{"value1".getBytes()});
+                new Object[] { "partitionKey".getBytes(), "partition".getBytes(), timeStamp },
+                new String[] { "V" }, new Object[] { "value1".getBytes() });
             Assert.assertEquals(2, affectedRow);
-            Map<String, Object> result = obTableClient.get(TEST_TABLE,
-                    new Object[]{"partitionKey".getBytes(), "partition".getBytes(), timeStamp},
-                    new String[]{"K", "Q", "T", "V"});
+            Map<String, Object> result = obTableClient.get(TEST_TABLE, new Object[] {
+                    "partitionKey".getBytes(), "partition".getBytes(), timeStamp }, new String[] {
+                    "K", "Q", "T", "V" });
             Assert.assertEquals(timeStamp, result.get("T"));
             Assert.assertEquals("value1", new String((byte[]) result.get("V"), "UTF-8"));
         } catch (Exception e) {
             e.printStackTrace();
             Assert.assertTrue(false);
         } finally {
-            obTableClient.delete(TEST_TABLE, new Object[]{"partitionKey", "partition".getBytes(), timeStamp});
+            obTableClient.delete(TEST_TABLE, new Object[] { "partitionKey", "partition".getBytes(),
+                    timeStamp });
         }
     }
 

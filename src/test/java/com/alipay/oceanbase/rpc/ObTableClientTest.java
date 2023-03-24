@@ -665,13 +665,15 @@ public class ObTableClientTest extends ObTableClientTestBase {
         ObTableClientQueryImpl obTableClientQuery = new ObTableClientQueryImpl("test_batch_query",
             client1);
         try {
-            obTableClientQuery.executeInit(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
+            obTableClientQuery.executeInit(new ObPair<Long, ObTableParam>(0L, new ObTableParam(
+                obTable)));
             fail();
         } catch (Exception e) {
             assertTrue(true);
         }
         try {
-            obTableClientQuery.executeNext(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
+            obTableClientQuery.executeNext(new ObPair<Long, ObTableParam>(0L, new ObTableParam(
+                obTable)));
             fail();
         } catch (Exception e) {
             assertTrue(true);

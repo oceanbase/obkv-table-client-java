@@ -33,7 +33,7 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
     protected ObBytesString           credential;                                              // the credential returned when login. 登陆时返回的证书
     protected String                  tableName;                                               // table name. 待访问的表名
     protected long                    tableId                 = Constants.OB_INVALID_ID;       // table id. 如果知道表id，可以用于优化，如果不知道，设定为OB_INVALID_ID
-    protected long                    partitionId             = Constants.INVALID_TABLET_ID;       // Constants.OB_INVALID_ID; // partition id / tabletId. 如果知道表分区id，可以用于优化，如果不知道，设定为OB_INVALID_ID
+    protected long                    partitionId             = Constants.INVALID_TABLET_ID;   // Constants.OB_INVALID_ID; // partition id / tabletId. 如果知道表分区id，可以用于优化，如果不知道，设定为OB_INVALID_ID
     protected ObTableEntityType       entityType              = ObTableEntityType.DYNAMIC;     // entity type. 如果明确entity类型，可以用于优化，如果不知道，设定为ObTableEntityType::DYNAMIC
     protected ObTableConsistencyLevel consistencyLevel        = ObTableConsistencyLevel.STRONG; // read consistency level. 读一致性，是否要强一致性等（必须读到刚写入的数据）. 目前只支持STRONG.
     protected boolean                 returningRowKey         = false;
@@ -47,12 +47,11 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
     public long getPayloadContentSize() {
         if (ObGlobal.OB_VERSION >= 4)
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
-                   + Serialization.getNeedBytes(tableId) + 8 + 2
-                   + 3;
+                   + Serialization.getNeedBytes(tableId) + 8 + 2 + 3;
         else
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
-                    + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId) + 2
-                    + 3;
+                   + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId)
+                   + 2 + 3;
     }
 
     protected int encodeHeader(byte[] bytes, int idx) {

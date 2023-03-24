@@ -41,7 +41,8 @@ public class ObTableQueryAsyncClientResultSet implements QueryStreamResult {
     public ObTableQueryAsyncClientResultSet(ObTableClientQueryAsyncImpl obTableClientQueryAsync)
                                                                                                 throws Exception {
         this.obTableClientQueryAsync = obTableClientQueryAsync;
-        Map<Long, ObPair<Long, ObTableParam>> expectant = this.obTableClientQueryAsync.getPartitions();
+        Map<Long, ObPair<Long, ObTableParam>> expectant = this.obTableClientQueryAsync
+            .getPartitions();
         this.partitionIndex = expectant.size() - 1;
         lists = new ArrayList<ObPair<Long, ObTableParam>>();
         for (Map.Entry<Long, ObPair<Long, ObTableParam>> obPairEntry : expectant.entrySet()) {

@@ -112,7 +112,8 @@ public class BatchOperation {
                 Mutation mutation = (Mutation) operation;
                 if (!hasSetRowkeyElement && mutation.getRowKeyNames() != null) {
                     List<String> rowKeyNames = mutation.getRowKeyNames();
-                    ((ObTableClient) client).addRowKeyElement(tableName, rowKeyNames.toArray(new String[0]));
+                    ((ObTableClient) client).addRowKeyElement(tableName,
+                        rowKeyNames.toArray(new String[0]));
                     hasSetRowkeyElement = true;
                 }
                 ObTableOperationType type = mutation.getOperationType();

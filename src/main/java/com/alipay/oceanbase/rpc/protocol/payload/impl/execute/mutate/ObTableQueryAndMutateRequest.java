@@ -98,12 +98,12 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
     public long getPayloadContentSize() {
         if (ObGlobal.OB_VERSION >= 4)
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
-                    + Serialization.getNeedBytes(tableId) + 8 + 1
-                    + tableQueryAndMutate.getPayloadSize();
+                   + Serialization.getNeedBytes(tableId) + 8 + 1
+                   + tableQueryAndMutate.getPayloadSize();
         else
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
-                    + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId) + 1
-                    + tableQueryAndMutate.getPayloadSize();
+                   + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId)
+                   + 1 + tableQueryAndMutate.getPayloadSize();
 
     }
 

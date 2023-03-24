@@ -41,8 +41,8 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                                            .getLogger(ObTableClientQueryStreamResult.class);
     protected ObTableClient     client;
 
-    protected ObTableQueryResult execute(ObPair<Long, ObTableParam> partIdWithIndex, ObPayload request)
-                                                                                                  throws Exception {
+    protected ObTableQueryResult execute(ObPair<Long, ObTableParam> partIdWithIndex,
+                                         ObPayload request) throws Exception {
         Object result;
         ObTable subObTable = partIdWithIndex.getRight().getObTable();
         boolean needRefreshTableEntry = false;
@@ -76,9 +76,10 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
-                        subObTable = client.getTable(tableName, partIdWithIndex.getLeft(),
-                            needRefreshTableEntry, client.isTableEntryRefreshIntervalWait(), route)
-                            .getRight().getObTable();
+                        subObTable = client
+                            .getTable(tableName, partIdWithIndex.getLeft(), needRefreshTableEntry,
+                                client.isTableEntryRefreshIntervalWait(), route).getRight()
+                            .getObTable();
                     }
                 }
                 result = subObTable.execute(request);
