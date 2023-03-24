@@ -23,21 +23,22 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.AbstractQuer
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
+import com.alipay.oceanbase.rpc.table.ObTableParam;
 
 public class ObTableQueryAsyncStreamResult extends AbstractQueryStreamResult {
     private boolean isEnd = true;
     private long    sessionId;
 
     @Override
-    protected ObTableQueryResult execute(ObPair<Long, ObTable> partIdWithObTable,
+    protected ObTableQueryResult execute(ObPair<Long, ObTableParam> partIdWithObTable,
                                          ObPayload streamRequest) throws Exception {
         throw new IllegalArgumentException("not support this execute");
     }
 
     @Override
-    protected ObTableQueryAsyncResult executeAsync(ObPair<Long, ObTable> partIdWithObTable,
+    protected ObTableQueryAsyncResult executeAsync(ObPair<Long, ObTableParam> partIdWithObTable,
                                                    ObPayload streamRequest) throws Exception {
-        Object result = partIdWithObTable.getRight().execute(streamRequest);//执行query start/ query next等等
+        Object result = partIdWithObTable.getRight().getObTable().execute(streamRequest);//执行query start/ query next等等
 
         cacheStreamNext(partIdWithObTable, checkObTableQuerySyncResult(result));
 

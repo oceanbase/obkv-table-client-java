@@ -331,7 +331,7 @@ public class ObRpcPacketHeaderTest {
     }
 
     private void checkObRpcPacketHeaderClusterId(ObRpcPacketHeader obRpcPacketHeader) {
-        Assert.assertEquals(obRpcPacketHeader.getClusterId(), clusterId);
+        Assert.assertEquals(obRpcPacketHeader.getDstClusterId(), clusterId);
     }
 
     private void checkObRpcPacketHeaderCompress(ObRpcPacketHeader obRpcPacketHeader) {

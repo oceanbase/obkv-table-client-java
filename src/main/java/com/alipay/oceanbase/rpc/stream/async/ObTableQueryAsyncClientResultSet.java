@@ -23,6 +23,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.QueryStreamResult;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.table.ObTableClientQueryAsyncImpl;
+import com.alipay.oceanbase.rpc.table.ObTableParam;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -35,15 +36,16 @@ public class ObTableQueryAsyncClientResultSet implements QueryStreamResult {
     private int                               resultSize;
     private int                               partitionIndex;
     private int                               cur;
-    private List<ObPair<Long, ObTable>>       lists;
+    private List<ObPair<Long, ObTableParam>>  lists;
 
     public ObTableQueryAsyncClientResultSet(ObTableClientQueryAsyncImpl obTableClientQueryAsync)
                                                                                                 throws Exception {
         this.obTableClientQueryAsync = obTableClientQueryAsync;
-        Map<Long, ObPair<Long, ObTable>> expectant = this.obTableClientQueryAsync.getPartitions();
+        Map<Long, ObPair<Long, ObTableParam>> expectant = this.obTableClientQueryAsync
+            .getPartitions();
         this.partitionIndex = expectant.size() - 1;
-        lists = new ArrayList<ObPair<Long, ObTable>>();
-        for (Map.Entry<Long, ObPair<Long, ObTable>> obPairEntry : expectant.entrySet()) {
+        lists = new ArrayList<ObPair<Long, ObTableParam>>();
+        for (Map.Entry<Long, ObPair<Long, ObTableParam>> obPairEntry : expectant.entrySet()) {
             this.lists.add(obPairEntry.getValue());
         }
     }

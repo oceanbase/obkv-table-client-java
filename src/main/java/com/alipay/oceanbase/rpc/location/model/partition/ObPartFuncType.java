@@ -127,7 +127,7 @@ public enum ObPartFuncType {
      */
     public boolean isKeyPart() {
         return this.index == KEY_IMPLICIT.getIndex() || this.index == KEY_V2.getIndex()
-               || this.index == KEY_V3.getIndex();
+               || this.index == KEY_V3.getIndex() || this.index == KEY.getIndex();
     }
 
     /*

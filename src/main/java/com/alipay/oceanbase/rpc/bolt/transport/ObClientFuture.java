@@ -49,8 +49,7 @@ public class ObClientFuture implements InvokeFuture {
         if (waiter.await(timeoutMillis, TimeUnit.MILLISECONDS)) {
             return response;
         } else {
-            return ObTablePacket.createTransportErrorPacket(TransportCodes.BOLT_TIMEOUT,
-                "wait timeout: " + timeoutMillis, null);
+            return null;
         }
     }
 

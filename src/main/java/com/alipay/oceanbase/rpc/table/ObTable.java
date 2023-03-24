@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.alipay.oceanbase.rpc.property.Property.*;
+import static com.alipay.oceanbase.rpc.protocol.payload.Constants.*;
 
 public class ObTable extends AbstractObTable implements Lifecycle {
 
@@ -57,7 +58,6 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     private String                userName;
     private String                password;
     private String                database;
-
     private ConnectionFactory     connectionFactory;
     private ObTableRemoting       realClient;
     private ObTableConnectionPool connectionPool;

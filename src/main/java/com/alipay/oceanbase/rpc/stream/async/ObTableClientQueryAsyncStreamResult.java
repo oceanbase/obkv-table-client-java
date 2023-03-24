@@ -27,6 +27,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
 import com.alipay.oceanbase.rpc.stream.ObTableClientQueryStreamResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
+import com.alipay.oceanbase.rpc.table.ObTableParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,16 +40,16 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
     private boolean             hasMore;
 
     @Override
-    protected ObTableQueryResult execute(ObPair<Long, ObTable> partIdWithObTable,
+    protected ObTableQueryResult execute(ObPair<Long, ObTableParam> partIdWithObTable,
                                          ObPayload streamRequest) throws Exception {
         throw new IllegalArgumentException("not support this execute");
     }
 
     @Override
-    protected ObTableQueryAsyncResult executeAsync(ObPair<Long, ObTable> partIdWithObTable,
+    protected ObTableQueryAsyncResult executeAsync(ObPair<Long, ObTableParam> partIdWithObTable,
                                                    ObPayload streamRequest) throws Exception {
         Object result;
-        ObTable subObTable = partIdWithObTable.getRight();
+        ObTable subObTable = partIdWithObTable.getRight().getObTable();
         boolean needRefreshTableEntry = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
@@ -66,9 +67,9 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             tryTimes++;
             try {
                 if (needRefreshTableEntry) {
-                    subObTable = client.getTable(tableName,
-                        new Long[] { partIdWithObTable.getLeft() }, true,
-                        client.isTableEntryRefreshIntervalWait()).getRight();
+                    subObTable = client
+                        .getTable(tableName, new Long[] { partIdWithObTable.getLeft() }, true,
+                            client.isTableEntryRefreshIntervalWait()).getRight().getObTable();
                 }
                 result = subObTable.execute(streamRequest);
                 client.resetExecuteContinuousFailureCount(tableName);

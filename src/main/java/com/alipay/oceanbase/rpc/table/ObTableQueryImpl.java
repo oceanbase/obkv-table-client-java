@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.table;
 
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
+import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.*;
 import com.alipay.oceanbase.rpc.stream.ObTableQueryStreamResult;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
@@ -49,7 +50,8 @@ public class ObTableQueryImpl extends AbstractTableQueryImpl {
         this.request.setTableName(tableName);
         this.request.setTableQuery(tableQuery);
         // FIXME TableQuery 必须设置 PartitionId
-        this.request.setPartitionId(0);
+        this.request.setTableId(Constants.OB_INVALID_ID);
+        this.request.setPartitionId(Constants.INVALID_TABLET_ID);
     }
 
     /*
@@ -57,8 +59,8 @@ public class ObTableQueryImpl extends AbstractTableQueryImpl {
      */
     @Override
     public QueryResultSet execute() throws Exception {
-        Map<Long, ObPair<Long, ObTable>> partitionObTable = new HashMap<Long, ObPair<Long, ObTable>>();
-        partitionObTable.put(0L, new ObPair<Long, ObTable>(0L, table));
+        Map<Long, ObPair<Long, ObTableParam>> partitionObTable = new HashMap<Long, ObPair<Long, ObTableParam>>();
+        partitionObTable.put(0L, new ObPair<Long, ObTableParam>(0L, new ObTableParam(table)));
         ObTableQueryStreamResult obTableQueryStreamResult = new ObTableQueryStreamResult();
         obTableQueryStreamResult.setTableQuery(tableQuery);
         obTableQueryStreamResult.setEntityType(entityType);
@@ -71,12 +73,12 @@ public class ObTableQueryImpl extends AbstractTableQueryImpl {
     }
 
     @Override
-    public QueryResultSet executeInit(ObPair<Long, ObTable> entry) throws Exception {
+    public QueryResultSet executeInit(ObPair<Long, ObTableParam> entry) throws Exception {
         throw new IllegalArgumentException("not support executeInit");
     }
 
     @Override
-    public QueryResultSet executeNext(ObPair<Long, ObTable> entry) throws Exception {
+    public QueryResultSet executeNext(ObPair<Long, ObTableParam> entry) throws Exception {
         throw new IllegalArgumentException("not support executeNext");
     }
 

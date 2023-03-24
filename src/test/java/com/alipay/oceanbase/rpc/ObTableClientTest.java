@@ -38,6 +38,7 @@ import com.alipay.oceanbase.rpc.stream.async.ObTableQueryAsyncStreamResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.table.ObTableClientQueryAsyncImpl;
 import com.alipay.oceanbase.rpc.table.ObTableClientQueryImpl;
+import com.alipay.oceanbase.rpc.table.ObTableParam;
 import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
@@ -642,14 +643,14 @@ public class ObTableClientTest extends ObTableClientTestBase {
         TableQuery tableQuery = client1.query("test_batch_query");
         ObTable obTable = new ObTable();
         try {
-            tableQuery.executeInit(new ObPair<Long, ObTable>(0L, obTable));
+            tableQuery.executeInit(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
             fail();
         } catch (Exception e) {
             assertTrue(true);
         }
 
         try {
-            tableQuery.executeNext(new ObPair<Long, ObTable>(0L, obTable));
+            tableQuery.executeNext(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
             fail();
         } catch (Exception e) {
             assertTrue(true);
@@ -664,13 +665,15 @@ public class ObTableClientTest extends ObTableClientTestBase {
         ObTableClientQueryImpl obTableClientQuery = new ObTableClientQueryImpl("test_batch_query",
             client1);
         try {
-            obTableClientQuery.executeInit(new ObPair<Long, ObTable>(0L, obTable));
+            obTableClientQuery.executeInit(new ObPair<Long, ObTableParam>(0L, new ObTableParam(
+                obTable)));
             fail();
         } catch (Exception e) {
             assertTrue(true);
         }
         try {
-            obTableClientQuery.executeNext(new ObPair<Long, ObTable>(0L, obTable));
+            obTableClientQuery.executeNext(new ObPair<Long, ObTableParam>(0L, new ObTableParam(
+                obTable)));
             fail();
         } catch (Exception e) {
             assertTrue(true);
@@ -2092,7 +2095,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
             } else {
                 filters_1.addFilter(c1_GE_3, c1_LE_4);
                 MutationResult updateResult = client.increment("test_mutation_with_range")
-                    .setFilter(filters_1).addMutateRow(row(colVal("c4", 100)))
+                    .setFilter(filters_1).addMutateRow(row(colVal("c4", 100L)))
                     .setScanRangeColumns("c1", "c1sk")
                     .addScanRange(new Object[] { 4L, "A" }, new Object[] { 200L, "z" }).execute();
                 Assert.assertEquals(1, updateResult.getAffectedRows());

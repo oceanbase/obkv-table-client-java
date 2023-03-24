@@ -25,6 +25,7 @@ import com.alipay.oceanbase.rpc.util.*;
 import com.alipay.remoting.Connection;
 import org.slf4j.Logger;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.MONITOR;
@@ -32,14 +33,15 @@ import static com.alipay.oceanbase.rpc.util.TraceUtil.formatTraceMessage;
 
 public class ObTableConnection {
 
-    private static final Logger LOGGER   = TableClientLoggerFactory
-                                             .getLogger(ObTableConnection.class);
+    private static final Logger LOGGER         = TableClientLoggerFactory
+                                                   .getLogger(ObTableConnection.class);
     private ObBytesString       credential;
-    private long                tenantId = 1;                                    //默认值切勿不要随意改动
+    private long                tenantId       = 1;                                    //默认值切勿不要随意改动
     private Connection          connection;
     private final ObTable       obTable;
-    private long                uniqueId;                                        // as trace0 in rpc header
-    private AtomicLong          sequence;                                        // as trace1 in rpc header
+    private long                uniqueId;                                              // as trace0 in rpc header
+    private AtomicLong          sequence;                                              // as trace1 in rpc header
+    private AtomicBoolean       isReConnecting = new AtomicBoolean(false);             // indicate is re-connecting or not
 
     public static long ipToLong(String strIp) {
         String[] ip = strIp.split("\\.");
@@ -76,7 +78,7 @@ public class ObTableConnection {
         uniqueId = ip | port | isUserRequest | reserved;
     }
 
-    private synchronized boolean connect() throws Exception {
+    private boolean connect() throws Exception {
         if (checkAvailable()) { // double check status available
             return false;
         }
@@ -116,7 +118,7 @@ public class ObTableConnection {
         return true;
     }
 
-    private synchronized void login() throws Exception {
+    private void login() throws Exception {
         final long start = System.currentTimeMillis();
         ObTableLoginRequest request = new ObTableLoginRequest();
         request.setTenantName(obTable.getTenantName());
@@ -197,11 +199,36 @@ public class ObTableConnection {
         }
     }
 
-    private synchronized void reconnect(String msg) throws Exception {
-        if (connect()) {
-            LOGGER.warn("reconnect success. reconnect reason: [{}]", msg);
+    /**
+     * Reconnect current connection and login
+     *
+     * @param msg the reconnect reason
+     * @exception Exception if connect successfully or connection already reconnected by others
+     *                      throw exception if connect failed
+     *
+     */
+    private void reconnect(String msg) throws Exception {
+        if (isReConnecting.compareAndSet(false, true)) {
+            try {
+                if (connect()) {
+                    LOGGER.warn("reconnect success. reconnect reason: [{}]", msg);
+                } else {
+                    LOGGER.info(
+                        "connection maybe reconnect by other thread. reconnect reason: [{}]", msg);
+                }
+            } catch (Exception e) {
+                throw e;
+            } finally {
+                if (!isReConnecting.compareAndSet(true, false)) {
+                    LOGGER
+                        .error(
+                            "failed to set connecting to false after connect finished, reconnect reason: [{}]",
+                            msg);
+                }
+            }
         } else {
-            LOGGER.warn("connection maybe reconnect by other thread. reconnect reason: [{}]", msg);
+            LOGGER.warn("There is someone connecting, no need reconnect");
+            throw new ObTableException("This connection is already Connecting");
         }
     }
 

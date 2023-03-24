@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableAbstractOperationRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
@@ -78,7 +79,10 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
         this.credential = Serialization.decodeBytesString(buf);
         this.tableName = Serialization.decodeVString(buf);
         this.tableId = Serialization.decodeVi64(buf);
-        this.partitionId = Serialization.decodeVi64(buf);
+        if (ObGlobal.OB_VERSION >= 4)
+            this.partitionId = Serialization.decodeI64(buf);
+        else
+            this.partitionId = Serialization.decodeVi64(buf);
         this.entityType = ObTableEntityType.valueOf(buf.readByte());
 
         this.tableQueryAndMutate = new ObTableQueryAndMutate();
@@ -92,9 +96,15 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
      */
     @Override
     public long getPayloadContentSize() {
-        return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
-               + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId) + 1
-               + tableQueryAndMutate.getPayloadSize();
+        if (ObGlobal.OB_VERSION >= 4)
+            return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
+                   + Serialization.getNeedBytes(tableId) + 8 + 1
+                   + tableQueryAndMutate.getPayloadSize();
+        else
+            return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
+                   + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId)
+                   + 1 + tableQueryAndMutate.getPayloadSize();
+
     }
 
     /*

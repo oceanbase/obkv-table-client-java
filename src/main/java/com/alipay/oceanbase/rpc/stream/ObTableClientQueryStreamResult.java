@@ -28,6 +28,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.AbstractQuer
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
+import com.alipay.oceanbase.rpc.table.ObTableParam;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
 import org.slf4j.Logger;
 
@@ -40,10 +41,10 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                                            .getLogger(ObTableClientQueryStreamResult.class);
     protected ObTableClient     client;
 
-    protected ObTableQueryResult execute(ObPair<Long, ObTable> partIdWithIndex, ObPayload request)
-                                                                                                  throws Exception {
+    protected ObTableQueryResult execute(ObPair<Long, ObTableParam> partIdWithIndex,
+                                         ObPayload request) throws Exception {
         Object result;
-        ObTable subObTable = partIdWithIndex.getRight();
+        ObTable subObTable = partIdWithIndex.getRight().getObTable();
         boolean needRefreshTableEntry = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
@@ -75,9 +76,10 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
-                        subObTable = client.getTable(tableName, partIdWithIndex.getLeft(),
-                            needRefreshTableEntry, client.isTableEntryRefreshIntervalWait(), route)
-                            .getRight();
+                        subObTable = client
+                            .getTable(tableName, partIdWithIndex.getLeft(), needRefreshTableEntry,
+                                client.isTableEntryRefreshIntervalWait(), route).getRight()
+                            .getObTable();
                     }
                 }
                 result = subObTable.execute(request);
@@ -145,7 +147,7 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
     }
 
     @Override
-    protected ObTableQueryAsyncResult executeAsync(ObPair<Long, ObTable> partIdWithObTable,
+    protected ObTableQueryAsyncResult executeAsync(ObPair<Long, ObTableParam> partIdWithObTable,
                                                    ObPayload streamRequest) throws Exception {
         throw new IllegalArgumentException("not support this execute");
     }
