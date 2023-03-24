@@ -27,6 +27,7 @@ import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.AbstractTableQuery;
 import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.table.ObTableClientQueryAsyncImpl;
+import com.alipay.oceanbase.rpc.table.ObTableParam;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
 public class ObClusterTableAsyncQuery extends AbstractTableQuery {
@@ -52,12 +53,12 @@ public class ObClusterTableAsyncQuery extends AbstractTableQuery {
     }
 
     @Override
-    public QueryResultSet executeInit(ObPair<Long, ObTable> entry) throws Exception {
+    public QueryResultSet executeInit(ObPair<Long, ObTableParam> entry) throws Exception {
         return tableClientQuerySync.executeInit(entry);
     }
 
     @Override
-    public QueryResultSet executeNext(ObPair<Long, ObTable> entry) throws Exception {
+    public QueryResultSet executeNext(ObPair<Long, ObTableParam> entry) throws Exception {
         return tableClientQuerySync.executeNext(entry);
     }
 

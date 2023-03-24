@@ -35,11 +35,11 @@ import java.util.List;
 import java.util.Map;
 
 public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
-    private final String                     tableName;
-    private final ObTableClient              obTableClient;
-    private long                             sessionId;
-    private Map<Long, ObPair<Long, ObTable>> partitionObTables;
-    private boolean                          hasMore;
+    private final String                          tableName;
+    private final ObTableClient                   obTableClient;
+    private long                                  sessionId;
+    private Map<Long, ObPair<Long, ObTableParam>> partitionObTables;
+    private boolean                               hasMore;
 
     public ObTableClientQueryAsyncImpl(String tableName, ObTableClient client) {
         this.tableName = tableName;
@@ -73,8 +73,8 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
         return new QueryResultSet(new ObTableQueryAsyncClientResultSet(this));
     }
 
-    public QueryResultSet execute(ObQueryOperationType type, ObPair<Long, ObTable> entry)
-                                                                                         throws Exception {
+    public QueryResultSet execute(ObQueryOperationType type, ObPair<Long, ObTableParam> entry)
+                                                                                              throws Exception {
         ObTableClientQueryAsyncStreamResult obTableClientQueryAsyncStreamResult = executeInternal(
             type, entry);
         QueryResultSet queryResultSet = new QueryResultSet(obTableClientQueryAsyncStreamResult);
@@ -84,12 +84,12 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
     }
 
     @Override
-    public QueryResultSet executeInit(ObPair<Long, ObTable> entry) throws Exception {
+    public QueryResultSet executeInit(ObPair<Long, ObTableParam> entry) throws Exception {
         return execute(ObQueryOperationType.QUERY_START, entry);
     }
 
     @Override
-    public QueryResultSet executeNext(ObPair<Long, ObTable> entry) throws Exception {
+    public QueryResultSet executeNext(ObPair<Long, ObTableParam> entry) throws Exception {
         return execute(ObQueryOperationType.QUERY_NEXT, entry);
     }
 
@@ -105,7 +105,7 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
 
     public ObTableClientQueryAsyncStreamResult executeInternal(ObQueryOperationType type)
                                                                                          throws Exception {
-        Map<Long, ObPair<Long, ObTable>> partitionObTables = getPartitions();
+        Map<Long, ObPair<Long, ObTableParam>> partitionObTables = getPartitions();
         ObTableClientQueryAsyncStreamResult obTableClientQueryASyncStreamResult = new ObTableClientQueryAsyncStreamResult();
         obTableClientQueryASyncStreamResult.setTableQuery(tableQuery);
         obTableClientQueryASyncStreamResult.setEntityType(entityType);
@@ -126,8 +126,8 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
     }
 
     public ObTableClientQueryAsyncStreamResult executeInternal(ObQueryOperationType type,
-                                                               ObPair<Long, ObTable> entry)
-                                                                                           throws Exception {
+                                                               ObPair<Long, ObTableParam> entry)
+                                                                                                throws Exception {
         ObTableClientQueryAsyncStreamResult obTableClientQueryASyncStreamResult = new ObTableClientQueryAsyncStreamResult();
         obTableClientQueryASyncStreamResult.setTableQuery(tableQuery);
         obTableClientQueryASyncStreamResult.setEntityType(entityType);
@@ -147,8 +147,8 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
         return obTableClientQueryASyncStreamResult;
     }
 
-    public Map<Long, ObPair<Long, ObTable>> getPartitions() throws Exception {
-        this.partitionObTables = new HashMap<Long, ObPair<Long, ObTable>>();
+    public Map<Long, ObPair<Long, ObTableParam>> getPartitions() throws Exception {
+        this.partitionObTables = new HashMap<Long, ObPair<Long, ObTableParam>>();
         for (ObNewRange rang : this.tableQuery.getKeyRanges()) {
             ObRowKey startKey = rang.getStartKey();
             int startKeySize = startKey.getObjs().size();
@@ -164,9 +164,10 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
                 end[i] = endKey.getObj(i).getValue();
             }
             ObBorderFlag borderFlag = rang.getBorderFlag();
-            List<ObPair<Long, ObTable>> pairs = this.obTableClient.getTables(this.tableName, start,
-                borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false, false);
-            for (ObPair<Long, ObTable> pair : pairs) {
+            List<ObPair<Long, ObTableParam>> pairs = this.obTableClient.getTables(this.tableName,
+                start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false,
+                false);
+            for (ObPair<Long, ObTableParam> pair : pairs) {
                 partitionObTables.put(pair.getLeft(), pair);
             }
         }

@@ -78,6 +78,7 @@ public class ObTableRemoting extends BaseRemoting {
             String errMessage = TraceUtil.formatTraceMessage(conn, request,
                 "get an error response: " + response.getMessage());
             logger.warn(errMessage);
+            response.releaseByteBuf();
             ExceptionUtil.throwObTableTransportException(errMessage, response.getTransportCode());
             return null;
         }

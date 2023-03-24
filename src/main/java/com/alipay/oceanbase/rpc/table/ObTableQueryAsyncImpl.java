@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.table;
 
+import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.stream.async.ObTableQueryAsyncResultSet;
 import com.alipay.oceanbase.rpc.stream.async.ObTableQueryAsyncStreamResult;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
@@ -48,7 +49,8 @@ public class ObTableQueryAsyncImpl extends AbstractTableQueryImpl {
 
         obTableQueryRequest.setTableQuery(tableQuery);
         obTableQueryRequest.setTableName(tableName);
-        obTableQueryRequest.setPartitionId(0);
+        obTableQueryRequest.setTableId(Constants.OB_INVALID_ID);
+        obTableQueryRequest.setPartitionId(Constants.INVALID_TABLET_ID);
 
         obTableQueryAsyncRequest.setObTableQueryRequest(obTableQueryRequest);
     }
@@ -81,8 +83,8 @@ public class ObTableQueryAsyncImpl extends AbstractTableQueryImpl {
     }
 
     public QueryResultSet execute(ObQueryOperationType type) throws Exception {
-        Map<Long, ObPair<Long, ObTable>> partitionObTable = new HashMap<Long, ObPair<Long, ObTable>>();
-        partitionObTable.put(0L, new ObPair<Long, ObTable>(0L, table));
+        Map<Long, ObPair<Long, ObTableParam>> partitionObTable = new HashMap<Long, ObPair<Long, ObTableParam>>();
+        partitionObTable.put(0L, new ObPair<Long, ObTableParam>(0L, new ObTableParam(table)));
         ObTableQueryAsyncStreamResult obTableQueryAsyncStreamResult = new ObTableQueryAsyncStreamResult();
         obTableQueryAsyncStreamResult.setTableQuery(tableQuery);
         obTableQueryAsyncStreamResult.setEntityType(entityType);
@@ -101,12 +103,12 @@ public class ObTableQueryAsyncImpl extends AbstractTableQueryImpl {
     }
 
     @Override
-    public QueryResultSet executeInit(ObPair<Long, ObTable> entry) throws Exception {
+    public QueryResultSet executeInit(ObPair<Long, ObTableParam> entry) throws Exception {
         return execute(ObQueryOperationType.QUERY_START);
     }
 
     @Override
-    public QueryResultSet executeNext(ObPair<Long, ObTable> entry) throws Exception {
+    public QueryResultSet executeNext(ObPair<Long, ObTableParam> entry) throws Exception {
         return execute(ObQueryOperationType.QUERY_NEXT);
     }
 

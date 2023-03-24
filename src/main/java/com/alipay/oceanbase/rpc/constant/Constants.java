@@ -32,4 +32,5 @@ public interface Constants {
     String OB_ROUTE_POLICY         = "ob_route_policy";
     String OCP_ROOT_SERVICE_ACTION = "ObRootServiceInfo";
     String OCP_IDC_REGION_ACTION   = "ObIDCRegionInfo";
+    Long   INVALID_TABLET_ID       = 0L;
 }

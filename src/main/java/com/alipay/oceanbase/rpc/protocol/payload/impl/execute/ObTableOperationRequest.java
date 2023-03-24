@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
@@ -92,7 +93,10 @@ public class ObTableOperationRequest extends ObTableAbstractOperationRequest {
         this.credential = Serialization.decodeBytesString(buf);
         this.tableName = Serialization.decodeVString(buf);
         this.tableId = Serialization.decodeVi64(buf);
-        this.partitionId = Serialization.decodeVi64(buf);
+        if (ObGlobal.OB_VERSION >= 4)
+            this.partitionId = Serialization.decodeI64(buf);
+        else
+            this.partitionId = Serialization.decodeVi64(buf);
         this.entityType = ObTableEntityType.valueOf(buf.readByte());
         this.tableOperation = new ObTableOperation();
         if (ObTableEntityType.DYNAMIC.equals(this.entityType)) {

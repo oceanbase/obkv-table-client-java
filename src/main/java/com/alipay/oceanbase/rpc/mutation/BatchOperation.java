@@ -101,6 +101,7 @@ public class BatchOperation {
         return this;
     }
 
+    @SuppressWarnings("unchecked")
     public BatchOperationResult execute() throws Exception {
         // add rowkeyElement
         boolean hasSetRowkeyElement = false;
@@ -110,8 +111,9 @@ public class BatchOperation {
             if (operation instanceof Mutation) {
                 Mutation mutation = (Mutation) operation;
                 if (!hasSetRowkeyElement && mutation.getRowKeyNames() != null) {
-                    ((ObTableClient) client).addRowKeyElement(tableName, (String[]) mutation
-                        .getRowKeyNames().toArray(new String[0]));
+                    List<String> rowKeyNames = mutation.getRowKeyNames();
+                    ((ObTableClient) client).addRowKeyElement(tableName,
+                        rowKeyNames.toArray(new String[0]));
                     hasSetRowkeyElement = true;
                 }
                 ObTableOperationType type = mutation.getOperationType();
