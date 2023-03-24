@@ -207,14 +207,15 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
     }
 
     public Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> partitionPrepare()
-                                                                                                 throws Exception {
+                                                                                                      throws Exception {
         // consistent can not be sure
         List<ObTableOperation> operations = batchOperation.getTableOperations();
         Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> partitionOperationsMap = new HashMap<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>>();
 
         if (obTableClient.isOdpMode()) {
             ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>> obTableOperations = new ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>(
-                new ObTableParam(obTableClient.getOdpTable()), new ArrayList<ObPair<Integer, ObTableOperation>>());
+                new ObTableParam(obTableClient.getOdpTable()),
+                new ArrayList<ObPair<Integer, ObTableOperation>>());
             for (int i = 0; i < operations.size(); i++) {
                 ObTableOperation operation = operations.get(i);
                 obTableOperations.getRight().add(
@@ -232,8 +233,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             for (int j = 0; j < rowKeySize; j++) {
                 rowKey[j] = rowKeyObject.getObj(j).getValue();
             }
-            ObPair<Long, ObTableParam> tableObPair = obTableClient.getTable(tableName, rowKey, false,
-                false, obTableClient.getRoute(batchOperation.isReadOnly()));
+            ObPair<Long, ObTableParam> tableObPair = obTableClient.getTable(tableName, rowKey,
+                false, false, obTableClient.getRoute(batchOperation.isReadOnly()));
             ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>> obTableOperations = partitionOperationsMap
                 .get(tableObPair.getLeft());
             if (obTableOperations == null) {
@@ -258,7 +259,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
      */
     public void partitionExecute(ObTableOperationResult[] results,
                                  Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> partitionOperation)
-                                                                                                                              throws Exception {
+                                                                                                                                   throws Exception {
         ObTableParam tableParam = partitionOperation.getValue().getLeft();
         long tableId = tableParam.getTableId();
         long partId = tableParam.getPartitionId();
@@ -323,9 +324,10 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
-                        subObTable = obTableClient.getTable(tableName, partId,
-                            needRefreshTableEntry, obTableClient.isTableEntryRefreshIntervalWait(),
-                            route).getRight().getObTable();
+                        subObTable = obTableClient
+                            .getTable(tableName, partId, needRefreshTableEntry,
+                                obTableClient.isTableEntryRefreshIntervalWait(), route).getRight()
+                            .getObTable();
                     }
                 }
                 subObTableBatchOperationResult = (ObTableBatchOperationResult) subObTable
@@ -510,7 +512,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             }
 
         } else {
-            for (final Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> entry : partitions.entrySet()) {
+            for (final Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> entry : partitions
+                .entrySet()) {
                 partitionExecute(obTableOperationResults, entry);
             }
         }

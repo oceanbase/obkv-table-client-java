@@ -51,7 +51,7 @@ public class ObNewRange implements ObSimplePayload {
     private ObBorderFlag borderFlag = new ObBorderFlag();
     private ObRowKey     startKey;
     private ObRowKey     endKey;
-    private long         flag = 0L;
+    private long         flag       = 0L;
 
     /*
      * Ob new range.

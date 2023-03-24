@@ -679,14 +679,16 @@ public abstract class ObTableClientTestBase {
         } else {
             ObTable obTable = new ObTable();
             try {
-                tableQuery.executeInit(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
+                tableQuery
+                    .executeInit(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
                 fail();
             } catch (Exception e) {
                 assertTrue(true);
             }
 
             try {
-                tableQuery.executeNext(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
+                tableQuery
+                    .executeNext(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
                 fail();
             } catch (Exception e) {
                 assertTrue(true);
@@ -835,14 +837,16 @@ public abstract class ObTableClientTestBase {
 
             ObTable obTable = new ObTable();
             try {
-                tableQuery.executeInit(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
+                tableQuery
+                    .executeInit(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
                 fail();
             } catch (Exception e) {
                 assertTrue(true);
             }
 
             try {
-                tableQuery.executeNext(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
+                tableQuery
+                    .executeNext(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
                 fail();
             } catch (Exception e) {
                 assertTrue(true);

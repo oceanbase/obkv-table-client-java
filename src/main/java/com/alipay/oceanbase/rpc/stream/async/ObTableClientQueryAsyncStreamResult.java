@@ -67,9 +67,9 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             tryTimes++;
             try {
                 if (needRefreshTableEntry) {
-                    subObTable = client.getTable(tableName,
-                        new Long[] { partIdWithObTable.getLeft() }, true,
-                        client.isTableEntryRefreshIntervalWait()).getRight().getObTable();
+                    subObTable = client
+                        .getTable(tableName, new Long[] { partIdWithObTable.getLeft() }, true,
+                            client.isTableEntryRefreshIntervalWait()).getRight().getObTable();
                 }
                 result = subObTable.execute(streamRequest);
                 client.resetExecuteContinuousFailureCount(tableName);

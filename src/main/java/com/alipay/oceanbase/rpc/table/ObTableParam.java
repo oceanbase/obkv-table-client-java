@@ -23,9 +23,9 @@ import static com.alipay.oceanbase.rpc.protocol.payload.Constants.INVALID_TABLET
 import static com.alipay.oceanbase.rpc.protocol.payload.Constants.OB_INVALID_ID;
 
 public class ObTableParam {
-    private ObTable               obTable;
-    private long                  tableId     = OB_INVALID_ID;
-    private long                  partitionId = INVALID_TABLET_ID; // partition id in 3.x aka tablet id in 4.x
+    private ObTable obTable;
+    private long    tableId     = OB_INVALID_ID;
+    private long    partitionId = INVALID_TABLET_ID; // partition id in 3.x aka tablet id in 4.x
 
     /*
      * constructor

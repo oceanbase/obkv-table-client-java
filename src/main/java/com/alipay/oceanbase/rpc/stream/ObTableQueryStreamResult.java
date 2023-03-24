@@ -27,8 +27,8 @@ import com.alipay.oceanbase.rpc.table.ObTableParam;
 
 public class ObTableQueryStreamResult extends AbstractQueryStreamResult {
 
-    protected ObTableQueryResult execute(ObPair<Long, ObTableParam> partIdWithIndex, ObPayload request)
-                                                                                                  throws Exception {
+    protected ObTableQueryResult execute(ObPair<Long, ObTableParam> partIdWithIndex,
+                                         ObPayload request) throws Exception {
         Object result = partIdWithIndex.getRight().getObTable().execute(request);
 
         cacheStreamNext(partIdWithIndex, checkObTableQueryResult(result));

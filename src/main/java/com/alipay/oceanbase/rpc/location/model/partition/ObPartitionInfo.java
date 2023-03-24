@@ -26,13 +26,13 @@ import java.util.Map;
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class ObPartitionInfo {
-    private ObPartitionLevel     level         = ObPartitionLevel.UNKNOWN;
-    private ObPartDesc           firstPartDesc = null;
-    private ObPartDesc           subPartDesc   = null;
-    private List<ObColumn>       partColumns   = new ArrayList<ObColumn>(1);
+    private ObPartitionLevel     level           = ObPartitionLevel.UNKNOWN;
+    private ObPartDesc           firstPartDesc   = null;
+    private ObPartDesc           subPartDesc     = null;
+    private List<ObColumn>       partColumns     = new ArrayList<ObColumn>(1);
     private Map<Long, Long>      partTabletIdMap = null;
-    private Map<String, Long>    partNameIdMap = null;
-    private Map<String, Integer> rowKeyElement = null;
+    private Map<String, Long>    partNameIdMap   = null;
+    private Map<String, Integer> rowKeyElement   = null;
 
     /*
      * Get level.
