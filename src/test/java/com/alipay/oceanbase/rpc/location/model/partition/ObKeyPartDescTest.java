@@ -108,7 +108,7 @@ public class ObKeyPartDescTest {
         // key binary
 
         long partId = keyBinary.getPartId("partition_1", "column_1", System.currentTimeMillis());
-        Assert.assertEquals(2, partId);
+        Assert.assertEquals(11, partId);
 
         Assert.assertEquals(
             keyBinary.getPartId("partition_1", "column_1", System.currentTimeMillis()),

@@ -196,7 +196,7 @@ public class ObHashPartDesc extends ObPartDesc {
 
     private Long innerHash(long hashValue) {
         hashValue = Math.abs(hashValue);
-        return (partSpace << ObPartConstants.PART_ID_BITNUM) | (hashValue % partNum);
+        return (partSpace << ObPartConstants.OB_PART_IDS_BITNUM) | (hashValue % partNum);
     }
 
     /*

@@ -26,7 +26,8 @@ public enum ObPartFuncType {
     KEY_V2("KEY_V2", 6), //
     LIST_COLUMNS("LIST_COLUMNS", 7), //
     HASH_V2("HASH_V2", 8), //
-    KEY_V3("KEY_V3", 9);
+    KEY_V3("KEY_V3", 9), //
+    KEY_IMPLICIT_V2("KEY_IMPLICIT_V2", 10);
 
     private final String name;
     private final long   index;
@@ -60,6 +61,8 @@ public enum ObPartFuncType {
             return HASH_V2;
         } else if (KEY_V3.index == index) {
             return KEY_V3;
+        } else if (KEY_IMPLICIT_V2.index == index) {
+            return KEY_IMPLICIT_V2;
         } else {
             return UNKNOWN;
         }
@@ -89,6 +92,8 @@ public enum ObPartFuncType {
             return HASH_V2;
         } else if (KEY_V3.name.equalsIgnoreCase(name)) {
             return KEY_V3;
+        } else if (KEY_IMPLICIT_V2.name.equalsIgnoreCase(name)) {
+            return KEY_IMPLICIT_V2;
         } else {
             return UNKNOWN;
         }
@@ -126,8 +131,9 @@ public enum ObPartFuncType {
      * Is key part.
      */
     public boolean isKeyPart() {
-        return this.index == KEY_IMPLICIT.getIndex() || this.index == KEY_V2.getIndex()
-               || this.index == KEY_V3.getIndex() || this.index == KEY.getIndex();
+        return this.index == KEY_IMPLICIT_V2.getIndex() || this.index == KEY_IMPLICIT.getIndex()
+               || this.index == KEY_V2.getIndex() || this.index == KEY_V3.getIndex()
+               || this.index == KEY.getIndex();
     }
 
     /*

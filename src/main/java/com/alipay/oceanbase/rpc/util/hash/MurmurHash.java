@@ -177,6 +177,61 @@ public final class MurmurHash {
     }
 
     /**
+     * Generates 64a bit hash from byte array of the given length and seed.
+     *
+     * @param data   byte array to hash
+     * @param length length of the array to hash
+     * @param seed   initial seed value
+     * @return 64 bit hash of the given array
+     */
+    public static long hash64a(final byte[] data, int length, long seed) {
+        final long m = 0xc6a4a7935bd1e995L;
+        final int r = 47;
+
+        long h = seed ^ (length * m);
+
+        int endpos = length - (length & 7);
+        int i = 0;
+        while (i != endpos) {
+            long k = (data[i] & 0xFFL) | ((data[i + 1] & 0xFFL) << 8)
+                     | ((data[i + 2] & 0xFFL) << 16) | ((data[i + 3] & 0xFFL) << 24)
+                     | ((data[i + 4] & 0xFFL) << 32) | ((data[i + 5] & 0xFFL) << 40)
+                     | ((data[i + 6] & 0xFFL) << 48) | ((data[i + 7] & 0xFFL) << 56);
+
+            k *= m;
+            k ^= k >>> r;
+            k *= m;
+            h ^= k;
+            h *= m;
+
+            i += 8;
+        }
+
+        switch (length & 7) {
+            case 7:
+                h ^= (data[i + 6] & 0xFFL) << 48;
+            case 6:
+                h ^= (data[i + 5] & 0xFFL) << 40;
+            case 5:
+                h ^= (data[i + 4] & 0xFFL) << 32;
+            case 4:
+                h ^= (data[i + 3] & 0xFFL) << 24;
+            case 3:
+                h ^= (data[i + 2] & 0xFFL) << 16;
+            case 2:
+                h ^= (data[i + 1] & 0xFFL) << 8;
+            case 1:
+                h ^= (data[i] & 0xFFL);
+                h *= m;
+        }
+
+        h ^= h >>> r;
+        h *= m;
+        h ^= h >>> r;
+        return h;
+    }
+
+    /**
      * Generates 64 bit hash from byte array with default seed value.
      *
      * @param data   byte array to hash
