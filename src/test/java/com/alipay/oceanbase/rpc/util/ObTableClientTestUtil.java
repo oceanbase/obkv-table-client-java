@@ -19,12 +19,17 @@ package com.alipay.oceanbase.rpc.util;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
 public class ObTableClientTestUtil {
     public static String FULL_USER_NAME          = "full-user-name";
     public static String PARAM_URL               = "config-url";
     public static String PASSWORD                = "password";
     public static String PROXY_SYS_USER_NAME     = "sys-user-name";
     public static String PROXY_SYS_USER_PASSWORD = "sys-user-password";
+    public static String JDBC_URL                = "jdbc-url";
 
     public static ObTableClient newTestClient() throws Exception {
         ObTableClient obTableClient = new ObTableClient();
@@ -34,6 +39,11 @@ public class ObTableClientTestUtil {
         obTableClient.setSysUserName(PROXY_SYS_USER_NAME);
         obTableClient.setSysPassword(PROXY_SYS_USER_PASSWORD);
         return obTableClient;
+    }
+
+    public static Connection getConnection() throws SQLException {
+        String[] userNames = FULL_USER_NAME.split("#");
+        return DriverManager.getConnection(JDBC_URL, userNames[0], PASSWORD);
     }
 
     static {

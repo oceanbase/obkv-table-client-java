@@ -79,9 +79,16 @@ public abstract class ObPartDesc {
         if (StringUtil.isBlank(partExpr)) {
             throw new IllegalArgumentException("ObKeyPartDesc part express is blank");
         }
-        this.partExpr = partExpr;
-        this.orderedPartColumnNames = unmodifiableList(Arrays.asList(partExpr.split(",")));
+        this.partExpr = partExpr.replace(" ", "");
+        this.orderedPartColumnNames = unmodifiableList(Arrays.asList(this.partExpr.split(",")));
     }
+
+    /*
+     * Get part num
+     */
+    public int getPartNum() {
+        return -1;
+    };
 
     /*
      * Get ordered part column names.

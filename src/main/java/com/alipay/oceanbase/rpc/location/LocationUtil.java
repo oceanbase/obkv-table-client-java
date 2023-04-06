@@ -999,6 +999,7 @@ public class LocationUtil {
             // get part key for each loop
             String partKeyExtra = rs.getString("part_key_extra");
             partKeyExtra = partKeyExtra.replace("`", ""); // '`' is not supported by druid
+            partKeyExtra = partKeyExtra.replace(" ", ""); // ' ' should be removed
             ObColumn column;
             String collationTypeLabel = null;
             if (ObGlobal.OB_VERSION >= 4L) {

@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.util;
 
+import com.alipay.oceanbase.rpc.location.model.partition.ObPartFuncType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObCollationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObColumn;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjType;
@@ -36,9 +37,11 @@ public class ObHashUtils {
      * @param varchar input varchar data
      * @param collationType collation type
      * @param hashCode old hashCode
+     * @param partFuncType partition function type
      * @return new hashCode
      */
-    public static long varcharHash(Object varchar, ObCollationType collationType, long hashCode) {
+    public static long varcharHash(Object varchar, ObCollationType collationType, long hashCode,
+                                   ObPartFuncType partFuncType) {
         // magic number, the same number with observer
         long seed = 0xc6a4a7935bd1e995L;
         byte[] bytes;
@@ -61,13 +64,31 @@ public class ObHashUtils {
         }
         switch (collationType) {
             case CS_TYPE_UTF8MB4_GENERAL_CI:
-                hashCode = ObHashSortUtf8mb4.obHashSortUtf8Mb4(bytes, bytes.length, hashCode, seed);
+                if (partFuncType == ObPartFuncType.KEY_V3
+                    || partFuncType == ObPartFuncType.KEY_IMPLICIT_V2) {
+                    hashCode = ObHashSortUtf8mb4.obHashSortUtf8Mb4(bytes, bytes.length, hashCode,
+                        seed, true);
+                } else {
+                    hashCode = ObHashSortUtf8mb4.obHashSortUtf8Mb4(bytes, bytes.length, hashCode,
+                        seed, false);
+                }
                 break;
             case CS_TYPE_UTF8MB4_BIN:
-                hashCode = ObHashSortUtf8mb4.obHashSortMbBin(bytes, bytes.length, hashCode, seed);
+                if (partFuncType == ObPartFuncType.KEY_V3
+                    || partFuncType == ObPartFuncType.KEY_IMPLICIT_V2) {
+                    hashCode = MurmurHash.hash64a(bytes, bytes.length, hashCode);
+                } else {
+                    hashCode = ObHashSortUtf8mb4.obHashSortMbBin(bytes, bytes.length, hashCode,
+                        seed);
+                }
                 break;
             case CS_TYPE_BINARY:
-                hashCode = ObHashSortBin.obHashSortBin(bytes, bytes.length, hashCode, seed);
+                if (partFuncType == ObPartFuncType.KEY_V3
+                    || partFuncType == ObPartFuncType.KEY_IMPLICIT_V2) {
+                    hashCode = MurmurHash.hash64a(bytes, bytes.length, hashCode);
+                } else {
+                    hashCode = ObHashSortBin.obHashSortBin(bytes, bytes.length, hashCode, seed);
+                }
                 break;
             case CS_TYPE_INVALID:
             case CS_TYPE_COLLATION_FREE:
@@ -85,9 +106,11 @@ public class ObHashUtils {
      * @param value input data
      * @param refColumn data info, include type and collation type
      * @param hashCode old hashCode
+     * @param partFuncType partition function type
      * @return new hashCode
      */
-    public static long toHashcode(Object value, ObColumn refColumn, long hashCode) {
+    public static long toHashcode(Object value, ObColumn refColumn, long hashCode,
+                                  ObPartFuncType partFuncType) {
 
         ObObjType type = refColumn.getObObjType();
         int typeValue = type.getValue();
@@ -101,7 +124,7 @@ public class ObHashUtils {
         } else if (ObDateType.getValue() == typeValue) {
             return ObHashUtils.dateHash((Date) value, hashCode);
         } else if (ObVarcharType.getValue() == typeValue || ObCharType.getValue() == typeValue) {
-            return ObHashUtils.varcharHash(value, collationType, hashCode);
+            return ObHashUtils.varcharHash(value, collationType, hashCode, partFuncType);
         }
 
         throw new ClassCastException("unexpected type" + type);
@@ -120,7 +143,7 @@ public class ObHashUtils {
      * @return new hashCode
      */
     public static long longHash(long l, long hashCode) {
-        return MurmurHash.hash64(longToByteArray(l), 8, hashCode);
+        return MurmurHash.hash64a(longToByteArray(l), 8, hashCode);
     }
 
     /**

@@ -26,7 +26,6 @@ import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionLevel;
 import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
-import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutate;
@@ -58,12 +57,10 @@ import static com.alipay.oceanbase.rpc.constant.Constants.OCEANBASE_DATABASE;
 import static com.alipay.oceanbase.rpc.location.LocationUtil.*;
 import static com.alipay.oceanbase.rpc.location.model.ObServerRoute.STRONG_READ;
 import static com.alipay.oceanbase.rpc.location.model.TableEntry.HBASE_ROW_KEY_ELEMENT;
-import static com.alipay.oceanbase.rpc.location.model.partition.ObPartConstants.PART_ID_BITNUM;
-import static com.alipay.oceanbase.rpc.location.model.partition.ObPartConstants.PART_ID_SHIFT;
+import static com.alipay.oceanbase.rpc.location.model.partition.ObPartIdCalculator.*;
 import static com.alipay.oceanbase.rpc.property.Property.*;
 import static com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType.*;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
-import static com.alipay.oceanbase.rpc.util.TraceUtil.formatTraceMessage;
 
 public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private static final Logger                               logger                                  = TableClientLoggerFactory
@@ -1100,21 +1097,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return tableEntry;
     }
 
-    private static final Long MASK = (1L << PART_ID_BITNUM)
-                                     | 1L << (PART_ID_BITNUM + PART_ID_SHIFT);
-
-    private long extractIdxFromPartid(long id) {
-        return (id & (~(0xffffffffffffffffL << PART_ID_BITNUM)));
-    }
-
-    private long extractSubpartId(long id) {
-        return id & (~(0xffffffffffffffffL << PART_ID_SHIFT));
-    }
-
-    private long extractSubpartIdx(long id) {
-        return extractIdxFromPartid(extractSubpartId(id));
-    }
-
     /**
      * 根据 rowkey 获取分区 id
      * @param tableEntry
@@ -1134,7 +1116,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         Long partId1 = tableEntry.getPartitionInfo().getFirstPartDesc().getPartId(rowKey);
         Long partId2 = tableEntry.getPartitionInfo().getSubPartDesc().getPartId(rowKey);
-        return ((partId1 << PART_ID_SHIFT) | partId2 | MASK);
+        return generatePartId(partId1, partId2);
     }
 
     private List<Long> getPartitionsForLevelTwo(TableEntry tableEntry, Object[] start,
@@ -1151,9 +1133,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             .getPartIds(start, startIncluded, end, endIncluded);
 
         List<Long> partIds = new ArrayList<Long>();
-        for (int i = 0; i < partIds1.size(); i++) {
-            for (int j = 0; j < partIds2.size(); j++) {
-                partIds.add((partIds1.get(i) << PART_ID_SHIFT) | partIds2.get(j) | MASK);
+        for (Long partId1 : partIds1) {
+            for (Long partId2 : partIds2) {
+                partIds.add(generatePartId(partId1, partId2));
             }
         }
 
@@ -1165,7 +1147,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         long logicID = partId;
         if (tableEntry != null && tableEntry.getPartitionInfo() != null
             && tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
-            logicID = extractSubpartIdx(partId);
+            logicID = extractPartIdx(partId)
+                      * tableEntry.getPartitionInfo().getSubPartDesc().getPartNum()
+                      + extractSubpartIdx(partId);
         }
         return new ObPair<Long, ReplicaLocation>(partId, getPartitionLocation(tableEntry, logicID,
             route));

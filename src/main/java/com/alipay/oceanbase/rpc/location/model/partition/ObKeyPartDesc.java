@@ -146,14 +146,16 @@ public class ObKeyPartDesc extends ObPartDesc {
                 }
             }
 
-            Long hashValue = 0L;
+            long hashValue = 0L;
             for (int i = 0; i < partRefColumnSize; i++) {
                 hashValue = ObHashUtils.toHashcode(evalValues.get(i),
-                    orderedPartRefColumnRowKeyRelations.get(i).getLeft(), hashValue);
+                    orderedPartRefColumnRowKeyRelations.get(i).getLeft(), hashValue,
+                    this.getPartFuncType());
             }
 
             hashValue = (hashValue > 0 ? hashValue : -hashValue);
-            return (partSpace << ObPartConstants.PART_ID_BITNUM) | (hashValue % this.partNum);
+            return ((long) partSpace << ObPartConstants.OB_PART_IDS_BITNUM)
+                   | (hashValue % this.partNum);
         } catch (IllegalArgumentException e) {
             logger.error(LCD.convert("01-00023"), e);
             throw new IllegalArgumentException(
