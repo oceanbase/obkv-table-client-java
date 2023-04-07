@@ -29,6 +29,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.sql.Connection;
+import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.Executors;
 
@@ -501,4 +503,39 @@ public class ObTableClientPartitionHashTest {
         Assert.assertEquals("value2", new String((byte[]) getResult.get("V")));
     }
 
+    public void cleanPartitionLocationTable(String tableName) throws Exception {
+        Connection connection = ObTableClientTestUtil.getConnection();
+        Statement statement = connection.createStatement();
+        statement.execute("delete from " + tableName);
+    }
+
+    @Test
+    public void testPartitionLocation() throws Exception {
+        obTableClient.setRunningMode(ObTableClient.RunningMode.NORMAL);
+        String testTable = "testPartitionHashComplex";
+        obTableClient.addRowKeyElement(testTable, new String[] { "c1", "c2" });
+        Random rng = new Random();
+        try {
+            cleanPartitionLocationTable(testTable);
+            Connection connection = ObTableClientTestUtil.getConnection();
+            Statement statement = connection.createStatement();
+            for (int i = 0; i < 64; i++) {
+                int c1 = rng.nextInt();
+                long c2 = rng.nextLong();
+
+                // use sql to insert data
+                statement.execute("insert into " + testTable + "(c1, c2, c3) values (" + c1 + "," + c2 + "," + "'value')");
+
+                // get data by obkv interface
+                Map<String, Object> result = obTableClient.get(testTable,
+                        new Object[] { c1, c2 }, new String[] { "c1", "c2", "c3" });
+                Assert.assertEquals(3, result.size());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        } finally {
+            cleanPartitionLocationTable(testTable);
+        }
+    }
 }

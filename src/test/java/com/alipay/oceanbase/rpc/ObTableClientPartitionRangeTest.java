@@ -27,8 +27,12 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.sql.Connection;
+import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.Executors;
+
+import static java.lang.StrictMath.abs;
 
 public class ObTableClientPartitionRangeTest {
     private ObTableClient obTableClient;
@@ -591,4 +595,51 @@ public class ObTableClientPartitionRangeTest {
         }
     }
 
+    public void cleanPartitionLocationTable(String tableName) throws Exception {
+        Connection connection = ObTableClientTestUtil.getConnection();
+        Statement statement = connection.createStatement();
+        statement.execute("delete from " + tableName);
+    }
+
+    static String generateRandomStringByUUID(int times) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < times; i++) {
+            sb.append(UUID.randomUUID().toString().replaceAll("-", ""));
+        }
+        return sb.toString();
+    }
+
+    @Test
+    public void testPartitionLocation() throws Exception {
+        obTableClient.setRunningMode(ObTableClient.RunningMode.NORMAL);
+        String testTable = "testPartitionRangeComplex";
+        obTableClient.addRowKeyElement(testTable, new String[] { "c1", "c2", "c3", "c4" });
+        Random rng = new Random();
+        try {
+            cleanPartitionLocationTable(testTable);
+            Connection connection = ObTableClientTestUtil.getConnection();
+            Statement statement = connection.createStatement();
+            for (int i = 0; i < 64; i++) {
+                long c1 = abs(rng.nextLong()) % 2000;
+                long c2 = abs(rng.nextLong()) % 2000;
+                String c3 = generateRandomStringByUUID(10);
+                String c4 = generateRandomStringByUUID(5) + c3 + generateRandomStringByUUID(5);
+
+                // use sql to insert data
+                statement.execute("insert into " + testTable + "(c1, c2, c3, c4, c5) values (" + c1
+                        + "," + c2 + ",'" + c3 + "','" + c4 + "'," + "'value')");
+
+                // get data by obkv interface
+                Map<String, Object> result = obTableClient.get(testTable,
+                        new Object[] { c1, c2, c3, c4 }, new String[] { "c1", "c2", "c3",
+                                "c4", "c5" });
+                Assert.assertEquals(5, result.size());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        } finally {
+            cleanPartitionLocationTable(testTable);
+        }
+    }
 }
