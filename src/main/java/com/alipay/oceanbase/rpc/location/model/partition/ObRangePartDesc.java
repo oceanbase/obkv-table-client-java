@@ -44,6 +44,8 @@ public class ObRangePartDesc extends ObPartDesc {
         setPartFuncType(ObPartFuncType.RANGE);
     }
 
+    private int                 partSpace = 0;
+    private int                 partNum   = 0;
     private List<ObColumn>                             orderedCompareColumns     = null;
     private List<ObObjType>                            orderedCompareColumnTypes = null;
     private List<ObComparableKV<ObPartitionKey, Long>> bounds                    = null;
@@ -151,6 +153,34 @@ public class ObRangePartDesc extends ObPartDesc {
         }
 
         super.prepare();
+    }
+
+    /*
+     * Get part space.
+     */
+    public int getPartSpace() {
+        return partSpace;
+    }
+
+    /*
+     * Set part space.
+     */
+    public void setPartSpace(int partSpace) {
+        this.partSpace = partSpace;
+    }
+
+    /*
+     * Get part num.
+     */
+    public int getPartNum() {
+        return this.partNum;
+    }
+
+    /*
+     * Set part num.
+     */
+    public void setPartNum(int partNum) {
+        this.partNum = partNum;
     }
 
     /*

@@ -104,7 +104,7 @@ public class LocationUtil {
 
     private static final String PROXY_SUB_PARTITION_SQL          = "SELECT /*+READ_CONSISTENCY(WEAK)*/ sub_part_id, part_name, high_bound_val "
                                                                    + "FROM oceanbase.__all_virtual_proxy_sub_partition "
-                                                                   + "WHERE table_id = ? and part_id = ? LIMIT ?;";
+                                                                   + "WHERE table_id = ? LIMIT ?;";
 
     private static final String PROXY_SERVER_STATUS_INFO         = "SELECT ss.svr_ip, ss.zone, zs.region, zs.spare4 as idc "
                                                                    + "FROM oceanbase.__all_virtual_proxy_server_stat ss, oceanbase.__all_virtual_zone_stat zs "
@@ -743,8 +743,7 @@ public class LocationUtil {
             } else {
                 pstmt = connection.prepareStatement(PROXY_SUB_PARTITION_SQL);
                 pstmt.setLong(1, tableEntry.getTableId());
-                pstmt.setLong(2, TEMPLATE_PART_ID);
-                pstmt.setInt(3, Integer.MAX_VALUE);
+                pstmt.setInt(2, Integer.MAX_VALUE);
             }
 
             rs = pstmt.executeQuery();
@@ -1063,6 +1062,8 @@ public class LocationUtil {
             ObRangePartDesc rangeDesc = new ObRangePartDesc();
             rangeDesc.setPartFuncType(partType);
             rangeDesc.setPartExpr(partExpr);
+            rangeDesc.setPartNum(rs.getInt(partLevelPrefix + "part_num"));
+            rangeDesc.setPartSpace(rs.getInt(partLevelPrefix + "part_space"));
             ArrayList<ObObjType> types = new ArrayList<ObObjType>(1);
             String objTypesStr = rs.getString(partLevelPrefix + "part_range_type");
             for (String typeStr : objTypesStr.split(",")) {
