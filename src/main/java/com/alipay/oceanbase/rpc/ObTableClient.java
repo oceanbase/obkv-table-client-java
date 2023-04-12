@@ -1171,7 +1171,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         } else {
             return tableEntry.getPartitionEntry().getPartitionLocationWithPartId(partId)
                 .getReplica(route);
-
         }
     }
 

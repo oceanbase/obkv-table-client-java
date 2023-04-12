@@ -631,7 +631,7 @@ public class ObTableClientPartitionRangeTest {
 
                 // get data by obkv interface
                 Map<String, Object> result = obTableClient.get(testTable,
-                        new Object[] { c1, c2, c3, c4 }, new String[] { "c1", "c2", "c3",
+                        new Object[] { c1, c2, c3.getBytes(), c4 }, new String[] { "c1", "c2", "c3",
                                 "c4", "c5" });
                 Assert.assertEquals(5, result.size());
             }
