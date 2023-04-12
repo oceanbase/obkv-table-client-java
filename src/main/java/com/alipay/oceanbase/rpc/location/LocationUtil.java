@@ -617,11 +617,24 @@ public class LocationUtil {
             }
             sql = MessageFormat.format(PROXY_LOCATION_SQL_PARTITION_V4, sb.toString());
         } else {
-            for (int i = 0; i < partitionNum; i++) {
-                if (i > 0) {
-                    sb.append(", ");
+            if (tableEntry.isPartitionTable() && null != tableEntry.getPartitionInfo().getSubPartDesc()) {
+                long firstPartNum = tableEntry.getPartitionInfo().getFirstPartDesc().getPartNum();
+                long subPartNum = tableEntry.getPartitionInfo().getSubPartDesc().getPartNum();
+                for (long i = 0; i < firstPartNum; ++i) {
+                    for (long j = 0; j < subPartNum; ++j) {
+                        if (i > 0 || j > 0) {
+                            sb.append(", ");
+                        }
+                        sb.append(ObPartIdCalculator.generatePartId(i, j));
+                    }
                 }
-                sb.append(i);
+            } else {
+                for (int i = 0; i < partitionNum; i++) {
+                    if (i > 0) {
+                        sb.append(", ");
+                    }
+                    sb.append(i);
+                }
             }
             sql = MessageFormat.format(PROXY_LOCATION_SQL_PARTITION, sb.toString());
         }
@@ -838,6 +851,9 @@ public class LocationUtil {
                 partitionId = rs.getLong("tablet_id");
             } else {
                 partitionId = rs.getLong("partition_id");
+                if (tableEntry.isPartitionTable() && null != tableEntry.getPartitionInfo().getSubPartDesc()) {
+                    partitionId = ObPartIdCalculator.extractPartIdx(partitionId) * tableEntry.getPartitionInfo().getSubPartDesc().getPartNum() + ObPartIdCalculator.extractSubpartIdx(partitionId);
+                }
             }
             if (!replica.isValid()) {
                 RUNTIME
