@@ -23,6 +23,7 @@ import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.batch.QueryByBatch;
 import com.alipay.oceanbase.rpc.location.model.*;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
+import com.alipay.oceanbase.rpc.location.model.partition.ObPartIdCalculator;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionLevel;
 import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
@@ -1147,9 +1148,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         long logicID = partId;
         if (tableEntry != null && tableEntry.getPartitionInfo() != null
             && tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
-            logicID = extractPartIdx(partId)
-                      * tableEntry.getPartitionInfo().getSubPartDesc().getPartNum()
-                      + extractSubpartIdx(partId);
+            logicID = ObPartIdCalculator.getPartIdx(partId, tableEntry.getPartitionInfo().getSubPartDesc().getPartNum());
         }
         return new ObPair<Long, ReplicaLocation>(partId, getPartitionLocation(tableEntry, logicID,
             route));
@@ -1318,9 +1317,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
 
         ObTableParam param = new ObTableParam(obTable);
-        if (ObGlobal.OB_VERSION >= 4) {
+        if (ObGlobal.OB_VERSION >= 4 && tableEntry != null) {
+            long logicID = partId;
+            if (tableEntry.getPartitionInfo() != null && tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
+                logicID = ObPartIdCalculator.getPartIdx(partId, tableEntry.getPartitionInfo().getSubPartDesc().getPartNum());
+            }
             partId = tableEntry.isPartitionTable() ? tableEntry.getPartitionInfo()
-                .getPartTabletIdMap().get(partId) : partId;
+                .getPartTabletIdMap().get(logicID) : partId;
         }
 
         param.setTableId(tableEntry.getTableId());
