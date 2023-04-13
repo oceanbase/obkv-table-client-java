@@ -713,7 +713,7 @@ public class LocationUtil {
                 }
             } else if (ObGlobal.OB_VERSION >= 4
                        && (obPartFuncType.isKeyPart() || obPartFuncType.isHashPart())) {
-                tableEntry.getPartitionInfo().setPartTabletIdMap(parseFirstPartKeyHash(rs));
+                tableEntry.getPartitionInfo().setPartTabletIdMap(parseFirstPartKeyHash(rs, tableEntry));
             }
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00011"), tableEntry, obPartFuncType, e);
@@ -778,7 +778,7 @@ public class LocationUtil {
                 }
             } else if (ObGlobal.OB_VERSION >= 4
                        && (subPartFuncType.isKeyPart() || subPartFuncType.isHashPart())) {
-                tableEntry.getPartitionInfo().setPartTabletIdMap(parseSubPartKeyHash(rs));
+                tableEntry.getPartitionInfo().setPartTabletIdMap(parseSubPartKeyHash(rs, tableEntry));
             }
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00012"), tableEntry, subPartFuncType, e);
@@ -852,7 +852,7 @@ public class LocationUtil {
             } else {
                 partitionId = rs.getLong("partition_id");
                 if (tableEntry.isPartitionTable() && null != tableEntry.getPartitionInfo().getSubPartDesc()) {
-                    partitionId = ObPartIdCalculator.extractPartIdx(partitionId) * tableEntry.getPartitionInfo().getSubPartDesc().getPartNum() + ObPartIdCalculator.extractSubpartIdx(partitionId);
+                    partitionId = ObPartIdCalculator.getPartIdx(partitionId, tableEntry.getPartitionInfo().getSubPartDesc().getPartNum());
                 }
             }
             if (!replica.isValid()) {
@@ -1183,10 +1183,10 @@ public class LocationUtil {
         return partNameIdMap;
     }
 
-    private static Map<Long, Long> parseFirstPartKeyHash(ResultSet rs) throws SQLException,
-                                                                      IllegalArgumentException,
-                                                                      FeatureNotSupportedException {
-        return parseKeyHashPart(rs);
+    private static Map<Long, Long> parseFirstPartKeyHash(ResultSet rs, TableEntry tableEntry) throws SQLException,
+                                                                                              IllegalArgumentException,
+                                                                                              FeatureNotSupportedException {
+        return parseKeyHashPart(rs, tableEntry, false);
     }
 
     private static List<ObComparableKV<ObPartitionKey, Long>> parseFirstPartRange(ResultSet rs,
@@ -1219,18 +1219,38 @@ public class LocationUtil {
         return parseListPartSets(rs, tableEntry, true);
     }
 
-    private static Map<Long, Long> parseSubPartKeyHash(ResultSet rs) throws SQLException,
-                                                                    IllegalArgumentException,
-                                                                    FeatureNotSupportedException {
-        return parseKeyHashPart(rs);
+    private static Map<Long, Long> parseSubPartKeyHash(ResultSet rs, TableEntry tableEntry) throws SQLException,
+                                                                                            IllegalArgumentException,
+                                                                                            FeatureNotSupportedException {
+        return parseKeyHashPart(rs, tableEntry, true);
     }
 
-    private static Map<Long, Long> parseKeyHashPart(ResultSet rs) throws SQLException,
-                                                                 IllegalArgumentException,
-                                                                 FeatureNotSupportedException {
+    private static Map<Long, Long> parseKeyHashPart(ResultSet rs, TableEntry tableEntry, boolean isSubPart) throws SQLException,
+                                                                                                            IllegalArgumentException,
+                                                                                                            FeatureNotSupportedException {
         long idx = 0L;
         Map<Long, Long> partTabletIdMap = new HashMap<Long, Long>();
         while (rs.next()) {
+            ObPartDesc subPartDesc = tableEntry.getPartitionInfo().getSubPartDesc();
+            if (null != subPartDesc) {
+                // client only support template partition table
+                // so the sub_part_num is a constant and will store in subPartDesc which is different from proxy
+                if (subPartDesc instanceof ObKeyPartDesc) {
+                    ObKeyPartDesc subKeyPartDesc = (ObKeyPartDesc) subPartDesc;
+                    if (!isSubPart && subKeyPartDesc.getPartNum() == 0) {
+                        long subPartNum = rs.getLong("sub_part_num");
+                        subKeyPartDesc.setPartNum((int) subPartNum);
+                    }
+                } else if (subPartDesc instanceof ObHashPartDesc) {
+                    ObHashPartDesc subHashPartDesc = (ObHashPartDesc) subPartDesc;
+                    if (!isSubPart && subHashPartDesc.getPartNum() == 0) {
+                        long subPartNum = rs.getLong("sub_part_num");
+                        subHashPartDesc.setPartNum((int) subPartNum);
+                    }
+                } else {
+                    throw new IllegalArgumentException("sub part desc is not key or hash part desc");
+                }
+            }
             Long tabletId = rs.getLong("tablet_id");
             partTabletIdMap.put(idx++, tabletId);
         }
@@ -1254,8 +1274,16 @@ public class LocationUtil {
         List<ObComparableKV<ObPartitionKey, Long>> bounds = new ArrayList<ObComparableKV<ObPartitionKey, Long>>();
         Map<String, Long> partNameIdMap = new HashMap<String, Long>();
         Map<Long, Long> partTabletIdMap = new HashMap<Long, Long>();
+        ObRangePartDesc subRangePartDesc = (ObRangePartDesc) tableEntry.getPartitionInfo().getSubPartDesc();
         long idx = 0L;
         while (rs.next()) {
+            if (null != subRangePartDesc && !isSubPart && subRangePartDesc.getPartNum() == 0) {
+                // client only support template partition table
+                // so the sub_part_num is a constant and will store in subPartDesc which is different from proxy
+                long subPartNum = rs.getLong("sub_part_num");
+                subRangePartDesc.setPartNum((int)subPartNum);
+            }
+
             String highBoundVal = rs.getString("high_bound_val");
             String[] splits = highBoundVal.split(",");
             List<Comparable> partElements = new ArrayList<Comparable>();
