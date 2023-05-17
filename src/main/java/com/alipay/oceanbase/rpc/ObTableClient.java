@@ -1148,7 +1148,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         long logicID = partId;
         if (tableEntry != null && tableEntry.getPartitionInfo() != null
             && tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
-            logicID = ObPartIdCalculator.getPartIdx(partId, tableEntry.getPartitionInfo().getSubPartDesc().getPartNum());
+            logicID = ObPartIdCalculator.getPartIdx(partId, tableEntry.getPartitionInfo()
+                .getSubPartDesc().getPartNum());
         }
         return new ObPair<Long, ReplicaLocation>(partId, getPartitionLocation(tableEntry, logicID,
             route));
@@ -1319,8 +1320,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         ObTableParam param = new ObTableParam(obTable);
         if (ObGlobal.OB_VERSION >= 4 && tableEntry != null) {
             long logicID = partId;
-            if (tableEntry.getPartitionInfo() != null && tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
-                logicID = ObPartIdCalculator.getPartIdx(partId, tableEntry.getPartitionInfo().getSubPartDesc().getPartNum());
+            if (tableEntry.getPartitionInfo() != null
+                && tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
+                logicID = ObPartIdCalculator.getPartIdx(partId, tableEntry.getPartitionInfo()
+                    .getSubPartDesc().getPartNum());
             }
             partId = tableEntry.isPartitionTable() ? tableEntry.getPartitionInfo()
                 .getPartTabletIdMap().get(logicID) : partId;

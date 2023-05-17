@@ -32,13 +32,15 @@ import static org.junit.Assert.assertEquals;
 
 public class ObTableConnectionTest {
     public ObTableClient client;
-    private int connCnt = 100;
+    private int          connCnt = 100;
+
     @Before
     public void setup() throws Exception {
         System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
 
         final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
-        obTableClient.addProperty(Property.SERVER_CONNECTION_POOL_SIZE.getKey(), Integer.toString(connCnt));
+        obTableClient.addProperty(Property.SERVER_CONNECTION_POOL_SIZE.getKey(),
+            Integer.toString(connCnt));
         obTableClient.init();
 
         this.client = obTableClient;
@@ -48,7 +50,8 @@ public class ObTableConnectionTest {
         int resCnt = 0;
         Connection connection = ObTableClientTestUtil.getConnection();
         Statement statement = connection.createStatement();
-        statement.execute("select count(*) from oceanbase.gv$ob_kv_connections group by svr_ip, svr_port limit 1");
+        statement
+            .execute("select count(*) from oceanbase.gv$ob_kv_connections group by svr_ip, svr_port limit 1");
         ResultSet resultSet = statement.getResultSet();
         while (resultSet.next()) {
             resCnt = resultSet.getInt(1);
@@ -123,7 +126,7 @@ public class ObTableConnectionTest {
         private int           id;
         private String        tableName;
         private ObTableClient obTableClient;
-        private long          executeTime; // in millisecond
+        private long          executeTime;  // in millisecond
 
         public GetWorker(int id, String tableName, ObTableClient obTableClient, long executeTime) {
             this.id = id;
@@ -136,11 +139,12 @@ public class ObTableConnectionTest {
             long start = System.currentTimeMillis();
             while ((System.currentTimeMillis() - start) < executeTime) {
                 try {
-                    obTableClient.get(tableName, new String[] { "k1" }, new String[] {"c1"});
+                    obTableClient.get(tableName, new String[] { "k1" }, new String[] { "c1" });
                 } catch (Exception e) {
                     e.printStackTrace();
                     System.out.println("thread " + id + " get occurs exception !");
-                } finally {}
+                } finally {
+                }
             }
         }
     }

@@ -524,11 +524,12 @@ public class ObTableClientPartitionHashTest {
                 long c2 = rng.nextLong();
 
                 // use sql to insert data
-                statement.execute("insert into " + testTable + "(c1, c2, c3) values (" + c1 + "," + c2 + "," + "'value')");
+                statement.execute("insert into " + testTable + "(c1, c2, c3) values (" + c1 + ","
+                                  + c2 + "," + "'value')");
 
                 // get data by obkv interface
-                Map<String, Object> result = obTableClient.get(testTable,
-                        new Object[] { c1, c2 }, new String[] { "c1", "c2", "c3" });
+                Map<String, Object> result = obTableClient.get(testTable, new Object[] { c1, c2 },
+                    new String[] { "c1", "c2", "c3" });
                 Assert.assertEquals(3, result.size());
             }
         } catch (Exception e) {
