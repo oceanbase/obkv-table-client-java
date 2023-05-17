@@ -44,8 +44,8 @@ public class ObRangePartDesc extends ObPartDesc {
         setPartFuncType(ObPartFuncType.RANGE);
     }
 
-    private int                 partSpace = 0;
-    private int                 partNum   = 0;
+    private int                                        partSpace                 = 0;
+    private int                                        partNum                   = 0;
     private List<ObColumn>                             orderedCompareColumns     = null;
     private List<ObObjType>                            orderedCompareColumnTypes = null;
     private List<ObComparableKV<ObPartitionKey, Long>> bounds                    = null;

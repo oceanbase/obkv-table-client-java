@@ -233,7 +233,7 @@ public class LocationUtil {
     private static String formatObServerUrl(ObServerAddr obServerAddr, long connectTimeout,
                                             long socketTimeout) {
         return format(
-            "jdbc:mysql://%s/oceanbase?useUnicode=true&characterEncoding=utf-8&connectTimeout=%d&socketTimeout=%d",
+            "jdbc:oceanbase://%s/oceanbase?useUnicode=true&characterEncoding=utf-8&connectTimeout=%d&socketTimeout=%d",
             obServerAddr.getIp() + ":" + obServerAddr.getSqlPort(), connectTimeout, socketTimeout);
     }
 
@@ -247,11 +247,11 @@ public class LocationUtil {
     private static Connection getMetaRefreshConnection(String url, ObUserAuth sysUA)
                                                                                     throws ObTableEntryRefreshException {
         try {
-            Class.forName("com.mysql.jdbc.Driver");
+            Class.forName("com.alipay.oceanbase.jdbc.Driver");
         } catch (ClassNotFoundException e) {
             RUNTIME.error(LCD.convert("01-00006"), e.getMessage(), e);
             throw new ObTableEntryRefreshException(format(
-                "fail to find com.mysql.jdbc.Driver, errMsg=%s", e.getMessage()), e);
+                "fail to find com.alipay.oceanbase.jdbc.Driver, errMsg=%s", e.getMessage()), e);
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00005"), e.getMessage(), e);
             throw new ObTableEntryRefreshException("fail to decode proxyro password", e);
@@ -617,7 +617,8 @@ public class LocationUtil {
             }
             sql = MessageFormat.format(PROXY_LOCATION_SQL_PARTITION_V4, sb.toString());
         } else {
-            if (tableEntry.isPartitionTable() && null != tableEntry.getPartitionInfo().getSubPartDesc()) {
+            if (tableEntry.isPartitionTable()
+                && null != tableEntry.getPartitionInfo().getSubPartDesc()) {
                 long firstPartNum = tableEntry.getPartitionInfo().getFirstPartDesc().getPartNum();
                 long subPartNum = tableEntry.getPartitionInfo().getSubPartDesc().getPartNum();
                 for (long i = 0; i < firstPartNum; ++i) {
@@ -713,7 +714,8 @@ public class LocationUtil {
                 }
             } else if (ObGlobal.OB_VERSION >= 4
                        && (obPartFuncType.isKeyPart() || obPartFuncType.isHashPart())) {
-                tableEntry.getPartitionInfo().setPartTabletIdMap(parseFirstPartKeyHash(rs, tableEntry));
+                tableEntry.getPartitionInfo().setPartTabletIdMap(
+                    parseFirstPartKeyHash(rs, tableEntry));
             }
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00011"), tableEntry, obPartFuncType, e);
@@ -778,7 +780,8 @@ public class LocationUtil {
                 }
             } else if (ObGlobal.OB_VERSION >= 4
                        && (subPartFuncType.isKeyPart() || subPartFuncType.isHashPart())) {
-                tableEntry.getPartitionInfo().setPartTabletIdMap(parseSubPartKeyHash(rs, tableEntry));
+                tableEntry.getPartitionInfo().setPartTabletIdMap(
+                    parseSubPartKeyHash(rs, tableEntry));
             }
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00012"), tableEntry, subPartFuncType, e);
@@ -851,8 +854,10 @@ public class LocationUtil {
                 partitionId = rs.getLong("tablet_id");
             } else {
                 partitionId = rs.getLong("partition_id");
-                if (tableEntry.isPartitionTable() && null != tableEntry.getPartitionInfo().getSubPartDesc()) {
-                    partitionId = ObPartIdCalculator.getPartIdx(partitionId, tableEntry.getPartitionInfo().getSubPartDesc().getPartNum());
+                if (tableEntry.isPartitionTable()
+                    && null != tableEntry.getPartitionInfo().getSubPartDesc()) {
+                    partitionId = ObPartIdCalculator.getPartIdx(partitionId, tableEntry
+                        .getPartitionInfo().getSubPartDesc().getPartNum());
                 }
             }
             if (!replica.isValid()) {
@@ -1183,9 +1188,10 @@ public class LocationUtil {
         return partNameIdMap;
     }
 
-    private static Map<Long, Long> parseFirstPartKeyHash(ResultSet rs, TableEntry tableEntry) throws SQLException,
-                                                                                              IllegalArgumentException,
-                                                                                              FeatureNotSupportedException {
+    private static Map<Long, Long> parseFirstPartKeyHash(ResultSet rs, TableEntry tableEntry)
+                                                                                             throws SQLException,
+                                                                                             IllegalArgumentException,
+                                                                                             FeatureNotSupportedException {
         return parseKeyHashPart(rs, tableEntry, false);
     }
 
@@ -1219,15 +1225,17 @@ public class LocationUtil {
         return parseListPartSets(rs, tableEntry, true);
     }
 
-    private static Map<Long, Long> parseSubPartKeyHash(ResultSet rs, TableEntry tableEntry) throws SQLException,
-                                                                                            IllegalArgumentException,
-                                                                                            FeatureNotSupportedException {
+    private static Map<Long, Long> parseSubPartKeyHash(ResultSet rs, TableEntry tableEntry)
+                                                                                           throws SQLException,
+                                                                                           IllegalArgumentException,
+                                                                                           FeatureNotSupportedException {
         return parseKeyHashPart(rs, tableEntry, true);
     }
 
-    private static Map<Long, Long> parseKeyHashPart(ResultSet rs, TableEntry tableEntry, boolean isSubPart) throws SQLException,
-                                                                                                            IllegalArgumentException,
-                                                                                                            FeatureNotSupportedException {
+    private static Map<Long, Long> parseKeyHashPart(ResultSet rs, TableEntry tableEntry,
+                                                    boolean isSubPart) throws SQLException,
+                                                                      IllegalArgumentException,
+                                                                      FeatureNotSupportedException {
         long idx = 0L;
         Map<Long, Long> partTabletIdMap = new HashMap<Long, Long>();
         while (rs.next()) {
@@ -1274,14 +1282,15 @@ public class LocationUtil {
         List<ObComparableKV<ObPartitionKey, Long>> bounds = new ArrayList<ObComparableKV<ObPartitionKey, Long>>();
         Map<String, Long> partNameIdMap = new HashMap<String, Long>();
         Map<Long, Long> partTabletIdMap = new HashMap<Long, Long>();
-        ObRangePartDesc subRangePartDesc = (ObRangePartDesc) tableEntry.getPartitionInfo().getSubPartDesc();
+        ObRangePartDesc subRangePartDesc = (ObRangePartDesc) tableEntry.getPartitionInfo()
+            .getSubPartDesc();
         long idx = 0L;
         while (rs.next()) {
             if (null != subRangePartDesc && !isSubPart && subRangePartDesc.getPartNum() == 0) {
                 // client only support template partition table
                 // so the sub_part_num is a constant and will store in subPartDesc which is different from proxy
                 long subPartNum = rs.getLong("sub_part_num");
-                subRangePartDesc.setPartNum((int)subPartNum);
+                subRangePartDesc.setPartNum((int) subPartNum);
             }
 
             String highBoundVal = rs.getString("high_bound_val");

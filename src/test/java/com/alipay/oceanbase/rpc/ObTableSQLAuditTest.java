@@ -41,21 +41,25 @@ import static org.junit.Assert.assertTrue;
 public class ObTableSQLAuditTest {
     class AuditRows {
         int affected_rows = -1;
-        int return_rows = -1;
+        int return_rows   = -1;
     }
+
     public ObTableClient client;
+
     @Before
     public void setup() throws Exception {
         final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
         obTableClient.init();
         this.client = obTableClient;
     }
+
     // get affected_rows and return rows from sql_audit
-     AuditRows fetch_audit_rows() throws Exception {
+    AuditRows fetch_audit_rows() throws Exception {
         AuditRows auditRows = new AuditRows();
         Connection connection = ObTableClientTestUtil.getConnection();
         Statement statement = connection.createStatement();
-        statement.execute("select affected_rows, return_rows from oceanbase.gv$sql_audit where query_sql like 'table api%' order by request_time desc limit 1");
+        statement
+            .execute("select affected_rows, return_rows from oceanbase.gv$sql_audit where query_sql like 'table api%' order by request_time desc limit 1");
         ResultSet resultSet = statement.getResultSet();
         int rowCnt = 0;
         while (resultSet.next()) {
@@ -81,11 +85,11 @@ public class ObTableSQLAuditTest {
             assertEquals(0, auditRows.affected_rows);
             assertEquals(0, auditRows.return_rows);
 
-            MutationResult mutateRes = client.insertOrUpdate(tableName).setRowKey(colVal("c1", startKey)).
-                    addMutateColVal(colVal("c2", "v1")).execute();
+            MutationResult mutateRes = client.insertOrUpdate(tableName)
+                .setRowKey(colVal("c1", startKey)).addMutateColVal(colVal("c2", "v1")).execute();
             assertEquals(1, mutateRes.getAffectedRows());
-            mutateRes = client.insertOrUpdate(tableName).setRowKey(colVal("c1", endKey)).
-                    addMutateColVal(colVal("c2", "v1")).execute();
+            mutateRes = client.insertOrUpdate(tableName).setRowKey(colVal("c1", endKey))
+                .addMutateColVal(colVal("c2", "v1")).execute();
             assertEquals(1, mutateRes.getAffectedRows());
 
             query = client.query(tableName).addScanRange(startKey, endKey);
@@ -104,7 +108,6 @@ public class ObTableSQLAuditTest {
 
     }
 
-
     @Test
     public void test_single_operation() throws Exception {
 
@@ -119,40 +122,40 @@ public class ObTableSQLAuditTest {
             assertEquals(0, auditRows.return_rows);
 
             // 2. insert new record
-            MutationResult mutateRes = client.insert(tableName).setRowKey(rowKey).
-                    addMutateColVal(colVal("c2", "v1")).execute();
+            MutationResult mutateRes = client.insert(tableName).setRowKey(rowKey)
+                .addMutateColVal(colVal("c2", "v1")).execute();
             assertEquals(1, mutateRes.getAffectedRows());
             auditRows = fetch_audit_rows();
             assertEquals(1, auditRows.affected_rows);
             assertEquals(0, auditRows.return_rows);
 
             // 3. insertOrUpdate
-            mutateRes = client.insertOrUpdate(tableName).setRowKey(rowKey).
-                    addMutateColVal(colVal("c2", "v2")).execute();
+            mutateRes = client.insertOrUpdate(tableName).setRowKey(rowKey)
+                .addMutateColVal(colVal("c2", "v2")).execute();
             assertEquals(1, mutateRes.getAffectedRows());
             auditRows = fetch_audit_rows();
             assertEquals(1, auditRows.affected_rows);
             assertEquals(0, auditRows.return_rows);
 
             // 4. update
-            mutateRes = client.update(tableName).setRowKey(rowKey).
-                    addMutateColVal(colVal("c2", "v3")).execute();
+            mutateRes = client.update(tableName).setRowKey(rowKey)
+                .addMutateColVal(colVal("c2", "v3")).execute();
             assertEquals(1, mutateRes.getAffectedRows());
             auditRows = fetch_audit_rows();
             assertEquals(1, auditRows.affected_rows);
             assertEquals(0, auditRows.return_rows);
 
             // 5. replace
-            mutateRes = client.replace(tableName).setRowKey(rowKey).
-                    addMutateColVal(colVal("c2", "v4")).execute();
+            mutateRes = client.replace(tableName).setRowKey(rowKey)
+                .addMutateColVal(colVal("c2", "v4")).execute();
             assertEquals(2, mutateRes.getAffectedRows());
             auditRows = fetch_audit_rows();
             assertEquals(2, auditRows.affected_rows);
             assertEquals(0, auditRows.return_rows);
 
             // 6. append
-            mutateRes = client.append(tableName).setRowKey(rowKey).
-                    addMutateColVal(colVal("c2", "v4")).execute();
+            mutateRes = client.append(tableName).setRowKey(rowKey)
+                .addMutateColVal(colVal("c2", "v4")).execute();
             assertEquals(1, mutateRes.getAffectedRows());
             auditRows = fetch_audit_rows();
             assertEquals(1, auditRows.affected_rows);
@@ -166,15 +169,15 @@ public class ObTableSQLAuditTest {
             assertEquals(0, auditRows.return_rows);
 
             // 8. replace
-            mutateRes = client.replace(tableName).setRowKey(rowKey).
-                    addMutateColVal(colVal("c2", "v4")).execute();
+            mutateRes = client.replace(tableName).setRowKey(rowKey)
+                .addMutateColVal(colVal("c2", "v4")).execute();
             assertEquals(1, mutateRes.getAffectedRows());
             auditRows = fetch_audit_rows();
             assertEquals(1, auditRows.affected_rows);
             assertEquals(0, auditRows.return_rows);
         } catch (Exception e) {
-           e.printStackTrace();
-           assertTrue(false);
+            e.printStackTrace();
+            assertTrue(false);
         } finally {
             client.delete(tableName).setRowKey(rowKey).execute();
         }
@@ -192,10 +195,14 @@ public class ObTableSQLAuditTest {
         ColumnValue updateVal = colVal("c2", "v1");
         try {
             BatchOperation batchOperation = client.batchOperation(tableName);
-            InsertOrUpdate insertUp = client.insertOrUpdate(tableName).setRowKey(insUpKey).addMutateColVal(updateVal);
+            InsertOrUpdate insertUp = client.insertOrUpdate(tableName).setRowKey(insUpKey)
+                .addMutateColVal(updateVal);
             Delete delete = client.delete(tableName).setRowKey(deleteKey);
-            Update update = client.update(tableName).setRowKey(updateKey).addMutateColVal(updateVal);
-            Append append = client.append(tableName).setRowKey(appendKey).addMutateColVal(updateVal);;
+            Update update = client.update(tableName).setRowKey(updateKey)
+                .addMutateColVal(updateVal);
+            Append append = client.append(tableName).setRowKey(appendKey)
+                .addMutateColVal(updateVal);
+            ;
             TableQuery query = client.query(tableName).setRowKey(row(getKey));
             batchOperation.addOperation(insertUp, delete, update, append).addOperation(query);
             batchOperation.execute();
@@ -229,17 +236,19 @@ public class ObTableSQLAuditTest {
         String endKey = "k2";
         ColumnValue updateVal = colVal("c2", "v2");
         try {
-            client.append(tableName).addScanRange(startKey, endKey)
-                    .addMutateColVal(updateVal).execute();
+            client.append(tableName).addScanRange(startKey, endKey).addMutateColVal(updateVal)
+                .execute();
             AuditRows auditRows = fetch_audit_rows();
             assertEquals(0, auditRows.affected_rows);
             assertEquals(0, auditRows.return_rows);
 
-            client.insert(tableName).setRowKey(colVal("c1", startKey)).addMutateColVal(updateVal).execute();
-            client.insert(tableName).setRowKey(colVal("c2", endKey)).addMutateColVal(updateVal).execute();
+            client.insert(tableName).setRowKey(colVal("c1", startKey)).addMutateColVal(updateVal)
+                .execute();
+            client.insert(tableName).setRowKey(colVal("c2", endKey)).addMutateColVal(updateVal)
+                .execute();
 
-            client.update(tableName).addScanRange(startKey, endKey)
-                    .addMutateColVal(updateVal).execute();
+            client.update(tableName).addScanRange(startKey, endKey).addMutateColVal(updateVal)
+                .execute();
             auditRows = fetch_audit_rows();
             assertEquals(2, auditRows.affected_rows);
             // TODO: ODP do not serialize return_affected_entity_ in ObTableQueryAndMutate
@@ -250,7 +259,6 @@ public class ObTableSQLAuditTest {
             } else {
                 assertEquals(0, auditRows.return_rows);
             }
-
 
             client.delete(tableName).addScanRange(startKey, endKey).execute();
             auditRows = fetch_audit_rows();

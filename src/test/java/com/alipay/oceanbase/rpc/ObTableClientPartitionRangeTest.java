@@ -627,12 +627,12 @@ public class ObTableClientPartitionRangeTest {
 
                 // use sql to insert data
                 statement.execute("insert into " + testTable + "(c1, c2, c3, c4, c5) values (" + c1
-                        + "," + c2 + ",'" + c3 + "','" + c4 + "'," + "'value')");
+                                  + "," + c2 + ",'" + c3 + "','" + c4 + "'," + "'value')");
 
                 // get data by obkv interface
                 Map<String, Object> result = obTableClient.get(testTable,
-                        new Object[] { c1, c2, c3.getBytes(), c4 }, new String[] { "c1", "c2", "c3",
-                                "c4", "c5" });
+                    new Object[] { c1, c2, c3.getBytes(), c4 }, new String[] { "c1", "c2", "c3",
+                            "c4", "c5" });
                 Assert.assertEquals(5, result.size());
             }
         } catch (Exception e) {
