@@ -620,7 +620,7 @@ public class ObTableClientPartitionRangeTest {
             Connection connection = ObTableClientTestUtil.getConnection();
             Statement statement = connection.createStatement();
             for (int i = 0; i < 64; i++) {
-                long c1 = abs(rng.nextLong()) % 2000;
+                int c1 = abs(rng.nextInt()) % 2000;
                 long c2 = abs(rng.nextLong()) % 2000;
                 String c3 = generateRandomStringByUUID(10);
                 String c4 = generateRandomStringByUUID(5) + c3 + generateRandomStringByUUID(5);
