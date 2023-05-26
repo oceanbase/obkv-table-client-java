@@ -22,17 +22,27 @@ import com.alipay.remoting.InvokeCallback;
 import com.alipay.remoting.InvokeContext;
 import com.alipay.remoting.InvokeFuture;
 import com.alipay.remoting.RemotingCommand;
+import com.alipay.oceanbase.rpc.exception.ObTableTimeoutExcetion;
 import io.netty.util.Timeout;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ObClientFuture implements InvokeFuture {
 
     private CountDownLatch  waiter = new CountDownLatch(1);
     private RemotingCommand response;
     private int             channelId;
+
+    // BY_WORKER indicate response must be release by worker itself.
+    // BY_BACKGROUND indicate response must be release by background decoder thread
+    private static int      INIT = 0;
+    private static int      BY_WORKER = 1;
+    private static int      BY_BACKGROUND = 2;
+
+    private AtomicInteger   releaseFlag = new AtomicInteger(INIT);
 
     /*
      * Ob client future.
@@ -46,11 +56,19 @@ public class ObClientFuture implements InvokeFuture {
      */
     @Override
     public RemotingCommand waitResponse(long timeoutMillis) throws InterruptedException {
-        if (waiter.await(timeoutMillis, TimeUnit.MILLISECONDS)) {
-            return response;
-        } else {
-            return null;
-        }
+        try {
+            if (waiter.await(timeoutMillis, TimeUnit.MILLISECONDS) || !releaseFlag.compareAndSet(INIT, BY_BACKGROUND)) {
+                return response;
+            } else {
+                return null;
+            }
+        } catch (InterruptedException e) {
+            releaseFlag.set(BY_BACKGROUND);
+            if (response instanceof ObTablePacket) {
+               ((ObTablePacket) response).releaseByteBuf();
+            }
+            throw e;
+        } finally {}
     }
 
     /*
@@ -69,6 +87,11 @@ public class ObClientFuture implements InvokeFuture {
     public void putResponse(RemotingCommand response) {
         this.response = response;
         waiter.countDown();
+        if (!releaseFlag.compareAndSet(INIT, BY_WORKER)) {
+            if (response instanceof ObTablePacket) {
+                ((ObTablePacket) response).releaseByteBuf();
+            }
+        }
     }
 
     /*
