@@ -113,7 +113,7 @@ PRIMARY KEY (`c1`, `c2`, `c3`, `c4`)
 partition by key(`c1`, `c2`, `c3`) subpartition by key(`c4`) subpartitions 4 partitions 16;
 
 CREATE TABLE IF NOT EXISTS `testPartitionRangeComplex` (
-    `c1` bigint NOT NULL,
+    `c1` int NOT NULL,
     `c2` bigint NOT NULL,
     `c3` varbinary(1024) NOT NULL,
     `c4` varchar(1024) NOT NULL,

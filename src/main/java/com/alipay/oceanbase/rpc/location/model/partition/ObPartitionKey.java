@@ -115,6 +115,11 @@ public class ObPartitionKey implements Comparable<ObPartitionKey> {
                 tmpRet = ((String) thisElement).toUpperCase().compareTo(
                     ((String) thatElement).toUpperCase());
             } else {
+                // make number into long value for compare
+                if (thisElement instanceof Number && thatElement instanceof Number) {
+                    thisElement = ((Number) thisElement).longValue();
+                    thatElement = ((Number) thatElement).longValue();
+                }
                 tmpRet = thisElement.compareTo(thatElement);
             }
 
