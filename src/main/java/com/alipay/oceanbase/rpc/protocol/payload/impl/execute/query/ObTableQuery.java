@@ -61,7 +61,12 @@ public class ObTableQuery extends AbstractPayload {
     private static final byte[] HTABLE_FILTER_DUMMY_BYTES = new byte[] { 0x01, 0x00 };
     private boolean             isHbaseQuery              = false;
     private List<String>        scanRangeColumns          = new LinkedList<String>();
+    
+    private List<AggregationSingle>    aggregations = new LinkedList<>();
 
+    public void AddAggregation(AggregationType aggregationType, String column) {
+        this.aggregations.add(new AggregationSingle(aggregationType, column));
+    }
     /*
      * Encode.
      */
@@ -134,6 +139,16 @@ public class ObTableQuery extends AbstractPayload {
         for (String keyRangeColumn : scanRangeColumns) {
             len = Serialization.getNeedBytes(keyRangeColumn);
             System.arraycopy(Serialization.encodeVString(keyRangeColumn), 0, bytes, idx, len);
+            idx += len;
+        }
+
+        //Aggregation
+        len = Serialization.getNeedBytes(aggregations.size());
+        System.arraycopy(Serialization.encodeVi64(aggregations.size()), 0, bytes, idx, len);
+        idx += len;
+        for (AggregationSingle aggregationSingle : aggregations) {
+            len = (int) aggregationSingle.getPayloadSize();
+            System.arraycopy(aggregationSingle.encode(), 0, bytes, idx, len);
             idx += len;
         }
 
@@ -224,6 +239,10 @@ public class ObTableQuery extends AbstractPayload {
             contentSize += Serialization.getNeedBytes(scanRangeColumn);
         }
 
+        contentSize += Serialization.getNeedBytes(aggregations.size());
+        for (AggregationSingle aggregationSingle : aggregations) {
+            contentSize += aggregationSingle.getPayloadSize();
+        }
         return contentSize;
     }
 

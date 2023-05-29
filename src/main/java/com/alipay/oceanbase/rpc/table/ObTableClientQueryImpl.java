@@ -40,6 +40,9 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
     private Row                 rowKey;       // only used by BatchOperation
 
+    public void AddAggregation(AggregationType aggregationType, String column) {
+        this.tableQuery.AddAggregation(aggregationType, column);
+    }
     /*
      * Ob table client query impl construct only with tableName
      */
