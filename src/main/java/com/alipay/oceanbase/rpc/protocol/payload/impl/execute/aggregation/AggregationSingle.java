@@ -57,10 +57,6 @@ public class AggregationSingle extends AbstractPayload {
         return bytes;
     }
 
-    public long getPayloadSize() {
-        return getObUniVersionHeaderLength(getVersion(), this.getPayloadContentSize()) + this.getPayloadContentSize();
-    }
-
     public long getPayloadContentSize() {
         return Serialization.getNeedBytes(aggType_.getByteValue()) + Serialization.getNeedBytes(aggColumn_);
     }
