@@ -184,4 +184,11 @@ CREATE TABLE `test_throttle` (
         PARTITION p1 VALUES LESS THAN (1000000),
         PARTITION p2 VALUES LESS THAN MAXVALUE);
 
+CREATE TABLE test_aggregation(
+     `c1` varchar(255),
+     `c2` int,
+     `c3` double,
+     PRIMARY KEY(`c1`)
+);
+
 alter system set kv_hotkey_throttle_threshold = 50;

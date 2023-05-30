@@ -2,7 +2,7 @@
  * #%L
  * OBKV Table Client Framework
  * %%
- * Copyright (C) 2021 OceanBase
+ * Copyright (C) 2023 OceanBase
  * %%
  * OBKV Table Client Framework is licensed under Mulan PSL v2.
  * You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -26,11 +26,17 @@ import java.util.List;
 import java.util.Map;
 
 public class TableAggregationResult {
-    public TableAggregationResult(QueryResultSet queryResultSet_, Map<Integer, String> index_) {
-        this.queryResultSet = queryResultSet_;
-        this.index = index_;
-        this.isInit = false;
+
+    private Map<Integer, String> index;
+    private final QueryResultSet queryResultSet;
+    private Map<String, Object> row = new HashMap<>();
+
+    public TableAggregationResult(QueryResultSet queryResultSet, Map<Integer, String> index) throws Exception {
+        this.queryResultSet = queryResultSet;
+        this.index = index;
+        this.init();
     }
+
     public void init() throws Exception {
         this.queryResultSet.next();
         List<ObObj> init_row;
@@ -39,28 +45,12 @@ public class TableAggregationResult {
             row.put(index.get(i), init_row.get(i).getValue());
         }
     }
+
     public Object get(String columName) throws Exception {
-        if (!this.isInit) {
-            this.init();
-            this.changeInit();
-        }
         return row.get(columName);
     }
 
     public Row getRow() throws Exception {
-        if (!this.isInit) {
-            this.init();
-            this.changeInit();
-        }
         return new Row(this.row);
     }
-
-    public void changeInit() {
-        this.isInit = true;
-    }
-    private final QueryResultSet queryResultSet;
-    private Map<String, Object> row = new HashMap<>();
-    private Map<Integer, String> index;
-
-    private boolean isInit = false;
 }

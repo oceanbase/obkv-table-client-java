@@ -2,7 +2,7 @@
  * #%L
  * OBKV Table Client Framework
  * %%
- * Copyright (C) 2021 OceanBase
+ * Copyright (C) 2023 OceanBase
  * %%
  * OBKV Table Client Framework is licensed under Mulan PSL v2.
  * You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -24,86 +24,96 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TableAggregation {
+
+    private ObClusterTableQuery tablequery;
+    private Map<Integer, String> message = new HashMap<>();
+    private Integer index                = 0;
+
     public TableAggregation(ObClusterTableQuery obClusterTableQuery) {
-        this.tablequery_ = obClusterTableQuery;
+        this.tablequery = obClusterTableQuery;
     }
 
-    public void Min(String columnName) {
-        this.tablequery_.AddAggregation(AggregationType.MIN, columnName);
+    public void min(String columnName) {
+        this.tablequery.AddAggregation(AggregationType.MIN, columnName);
         message.put(getIndex(), "min(" + columnName + ")");
         updateIndex();
     }
 
-    public void Min(String columnName, String aliasName) {
-        this.tablequery_.AddAggregation(AggregationType.MIN, columnName);
+    public void min(String columnName, String aliasName) {
+        this.tablequery.AddAggregation(AggregationType.MIN, columnName);
         message.put(getIndex(), "min(" + aliasName + ")");
         updateIndex();
     }
 
-    public void Max(String columnName) {
-        this.tablequery_.AddAggregation(AggregationType.MAX, columnName);
+    public void max(String columnName) {
+        this.tablequery.AddAggregation(AggregationType.MAX, columnName);
         message.put(getIndex(), "max(" + columnName + ")");
         updateIndex();
     }
 
-    public void Max(String columnName, String aliasName) {
-        this.tablequery_.AddAggregation(AggregationType.MAX, columnName);
+    public void max(String columnName, String aliasName) {
+        this.tablequery.AddAggregation(AggregationType.MAX, columnName);
         message.put(getIndex(), "max(" + aliasName + ")");
         updateIndex();
     }
 
-    public void Count() {
-        this.tablequery_.AddAggregation(AggregationType.COUNT, "*");
+    public void count() {
+        this.tablequery.AddAggregation(AggregationType.COUNT, "*");
         message.put(getIndex(), "count(*)");
         updateIndex();
     }
-    public void Count(String aliasName) {
-        this.tablequery_.AddAggregation(AggregationType.COUNT, "*");
+    public void count(String aliasName) {
+        this.tablequery.AddAggregation(AggregationType.COUNT, "*");
         message.put(getIndex(), "count(" + aliasName + ")");
         updateIndex();
     }
 
-    public void Sum(String columnName) {
-        this.tablequery_.AddAggregation(AggregationType.SUM, columnName);
+    public void sum(String columnName) {
+        this.tablequery.AddAggregation(AggregationType.SUM, columnName);
         message.put(getIndex(), "sum(" + columnName + ")");
         updateIndex();
     }
 
     public void Sum(String columnName, String aliasName) {
-        this.tablequery_.AddAggregation(AggregationType.SUM, columnName);
+        this.tablequery.AddAggregation(AggregationType.SUM, columnName);
         message.put(getIndex(), "sum(" + aliasName + ")");
         updateIndex();
     }
 
-    public void Avg(String columnName) {
-        this.tablequery_.AddAggregation(AggregationType.AVG, columnName);
+    public void avg(String columnName) {
+        this.tablequery.AddAggregation(AggregationType.AVG, columnName);
         message.put(getIndex(), "avg(" + columnName + ")");
         updateIndex();
     }
 
-    public void Avg(String columnName, String aliasName) {
-        this.tablequery_.AddAggregation(AggregationType.AVG, columnName);
+    public void avg(String columnName, String aliasName) {
+        this.tablequery.AddAggregation(AggregationType.AVG, columnName);
         message.put(getIndex(), "avg(" + aliasName + ")");
         updateIndex();
     }
-    //
+
     public void setScanRangeColumns(String... columns) {
-        this.tablequery_.setScanRangeColumns(columns);
+        this.tablequery.setScanRangeColumns(columns);
     }
+
     public void addScanRange(Object start, Object end) {
-        this.tablequery_.addScanRange(start, end);
+        this.tablequery.addScanRange(start, end);
     }
+
     public void addScanRange(Object[] start, Object[] end) {
-        this.tablequery_.addScanRange(start, end);
+        this.tablequery.addScanRange(start, end);
     }
+
     public void indexName(String indexName) {
-        this.tablequery_.indexName(indexName);
+        this.tablequery.indexName(indexName);
     }
+
     public void setFilter(ObTableFilter filter) {
-        this.tablequery_.setFilter(filter);
+        this.tablequery.setFilter(filter);
     }
+
     public void setOperationTimeout(long operationTimeout) {
-        this.tablequery_.setOperationTimeout(operationTimeout);
+        this.tablequery.setOperationTimeout(operationTimeout);
     }
 
     public TableAggregationResult execute() throws Exception {
@@ -112,17 +122,15 @@ public class TableAggregation {
                     "please add aggregations"
             );
         }
-        this.tablequery_.select(new String[getIndex()]);
-        return new TableAggregationResult(this.tablequery_.execute(), this.message);
+        this.tablequery.select(new String[getIndex()]);
+        return new TableAggregationResult(this.tablequery.execute(), this.message);
     }
-    //utils
+
     public Integer getIndex() {
         return this.index;
     }
+
     public void updateIndex() {
         this.index++;
     }
-    private ObClusterTableQuery tablequery_;
-    private Map<Integer, String> message = new HashMap<>();
-    private Integer index = 0;
 }

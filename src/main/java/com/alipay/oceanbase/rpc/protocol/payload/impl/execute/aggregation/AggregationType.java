@@ -2,7 +2,7 @@
  * #%L
  * OBKV Table Client Framework
  * %%
- * Copyright (C) 2021 OceanBase
+ * Copyright (C) 2023 OceanBase
  * %%
  * OBKV Table Client Framework is licensed under Mulan PSL v2.
  * You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -25,11 +25,13 @@ public enum AggregationType {
     SUM(4),
     AVG(5);
 
+    private int value;
+
     public byte getByteValue() {
-        return (byte) value_;
+        return (byte) value;
     }
+
     AggregationType(int value) {
-        this.value_ = value;
+        this.value = value;
     }
-    private int value_;
 };

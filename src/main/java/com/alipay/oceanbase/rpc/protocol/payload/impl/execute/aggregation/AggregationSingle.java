@@ -2,7 +2,7 @@
  * #%L
  * OBKV Table Client Framework
  * %%
- * Copyright (C) 2021 OceanBase
+ * Copyright (C) 2023 OceanBase
  * %%
  * OBKV Table Client Framework is licensed under Mulan PSL v2.
  * You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -24,18 +24,13 @@ import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHead
 import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderLength;
 
 public class AggregationSingle extends AbstractPayload {
-    private AggregationType aggType_;
-    private String aggColumn_;
+
+    private AggregationType aggType;
+    private String aggColumn;
 
     public AggregationSingle(AggregationType aggType, String aggColumn) {
-        this.aggColumn_ = aggColumn;
-        this.aggType_ = aggType;
-    }
-    public int getTypeNumber() {
-        return aggType_.getByteValue();
-    }
-    public String getAggregationColumn() {
-        return this.aggColumn_;
+        this.aggColumn = aggColumn;
+        this.aggType = aggType;
     }
 
     public byte[] encode() {
@@ -47,17 +42,17 @@ public class AggregationSingle extends AbstractPayload {
                 idx, headerLen);
         idx += headerLen;
 
-        int len =  Serialization.getNeedBytes(aggType_.getByteValue());
-        System.arraycopy(Serialization.encodeI8(aggType_.getByteValue()), 0, bytes, idx, len);
+        int len =  Serialization.getNeedBytes(aggType.getByteValue());
+        System.arraycopy(Serialization.encodeI8(aggType.getByteValue()), 0, bytes, idx, len);
         idx += len;
 
-        len = Serialization.getNeedBytes(aggColumn_);
-        System.arraycopy(Serialization.encodeVString(aggColumn_), 0, bytes, idx, len);
+        len = Serialization.getNeedBytes(aggColumn);
+        System.arraycopy(Serialization.encodeVString(aggColumn), 0, bytes, idx, len);
 
         return bytes;
     }
 
     public long getPayloadContentSize() {
-        return Serialization.getNeedBytes(aggType_.getByteValue()) + Serialization.getNeedBytes(aggColumn_);
+        return Serialization.getNeedBytes(aggType.getByteValue()) + Serialization.getNeedBytes(aggColumn);
     }
 }
