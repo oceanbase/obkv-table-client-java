@@ -62,10 +62,13 @@ public class ObTableQuery extends AbstractPayload {
     private boolean             isHbaseQuery              = false;
     private List<String>        scanRangeColumns          = new LinkedList<String>();
     
-    private List<AggregationSingle>    aggregations = new LinkedList<>();
+    private List<AggregationSingle>    aggregations       = new LinkedList<>();
 
-    public void AddAggregation(AggregationType aggregationType, String column) {
-        this.aggregations.add(new AggregationSingle(aggregationType, column));
+    /*
+     * Add aggregation
+     */
+    public void AddAggregation(AggregationType aggType, String aggColumn) {
+        this.aggregations.add(new AggregationSingle(aggType, aggColumn));
     }
     /*
      * Encode.
