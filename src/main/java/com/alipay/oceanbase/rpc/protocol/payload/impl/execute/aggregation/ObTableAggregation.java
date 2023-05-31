@@ -23,71 +23,73 @@ import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TableAggregation {
+public class ObTableAggregation {
 
-    private ObClusterTableQuery tablequery;
+    // this message is used to record the aggregation order and the corresponding aggregation name
     private Map<Integer, String> message = new HashMap<>();
-    private Integer index                = 0;
+    // this index is used to record the aggregation order
+    private Integer index                = 0;               
+    private ObClusterTableQuery tablequery;
 
-    public TableAggregation(ObClusterTableQuery obClusterTableQuery) {
+    public ObTableAggregation(ObClusterTableQuery obClusterTableQuery) {
         this.tablequery = obClusterTableQuery;
     }
 
     public void min(String columnName) {
-        this.tablequery.AddAggregation(AggregationType.MIN, columnName);
+        this.tablequery.addAggregation(ObTableAggregationType.MIN, columnName);
         message.put(getIndex(), "min(" + columnName + ")");
         updateIndex();
     }
 
     public void min(String columnName, String aliasName) {
-        this.tablequery.AddAggregation(AggregationType.MIN, columnName);
+        this.tablequery.addAggregation(ObTableAggregationType.MIN, columnName);
         message.put(getIndex(), "min(" + aliasName + ")");
         updateIndex();
     }
 
     public void max(String columnName) {
-        this.tablequery.AddAggregation(AggregationType.MAX, columnName);
+        this.tablequery.addAggregation(ObTableAggregationType.MAX, columnName);
         message.put(getIndex(), "max(" + columnName + ")");
         updateIndex();
     }
 
     public void max(String columnName, String aliasName) {
-        this.tablequery.AddAggregation(AggregationType.MAX, columnName);
+        this.tablequery.addAggregation(ObTableAggregationType.MAX, columnName);
         message.put(getIndex(), "max(" + aliasName + ")");
         updateIndex();
     }
 
     public void count() {
-        this.tablequery.AddAggregation(AggregationType.COUNT, "*");
+        this.tablequery.addAggregation(ObTableAggregationType.COUNT, "*");
         message.put(getIndex(), "count(*)");
         updateIndex();
     }
     public void count(String aliasName) {
-        this.tablequery.AddAggregation(AggregationType.COUNT, "*");
+        this.tablequery.addAggregation(ObTableAggregationType.COUNT, "*");
         message.put(getIndex(), "count(" + aliasName + ")");
         updateIndex();
     }
 
     public void sum(String columnName) {
-        this.tablequery.AddAggregation(AggregationType.SUM, columnName);
+        this.tablequery.addAggregation(ObTableAggregationType.SUM, columnName);
         message.put(getIndex(), "sum(" + columnName + ")");
         updateIndex();
     }
 
     public void Sum(String columnName, String aliasName) {
-        this.tablequery.AddAggregation(AggregationType.SUM, columnName);
+        this.tablequery.addAggregation(ObTableAggregationType.SUM, columnName);
         message.put(getIndex(), "sum(" + aliasName + ")");
         updateIndex();
     }
 
     public void avg(String columnName) {
-        this.tablequery.AddAggregation(AggregationType.AVG, columnName);
+        this.tablequery.addAggregation(ObTableAggregationType.AVG, columnName);
         message.put(getIndex(), "avg(" + columnName + ")");
         updateIndex();
     }
 
     public void avg(String columnName, String aliasName) {
-        this.tablequery.AddAggregation(AggregationType.AVG, columnName);
+        this.tablequery.addAggregation(ObTableAggregationType.AVG, columnName);
         message.put(getIndex(), "avg(" + aliasName + ")");
         updateIndex();
     }
@@ -116,21 +118,28 @@ public class TableAggregation {
         this.tablequery.setOperationTimeout(operationTimeout);
     }
 
-    public TableAggregationResult execute() throws Exception {
+    public ObTableAggregationResult execute() throws Exception {
         if (this.getIndex() == 0) {
             throw new Exception(
                     "please add aggregations"
             );
         }
         this.tablequery.select(new String[getIndex()]);
-        return new TableAggregationResult(this.tablequery.execute(), this.message);
+        return new ObTableAggregationResult(this.tablequery.execute(), this.message);
     }
 
+    /*
+     * Get the index.
+     */
     public Integer getIndex() {
         return this.index;
     }
 
+    /*
+     * Update the index.
+     */
     public void updateIndex() {
         this.index++;
     }
-}
+ }
+ 

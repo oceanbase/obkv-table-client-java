@@ -15,20 +15,20 @@
  * #L%
  */
 
-package com.alipay.oceanbase.rpc;
+ package com.alipay.oceanbase.rpc;
 
-import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
-import com.alipay.oceanbase.rpc.mutation.Row;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilter;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
-import com.alipay.oceanbase.rpc.stream.ObTableClientQueryStreamResult;
-import com.alipay.oceanbase.rpc.stream.QueryResultSet;
-import com.alipay.oceanbase.rpc.table.AbstractTableQuery;
-import com.alipay.oceanbase.rpc.table.ObTable;
-import com.alipay.oceanbase.rpc.table.ObTableClientQueryImpl;
-import com.alipay.oceanbase.rpc.table.ObTableParam;
-import com.alipay.oceanbase.rpc.table.api.TableQuery;
+ import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
+ import com.alipay.oceanbase.rpc.mutation.Row;
+ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
+ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
+ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilter;
+ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
+ import com.alipay.oceanbase.rpc.stream.ObTableClientQueryStreamResult;
+ import com.alipay.oceanbase.rpc.stream.QueryResultSet;
+ import com.alipay.oceanbase.rpc.table.AbstractTableQuery;
+ import com.alipay.oceanbase.rpc.table.ObTableClientQueryImpl;
+ import com.alipay.oceanbase.rpc.table.ObTableParam;
+ import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
 import java.util.List;
 
@@ -41,11 +41,12 @@ public class ObClusterTableQuery extends AbstractTableQuery {
     }
     
     /*
-     * Add aggregation
+     * Add aggregation.
      */
-    public void AddAggregation(AggregationType aggType, String aggColumn) {
-        this.tableClientQuery.AddAggregation(aggType, aggColumn);
+    public void addAggregation(ObTableAggregationType aggType, String aggColumn) {
+        this.tableClientQuery.addAggregation(aggType, aggColumn);
     }
+    
     /*
      * Get table name.
      */

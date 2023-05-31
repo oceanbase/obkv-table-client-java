@@ -15,19 +15,19 @@
  * #L%
  */
 
-package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
+ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
-import com.alipay.oceanbase.rpc.exception.ObTableException;
-import com.alipay.oceanbase.rpc.mutation.ColumnValue;
-import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
-import com.alipay.oceanbase.rpc.util.Serialization;
-import io.netty.buffer.ByteBuf;
-
-import java.util.LinkedList;
-import java.util.List;
-
-import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
-import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderLength;
+ import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
+ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationSingle;
+ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
+ import com.alipay.oceanbase.rpc.util.Serialization;
+ import io.netty.buffer.ByteBuf;
+ 
+ import java.util.LinkedList;
+ import java.util.List;
+ 
+ import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
+ import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderLength;
 
 /**
  *
@@ -62,14 +62,15 @@ public class ObTableQuery extends AbstractPayload {
     private boolean             isHbaseQuery              = false;
     private List<String>        scanRangeColumns          = new LinkedList<String>();
     
-    private List<AggregationSingle>    aggregations       = new LinkedList<>();
+    private List<ObTableAggregationSingle>    aggregations       = new LinkedList<>();
 
     /*
-     * Add aggregation
+     * Add aggregation.
      */
-    public void AddAggregation(AggregationType aggType, String aggColumn) {
-        this.aggregations.add(new AggregationSingle(aggType, aggColumn));
+    public void addAggregation(ObTableAggregationType aggType, String aggColumn) {
+        this.aggregations.add(new ObTableAggregationSingle(aggType, aggColumn));
     }
+    
     /*
      * Encode.
      */
@@ -149,9 +150,9 @@ public class ObTableQuery extends AbstractPayload {
         len = Serialization.getNeedBytes(aggregations.size());
         System.arraycopy(Serialization.encodeVi64(aggregations.size()), 0, bytes, idx, len);
         idx += len;
-        for (AggregationSingle aggregationSingle : aggregations) {
-            len = (int) aggregationSingle.getPayloadSize();
-            System.arraycopy(aggregationSingle.encode(), 0, bytes, idx, len);
+        for (ObTableAggregationSingle obTableAggregationSingle : aggregations) {
+            len = (int) obTableAggregationSingle.getPayloadSize();
+            System.arraycopy(obTableAggregationSingle.encode(), 0, bytes, idx, len);
             idx += len;
         }
 
@@ -243,8 +244,8 @@ public class ObTableQuery extends AbstractPayload {
         }
 
         contentSize += Serialization.getNeedBytes(aggregations.size());
-        for (AggregationSingle aggregationSingle : aggregations) {
-            contentSize += aggregationSingle.getPayloadSize();
+        for (ObTableAggregationSingle obTableAggregationSingle : aggregations) {
+            contentSize += obTableAggregationSingle.getPayloadSize();
         }
         return contentSize;
     }

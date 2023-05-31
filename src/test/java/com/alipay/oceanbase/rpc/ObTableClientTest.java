@@ -2239,43 +2239,78 @@ public class ObTableClientTest extends ObTableClientTestBase {
          *  );
          */
         final ObTableClient client = (ObTableClient) this.client;
-        client.addRowKeyElement("test_null", new String[] { "c1" });
+        client.addRowKeyElement("test_aggregation", new String[] { "c1" });
 
         try {
-            client.insert("test_aggregation", "first_row", new String[] { "c2", "c3" },
-                    new Object[] { 1, 2.0 });
-            client.insert("test_aggregation", "second_row", new String[] { "c2", "c3" },
-                    new Object[] { 2, 3.0 });
-            client.insert("test_aggregation", "third_row", new String[] { "c2", "c3" },
-                    new Object[] { 3, 4.0 });
-            TableAggregation tableAggregation = client.aggregate("test_aggregation");
+            client.insert("test_aggregation", "first_row", new String[] { "c2", "c3", "c4", "c5", "c6" },
+                    new Object[] { 1, 1L, 1.0f, 1.0, (byte)1 });
+            client.insert("test_aggregation", "second_row", new String[] { "c2", "c3", "c4", "c5", "c6" },
+                    new Object[] { 2, 2L, 2.0f, 2.0, (byte)2 });
+            client.insert("test_aggregation", "third_row", new String[] { "c2", "c3", "c4", "c5", "c6" },
+                    new Object[] { 3, 3L, 3.0f, 3.0, (byte)3 });
+            ObTableAggregation obtableAggregation = client.aggregate("test_aggregation");
             // test int
-            tableAggregation.max("c2");
-            tableAggregation.min("c2");
-            tableAggregation.count();
-            tableAggregation.sum("c2");
-            tableAggregation.avg("c2");
+            obtableAggregation.max("c2");
+            obtableAggregation.min("c2");
+            obtableAggregation.count();
+            obtableAggregation.sum("c2");
+            obtableAggregation.avg("c2");
+            // test bigint
+            obtableAggregation.max("c3");
+            obtableAggregation.min("c3");
+            obtableAggregation.count();
+            obtableAggregation.sum("c3");
+            obtableAggregation.avg("c3");
             // test float
-            tableAggregation.max("c3");
-            tableAggregation.min("c3");
-            tableAggregation.count();
-            tableAggregation.sum("c3");
-            tableAggregation.avg("c3");
+            obtableAggregation.max("c4");
+            obtableAggregation.min("c4");
+            obtableAggregation.count();
+            obtableAggregation.sum("c4");
+            obtableAggregation.avg("c4");
+            // test double
+            obtableAggregation.max("c5");
+            obtableAggregation.min("c5");
+            obtableAggregation.count();
+            obtableAggregation.sum("c5");
+            obtableAggregation.avg("c5");
+            // test tinyint
+            obtableAggregation.max("c6");
+            obtableAggregation.min("c6");
+            obtableAggregation.count();
+            obtableAggregation.sum("c6");
+            obtableAggregation.avg("c6");
             // execute
-            TableAggregationResult tableAggregationResult = tableAggregation.execute();
+            ObTableAggregationResult obtableAggregationResult = obtableAggregation.execute();
             // test int
-            Assert.assertEquals(3, tableAggregationResult.get("max(c2)"));
-            Assert.assertEquals(1, tableAggregationResult.get("min(c2)"));
-            Assert.assertEquals(3L, tableAggregationResult.get("count(*)"));
-            Assert.assertEquals(6L, tableAggregationResult.get("sum(c2)"));
-            Assert.assertEquals(2.0, tableAggregationResult.get("avg(c2)"));
+            Assert.assertEquals(3, obtableAggregationResult.get("max(c2)"));
+            Assert.assertEquals(1, obtableAggregationResult.get("min(c2)"));
+            Assert.assertEquals(3L, obtableAggregationResult.get("count(*)"));
+            Assert.assertEquals(6L, obtableAggregationResult.get("sum(c2)"));
+            Assert.assertEquals(2.0, obtableAggregationResult.get("avg(c2)"));
+            // test bigint
+            Assert.assertEquals(3L, obtableAggregationResult.get("max(c3)"));
+            Assert.assertEquals(1L, obtableAggregationResult.get("min(c3)"));
+            Assert.assertEquals(3L, obtableAggregationResult.get("count(*)"));
+            Assert.assertEquals(6L, obtableAggregationResult.get("sum(c3)"));
+            Assert.assertEquals(2.0, obtableAggregationResult.get("avg(c3)"));
             // test float
-            double delta = 1e-6;
-            Assert.assertEquals(4.0, (Double) tableAggregationResult.get("max(c3)"), delta);
-            Assert.assertEquals(2.0, (Double) tableAggregationResult.get("min(c3)"), delta);
-            Assert.assertEquals(3L, tableAggregationResult.get("count(*)"));
-            Assert.assertEquals(9.0, (Double) tableAggregationResult.get("sum(c3)"), delta);
-            Assert.assertEquals(3.0, (Double) tableAggregationResult.get("avg(c3)"), delta);
+            Assert.assertEquals(3.0f, obtableAggregationResult.get("max(c4)"));
+            Assert.assertEquals(1.0f, obtableAggregationResult.get("min(c4)"));
+            Assert.assertEquals(3L, obtableAggregationResult.get("count(*)"));
+            Assert.assertEquals(6.0, obtableAggregationResult.get("sum(c4)"));
+            Assert.assertEquals(2.0, obtableAggregationResult.get("avg(c4)"));
+            // test double
+            Assert.assertEquals(3.0, obtableAggregationResult.get("max(c5)"));
+            Assert.assertEquals(1.0, obtableAggregationResult.get("min(c5)"));
+            Assert.assertEquals(3L, obtableAggregationResult.get("count(*)"));
+            Assert.assertEquals(6.0, obtableAggregationResult.get("sum(c5)"));
+            Assert.assertEquals(2.0, obtableAggregationResult.get("avg(c5)"));
+            // test tinyint
+            Assert.assertEquals((byte)3, obtableAggregationResult.get("max(c6)"));
+            Assert.assertEquals((byte)1, obtableAggregationResult.get("min(c6)"));
+            Assert.assertEquals(3L, obtableAggregationResult.get("count(*)"));
+            Assert.assertEquals(6L, obtableAggregationResult.get("sum(c6)"));
+            Assert.assertEquals(2.0, obtableAggregationResult.get("avg(c6)"));
         } finally {
             client.delete("test_aggregation", "first_row");
             client.delete("test_aggregation", "second_row");

@@ -22,13 +22,13 @@ import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.*;
 import com.alipay.oceanbase.rpc.stream.ObTableClientQueryStreamResult;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.util.MonitorUtil;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,9 +40,13 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
     private Row                 rowKey;       // only used by BatchOperation
 
-    public void AddAggregation(AggregationType aggType, String aggColumn) {
-        this.tableQuery.AddAggregation(aggType, aggColumn);
+    /*
+     * Add aggregation.
+     */
+    public void addAggregation(ObTableAggregationType aggType, String aggColumn) {
+        this.tableQuery.addAggregation(aggType, aggColumn);
     }
+    
     /*
      * Ob table client query impl construct only with tableName
      */
