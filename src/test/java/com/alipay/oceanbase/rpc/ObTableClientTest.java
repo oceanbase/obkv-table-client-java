@@ -2231,23 +2231,30 @@ public class ObTableClientTest extends ObTableClientTestBase {
     @Test
     public void testAggregation() throws Exception {
         /*
-         *  create table test_aggregation(
-         *      `c1` varchar(255),
-         *      `c2` bigint NOT NULL,
-         *      `c3` float DEFAULT NULL,
-         *      PRIMARY KEY(`c1`)
-         *  );
-         */
+         * CREATE TABLE test_aggregation (
+         *   `c1` varchar(255),
+         *   `c2` int NOT NULL,
+         *   `c3` bigint NOT NULL,
+         *   `c4` float NOT NULL,
+         *   `c5` double NOT NULL,
+         *   `c6` tinyint NULL,
+         *    `c7` date,
+         *    PRIMARY KEY(`c1`)
+         * );
+         * */
         final ObTableClient client = (ObTableClient) this.client;
         client.addRowKeyElement("test_aggregation", new String[] { "c1" });
-
+        SimpleDateFormat sdf =   new SimpleDateFormat( " yyyy-MM-dd HH:mm:ss " );
+        Date date1 = sdf.parse( " 2001-07-10 19:20:00 " );
+        Date date2 = sdf.parse( " 2002-07-10 19:20:00 " );
+        Date date3 = sdf.parse( " 2003-07-10 19:20:00 " );
         try {
-            client.insert("test_aggregation", "first_row", new String[] { "c2", "c3", "c4", "c5", "c6" },
-                    new Object[] { 1, 1L, 1.0f, 1.0, (byte)1 });
-            client.insert("test_aggregation", "second_row", new String[] { "c2", "c3", "c4", "c5", "c6" },
-                    new Object[] { 2, 2L, 2.0f, 2.0, (byte)2 });
-            client.insert("test_aggregation", "third_row", new String[] { "c2", "c3", "c4", "c5", "c6" },
-                    new Object[] { 3, 3L, 3.0f, 3.0, (byte)3 });
+            client.insert("test_aggregation", "first_row", new String[] { "c2", "c3", "c4", "c5", "c6", "c7" },
+                    new Object[] { 1, 1L, 1.0f, 1.0, (byte)1, date1 });
+            client.insert("test_aggregation", "second_row", new String[] { "c2", "c3", "c4", "c5", "c6", "c7" },
+                    new Object[] { 2, 2L, 2.0f, 2.0, (byte)2, date2 });
+            client.insert("test_aggregation", "third_row", new String[] { "c2", "c3", "c4", "c5", "c6", "c7" },
+                    new Object[] { 3, 3L, 3.0f, 3.0, (byte)3, date3 });
             ObTableAggregation obtableAggregation = client.aggregate("test_aggregation");
             // test int
             obtableAggregation.max("c2");
@@ -2279,6 +2286,9 @@ public class ObTableClientTest extends ObTableClientTestBase {
             obtableAggregation.count();
             obtableAggregation.sum("c6");
             obtableAggregation.avg("c6");
+            // test date
+            obtableAggregation.max("c7");
+            obtableAggregation.min("c7");
             // execute
             ObTableAggregationResult obtableAggregationResult = obtableAggregation.execute();
             // test int
@@ -2311,6 +2321,9 @@ public class ObTableClientTest extends ObTableClientTestBase {
             Assert.assertEquals(3L, obtableAggregationResult.get("count(*)"));
             Assert.assertEquals(6L, obtableAggregationResult.get("sum(c6)"));
             Assert.assertEquals(2.0, obtableAggregationResult.get("avg(c6)"));
+            //test date
+            Assert.assertEquals(date3, obtableAggregationResult.get("max(c7)"));
+            Assert.assertEquals(date1, obtableAggregationResult.get("min(c7)"));
         } finally {
             client.delete("test_aggregation", "first_row");
             client.delete("test_aggregation", "second_row");
