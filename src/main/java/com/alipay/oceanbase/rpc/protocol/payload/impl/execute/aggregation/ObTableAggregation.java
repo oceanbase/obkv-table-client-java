@@ -25,10 +25,8 @@ import java.util.Map;
 
 public class ObTableAggregation {
 
-    // this message is used to record the aggregation order and the corresponding aggregation name
+    //this message is used to record the aggregation order and the corresponding aggregation name
     private Map<Integer, String> message = new HashMap<>();
-    // this index is used to record the aggregation order
-    private Integer index                = 0;               
     private ObClusterTableQuery tablequery;
 
     public ObTableAggregation(ObClusterTableQuery obClusterTableQuery) {
@@ -37,61 +35,51 @@ public class ObTableAggregation {
 
     public void min(String columnName) {
         this.tablequery.addAggregation(ObTableAggregationType.MIN, columnName);
-        message.put(getIndex(), "min(" + columnName + ")");
-        updateIndex();
+        message.put(this.message.size(), "min(" + columnName + ")");
     }
 
     public void min(String columnName, String aliasName) {
         this.tablequery.addAggregation(ObTableAggregationType.MIN, columnName);
-        message.put(getIndex(), "min(" + aliasName + ")");
-        updateIndex();
+        message.put(this.message.size(), "min(" + aliasName + ")");
     }
 
     public void max(String columnName) {
         this.tablequery.addAggregation(ObTableAggregationType.MAX, columnName);
-        message.put(getIndex(), "max(" + columnName + ")");
-        updateIndex();
+        message.put(this.message.size(), "max(" + columnName + ")");
     }
 
     public void max(String columnName, String aliasName) {
         this.tablequery.addAggregation(ObTableAggregationType.MAX, columnName);
-        message.put(getIndex(), "max(" + aliasName + ")");
-        updateIndex();
+        message.put(this.message.size(), "max(" + aliasName + ")");
     }
 
     public void count() {
         this.tablequery.addAggregation(ObTableAggregationType.COUNT, "*");
-        message.put(getIndex(), "count(*)");
-        updateIndex();
+        message.put(this.message.size(), "count(*)");
     }
     public void count(String aliasName) {
         this.tablequery.addAggregation(ObTableAggregationType.COUNT, "*");
-        message.put(getIndex(), "count(" + aliasName + ")");
-        updateIndex();
+        message.put(this.message.size(), "count(" + aliasName + ")");
     }
 
     public void sum(String columnName) {
         this.tablequery.addAggregation(ObTableAggregationType.SUM, columnName);
-        message.put(getIndex(), "sum(" + columnName + ")");
-        updateIndex();
+        message.put(this.message.size(), "sum(" + columnName + ")");
     }
 
     public void Sum(String columnName, String aliasName) {
         this.tablequery.addAggregation(ObTableAggregationType.SUM, columnName);
-        message.put(getIndex(), "sum(" + aliasName + ")");
-        updateIndex();
+        message.put(this.message.size(), "sum(" + aliasName + ")");
     }
 
     public void avg(String columnName) {
         this.tablequery.addAggregation(ObTableAggregationType.AVG, columnName);
-        message.put(getIndex(), "avg(" + columnName + ")");
-        updateIndex();
+        message.put(this.message.size(), "avg(" + columnName + ")");
     }
 
     public void avg(String columnName, String aliasName) {
         this.tablequery.addAggregation(ObTableAggregationType.AVG, columnName);
-        message.put(getIndex(), "avg(" + aliasName + ")");
-        updateIndex();
+        message.put(this.message.size(), "avg(" + aliasName + ")");
     }
 
     public void setScanRangeColumns(String... columns) {
@@ -119,27 +107,13 @@ public class ObTableAggregation {
     }
 
     public ObTableAggregationResult execute() throws Exception {
-        if (this.getIndex() == 0) {
+        if (this.message.size() == 0) {
             throw new Exception(
                     "please add aggregations"
             );
         }
-        this.tablequery.select(new String[getIndex()]);
+        // In order to get cache size.
+        this.tablequery.select(new String[this.message.size()]);
         return new ObTableAggregationResult(this.tablequery.execute(), this.message);
     }
-
-    /*
-     * Get the index.
-     */
-    public Integer getIndex() {
-        return this.index;
-    }
-
-    /*
-     * Update the index.
-     */
-    public void updateIndex() {
-        this.index++;
-    }
- }
- 
+}
