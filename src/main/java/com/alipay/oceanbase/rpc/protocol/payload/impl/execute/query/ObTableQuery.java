@@ -17,9 +17,9 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
-import com.alipay.oceanbase.rpc.exception.ObTableException;
-import com.alipay.oceanbase.rpc.mutation.ColumnValue;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationSingle;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -61,7 +61,16 @@ public class ObTableQuery extends AbstractPayload {
     private static final byte[] HTABLE_FILTER_DUMMY_BYTES = new byte[] { 0x01, 0x00 };
     private boolean             isHbaseQuery              = false;
     private List<String>        scanRangeColumns          = new LinkedList<String>();
+    
+    private List<ObTableAggregationSingle>    aggregations       = new LinkedList<>();
 
+    /*
+     * Add aggregation.
+     */
+    public void addAggregation(ObTableAggregationType aggType, String aggColumn) {
+        this.aggregations.add(new ObTableAggregationSingle(aggType, aggColumn));
+    }
+    
     /*
      * Encode.
      */
@@ -134,6 +143,16 @@ public class ObTableQuery extends AbstractPayload {
         for (String keyRangeColumn : scanRangeColumns) {
             len = Serialization.getNeedBytes(keyRangeColumn);
             System.arraycopy(Serialization.encodeVString(keyRangeColumn), 0, bytes, idx, len);
+            idx += len;
+        }
+
+        //Aggregation
+        len = Serialization.getNeedBytes(aggregations.size());
+        System.arraycopy(Serialization.encodeVi64(aggregations.size()), 0, bytes, idx, len);
+        idx += len;
+        for (ObTableAggregationSingle obTableAggregationSingle : aggregations) {
+            len = (int) obTableAggregationSingle.getPayloadSize();
+            System.arraycopy(obTableAggregationSingle.encode(), 0, bytes, idx, len);
             idx += len;
         }
 
@@ -224,6 +243,10 @@ public class ObTableQuery extends AbstractPayload {
             contentSize += Serialization.getNeedBytes(scanRangeColumn);
         }
 
+        contentSize += Serialization.getNeedBytes(aggregations.size());
+        for (ObTableAggregationSingle obTableAggregationSingle : aggregations) {
+            contentSize += obTableAggregationSingle.getPayloadSize();
+        }
         return contentSize;
     }
 

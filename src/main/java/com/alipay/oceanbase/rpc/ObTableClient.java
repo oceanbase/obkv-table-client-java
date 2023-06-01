@@ -1468,7 +1468,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         return obTableParams;
     }
-
+    /**
+     * Aggregate.
+     */
+    public TableAggregation aggregate(String tableName) {
+        ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(tableName, this);
+        ObClusterTableQuery clusterTableQuery = new ObClusterTableQuery(tableQuery);
+        return new TableAggregation(clusterTableQuery);
+    }
     /**
      * Query.
      */
