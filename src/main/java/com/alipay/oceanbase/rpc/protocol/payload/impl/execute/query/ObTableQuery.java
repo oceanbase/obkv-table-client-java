@@ -15,19 +15,19 @@
  * #L%
  */
 
- package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
+package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
- import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
- import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationSingle;
- import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
- import com.alipay.oceanbase.rpc.util.Serialization;
- import io.netty.buffer.ByteBuf;
- 
- import java.util.LinkedList;
- import java.util.List;
- 
- import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
- import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderLength;
+import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationSingle;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
+import com.alipay.oceanbase.rpc.util.Serialization;
+import io.netty.buffer.ByteBuf;
+
+import java.util.LinkedList;
+import java.util.List;
+
+import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
+import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderLength;
 
 /**
  *

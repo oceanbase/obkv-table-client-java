@@ -67,7 +67,7 @@ public class ObTableAggregation {
         message.put(this.message.size(), "sum(" + columnName + ")");
     }
 
-    public void Sum(String columnName, String aliasName) {
+    public void sum(String columnName, String aliasName) {
         this.tablequery.addAggregation(ObTableAggregationType.SUM, columnName);
         message.put(this.message.size(), "sum(" + aliasName + ")");
     }

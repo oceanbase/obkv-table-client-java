@@ -30,6 +30,8 @@ import com.alipay.oceanbase.rpc.mutation.result.*;
 import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregation;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObQueryOperationType;
@@ -50,6 +52,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.*;
@@ -2229,7 +2232,9 @@ public class ObTableClientTest extends ObTableClientTestBase {
     }
 
     @Test
+    // Test aggregation
     public void testAggregation() throws Exception {
+        
         /*
          * CREATE TABLE test_aggregation (
          *   `c1` varchar(255),
@@ -2238,16 +2243,19 @@ public class ObTableClientTest extends ObTableClientTestBase {
          *   `c4` float NOT NULL,
          *   `c5` double NOT NULL,
          *   `c6` tinyint NULL,
-         *    `c7` date,
-         *    PRIMARY KEY(`c1`)
+         *   `c7` date,
+         *   PRIMARY KEY(`c1`)
          * );
          * */
+
         final ObTableClient client = (ObTableClient) this.client;
         client.addRowKeyElement("test_aggregation", new String[] { "c1" });
+
         SimpleDateFormat sdf =   new SimpleDateFormat( " yyyy-MM-dd HH:mm:ss " );
         Date date1 = sdf.parse( " 2001-07-10 19:20:00 " );
         Date date2 = sdf.parse( " 2002-07-10 19:20:00 " );
         Date date3 = sdf.parse( " 2003-07-10 19:20:00 " );
+
         try {
             client.insert("test_aggregation", "first_row", new String[] { "c2", "c3", "c4", "c5", "c6", "c7" },
                     new Object[] { 1, 1L, 1.0f, 1.0, (byte)1, date1 });
@@ -2256,71 +2264,84 @@ public class ObTableClientTest extends ObTableClientTestBase {
             client.insert("test_aggregation", "third_row", new String[] { "c2", "c3", "c4", "c5", "c6", "c7" },
                     new Object[] { 3, 3L, 3.0f, 3.0, (byte)3, date3 });
             ObTableAggregation obtableAggregation = client.aggregate("test_aggregation");
+
             // test int
             obtableAggregation.max("c2");
             obtableAggregation.min("c2");
             obtableAggregation.count();
             obtableAggregation.sum("c2");
             obtableAggregation.avg("c2");
+
             // test bigint
             obtableAggregation.max("c3");
             obtableAggregation.min("c3");
             obtableAggregation.count();
             obtableAggregation.sum("c3");
             obtableAggregation.avg("c3");
+
             // test float
             obtableAggregation.max("c4");
             obtableAggregation.min("c4");
             obtableAggregation.count();
             obtableAggregation.sum("c4");
             obtableAggregation.avg("c4");
+
             // test double
             obtableAggregation.max("c5");
             obtableAggregation.min("c5");
             obtableAggregation.count();
             obtableAggregation.sum("c5");
             obtableAggregation.avg("c5");
+
             // test tinyint
             obtableAggregation.max("c6");
             obtableAggregation.min("c6");
             obtableAggregation.count();
             obtableAggregation.sum("c6");
             obtableAggregation.avg("c6");
+
             // test date
             obtableAggregation.max("c7");
             obtableAggregation.min("c7");
+
             // execute
             ObTableAggregationResult obtableAggregationResult = obtableAggregation.execute();
+
             // test int
             Assert.assertEquals(3, obtableAggregationResult.get("max(c2)"));
             Assert.assertEquals(1, obtableAggregationResult.get("min(c2)"));
             Assert.assertEquals(3L, obtableAggregationResult.get("count(*)"));
             Assert.assertEquals(6L, obtableAggregationResult.get("sum(c2)"));
             Assert.assertEquals(2.0, obtableAggregationResult.get("avg(c2)"));
+
             // test bigint
             Assert.assertEquals(3L, obtableAggregationResult.get("max(c3)"));
             Assert.assertEquals(1L, obtableAggregationResult.get("min(c3)"));
             Assert.assertEquals(3L, obtableAggregationResult.get("count(*)"));
             Assert.assertEquals(6L, obtableAggregationResult.get("sum(c3)"));
             Assert.assertEquals(2.0, obtableAggregationResult.get("avg(c3)"));
+
             // test float
             Assert.assertEquals(3.0f, obtableAggregationResult.get("max(c4)"));
             Assert.assertEquals(1.0f, obtableAggregationResult.get("min(c4)"));
             Assert.assertEquals(3L, obtableAggregationResult.get("count(*)"));
             Assert.assertEquals(6.0, obtableAggregationResult.get("sum(c4)"));
             Assert.assertEquals(2.0, obtableAggregationResult.get("avg(c4)"));
+
             // test double
             Assert.assertEquals(3.0, obtableAggregationResult.get("max(c5)"));
             Assert.assertEquals(1.0, obtableAggregationResult.get("min(c5)"));
             Assert.assertEquals(3L, obtableAggregationResult.get("count(*)"));
             Assert.assertEquals(6.0, obtableAggregationResult.get("sum(c5)"));
             Assert.assertEquals(2.0, obtableAggregationResult.get("avg(c5)"));
+
             // test tinyint
             Assert.assertEquals((byte)3, obtableAggregationResult.get("max(c6)"));
             Assert.assertEquals((byte)1, obtableAggregationResult.get("min(c6)"));
             Assert.assertEquals(3L, obtableAggregationResult.get("count(*)"));
             Assert.assertEquals(6L, obtableAggregationResult.get("sum(c6)"));
             Assert.assertEquals(2.0, obtableAggregationResult.get("avg(c6)"));
+
             //test date
             Assert.assertEquals(date3, obtableAggregationResult.get("max(c7)"));
             Assert.assertEquals(date1, obtableAggregationResult.get("min(c7)"));
