@@ -168,6 +168,15 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         String endpoint = stringBuilder.toString();
         long getTableTime = System.currentTimeMillis();
 
+        // Defend aggregation of multiple partitions.
+        if (tableQuery.isAggregation()) {
+            if (partitionObTables.size() > 1) {
+                throw new Exception(
+                        "we don't support aggregate of multiple partitions"
+                );
+            }
+        }
+
         ObTableClientQueryStreamResult obTableClientQueryStreamResult = new ObTableClientQueryStreamResult();
         obTableClientQueryStreamResult.setTableQuery(tableQuery);
         obTableClientQueryStreamResult.setEntityType(entityType);

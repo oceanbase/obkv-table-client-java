@@ -2351,4 +2351,54 @@ public class ObTableClientTest extends ObTableClientTestBase {
             client.delete("test_aggregation", "third_row");
         }
     }
+
+    @Test
+    // Test aggregation of multiple aggregation
+    public void testPartitionAggregation() throws Exception {
+
+        /*
+         * CREATE TABLE `test_partition_aggregation` (
+         *`c1` bigint NOT NULL,
+         *`c2` bigint DEFAULT NULL,
+         *PRIMARY KEY (`c1`))partition by range(`c1`)(partition p0 values less than(200), partition p1 values less than(500), partition p2 values less than(900));
+         */
+
+        final ObTableClient client = (ObTableClient) this.client;
+        client.addRowKeyElement("test_partition_aggregation", new String[] { "c1" });
+
+        try {
+            client.insert("test_partition_aggregation", new Object[] { 50L }, new String[] { "c2" },
+                    new Object[] { 50L });
+            client.insert("test_partition_aggregation", new Object[] { 150L }, new String[] { "c2" },
+                    new Object[] { 150L });
+            client.insert("test_partition_aggregation", new Object[] { 300L }, new String[] { "c2" },
+                    new Object[] { 300L });
+
+            ObTableAggregation obtableAggregation = client.aggregate("test_partition_aggregation");
+
+            obtableAggregation.addScanRange(new Object[] { 0L }, new Object[] { 150L });
+
+            // test
+            obtableAggregation.max("c2");
+            obtableAggregation.min("c2");
+            obtableAggregation.count();
+            obtableAggregation.sum("c2");
+            obtableAggregation.avg("c2");
+
+            // execute
+            ObTableAggregationResult obtableAggregationResult = obtableAggregation.execute();
+
+            // test
+            Assert.assertEquals(150L, obtableAggregationResult.get("max(c2)"));
+            Assert.assertEquals(50L, obtableAggregationResult.get("min(c2)"));
+            Assert.assertEquals(2L, obtableAggregationResult.get("count(*)"));
+            Assert.assertEquals(200L, obtableAggregationResult.get("sum(c2)"));
+            Assert.assertEquals(100.0, obtableAggregationResult.get("avg(c2)"));
+
+        } finally {
+            client.delete("test_partition_aggregation", 50L );
+            client.delete("test_partition_aggregation", 150L );
+            client.delete("test_partition_aggregation", 300L );
+        }
+    }
 }
