@@ -108,9 +108,7 @@ public class ObTableAggregation {
 
     public ObTableAggregationResult execute() throws Exception {
         if (this.message.size() == 0) {
-            throw new Exception(
-                    "please add aggregations"
-            );
+            throw new IllegalArgumentException("please add aggregations.");
         }
         // In order to get cache size.
         this.tablequery.select(new String[this.message.size()]);

@@ -242,5 +242,10 @@ CREATE TABLE test_aggregation (
     PRIMARY KEY(`c1`)
 );
         
+CREATE TABLE `test_partition_aggregation` (
+    `c1` bigint NOT NULL,
+    `c2` bigint DEFAULT NULL,
+    PRIMARY KEY (`c1`))partition by range(`c1`)(partition p0 values less than(200), partition p1 values less than(500), partition p2 values less than(900));
+
 
 alter system set kv_hotkey_throttle_threshold = 50;
