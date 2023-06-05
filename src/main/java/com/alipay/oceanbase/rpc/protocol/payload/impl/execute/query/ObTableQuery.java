@@ -65,8 +65,7 @@ public class ObTableQuery extends AbstractPayload {
     private List<ObTableAggregationSingle>    aggregations       = new LinkedList<>();
 
     /*
-     * Check aggregation
-     *
+     * Check aggregation.
      */
     public boolean isAggregation() {
         if (aggregations.isEmpty()) {
