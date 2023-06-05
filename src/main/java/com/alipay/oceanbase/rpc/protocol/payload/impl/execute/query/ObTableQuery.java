@@ -65,6 +65,16 @@ public class ObTableQuery extends AbstractPayload {
     private List<ObTableAggregationSingle>    aggregations       = new LinkedList<>();
 
     /*
+     * Check aggregation.
+     */
+    public boolean isAggregation() {
+        if (aggregations.isEmpty()) {
+            return false;
+        }
+        return true;
+    }
+
+    /*
      * Add aggregation.
      */
     public void addAggregation(ObTableAggregationType aggType, String aggColumn) {

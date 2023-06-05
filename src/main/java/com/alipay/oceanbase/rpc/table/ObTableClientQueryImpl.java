@@ -21,6 +21,7 @@ import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.Row;
+import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.*;
@@ -167,6 +168,13 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         }
         String endpoint = stringBuilder.toString();
         long getTableTime = System.currentTimeMillis();
+
+        // Defend aggregation of multiple partitions.
+        if (tableQuery.isAggregation()) {
+            if (partitionObTables.size() > 1) {
+                throw new ObTableException("Not supported aggregate of multiple partitions, the partition size is: " + partitionObTables.size(), ResultCodes.OB_NOT_SUPPORTED.errorCode);
+            }
+        }
 
         ObTableClientQueryStreamResult obTableClientQueryStreamResult = new ObTableClientQueryStreamResult();
         obTableClientQueryStreamResult.setTableQuery(tableQuery);
