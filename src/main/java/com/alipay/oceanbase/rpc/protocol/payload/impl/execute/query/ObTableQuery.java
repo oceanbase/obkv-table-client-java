@@ -61,7 +61,7 @@ public class ObTableQuery extends AbstractPayload {
     private static final byte[] HTABLE_FILTER_DUMMY_BYTES = new byte[] { 0x01, 0x00 };
     private boolean             isHbaseQuery              = false;
     private List<String>        scanRangeColumns          = new LinkedList<String>();
-    
+
     private List<ObTableAggregationSingle>    aggregations       = new LinkedList<>();
 
     /*
@@ -80,7 +80,7 @@ public class ObTableQuery extends AbstractPayload {
     public void addAggregation(ObTableAggregationType aggType, String aggColumn) {
         this.aggregations.add(new ObTableAggregationSingle(aggType, aggColumn));
     }
-    
+
     /*
      * Encode.
      */
@@ -217,6 +217,12 @@ public class ObTableQuery extends AbstractPayload {
             this.scanRangeColumns.add(Serialization.decodeVString(buf));
         }
 
+        size = Serialization.decodeVi64(buf);
+        for (int i = 0; i < size; i++) {
+            byte agg_type = Serialization.decodeI8(buf);
+            String agg_column = Serialization.decodeVString(buf);
+            this.aggregations.add(new ObTableAggregationSingle(ObTableAggregationType.fromByte(agg_type), agg_column));
+        }
         return this;
     }
 

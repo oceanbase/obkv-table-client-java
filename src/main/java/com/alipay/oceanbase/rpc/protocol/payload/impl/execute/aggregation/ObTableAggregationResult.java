@@ -26,13 +26,13 @@ import java.util.List;
 import java.util.Map;
 
 public class ObTableAggregationResult {
-    
+
     // this message is used to record the aggregation order and the corresponding aggregation name
-    private Map<Integer, String>  message; 
+    private List<String>  message;
     private Map<String, Object>   row = new HashMap<>();
     private final QueryResultSet  queryResultSet;
 
-    public ObTableAggregationResult(QueryResultSet queryResultSet, Map<Integer, String> message) throws Exception {
+    public ObTableAggregationResult(QueryResultSet queryResultSet, List<String> message) throws Exception {
         this.queryResultSet = queryResultSet;
         this.message = message;
         this.init();
@@ -43,11 +43,7 @@ public class ObTableAggregationResult {
      */
     public void init() throws Exception {
         this.queryResultSet.next();
-        List<ObObj> init_row;
-        init_row = this.queryResultSet.get_Row();
-        for (int i = 0; i < init_row.size(); i++) {
-            row.put(message.get(i), init_row.get(i).getValue());
-        }
+        row = this.queryResultSet.getRow();
     }
 
     /*
@@ -56,7 +52,7 @@ public class ObTableAggregationResult {
     public Object get(String columName) throws Exception {
         return row.get(columName);
     }
-    
+
     /*
      * Get the aggregation row.
      */

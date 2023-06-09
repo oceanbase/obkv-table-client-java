@@ -2457,4 +2457,111 @@ public class ObTableClientTest extends ObTableClientTestBase {
             client.delete("test_partition_aggregation", 300L );
         }
     }
+
+    @Test
+    // Test aggregation with filter
+    public void testAggregationWithFilter() throws Exception {
+
+        /*
+         * CREATE TABLE test_aggregation_with_filter (
+         *   `c1` varchar(255),
+         *   `c2` int NOT NULL,
+         *   PRIMARY KEY(`c1`)
+         * );
+         * */
+
+        final ObTableClient client = (ObTableClient) this.client;
+        client.addRowKeyElement("test_aggregation_with_filter", new String[] { "c1" });
+
+        // test without filter
+        try {
+            client.insert("test_aggregation_with_filter", new Object[] { 50L }, new String[] { "c2" },
+                    new Object[] { 50L });
+            client.insert("test_aggregation_with_filter", new Object[] { 100L }, new String[] { "c2" },
+                    new Object[] { 100L });
+            client.insert("test_aggregation_with_filter", new Object[] { 300L }, new String[] { "c2" },
+                    new Object[] { 300L });
+            client.insert("test_aggregation_with_filter", new Object[] { 310L }, new String[] { "c2" },
+                    new Object[] { 300L });
+
+            // without filter
+            ObTableAggregation obtableAggregationWithoutFilter = client.aggregate("test_aggregation_with_filter");
+
+            // test
+            obtableAggregationWithoutFilter.max("c2");
+            obtableAggregationWithoutFilter.min("c2");
+            obtableAggregationWithoutFilter.count();
+            obtableAggregationWithoutFilter.sum("c2");
+            obtableAggregationWithoutFilter.avg("c2");
+
+            // execute
+            ObTableAggregationResult obtableAggregationResultWithoutFilter = obtableAggregationWithoutFilter.execute();
+
+            // test without filter
+            Assert.assertEquals(300L, obtableAggregationResultWithoutFilter.get("max(c2)"));
+            Assert.assertEquals(50L, obtableAggregationResultWithoutFilter.get("min(c2)"));
+            Assert.assertEquals(4L, obtableAggregationResultWithoutFilter.get("count(*)"));
+            Assert.assertEquals(750L, obtableAggregationResultWithoutFilter.get("sum(c2)"));
+            Assert.assertEquals(187.5, obtableAggregationResultWithoutFilter.get("avg(c2)"));
+
+            // with filter
+            ObTableAggregation obtableAggregationWithFilter = client.aggregate("test_aggregation_with_filter");
+
+            // test
+            obtableAggregationWithFilter.max("c2");
+            obtableAggregationWithFilter.min("c2");
+            obtableAggregationWithFilter.count();
+            obtableAggregationWithFilter.sum("c2");
+            obtableAggregationWithFilter.avg("c2");
+
+            // filter
+            ObTableValueFilter filter = new ObTableValueFilter(ObCompareOp.GT, "c1", 90L);
+
+            // add filter
+            obtableAggregationWithFilter.setFilter(filter);
+
+            // execute
+            ObTableAggregationResult obtableAggregationResultWithFilter = obtableAggregationWithFilter.execute();
+
+            // test with filter
+            double delta = 1e-6;
+            Assert.assertEquals(300L, obtableAggregationResultWithFilter.get("max(c2)"));
+            Assert.assertEquals(100L, obtableAggregationResultWithFilter.get("min(c2)"));
+            Assert.assertEquals(3L, obtableAggregationResultWithFilter.get("count(*)"));
+            Assert.assertEquals(700L, obtableAggregationResultWithFilter.get("sum(c2)"));
+            Assert.assertEquals(233.33333333, (double) obtableAggregationResultWithFilter.get("avg(c2)"), delta);
+
+            // with filter
+            ObTableAggregation obtableAggregationWithFilterAndLimit = client.aggregate("test_aggregation_with_filter");
+
+            // test
+            obtableAggregationWithFilterAndLimit.max("c2");
+            obtableAggregationWithFilterAndLimit.min("c2");
+            obtableAggregationWithFilterAndLimit.count();
+            obtableAggregationWithFilterAndLimit.sum("c2");
+            obtableAggregationWithFilterAndLimit.avg("c2");
+
+            // add filter
+            obtableAggregationWithFilterAndLimit.setFilter(filter);
+
+            // add limit
+            obtableAggregationWithFilterAndLimit.limit(0, 2);
+
+            // execute
+            ObTableAggregationResult obtableAggregationResultWithFilterAndLimit = obtableAggregationWithFilterAndLimit.execute();
+
+            // test with filter and limit
+            Assert.assertEquals(300L, obtableAggregationResultWithFilterAndLimit.get("max(c2)"));
+            Assert.assertEquals(100L, obtableAggregationResultWithFilterAndLimit.get("min(c2)"));
+            Assert.assertEquals(2L, obtableAggregationResultWithFilterAndLimit.get("count(*)"));
+            Assert.assertEquals(400L, obtableAggregationResultWithFilterAndLimit.get("sum(c2)"));
+            Assert.assertEquals(200.0, obtableAggregationResultWithFilterAndLimit.get("avg(c2)"));
+
+        } finally {
+            client.delete("test_aggregation_with_filter", 50L );
+            client.delete("test_aggregation_with_filter", 100L );
+            client.delete("test_aggregation_with_filter", 300L );
+            client.delete("test_aggregation_with_filter", 310L );
+        }
+    }
 }
