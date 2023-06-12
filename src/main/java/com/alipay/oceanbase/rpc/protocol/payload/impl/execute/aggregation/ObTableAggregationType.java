@@ -26,7 +26,29 @@ public enum ObTableAggregationType {
     AVG(5);
 
     private int value;
-    
+
+    /*
+     * Get agg type from byte
+     */
+    public static ObTableAggregationType fromByte(byte i) {
+        switch (i) {
+            case 0:
+                return INVAILD;
+            case 1:
+                return MAX;
+            case 2:
+                return MIN;
+            case 3:
+                return COUNT;
+            case 4:
+                return SUM;
+            case 5:
+                return AVG;
+            default:
+                throw new IllegalArgumentException("Invalid value: " + i);
+        }
+    }
+
     /*
      * For serialize.
      */

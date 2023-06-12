@@ -17,24 +17,20 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation;
 
+import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.mutation.Row;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class ObTableAggregationResult {
-    
-    // this message is used to record the aggregation order and the corresponding aggregation name
-    private Map<Integer, String>  message; 
+
     private Map<String, Object>   row = new HashMap<>();
     private final QueryResultSet  queryResultSet;
 
-    public ObTableAggregationResult(QueryResultSet queryResultSet, Map<Integer, String> message) throws Exception {
+    public ObTableAggregationResult(QueryResultSet queryResultSet) throws Exception {
         this.queryResultSet = queryResultSet;
-        this.message = message;
         this.init();
     }
 
@@ -42,11 +38,10 @@ public class ObTableAggregationResult {
      * Init for aggregation result.
      */
     public void init() throws Exception {
-        this.queryResultSet.next();
-        List<ObObj> init_row;
-        init_row = this.queryResultSet.get_Row();
-        for (int i = 0; i < init_row.size(); i++) {
-            row.put(message.get(i), init_row.get(i).getValue());
+        if (this.queryResultSet.next()) {
+            row = this.queryResultSet.getRow();
+        } else {
+            throw new ObTableUnexpectedException("aggregate an empty table");
         }
     }
 
@@ -56,7 +51,7 @@ public class ObTableAggregationResult {
     public Object get(String columName) throws Exception {
         return row.get(columName);
     }
-    
+
     /*
      * Get the aggregation row.
      */

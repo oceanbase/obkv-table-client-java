@@ -29,6 +29,7 @@ import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregation;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutate;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateResult;
@@ -1471,10 +1472,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     /**
      * Aggregate.
      */
-    public TableAggregation aggregate(String tableName) {
+    public ObTableAggregation aggregate(String tableName) {
         ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(tableName, this);
         ObClusterTableQuery clusterTableQuery = new ObClusterTableQuery(tableQuery);
-        return new TableAggregation(clusterTableQuery);
+        return new ObTableAggregation(clusterTableQuery);
     }
     /**
      * Query.
