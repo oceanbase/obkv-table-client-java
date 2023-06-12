@@ -114,6 +114,6 @@ public class ObTableAggregation {
         }
         // In order to get cache size.
         this.tablequery.select(message.toArray(new String[message.size()]));
-        return new ObTableAggregationResult(this.tablequery.execute(), this.message);
+        return new ObTableAggregationResult(this.tablequery.execute());
     }
 }
