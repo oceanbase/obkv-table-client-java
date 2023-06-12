@@ -238,7 +238,7 @@ CREATE TABLE test_aggregation (
     `c4` float NOT NULL,
     `c5` double NOT NULL,
     `c6` tinyint NULL,
-    `c7` date,
+    `c7` datetime,
     PRIMARY KEY(`c1`)
 );
         

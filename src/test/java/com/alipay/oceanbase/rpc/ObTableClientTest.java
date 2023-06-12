@@ -2243,7 +2243,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
          *   `c4` float NOT NULL,
          *   `c5` double NOT NULL,
          *   `c6` tinyint NULL,
-         *   `c7` date,
+         *   `c7` datetime,
          *   PRIMARY KEY(`c1`)
          * );
          * */
@@ -2565,7 +2565,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
     }
 
     @Test
-    // Test aggregation with empty row
+    // Test aggregation with empty table
     public void testAggregationWithEmptyRow() throws Exception {
         /*
          * CREATE TABLE `test_partition_aggregation` (
@@ -2584,10 +2584,13 @@ public class ObTableClientTest extends ObTableClientTestBase {
         obtableAggregation.min("c2");
 
         // execute
-        ObTableAggregationResult obtableAggregationResult = obtableAggregation.execute();
-
-        Assert.assertEquals(null, obtableAggregationResult.get("max(c2)"));
-        Assert.assertEquals(null, obtableAggregationResult.get("min(c2)"));
+        try {
+            ObTableAggregationResult obtableAggregationResult = obtableAggregation.execute();
+        } catch (Exception e) {
+            Assert.assertTrue(e instanceof ObTableUnexpectedException);
+            Assert.assertEquals("aggregate an empty table",
+                    ((ObTableUnexpectedException) e).getMessage());
+        }
     }
 
     @Test

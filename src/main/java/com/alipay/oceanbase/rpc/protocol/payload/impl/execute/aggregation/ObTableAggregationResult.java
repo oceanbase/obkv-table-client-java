@@ -17,12 +17,11 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation;
 
+import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.mutation.Row;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class ObTableAggregationResult {
@@ -41,6 +40,8 @@ public class ObTableAggregationResult {
     public void init() throws Exception {
         if (this.queryResultSet.next()) {
             row = this.queryResultSet.getRow();
+        } else {
+            throw new ObTableUnexpectedException("aggregate an empty table");
         }
     }
 
