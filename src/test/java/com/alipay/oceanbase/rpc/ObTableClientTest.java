@@ -2243,7 +2243,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
          *   `c4` float NOT NULL,
          *   `c5` double NOT NULL,
          *   `c6` tinyint NULL,
-         *   `c7` date,
+         *   `c7` datetime,
          *   PRIMARY KEY(`c1`)
          * );
          * */
@@ -2455,6 +2455,228 @@ public class ObTableClientTest extends ObTableClientTestBase {
             client.delete("test_partition_aggregation", 50L );
             client.delete("test_partition_aggregation", 150L );
             client.delete("test_partition_aggregation", 300L );
+        }
+    }
+
+    @Test
+    // Test aggregation with filter
+    public void testAggregationWithFilter() throws Exception {
+
+        /*
+         * CREATE TABLE `test_partition_aggregation` (
+         *`c1` bigint NOT NULL,
+         *`c2` bigint DEFAULT NULL,
+         *PRIMARY KEY (`c1`))partition by range(`c1`)(partition p0 values less than(200), partition p1 values less than(500), partition p2 values less than(900));
+         */
+
+        final ObTableClient client = (ObTableClient) this.client;
+        client.addRowKeyElement("test_partition_aggregation", new String[] { "c1" });
+
+        // test without filter
+        try {
+            client.insert("test_partition_aggregation", new Object[] { 50L }, new String[] { "c2" },
+                    new Object[] { 50L });
+            client.insert("test_partition_aggregation", new Object[] { 100L }, new String[] { "c2" },
+                    new Object[] { 100L });
+            client.insert("test_partition_aggregation", new Object[] { 120L }, new String[] { "c2" },
+                    new Object[] { 300L });
+            client.insert("test_partition_aggregation", new Object[] { 130L }, new String[] { "c2" },
+                    new Object[] { 300L });
+
+            // without filter
+            ObTableAggregation obtableAggregationWithoutFilter = client.aggregate("test_partition_aggregation");
+
+            // test
+            obtableAggregationWithoutFilter.max("c2");
+            obtableAggregationWithoutFilter.min("c2");
+            obtableAggregationWithoutFilter.count();
+            obtableAggregationWithoutFilter.sum("c2");
+            obtableAggregationWithoutFilter.avg("c2");
+
+            // execute
+            ObTableAggregationResult obtableAggregationResultWithoutFilter = obtableAggregationWithoutFilter.execute();
+
+            // test without filter
+            Assert.assertEquals(300L, obtableAggregationResultWithoutFilter.get("max(c2)"));
+            Assert.assertEquals(50L, obtableAggregationResultWithoutFilter.get("min(c2)"));
+            Assert.assertEquals(4L, obtableAggregationResultWithoutFilter.get("count(*)"));
+            Assert.assertEquals(750L, obtableAggregationResultWithoutFilter.get("sum(c2)"));
+            Assert.assertEquals(187.5, obtableAggregationResultWithoutFilter.get("avg(c2)"));
+
+            // with filter
+            ObTableAggregation obtableAggregationWithFilter = client.aggregate("test_partition_aggregation");
+
+            // test
+            obtableAggregationWithFilter.max("c2");
+            obtableAggregationWithFilter.min("c2");
+            obtableAggregationWithFilter.count();
+            obtableAggregationWithFilter.sum("c2");
+            obtableAggregationWithFilter.avg("c2");
+
+            // filter
+            ObTableValueFilter filter = new ObTableValueFilter(ObCompareOp.GT, "c1", 90L);
+
+            // add filter
+            obtableAggregationWithFilter.setFilter(filter);
+
+            // execute
+            ObTableAggregationResult obtableAggregationResultWithFilter = obtableAggregationWithFilter.execute();
+
+            // test with filter
+            double delta = 1e-6;
+            Assert.assertEquals(300L, obtableAggregationResultWithFilter.get("max(c2)"));
+            Assert.assertEquals(100L, obtableAggregationResultWithFilter.get("min(c2)"));
+            Assert.assertEquals(3L, obtableAggregationResultWithFilter.get("count(*)"));
+            Assert.assertEquals(700L, obtableAggregationResultWithFilter.get("sum(c2)"));
+            Assert.assertEquals(233.33333333, (double) obtableAggregationResultWithFilter.get("avg(c2)"), delta);
+
+            // with filter
+            ObTableAggregation obtableAggregationWithFilterAndLimit = client.aggregate("test_partition_aggregation");
+
+            // test
+            obtableAggregationWithFilterAndLimit.max("c2");
+            obtableAggregationWithFilterAndLimit.min("c2");
+            obtableAggregationWithFilterAndLimit.count();
+            obtableAggregationWithFilterAndLimit.sum("c2");
+            obtableAggregationWithFilterAndLimit.avg("c2");
+
+            // add filter
+            obtableAggregationWithFilterAndLimit.setFilter(filter);
+
+            // add limit
+            obtableAggregationWithFilterAndLimit.limit(0, 2);
+
+            // execute
+            ObTableAggregationResult obtableAggregationResultWithFilterAndLimit = obtableAggregationWithFilterAndLimit.execute();
+
+            // test with filter and limit
+            Assert.assertEquals(300L, obtableAggregationResultWithFilterAndLimit.get("max(c2)"));
+            Assert.assertEquals(100L, obtableAggregationResultWithFilterAndLimit.get("min(c2)"));
+            Assert.assertEquals(2L, obtableAggregationResultWithFilterAndLimit.get("count(*)"));
+            Assert.assertEquals(400L, obtableAggregationResultWithFilterAndLimit.get("sum(c2)"));
+            Assert.assertEquals(200.0, obtableAggregationResultWithFilterAndLimit.get("avg(c2)"));
+
+        } finally {
+            client.delete("test_partition_aggregation", 50L );
+            client.delete("test_partition_aggregation", 100L );
+            client.delete("test_partition_aggregation", 120L );
+            client.delete("test_partition_aggregation", 130L );
+        }
+    }
+
+    @Test
+    // Test aggregation with empty table
+    public void testAggregationWithEmptyRow() throws Exception {
+        /*
+         * CREATE TABLE `test_partition_aggregation` (
+         *`c1` bigint NOT NULL,
+         *`c2` bigint DEFAULT NULL,
+         *PRIMARY KEY (`c1`))partition by range(`c1`)(partition p0 values less than(200), partition p1 values less than(500), partition p2 values less than(900));
+         */
+
+        final ObTableClient client = (ObTableClient) this.client;
+        client.addRowKeyElement("test_partition_aggregation", new String[] { "c1" });
+        // aggregate without insert
+        ObTableAggregation obtableAggregation = client.aggregate("test_partition_aggregation");
+
+        // test
+        obtableAggregation.max("c2");
+        obtableAggregation.min("c2");
+
+        // execute
+        try {
+            ObTableAggregationResult obtableAggregationResult = obtableAggregation.execute();
+        } catch (Exception e) {
+            Assert.assertTrue(e instanceof ObTableUnexpectedException);
+            Assert.assertEquals("aggregate an empty table",
+                    ((ObTableUnexpectedException) e).getMessage());
+        }
+    }
+
+    @Test
+    // Test aggregation exist null
+    public void testAggregationExistNull() throws Exception {
+
+        /*
+         * CREATE TABLE `test_partition_aggregation` (
+         *`c1` bigint NOT NULL,
+         *`c2` bigint DEFAULT NULL,
+         *PRIMARY KEY (`c1`))partition by range(`c1`)(partition p0 values less than(200), partition p1 values less than(500), partition p2 values less than(900));
+         */
+
+        final ObTableClient client = (ObTableClient) this.client;
+        client.addRowKeyElement("test_partition_aggregation", new String[] { "c1" });
+
+        // test with null
+        try {
+            client.insert("test_partition_aggregation", new Object[] { 50L }, new String[] { "c2" },
+                    new Object[] { null });
+            client.insert("test_partition_aggregation", new Object[] { 100L }, new String[] { "c2" },
+                    new Object[] { null });
+
+            // with null
+            ObTableAggregation obtableAggregationWithoutFilter = client.aggregate("test_partition_aggregation");
+
+            // test
+            obtableAggregationWithoutFilter.max("c1");
+            obtableAggregationWithoutFilter.min("c1");
+            obtableAggregationWithoutFilter.max("c2");
+            obtableAggregationWithoutFilter.min("c2");
+
+            // execute
+            ObTableAggregationResult obtableAggregationResultWithoutFilter = obtableAggregationWithoutFilter.execute();
+
+            // test with null
+            Assert.assertEquals(100L, obtableAggregationResultWithoutFilter.get("max(c1)"));
+            Assert.assertEquals(50L, obtableAggregationResultWithoutFilter.get("min(c1)"));
+
+            Assert.assertEquals(null, obtableAggregationResultWithoutFilter.get("max(c2)"));
+            Assert.assertEquals(null, obtableAggregationResultWithoutFilter.get("min(c2)"));
+
+        } finally {
+            client.delete("test_partition_aggregation", 50L );
+            client.delete("test_partition_aggregation", 100L );
+        }
+    }
+
+    @Test
+    // Test aggregation with illegal column
+    public void testAggregationWithIllegalColumn() throws Exception {
+
+        /*
+         * CREATE TABLE `test_partition_aggregation` (
+         *`c1` bigint NOT NULL,
+         *`c2` bigint DEFAULT NULL,
+         *PRIMARY KEY (`c1`))partition by range(`c1`)(partition p0 values less than(200), partition p1 values less than(500), partition p2 values less than(900));
+         */
+
+        final ObTableClient client = (ObTableClient) this.client;
+        client.addRowKeyElement("test_partition_aggregation", new String[] { "c1" });
+
+        // test with null
+        try {
+            client.insert("test_partition_aggregation", new Object[] { 50L }, new String[] { "c2" },
+                    new Object[] { null });
+            client.insert("test_partition_aggregation", new Object[] { 100L }, new String[] { "c2" },
+                    new Object[] { null });
+
+            // with
+            ObTableAggregation obtableAggregationWithIllegal = client.aggregate("test_partition_aggregation");
+
+            // test illegal column
+            obtableAggregationWithIllegal.max("c3");
+
+            try {
+                obtableAggregationWithIllegal.execute();
+            } catch (Exception e) {
+                Assert.assertTrue(e instanceof ObTableUnexpectedException);
+                Assert.assertEquals(ResultCodes.OB_ERR_UNEXPECTED.errorCode,
+                        ((ObTableUnexpectedException) e).getErrorCode());
+            }
+
+        } finally {
+            client.delete("test_partition_aggregation", 50L );
+            client.delete("test_partition_aggregation", 100L );
         }
     }
 }

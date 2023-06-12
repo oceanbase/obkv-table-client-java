@@ -20,13 +20,13 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation;
 import com.alipay.oceanbase.rpc.ObClusterTableQuery;
 import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ObTableAggregation {
 
     //this message is used to record the aggregation order and the corresponding aggregation name
-    private Map<Integer, String> message = new HashMap<>();
+    private List<String> message = new ArrayList<>();
     private ObClusterTableQuery tablequery;
 
     public ObTableAggregation(ObClusterTableQuery obClusterTableQuery) {
@@ -35,51 +35,51 @@ public class ObTableAggregation {
 
     public void min(String columnName) {
         this.tablequery.addAggregation(ObTableAggregationType.MIN, columnName);
-        message.put(this.message.size(), "min(" + columnName + ")");
+        message.add("min(" + columnName + ")");
     }
 
     public void min(String columnName, String aliasName) {
         this.tablequery.addAggregation(ObTableAggregationType.MIN, columnName);
-        message.put(this.message.size(), "min(" + aliasName + ")");
+        message.add("min(" + aliasName + ")");
     }
 
     public void max(String columnName) {
         this.tablequery.addAggregation(ObTableAggregationType.MAX, columnName);
-        message.put(this.message.size(), "max(" + columnName + ")");
+        message.add("max(" + columnName + ")");
     }
 
     public void max(String columnName, String aliasName) {
         this.tablequery.addAggregation(ObTableAggregationType.MAX, columnName);
-        message.put(this.message.size(), "max(" + aliasName + ")");
+        message.add("max(" + aliasName + ")");
     }
 
     public void count() {
         this.tablequery.addAggregation(ObTableAggregationType.COUNT, "*");
-        message.put(this.message.size(), "count(*)");
+        message.add("count(*)");
     }
     public void count(String aliasName) {
         this.tablequery.addAggregation(ObTableAggregationType.COUNT, "*");
-        message.put(this.message.size(), "count(" + aliasName + ")");
+        message.add("count(" + aliasName + ")");
     }
 
     public void sum(String columnName) {
         this.tablequery.addAggregation(ObTableAggregationType.SUM, columnName);
-        message.put(this.message.size(), "sum(" + columnName + ")");
+        message.add("sum(" + columnName + ")");
     }
 
     public void sum(String columnName, String aliasName) {
         this.tablequery.addAggregation(ObTableAggregationType.SUM, columnName);
-        message.put(this.message.size(), "sum(" + aliasName + ")");
+        message.add("sum(" + aliasName + ")");
     }
 
     public void avg(String columnName) {
         this.tablequery.addAggregation(ObTableAggregationType.AVG, columnName);
-        message.put(this.message.size(), "avg(" + columnName + ")");
+        message.add("avg(" + columnName + ")");
     }
 
     public void avg(String columnName, String aliasName) {
         this.tablequery.addAggregation(ObTableAggregationType.AVG, columnName);
-        message.put(this.message.size(), "avg(" + aliasName + ")");
+        message.add("avg(" + aliasName + ")");
     }
 
     public void setScanRangeColumns(String... columns) {
@@ -102,6 +102,8 @@ public class ObTableAggregation {
         this.tablequery.setFilter(filter);
     }
 
+    public void limit(int offset, int limit) { this.tablequery.limit(offset, limit); }
+
     public void setOperationTimeout(long operationTimeout) {
         this.tablequery.setOperationTimeout(operationTimeout);
     }
@@ -111,7 +113,7 @@ public class ObTableAggregation {
             throw new IllegalArgumentException("please add aggregations.");
         }
         // In order to get cache size.
-        this.tablequery.select(new String[this.message.size()]);
-        return new ObTableAggregationResult(this.tablequery.execute(), this.message);
+        this.tablequery.select(message.toArray(new String[message.size()]));
+        return new ObTableAggregationResult(this.tablequery.execute());
     }
 }
