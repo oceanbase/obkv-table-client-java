@@ -24,6 +24,7 @@ import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.sql.Connection;
@@ -51,6 +52,19 @@ public class ObTableSQLAuditTest {
         final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
         obTableClient.init();
         this.client = obTableClient;
+    }
+
+    @BeforeClass
+    public static void testVersion() throws Exception {
+        final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
+        obTableClient.init();
+        if (ObGlobal.OB_VERSION <= 0) {
+            // ob version is invalid
+            Assert.assertTrue(false);
+        } else if (ObGlobal.OB_VERSION != 3) {
+            // todo: only support in 3.x currently
+            Assert.assertTrue(false);
+        }
     }
 
     // get affected_rows and return rows from sql_audit
@@ -191,7 +205,7 @@ public class ObTableSQLAuditTest {
         ColumnValue deleteKey = colVal("c1", "k2");
         ColumnValue updateKey = colVal("c1", "k3");
         ColumnValue appendKey = colVal("c1", "k4");
-        ColumnValue getKey = colVal("c1", "k5");
+        ColumnValue getKey = colVal("c2", "k5");
         ColumnValue updateVal = colVal("c2", "v1");
         try {
             BatchOperation batchOperation = client.batchOperation(tableName);

@@ -17,12 +17,15 @@
 
 package com.alipay.oceanbase.rpc.table;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.ObTableClientTestBase;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
+import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -44,6 +47,19 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
 
         client = obTableClient;
         syncRefreshMetaHelper(obTableClient);
+    }
+
+    @BeforeClass
+    public static void testVersion() throws Exception {
+        final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
+        obTableClient.init();
+        if (ObGlobal.OB_VERSION <= 0) {
+            // ob version is invalid
+            Assert.assertTrue(false);
+        } else if (ObGlobal.OB_VERSION != 3) {
+            // todo: only support in 3.x currently
+            Assert.assertTrue(false);
+        }
     }
 
     @Test

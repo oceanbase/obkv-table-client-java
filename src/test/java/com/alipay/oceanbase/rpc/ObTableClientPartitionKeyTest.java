@@ -465,6 +465,7 @@ public class ObTableClientPartitionKeyTest {
         String key = "key";
         String qualifier = "partition";
         String value = "V";
+        int columnSize = 0;
         try {
             for (long i = 0; i < batchSize; i++) {
                 obTableClient.insert(TEST_TABLE,
@@ -472,16 +473,25 @@ public class ObTableClientPartitionKeyTest {
                     new Object[] { value.getBytes() });
             }
             TableQuery tableQuery = obTableClient.query(TEST_TABLE);
-            tableQuery.setScanRangeColumns("K");
-            tableQuery.addScanRange(new Object[] { "key".getBytes() },
-                new Object[] { "key".getBytes() });
+            // fixme: generated column is not supported by odp mode
+            if (obTableClient.isOdpMode()) {
+                columnSize = 4;
+                tableQuery.setScanRangeColumns("K");
+                tableQuery.addScanRange(new Object[] { "key".getBytes() },
+                        new Object[] { "key".getBytes() });
+            } else {
+                // todo: scan_range_columns cannot be used for routing
+                columnSize = 5;
+                tableQuery.addScanRange(new Object[]{"key".getBytes(), "a".getBytes(), Long.MIN_VALUE},
+                        new Object[]{"key".getBytes(), "z".getBytes(), Long.MAX_VALUE});
+            }
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(batchSize, result.cacheSize());
 
             for (long i = 0; i < batchSize; i++) {
                 Assert.assertEquals(true, result.next());
                 Map<String, Object> row = result.getRow();
-                Assert.assertEquals(4, row.size());
+                Assert.assertEquals(columnSize, row.size());
                 Assert.assertEquals(key, new String((byte[]) row.get("K")));
                 Assert.assertEquals(qualifier, new String((byte[]) row.get("Q")));
                 Assert.assertEquals(i, row.get("T"));
