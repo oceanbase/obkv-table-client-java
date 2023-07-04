@@ -32,17 +32,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ObClientFuture implements InvokeFuture {
 
-    private CountDownLatch  waiter = new CountDownLatch(1);
+    private CountDownLatch  waiter        = new CountDownLatch(1);
     private RemotingCommand response;
     private int             channelId;
 
     // BY_WORKER indicate response must be release by worker itself.
     // BY_BACKGROUND indicate response must be release by background decoder thread
-    private static int      INIT = 0;
-    private static int      BY_WORKER = 1;
+    private static int      INIT          = 0;
+    private static int      BY_WORKER     = 1;
     private static int      BY_BACKGROUND = 2;
 
-    private AtomicInteger   releaseFlag = new AtomicInteger(INIT);
+    private AtomicInteger   releaseFlag   = new AtomicInteger(INIT);
 
     /*
      * Ob client future.
@@ -57,7 +57,8 @@ public class ObClientFuture implements InvokeFuture {
     @Override
     public RemotingCommand waitResponse(long timeoutMillis) throws InterruptedException {
         try {
-            if (waiter.await(timeoutMillis, TimeUnit.MILLISECONDS) || !releaseFlag.compareAndSet(INIT, BY_BACKGROUND)) {
+            if (waiter.await(timeoutMillis, TimeUnit.MILLISECONDS)
+                || !releaseFlag.compareAndSet(INIT, BY_BACKGROUND)) {
                 return response;
             } else {
                 return null;
@@ -65,10 +66,11 @@ public class ObClientFuture implements InvokeFuture {
         } catch (InterruptedException e) {
             releaseFlag.set(BY_BACKGROUND);
             if (response instanceof ObTablePacket) {
-               ((ObTablePacket) response).releaseByteBuf();
+                ((ObTablePacket) response).releaseByteBuf();
             }
             throw e;
-        } finally {}
+        } finally {
+        }
     }
 
     /*

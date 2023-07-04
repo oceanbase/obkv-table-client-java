@@ -39,14 +39,14 @@ public class ObClusterTableQuery extends AbstractTableQuery {
     public ObClusterTableQuery(ObTableClientQueryImpl tableQuery) {
         this.tableClientQuery = tableQuery;
     }
-    
+
     /*
      * Add aggregation.
      */
     public void addAggregation(ObTableAggregationType aggType, String aggColumn) {
         this.tableClientQuery.addAggregation(aggType, aggColumn);
     }
-    
+
     /*
      * Get table name.
      */
