@@ -18,18 +18,8 @@
 package com.alipay.oceanbase.rpc.util;
 
 import com.alipay.oceanbase.rpc.exception.ObTableAuthException;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.SecretKeySpec;
-import java.math.BigInteger;
-import java.security.InvalidKeyException;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
-import static com.alipay.oceanbase.rpc.util.StringUtil.isNotBlank;
 
 /**
  * com.mysql.jdbc.MysqlIO#secureAuth
@@ -117,112 +107,5 @@ public class Security {
         seed = nextSeed;
         return nextSeed;
     }
-
-    private static String ENC_KEY_BYTES_STR      = "jaas is the way";
-    private static byte[] ENC_KEY_BYTES          = ENC_KEY_BYTES_STR.getBytes();
-
-    private static String ENC_KEY_BYTES_PROD_STR = "gQzLk5tTcGYlQ47GG29xQxfbHIURCheJ";
-    private static byte[] ENC_KEY_BYTES_PROD     = ENC_KEY_BYTES_PROD_STR.getBytes();
-
-    public static String encode(String secret) throws NoSuchPaddingException,
-                                              NoSuchAlgorithmException, InvalidKeyException,
-                                              BadPaddingException, IllegalBlockSizeException {
-        return encode(null, secret);
-    }
-
-    public static String encode(String encKey, String secret) throws InvalidKeyException,
-                                                             NoSuchAlgorithmException,
-                                                             NoSuchPaddingException,
-                                                             IllegalBlockSizeException,
-                                                             BadPaddingException {
-        byte[] kbytes = ENC_KEY_BYTES_PROD;
-        if (isNotBlank(encKey)) {
-            kbytes = encKey.getBytes();
-        }
-
-        // 默认采用prod key加密与解密,线下环境会异常;
-        try {
-            return initEncode(kbytes, secret);
-        } catch (InvalidKeyException e) {
-            kbytes = ENC_KEY_BYTES;
-        } catch (NoSuchAlgorithmException e) {
-            kbytes = ENC_KEY_BYTES;
-        } catch (NoSuchPaddingException e) {
-            kbytes = ENC_KEY_BYTES;
-        } catch (IllegalBlockSizeException e) {
-            kbytes = ENC_KEY_BYTES;
-        } catch (BadPaddingException e) {
-            kbytes = ENC_KEY_BYTES;
-        }
-
-        return initEncode(kbytes, secret);
-    }
-
-    static final String initEncode(byte[] kbytes, String secret) throws NoSuchAlgorithmException,
-                                                                NoSuchPaddingException,
-                                                                InvalidKeyException,
-                                                                IllegalBlockSizeException,
-                                                                BadPaddingException {
-        SecretKeySpec key = new SecretKeySpec(kbytes, "Blowfish");
-        Cipher cipher = Cipher.getInstance("Blowfish");
-        cipher.init(Cipher.ENCRYPT_MODE, key);
-        byte[] encoding = cipher.doFinal(secret.getBytes());
-        BigInteger n = new BigInteger(encoding);
-        return n.toString(16);
-    }
-
-    public static char[] decode(String secret) throws NoSuchPaddingException,
-                                              NoSuchAlgorithmException, InvalidKeyException,
-                                              BadPaddingException, IllegalBlockSizeException {
-        return decode(null, secret).toCharArray();
-    }
-
-    public static String decode(String encKey, String secret) throws NoSuchPaddingException,
-                                                             NoSuchAlgorithmException,
-                                                             InvalidKeyException,
-                                                             BadPaddingException,
-                                                             IllegalBlockSizeException {
-
-        byte[] kbytes = ENC_KEY_BYTES_PROD;
-        if (isNotBlank(encKey)) {
-            kbytes = encKey.getBytes();
-        }
-
-        try {
-            return iniDecode(kbytes, secret);
-        } catch (InvalidKeyException e) {
-            kbytes = ENC_KEY_BYTES;
-        } catch (BadPaddingException e) {
-            kbytes = ENC_KEY_BYTES;
-        } catch (IllegalBlockSizeException e) {
-            kbytes = ENC_KEY_BYTES;
-        }
-        return iniDecode(kbytes, secret);
-    }
-
-    private static String iniDecode(byte[] kbytes, String secret) throws NoSuchPaddingException,
-                                                                 NoSuchAlgorithmException,
-                                                                 InvalidKeyException,
-                                                                 BadPaddingException,
-                                                                 IllegalBlockSizeException {
-        SecretKeySpec secretKeySpec = new SecretKeySpec(kbytes, "Blowfish");
-        BigInteger bigInteger = new BigInteger(secret, 16);
-        byte[] encoding = bigInteger.toByteArray();
-        // SECURITY-344: fix leading zeros
-        if (encoding.length % 8 != 0) {
-            int len = encoding.length;
-            int nLen = ((len / 8) + 1) * 8;
-            int pad = nLen - len; //number of leading zeros
-            byte[] old = encoding;
-            encoding = new byte[nLen];
-            for (int i = old.length - 1; i >= 0; i--) {
-                encoding[i + pad] = old[i];
-            }
-        }
-        Cipher cipher = Cipher.getInstance("Blowfish");
-        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec);
-        byte[] decode = cipher.doFinal(encoding);
-        return new String(decode);
-    }
-
 }
+
