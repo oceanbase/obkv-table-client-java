@@ -2086,7 +2086,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
             if (((ObTableClient) client).isOdpMode()) {
                 filters_1.addFilter(c1_GE_3, c1_LE_4);
                 MutationResult updateResult = client.increment("test_mutation_with_range")
-                    .setFilter(filters_1).addMutateRow(row(colVal("c4", 100)))
+                    .setFilter(filters_1).addMutateRow(row(colVal("c4", 100L)))
                     .setScanRangeColumns("c1")
                     .addScanRange(new Object[] { 4L }, new Object[] { 200L }).execute();
                 Assert.assertEquals(1, updateResult.getAffectedRows());
