@@ -18,12 +18,7 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation;
 
 public enum ObTableAggregationType {
-    INVAILD(0),
-    MAX(1),
-    MIN(2),
-    COUNT(3),
-    SUM(4),
-    AVG(5);
+    INVAILD(0), MAX(1), MIN(2), COUNT(3), SUM(4), AVG(5);
 
     private int value;
 

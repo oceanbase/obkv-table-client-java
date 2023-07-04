@@ -478,12 +478,13 @@ public class ObTableClientPartitionKeyTest {
                 columnSize = 4;
                 tableQuery.setScanRangeColumns("K");
                 tableQuery.addScanRange(new Object[] { "key".getBytes() },
-                        new Object[] { "key".getBytes() });
+                    new Object[] { "key".getBytes() });
             } else {
                 // todo: scan_range_columns cannot be used for routing
                 columnSize = 5;
-                tableQuery.addScanRange(new Object[]{"key".getBytes(), "a".getBytes(), Long.MIN_VALUE},
-                        new Object[]{"key".getBytes(), "z".getBytes(), Long.MAX_VALUE});
+                tableQuery.addScanRange(new Object[] { "key".getBytes(), "a".getBytes(),
+                        Long.MIN_VALUE }, new Object[] { "key".getBytes(), "z".getBytes(),
+                        Long.MAX_VALUE });
             }
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(batchSize, result.cacheSize());

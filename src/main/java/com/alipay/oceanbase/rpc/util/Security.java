@@ -20,7 +20,6 @@ package com.alipay.oceanbase.rpc.util;
 import com.alipay.oceanbase.rpc.exception.ObTableAuthException;
 import java.security.MessageDigest;
 
-
 /**
  * com.mysql.jdbc.MysqlIO#secureAuth
  */
@@ -108,4 +107,3 @@ public class Security {
         return nextSeed;
     }
 }
-

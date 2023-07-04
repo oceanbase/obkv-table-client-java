@@ -47,7 +47,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     public void addAggregation(ObTableAggregationType aggType, String aggColumn) {
         this.tableQuery.addAggregation(aggType, aggColumn);
     }
-    
+
     /*
      * Ob table client query impl construct only with tableName
      */
@@ -172,7 +172,9 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         // Defend aggregation of multiple partitions.
         if (tableQuery.isAggregation()) {
             if (partitionObTables.size() > 1) {
-                throw new ObTableException("Not supported aggregate of multiple partitions, the partition size is: " + partitionObTables.size(), ResultCodes.OB_NOT_SUPPORTED.errorCode);
+                throw new ObTableException(
+                    "Not supported aggregate of multiple partitions, the partition size is: "
+                            + partitionObTables.size(), ResultCodes.OB_NOT_SUPPORTED.errorCode);
             }
         }
 

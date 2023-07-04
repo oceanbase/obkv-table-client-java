@@ -519,7 +519,7 @@ public enum ObObjType {
         @Override
         public ObObjMeta getDefaultObjMeta() {
             return new ObObjMeta(this, ObCollationLevel.CS_LEVEL_NUMERIC,
-                ObCollationType.CS_TYPE_BINARY, (byte) 10);
+                ObCollationType.CS_TYPE_BINARY, (byte) -1);
         }
 
         /*

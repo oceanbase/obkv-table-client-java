@@ -26,13 +26,13 @@ import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderL
 public class ObTableAggregationSingle extends AbstractPayload {
 
     private ObTableAggregationType aggType;
-    private String aggColumn;
+    private String                 aggColumn;
 
     public ObTableAggregationSingle(ObTableAggregationType aggType, String aggColumn) {
         this.aggColumn = aggColumn;
         this.aggType = aggType;
     }
-    
+
     /*
      * Serialize.
      */
@@ -40,12 +40,13 @@ public class ObTableAggregationSingle extends AbstractPayload {
         byte[] bytes = new byte[(int) this.getPayloadSize()];
         int idx = 0;
 
-        int headerLen = (int) getObUniVersionHeaderLength(getVersion(), this.getPayloadContentSize());
-        System.arraycopy(encodeObUniVersionHeader(getVersion(), this.getPayloadContentSize()), 0, bytes,
-                idx, headerLen);
+        int headerLen = (int) getObUniVersionHeaderLength(getVersion(),
+            this.getPayloadContentSize());
+        System.arraycopy(encodeObUniVersionHeader(getVersion(), this.getPayloadContentSize()), 0,
+            bytes, idx, headerLen);
         idx += headerLen;
 
-        int len =  Serialization.getNeedBytes(aggType.getByteValue());
+        int len = Serialization.getNeedBytes(aggType.getByteValue());
         System.arraycopy(Serialization.encodeI8(aggType.getByteValue()), 0, bytes, idx, len);
         idx += len;
 
@@ -56,6 +57,7 @@ public class ObTableAggregationSingle extends AbstractPayload {
     }
 
     public long getPayloadContentSize() {
-        return Serialization.getNeedBytes(aggType.getByteValue()) + Serialization.getNeedBytes(aggColumn);
+        return Serialization.getNeedBytes(aggType.getByteValue())
+               + Serialization.getNeedBytes(aggColumn);
     }
 }

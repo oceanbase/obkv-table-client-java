@@ -1469,6 +1469,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         return obTableParams;
     }
+
     /**
      * Aggregate.
      */
@@ -1477,6 +1478,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         ObClusterTableQuery clusterTableQuery = new ObClusterTableQuery(tableQuery);
         return new ObTableAggregation(clusterTableQuery);
     }
+
     /**
      * Query.
      */
