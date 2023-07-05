@@ -135,7 +135,9 @@ public class Insert extends Mutation<Insert> {
                 getTableName(), getRowKey(), getKeyRanges(), columns.toArray(new String[0]),
                 values.toArray()));
         } else {
-            throw new ObTableException("Insert with query(filter) is not supported yet");
+            return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
+                    getRowKey(), getKeyRanges(), ObTableOperationType.INSERT,
+                    columns.toArray(new String[0]), values.toArray(), true));
         }
     }
 }
