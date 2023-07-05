@@ -254,4 +254,32 @@ CREATE TABLE `test_ttl_timestamp` (
  `expired_ts` timestamp,
 PRIMARY KEY (`c1`)) TTL(expired_ts + INTERVAL 0 SECOND);
 
+CREATE TABLE IF NOT EXISTS `test_auto_increment_rowkey` (
+    `c1` int auto_increment,
+    `c2` int not null,
+    `c3` int default null,
+    primary key(c1, c2)
+);
+
+CREATE TABLE IF NOT EXISTS `test_auto_increment_rowkey_append` (
+    `c1` int auto_increment,
+    `c2` int not null,
+    `c3` varchar(255),
+    primary key(c1, c2)
+);
+
+CREATE TABLE IF NOT EXISTS `test_auto_increment_not_rowkey` (
+    `c1` int not null,
+    `c2` int not null,
+    `c3` int not null auto_increment,
+    primary key(c1)
+);
+
+CREATE TABLE IF NOT EXISTS `test_auto_increment_not_rowkey_append` (
+    `c1` int not null,
+    `c2` int not null auto_increment,
+    `c3` varchar(255),
+    primary key(c1)
+);
+
 alter system set kv_hotkey_throttle_threshold = 50;

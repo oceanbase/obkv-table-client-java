@@ -2151,7 +2151,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 long TableTime = System.currentTimeMillis();
                 ObTableParam tableParam = obPair.getRight();
                 ObTable obTable = tableParam.getObTable();
-                ObTableQueryAndMutateRequest request = obTableQueryAndMutate(type, tableQuery,
+                ObTableQueryAndMutateRequest request = obTableQueryAndMutate(type, rowKey, tableQuery,
                     columns, values, false);
                 request.setTimeout(obTable.getObTableOperationTimeout());
                 request.setReturningAffectedEntity(withResult);
@@ -2192,7 +2192,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (null == columns || null == values || 0 == columns.length || 0 == values.length) {
             throw new ObTableException("client get unexpected empty columns or values");
         }
-        return obTableQueryAndMutate(ObTableOperationType.UPDATE, tableQuery, columns, values,
+        return obTableQueryAndMutate(ObTableOperationType.UPDATE,  new Object[] {}, tableQuery, columns, values,
             false);
     }
 
@@ -2205,7 +2205,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     public ObTableQueryAndMutateRequest obTableQueryAndDelete(final TableQuery tableQuery)
                                                                                           throws Exception {
-        return obTableQueryAndMutate(ObTableOperationType.DEL, tableQuery, null, null, false);
+        return obTableQueryAndMutate(ObTableOperationType.DEL, new Object[] {}, tableQuery, null, null, false);
     }
 
     /**
@@ -2225,7 +2225,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (null == columns || null == values || 0 == columns.length || 0 == values.length) {
             throw new ObTableException("client get unexpected empty columns or values");
         }
-        return obTableQueryAndMutate(ObTableOperationType.INCREMENT, tableQuery, columns, values,
+        return obTableQueryAndMutate(ObTableOperationType.INCREMENT, new Object[] {}, tableQuery, columns, values,
             withResult);
     }
 
@@ -2246,7 +2246,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (null == columns || null == values || 0 == columns.length || 0 == values.length) {
             throw new ObTableException("client get unexpected empty columns or values");
         }
-        return obTableQueryAndMutate(ObTableOperationType.APPEND, tableQuery, columns, values,
+        return obTableQueryAndMutate(ObTableOperationType.APPEND,  new Object[] {}, tableQuery, columns, values,
             withResult);
     }
 
@@ -2261,6 +2261,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws Exception
      */
     ObTableQueryAndMutateRequest obTableQueryAndMutate(final ObTableOperationType type,
+                                                       final Object[] rowKey,
                                                        final TableQuery tableQuery,
                                                        final String[] columns,
                                                        final Object[] values,
@@ -2269,8 +2270,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         String tableName = tableQuery.getTableName();
 
         ObTableBatchOperation operations = new ObTableBatchOperation();
-        ObTableOperation operation = ObTableOperation.getInstance(type, new Object[] {}, columns,
-            values);
+        ObTableOperation operation = new ObTableOperation();
+        if (type == INSERT) { // insert use rowkey
+            operation = ObTableOperation.getInstance(type, rowKey, columns,
+                    values);
+        } else { // other use null value
+            operation = ObTableOperation.getInstance(type, new Object[] {}, columns,
+                    values);
+        }
         operations.addTableOperation(operation);
 
         ObTableQueryAndMutate queryAndMutate = buildObTableQueryAndMutate(obTableQuery, operations);

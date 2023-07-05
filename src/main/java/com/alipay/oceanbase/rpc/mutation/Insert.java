@@ -38,6 +38,7 @@ public class Insert extends Mutation<Insert> {
         super();
         columns = new ArrayList<String>();
         values = new ArrayList<Object>();
+        setInsert();
     }
 
     /*
@@ -47,6 +48,7 @@ public class Insert extends Mutation<Insert> {
         super(client, tableName);
         columns = new ArrayList<String>();
         values = new ArrayList<Object>();
+        setInsert();
     }
 
     /*

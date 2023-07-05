@@ -36,7 +36,7 @@ public class Mutation<T> {
     private TableQuery     query;
     private boolean        hasSetRowKey = false;
     protected List<String> rowKeyNames  = null;
-
+    private boolean        isInsert     = false;
     /*
      * default constructor
      * recommend for batch operation
@@ -63,6 +63,13 @@ public class Mutation<T> {
         this.rowKey = null;
         this.query = null;
         this.rowKeyNames = null;
+    }
+
+    /*
+     * set is insert
+     */
+    protected void setInsert() {
+        isInsert = true;
     }
 
     /*
@@ -177,7 +184,9 @@ public class Mutation<T> {
 
         // renew scan range of QueryAndMutate
         if (null != query) {
-            query.addScanRange(this.rowKey, this.rowKey);
+            if (!isInsert) { // insert do not renew
+                query.addScanRange(this.rowKey, this.rowKey);
+            }
         }
         hasSetRowKey = true;
         return (T) this;
@@ -215,7 +224,9 @@ public class Mutation<T> {
 
         // renew scan range of QueryAndMutate
         if (null != query) {
-            query.addScanRange(rowKey, rowKey);
+            if (!isInsert) { // insert do not renew
+                query.addScanRange(this.rowKey, this.rowKey);
+            }
         }
         hasSetRowKey = true;
         return (T) this;
@@ -235,7 +246,9 @@ public class Mutation<T> {
                 query = client.query(tableName);
                 // set scan range if rowKey exist
                 if (null != rowKey) {
-                    query.addScanRange(rowKey, rowKey);
+                    if (!isInsert) { // insert do not renew
+                        query.addScanRange(this.rowKey, this.rowKey);
+                    }
                 }
             }
             // only filter string in query works

@@ -52,6 +52,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -2687,6 +2689,573 @@ public class ObTableClientTest extends ObTableClientTestBase {
         } finally {
             client.delete("test_partition_aggregation", 50L);
             client.delete("test_partition_aggregation", 100L);
+        }
+    }
+
+    @Test
+    // Test auto increment on rowkey
+    public void testAutoIncrementRowkey() throws Exception {
+        if (ObGlobal.OB_VERSION <= 0) {
+            // ob version is invalid
+            Assert.assertTrue(false);
+        } else if (ObGlobal.OB_VERSION == 4) {
+            // todo: auto increment only support in 4.x currently
+            final ObTableClient client = (ObTableClient) this.client;
+            client.addRowKeyElement("test_auto_increment_rowkey", new String[] { "c1", "c2" });
+
+            // use sql to create table
+            Connection connection = ObTableClientTestUtil.getConnection();
+            Statement statement = connection.createStatement();
+
+            try {
+                statement.execute("CREATE TABLE IF NOT EXISTS `test_auto_increment_rowkey`(c1 int auto_increment,c2 int not null,c3 int default null,primary key(c1, c2));");
+
+                client.insert("test_auto_increment_rowkey", new Object[] { 0, 1 }, new String[] { "c3"},
+                        new Object[] { 1 });
+
+                TableQuery tableQuery = client.query("test_auto_increment_rowkey");
+                tableQuery.select("c1", "c2", "c3");
+                ObTableValueFilter filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 1);
+                tableQuery.setFilter(filter);
+                QueryResultSet result = tableQuery.execute();
+                result.next();
+                Map<String, Object> value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(1, value.get("c3"));
+
+                // test insert use user value
+                client.insert("test_auto_increment_rowkey", new Object[] { 100, 1 }, new String[] { "c3"},
+                        new Object[] { 1 });
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 100);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(1, value.get("c3"));
+
+                // test insert sync global auto inc val
+                client.insert("test_auto_increment_rowkey", new Object[] { 0, 1 }, new String[] { "c3"},
+                        new Object[] { 1 });
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 101);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(1, value.get("c3"));
+
+                // test delete
+                client.delete("test_auto_increment_rowkey", new Object[] { 101, 1 });
+
+                // test update
+                ObTableValueFilter filter_3 = compareVal(ObCompareOp.EQ, "c3", 1);
+
+                MutationResult updateResult = client.update("test_auto_increment_rowkey")
+                        .setRowKey(colVal("c1", 1), colVal("c2", 1)).setFilter(filter_3)
+                        .addMutateRow(row(colVal("c3", 5))).execute();
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 1);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(5, value.get("c3"));
+
+                // test replace not exist, insert
+                MutationResult theResult = client.replace("test_auto_increment_rowkey")
+                        .setRowKey(colVal("c1", 0), colVal("c2",1))
+                        .addMutateRow(row(colVal("c3", 2))).execute();
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 102);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(2, value.get("c3"));
+
+                // test replace exist, replace
+                theResult  = client.replace("test_auto_increment_rowkey")
+                        .setRowKey(colVal("c1", 101), colVal("c2",1))
+                        .addMutateRow(row(colVal("c3", 20))).execute();
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 101);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(20, value.get("c3"));
+
+                // test insertup not exist, insert
+                theResult = client.insertOrUpdate("test_auto_increment_rowkey")
+                        .setRowKey(colVal("c1", 0), colVal("c2", 1))
+                        .addMutateRow(row(colVal("c3", 5))).execute();
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 103);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(5, value.get("c3"));
+
+                // test insertup exist, update
+                theResult = client.insertOrUpdate("test_auto_increment_rowkey")
+                        .setRowKey(colVal("c1", 103), colVal("c2", 1))
+                        .addMutateRow(row(colVal("c3", 50))).execute();
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 103);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(50, value.get("c3"));
+
+                // test insertup exist, update again
+                theResult = client.insertOrUpdate("test_auto_increment_rowkey")
+                        .setRowKey(colVal("c1", 103), colVal("c2", 1))
+                        .addMutateRow(row(colVal("c3", 50))).execute();
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 103);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(50, value.get("c3"));
+
+                // test increment not exist, insert
+                value = client.increment("test_auto_increment_rowkey", new Object[] {0, 1},
+                        new String[] { "c3" }, new Object[] { 6 }, true);
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 104);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(6, value.get("c3"));
+
+                // test increment exist, increment
+                value = client.increment("test_auto_increment_rowkey", new Object[] {104, 1},
+                        new String[] { "c3" }, new Object[] { 6 }, true);
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 104);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(12, value.get("c3"));
+
+                // test illegal increment on auto increment column
+                try {
+                    value = client.increment("test_auto_increment_rowkey", new Object[] {104, 1},
+                            new String[] { "c1" }, new Object[] { 1 }, true);
+                } catch (ObTableException e) {
+                    assertNotNull(e);
+                    assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode, e.getErrorCode());
+                }
+            } finally { // use sql to drop table
+                statement.execute("drop table test_auto_increment_rowkey");
+            }
+        }
+    }
+
+    @Test
+    // Test auto increment on rowkey for append
+    public void testAutoIncrementRowkeyAppend() throws Exception {
+        if (ObGlobal.OB_VERSION <= 0) {
+            // ob version is invalid
+            Assert.assertTrue(false);
+        } else if (ObGlobal.OB_VERSION == 4) {
+            // todo: auto increment only support in 4.x currently
+            final ObTableClient client = (ObTableClient) this.client;
+            client.addRowKeyElement("test_auto_increment_rowkey", new String[] { "c1", "c2" });
+
+            // use sql to create table
+            Connection connection = ObTableClientTestUtil.getConnection();
+            Statement statement = connection.createStatement();
+
+            try {
+                statement.execute("CREATE TABLE IF NOT EXISTS test_auto_increment_rowkey_append(c1 int auto_increment,c2 int not null,c3 varchar(255),primary key(c1, c2));");
+
+                // test append not exist, insert
+                Map<String, Object> res = client.append("test_auto_increment_rowkey_append", new Object[] { 0, 1 },
+                        new String[] { "c3" },  new Object[] { "a" } , true);
+
+                TableQuery tableQuery = client.query("test_auto_increment_rowkey_append");
+                tableQuery.select("c1", "c2", "c3");
+                ObTableValueFilter filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 1);
+                tableQuery.setFilter(filter);
+                QueryResultSet result = tableQuery.execute();
+                result.next();
+                Map<String, Object> value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals("a", value.get("c3"));
+
+                // test append exist, append
+                res = client.append("test_auto_increment_rowkey_append", new Object[] { 1, 1 },
+                        new String[] { "c3" },  new Object[] { "b" } , true);
+
+                tableQuery = client.query("test_auto_increment_rowkey_append");
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 1);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals("ab", value.get("c3"));
+            } finally { // use sql to drop table
+                statement.execute("drop table test_auto_increment_rowkey_append");
+            }
+        }
+    }
+
+    @Test
+    // Test auto increment on not rowkey
+    public void testAutoIncrementNotRowkey() throws Exception {
+        if (ObGlobal.OB_VERSION <= 0) {
+            // ob version is invalid
+            Assert.assertTrue(false);
+        } else if (ObGlobal.OB_VERSION == 4) {
+            // todo: auto increment only support in 4.x currently
+            final ObTableClient client = (ObTableClient) this.client;
+            client.addRowKeyElement("test_auto_increment_not_rowkey", new String[] { "c1" });
+
+            // use sql to create table
+            Connection connection = ObTableClientTestUtil.getConnection();
+            Statement statement = connection.createStatement();
+
+            try {
+                statement.execute("CREATE TABLE IF NOT EXISTS `test_auto_increment_not_rowkey`(c1 int not null, c2 int not null, c3 int not null auto_increment,primary key(c1));");
+                client.insert("test_auto_increment_not_rowkey", new Object[] { 1 }, new String[] { "c2" },
+                        new Object[] { 1 });
+
+                TableQuery tableQuery = client.query("test_auto_increment_not_rowkey");
+                tableQuery.select("c1", "c2", "c3");
+                ObTableValueFilter filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 1);
+                tableQuery.setFilter(filter);
+                QueryResultSet result = tableQuery.execute();
+                result.next();
+                Map<String, Object> value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(1, value.get("c3"));
+
+                // test insert use user value
+                client.insert("test_auto_increment_not_rowkey", new Object[] { 2 }, new String[] { "c2", "c3"},
+                        new Object[] { 1, 100 });
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 2);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(100, value.get("c3"));
+
+                // test insert sync global auto inc val
+                client.insert("test_auto_increment_not_rowkey", new Object[] { 3 }, new String[] { "c2"},
+                        new Object[] { 1 });
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 3);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(101, value.get("c3"));
+
+                // test delete
+                client.delete("test_auto_increment_not_rowkey", new Object[] { 1 });
+
+                // test update
+                ObTableValueFilter filter_3 = compareVal(ObCompareOp.EQ, "c2", 1);
+
+                MutationResult updateResult = client.update("test_auto_increment_not_rowkey")
+                        .setRowKey(colVal("c1", 3)).setFilter(filter_3)
+                        .addMutateRow(row(colVal("c3", 5))).execute();
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 3);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(5, value.get("c3"));
+
+                // test replace not exist, insert
+                MutationResult theResult = client.replace("test_auto_increment_not_rowkey")
+                        .setRowKey(colVal("c1", 4))
+                        .addMutateRow(row(colVal("c2", 1))).execute();
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 4);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(102, value.get("c3"));
+
+                // test replace exist, replace
+                theResult  = client.replace("test_auto_increment_not_rowkey")
+                        .setRowKey(colVal("c1", 3))
+                        .addMutateRow(row(colVal("c3", 20), colVal("c2", 1))).execute();
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 3);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(20, value.get("c3"));
+
+                // test insertup not exist, insert
+                theResult = client.insertOrUpdate("test_auto_increment_not_rowkey")
+                        .setRowKey(colVal("c1", 5))
+                        .addMutateRow(row(colVal("c2", 1))).execute();
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 5);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(103, value.get("c3"));
+
+                // test insertup exist, update
+                theResult = client.insertOrUpdate("test_auto_increment_not_rowkey")
+                        .setRowKey(colVal("c1", 5))
+                        .addMutateRow(row(colVal("c3", 50), colVal("c2", 1))).execute();
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 5);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(50, value.get("c3"));
+
+                // test insertup exist, update again
+                theResult = client.insertOrUpdate("test_auto_increment_not_rowkey")
+                        .setRowKey(colVal("c1", 5))
+                        .addMutateRow(row(colVal("c3", 50), colVal("c2", 1))).execute();
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 5);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals(50, value.get("c3"));
+
+                // test increment not exist, insert
+                value = client.increment("test_auto_increment_not_rowkey", new Object[] {6},
+                        new String[] { "c2" }, new Object[] { 6 }, true);
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 6);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(6, value.get("c2"));
+                Assert.assertEquals(104, value.get("c3"));
+
+                // test increment exist, increment
+                value = client.increment("test_auto_increment_not_rowkey", new Object[] {6},
+                        new String[] { "c2" }, new Object[] { 6 }, true);
+
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 6);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(12, value.get("c2"));
+                Assert.assertEquals(104, value.get("c3"));
+
+                // test illegal increment on auto increment column
+                try {
+                    value = client.increment("test_auto_increment_not_rowkey", new Object[] {6},
+                            new String[] { "c3" }, new Object[] { 1 }, true);
+                } catch (ObTableException e) {
+                    assertNotNull(e);
+                    assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode, e.getErrorCode());
+                }
+            } finally { // use sql to drop table
+                statement.execute("drop table test_auto_increment_not_rowkey");
+            }
+        }
+    }
+
+    @Test
+    // Test auto increment on not rowkey for append
+    public void testAutoIncrementNotRowkeyAppend() throws Exception {
+        if (ObGlobal.OB_VERSION <= 0) {
+            // ob version is invalid
+            Assert.assertTrue(false);
+        } else if (ObGlobal.OB_VERSION == 4) {
+            // todo: auto increment only support in 4.x currently
+            final ObTableClient client = (ObTableClient) this.client;
+            client.addRowKeyElement("test_auto_increment_not_rowkey_append", new String[] { "c1" });
+
+            // use sql to create table
+            Connection connection = ObTableClientTestUtil.getConnection();
+            Statement statement = connection.createStatement();
+
+            try {
+                statement.execute("CREATE TABLE IF NOT EXISTS test_auto_increment_not_rowkey_append(c1 int not null,c2 int not null auto_increment,c3 varchar(255),primary key(c1));");
+
+                // test append not exist, insert
+                Map<String, Object> res = client.append("test_auto_increment_not_rowkey_append", new Object[] { 1 },
+                        new String[] { "c3" },  new Object[] { "a" } , true);
+
+                TableQuery tableQuery = client.query("test_auto_increment_not_rowkey_append");
+                tableQuery.select("c1", "c2", "c3");
+                ObTableValueFilter filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 1);
+                tableQuery.setFilter(filter);
+                QueryResultSet result = tableQuery.execute();
+                result.next();
+                Map<String, Object> value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals("a", value.get("c3"));
+
+                // test append exist, append
+                res = client.append("test_auto_increment_not_rowkey_append", new Object[] { 1 },
+                        new String[] { "c3" },  new Object[] { "b" } , true);
+
+                tableQuery = client.query("test_auto_increment_not_rowkey_append");
+                tableQuery.select("c1", "c2", "c3");
+                filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 1);
+                tableQuery.setFilter(filter);
+                result = tableQuery.execute();
+                result.next();
+                value = result.getRow();
+                Assert.assertEquals(1, value.get("c2"));
+                Assert.assertEquals("ab", value.get("c3"));
+            } finally { // use sql to drop table
+                statement.execute("drop table test_auto_increment_not_rowkey_append");
+            }
+        }
+    }
+
+    @Test
+    // test check and insert
+    public void testCheckAndInsert() throws Exception {
+        if (ObGlobal.OB_VERSION <= 0) {
+            // ob version is invalid
+            Assert.assertTrue(false);
+        } else if (ObGlobal.OB_VERSION == 4) {
+            // todo: check and insert only support in 4.x currently
+            System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
+            TableQuery tableQuery = client.query("test_mutation");
+            tableQuery.addScanRange(new Object[] { 0L, "\0" }, new Object[] { 200L, "\254" });
+            tableQuery.select("c1", "c2", "c3", "c4");
+
+            try {
+                // prepare data with insert
+                client.insert("test_mutation").setRowKey(row(colVal("c1", 0L), colVal("c2", "row_0")))
+                        .addMutateColVal(colVal("c3", new byte[]{1}))
+                        .addMutateColVal(colVal("c4", 100L)).execute();
+                client.insert("test_mutation").setRowKey(colVal("c1", 1L), colVal("c2", "row_1"))
+                        .addMutateColVal(colVal("c3", new byte[]{1}))
+                        .addMutateColVal(colVal("c4", 101L)).execute();
+                client.insert("test_mutation").setRowKey(colVal("c1", 2L), colVal("c2", "row_2"))
+                        .addMutateColVal(colVal("c3", new byte[]{1}))
+                        .addMutateColVal(colVal("c4", 102L)).execute();
+                client.insert("test_mutation").setRowKey(colVal("c1", 3L), colVal("c2", "row_3"))
+                        .addMutateColVal(colVal("c1", 3L)).addMutateColVal(colVal("c2", "row_3"))
+                        .addMutateColVal(colVal("c3", new byte[]{1}))
+                        .addMutateColVal(colVal("c4", 103L)).execute();
+
+                // insert / match filter
+                ObTableValueFilter c4_EQ_101 = compareVal(ObCompareOp.EQ, "c4", 101L);
+                MutationResult insertResult = client.insert("test_mutation")
+                        .setRowKey(colVal("c1", 100L), colVal("c2", "row_5")).setFilter(c4_EQ_101)
+                        .addMutateRow(row(colVal("c3", new byte[]{1}), colVal("c4", 999L))).execute();
+                Assert.assertEquals(1, insertResult.getAffectedRows());
+                /* To confirm changing. re-query to get the latest data */
+                ObTableValueFilter confirm_0 = compareVal(ObCompareOp.EQ, "c4", 999L);
+                tableQuery.setFilter(confirm_0);
+                QueryResultSet result_0 = tableQuery.execute();
+                Assert.assertEquals(1, result_0.cacheSize());
+
+                insertResult = client.insert("test_mutation")
+                        .setRowKey(colVal("c1", 120L), colVal("c2", "row_6")).setFilter(c4_EQ_101)
+                        .addMutateRow(row(colVal("c3", new byte[]{1}), colVal("c4", 999L))).execute();
+                Assert.assertEquals(1, insertResult.getAffectedRows());
+                /* To confirm changing. re-query to get the latest data */
+                confirm_0 = compareVal(ObCompareOp.EQ, "c4", 999L);
+                tableQuery.setFilter(confirm_0);
+                result_0 = tableQuery.execute();
+                Assert.assertEquals(2, result_0.cacheSize());
+
+                // insert / only insert one row when multiple match
+                ObTableValueFilter c4_EQ_999 = compareVal(ObCompareOp.EQ, "c4", 999L);
+                insertResult = client.insert("test_mutation")
+                        .setRowKey(colVal("c1", 130L), colVal("c2", "row_7")).setFilter(c4_EQ_999)
+                        .addMutateRow(row(colVal("c3", new byte[]{1}), colVal("c4", 99L))).execute();
+                Assert.assertEquals(1, insertResult.getAffectedRows());
+                /* To confirm changing. re-query to get the latest data */
+                confirm_0 = compareVal(ObCompareOp.EQ, "c4", 99L);
+                tableQuery.setFilter(confirm_0);
+                result_0 = tableQuery.execute();
+                Assert.assertEquals(1, result_0.cacheSize());
+
+                // insert / do not match filter
+                ObTableValueFilter c4_EQ_201 = compareVal(ObCompareOp.EQ, "c4", 201L);
+                insertResult = client.insert("test_mutation")
+                        .setRowKey(colVal("c1", 150L), colVal("c2", "row_8")).setFilter(c4_EQ_201)
+                        .addMutateRow(row(colVal("c3", new byte[]{1}), colVal("c4", 4000L))).execute();
+                Assert.assertEquals(0, insertResult.getAffectedRows());
+                /* To confirm changing. re-query to get the latest data */
+                confirm_0 = compareVal(ObCompareOp.EQ, "c4", 4000L);
+                tableQuery.setFilter(confirm_0);
+                result_0 = tableQuery.execute();
+                Assert.assertEquals(0, result_0.cacheSize());
+
+            } finally {
+                client.delete("test_mutation").setRowKey(colVal("c1", 0L), colVal("c2", "row_0"))
+                        .execute();
+                client.delete("test_mutation").setRowKey(colVal("c1", 1L), colVal("c2", "row_1"))
+                        .execute();
+                client.delete("test_mutation").setRowKey(colVal("c1", 2L), colVal("c2", "row_2"))
+                        .execute();
+                client.delete("test_mutation").setRowKey(colVal("c1", 3L), colVal("c2", "row_3"))
+                        .execute();
+                client.delete("test_mutation").setRowKey(colVal("c1", 100L), colVal("c2", "row_5"))
+                        .execute();
+                client.delete("test_mutation").setRowKey(colVal("c1", 120L), colVal("c2", "row_6"))
+                        .execute();
+                client.delete("test_mutation").setRowKey(colVal("c1", 130L), colVal("c2", "row_7"))
+                        .execute();
+            }
         }
     }
 }
