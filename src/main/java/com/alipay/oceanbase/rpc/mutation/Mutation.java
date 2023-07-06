@@ -184,10 +184,42 @@ public class Mutation<T> {
 
         // renew scan range of QueryAndMutate
         if (null != query) {
-            if (!isInsert) { // insert do not renew
-                query.addScanRange(this.rowKey, this.rowKey);
-            }
+            query.addScanRange(this.rowKey, this.rowKey);
         }
+
+        hasSetRowKey = true;
+        return (T) this;
+    }
+
+    /*
+     * Set the Row Key of mutation with Row and keep scan range
+     */
+    @SuppressWarnings("unchecked")
+    protected T setRowKeyOnly(Row rowKey) {
+        if (hasSetRowKey) {
+            throw new IllegalArgumentException("Could not set row key (scan range) twice");
+        } else if (null == rowKey) {
+            throw new IllegalArgumentException("Invalid null rowKey set into Mutation");
+        } else if (0 == rowKey.getMap().size()) {
+            throw new IllegalArgumentException("input row key should not be empty");
+        }
+
+        // set row key name into client and set rowKeys
+        List<String> columnNames = new ArrayList<String>();
+        List<Object> Keys = new ArrayList<Object>();
+        for (Map.Entry<String, Object> entry : rowKey.getMap().entrySet()) {
+            columnNames.add(entry.getKey());
+            Keys.add(entry.getValue());
+        }
+        this.rowKey = Keys.toArray();
+        this.rowKeyNames = columnNames;
+
+        // set row key in table
+        if (null != tableName) {
+            ((ObTableClient) client)
+                    .addRowKeyElement(tableName, columnNames.toArray(new String[0]));
+        }
+
         hasSetRowKey = true;
         return (T) this;
     }
@@ -224,10 +256,43 @@ public class Mutation<T> {
 
         // renew scan range of QueryAndMutate
         if (null != query) {
-            if (!isInsert) { // insert do not renew
-                query.addScanRange(this.rowKey, this.rowKey);
-            }
+            query.addScanRange(this.rowKey, this.rowKey);
         }
+
+        hasSetRowKey = true;
+        return (T) this;
+    }
+
+    /*
+     * set the Row Key of mutation with ColumnValues and keep scan range
+     */
+    @SuppressWarnings("unchecked")
+    public T setRowKeyOnly(ColumnValue... rowKey) {
+        if (hasSetRowKey) {
+            throw new IllegalArgumentException("Could not set row key (scan range) twice");
+        } else if (null == rowKey) {
+            throw new IllegalArgumentException("Invalid null rowKey set into Mutation");
+        }
+
+        // set row key name into client and set rowKey
+        List<String> columnNames = new ArrayList<String>();
+        List<Object> Keys = new ArrayList<Object>();
+        for (ColumnValue columnValue : rowKey) {
+            if (columnNames.contains(columnValue.getColumnName())) {
+                throw new ObTableException("Duplicate column in Row Key");
+            }
+            columnNames.add(columnValue.getColumnName());
+            Keys.add(columnValue.getValue());
+        }
+        this.rowKey = Keys.toArray();
+        this.rowKeyNames = columnNames;
+
+        // set row key in table
+        if (null != tableName) {
+            ((ObTableClient) client)
+                    .addRowKeyElement(tableName, columnNames.toArray(new String[0]));
+        }
+
         hasSetRowKey = true;
         return (T) this;
     }
@@ -246,10 +311,28 @@ public class Mutation<T> {
                 query = client.query(tableName);
                 // set scan range if rowKey exist
                 if (null != rowKey) {
-                    if (!isInsert) { // insert do not renew
-                        query.addScanRange(this.rowKey, this.rowKey);
-                    }
+                    query.addScanRange(this.rowKey, this.rowKey);
                 }
+            }
+            // only filter string in query works
+            query.setFilter(filter);
+        }
+        return (T) this;
+    }
+
+    /*
+     * add filter into mutation (use QueryAndMutate) and scan range
+     */
+    @SuppressWarnings("unchecked")
+    public T setFilterOnly(ObTableFilter filter) throws Exception {
+        if (null == filter) {
+            throw new IllegalArgumentException("Invalid null filter set into Mutation");
+        } else if (null == client) {
+            // do nothing
+        } else {
+            if (null == query) {
+                query = client.query(tableName);
+                // set scan range if rowKey exist
             }
             // only filter string in query works
             query.setFilter(filter);
@@ -330,9 +413,7 @@ public class Mutation<T> {
     @SuppressWarnings("unchecked")
     public T addScanRange(Object[] start, boolean startEquals, Object[] end, boolean endEquals)
                                                                                                throws Exception {
-        if (this.rowKey != null) {
-            throw new IllegalArgumentException("Invalid scan range with row key");
-        } else if (null == start || null == end) {
+        if (null == start || null == end) {
             throw new IllegalArgumentException("Invalid null range set into Mutation");
         }
 
@@ -340,10 +421,8 @@ public class Mutation<T> {
             query = client.query(tableName);
         }
 
-        rowKey = null;
         query.addScanRange(start, startEquals, end, endEquals);
 
-        hasSetRowKey = true;
         return (T) this;
     }
 

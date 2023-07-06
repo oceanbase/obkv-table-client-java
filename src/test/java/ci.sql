@@ -258,27 +258,15 @@ CREATE TABLE IF NOT EXISTS `test_auto_increment_rowkey` (
     `c1` int auto_increment,
     `c2` int not null,
     `c3` int default null,
-    primary key(c1, c2)
-);
-
-CREATE TABLE IF NOT EXISTS `test_auto_increment_rowkey_append` (
-    `c1` int auto_increment,
-    `c2` int not null,
-    `c3` varchar(255),
+    `c4` varchar(255) default null,
     primary key(c1, c2)
 );
 
 CREATE TABLE IF NOT EXISTS `test_auto_increment_not_rowkey` (
     `c1` int not null,
-    `c2` int not null,
+    `c2` int default null,
     `c3` int not null auto_increment,
-    primary key(c1)
-);
-
-CREATE TABLE IF NOT EXISTS `test_auto_increment_not_rowkey_append` (
-    `c1` int not null,
-    `c2` int not null auto_increment,
-    `c3` varchar(255),
+    `c4` varchar(255) default null,
     primary key(c1)
 );
 
