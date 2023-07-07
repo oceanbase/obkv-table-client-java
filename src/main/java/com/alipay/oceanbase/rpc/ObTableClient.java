@@ -2129,12 +2129,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return execute result
      * @throws Exception exception
      */
-    public ObPayload mutationWithFilter(final TableQuery tableQuery,
-                                        final Object[] rowKey,
+    public ObPayload mutationWithFilter(final TableQuery tableQuery, final Object[] rowKey,
                                         final List<ObNewRange> keyRanges,
-                                        final ObTableOperation operation,
-                                        final boolean withResult)
-                                                                                        throws Exception {
+                                        final ObTableOperation operation, final boolean withResult)
+                                                                                                   throws Exception {
         final long start = System.currentTimeMillis();
         if (tableQuery != null && tableQuery.getObTableQuery().getKeyRanges().isEmpty()) {
             // fill a whole range if no range is added explicitly.
@@ -2150,7 +2148,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 long TableTime = System.currentTimeMillis();
                 ObTableParam tableParam = obPair.getRight();
                 ObTable obTable = tableParam.getObTable();
-                ObTableQueryAndMutateRequest request = obTableQueryAndMutate(operation, tableQuery, false);
+                ObTableQueryAndMutateRequest request = obTableQueryAndMutate(operation, tableQuery,
+                    false);
                 request.setTimeout(obTable.getObTableOperationTimeout());
                 request.setReturningAffectedEntity(withResult);
                 request.setTableId(tableParam.getTableId());
@@ -2159,10 +2158,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 ObPayload result = obTable.execute(request);
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
                 MonitorUtil.info(request, database, tableQuery.getTableName(), "QUERY_AND_MUTATE",
-                    operation.getOperationType().toString(), endpoint, (ObTableQueryAndMutateResult) result,
-                    tableQuery.getObTableQuery(), TableTime - start, System.currentTimeMillis()
-                                                                     - TableTime,
-                    getslowQueryMonitorThreshold());
+                    operation.getOperationType().toString(), endpoint,
+                    (ObTableQueryAndMutateResult) result, tableQuery.getObTableQuery(), TableTime
+                                                                                        - start,
+                    System.currentTimeMillis() - TableTime, getslowQueryMonitorThreshold());
                 checkResult(obTable.getIp(), obTable.getPort(), request, result);
                 return result;
             }
@@ -2184,7 +2183,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (null == columns || null == values || 0 == columns.length || 0 == values.length) {
             throw new ObTableException("client get unexpected empty columns or values");
         }
-        ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.UPDATE,  new Object[] {}, columns, values);
+        ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.UPDATE,
+            new Object[] {}, columns, values);
         return obTableQueryAndMutate(operation, tableQuery, false);
     }
 
@@ -2197,7 +2197,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     public ObTableQueryAndMutateRequest obTableQueryAndDelete(final TableQuery tableQuery)
                                                                                           throws Exception {
-        ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.DEL,  new Object[] {}, null, null);
+        ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.DEL,
+            new Object[] {}, null, null);
         return obTableQueryAndMutate(operation, tableQuery, false);
     }
 
@@ -2218,7 +2219,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (null == columns || null == values || 0 == columns.length || 0 == values.length) {
             throw new ObTableException("client get unexpected empty columns or values");
         }
-        ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.INCREMENT,  new Object[] {}, columns, values);
+        ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.INCREMENT,
+            new Object[] {}, columns, values);
         return obTableQueryAndMutate(operation, tableQuery, withResult);
     }
 
@@ -2239,7 +2241,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (null == columns || null == values || 0 == columns.length || 0 == values.length) {
             throw new ObTableException("client get unexpected empty columns or values");
         }
-        ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.APPEND,  new Object[] {}, columns, values);
+        ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.APPEND,
+            new Object[] {}, columns, values);
         return obTableQueryAndMutate(operation, tableQuery, withResult);
     }
 

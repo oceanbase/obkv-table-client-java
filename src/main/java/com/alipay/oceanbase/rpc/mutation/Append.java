@@ -138,10 +138,10 @@ public class Append extends Mutation<Append> {
                 values.toArray(), withResult));
         } else {
             // QueryAndAppend
-            ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.APPEND, new Object[] {},
-                    columns.toArray(new String[0]), values.toArray());
+            ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.APPEND,
+                new Object[] {}, columns.toArray(new String[0]), values.toArray());
             return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
-                    getRowKey(), getKeyRanges(), operation, withResult));
+                getRowKey(), getKeyRanges(), operation, withResult));
         }
     }
 }

@@ -220,7 +220,7 @@ public class Mutation<T> {
         // set row key in table
         if (null != tableName) {
             ((ObTableClient) client)
-                    .addRowKeyElement(tableName, columnNames.toArray(new String[0]));
+                .addRowKeyElement(tableName, columnNames.toArray(new String[0]));
         }
 
         hasSetRowKey = true;
@@ -293,7 +293,7 @@ public class Mutation<T> {
         // set row key in table
         if (null != tableName) {
             ((ObTableClient) client)
-                    .addRowKeyElement(tableName, columnNames.toArray(new String[0]));
+                .addRowKeyElement(tableName, columnNames.toArray(new String[0]));
         }
 
         hasSetRowKey = true;
@@ -427,6 +427,7 @@ public class Mutation<T> {
 
         return (T) this;
     }
+
     static void removeRowkeyFromMutateColval(List<String> columns, List<Object> values,
                                              List<String> rowKeyNames) {
         if (null == columns || null == rowKeyNames || columns.size() != values.size()) {
