@@ -342,7 +342,6 @@ public class Mutation<T> {
         } else {
             if (null == query) {
                 query = client.query(tableName);
-                // set scan range if rowKey exist
             }
             // only filter string in query works
             query.setFilter(filter);
