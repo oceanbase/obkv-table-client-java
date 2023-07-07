@@ -1,6 +1,24 @@
+/*-
+ * #%L
+ * OBKV Table Client Framework
+ * %%
+ * Copyright (C) 2023 OceanBase
+ * %%
+ * OBKV Table Client Framework is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * #L%
+ */
+
 package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.bolt.ObTableClientTestBase;
+import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.filter.ObCompareOp;
 import com.alipay.oceanbase.rpc.filter.ObTableValueFilter;
 import com.alipay.oceanbase.rpc.location.model.ObServerAddr;
@@ -139,6 +157,16 @@ public class ObTableClientCheckAndInsertTest extends ObTableClientTestBase  {
             result_0 = tableQuery.execute();
             Assert.assertEquals(0, result_0.cacheSize());
 
+            // test defense for set scan range without filter
+            try {
+                insertResult = client.insert("test_mutation")
+                        .setRowKey(colVal("c1", 120L), colVal("c2", "row_7"))
+                        .addScanRange(new Object[] { 0L, "\0" }, new Object[] { 200L, "\254" })
+                        .addMutateRow(row(colVal("c3", new byte[]{1}), colVal("c4", 999L))).execute();
+            } catch (Exception e) {
+                Assert.assertTrue(e instanceof ObTableUnexpectedException);
+                Assert.assertEquals("should set filter and scan range both", e.getMessage());
+            }
         } finally {
             client.delete("test_mutation").setRowKey(colVal("c1", 0L), colVal("c2", "row_0"))
                     .execute();

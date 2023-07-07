@@ -2129,7 +2129,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return execute result
      * @throws Exception exception
      */
-    public ObPayload mutationWithFilter(final TableQuery tableQuery, final Object[] rowKey,
+    public ObPayload mutationWithFilter(final TableQuery tableQuery,
+                                        final Object[] rowKey,
                                         final List<ObNewRange> keyRanges,
                                         final ObTableOperation operation,
                                         final boolean withResult)

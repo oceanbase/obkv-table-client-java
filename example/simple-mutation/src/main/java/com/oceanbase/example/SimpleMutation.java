@@ -179,13 +179,15 @@ public class SimpleMutation {
 
             // check and insert
             // use setRowkey to specify the key of the new row
-            // use addScanRange for query scan
+            // use addScanRange to add a rowkey range where to check filter
+            // keep the new row and the range of filter in the same partition
+            // should set range and filter both
             // suppose old row (1, 1) exists
             // satisfy the filter, insert new row (2, 2)
-            ObTableValueFilter filter = compareVal(ObCompareOp.EQ, "c2", 0);
+            ObTableValueFilter filter = compareVal(ObCompareOp.EQ, "c2", 1);
             MutationResult insertResult = client.insert("mutation_table")
                     .setRowKey(colVal("c1", 2)).setFilter(filter)
-                    .addScanRange(new Object[] { 0 }, new Object[] { 200 })
+                    .addScanRange(new Object[] { 1 }, new Object[] { 200 })
                     .addMutateRow(row(colVal("c2", 2)).execute();
 
         } finally {

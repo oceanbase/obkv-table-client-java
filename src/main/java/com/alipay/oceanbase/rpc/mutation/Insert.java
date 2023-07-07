@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.mutation;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperation;
@@ -160,11 +161,15 @@ public class Insert extends Mutation<Insert> {
                 getTableName(), getRowKey(), getKeyRanges(), columns.toArray(new String[0]),
                 values.toArray()));
         } else {
-            // QueryAndInsert
-            ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.INSERT, getRowKey(),
-                    columns.toArray(new String[0]), values.toArray());
-            return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
-                    getRowKey(), getKeyRanges(), operation, true));
+            if (checkMutationWithFilter()) {
+                // QueryAndInsert
+                ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.INSERT, getRowKey(),
+                        columns.toArray(new String[0]), values.toArray());
+                return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
+                        getRowKey(), getKeyRanges(), operation, true));
+            } else {
+                throw new ObTableUnexpectedException("should set filter and scan range both");
+            }
         }
     }
 }

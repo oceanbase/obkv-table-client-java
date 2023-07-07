@@ -52,8 +52,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
-import java.sql.Connection;
-import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.*;
 

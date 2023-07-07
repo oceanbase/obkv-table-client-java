@@ -125,6 +125,16 @@ public class Mutation<T> {
     }
 
     /*
+     * check mutation filter
+     */
+    protected boolean checkMutationWithFilter() {
+        if (null == query) {
+            return false;
+        }
+        return query.getObTableQuery().isFilterNull();
+    }
+
+    /*
      * set client
      */
     @SuppressWarnings("unchecked")
@@ -425,7 +435,6 @@ public class Mutation<T> {
 
         return (T) this;
     }
-
     static void removeRowkeyFromMutateColval(List<String> columns, List<Object> values,
                                              List<String> rowKeyNames) {
         if (null == columns || null == rowKeyNames || columns.size() != values.size()) {
