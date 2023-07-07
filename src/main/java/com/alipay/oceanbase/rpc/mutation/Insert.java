@@ -161,10 +161,11 @@ public class Insert extends Mutation<Insert> {
         } else {
             if (checkMutationWithFilter()) {
                 // QueryAndInsert
-                ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.INSERT, getRowKey(),
-                        columns.toArray(new String[0]), values.toArray());
-                return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
-                        getRowKey(), getKeyRanges(), operation, true));
+                ObTableOperation operation = ObTableOperation.getInstance(
+                    ObTableOperationType.INSERT, getRowKey(), columns.toArray(new String[0]),
+                    values.toArray());
+                return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(
+                    getQuery(), getRowKey(), getKeyRanges(), operation, true));
             } else {
                 throw new ObTableUnexpectedException("should set filter and scan range both");
             }

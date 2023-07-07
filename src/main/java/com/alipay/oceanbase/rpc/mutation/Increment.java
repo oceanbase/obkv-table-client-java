@@ -138,10 +138,11 @@ public class Increment extends Mutation<Increment> {
                 values.toArray(), withResult));
         } else {
             // QueryAndIncrement
-            ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.INCREMENT, new Object[] {},
-                    columns.toArray(new String[0]), values.toArray());
+            ObTableOperation operation = ObTableOperation.getInstance(
+                ObTableOperationType.INCREMENT, new Object[] {}, columns.toArray(new String[0]),
+                values.toArray());
             return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
-                    getRowKey(), getKeyRanges(), operation, withResult));
+                getRowKey(), getKeyRanges(), operation, withResult));
         }
     }
 }

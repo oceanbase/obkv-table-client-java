@@ -91,8 +91,8 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
         final String TABLE_NAME = "test_auto_increment_rowkey";
 
         try {
-            client.insert(TABLE_NAME, new Object[] { 0, 1 }, new String[] {"c3"},
-                    new Object[] { 1 });
+            client.insert(TABLE_NAME, new Object[] { 0, 1 }, new String[] { "c3" },
+                new Object[] { 1 });
 
             TableQuery tableQuery = client.query(TABLE_NAME);
             tableQuery.select("c1", "c2", "c3");
@@ -106,8 +106,8 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             Assert.assertEquals(1, value.get("c3"));
 
             // test insert use user value
-            client.insert(TABLE_NAME, new Object[] { 100, 1 }, new String[] {"c3"},
-                    new Object[] { 1 });
+            client.insert(TABLE_NAME, new Object[] { 100, 1 }, new String[] { "c3" },
+                new Object[] { 1 });
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 100);
@@ -119,8 +119,8 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             Assert.assertEquals(1, value.get("c3"));
 
             // test insert sync global auto inc val
-            client.insert(TABLE_NAME, new Object[] { 0, 1 }, new String[] {"c3"},
-                    new Object[] { 1 });
+            client.insert(TABLE_NAME, new Object[] { 0, 1 }, new String[] { "c3" },
+                new Object[] { 1 });
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 101);
@@ -145,8 +145,8 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             ObTableValueFilter filter_3 = compareVal(ObCompareOp.EQ, "c3", 1);
 
             MutationResult updateResult = client.update(TABLE_NAME)
-                    .setRowKey(colVal("c1", 1), colVal("c2", 1)).setFilter(filter_3)
-                    .addMutateRow(row(colVal("c3", 5))).execute();
+                .setRowKey(colVal("c1", 1), colVal("c2", 1)).setFilter(filter_3)
+                .addMutateRow(row(colVal("c3", 5))).execute();
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 1);
@@ -159,8 +159,8 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
 
             // test replace not exist, insert
             MutationResult theResult = client.replace(TABLE_NAME)
-                    .setRowKey(colVal("c1", 0), colVal("c2",1))
-                    .addMutateRow(row(colVal("c3", 2))).execute();
+                .setRowKey(colVal("c1", 0), colVal("c2", 1)).addMutateRow(row(colVal("c3", 2)))
+                .execute();
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 102);
@@ -172,9 +172,8 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             Assert.assertEquals(2, value.get("c3"));
 
             // test replace exist, replace
-            theResult  = client.replace(TABLE_NAME)
-                    .setRowKey(colVal("c1", 101), colVal("c2",1))
-                    .addMutateRow(row(colVal("c3", 20))).execute();
+            theResult = client.replace(TABLE_NAME).setRowKey(colVal("c1", 101), colVal("c2", 1))
+                .addMutateRow(row(colVal("c3", 20))).execute();
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 101);
@@ -187,8 +186,8 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
 
             // test insertup not exist, insert
             theResult = client.insertOrUpdate(TABLE_NAME)
-                    .setRowKey(colVal("c1", 0), colVal("c2", 1))
-                    .addMutateRow(row(colVal("c3", 5))).execute();
+                .setRowKey(colVal("c1", 0), colVal("c2", 1)).addMutateRow(row(colVal("c3", 5)))
+                .execute();
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 103);
@@ -201,8 +200,8 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
 
             // test insertup exist, update
             theResult = client.insertOrUpdate(TABLE_NAME)
-                    .setRowKey(colVal("c1", 103), colVal("c2", 1))
-                    .addMutateRow(row(colVal("c3", 50))).execute();
+                .setRowKey(colVal("c1", 103), colVal("c2", 1)).addMutateRow(row(colVal("c3", 50)))
+                .execute();
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 103);
@@ -215,8 +214,8 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
 
             // test insertup exist, update again
             theResult = client.insertOrUpdate(TABLE_NAME)
-                    .setRowKey(colVal("c1", 103), colVal("c2", 1))
-                    .addMutateRow(row(colVal("c3", 50))).execute();
+                .setRowKey(colVal("c1", 103), colVal("c2", 1)).addMutateRow(row(colVal("c3", 50)))
+                .execute();
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 103);
@@ -228,8 +227,8 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             Assert.assertEquals(50, value.get("c3"));
 
             // test increment not exist, insert
-            value = client.increment(TABLE_NAME, new Object[] {0, 1},
-                    new String[] { "c3" }, new Object[] { 6 }, true);
+            value = client.increment(TABLE_NAME, new Object[] { 0, 1 }, new String[] { "c3" },
+                new Object[] { 6 }, true);
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 104);
@@ -241,8 +240,8 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             Assert.assertEquals(6, value.get("c3"));
 
             // test increment exist, increment
-            value = client.increment(TABLE_NAME, new Object[] {104, 1},
-                    new String[] { "c3" }, new Object[] { 6 }, true);
+            value = client.increment(TABLE_NAME, new Object[] { 104, 1 }, new String[] { "c3" },
+                new Object[] { 6 }, true);
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 104);
@@ -255,8 +254,8 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
 
             // test illegal increment on auto increment column
             try {
-                value = client.increment(TABLE_NAME, new Object[] {104, 1},
-                        new String[] { "c1" }, new Object[] { 1 }, true);
+                value = client.increment(TABLE_NAME, new Object[] { 104, 1 },
+                    new String[] { "c1" }, new Object[] { 1 }, true);
             } catch (ObTableException e) {
                 assertNotNull(e);
                 assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode, e.getErrorCode());
@@ -264,7 +263,7 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
 
             // test append not exist, insert
             Map<String, Object> res = client.append(TABLE_NAME, new Object[] { 0, 1 },
-                    new String[] { "c4" },  new Object[] { "a" } , true);
+                new String[] { "c4" }, new Object[] { "a" }, true);
 
             tableQuery.select("c1", "c2", "c3", "c4");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 105);
@@ -276,8 +275,8 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             Assert.assertEquals("a", value.get("c4"));
 
             // test append exist, append
-            res = client.append(TABLE_NAME, new Object[] { 105, 1 },
-                    new String[] { "c4" },  new Object[] { "b" } , true);
+            res = client.append(TABLE_NAME, new Object[] { 105, 1 }, new String[] { "c4" },
+                new Object[] { "b" }, true);
 
             tableQuery.select("c1", "c2", "c3", "c4");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 105);
@@ -305,8 +304,8 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
         final String TABLE_NAME = "test_auto_increment_not_rowkey";
 
         try {
-            client.insert(TABLE_NAME, new Object[] { 1 }, new String[] { "c2" },
-                    new Object[] { 1 });
+            client
+                .insert(TABLE_NAME, new Object[] { 1 }, new String[] { "c2" }, new Object[] { 1 });
 
             TableQuery tableQuery = client.query(TABLE_NAME);
             tableQuery.select("c1", "c2", "c3");
@@ -317,11 +316,11 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             Assert.assertTrue(result.next());
             Map<String, Object> value = result.getRow();
             Assert.assertEquals(1, value.get("c2"));
-            Assert.assertEquals((byte)1, value.get("c3"));
+            Assert.assertEquals((byte) 1, value.get("c3"));
 
             // test insert use user value
-            client.insert(TABLE_NAME, new Object[] { 2 }, new String[] { "c2", "c3"},
-                    new Object[] { 1, (byte)100 });
+            client.insert(TABLE_NAME, new Object[] { 2 }, new String[] { "c2", "c3" },
+                new Object[] { 1, (byte) 100 });
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 2);
@@ -330,11 +329,11 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             Assert.assertTrue(result.next());
             value = result.getRow();
             Assert.assertEquals(1, value.get("c2"));
-            Assert.assertEquals((byte)100, value.get("c3"));
+            Assert.assertEquals((byte) 100, value.get("c3"));
 
             // test insert sync global auto inc val
-            client.insert(TABLE_NAME, new Object[] { 3 }, new String[] {"c2"},
-                    new Object[] { 1 });
+            client
+                .insert(TABLE_NAME, new Object[] { 3 }, new String[] { "c2" }, new Object[] { 1 });
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 3);
@@ -343,7 +342,7 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             Assert.assertTrue(result.next());
             value = result.getRow();
             Assert.assertEquals(1, value.get("c2"));
-            Assert.assertEquals((byte)101, value.get("c3"));
+            Assert.assertEquals((byte) 101, value.get("c3"));
 
             // test delete
             client.delete(TABLE_NAME, new Object[] { 1 });
@@ -358,9 +357,8 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             // test update
             ObTableValueFilter filter_3 = compareVal(ObCompareOp.EQ, "c2", 1);
 
-            MutationResult updateResult = client.update(TABLE_NAME)
-                    .setRowKey(colVal("c1", 3)).setFilter(filter_3)
-                    .addMutateRow(row(colVal("c3", (byte)5))).execute();
+            MutationResult updateResult = client.update(TABLE_NAME).setRowKey(colVal("c1", 3))
+                .setFilter(filter_3).addMutateRow(row(colVal("c3", (byte) 5))).execute();
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 3);
@@ -369,12 +367,11 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             Assert.assertTrue(result.next());
             value = result.getRow();
             Assert.assertEquals(1, value.get("c2"));
-            Assert.assertEquals((byte)5, value.get("c3"));
+            Assert.assertEquals((byte) 5, value.get("c3"));
 
             // test replace not exist, insert
-            MutationResult theResult = client.replace(TABLE_NAME)
-                    .setRowKey(colVal("c1", 4))
-                    .addMutateRow(row(colVal("c2", 1))).execute();
+            MutationResult theResult = client.replace(TABLE_NAME).setRowKey(colVal("c1", 4))
+                .addMutateRow(row(colVal("c2", 1))).execute();
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 4);
@@ -383,12 +380,11 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             Assert.assertTrue(result.next());
             value = result.getRow();
             Assert.assertEquals(1, value.get("c2"));
-            Assert.assertEquals((byte)102, value.get("c3"));
+            Assert.assertEquals((byte) 102, value.get("c3"));
 
             // test replace exist, replace
-            theResult  = client.replace(TABLE_NAME)
-                    .setRowKey(colVal("c1", 3))
-                    .addMutateRow(row(colVal("c3", (byte)20), colVal("c2", 1))).execute();
+            theResult = client.replace(TABLE_NAME).setRowKey(colVal("c1", 3))
+                .addMutateRow(row(colVal("c3", (byte) 20), colVal("c2", 1))).execute();
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 3);
@@ -397,12 +393,11 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             Assert.assertTrue(result.next());
             value = result.getRow();
             Assert.assertEquals(1, value.get("c2"));
-            Assert.assertEquals((byte)20, value.get("c3"));
+            Assert.assertEquals((byte) 20, value.get("c3"));
 
             // test insertup not exist, insert
-            theResult = client.insertOrUpdate(TABLE_NAME)
-                    .setRowKey(colVal("c1", 5))
-                    .addMutateRow(row(colVal("c2", 1))).execute();
+            theResult = client.insertOrUpdate(TABLE_NAME).setRowKey(colVal("c1", 5))
+                .addMutateRow(row(colVal("c2", 1))).execute();
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 5);
@@ -411,12 +406,11 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             Assert.assertTrue(result.next());
             value = result.getRow();
             Assert.assertEquals(1, value.get("c2"));
-            Assert.assertEquals((byte)103, value.get("c3"));
+            Assert.assertEquals((byte) 103, value.get("c3"));
 
             // test insertup exist, update
-            theResult = client.insertOrUpdate(TABLE_NAME)
-                    .setRowKey(colVal("c1", 5))
-                    .addMutateRow(row(colVal("c3", (byte)50), colVal("c2", 1))).execute();
+            theResult = client.insertOrUpdate(TABLE_NAME).setRowKey(colVal("c1", 5))
+                .addMutateRow(row(colVal("c3", (byte) 50), colVal("c2", 1))).execute();
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 5);
@@ -425,12 +419,11 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             Assert.assertTrue(result.next());
             value = result.getRow();
             Assert.assertEquals(1, value.get("c2"));
-            Assert.assertEquals((byte)50, value.get("c3"));
+            Assert.assertEquals((byte) 50, value.get("c3"));
 
             // test insertup exist, update again
-            theResult = client.insertOrUpdate(TABLE_NAME)
-                    .setRowKey(colVal("c1", 5))
-                    .addMutateRow(row(colVal("c3", (byte)50), colVal("c2", 1))).execute();
+            theResult = client.insertOrUpdate(TABLE_NAME).setRowKey(colVal("c1", 5))
+                .addMutateRow(row(colVal("c3", (byte) 50), colVal("c2", 1))).execute();
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 5);
@@ -439,11 +432,11 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             Assert.assertTrue(result.next());
             value = result.getRow();
             Assert.assertEquals(1, value.get("c2"));
-            Assert.assertEquals((byte)50, value.get("c3"));
+            Assert.assertEquals((byte) 50, value.get("c3"));
 
             // test increment not exist, insert
-            value = client.increment(TABLE_NAME, new Object[] {6},
-                    new String[] { "c2" }, new Object[] { 6 }, true);
+            value = client.increment(TABLE_NAME, new Object[] { 6 }, new String[] { "c2" },
+                new Object[] { 6 }, true);
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 6);
@@ -452,11 +445,11 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             Assert.assertTrue(result.next());
             value = result.getRow();
             Assert.assertEquals(6, value.get("c2"));
-            Assert.assertEquals((byte)104, value.get("c3"));
+            Assert.assertEquals((byte) 104, value.get("c3"));
 
             // test increment exist, increment
-            value = client.increment(TABLE_NAME, new Object[] {6},
-                    new String[] { "c2" }, new Object[] { 6 }, true);
+            value = client.increment(TABLE_NAME, new Object[] { 6 }, new String[] { "c2" },
+                new Object[] { 6 }, true);
 
             tableQuery.select("c1", "c2", "c3");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 6);
@@ -465,12 +458,12 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             Assert.assertTrue(result.next());
             value = result.getRow();
             Assert.assertEquals(12, value.get("c2"));
-            Assert.assertEquals((byte)104, value.get("c3"));
+            Assert.assertEquals((byte) 104, value.get("c3"));
 
             // test illegal increment on auto increment column
             try {
-                value = client.increment(TABLE_NAME, new Object[] {6},
-                        new String[] { "c3" }, new Object[] { (byte)5 }, true);
+                value = client.increment(TABLE_NAME, new Object[] { 6 }, new String[] { "c3" },
+                    new Object[] { (byte) 5 }, true);
             } catch (ObTableException e) {
                 assertNotNull(e);
                 assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode, e.getErrorCode());
@@ -478,7 +471,7 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
 
             // test append not exist, insert
             Map<String, Object> res = client.append(TABLE_NAME, new Object[] { 200 },
-                    new String[] { "c4" },  new Object[] { "a" } , true);
+                new String[] { "c4" }, new Object[] { "a" }, true);
 
             tableQuery.select("c1", "c2", "c3", "c4");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 200);
@@ -487,12 +480,12 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             result = tableQuery.execute();
             Assert.assertTrue(result.next());
             value = result.getRow();
-            Assert.assertEquals((byte)106, value.get("c3"));
+            Assert.assertEquals((byte) 106, value.get("c3"));
             Assert.assertEquals("a", value.get("c4"));
 
             // test append exist, append
-            res = client.append(TABLE_NAME, new Object[] { 200 },
-                    new String[] { "c4" },  new Object[] { "b" } , true);
+            res = client.append(TABLE_NAME, new Object[] { 200 }, new String[] { "c4" },
+                new Object[] { "b" }, true);
 
             tableQuery.select("c1", "c2", "c3", "c4");
             filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 200);
@@ -501,7 +494,7 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             result = tableQuery.execute();
             Assert.assertTrue(result.next());
             value = result.getRow();
-            Assert.assertEquals((byte)106, value.get("c3"));
+            Assert.assertEquals((byte) 106, value.get("c3"));
             Assert.assertEquals("ab", value.get("c4"));
 
             //  the total number of data

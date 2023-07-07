@@ -66,10 +66,10 @@ public class Delete extends Mutation<Delete> {
                 getTableName(), getRowKey(), getKeyRanges()));
         } else {
             // QueryAndDelete
-            ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.DEL, new Object[] {},
-                    null, null);
+            ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.DEL,
+                new Object[] {}, null, null);
             return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
-                    getRowKey(), getKeyRanges(), operation, false));
+                getRowKey(), getKeyRanges(), operation, false));
         }
     }
 }

@@ -135,10 +135,10 @@ public class Update extends Mutation<Update> {
                 values.toArray()));
         } else {
             // QueryAndUpdate
-            ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.UPDATE, new Object[] {},
-                    columns.toArray(new String[0]), values.toArray());
+            ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.UPDATE,
+                new Object[] {}, columns.toArray(new String[0]), values.toArray());
             return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
-                    getRowKey(), getKeyRanges(), operation, false));
+                getRowKey(), getKeyRanges(), operation, false));
         }
     }
 }
