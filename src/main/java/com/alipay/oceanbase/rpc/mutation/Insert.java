@@ -41,7 +41,15 @@ public class Insert extends Mutation<Insert> {
         super();
         columns = new ArrayList<String>();
         values = new ArrayList<Object>();
-        setInsert();
+    }
+
+    /*
+     * construct with ObTableClient and String
+     */
+    public Insert(Table client, String tableName) {
+        super(client, tableName);
+        columns = new ArrayList<String>();
+        values = new ArrayList<Object>();
     }
 
     /*
@@ -65,16 +73,6 @@ public class Insert extends Mutation<Insert> {
      */
     public Insert setFilter(ObTableFilter filter) throws Exception {
         return setFilterOnly(filter);
-    }
-
-    /*
-     * construct with ObTableClient and String
-     */
-    public Insert(Table client, String tableName) {
-        super(client, tableName);
-        columns = new ArrayList<String>();
-        values = new ArrayList<Object>();
-        setInsert();
     }
 
     /*

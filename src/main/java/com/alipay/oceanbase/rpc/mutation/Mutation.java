@@ -36,7 +36,7 @@ public class Mutation<T> {
     private TableQuery     query;
     private boolean        hasSetRowKey = false;
     protected List<String> rowKeyNames  = null;
-    private boolean        isInsert     = false;
+
     /*
      * default constructor
      * recommend for batch operation
@@ -63,13 +63,6 @@ public class Mutation<T> {
         this.rowKey = null;
         this.query = null;
         this.rowKeyNames = null;
-    }
-
-    /*
-     * set is insert
-     */
-    protected void setInsert() {
-        isInsert = true;
     }
 
     /*
