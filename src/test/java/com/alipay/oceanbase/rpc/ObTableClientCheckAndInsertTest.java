@@ -59,18 +59,6 @@ public class ObTableClientCheckAndInsertTest extends ObTableClientTestBase  {
         syncRefreshMetaHelper(obTableClient);
     }
 
-    private long getMaxAccessTime(ObTableClient client) throws Exception {
-        Class clientClass = client.getClass();
-        Field field = clientClass.getDeclaredField("serverRoster");
-        field.setAccessible(true);
-        ServerRoster serverRoster = (ServerRoster) field.get(client);
-        long resTime = 0;
-        for (ObServerAddr addr : serverRoster.getMembers()) {
-            resTime = Math.max(resTime, addr.getLastAccessTime());
-        }
-        return resTime;
-    }
-
     @BeforeClass
     public static void testVersion() throws Exception {
         final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
@@ -87,29 +75,31 @@ public class ObTableClientCheckAndInsertTest extends ObTableClientTestBase  {
     @Test
     // test check and insert
     public void testCheckAndInsert() throws Exception {
-        TableQuery tableQuery = client.query("test_mutation");
+        final String TABLE_NAME = "test_mutation";
+
+        TableQuery tableQuery = client.query(TABLE_NAME);
         tableQuery.addScanRange(new Object[] { 0L, "\0" }, new Object[] { 200L, "\254" });
         tableQuery.select("c1", "c2", "c3", "c4");
 
         try {
             // prepare data with insert
-            client.insert("test_mutation").setRowKey(row(colVal("c1", 0L), colVal("c2", "row_0")))
+            client.insert(TABLE_NAME).setRowKey(row(colVal("c1", 0L), colVal("c2", "row_0")))
                     .addMutateColVal(colVal("c3", new byte[]{1}))
                     .addMutateColVal(colVal("c4", 100L)).execute();
-            client.insert("test_mutation").setRowKey(colVal("c1", 1L), colVal("c2", "row_1"))
+            client.insert(TABLE_NAME).setRowKey(colVal("c1", 1L), colVal("c2", "row_1"))
                     .addMutateColVal(colVal("c3", new byte[]{1}))
                     .addMutateColVal(colVal("c4", 101L)).execute();
-            client.insert("test_mutation").setRowKey(colVal("c1", 2L), colVal("c2", "row_2"))
+            client.insert(TABLE_NAME).setRowKey(colVal("c1", 2L), colVal("c2", "row_2"))
                     .addMutateColVal(colVal("c3", new byte[]{1}))
                     .addMutateColVal(colVal("c4", 102L)).execute();
-            client.insert("test_mutation").setRowKey(colVal("c1", 3L), colVal("c2", "row_3"))
+            client.insert(TABLE_NAME).setRowKey(colVal("c1", 3L), colVal("c2", "row_3"))
                     .addMutateColVal(colVal("c1", 3L)).addMutateColVal(colVal("c2", "row_3"))
                     .addMutateColVal(colVal("c3", new byte[]{1}))
                     .addMutateColVal(colVal("c4", 103L)).execute();
 
             // insert / match filter
             ObTableValueFilter c4_EQ_101 = compareVal(ObCompareOp.EQ, "c4", 101L);
-            MutationResult insertResult = client.insert("test_mutation")
+            MutationResult insertResult = client.insert(TABLE_NAME)
                     .setRowKey(colVal("c1", 100L), colVal("c2", "row_5")).setFilter(c4_EQ_101)
                     .addScanRange(new Object[] { 0L, "\0" }, new Object[] { 200L, "\254" })
                     .addMutateRow(row(colVal("c3", new byte[]{1}), colVal("c4", 999L))).execute();
@@ -120,7 +110,7 @@ public class ObTableClientCheckAndInsertTest extends ObTableClientTestBase  {
             QueryResultSet result_0 = tableQuery.execute();
             Assert.assertEquals(1, result_0.cacheSize());
 
-            insertResult = client.insert("test_mutation")
+            insertResult = client.insert(TABLE_NAME)
                     .setRowKey(colVal("c1", 120L), colVal("c2", "row_6")).setFilter(c4_EQ_101)
                     .addScanRange(new Object[] { 0L, "\0" }, new Object[] { 200L, "\254" })
                     .addMutateRow(row(colVal("c3", new byte[]{1}), colVal("c4", 999L))).execute();
@@ -133,7 +123,7 @@ public class ObTableClientCheckAndInsertTest extends ObTableClientTestBase  {
 
             // insert / only insert one row when multiple match
             ObTableValueFilter c4_EQ_999 = compareVal(ObCompareOp.EQ, "c4", 999L);
-            insertResult = client.insert("test_mutation")
+            insertResult = client.insert(TABLE_NAME)
                     .setRowKey(colVal("c1", 130L), colVal("c2", "row_7")).setFilter(c4_EQ_999)
                     .addScanRange(new Object[] { 0L, "\0" }, new Object[] { 200L, "\254" })
                     .addMutateRow(row(colVal("c3", new byte[]{1}), colVal("c4", 99L))).execute();
@@ -146,7 +136,7 @@ public class ObTableClientCheckAndInsertTest extends ObTableClientTestBase  {
 
             // insert / do not match filter
             ObTableValueFilter c4_EQ_201 = compareVal(ObCompareOp.EQ, "c4", 201L);
-            insertResult = client.insert("test_mutation")
+            insertResult = client.insert(TABLE_NAME)
                     .setRowKey(colVal("c1", 150L), colVal("c2", "row_8")).setFilter(c4_EQ_201)
                     .addScanRange(new Object[] { 0L, "\0" }, new Object[] { 200L, "\254" })
                     .addMutateRow(row(colVal("c3", new byte[]{1}), colVal("c4", 4000L))).execute();
@@ -159,7 +149,7 @@ public class ObTableClientCheckAndInsertTest extends ObTableClientTestBase  {
 
             // test defense for set scan range without filter
             try {
-                insertResult = client.insert("test_mutation")
+                insertResult = client.insert(TABLE_NAME)
                         .setRowKey(colVal("c1", 120L), colVal("c2", "row_7"))
                         .addScanRange(new Object[] { 0L, "\0" }, new Object[] { 200L, "\254" })
                         .addMutateRow(row(colVal("c3", new byte[]{1}), colVal("c4", 999L))).execute();
@@ -168,19 +158,19 @@ public class ObTableClientCheckAndInsertTest extends ObTableClientTestBase  {
                 Assert.assertEquals("should set filter and scan range both", e.getMessage());
             }
         } finally {
-            client.delete("test_mutation").setRowKey(colVal("c1", 0L), colVal("c2", "row_0"))
+            client.delete(TABLE_NAME).setRowKey(colVal("c1", 0L), colVal("c2", "row_0"))
                     .execute();
-            client.delete("test_mutation").setRowKey(colVal("c1", 1L), colVal("c2", "row_1"))
+            client.delete(TABLE_NAME).setRowKey(colVal("c1", 1L), colVal("c2", "row_1"))
                     .execute();
-            client.delete("test_mutation").setRowKey(colVal("c1", 2L), colVal("c2", "row_2"))
+            client.delete(TABLE_NAME).setRowKey(colVal("c1", 2L), colVal("c2", "row_2"))
                     .execute();
-            client.delete("test_mutation").setRowKey(colVal("c1", 3L), colVal("c2", "row_3"))
+            client.delete(TABLE_NAME).setRowKey(colVal("c1", 3L), colVal("c2", "row_3"))
                     .execute();
-            client.delete("test_mutation").setRowKey(colVal("c1", 100L), colVal("c2", "row_5"))
+            client.delete(TABLE_NAME).setRowKey(colVal("c1", 100L), colVal("c2", "row_5"))
                     .execute();
-            client.delete("test_mutation").setRowKey(colVal("c1", 120L), colVal("c2", "row_6"))
+            client.delete(TABLE_NAME).setRowKey(colVal("c1", 120L), colVal("c2", "row_6"))
                     .execute();
-            client.delete("test_mutation").setRowKey(colVal("c1", 130L), colVal("c2", "row_7"))
+            client.delete(TABLE_NAME).setRowKey(colVal("c1", 130L), colVal("c2", "row_7"))
                     .execute();
         }
     }
