@@ -25,6 +25,28 @@ CREATE TABLE IF NOT EXISTS `kv_table` (
     `val` varchar(20) DEFAULT NULL,
     PRIMARY KEY (`key`)
 );
+
+// test for aggregation
+CREATE TABLE IF NOT EXISTS `aggregation_table` (
+    `key` int NOT NULL,
+    `val` int DEFAULT NULL,
+    PRIMARY KEY (`key`)
+);
+
+// test for auto increment
+CREATE TABLE IF NOT EXISTS `auto_inc_table` (
+    `key` int NOT NULL,
+    `val` int DEFAULT NULL,
+    PRIMARY KEY (`key`)
+);
+
+// test for check and insert
+CREATE TABLE IF NOT EXISTS `mutation_table` (
+    `key` int NOT NULL,
+    `val` int DEFAULT NULL,
+    PRIMARY KEY (`key`)
+);
+
 */
 
 public class SimpleMutation {
@@ -120,6 +142,53 @@ public class SimpleMutation {
                 System.out.println(String.format("the %dth mutation affect %d rows", idx,
                         batchResult.get(idx).getAffectedRows()));
             }
+
+            /*
+             * notice. these are only demo for new operations
+             */
+
+            // aggregation
+            // construct aggregation
+            ObTableAggregation obtableAggregation = client.aggregate("aggregation_table");
+
+            // add aggregation operation
+            obtableAggregation.max("c2");
+
+            // execute aggregation
+            ObTableAggregationResult obtableAggregationResult = obtableAggregation.execute();
+
+            // get aggregation result
+            System.out.println(obtableAggregationResult.get("max(c2)"));
+
+            // auto increment
+            // if rowkey is auto increment
+            // use auto increment value, should fill 0
+            // the value of new row on c1 will be 1
+            client.insert("auto_inc_table", new Object[] { 0 }, new String[] {"c2"},
+                    new Object[] { 1 });
+
+            // assign the specific value on auto increment column
+            // the value of new row on c1 will be 100
+            client.insert("auto_inc_table", new Object[] { 100 }, new String[] {"c2"},
+                    new Object[] { 1 });
+
+            //assign the specific value will refresh the auto increment value
+            // the value of new row on c1 will be 101
+            client.insert("auto_inc_table", new Object[] { 0 }, new String[] {"c2"},
+                    new Object[] { 1 });
+
+            // check and insert
+            // use setRowkey to specify the key of the new row
+            // use addScanRange to add a rowkey range where to check filter
+            // keep the new row and the range of filter in the same partition
+            // should set range and filter both
+            // suppose old row (1, 1) exists
+            // satisfy the filter, insert new row (2, 2)
+            ObTableValueFilter filter = compareVal(ObCompareOp.EQ, "c2", 1);
+            MutationResult insertResult = client.insert("mutation_table")
+                    .setRowKey(colVal("c1", 2)).setFilter(filter)
+                    .addScanRange(new Object[] { 1 }, new Object[] { 200 })
+                    .addMutateRow(row(colVal("c2", 2)).execute();
 
         } finally {
             if (tableClient != null) {

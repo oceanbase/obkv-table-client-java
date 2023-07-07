@@ -245,7 +245,10 @@ CREATE TABLE test_aggregation (
 CREATE TABLE `test_partition_aggregation` (
     `c1` bigint NOT NULL,
     `c2` bigint DEFAULT NULL,
-    PRIMARY KEY (`c1`))partition by range(`c1`)(partition p0 values less than(200), partition p1 values less than(500), partition p2 values less than(900));
+    PRIMARY KEY (`c1`))partition by range(`c1`) (
+        PARTITION p0 VALUES LESS THAN (200),
+        PARTITION p1 VALUES LESS THAN (500),
+        PARTITION p2 VALUES LESS THAN (900));
 
 CREATE TABLE `test_ttl_timestamp` (
  `c1` bigint NOT NULL,
@@ -253,5 +256,23 @@ CREATE TABLE `test_ttl_timestamp` (
  `c3` bigint DEFAULT NULL,
  `expired_ts` timestamp,
 PRIMARY KEY (`c1`)) TTL(expired_ts + INTERVAL 0 SECOND);
+
+CREATE TABLE IF NOT EXISTS `test_auto_increment_rowkey` (
+    `c1` int auto_increment,
+    `c2` int NOT NULL,
+    `c3` int DEFAULT NULL,
+    `c4` varchar(255) DEFAULT NULL,
+    PRIMARY KEY(`c1`, `c2`)) partition by range columns(`c2`) (
+        PARTITION p0 VALUES LESS THAN (100),
+        PARTITION p1 VALUES LESS THAN (1000));
+
+CREATE TABLE IF NOT EXISTS `test_auto_increment_not_rowkey` (
+    `c1` int NOT NULL,
+    `c2` int DEFAULT NULL,
+    `c3` tinyint auto_increment,
+    `c4` varchar(255) DEFAULT NULL,
+    PRIMARY KEY(`c1`)) partition by range columns(`c1`) (
+        PARTITION p0 VALUES LESS THAN (100),
+        PARTITION p1 VALUES LESS THAN (1000));
 
 alter system set kv_hotkey_throttle_threshold = 50;

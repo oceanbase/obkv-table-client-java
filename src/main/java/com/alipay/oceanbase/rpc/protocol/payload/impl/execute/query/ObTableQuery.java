@@ -65,6 +65,13 @@ public class ObTableQuery extends AbstractPayload {
     private List<ObTableAggregationSingle>    aggregations       = new LinkedList<>();
 
     /*
+     * Check filter.
+     */
+    public boolean isFilterNull() {
+         return filterString != null;
+    }
+
+    /*
      * Check aggregation.
      */
     public boolean isAggregation() {

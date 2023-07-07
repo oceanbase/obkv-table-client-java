@@ -20,6 +20,7 @@ package com.alipay.oceanbase.rpc.mutation;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperation;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
 import com.alipay.oceanbase.rpc.table.api.Table;
 
@@ -134,9 +135,10 @@ public class Update extends Mutation<Update> {
                 values.toArray()));
         } else {
             // QueryAndUpdate
+            ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.UPDATE, new Object[] {},
+                    columns.toArray(new String[0]), values.toArray());
             return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
-                getRowKey(), getKeyRanges(), ObTableOperationType.UPDATE,
-                columns.toArray(new String[0]), values.toArray(), false));
+                    getRowKey(), getKeyRanges(), operation, false));
         }
     }
 }
