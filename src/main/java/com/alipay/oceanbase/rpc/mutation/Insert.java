@@ -19,7 +19,10 @@ package com.alipay.oceanbase.rpc.mutation;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
+import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperation;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
 import com.alipay.oceanbase.rpc.table.api.Table;
 
@@ -47,6 +50,29 @@ public class Insert extends Mutation<Insert> {
         super(client, tableName);
         columns = new ArrayList<String>();
         values = new ArrayList<Object>();
+    }
+
+    /*
+     * set the Row Key of mutation with Row and keep scan range
+     */
+    @Override
+    public Insert setRowKey(Row rowKey) {
+        return setRowKeyOnly(rowKey);
+    }
+
+    /*
+     * set the Row Key of mutation with ColumnValues and keep scan range
+     */
+    @Override
+    public Insert setRowKey(ColumnValue... rowKey) {
+        return setRowKeyOnly(rowKey);
+    }
+
+    /*
+     * add filter into mutation (use QueryAndMutate) and scan range
+     */
+    public Insert setFilter(ObTableFilter filter) throws Exception {
+        return setFilterOnly(filter);
     }
 
     /*
@@ -133,7 +159,15 @@ public class Insert extends Mutation<Insert> {
                 getTableName(), getRowKey(), getKeyRanges(), columns.toArray(new String[0]),
                 values.toArray()));
         } else {
-            throw new ObTableException("Insert with query(filter) is not supported yet");
+            if (checkMutationWithFilter()) {
+                // QueryAndInsert
+                ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.INSERT, getRowKey(),
+                        columns.toArray(new String[0]), values.toArray());
+                return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
+                        getRowKey(), getKeyRanges(), operation, true));
+            } else {
+                throw new ObTableUnexpectedException("should set filter and scan range both");
+            }
         }
     }
 }
