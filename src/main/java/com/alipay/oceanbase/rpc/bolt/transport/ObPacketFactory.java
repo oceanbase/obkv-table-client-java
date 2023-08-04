@@ -33,6 +33,13 @@ import java.net.InetSocketAddress;
 
 public class ObPacketFactory implements CommandFactory {
 
+    boolean reRouting;
+
+    // construct ObPacketFactory
+    public ObPacketFactory(boolean reRouting) {
+        this.reRouting = reRouting;
+    }
+
     /*
      * Create request command.
      */
@@ -61,6 +68,10 @@ public class ObPacketFactory implements CommandFactory {
         // 2. assemble rpc packet header
         ObRpcPacketHeader rpcHeaderPacket = new ObRpcPacketHeader();
         rpcHeaderPacket.setPcode(payload.getPcode());
+        // flag
+        if (reRouting) {
+            rpcHeaderPacket.enableRerouting();
+        }
         // us
         rpcHeaderPacket.setTimeout(payload.getTimeout() * 1000);
         rpcHeaderPacket.setTenantId(payload.getTenantId());

@@ -127,7 +127,9 @@ public enum Property {
     // when a big package is blocking the buffer but the server is OK.
     NETTY_BLOCKING_WAIT_INTERVAL("bolt.netty.blocking.wait.interval", 1, "netty写缓存满后等待时间"),
 
-    SLOW_QUERY_MONITOR_THRESHOLD("slow.query.monitor.threshold", 10L, "记录到 MONITOR 日志中的慢操作的运行时间阈值");
+    SLOW_QUERY_MONITOR_THRESHOLD("slow.query.monitor.threshold", 10L, "记录到 MONITOR 日志中的慢操作的运行时间阈值"),
+
+    SERVER_ENABLE_REROUTING("server.enable.rerouting", "false", "开启server端的重定向回复功能");
 
     private final String key;
     private final Object defaultV;

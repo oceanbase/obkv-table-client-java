@@ -76,6 +76,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
         obTableClient.addProperty(Property.RUNTIME_BATCH_MAX_WAIT.getKey(), "3000");
         obTableClient.addProperty(Property.RUNTIME_BATCH_EXECUTOR.getKey(), "32");
         obTableClient.addProperty(Property.RPC_OPERATION_TIMEOUT.getKey(), "3000");
+        obTableClient.addProperty(Property.SERVER_ENABLE_REROUTING.getKey(), "False");
         obTableClient.init();
 
         this.client = obTableClient;
