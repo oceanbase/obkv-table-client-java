@@ -40,9 +40,8 @@ public class ObTableAggregationResult {
     public void init() throws Exception {
         if (this.queryResultSet.next()) {
             row = this.queryResultSet.getRow();
-        } else {
-            throw new ObTableUnexpectedException("aggregate an empty table");
         }
+        // else do nothing.
     }
 
     /*
