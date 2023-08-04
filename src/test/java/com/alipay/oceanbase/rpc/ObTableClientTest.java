@@ -2591,13 +2591,11 @@ public class ObTableClientTest extends ObTableClientTestBase {
         obtableAggregation.min("c2");
 
         // execute
-        try {
-            ObTableAggregationResult obtableAggregationResult = obtableAggregation.execute();
-        } catch (Exception e) {
-            Assert.assertTrue(e instanceof ObTableUnexpectedException);
-            Assert.assertEquals("aggregate an empty table",
-                ((ObTableUnexpectedException) e).getMessage());
-        }
+        ObTableAggregationResult obtableAggregationResult = obtableAggregation.execute();
+
+        // test null
+        Assert.assertNull(obtableAggregationResult.get("max(c2)"));
+        Assert.assertNull(obtableAggregationResult.get("min(c2)"));
     }
 
     @Test
