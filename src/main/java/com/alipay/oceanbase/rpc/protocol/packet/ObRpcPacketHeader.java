@@ -312,6 +312,17 @@ public class ObRpcPacketHeader {
     }
 
     /*
+     * Set routing flag bit.
+     */
+    public void enableRerouting() {
+        flag |= REQUIRE_REROUTING_FLAG;
+    }
+
+    public void disableRerouting() {
+        flag &= ~REQUIRE_REROUTING_FLAG;
+    }
+
+    /*
      * Get pcode.
      */
     public int getPcode() {
