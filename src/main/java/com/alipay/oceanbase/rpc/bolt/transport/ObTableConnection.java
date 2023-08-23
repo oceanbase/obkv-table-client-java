@@ -17,7 +17,9 @@
 
 package com.alipay.oceanbase.rpc.bolt.transport;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.exception.*;
+import com.alipay.oceanbase.rpc.location.LocationUtil;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.login.ObTableLoginRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.login.ObTableLoginResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
@@ -139,6 +141,12 @@ public class ObTableConnection {
                     && result.getCredential().length() > 0) {
                     credential = result.getCredential();
                     tenantId = result.getTenantId();
+                    // Set version if missing
+                    if (ObGlobal.OB_VERSION == 0.0 && !result.getServerVersion().isEmpty()) {
+                        // version should be set before login when direct mode
+                        ObGlobal.OB_VERSION = LocationUtil.ParseObVerionFromLogin(result.getServerVersion());
+                        LOGGER.info("The OB_VERSION parsed from login result is: {}", ObGlobal.OB_VERSION);
+                    }
                     break;
                 }
             } catch (Exception e) {

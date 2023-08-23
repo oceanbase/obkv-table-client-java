@@ -48,6 +48,8 @@ import static com.alipay.oceanbase.rpc.location.model.partition.ObPartitionKey.M
 import static com.alipay.oceanbase.rpc.util.RandomUtil.getRandomNum;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
 import static java.lang.String.format;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class LocationUtil {
 
@@ -1672,5 +1674,16 @@ public class LocationUtil {
         int end = str.length() > 0 && str.charAt(str.length() - 1) == '\'' ? str.length() - 1 : str
             .length();
         return str.substring(start, end);
+    }
+
+    public static Long ParseObVerionFromLogin(String serverVersion) {
+        long version = 0L;
+        // serverVersion is like "OceanBase 4.0.0.0"
+        Pattern pattern = Pattern.compile("OceanBase\\s+(\\d)");
+        Matcher matcher = pattern.matcher(serverVersion);
+        if (matcher.find()) {
+            version = Integer.parseInt(matcher.group(1));
+        }
+        return version;
     }
 }
