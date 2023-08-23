@@ -64,7 +64,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
 
     private volatile boolean      initialized = false;
     private volatile boolean      closed      = false;
-    private boolean               reRouting   = false; // only used for init packet factory
+    private boolean               reRouting   = false;              // only used for init packet factory
 
     private ReentrantLock         statusLock  = new ReentrantLock();
 

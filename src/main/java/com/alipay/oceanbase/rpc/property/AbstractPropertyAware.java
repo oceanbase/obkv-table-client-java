@@ -61,7 +61,8 @@ public abstract class AbstractPropertyAware {
     }
 
     public boolean parseToBoolean(String key) {
-        return Boolean.parseBoolean(System.getProperty(OB_TABLE_CLIENT_PREFIX + key, getProperty(key)));
+        return Boolean.parseBoolean(System.getProperty(OB_TABLE_CLIENT_PREFIX + key,
+            getProperty(key)));
     }
 
     public boolean parseToBoolean(String key, boolean defaultV) {
