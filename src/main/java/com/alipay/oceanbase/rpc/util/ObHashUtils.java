@@ -118,7 +118,15 @@ public class ObHashUtils {
         ObCollationType collationType = refColumn.getObCollationType();
 
         if (typeValue >= ObTinyIntType.getValue() && typeValue <= ObUInt64Type.getValue()) {
-            return ObHashUtils.longHash((Long) value, hashCode);
+            if (value instanceof Integer) {
+                return ObHashUtils.longHash(((Integer) value).longValue(), hashCode);
+            } else if (value instanceof Short) {
+                return ObHashUtils.longHash(((Short) value).longValue(), hashCode);
+            } else if (value instanceof Byte) {
+                return ObHashUtils.longHash(((Byte) value).longValue(), hashCode);
+            } else {
+                return ObHashUtils.longHash((Long) value, hashCode);
+            }
         } else if (ObDateTimeType.getValue() == typeValue
                    || ObTimestampType.getValue() == typeValue) {
             return ObHashUtils.timeStampHash((Timestamp) value, hashCode);
