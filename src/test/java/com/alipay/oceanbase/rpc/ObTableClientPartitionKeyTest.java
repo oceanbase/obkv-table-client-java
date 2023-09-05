@@ -718,26 +718,28 @@ public class ObTableClientPartitionKeyTest {
     public void testPartitionLocation() throws Exception {
         obTableClient.setRunningMode(ObTableClient.RunningMode.NORMAL);
         String testTable = "testPartitionKeyComplex";
-        obTableClient.addRowKeyElement(testTable, new String[] { "c1", "c2", "c3", "c4" });
+        obTableClient.addRowKeyElement(testTable, new String[] { "c0", "c1", "c2", "c3", "c4", "c5"});
         try {
             cleanPartitionLocationTable(testTable);
             Connection connection = ObTableClientTestUtil.getConnection();
             Statement statement = connection.createStatement();
             for (int i = 0; i < 64; i++) {
-                long c1 = i * (i + 1) * (i + 2);
-                String c2 = generateRandomStringByUUID(10);
-                String c3 = generateRandomStringByUUID(5) + c2 + generateRandomStringByUUID(5);
-                String c4 = generateRandomStringByUUID(5) + c3 + generateRandomStringByUUID(5);
+                byte c0 = (byte) i;
+                int c1 = i * (i + 1) * (i + 2);
+                long c2 = i * (i + 1) * (i + 2);
+                String c3 = generateRandomStringByUUID(10);
+                String c4 = generateRandomStringByUUID(5) + c2 + generateRandomStringByUUID(5);
+                String c5 = generateRandomStringByUUID(5) + c3 + generateRandomStringByUUID(5);
 
                 // use sql to insert data
-                statement.execute("insert into " + testTable + "(c1, c2, c3, c4, c5) values (" + c1
-                                  + ",'" + c2 + "','" + c3 + "','" + c4 + "'," + "'value')");
+                statement.execute("insert into " + testTable + "(c0, c1, c2, c3, c4, c5, c6) values (" + c0
+                                  + "," + c1 + "," + c2 + ",'" + c3 + "','" + c4 + "','" + c5 + "'," + "'value')");
 
                 // get data by obkv interface
                 Map<String, Object> result = obTableClient.get(testTable,
-                    new Object[] { c1, c2.getBytes(), c3, c4 }, new String[] { "c1", "c2", "c3",
-                            "c4", "c5" });
-                Assert.assertEquals(5, result.size());
+                    new Object[] { c0, c1, c2, c3.getBytes(), c4, c5 }, new String[] { "c0", "c1", "c2", "c3",
+                            "c4", "c5", "c6" });
+                Assert.assertEquals(7, result.size());
             }
         } catch (Exception e) {
             e.printStackTrace();
