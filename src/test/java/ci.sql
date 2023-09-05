@@ -103,14 +103,16 @@ PRIMARY KEY (`c1`, `c2`)
 partition by hash(`c1`) subpartition by hash(`c2`) subpartitions 4 partitions 16;
 
 CREATE TABLE IF NOT EXISTS `testPartitionKeyComplex` (
-    `c1` bigint NOT NULL,
-    `c2` varbinary(1024) NOT NULL,
-    `c3` varchar(1024) NOT NULL,
+    `c0` tinyint NOT NULL,
+    `c1` int NOT NULL,
+    `c2` bigint NOT NULL,
+    `c3` varbinary(1024) NOT NULL,
     `c4` varchar(1024) NOT NULL,
-    `c5` varchar(20) default NULL,
-PRIMARY KEY (`c1`, `c2`, `c3`, `c4`)
+    `c5` varchar(1024) NOT NULL,
+    `c6` varchar(20) default NULL,
+PRIMARY KEY (`c0`, `c1`, `c2`, `c3`, `c4`, `c5`)
 ) DEFAULT CHARSET = utf8mb4 ROW_FORMAT = DYNAMIC COMPRESSION = 'lz4_1.0' REPLICA_NUM = 3 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 10
-partition by key(`c1`, `c2`, `c3`) subpartition by key(`c4`) subpartitions 4 partitions 16;
+partition by key(`c0`, `c1`, `c2`, `c3`, `c4`) subpartition by key(`c5`) subpartitions 4 partitions 16;
 
 CREATE TABLE IF NOT EXISTS `testPartitionRangeComplex` (
     `c1` int NOT NULL,
