@@ -124,6 +124,8 @@ public class ObHashUtils {
                 return ObHashUtils.longHash(((Short) value).longValue(), hashCode);
             } else if (value instanceof Byte) {
                 return ObHashUtils.longHash(((Byte) value).longValue(), hashCode);
+            } else if (value instanceof Boolean) {
+                return ObHashUtils.longHash((Boolean) value ? 1L : 0L, hashCode);
             } else {
                 return ObHashUtils.longHash((Long) value, hashCode);
             }
