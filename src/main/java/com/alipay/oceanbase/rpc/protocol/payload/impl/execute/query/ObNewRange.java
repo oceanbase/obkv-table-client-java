@@ -97,7 +97,7 @@ public class ObNewRange implements ObSimplePayload {
             idx += objBytes.length;
         }
 
-        if (ObGlobal.OB_VERSION >= 4) {
+        if (ObGlobal.OB_VERSION.majorVersion >= 4) {
             len = Serialization.getNeedBytes(flag);
             System.arraycopy(Serialization.encodeVi64(flag), 0, bytes, idx, len);
             idx += len;
@@ -130,7 +130,7 @@ public class ObNewRange implements ObSimplePayload {
             this.endKey.addObj(obObj);
         }
 
-        if (ObGlobal.OB_VERSION >= 4) {
+        if (ObGlobal.OB_VERSION.majorVersion >= 4) {
             this.flag = Serialization.decodeVi64(buf);
         }
 
@@ -159,7 +159,7 @@ public class ObNewRange implements ObSimplePayload {
             encodedSize += obObj.getEncodedSize();
         }
 
-        if (ObGlobal.OB_VERSION >= 4) {
+        if (ObGlobal.OB_VERSION.majorVersion >= 4) {
             encodedSize += Serialization.getNeedBytes(flag);
         }
 
