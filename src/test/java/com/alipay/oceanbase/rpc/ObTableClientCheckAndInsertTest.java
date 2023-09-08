@@ -63,10 +63,10 @@ public class ObTableClientCheckAndInsertTest extends ObTableClientTestBase {
     public static void testVersion() throws Exception {
         final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
         obTableClient.init();
-        if (ObGlobal.OB_VERSION <= 0) {
+        if (ObGlobal.OB_VERSION.majorVersion <= 0) {
             // ob version is invalid
             Assert.assertTrue(false);
-        } else if (ObGlobal.OB_VERSION != 4) {
+        } else if (ObGlobal.OB_VERSION.majorVersion != 4) {
             // todo: only support in 4.x currently
             Assert.assertTrue(false);
         }
