@@ -131,7 +131,7 @@ public class ObRpcPacketHeader {
         byte[] bytes = null;
         if (hlen != 0) {
             bytes = new byte[ENCODE_SIZE];
-        } else if (ObGlobal.OB_VERSION >= 4) {
+        } else if (ObGlobal.OB_VERSION.majorVersion >= 4) {
             bytes = new byte[ENCODE_SIZE_V4];
             hlen = (short) ENCODE_SIZE_V4;
         } else {
@@ -171,7 +171,7 @@ public class ObRpcPacketHeader {
         System.arraycopy(Serialization.encodeI32(obCompressType.getCode()), 0, bytes, idx, 4);
         idx += 4;
         System.arraycopy(Serialization.encodeI32(originalLen), 0, bytes, idx, 4);
-        if (ObGlobal.OB_VERSION >= 4 && hlen >= ENCODE_SIZE_V4) {
+        if (ObGlobal.OB_VERSION.majorVersion >= 4 && hlen >= ENCODE_SIZE_V4) {
             idx += 4;
             System.arraycopy(Serialization.encodeI64(srcClusterId), 0, bytes, idx, 8);
             idx += 8;

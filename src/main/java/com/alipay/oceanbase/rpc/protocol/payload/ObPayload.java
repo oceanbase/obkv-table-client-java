@@ -42,6 +42,26 @@ public interface ObPayload extends ObUnisVersion {
     long getTimeout();
 
     /*
+     * set sequence
+     */
+    void setSequence(long sequence);
+
+    /*
+     * @return sequence
+     */
+    long getSequence();
+
+    /*
+     * set unique id
+     */
+    void setUniqueId(long uniqueId);
+
+    /*
+     * @return unique id
+     */
+    long getUniqueId();
+
+    /*
      * @return encoded payload content
      */
     byte[] encode();

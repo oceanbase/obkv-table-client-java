@@ -130,7 +130,6 @@ public abstract class AbstractPayload implements ObPayload {
     /*
      * Get unique id.
      */
-    @Override
     public long getUniqueId() {
         return uniqueId;
     }
@@ -138,7 +137,6 @@ public abstract class AbstractPayload implements ObPayload {
     /*
      * Set unique id.
      */
-    @Override
     public void setUniqueId(long uniqueId) {
         this.uniqueId = uniqueId;
     }
@@ -146,7 +144,6 @@ public abstract class AbstractPayload implements ObPayload {
     /*
      * Get sequence.
      */
-    @Override
     public long getSequence() {
         return sequence;
     }
@@ -154,7 +151,6 @@ public abstract class AbstractPayload implements ObPayload {
     /*
      * Set sequence.
      */
-    @Override
     public void setSequence(long sequence) {
         this.sequence = sequence;
     }

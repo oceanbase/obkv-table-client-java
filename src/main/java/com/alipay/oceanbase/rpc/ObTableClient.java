@@ -522,10 +522,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 RUNTIME.error("execute while meet exception", ex);
                 if (odpMode) {
                     if ((tryTimes - 1) < runtimeRetryTimes) {
-                        logger
-                            .warn(
-                                "execute while meet Exception, errorCode: {} , errorMsg: {}, try times {}",
-                                ((ObTableException) ex).getErrorCode(), ex.getMessage(), tryTimes);
+                        if (ex instanceof ObTableException) {
+                            logger
+                                .warn(
+                                    "execute while meet Exception, errorCode: {} , errorMsg: {}, try times {}",
+                                    ((ObTableException) ex).getErrorCode(), ex.getMessage(), tryTimes);
+                        } else {
+                            logger
+                                .warn(
+                                    "execute while meet Exception, errorMsg: {}, try times {}", ex.getMessage(), tryTimes);
+                        }
                     } else {
                         throw ex;
                     }
@@ -1165,7 +1171,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     private ReplicaLocation getPartitionLocation(TableEntry tableEntry, long partId,
                                                  ObServerRoute route) {
-        if (ObGlobal.OB_VERSION >= 4 && tableEntry.isPartitionTable()) {
+        if (ObGlobal.OB_VERSION.majorVersion >= 4 && tableEntry.isPartitionTable()) {
             long TabletId = tableEntry.getPartitionInfo().getPartTabletIdMap().get(partId);
             return tableEntry.getPartitionEntry().getPartitionLocationWithTabletId(TabletId)
                 .getReplica(route);
@@ -1319,7 +1325,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
 
         ObTableParam param = new ObTableParam(obTable);
-        if (ObGlobal.OB_VERSION >= 4 && tableEntry != null) {
+        if (ObGlobal.OB_VERSION.majorVersion >= 4 && tableEntry != null) {
             long logicID = partId;
             if (tableEntry.getPartitionInfo() != null
                 && tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
@@ -1455,7 +1461,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
 
             ObTableParam param = new ObTableParam(obTable);
-            if (ObGlobal.OB_VERSION >= 4) {
+            if (ObGlobal.OB_VERSION.majorVersion >= 4) {
                 partId = tableEntry.isPartitionTable() ? tableEntry.getPartitionInfo()
                     .getPartTabletIdMap().get(partId) : partId;
             }
