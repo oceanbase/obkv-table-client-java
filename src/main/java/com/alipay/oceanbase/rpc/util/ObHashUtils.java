@@ -66,7 +66,7 @@ public class ObHashUtils {
         switch (collationType) {
             case CS_TYPE_UTF8MB4_GENERAL_CI:
                 if (partFuncType == ObPartFuncType.KEY_V3
-                    || partFuncType == ObPartFuncType.KEY_IMPLICIT_V2 || ObGlobal.OB_VERSION.majorVersion >= 4) {
+                    || partFuncType == ObPartFuncType.KEY_IMPLICIT_V2 || ObGlobal.obVsnMajor() >= 4) {
                     hashCode = ObHashSortUtf8mb4.obHashSortUtf8Mb4(bytes, bytes.length, hashCode,
                         seed, true);
                 } else {
@@ -76,7 +76,7 @@ public class ObHashUtils {
                 break;
             case CS_TYPE_UTF8MB4_BIN:
                 if (partFuncType == ObPartFuncType.KEY_V3
-                    || partFuncType == ObPartFuncType.KEY_IMPLICIT_V2 || ObGlobal.OB_VERSION.majorVersion >= 4) {
+                    || partFuncType == ObPartFuncType.KEY_IMPLICIT_V2 || ObGlobal.obVsnMajor() >= 4) {
                     hashCode = MurmurHash.hash64a(bytes, bytes.length, hashCode);
                 } else {
                     hashCode = ObHashSortUtf8mb4.obHashSortMbBin(bytes, bytes.length, hashCode,
@@ -85,7 +85,7 @@ public class ObHashUtils {
                 break;
             case CS_TYPE_BINARY:
                 if (partFuncType == ObPartFuncType.KEY_V3
-                    || partFuncType == ObPartFuncType.KEY_IMPLICIT_V2 || ObGlobal.OB_VERSION.majorVersion >= 4) {
+                    || partFuncType == ObPartFuncType.KEY_IMPLICIT_V2 || ObGlobal.obVsnMajor() >= 4) {
                     hashCode = MurmurHash.hash64a(bytes, bytes.length, hashCode);
                 } else {
                     hashCode = ObHashSortBin.obHashSortBin(bytes, bytes.length, hashCode, seed);

@@ -54,10 +54,10 @@ public class ObTableTTLTest {
     public static void testVersion() throws Exception {
         final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
         obTableClient.init();
-        if (ObGlobal.OB_VERSION.majorVersion <= 0) {
+        if (ObGlobal.obVsnMajor() <= 0) {
             // ob version is invalid
             Assert.assertTrue(false);
-        } else if (ObGlobal.OB_VERSION.majorVersion != 3) {
+        } else if (ObGlobal.obVsnMajor() != 3) {
             // todo: only support in 3.x currently
             Assert.assertTrue(false);
         }

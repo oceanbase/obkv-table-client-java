@@ -79,7 +79,7 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
         this.credential = Serialization.decodeBytesString(buf);
         this.tableName = Serialization.decodeVString(buf);
         this.tableId = Serialization.decodeVi64(buf);
-        if (ObGlobal.OB_VERSION.majorVersion >= 4)
+        if (ObGlobal.obVsnMajor() >= 4)
             this.partitionId = Serialization.decodeI64(buf);
         else
             this.partitionId = Serialization.decodeVi64(buf);
@@ -96,7 +96,7 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
      */
     @Override
     public long getPayloadContentSize() {
-        if (ObGlobal.OB_VERSION.majorVersion >= 4)
+        if (ObGlobal.obVsnMajor() >= 4)
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
                    + Serialization.getNeedBytes(tableId) + 8 + 1
                    + tableQueryAndMutate.getPayloadSize();

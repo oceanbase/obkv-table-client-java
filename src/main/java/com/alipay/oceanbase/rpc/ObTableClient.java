@@ -1171,7 +1171,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     private ReplicaLocation getPartitionLocation(TableEntry tableEntry, long partId,
                                                  ObServerRoute route) {
-        if (ObGlobal.OB_VERSION.majorVersion >= 4 && tableEntry.isPartitionTable()) {
+        if (ObGlobal.obVsnMajor() >= 4 && tableEntry.isPartitionTable()) {
             long TabletId = tableEntry.getPartitionInfo().getPartTabletIdMap().get(partId);
             return tableEntry.getPartitionEntry().getPartitionLocationWithTabletId(TabletId)
                 .getReplica(route);
@@ -1325,7 +1325,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
 
         ObTableParam param = new ObTableParam(obTable);
-        if (ObGlobal.OB_VERSION.majorVersion >= 4 && tableEntry != null) {
+        if (ObGlobal.obVsnMajor() >= 4 && tableEntry != null) {
             long logicID = partId;
             if (tableEntry.getPartitionInfo() != null
                 && tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
@@ -1461,7 +1461,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
 
             ObTableParam param = new ObTableParam(obTable);
-            if (ObGlobal.OB_VERSION.majorVersion >= 4) {
+            if (ObGlobal.obVsnMajor() >= 4) {
                 partId = tableEntry.isPartitionTable() ? tableEntry.getPartitionInfo()
                     .getPartTabletIdMap().get(partId) : partId;
             }

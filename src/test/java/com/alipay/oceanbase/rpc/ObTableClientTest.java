@@ -2233,6 +2233,36 @@ public class ObTableClientTest extends ObTableClientTestBase {
     }
 
     @Test
+    public void testDateTime() throws Exception {
+        final ObTableClient client = (ObTableClient) this.client;
+        client.addRowKeyElement("test_datetime_table", new String[] { "c1" });
+
+        SimpleDateFormat sdf = new SimpleDateFormat(" yyyy-MM-dd HH:mm:ss ");
+        Date date1 = sdf.parse(" 2001-07-10 19:20:00 ");
+        Date date2 = sdf.parse(" 2002-07-10 19:20:00 ");
+        Date date3 = sdf.parse(" 2003-07-10 19:20:00 ");
+
+        try {
+            client.insert("test_datetime_table", "1", new String[] { "c2" }, new Object[] { date1 });
+            client.insert("test_datetime_table", "2", new String[] { "c2" }, new Object[] { date2 });
+            client.insert("test_datetime_table", "3", new String[] { "c2" }, new Object[] { date3 });
+
+            Map res = client.get("test_datetime_table", "1", new String[] { "c2" });
+            Assert.assertEquals(date1, res.get("c2"));
+            res = client.get("test_datetime_table", "2", new String[] { "c2" });
+            Assert.assertEquals(date2, res.get("c2"));
+            res = client.get("test_datetime_table", "3", new String[] { "c2" });
+            Assert.assertEquals(date3, res.get("c2"));
+
+
+        } finally {
+            client.delete("test_datetime_table").setRowKey(colVal("c1", "1")).execute();
+            client.delete("test_datetime_table").setRowKey(colVal("c1", "2")).execute();
+            client.delete("test_datetime_table").setRowKey(colVal("c1", "3")).execute();
+        }
+    }
+
+    @Test
     // Test aggregation
     public void testAggregation() throws Exception {
 
