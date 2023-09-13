@@ -486,6 +486,9 @@ public class ObTableClientPartitionKeyTest {
                         Long.MIN_VALUE }, new Object[] { "key".getBytes(), "z".getBytes(),
                         Long.MAX_VALUE });
             }
+            if (ObGlobal.obVsnMajor() < 4) {
+                tableQuery.select("K", "Q", "T", "V");
+            }
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(batchSize, result.cacheSize());
 

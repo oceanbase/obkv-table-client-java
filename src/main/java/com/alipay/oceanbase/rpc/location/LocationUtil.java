@@ -287,7 +287,7 @@ public class LocationUtil {
         ResultSet rs = null;
         try {
             connection = getMetaRefreshConnection(url, sysUA);
-            if (ObGlobal.OB_VERSION.majorVersion >= 4) {
+            if (ObGlobal.obVsnMajor() >= 4) {
                 ps = connection.prepareStatement(PROXY_SERVER_STATUS_INFO_V4);
             } else {
                 ps = connection.prepareStatement(PROXY_SERVER_STATUS_INFO);
@@ -483,10 +483,10 @@ public class LocationUtil {
         ResultSet rs = null;
         TableEntry tableEntry;
         try {
-            if (ObGlobal.OB_VERSION.majorVersion == 0) {
+            if (ObGlobal.obVsnMajor() == 0) {
                 getObVersionFromRemote(connection);
             }
-            if (ObGlobal.OB_VERSION.majorVersion >= 4) {
+            if (ObGlobal.obVsnMajor() >= 4) {
                 if (key.getTableName().equals(Constants.ALL_DUMMY_TABLE)) {
                     ps = connection.prepareStatement(PROXY_DUMMY_LOCATION_SQL_V4);
                     ps.setString(1, key.getTenantName());
@@ -586,7 +586,7 @@ public class LocationUtil {
         StringBuilder sb = new StringBuilder();
         ObPartitionEntry partitionEntry;
         String sql = null;
-        if (ObGlobal.OB_VERSION.majorVersion >= 4) {
+        if (ObGlobal.obVsnMajor() >= 4) {
             if (tableEntry.isPartitionTable()) {
                 Map<Long, Long> partTabletIdMap = tableEntry.getPartitionInfo()
                     .getPartTabletIdMap();
@@ -673,7 +673,7 @@ public class LocationUtil {
         PreparedStatement ps = null;
         ResultSet rs = null;
         try {
-            if (ObGlobal.OB_VERSION.majorVersion >= 4) {
+            if (ObGlobal.obVsnMajor() >= 4) {
                 ps = connection.prepareStatement(PROXY_FIRST_PARTITION_SQL_V4);
                 ps.setString(1, key.getTenantName());
                 ps.setLong(2, tableEntry.getTableId());
@@ -702,7 +702,7 @@ public class LocationUtil {
                     logger.info(format("uuid:%s, get first list sets from remote for %s, sets=%s",
                         uuid, tableName, JSON.toJSON(sets)));
                 }
-            } else if (ObGlobal.OB_VERSION.majorVersion >= 4
+            } else if (ObGlobal.obVsnMajor() >= 4
                        && (obPartFuncType.isKeyPart() || obPartFuncType.isHashPart())) {
                 tableEntry.getPartitionInfo().setPartTabletIdMap(
                     parseFirstPartKeyHash(rs, tableEntry));
@@ -740,7 +740,7 @@ public class LocationUtil {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         try {
-            if (ObGlobal.OB_VERSION.majorVersion >= 4) {
+            if (ObGlobal.obVsnMajor() >= 4) {
                 pstmt = connection.prepareStatement(PROXY_SUB_PARTITION_SQL_V4);
                 pstmt.setString(1, key.getTenantName());
                 pstmt.setLong(2, tableEntry.getTableId());
@@ -768,7 +768,7 @@ public class LocationUtil {
                     logger.info(format("uuid:%s, get sub list sets from remote, sets=%s", uuid,
                         JSON.toJSON(sets)));
                 }
-            } else if (ObGlobal.OB_VERSION.majorVersion >= 4
+            } else if (ObGlobal.obVsnMajor() >= 4
                        && (subPartFuncType.isKeyPart() || subPartFuncType.isHashPart())) {
                 tableEntry.getPartitionInfo().setPartTabletIdMap(
                     parseSubPartKeyHash(rs, tableEntry));
@@ -840,7 +840,7 @@ public class LocationUtil {
         while (rs.next()) {
             ReplicaLocation replica = buildReplicaLocation(rs);
             long partitionId;
-            if (ObGlobal.OB_VERSION.majorVersion >= 4) {
+            if (ObGlobal.obVsnMajor() >= 4) {
                 partitionId = rs.getLong("tablet_id");
             } else {
                 partitionId = rs.getLong("partition_id");
@@ -868,7 +868,7 @@ public class LocationUtil {
         ObPartitionEntry partitionEntry = new ObPartitionEntry();
         partitionEntry.setPartitionLocation(partitionLocation);
 
-        if (ObGlobal.OB_VERSION.majorVersion < 4) {
+        if (ObGlobal.obVsnMajor() < 4) {
             for (long i = 0; i < tableEntry.getPartitionNum(); i++) {
                 ObPartitionLocation location = partitionEntry.getPartitionLocationWithPartId(i);
                 if (location == null) {
@@ -934,7 +934,7 @@ public class LocationUtil {
         ResultSet rs = null;
         ObPartitionInfo info = null;
         try {
-            if (ObGlobal.OB_VERSION.majorVersion >= 4) {
+            if (ObGlobal.obVsnMajor() >= 4) {
                 pstmt = connection.prepareStatement(PROXY_PART_INFO_SQL_V4);
                 pstmt.setString(1, tableEntry.getTableEntryKey().getTenantName());
                 pstmt.setLong(2, tableEntry.getTableId());
@@ -1012,7 +1012,7 @@ public class LocationUtil {
             partKeyExtra = partKeyExtra.replace(" ", ""); // ' ' should be removed
             ObColumn column;
             String collationTypeLabel = null;
-            if (ObGlobal.OB_VERSION.majorVersion >= 4L) {
+            if (ObGlobal.obVsnMajor() >= 4) {
                 collationTypeLabel = "part_key_collation_type";
             } else {
                 collationTypeLabel = "spare1";
@@ -1088,7 +1088,7 @@ public class LocationUtil {
             hashDesc.setPartFuncType(partType);
             hashDesc.setPartNum(rs.getInt(partLevelPrefix + "part_num"));
             hashDesc.setPartSpace(rs.getInt(partLevelPrefix + "part_space"));
-            if (ObGlobal.OB_VERSION.majorVersion < 4L) {
+            if (ObGlobal.obVsnMajor() < 4) {
                 Map<String, Long> partNameIdMap = buildDefaultPartNameIdMap(hashDesc.getPartNum());
                 hashDesc.setPartNameIdMap(partNameIdMap);
             }
@@ -1099,7 +1099,7 @@ public class LocationUtil {
             keyPartDesc.setPartExpr(partExpr);
             keyPartDesc.setPartNum(rs.getInt(partLevelPrefix + "part_num"));
             keyPartDesc.setPartSpace(rs.getInt(partLevelPrefix + "part_space"));
-            if (ObGlobal.OB_VERSION.majorVersion < 4L) {
+            if (ObGlobal.obVsnMajor() < 4) {
                 Map<String, Long> partNameIdMap = buildDefaultPartNameIdMap(keyPartDesc
                     .getPartNum());
                 keyPartDesc.setPartNameIdMap(partNameIdMap);
@@ -1303,7 +1303,7 @@ public class LocationUtil {
                 }
             }
             ObPartitionKey partitionKey = new ObPartitionKey(orderPartColumns, partElements);
-            if (ObGlobal.OB_VERSION.majorVersion >= 4) {
+            if (ObGlobal.obVsnMajor() >= 4) {
                 long tabletId = rs.getLong("tablet_id");
                 bounds.add(new ObComparableKV<ObPartitionKey, Long>(partitionKey, idx));
                 partTabletIdMap.put(idx, tabletId);
@@ -1315,7 +1315,7 @@ public class LocationUtil {
                 partNameIdMap.put(partName.toLowerCase(), partId);
             }
         }
-        if (ObGlobal.OB_VERSION.majorVersion >= 4) {
+        if (ObGlobal.obVsnMajor() >= 4) {
             //set single level partition tablet-id mapping
             tableEntry.getPartitionInfo().setPartTabletIdMap(partTabletIdMap);
         } else {
@@ -1372,7 +1372,7 @@ public class LocationUtil {
 
         List<ObColumn> columns = ((ObListPartDesc) partDesc).getOrderCompareColumns();
         Map<ObPartitionKey, Long> sets = new HashMap<ObPartitionKey, Long>();
-        if (ObGlobal.OB_VERSION.majorVersion >= 4) {
+        if (ObGlobal.obVsnMajor() >= 4) {
             Map<Long, Long> partTabletIdMap = new HashMap<Long, Long>();
             long idx = 0L;
             while (rs.next()) {
@@ -1668,11 +1668,8 @@ public class LocationUtil {
         // serverVersion is like "4.2.1.0"
         Pattern pattern = Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)");
         Matcher matcher = pattern.matcher(serverVersion);
-        if (matcher.find() && !ObGlobal.OB_VERSION.isInit()) {
-            ObGlobal.OB_VERSION.majorVersion = Integer.parseInt(matcher.group(1));
-            ObGlobal.OB_VERSION.minorVersion = Integer.parseInt(matcher.group(2));
-            ObGlobal.OB_VERSION.buildVersion = Integer.parseInt(matcher.group(3));
-            ObGlobal.OB_VERSION.revisionVersion = Integer.parseInt(matcher.group(4));
+        if (matcher.find() && ObGlobal.OB_VERSION == 0) {
+            ObGlobal.OB_VERSION = ObGlobal.calcVersion(Integer.parseInt(matcher.group(1)), (short) Integer.parseInt(matcher.group(2)), (byte) Integer.parseInt(matcher.group(3)), (byte) Integer.parseInt(matcher.group(4)));
         }
     }
 
@@ -1680,11 +1677,8 @@ public class LocationUtil {
         // serverVersion is like "OceanBase 4.0.0.0"
         Pattern pattern = Pattern.compile("OceanBase\\s+(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)");
         Matcher matcher = pattern.matcher(serverVersion);
-        if (matcher.find() && !ObGlobal.OB_VERSION.isInit()) {
-            ObGlobal.OB_VERSION.majorVersion = Integer.parseInt(matcher.group(1));
-            ObGlobal.OB_VERSION.minorVersion = Integer.parseInt(matcher.group(2));
-            ObGlobal.OB_VERSION.buildVersion = Integer.parseInt(matcher.group(3));
-            ObGlobal.OB_VERSION.revisionVersion = Integer.parseInt(matcher.group(4));
+        if (matcher.find() && ObGlobal.OB_VERSION == 0) {
+            ObGlobal.OB_VERSION = ObGlobal.calcVersion(Integer.parseInt(matcher.group(1)), (short) Integer.parseInt(matcher.group(2)), (byte) Integer.parseInt(matcher.group(3)), (byte) Integer.parseInt(matcher.group(4)));
         }
     }
 }
