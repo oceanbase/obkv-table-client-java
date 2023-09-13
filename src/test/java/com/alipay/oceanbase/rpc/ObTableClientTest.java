@@ -2241,6 +2241,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
         SimpleDateFormat sdf = new SimpleDateFormat(" yyyy-MM-dd HH:mm:ss ");
         Date date1 = sdf.parse(" 2022-04-21 12:00:00 ");
+        Date date2 = new Date(1650513600000L);
 
         try {
             // client.insert("test_datetime_table", "1", new String[] { "c2" }, new Object[] { date1 });
@@ -2250,7 +2251,10 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
             // 2022-04-21 12:00:00 = 1650513600000 -> insert by sql, get by obkv client
             Map<String, Object> res = client.get("test_datetime_table", "0", new String[] { "c2" });
+            Assert.assertEquals(date1, res.get("c2"));
+            Assert.assertEquals(date2, res.get("c2"));
             Assert.assertEquals(date1.getTime(), ((Date) res.get("c2")).getTime());
+            Assert.assertEquals(date2.getTime(), ((Date) res.get("c2")).getTime());
             Assert.assertEquals(1650513600000L, ((Date) res.get("c2")).getTime());
         } finally {
             client.delete("test_datetime_table").setRowKey(colVal("c1", "0")).execute();
