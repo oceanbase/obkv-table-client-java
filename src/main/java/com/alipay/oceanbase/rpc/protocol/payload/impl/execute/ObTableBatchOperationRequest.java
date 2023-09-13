@@ -85,7 +85,7 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
         System.arraycopy(Serialization.encodeI8(returningAffectedRows ? (byte) 1 : (byte) 0), 0,
             bytes, idx, 1);
         idx++;
-        if (ObGlobal.OB_VERSION.majorVersion >= 4) {
+        if (ObGlobal.obVsnMajor() >= 4) {
             System.arraycopy(Serialization.encodeI64(partitionId), 0, bytes, idx, 8);
             idx += 8;
         } else {
@@ -118,7 +118,7 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
         this.returningRowKey = Serialization.decodeI8(buf) != 0;
         this.returningAffectedEntity = Serialization.decodeI8(buf) != 0;
         this.returningAffectedRows = Serialization.decodeI8(buf) != 0;
-        if (ObGlobal.OB_VERSION.majorVersion >= 4)
+        if (ObGlobal.obVsnMajor() >= 4)
             this.partitionId = Serialization.decodeI64(buf);
         else
             this.partitionId = Serialization.decodeVi64(buf);
