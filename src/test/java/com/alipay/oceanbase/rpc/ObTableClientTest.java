@@ -52,6 +52,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -2238,27 +2240,20 @@ public class ObTableClientTest extends ObTableClientTestBase {
         client.addRowKeyElement("test_datetime_table", new String[] { "c1" });
 
         SimpleDateFormat sdf = new SimpleDateFormat(" yyyy-MM-dd HH:mm:ss ");
-        Date date1 = sdf.parse(" 2001-07-10 19:20:00 ");
-        Date date2 = sdf.parse(" 2002-07-10 19:20:00 ");
-        Date date3 = sdf.parse(" 2003-07-10 19:20:00 ");
+        Date date1 = sdf.parse(" 2022-04-21 12:00:00 ");
 
         try {
-            client.insert("test_datetime_table", "1", new String[] { "c2" }, new Object[] { date1 });
-            client.insert("test_datetime_table", "2", new String[] { "c2" }, new Object[] { date2 });
-            client.insert("test_datetime_table", "3", new String[] { "c2" }, new Object[] { date3 });
+            // client.insert("test_datetime_table", "1", new String[] { "c2" }, new Object[] { date1 });
+            Connection connection = ObTableClientTestUtil.getConnection();
+            Statement statement = connection.createStatement();
+            statement.execute("insert into test_datetime_table values (0, FROM_UNIXTIME(1650513600))");
 
-            Map res = client.get("test_datetime_table", "1", new String[] { "c2" });
-            Assert.assertEquals(date1, res.get("c2"));
-            res = client.get("test_datetime_table", "2", new String[] { "c2" });
-            Assert.assertEquals(date2, res.get("c2"));
-            res = client.get("test_datetime_table", "3", new String[] { "c2" });
-            Assert.assertEquals(date3, res.get("c2"));
-
-
+            // 2022-04-21 12:00:00 = 1650513600000 -> insert by sql, get by obkv client
+            Map<String, Object> res = client.get("test_datetime_table", "0", new String[] { "c2" });
+            Assert.assertEquals(date1.getTime(), ((Date) res.get("c2")).getTime());
+            Assert.assertEquals(1650513600000L, ((Date) res.get("c2")).getTime());
         } finally {
-            client.delete("test_datetime_table").setRowKey(colVal("c1", "1")).execute();
-            client.delete("test_datetime_table").setRowKey(colVal("c1", "2")).execute();
-            client.delete("test_datetime_table").setRowKey(colVal("c1", "3")).execute();
+            client.delete("test_datetime_table").setRowKey(colVal("c1", "0")).execute();
         }
     }
 
