@@ -26,9 +26,8 @@ import com.alipay.oceanbase.rpc.util.TimeUtils;
 import io.netty.buffer.ByteBuf;
 
 import java.sql.Timestamp;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.time.*;
+import java.util.*;
 
 public enum ObObjType {
 
@@ -893,7 +892,10 @@ public enum ObObjType {
          */
         @Override
         public byte[] encode(Object obj) {
-            return Serialization.encodeVi64(((Date) obj).getTime() * 1000L);
+            // Date do not have timezone, when we use getTime, system will recognize it as our system timezone and transform it into UTC Time, which will changed the time.
+            // We should add back the lose part.
+            long targetTs = ((Date) obj).getTime() + OffsetDateTime.now().getOffset().getTotalSeconds() * 1000L;
+            return Serialization.encodeVi64(targetTs * 1000L);
         }
 
         /*
@@ -901,7 +903,7 @@ public enum ObObjType {
          */
         @Override
         public Object decode(ByteBuf buf, ObCollationType type) {
-            return new Timestamp(Serialization.decodeVi64(buf) / 1000L);
+            return new Date(Serialization.decodeVi64(buf) / 1000L - OffsetDateTime.now().getOffset().getTotalSeconds() * 1000L);
         }
 
         /*
