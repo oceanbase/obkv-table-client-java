@@ -903,7 +903,7 @@ public enum ObObjType {
          */
         @Override
         public Object decode(ByteBuf buf, ObCollationType type) {
-            return new Timestamp(Serialization.decodeVi64(buf) / 1000L - OffsetDateTime.now().getOffset().getTotalSeconds() * 1000L);
+            return new Date(Serialization.decodeVi64(buf) / 1000L - OffsetDateTime.now().getOffset().getTotalSeconds() * 1000L);
         }
 
         /*
@@ -949,7 +949,7 @@ public enum ObObjType {
          */
         @Override
         public Object decode(ByteBuf buf, ObCollationType type) {
-            return new Date(Serialization.decodeVi64(buf) / 1000L);
+            return new Timestamp(Serialization.decodeVi64(buf) / 1000L);
         }
 
         /*
