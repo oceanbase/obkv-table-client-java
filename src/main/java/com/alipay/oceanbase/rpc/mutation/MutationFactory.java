@@ -54,6 +54,8 @@ public class MutationFactory {
         return new InsertOrUpdate();
     }
 
+    public static Put put() { return new Put(); }
+
     public static Replace replace() {
         return new Replace();
     }

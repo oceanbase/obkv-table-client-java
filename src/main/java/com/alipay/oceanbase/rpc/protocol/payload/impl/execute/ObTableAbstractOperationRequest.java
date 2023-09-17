@@ -36,7 +36,7 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
     protected long                    partitionId             = Constants.INVALID_TABLET_ID;   // Constants.OB_INVALID_ID; // partition id / tabletId. 如果知道表分区id，可以用于优化，如果不知道，设定为OB_INVALID_ID
     protected ObTableEntityType       entityType              = ObTableEntityType.DYNAMIC;     // entity type. 如果明确entity类型，可以用于优化，如果不知道，设定为ObTableEntityType::DYNAMIC
     protected ObTableConsistencyLevel consistencyLevel        = ObTableConsistencyLevel.STRONG; // read consistency level. 读一致性，是否要强一致性等（必须读到刚写入的数据）. 目前只支持STRONG.
-    protected boolean                 returningRowKey         = false;
+    protected ObTableOptionFlag       option_flag             = ObTableOptionFlag.DEFAULT;
     protected boolean                 returningAffectedEntity = false;
     protected boolean                 returningAffectedRows   = false;
 
@@ -210,17 +210,10 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
     }
 
     /*
-     * Is returning row key.
+     * Set option flag.
      */
-    public boolean isReturningRowKey() {
-        return returningRowKey;
-    }
-
-    /*
-     * Set returning row key.
-     */
-    public void setReturningRowKey(boolean returningRowKey) {
-        this.returningRowKey = returningRowKey;
+    public void setOptionFlag(ObTableOptionFlag optionFlagflag) {
+        this.option_flag = optionFlagflag;
     }
 
     /*
