@@ -1900,6 +1900,42 @@ public class ObTableClientTest extends ObTableClientTestBase {
         }
     }
 
+
+    @Test
+    public void testPut() throws Exception {
+        System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
+        try {
+            // put
+            MutationResult insertOrUpdateResult = client.put("test_mutation")
+                    .setRowKey(colVal("c1", 1L), colVal("c2", "row_1"))
+                    .addMutateRow(row(colVal("c3", new byte[] { 2 }), colVal("c4", 1L)))
+                    .execute();
+            Assert.assertEquals(1, insertOrUpdateResult.getAffectedRows());
+
+            // check
+            Map<String, Object> res = client.get("test_mutation", new Object[] {1L, "row_1"}, null);
+            Assert.assertEquals(1L, res.get("c1"));
+            Assert.assertEquals("row_1", res.get("c2"));
+            Assert.assertEquals(1L, res.get("c4"));
+
+            // use put but not set all column, cause exception
+            try {
+                insertOrUpdateResult = client.put("test_mutation")
+                        .setRowKey(colVal("c1", 1L), colVal("c2", "row_1"))
+                        .addMutateRow(row(colVal("c3", new byte[] { 2 })))
+                        .execute();
+            } catch (Exception e) {
+                Assert.assertTrue(e instanceof ObTableException);
+                Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
+                        ((ObTableException) e).getErrorCode());
+            }
+        } finally {
+            client.delete("test_mutation").setRowKey(colVal("c1", 1L), colVal("c2", "row_1"))
+                    .execute();
+        }
+    }
+
+
     @Test
     public void testBatchMutation() throws Exception {
         System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");

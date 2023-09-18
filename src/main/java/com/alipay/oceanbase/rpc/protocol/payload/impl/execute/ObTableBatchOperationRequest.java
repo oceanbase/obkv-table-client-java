@@ -76,7 +76,7 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
         idx += len;
         System.arraycopy(Serialization.encodeI8(consistencyLevel.getByteValue()), 0, bytes, idx, 1);
         idx++;
-        System.arraycopy(Serialization.encodeI8(returningRowKey ? (byte) 1 : (byte) 0), 0, bytes,
+        System.arraycopy(Serialization.encodeI8(option_flag.getByteValue()), 0, bytes,
             idx, 1);
         idx++;
         System.arraycopy(Serialization.encodeI8(returningAffectedEntity ? (byte) 1 : (byte) 0), 0,
@@ -115,7 +115,7 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
         this.batchOperation.decode(buf);
 
         this.consistencyLevel = ObTableConsistencyLevel.valueOf(buf.readByte());
-        this.returningRowKey = Serialization.decodeI8(buf) != 0;
+        this.option_flag = ObTableOptionFlag.valueOf(buf.readByte());
         this.returningAffectedEntity = Serialization.decodeI8(buf) != 0;
         this.returningAffectedRows = Serialization.decodeI8(buf) != 0;
         if (ObGlobal.obVsnMajor() >= 4)

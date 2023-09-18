@@ -29,10 +29,7 @@ import com.alipay.oceanbase.rpc.exception.ObTableServerConnectException;
 import com.alipay.oceanbase.rpc.batch.QueryByBatch;
 import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObITableEntity;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationRequest;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationResult;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.remoting.ConnectionEventHandler;
@@ -184,7 +181,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                                                                                         throws RemotingException,
                                                                                         InterruptedException {
         ObTableOperationResult result = execute(tableName, ObTableOperationType.GET, rowkeys,
-            columns, null, false, false, true);
+            columns, null, ObTableOptionFlag.DEFAULT, false, true);
         ObITableEntity entity = result.getEntity();
         return entity.getSimpleProperties();
     }
@@ -203,7 +200,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                                                                                              throws RemotingException,
                                                                                              InterruptedException {
         ObTableOperationResult result = execute(tableName, ObTableOperationType.UPDATE, rowkeys,
-            columns, values, false, false, true);
+            columns, values, ObTableOptionFlag.DEFAULT, false, true);
         return result.getAffectedRows();
     }
 
@@ -220,7 +217,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     public long delete(String tableName, Object[] rowkeys) throws RemotingException,
                                                           InterruptedException {
         ObTableOperationResult result = execute(tableName, ObTableOperationType.DEL, rowkeys, null,
-            null, false, false, true);
+            null, ObTableOptionFlag.DEFAULT, false, true);
         return result.getAffectedRows();
     }
 
@@ -238,7 +235,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                                                                                              throws RemotingException,
                                                                                              InterruptedException {
         ObTableOperationResult result = execute(tableName, ObTableOperationType.INSERT, rowkeys,
-            columns, values, false, false, true);
+            columns, values, ObTableOptionFlag.DEFAULT, false, true);
 
         return result.getAffectedRows();
     }
@@ -257,7 +254,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                                                                                               throws RemotingException,
                                                                                               InterruptedException {
         ObTableOperationResult result = execute(tableName, ObTableOperationType.REPLACE, rowkeys,
-            columns, values, false, false, true);
+            columns, values, ObTableOptionFlag.DEFAULT, false, true);
         return result.getAffectedRows();
     }
 
@@ -275,8 +272,15 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                                                                                                      throws RemotingException,
                                                                                                      InterruptedException {
         ObTableOperationResult result = execute(tableName, ObTableOperationType.INSERT_OR_UPDATE,
-            rowkeys, columns, values, false, false, true);
+            rowkeys, columns, values, ObTableOptionFlag.DEFAULT, false, true);
         return result.getAffectedRows();
+    }
+
+    /**
+     * Put.
+     */
+    public Put put(String tableName) {
+        return new Put(this, tableName);
     }
 
     /**
@@ -290,7 +294,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     public Map<String, Object> increment(String tableName, Object[] rowkeys, String[] columns,
                                          Object[] values, boolean withResult) throws Exception {
         ObTableOperationResult result = execute(tableName, ObTableOperationType.INCREMENT, rowkeys,
-            columns, values, false, withResult, true);
+            columns, values, ObTableOptionFlag.DEFAULT, withResult, true);
         ObITableEntity entity = result.getEntity();
         return entity.getSimpleProperties();
     }
@@ -306,7 +310,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     public Map<String, Object> append(String tableName, Object[] rowkeys, String[] columns,
                                       Object[] values, boolean withResult) throws Exception {
         ObTableOperationResult result = execute(tableName, ObTableOperationType.APPEND, rowkeys,
-            columns, values, false, withResult, true);
+            columns, values, ObTableOptionFlag.DEFAULT, withResult, true);
         ObITableEntity entity = result.getEntity();
         return entity.getSimpleProperties();
     }
@@ -323,13 +327,13 @@ public class ObTable extends AbstractObTable implements Lifecycle {
      */
     public ObTableOperationResult execute(String tableName, ObTableOperationType type,
                                           Object[] rowkeys, String[] columns, Object[] values,
-                                          boolean returningRowKey, boolean returningAffectedEntity,
+                                          ObTableOptionFlag optionFlag, boolean returningAffectedEntity,
                                           boolean returningAffectedRows) throws RemotingException,
                                                                         InterruptedException {
         checkStatus();
         ObTableOperationRequest request = ObTableOperationRequest.getInstance(tableName, type,
             rowkeys, columns, values, obTableOperationTimeout);
-        request.setReturningRowKey(returningRowKey);
+        request.setOptionFlag(optionFlag);
         request.setReturningAffectedEntity(returningAffectedEntity);
         request.setReturningAffectedRows(returningAffectedRows);
         ObPayload result = execute(request);
