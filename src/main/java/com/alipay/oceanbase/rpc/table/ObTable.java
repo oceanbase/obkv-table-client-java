@@ -327,7 +327,8 @@ public class ObTable extends AbstractObTable implements Lifecycle {
      */
     public ObTableOperationResult execute(String tableName, ObTableOperationType type,
                                           Object[] rowkeys, String[] columns, Object[] values,
-                                          ObTableOptionFlag optionFlag, boolean returningAffectedEntity,
+                                          ObTableOptionFlag optionFlag,
+                                          boolean returningAffectedEntity,
                                           boolean returningAffectedRows) throws RemotingException,
                                                                         InterruptedException {
         checkStatus();
