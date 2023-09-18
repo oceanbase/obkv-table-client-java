@@ -1669,7 +1669,10 @@ public class LocationUtil {
         Pattern pattern = Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)");
         Matcher matcher = pattern.matcher(serverVersion);
         if (matcher.find() && ObGlobal.OB_VERSION == 0) {
-            ObGlobal.OB_VERSION = ObGlobal.calcVersion(Integer.parseInt(matcher.group(1)), (short) Integer.parseInt(matcher.group(2)), (byte) Integer.parseInt(matcher.group(3)), (byte) Integer.parseInt(matcher.group(4)));
+            ObGlobal.OB_VERSION = ObGlobal.calcVersion(Integer.parseInt(matcher.group(1)),
+                (short) Integer.parseInt(matcher.group(2)),
+                (byte) Integer.parseInt(matcher.group(3)),
+                (byte) Integer.parseInt(matcher.group(4)));
         }
     }
 
@@ -1678,7 +1681,10 @@ public class LocationUtil {
         Pattern pattern = Pattern.compile("OceanBase\\s+(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)");
         Matcher matcher = pattern.matcher(serverVersion);
         if (matcher.find() && ObGlobal.OB_VERSION == 0) {
-            ObGlobal.OB_VERSION = ObGlobal.calcVersion(Integer.parseInt(matcher.group(1)), (short) Integer.parseInt(matcher.group(2)), (byte) Integer.parseInt(matcher.group(3)), (byte) Integer.parseInt(matcher.group(4)));
+            ObGlobal.OB_VERSION = ObGlobal.calcVersion(Integer.parseInt(matcher.group(1)),
+                (short) Integer.parseInt(matcher.group(2)),
+                (byte) Integer.parseInt(matcher.group(3)),
+                (byte) Integer.parseInt(matcher.group(4)));
         }
     }
 }

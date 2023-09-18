@@ -724,7 +724,8 @@ public class ObTableClientPartitionKeyTest {
     public void testPartitionLocation() throws Exception {
         obTableClient.setRunningMode(ObTableClient.RunningMode.NORMAL);
         String testTable = "testPartitionKeyComplex";
-        obTableClient.addRowKeyElement(testTable, new String[] { "c0", "c1", "c2", "c3", "c4", "c5"});
+        obTableClient.addRowKeyElement(testTable,
+            new String[] { "c0", "c1", "c2", "c3", "c4", "c5" });
         try {
             cleanPartitionLocationTable(testTable);
             Connection connection = ObTableClientTestUtil.getConnection();
@@ -738,13 +739,14 @@ public class ObTableClientPartitionKeyTest {
                 String c5 = generateRandomStringByUUID(5) + c3 + generateRandomStringByUUID(5);
 
                 // use sql to insert data
-                statement.execute("insert into " + testTable + "(c0, c1, c2, c3, c4, c5, c6) values (" + c0
-                                  + "," + c1 + "," + c2 + ",'" + c3 + "','" + c4 + "','" + c5 + "'," + "'value')");
+                statement.execute("insert into " + testTable
+                                  + "(c0, c1, c2, c3, c4, c5, c6) values (" + c0 + "," + c1 + ","
+                                  + c2 + ",'" + c3 + "','" + c4 + "','" + c5 + "'," + "'value')");
 
                 // get data by obkv interface
-                Map<String, Object> result = obTableClient.get(testTable,
-                    new Object[] { c0, c1, c2, c3.getBytes(), c4, c5 }, new String[] { "c0", "c1", "c2", "c3",
-                            "c4", "c5", "c6" });
+                Map<String, Object> result = obTableClient.get(testTable, new Object[] { c0, c1,
+                        c2, c3.getBytes(), c4, c5 }, new String[] { "c0", "c1", "c2", "c3", "c4",
+                        "c5", "c6" });
                 Assert.assertEquals(7, result.size());
             }
         } catch (Exception e) {
