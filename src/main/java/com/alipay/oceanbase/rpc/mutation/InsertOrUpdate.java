@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 public class InsertOrUpdate extends Mutation<InsertOrUpdate> {
+    private boolean usePut;
     private List<String> columns;
     private List<Object> values;
 
@@ -36,6 +37,7 @@ public class InsertOrUpdate extends Mutation<InsertOrUpdate> {
      */
     public InsertOrUpdate() {
         super();
+        usePut = false;
         columns = new ArrayList<String>();
         values = new ArrayList<Object>();
     }
@@ -45,8 +47,17 @@ public class InsertOrUpdate extends Mutation<InsertOrUpdate> {
      */
     public InsertOrUpdate(Table client, String tableName) {
         super(client, tableName);
+        usePut = false;
         columns = new ArrayList<String>();
         values = new ArrayList<Object>();
+    }
+
+    /*
+     * set use put
+     */
+    protected InsertOrUpdate usePut() {
+        usePut = true;
+        return this;
     }
 
     /*
@@ -131,7 +142,7 @@ public class InsertOrUpdate extends Mutation<InsertOrUpdate> {
             // simple InsertOrUpdate, without filter
             return new MutationResult(((ObTableClient) getClient()).insertOrUpdateWithResult(
                 getTableName(), getRowKey(), getKeyRanges(), columns.toArray(new String[0]),
-                values.toArray()));
+                values.toArray(), usePut));
         } else {
             throw new ObTableException("InsertOrUpdate with query(filter) is not supported yet");
         }

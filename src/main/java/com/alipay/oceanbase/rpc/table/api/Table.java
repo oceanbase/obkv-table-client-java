@@ -74,6 +74,7 @@ public interface Table {
 
     long insertOrUpdate(String tableName, Object[] rowkeys, String[] columns, Object[] values)
                                                                                               throws Exception;
+    Put put(String tableName);
 
     Increment increment(String tableName);
 

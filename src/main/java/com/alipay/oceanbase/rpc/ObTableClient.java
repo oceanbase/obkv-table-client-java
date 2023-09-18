@@ -1915,7 +1915,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     public ObPayload insertOrUpdateWithResult(final String tableName, final Object[] rowKey,
                                               final List<ObNewRange> keyRanges,
-                                              final String[] columns, final Object[] values)
+                                              final String[] columns, final Object[] values,
+                                              boolean usePut)
                                                                                             throws Exception {
         final long start = System.currentTimeMillis();
         return executeMutation(tableName,
@@ -1934,6 +1935,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     request.setTableId(tableParam.getTableId());
                     // partId/tabletId
                     request.setPartitionId(tableParam.getPartitionId());
+                    if (usePut) {
+                        request.setOptionFlag(ObTableOptionFlag.USE_PUT);
+                    }
                     ObPayload result = obTable.execute(request);
                     String endpoint = obTable.getIp() + ":" + obTable.getPort();
                     MonitorUtil.info(request, database, tableName, "INERT_OR_UPDATE", endpoint,
@@ -1943,6 +1947,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     return result;
                 }
             });
+    }
+
+    /**
+     * Put.
+     */
+    public Put put(String tableName) {
+        return new Put(this, tableName);
     }
 
     /**
@@ -2275,7 +2286,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         ObTableQueryAndMutateRequest request = buildObTableQueryAndMutateRequest(queryAndMutate,
             tableName);
 
-        request.setReturningRowKey(false);
+        request.setOptionFlag(ObTableOptionFlag.DEFAULT);
         request.setReturningAffectedEntity(withResult);
         request.setReturningAffectedRows(true);
 
