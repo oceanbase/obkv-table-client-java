@@ -526,11 +526,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             logger
                                 .warn(
                                     "execute while meet Exception, errorCode: {} , errorMsg: {}, try times {}",
-                                    ((ObTableException) ex).getErrorCode(), ex.getMessage(), tryTimes);
+                                    ((ObTableException) ex).getErrorCode(), ex.getMessage(),
+                                    tryTimes);
                         } else {
-                            logger
-                                .warn(
-                                    "execute while meet Exception, errorMsg: {}, try times {}", ex.getMessage(), tryTimes);
+                            logger.warn("execute while meet Exception, errorMsg: {}, try times {}",
+                                ex.getMessage(), tryTimes);
                         }
                     } else {
                         throw ex;
@@ -1916,8 +1916,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     public ObPayload insertOrUpdateWithResult(final String tableName, final Object[] rowKey,
                                               final List<ObNewRange> keyRanges,
                                               final String[] columns, final Object[] values,
-                                              boolean usePut)
-                                                                                            throws Exception {
+                                              boolean usePut) throws Exception {
         final long start = System.currentTimeMillis();
         return executeMutation(tableName,
             new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {

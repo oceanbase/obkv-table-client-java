@@ -16,6 +16,7 @@
  */
 
 package com.alipay.oceanbase.rpc.mutation;
+
 import com.alipay.oceanbase.rpc.table.api.Table;
 
 /*

@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 public class InsertOrUpdate extends Mutation<InsertOrUpdate> {
-    private boolean usePut;
+    private boolean      usePut;
     private List<String> columns;
     private List<Object> values;
 

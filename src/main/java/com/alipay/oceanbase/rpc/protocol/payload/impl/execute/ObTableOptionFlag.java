@@ -22,9 +22,7 @@ import java.util.Map;
 
 public enum ObTableOptionFlag {
 
-    DEFAULT(0),
-    RETURNING_ROWKEY(1 << 0),
-    USE_PUT(1 << 1);
+    DEFAULT(0), RETURNING_ROWKEY(1 << 0), USE_PUT(1 << 1);
 
     private int                                    value;
     private static Map<Integer, ObTableOptionFlag> map = new HashMap<Integer, ObTableOptionFlag>();

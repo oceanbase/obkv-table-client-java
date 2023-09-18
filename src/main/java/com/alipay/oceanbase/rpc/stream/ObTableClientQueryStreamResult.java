@@ -89,18 +89,21 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                 if (client.isOdpMode()) {
                     if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
                         if (e instanceof ObTableException) {
-                            logger.warn(
+                            logger
+                                .warn(
                                     "tablename:{} stream query execute while meet Exception needing retry, errorCode: {}, errorMsg: {}, try times {}",
-                                    tableName, ((ObTableException) e).getErrorCode(), e.getMessage(),
-                                    tryTimes);
+                                    tableName, ((ObTableException) e).getErrorCode(),
+                                    e.getMessage(), tryTimes);
                         } else if (e instanceof IllegalArgumentException) {
-                            logger.warn(
+                            logger
+                                .warn(
                                     "tablename:{} stream query execute while meet Exception needing retry, try times {}, errorMsg: {}",
                                     tableName, tryTimes, e.getMessage());
                         } else {
-                            logger.warn(
-                                "tablename:{} stream query execute while meet Exception needing retry, try times {}",
-                                tableName, tryTimes, e);
+                            logger
+                                .warn(
+                                    "tablename:{} stream query execute while meet Exception needing retry, try times {}",
+                                    tableName, tryTimes, e);
                         }
                     } else {
                         throw e;

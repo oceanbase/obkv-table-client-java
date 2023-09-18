@@ -1900,20 +1900,19 @@ public class ObTableClientTest extends ObTableClientTestBase {
         }
     }
 
-
     @Test
     public void testPut() throws Exception {
         System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
         try {
             // put
             MutationResult insertOrUpdateResult = client.put("test_mutation")
-                    .setRowKey(colVal("c1", 1L), colVal("c2", "row_1"))
-                    .addMutateRow(row(colVal("c3", new byte[] { 2 }), colVal("c4", 1L)))
-                    .execute();
+                .setRowKey(colVal("c1", 1L), colVal("c2", "row_1"))
+                .addMutateRow(row(colVal("c3", new byte[] { 2 }), colVal("c4", 1L))).execute();
             Assert.assertEquals(1, insertOrUpdateResult.getAffectedRows());
 
             // check
-            Map<String, Object> res = client.get("test_mutation", new Object[] {1L, "row_1"}, null);
+            Map<String, Object> res = client.get("test_mutation", new Object[] { 1L, "row_1" },
+                null);
             Assert.assertEquals(1L, res.get("c1"));
             Assert.assertEquals("row_1", res.get("c2"));
             Assert.assertEquals(1L, res.get("c4"));
@@ -1921,20 +1920,18 @@ public class ObTableClientTest extends ObTableClientTestBase {
             // use put but not set all column, cause exception
             try {
                 insertOrUpdateResult = client.put("test_mutation")
-                        .setRowKey(colVal("c1", 1L), colVal("c2", "row_1"))
-                        .addMutateRow(row(colVal("c3", new byte[] { 2 })))
-                        .execute();
+                    .setRowKey(colVal("c1", 1L), colVal("c2", "row_1"))
+                    .addMutateRow(row(colVal("c3", new byte[] { 2 }))).execute();
             } catch (Exception e) {
                 Assert.assertTrue(e instanceof ObTableException);
                 Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
-                        ((ObTableException) e).getErrorCode());
+                    ((ObTableException) e).getErrorCode());
             }
         } finally {
             client.delete("test_mutation").setRowKey(colVal("c1", 1L), colVal("c2", "row_1"))
-                    .execute();
+                .execute();
         }
     }
-
 
     @Test
     public void testBatchMutation() throws Exception {
@@ -2285,7 +2282,8 @@ public class ObTableClientTest extends ObTableClientTestBase {
             // client.insert("test_datetime_table", "0", new String[] { "c2" }, new Object[] { date1 });
             Connection connection = ObTableClientTestUtil.getConnection();
             Statement statement = connection.createStatement();
-            statement.execute("insert into test_datetime_table values (0, FROM_UNIXTIME(1650513600))");
+            statement
+                .execute("insert into test_datetime_table values (0, FROM_UNIXTIME(1650513600))");
 
             // 2022-04-21 12:00:00 CST = 1650513600000 -> insert by sql, get by obkv client
             Map<String, Object> res = client.get("test_datetime_table", "0", new String[] { "c2" });
@@ -2299,8 +2297,10 @@ public class ObTableClientTest extends ObTableClientTestBase {
             System.out.println(res.get("c2"));
 
             // 2022-04-21 15:00:00 CST = 1650524400000 -> insert by obkv client, get by sql
-            client.insert("test_datetime_table", "1", new String[] { "c2" }, new Object[] { date2 });
-            ResultSet resultSet = statement.executeQuery("select * from test_datetime_table where c1 = 1");
+            client
+                .insert("test_datetime_table", "1", new String[] { "c2" }, new Object[] { date2 });
+            ResultSet resultSet = statement
+                .executeQuery("select * from test_datetime_table where c1 = 1");
             resultSet.next();
             Assert.assertEquals(date2, resultSet.getTimestamp("c2"));
             Assert.assertEquals(date2.getTime(), resultSet.getDate("c2").getTime());
