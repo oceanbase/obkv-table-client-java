@@ -34,8 +34,9 @@ public class ObGlobal {
     }
 
     public static long calcVersion(long major, long minor, long major_patch, long minor_patch) {
-        return major << OB_VSN_MAJOR_SHIFT + minor << OB_VSN_MINOR_SHIFT + major_patch << OB_VSN_MAJOR_PATCH_SHIFT
-                                                                                          + minor_patch << OB_VSN_MINOR_PATCH_SHIFT;
+        return (major << OB_VSN_MAJOR_SHIFT) + (minor << OB_VSN_MINOR_SHIFT)
+               + (major_patch << OB_VSN_MAJOR_PATCH_SHIFT)
+               + (minor_patch << OB_VSN_MINOR_PATCH_SHIFT);
     }
 
     public static int obVsnMajor() {
@@ -70,5 +71,17 @@ public class ObGlobal {
         return (byte) ((version >> OB_VSN_MINOR_PATCH_SHIFT) & OB_VSN_MINOR_PATCH_MASK);
     }
 
-    public static long OB_VERSION = calcVersion(0, (short) 0, (byte) 0, (byte) 0);
+    public static String obVsnString() {
+        return String.format("%d.%d.%d.%d", obVsnMajor(), obVsnMinor(), obVsnMajorPatch(),
+            obVsnMinorPatch());
+    }
+
+    public static String getObVsnString(long version) {
+        return String.format("%d.%d.%d.%d", getObVsnMajor(version), getObVsnMinor(version),
+            getObVsnMajorPatch(version), getObVsnMinorPatch(version));
+    }
+
+    public static final long OB_VERSION_4_2_1_0 = calcVersion(4, (short) 2, (byte) 1, (byte) 0);
+
+    public static long       OB_VERSION         = calcVersion(0, (short) 0, (byte) 0, (byte) 0);
 }

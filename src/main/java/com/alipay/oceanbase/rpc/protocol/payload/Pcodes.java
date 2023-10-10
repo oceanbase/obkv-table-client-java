@@ -29,4 +29,6 @@ public interface Pcodes {
     int OB_ERROR_PACKET                 = 0x010;
 
     int OB_TABLE_API_EXECUTE_QUERY_SYNC = 0x1106;
+
+    int OB_TABLE_API_DIRECT_LOAD        = 0x1123;
 }

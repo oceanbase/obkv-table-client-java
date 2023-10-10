@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl;
 
 import com.alipay.oceanbase.rpc.protocol.payload.ObSimplePayload;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.ObVString;
 import io.netty.buffer.ByteBuf;
 
@@ -68,9 +69,21 @@ public class ObObj implements ObSimplePayload {
 
         System.arraycopy(meta.encode(), 0, bytes, idx, 4);
         idx += 4;
-        System.arraycopy(meta.getType().encode(value), 0, bytes, idx, meta.getType()
-            .getEncodedSize(value));
+
+        byte[] valueBytes = meta.getType().encode(value);
+        System.arraycopy(valueBytes, 0, bytes, idx, valueBytes.length);
+        idx += valueBytes.length;
+
         return bytes;
+    }
+
+    /*
+     * Encode.
+     */
+    @Override
+    public void encode(ObByteBuf buf) {
+        meta.encode(buf);
+        buf.writeBytes(meta.getType().encode(value));
     }
 
     /*
