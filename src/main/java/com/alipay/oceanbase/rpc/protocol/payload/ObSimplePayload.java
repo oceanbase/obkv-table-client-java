@@ -17,6 +17,8 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload;
 
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
+
 import io.netty.buffer.ByteBuf;
 
 /*
@@ -25,6 +27,8 @@ import io.netty.buffer.ByteBuf;
 public interface ObSimplePayload {
 
     byte[] encode();
+
+    void encode(ObByteBuf buf);
 
     Object decode(ByteBuf buf);
 

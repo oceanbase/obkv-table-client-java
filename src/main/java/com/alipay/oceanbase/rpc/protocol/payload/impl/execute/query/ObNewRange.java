@@ -22,6 +22,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.ObSimplePayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -104,6 +105,28 @@ public class ObNewRange implements ObSimplePayload {
         }
 
         return bytes;
+    }
+
+    /*
+     * Encode.
+     */
+    @Override
+    public void encode(ObByteBuf buf) {
+        Serialization.encodeVi64(buf, tableId);
+        Serialization.encodeI8(buf, borderFlag.getValue());
+        long startKeyObjCount = startKey.getObjCount();
+        Serialization.encodeVi64(buf, startKeyObjCount);
+        for (int i = 0; i < startKeyObjCount; ++i) {
+            startKey.getObj(i).encode(buf);
+        }
+        long endKeyObjCount = endKey.getObjCount();
+        Serialization.encodeVi64(buf, endKeyObjCount);
+        for (int i = 0; i < endKeyObjCount; ++i) {
+            endKey.getObj(i).encode(buf);
+        }
+        if (ObGlobal.obVsnMajor() >= 4) {
+            Serialization.encodeVi64(buf, flag);
+        }
     }
 
     /*

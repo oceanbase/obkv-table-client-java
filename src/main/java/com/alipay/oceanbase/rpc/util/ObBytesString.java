@@ -17,6 +17,8 @@
 
 package com.alipay.oceanbase.rpc.util;
 
+import java.util.ArrayList;
+
 /**
  * binary bytes string without charset
  */
@@ -89,5 +91,26 @@ public class ObBytesString implements Comparable<ObBytesString> {
             k++;
         }
         return len1 - len2;
+    }
+
+    public ObBytesString[] split(byte delim) {
+        ArrayList<ObBytesString> list = new ArrayList<>();
+        int start = 0;
+        for (int i = 0; i < bytes.length; ++i) {
+            if (bytes[i] == delim) {
+                byte[] data = new byte[i - start];
+                System.arraycopy(bytes, start, data, 0, data.length);
+                ObBytesString str = new ObBytesString(data);
+                list.add(str);
+                start = i + 1;
+            }
+        }
+        if (start < bytes.length) {
+            byte[] data = new byte[bytes.length - start];
+            System.arraycopy(bytes, start, data, 0, data.length);
+            ObBytesString str = new ObBytesString(data);
+            list.add(str);
+        }
+        return list.toArray(new ObBytesString[0]);
     }
 }
