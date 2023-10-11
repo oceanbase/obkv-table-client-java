@@ -57,9 +57,6 @@ public class ObTableTTLTest {
         if (ObGlobal.obVsnMajor() <= 0) {
             // ob version is invalid
             Assert.assertTrue(false);
-        } else if (ObGlobal.obVsnMajor() != 3) {
-            // todo: only support in 3.x currently
-            Assert.assertTrue(false);
         }
     }
 
