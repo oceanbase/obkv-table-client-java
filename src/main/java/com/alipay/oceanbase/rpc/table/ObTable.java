@@ -78,6 +78,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                 return;
             }
             initProperties();
+            init_check();
             connectionFactory = ObConnectionFactory
                 .newBuilder()
                 .configWriteBufferWaterMark(getNettyBufferLowWatermark(),
@@ -110,6 +111,21 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             closed = true;
         } finally {
             statusLock.unlock();
+        }
+    }
+
+    /*
+     * Init check
+     */
+    private void init_check() throws IllegalArgumentException {
+        if (obTableConnectionPoolSize <= 0) {
+            throw new IllegalArgumentException("invalid obTableConnectionPoolSize: "
+                                               + obTableConnectionPoolSize);
+        } else if (ip.isEmpty() || port <= 0) {
+            throw new IllegalArgumentException("invalid ip or port: " + ip + ":" + port);
+        } else if (userName.isEmpty() || database.isEmpty()) {
+            throw new IllegalArgumentException("invalid userName or database: "
+                                               + userName + ":" + database);
         }
     }
 
