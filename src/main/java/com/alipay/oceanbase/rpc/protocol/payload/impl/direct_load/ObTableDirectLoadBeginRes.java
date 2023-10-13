@@ -37,7 +37,7 @@ public class ObTableDirectLoadBeginRes implements ObSimplePayload {
     private long                    taskId      = 0;
     private String[]                columnNames = new String[0];
     private ObTableLoadClientStatus status      = ObTableLoadClientStatus.MAX_STATUS;
-    private ResultCodes             errorCode   = ResultCodes.OB_SUCCESS;
+    private int                     errorCode   = ResultCodes.OB_SUCCESS.errorCode;
 
     public ObTableDirectLoadBeginRes() {
     }
@@ -77,11 +77,11 @@ public class ObTableDirectLoadBeginRes implements ObSimplePayload {
         this.status = status;
     }
 
-    public ResultCodes getErrorCode() {
+    public int getErrorCode() {
         return errorCode;
     }
 
-    public void setErrorCode(ResultCodes errorCode) {
+    public void setErrorCode(int errorCode) {
         this.errorCode = errorCode;
     }
 
@@ -108,7 +108,7 @@ public class ObTableDirectLoadBeginRes implements ObSimplePayload {
             Serialization.encodeVString(columnNames[i]);
         }
         Serialization.encodeI8(buf, status.getByteValue());
-        Serialization.encodeVi32(buf, errorCode.errorCode);
+        Serialization.encodeVi32(buf, errorCode);
     }
 
     /**
@@ -124,7 +124,7 @@ public class ObTableDirectLoadBeginRes implements ObSimplePayload {
             columnNames[i] = Serialization.decodeVString(buf);
         }
         status = ObTableLoadClientStatus.valueOf(Serialization.decodeI8(buf));
-        errorCode = ResultCodes.valueOf(Serialization.decodeVi32(buf));
+        errorCode = Serialization.decodeVi32(buf);
         return this;
     }
 
@@ -141,7 +141,7 @@ public class ObTableDirectLoadBeginRes implements ObSimplePayload {
             len += Serialization.getNeedBytes(columnNames[i]);
         }
         len += 1; /*status*/
-        len += Serialization.getNeedBytes(errorCode.errorCode);
+        len += Serialization.getNeedBytes(errorCode);
         return len;
     }
 

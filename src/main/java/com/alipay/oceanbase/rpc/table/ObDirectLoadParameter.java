@@ -84,4 +84,10 @@ public class ObDirectLoadParameter {
         return this;
     }
 
+    public String toString() {
+        return String.format(
+            "{parallel:%s, maxErrorRowCount:%d, dupAction:%s, timeout:%d, heartBeatTimeout:%d}",
+            parallel, maxErrorRowCount, dupAction, timeout, heartBeatTimeout);
+    }
+
 }

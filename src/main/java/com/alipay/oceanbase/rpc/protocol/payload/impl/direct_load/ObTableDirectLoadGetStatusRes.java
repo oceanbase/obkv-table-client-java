@@ -31,7 +31,7 @@ import io.netty.buffer.ByteBuf;
 public class ObTableDirectLoadGetStatusRes implements ObSimplePayload {
 
     private ObTableLoadClientStatus status    = ObTableLoadClientStatus.MAX_STATUS;
-    private ResultCodes             errorCode = ResultCodes.OB_SUCCESS;
+    private int                     errorCode = ResultCodes.OB_SUCCESS.errorCode;
 
     public ObTableDirectLoadGetStatusRes() {
     }
@@ -44,11 +44,11 @@ public class ObTableDirectLoadGetStatusRes implements ObSimplePayload {
         this.status = status;
     }
 
-    public ResultCodes getErrorCode() {
+    public int getErrorCode() {
         return errorCode;
     }
 
-    public void setErrorCode(ResultCodes errorCode) {
+    public void setErrorCode(int errorCode) {
         this.errorCode = errorCode;
     }
 
@@ -69,7 +69,7 @@ public class ObTableDirectLoadGetStatusRes implements ObSimplePayload {
     @Override
     public void encode(ObByteBuf buf) {
         Serialization.encodeI8(buf, status.getByteValue());
-        Serialization.encodeVi32(buf, errorCode.errorCode);
+        Serialization.encodeVi32(buf, errorCode);
     }
 
     /**
@@ -78,7 +78,7 @@ public class ObTableDirectLoadGetStatusRes implements ObSimplePayload {
     @Override
     public ObTableDirectLoadGetStatusRes decode(ByteBuf buf) {
         status = ObTableLoadClientStatus.valueOf(Serialization.decodeI8(buf));
-        errorCode = ResultCodes.valueOf(Serialization.decodeVi32(buf));
+        errorCode = Serialization.decodeVi32(buf);
         return this;
     }
 
@@ -87,7 +87,7 @@ public class ObTableDirectLoadGetStatusRes implements ObSimplePayload {
      */
     @Override
     public int getEncodedSize() {
-        return 1 /*status*/+ Serialization.getNeedBytes(errorCode.errorCode);
+        return 1 /*status*/+ Serialization.getNeedBytes(errorCode);
     }
 
 }
