@@ -63,7 +63,7 @@ public class ObTableDirectLoad extends AbstractPropertyAware {
     private long                    taskId               = 0;
     private String[]                columnNames          = new String[0];
     private ObTableLoadClientStatus status               = ObTableLoadClientStatus.MAX_STATUS;
-    private ResultCodes             errorCode            = ResultCodes.OB_SUCCESS;
+    private int                     errorCode            = ResultCodes.OB_SUCCESS.errorCode;
     private ObAddr                  srvAddr              = null;
 
     private Timer                   timer;
@@ -78,6 +78,12 @@ public class ObTableDirectLoad extends AbstractPropertyAware {
             logger.warn("not supported ob version {}", ObGlobal.obVsnString());
             throw new ObTableException("not supported ob version " + ObGlobal.obVsnString(),
                 ResultCodes.OB_NOT_SUPPORTED.errorCode);
+        }
+        if (table == null || tableName == null || tableName.isEmpty() || parameter == null) {
+            logger.warn("invalid args, table:{}, tableName:{}, parameter:{}", table, tableName,
+                parameter);
+            throw new IllegalArgumentException("invalid args: " + table + ", " + tableName + ", "
+                                               + parameter);
         }
         this.table = table;
         this.tableName = tableName;
@@ -134,7 +140,7 @@ public class ObTableDirectLoad extends AbstractPropertyAware {
         return status == ObTableLoadClientStatus.ABORT;
     }
 
-    public ResultCodes getErrorCode() {
+    public int getErrorCode() {
         return errorCode;
     }
 
@@ -153,9 +159,8 @@ public class ObTableDirectLoad extends AbstractPropertyAware {
 
     public void begin() throws Exception {
         if (status != ObTableLoadClientStatus.MAX_STATUS) {
-            logger.warn("unexpected status to begin, table:{}, status:{}", toString(),
-                status.toString());
-            throw new ObTableException("unexpected status to begin, status:" + status.toString(),
+            logger.warn("unexpected status to begin, table:{}, status:{}", this, status);
+            throw new ObTableException("unexpected status to begin, status:" + status,
                 ResultCodes.OB_STATE_NOT_MATCH.errorCode);
         }
         ObTableDirectLoadBeginArg arg = new ObTableDirectLoadBeginArg();
@@ -173,29 +178,27 @@ public class ObTableDirectLoad extends AbstractPropertyAware {
         columnNames = res.getColumnNames();
         status = res.getStatus();
         errorCode = res.getErrorCode();
-        logger.info("begin suceess, table:{}", toString());
+        logger.info("begin suceess, table:{}", this);
         startHeartBeat();
     }
 
     public void commit() throws Exception {
         if (!isRunning()) {
-            logger.warn("unexpected status to commit, table:{}, status:{}", toString(),
-                status.toString());
-            throw new ObTableException("unexpected status to commit, status:" + status.toString(),
+            logger.warn("unexpected status to commit, table:{}, status:{}", this, status);
+            throw new ObTableException("unexpected status to commit, status:" + status,
                 ResultCodes.OB_STATE_NOT_MATCH.errorCode);
         }
         ObTableDirectLoadCommitArg arg = new ObTableDirectLoadCommitArg();
         arg.setTableId(tableId);
         arg.setTaskId(taskId);
         execute(ObTableDirectLoadOperationType.COMMIT, arg);
-        logger.info("commit suceess, table:{}", toString());
+        logger.info("commit suceess, table:{}", this);
     }
 
     public void abort() throws Exception {
         if (status == ObTableLoadClientStatus.MAX_STATUS) {
-            logger.warn("unexpected status to abort, table:{}, status:{}", toString(),
-                status.toString());
-            throw new ObTableException("unexpected status to abort, status:" + status.toString(),
+            logger.warn("unexpected status to abort, table:{}, status:{}", this, status);
+            throw new ObTableException("unexpected status to abort, status:" + status,
                 ResultCodes.OB_STATE_NOT_MATCH.errorCode);
         }
         if (isAbort()) {
@@ -205,16 +208,14 @@ public class ObTableDirectLoad extends AbstractPropertyAware {
         arg.setTableId(tableId);
         arg.setTaskId(taskId);
         execute(ObTableDirectLoadOperationType.ABORT, arg);
-        logger.info("abort suceess, table:{}", toString());
+        logger.info("abort suceess, table:{}", this);
         stopHeartBeat();
     }
 
     public ObTableLoadClientStatus getStatus() throws Exception {
         if (status == ObTableLoadClientStatus.MAX_STATUS) {
-            logger.warn("unexpected status to get status, table:{}, status:{}", toString(),
-                status.toString());
-            throw new ObTableException("unexpected status to get status, status:"
-                                       + status.toString(),
+            logger.warn("unexpected status to get status, table:{}, status:{}", this, status);
+            throw new ObTableException("unexpected status to get status, status:" + status,
                 ResultCodes.OB_STATE_NOT_MATCH.errorCode);
         }
         ObTableDirectLoadGetStatusArg arg = new ObTableDirectLoadGetStatusArg();
@@ -229,9 +230,8 @@ public class ObTableDirectLoad extends AbstractPropertyAware {
 
     public void insert(ObDirectLoadBucket bucket) throws Exception {
         if (!isRunning()) {
-            logger.warn("unexpected status to insert, table:{}, status:{}", toString(),
-                status.toString());
-            throw new ObTableException("unexpected status to insert, status:" + status.toString(),
+            logger.warn("unexpected status to insert, table:{}, status:{}", this, status);
+            throw new ObTableException("unexpected status to insert, status:" + status,
                 ResultCodes.OB_STATE_NOT_MATCH.errorCode);
         }
         ObTableDirectLoadInsertArg arg = new ObTableDirectLoadInsertArg();
@@ -259,12 +259,12 @@ public class ObTableDirectLoad extends AbstractPropertyAware {
                     heartBeat();
                 } catch (Exception e) {
                     stopHeartBeat();
-                    logger.info(String.format("heart beat failed, table:%s", toString()), e);
+                    logger.info(String.format("heart beat failed, table:%s", this), e);
                 }
             }
         };
         timer.schedule(task, 0, 10000);
-        logger.info("start heart beat, table:{}", toString());
+        logger.info("start heart beat, table:{}", this);
     }
 
     private void stopHeartBeat() {
@@ -272,7 +272,7 @@ public class ObTableDirectLoad extends AbstractPropertyAware {
             timer.cancel();
             timer = null;
         }
-        logger.info("stop heart beat, table:{}", toString());
+        logger.info("stop heart beat, table:{}", this);
     }
 
     private void execute(ObTableDirectLoadOperationType operationType, ObSimplePayload arg,
@@ -288,16 +288,14 @@ public class ObTableDirectLoad extends AbstractPropertyAware {
         ObTableDirectLoadResult result = (ObTableDirectLoadResult) rpcCall(request);
         if (result.getHeader().getOperationType() != operationType) {
             logger.warn("unexpected result operation type, table:{}, reqOpType:{}, resOpType:{}",
-                toString(), operationType.toString(), result.getHeader().getOperationType()
-                    .toString());
+                this, operationType, result.getHeader().getOperationType());
             throw new ObTableException("unexpected result operation type:"
-                                       + result.getHeader().getOperationType().toString()
-                                       + ", request operation type:" + operationType.toString(),
+                                       + result.getHeader().getOperationType()
+                                       + ", request operation type:" + operationType,
                 ResultCodes.OB_ERR_UNEXPECTED.errorCode);
         }
         if (result.getResContent().length() == 0) {
-            logger.warn("unexpected empty res content, table:{}, OpType:{}", toString(),
-                operationType.toString());
+            logger.warn("unexpected empty res content, table:{}, OpType:{}", this, operationType);
             throw new ObTableException("unexpected empty res content",
                 ResultCodes.OB_ERR_UNEXPECTED.errorCode);
         }
@@ -326,16 +324,15 @@ public class ObTableDirectLoad extends AbstractPropertyAware {
         ObTableDirectLoadResult result = (ObTableDirectLoadResult) rpcCall(request);
         if (result.getHeader().getOperationType() != operationType) {
             logger.warn("unexpected result operation type, table:{}, reqOpType:{}, resOpType:{}",
-                toString(), operationType.toString(), result.getHeader().getOperationType()
-                    .toString());
+                this, operationType, result.getHeader().getOperationType());
             throw new ObTableException("unexpected result operation type:"
-                                       + result.getHeader().getOperationType().toString()
-                                       + ", request operation type:" + operationType.toString(),
+                                       + result.getHeader().getOperationType()
+                                       + ", request operation type:" + operationType,
                 ResultCodes.OB_ERR_UNEXPECTED.errorCode);
         }
         if (result.getResContent().length() != 0) {
-            logger.warn("unexpected res content not empty, table:{}, OpType:{}", toString(),
-                operationType.toString());
+            logger.warn("unexpected res content not empty, table:{}, OpType:{}", this,
+                operationType);
             throw new ObTableException("unexpected res content not empty",
                 ResultCodes.OB_ERR_UNEXPECTED.errorCode);
         }
@@ -347,9 +344,8 @@ public class ObTableDirectLoad extends AbstractPropertyAware {
             try {
                 return table.execute(request);
             } catch (Exception e) {
-                logger
-                    .warn(String.format("table execute failed, table:%s, tries:%d", toString(),
-                        tries), e);
+                logger.warn(String.format("table execute failed, table:%s, tries:%d", this, tries),
+                    e);
                 if (tries < runtimeRetryTimes) {
                     Thread.sleep(runtimeRetryInterval);
                 } else {
