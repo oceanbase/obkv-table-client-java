@@ -21,6 +21,7 @@ import com.alibaba.fastjson.JSON;
 import com.alipay.oceanbase.rpc.constant.Constants;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.batch.QueryByBatch;
+import com.alipay.oceanbase.rpc.location.LocationUtil;
 import com.alipay.oceanbase.rpc.location.model.*;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPartIdCalculator;
@@ -113,6 +114,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * TableName -> TableEntry
      */
     private Map<String, TableEntry>                           tableLocations                          = new ConcurrentHashMap<String, TableEntry>();
+
+    /*
+     * TableName -> ObIndexinfo
+     */
+    private Map<String, ObIndexInfo>                          indexinfos                              = new ConcurrentHashMap<String, ObIndexInfo>();
+
+    private ConcurrentHashMap<String, Lock>                   refreshIndexInfoLocks                   = new ConcurrentHashMap<String, Lock>();
 
     /*
      * TableName -> rowKey element
@@ -888,6 +896,107 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             refreshMetadataLock.unlock();
             logger.warn("finish refresh all ob servers, ts: {}, dataSourceName: {}, url: {}",
                 lastRefreshMetadataTimestamp, dataSourceName, paramURL);
+        }
+    }
+
+    /*
+     * return the table name that need get location
+     * for global index: return global index table name
+     * others: return primary table name
+     */
+    public String getIndexTableName(final String dataTableName, final String indexName, List<String> scanRangeColumns)
+            throws Exception {
+        String indexTableName = dataTableName;
+        if (indexName != null && !indexName.equals("PRIMARY")) {
+            String tmpTableName = constructIndexTableName(dataTableName, indexName);
+            if (tmpTableName == null) {
+                throw new ObTableException("index table name is null");
+            }
+            ObIndexInfo indexInfo = getOrRefreshIndexInfo(indexName, tmpTableName);
+            if (indexInfo == null) {
+                throw new ObTableException("index info is null");
+            }
+            if (indexInfo.getIndexType().isGlobalIndex()) {
+                indexTableName = tmpTableName;
+                if (scanRangeColumns.isEmpty()) {
+                    throw new ObTableException("query by global index need add all index keys in order");
+                } else {
+                    addRowKeyElement(indexTableName, scanRangeColumns.toArray(new String[scanRangeColumns.size()]));
+                }
+            }
+        }
+        return indexTableName;
+    }
+
+    public String constructIndexTableName(final String dataTableName, final String indexName)
+            throws Exception {
+        // construct index table name
+        TableEntry entry = tableLocations.get(dataTableName);
+        Long dataTableId = null;
+        try {
+            if (entry == null) {
+                ObServerAddr addr = serverRoster.getServer(serverAddressPriorityTimeout,
+                        serverAddressCachingTimeout);
+                dataTableId = LocationUtil.getTableIdFromRemote(addr, sysUA,
+                        tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout, tenantName,
+                        database, dataTableName);
+            } else {
+                dataTableId = entry.getTableId();
+            }
+        } catch (Exception e) {
+            RUNTIME.error("get index table name exception", e);
+            throw e;
+        }
+        return "__idx_" + dataTableId + "_" + indexName;
+    }
+
+    public ObIndexInfo getOrRefreshIndexInfo(final String indexName, final String indexTableName)
+            throws Exception {
+        ObIndexInfo indexInfo = indexinfos.get(indexName);
+        if (indexInfo != null) {
+            return indexInfo;
+        }
+        Lock tempLock = new ReentrantLock();
+        Lock lock = refreshIndexInfoLocks.putIfAbsent(indexName, tempLock);
+        lock = (lock == null) ? tempLock : lock;
+        boolean acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
+        if (!acquired) {
+            String errMsg = "try to lock index infos refreshing timeout " + "dataSource:"
+                    + dataSourceName + " ,indexName:" + indexName + " , timeout:"
+                    + tableEntryRefreshLockTimeout + ".";
+            RUNTIME.error(errMsg);
+            throw new ObTableEntryRefreshException(errMsg);
+        }
+        try {
+            indexInfo = indexinfos.get(indexName);
+            if (indexInfo != null) {
+                return indexInfo;
+            } else {
+                logger.info("index info is not exist, create new index info, indexName: {}",
+                        indexName);
+                int serverSize = serverRoster.getMembers().size();
+                int refreshTryTimes = tableEntryRefreshTryTimes > serverSize ? serverSize
+                        : tableEntryRefreshTryTimes;
+                for (int i = 0; i < refreshTryTimes; i++) {
+                    ObServerAddr serverAddr = serverRoster.getServer(serverAddressPriorityTimeout,
+                            serverAddressCachingTimeout);
+                    indexInfo = getIndexInfoFromRemote(serverAddr, sysUA,
+                            tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
+                            indexTableName);
+                    if (indexInfo != null) {
+                        indexinfos.put(indexName, indexInfo);
+                    } else {
+                        RUNTIME.error("get index info from remote is null, index name: {}",
+                                indexName);
+                    }
+                }
+                return indexInfo;
+            }
+        } catch (Exception e) {
+            RUNTIME.error("getOrRefresh index info meet exception", e);
+            throw e;
+        } finally {
+            lock.unlock();
         }
     }
 

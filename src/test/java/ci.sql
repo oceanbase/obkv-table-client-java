@@ -277,4 +277,104 @@ CREATE TABLE IF NOT EXISTS `test_auto_increment_not_rowkey` (
         PARTITION p0 VALUES LESS THAN (100),
         PARTITION p1 VALUES LESS THAN (1000));
 
+CREATE TABLE IF NOT EXISTS `test_global_hash_range` (
+    `C1` int(11) NOT NULL,
+    `C2` int(11) DEFAULT NULL,
+    `C3` int(11) DEFAULT NULL,
+    PRIMARY KEY (`C1`),
+    KEY `idx` (`C2`)  GLOBAL partition by range(C2) (
+        partition p0 values less than (100),
+        partition p1 values less than (200),
+        partition p2 values less than (300)),
+    KEY `idx2` (`C3`)  LOCAL) partition by hash(c1) (
+    partition p0,
+    partition p1,
+    partition p2,
+    partition p3,
+    partition p4);
+
+CREATE TABLE IF NOT EXISTS `test_global_hash_hash` (
+  `c1` int(11) NOT NULL,
+  `c2` int(11) DEFAULT NULL,
+  `c3` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`c1`),
+  KEY `idx` (`c2`) GLOBAL partition by hash(`c2`) (
+    partition p0,
+    partition p1,
+    partition p2,
+    partition p3,
+    partition p4)) partition by hash(`c1`) (
+        partition p0,
+        partition p1,
+        partition p2,
+        partition p3,
+        partition p4,
+        partition p6);
+
+CREATE TABLE IF NOT EXISTS `test_global_key_key` (
+  `c1` int(11) NOT NULL,
+  `c2` int(11) DEFAULT NULL,
+  `c3` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`c1`),
+  KEY `idx` (`c2`) GLOBAL partition by key(`c2`) (
+    partition p0,
+    partition p1,
+    partition p2,
+    partition p3,
+    partition p4)) partition by key(`c1`) (
+        partition p0,
+        partition p1,
+        partition p2,
+        partition p3,
+        partition p4,
+        partition p6);
+
+CREATE TABLE IF NOT EXISTS `test_global_range_range` (
+    `c1` int(11) NOT NULL,
+    `c2` int(11) DEFAULT NULL,
+    `c3` varchar(255) DEFAULT NULL,
+    PRIMARY KEY (`c1`),
+    KEY `idx` (`c2`)  GLOBAL partition by range(c2) (
+        partition p0 values less than (100),
+        partition p1 values less than (200),
+        partition p2 values less than (1000))) partition by range(c1) (
+    partition p0 values less than (100),
+    partition p1 values less than (200),
+    partition p2 values less than (1000));
+
+CREATE TABLE IF NOT EXISTS `test_global_index_no_part` (
+  `C1` int(11) NOT NULL,
+  `C2` int(11) DEFAULT NULL,
+  `C3` int(11) DEFAULT NULL,
+  PRIMARY KEY (`c1`),
+  KEY `idx` (`c2`) GLOBAL,
+  KEY `idx2` (c3) LOCAL) partition by hash(`c1`) (
+    partition p0,
+    partition p1,
+    partition p2,
+    partition p3,
+    partition p4,
+    partition p6);
+
+CREATE TABLE IF NOT EXISTS `test_global_all_no_part` (
+  `C1` int(11) NOT NULL,
+  `C2` int(11) DEFAULT NULL,
+  `C3` int(11) DEFAULT NULL,
+  PRIMARY KEY (`C1`),
+  KEY `idx` (`C2`) GLOBAL,
+  KEY `idx2` (C3) LOCAL);
+
+CREATE TABLE IF NOT EXISTS `test_global_primary_no_part` (
+  `C1` int(11) NOT NULL,
+  `C2` int(11) DEFAULT NULL,
+  `C3` int(11) DEFAULT NULL,
+  PRIMARY KEY (`C1`),
+  KEY `idx` (`C2`) GLOBAL partition by hash(`C2`) (
+    partition p0,
+    partition p1,
+    partition p2,
+    partition p3,
+    partition p4),
+  KEY `idx2` (C3) LOCAL);
+
 alter system set kv_hotkey_throttle_threshold = 50;
