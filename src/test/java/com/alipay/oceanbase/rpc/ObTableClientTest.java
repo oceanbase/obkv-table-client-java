@@ -2122,7 +2122,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 updateResult = client.update("test_mutation_with_range")
                     .addMutateRow(row(colVal("c2", new byte[] { 1 }), colVal("c3", "update2")))
                     .setScanRangeColumns("c1", "c1sk")
-                    .addScanRange(new Object[] { 4L, "A" }, new Object[] { 200L, "z" }).execute();
+                    .addScanRange(new Object[] { 4L, "A" }, new Object[] { 9L, "z" }).execute();
                 Assert.assertEquals(2, updateResult.getAffectedRows());
                 /* To confirm changing. re-query to get the latest data */
                 ObTableValueFilter confirm_2 = compareVal(ObCompareOp.EQ, "c3", "update2");
