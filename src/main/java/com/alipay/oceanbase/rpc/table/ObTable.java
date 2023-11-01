@@ -124,8 +124,8 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         } else if (ip.isEmpty() || port <= 0) {
             throw new IllegalArgumentException("invalid ip or port: " + ip + ":" + port);
         } else if (userName.isEmpty() || database.isEmpty()) {
-            throw new IllegalArgumentException("invalid userName or database: "
-                                               + userName + ":" + database);
+            throw new IllegalArgumentException("invalid userName or database: " + userName + ":"
+                                               + database);
         }
     }
 
