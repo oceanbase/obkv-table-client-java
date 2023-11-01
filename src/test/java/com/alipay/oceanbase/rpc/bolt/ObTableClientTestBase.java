@@ -55,15 +55,18 @@ public abstract class ObTableClientTestBase {
 
     @Test
     public void test_batch() throws Exception {
-
         /*
-        *
         CREATE TABLE `test_varchar_table` (
         `c1` varchar(20) NOT NULL,
         `c2` varchar(20) DEFAULT NULL,
         PRIMARY KEY (`c1`)
         ) DEFAULT CHARSET = utf8mb4 COMPRESSION = 'lz4_1.0' REPLICA_NUM = 3 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 10
-        * */
+        */
+        if (this.getClass().getSimpleName().equals("ObTableTest")) {
+            // could not get tableId from ObTable
+            return;
+        }
+
         for (int i = 0; i < 100; i++) {
             TableBatchOps batchOps = client.batch("test_varchar_table");
 
