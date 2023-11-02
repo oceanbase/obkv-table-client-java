@@ -37,6 +37,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 
+import static com.alipay.oceanbase.rpc.ObGlobal.calcVersion;
 import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.compareVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
@@ -78,22 +79,14 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
         statement.execute("drop table " + tableName);
     }
 
-    @BeforeClass
-    public static void testVersion() throws Exception {
-        final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
-        obTableClient.init();
-        if (ObGlobal.obVsnMajor() <= 0) {
-            // ob version is invalid
-            Assert.assertTrue(false);
-        } else if (ObGlobal.obVsnMajor() != 4) {
-            // todo: only support in 4.x currently
-            Assert.assertTrue(false);
-        }
-    }
-
     @Test
     // Test auto increment on rowkey
     public void testAutoIncrementRowkey() throws Exception {
+        // todo: only support in 4.x currently
+        if (ObTableClientTestUtil.isOBVersionLessThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+            return;
+        }
+
         final String TABLE_NAME = "test_auto_increment_rowkey";
 
         try {
@@ -315,6 +308,11 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
     @Test
     // Test auto increment on not rowkey
     public void testAutoIncrementNotRowkey() throws Exception {
+        // todo: only support in 4.x currently
+        if (ObTableClientTestUtil.isOBVersionLessThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+            return;
+        }
+
         final String TABLE_NAME = "test_auto_increment_not_rowkey";
 
         try {

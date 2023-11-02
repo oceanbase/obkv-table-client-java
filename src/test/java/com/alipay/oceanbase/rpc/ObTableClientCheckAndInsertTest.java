@@ -35,6 +35,7 @@ import org.junit.Test;
 
 import java.lang.reflect.Field;
 
+import static com.alipay.oceanbase.rpc.ObGlobal.calcVersion;
 import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.compareVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
@@ -59,22 +60,14 @@ public class ObTableClientCheckAndInsertTest extends ObTableClientTestBase {
         syncRefreshMetaHelper(obTableClient);
     }
 
-    @BeforeClass
-    public static void testVersion() throws Exception {
-        final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
-        obTableClient.init();
-        if (ObGlobal.obVsnMajor() <= 0) {
-            // ob version is invalid
-            Assert.assertTrue(false);
-        } else if (ObGlobal.obVsnMajor() != 4) {
-            // todo: only support in 4.x currently
-            Assert.assertTrue(false);
-        }
-    }
-
     @Test
     // test check and insert
     public void testCheckAndInsert() throws Exception {
+        // todo: only support in 4.x currently
+        if (ObTableClientTestUtil.isOBVersionLessThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+            return;
+        }
+
         final String TABLE_NAME = "test_mutation";
 
         TableQuery tableQuery = client.query(TABLE_NAME);

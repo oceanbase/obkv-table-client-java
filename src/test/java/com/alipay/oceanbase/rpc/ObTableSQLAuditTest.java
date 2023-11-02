@@ -31,6 +31,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Map;
+
+import static com.alipay.oceanbase.rpc.ObGlobal.calcVersion;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
 
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
@@ -54,19 +56,6 @@ public class ObTableSQLAuditTest {
         this.client = obTableClient;
     }
 
-    @BeforeClass
-    public static void testVersion() throws Exception {
-        final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
-        obTableClient.init();
-        if (ObGlobal.obVsnMajor() <= 0) {
-            // ob version is invalid
-            Assert.assertTrue(false);
-        } else if (ObGlobal.obVsnMajor() != 3) {
-            // todo: only support in 3.x currently
-            Assert.assertTrue(false);
-        }
-    }
-
     // get affected_rows and return rows from sql_audit
     AuditRows fetch_audit_rows() throws Exception {
         AuditRows auditRows = new AuditRows();
@@ -88,6 +77,11 @@ public class ObTableSQLAuditTest {
 
     @Test
     public void testQuery() throws Exception {
+        // todo: only support in 3.x currently
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+            return;
+        }
+
         String tableName = "test_varchar_table";
         String startKey = "k1";
         String endKey = "k2";
@@ -124,6 +118,10 @@ public class ObTableSQLAuditTest {
 
     @Test
     public void test_single_operation() throws Exception {
+        // todo: only support in 3.x currently
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+            return;
+        }
 
         String tableName = "test_varchar_table";
         ColumnValue rowKey = colVal("c1", "k1");
@@ -200,6 +198,11 @@ public class ObTableSQLAuditTest {
 
     @Test
     public void testBatchOperation() throws Exception {
+        // todo: only support in 3.x currently
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+            return;
+        }
+
         String tableName = "test_varchar_table";
         ColumnValue insUpKey = colVal("c1", "k1");
         ColumnValue deleteKey = colVal("c1", "k2");
@@ -245,6 +248,11 @@ public class ObTableSQLAuditTest {
 
     @Test
     public void testQueryAndMutate() throws Exception {
+        // todo: only support in 3.x currently
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+            return;
+        }
+
         String tableName = "test_varchar_table";
         String startKey = "k1";
         String endKey = "k2";

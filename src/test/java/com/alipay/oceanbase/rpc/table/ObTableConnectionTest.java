@@ -28,6 +28,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static com.alipay.oceanbase.rpc.ObGlobal.calcVersion;
 import static org.junit.Assert.assertEquals;
 
 public class ObTableConnectionTest extends ObTableClientTestBase {
@@ -49,21 +50,13 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
         syncRefreshMetaHelper(obTableClient);
     }
 
-    @BeforeClass
-    public static void testVersion() throws Exception {
-        final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
-        obTableClient.init();
-        if (ObGlobal.obVsnMajor() <= 0) {
-            // ob version is invalid
-            Assert.assertTrue(false);
-        } else if (ObGlobal.obVsnMajor() != 3) {
-            // todo: only support in 3.x currently
-            Assert.assertTrue(false);
-        }
-    }
-
     @Test
     public void testVarcharConcurrent() throws Exception {
+        // todo: only support in 3.x currently
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+            return;
+        }
+
         obTableClient = ObTableClientTestUtil.newTestClient();
         obTableClient.setMetadataRefreshInterval(100);
         obTableClient.addProperty(Property.SERVER_CONNECTION_POOL_SIZE.getKey(),
@@ -78,6 +71,11 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
 
     @Test
     public void testConnectionPoolSize() throws Exception {
+        // todo: only support in 3.x currently
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+            return;
+        }
+
         if (obTableClient.isOdpMode()) {
             assertEquals(TEST_CONNECTION_POOL_SIZE, obTableClient.getOdpTable()
                 .getObTableConnectionPoolSize());
@@ -91,6 +89,11 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
 
     @Test
     public void testWatermarkSetting() throws Exception {
+        // todo: only support in 3.x currently
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+            return;
+        }
+
         ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
 
         obTableClient.addProperty(Property.NETTY_BUFFER_LOW_WATERMARK.getKey(),
@@ -123,6 +126,11 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
 
     @Test
     public void testDefaultWatermark() throws Exception {
+        // todo: only support in 3.x currently
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+            return;
+        }
+
         if (obTableClient.isOdpMode()) {
             // do nothing
         } else {
