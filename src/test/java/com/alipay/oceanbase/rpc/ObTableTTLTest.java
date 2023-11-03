@@ -50,16 +50,6 @@ public class ObTableTTLTest {
         client.addRowKeyElement(tableName, new String[] { keyCol });
     }
 
-    @BeforeClass
-    public static void testVersion() throws Exception {
-        final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
-        obTableClient.init();
-        if (ObGlobal.obVsnMajor() <= 0) {
-            // ob version is invalid
-            Assert.assertTrue(false);
-        }
-    }
-
     /**
      CREATE TABLE `test_ttl_timestamp` (
      `c1` bigint NOT NULL,

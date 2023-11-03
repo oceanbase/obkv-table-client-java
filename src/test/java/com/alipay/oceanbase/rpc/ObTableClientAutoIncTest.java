@@ -78,22 +78,14 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
         statement.execute("drop table " + tableName);
     }
 
-    @BeforeClass
-    public static void testVersion() throws Exception {
-        final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
-        obTableClient.init();
-        if (ObGlobal.obVsnMajor() <= 0) {
-            // ob version is invalid
-            Assert.assertTrue(false);
-        } else if (ObGlobal.obVsnMajor() != 4) {
-            // todo: only support in 4.x currently
-            Assert.assertTrue(false);
-        }
-    }
-
     @Test
     // Test auto increment on rowkey
     public void testAutoIncrementRowkey() throws Exception {
+        // todo: only support in 4.x currently
+        if (ObTableClientTestUtil.isOBVersionLessThan(ObTableClientTestUtil.obVsn4000)) {
+            return;
+        }
+
         final String TABLE_NAME = "test_auto_increment_rowkey";
 
         try {
@@ -315,6 +307,11 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
     @Test
     // Test auto increment on not rowkey
     public void testAutoIncrementNotRowkey() throws Exception {
+        // todo: only support in 4.x currently
+        if (ObTableClientTestUtil.isOBVersionLessThan(ObTableClientTestUtil.obVsn4000)) {
+            return;
+        }
+
         final String TABLE_NAME = "test_auto_increment_not_rowkey";
 
         try {

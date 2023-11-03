@@ -23,6 +23,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+import static com.alipay.oceanbase.rpc.ObGlobal.OB_VERSION;
+import static com.alipay.oceanbase.rpc.ObGlobal.calcVersion;
+
 public class ObTableClientTestUtil {
     public static String FULL_USER_NAME          = "full-user-name";
     public static String PARAM_URL               = "config-url";
@@ -45,6 +48,24 @@ public class ObTableClientTestUtil {
         String[] userNames = FULL_USER_NAME.split("#");
         return DriverManager.getConnection(JDBC_URL, userNames[0], PASSWORD);
     }
+
+    public static boolean isOBVersionGreaterEqualThan(long targetVersion) {
+        return OB_VERSION >= targetVersion;
+    }
+
+    public static boolean isOBVersionGreaterThan(long targetVersion) {
+        return OB_VERSION >= targetVersion;
+    }
+
+    public static boolean isOBVersionLessEqualThan(long targetVersion) {
+        return OB_VERSION <= targetVersion;
+    }
+
+    public static boolean isOBVersionLessThan(long targetVersion) {
+        return OB_VERSION <= targetVersion;
+    }
+
+    public static long obVsn4000 = calcVersion(4, (short) 0, (byte) 0, (byte) 0);
 
     static {
         System.setProperty("logging.path", System.getProperty("user.dir") + "/logs");
