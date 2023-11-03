@@ -35,7 +35,6 @@ import org.junit.Test;
 
 import java.lang.reflect.Field;
 
-import static com.alipay.oceanbase.rpc.ObGlobal.calcVersion;
 import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.compareVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
@@ -64,7 +63,7 @@ public class ObTableClientCheckAndInsertTest extends ObTableClientTestBase {
     // test check and insert
     public void testCheckAndInsert() throws Exception {
         // todo: only support in 4.x currently
-        if (ObTableClientTestUtil.isOBVersionLessThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+        if (ObTableClientTestUtil.isOBVersionLessThan(ObTableClientTestUtil.obVsn4000)) {
             return;
         }
 

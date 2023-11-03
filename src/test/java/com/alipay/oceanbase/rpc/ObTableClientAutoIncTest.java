@@ -37,7 +37,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 
-import static com.alipay.oceanbase.rpc.ObGlobal.calcVersion;
 import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.compareVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
@@ -83,7 +82,7 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
     // Test auto increment on rowkey
     public void testAutoIncrementRowkey() throws Exception {
         // todo: only support in 4.x currently
-        if (ObTableClientTestUtil.isOBVersionLessThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+        if (ObTableClientTestUtil.isOBVersionLessThan(ObTableClientTestUtil.obVsn4000)) {
             return;
         }
 
@@ -309,7 +308,7 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
     // Test auto increment on not rowkey
     public void testAutoIncrementNotRowkey() throws Exception {
         // todo: only support in 4.x currently
-        if (ObTableClientTestUtil.isOBVersionLessThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+        if (ObTableClientTestUtil.isOBVersionLessThan(ObTableClientTestUtil.obVsn4000)) {
             return;
         }
 

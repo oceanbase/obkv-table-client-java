@@ -28,7 +28,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static com.alipay.oceanbase.rpc.ObGlobal.calcVersion;
 import static org.junit.Assert.assertEquals;
 
 public class ObTableConnectionTest extends ObTableClientTestBase {
@@ -53,7 +52,7 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
     @Test
     public void testVarcharConcurrent() throws Exception {
         // todo: only support in 3.x currently
-        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(ObTableClientTestUtil.obVsn4000)) {
             return;
         }
 
@@ -72,7 +71,7 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
     @Test
     public void testConnectionPoolSize() throws Exception {
         // todo: only support in 3.x currently
-        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(ObTableClientTestUtil.obVsn4000)) {
             return;
         }
 
@@ -90,7 +89,7 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
     @Test
     public void testWatermarkSetting() throws Exception {
         // todo: only support in 3.x currently
-        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(ObTableClientTestUtil.obVsn4000)) {
             return;
         }
 
@@ -127,7 +126,7 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
     @Test
     public void testDefaultWatermark() throws Exception {
         // todo: only support in 3.x currently
-        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(ObTableClientTestUtil.obVsn4000)) {
             return;
         }
 

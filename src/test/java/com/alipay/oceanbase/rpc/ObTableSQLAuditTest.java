@@ -32,7 +32,6 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Map;
 
-import static com.alipay.oceanbase.rpc.ObGlobal.calcVersion;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
 
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
@@ -78,7 +77,7 @@ public class ObTableSQLAuditTest {
     @Test
     public void testQuery() throws Exception {
         // todo: only support in 3.x currently
-        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(ObTableClientTestUtil.obVsn4000)) {
             return;
         }
 
@@ -119,7 +118,7 @@ public class ObTableSQLAuditTest {
     @Test
     public void test_single_operation() throws Exception {
         // todo: only support in 3.x currently
-        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(ObTableClientTestUtil.obVsn4000)) {
             return;
         }
 
@@ -199,7 +198,7 @@ public class ObTableSQLAuditTest {
     @Test
     public void testBatchOperation() throws Exception {
         // todo: only support in 3.x currently
-        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(ObTableClientTestUtil.obVsn4000)) {
             return;
         }
 
@@ -249,7 +248,7 @@ public class ObTableSQLAuditTest {
     @Test
     public void testQueryAndMutate() throws Exception {
         // todo: only support in 3.x currently
-        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(calcVersion(4, (short) 0, (byte) 0, (byte) 0))) {
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(ObTableClientTestUtil.obVsn4000)) {
             return;
         }
 
