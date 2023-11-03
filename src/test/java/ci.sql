@@ -377,4 +377,16 @@ CREATE TABLE IF NOT EXISTS `test_global_primary_no_part` (
     partition p4),
   KEY `idx2` (C3) LOCAL);
 
+CREATE TABLE IF NOT EXISTS `test_ttl_timestamp_with_index` (
+`c1` varchar(20) NOT NULL,
+`c2` bigint NOT NULL,
+`c3` bigint DEFAULT NULL,
+`c4` bigint DEFAULT NULL,
+`expired_ts` timestamp,
+PRIMARY KEY (`c1`, `c2`),
+KEY `idx`(`c1`, `c4`) local,
+KEY `idx2`(`c3`) global partition by hash(`c3`) partitions 4)
+TTL(expired_ts + INTERVAL 0 SECOND) partition by key(`c1`) partitions 4;
+
+
 alter system set kv_hotkey_throttle_threshold = 50;

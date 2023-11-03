@@ -16,6 +16,7 @@
  */
 
 package com.alipay.oceanbase.rpc;
+import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
@@ -26,8 +27,10 @@ import org.junit.Test;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.Map;
 
+import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
 import static org.junit.Assert.assertEquals;
 
 public class ObTableGlobalIndexTest {
@@ -498,5 +501,66 @@ public class ObTableGlobalIndexTest {
         }
     }
 
+    /**
+     CREATE TABLE `test_ttl_timestamp_with_index` (
+     `c1` varchar(20) NOT NULL,
+     `c2` bigint NOT NULL,
+     `c3` bigint DEFAULT NULL,
+     `c4` bigint DEFAULT NULL,
+     `expired_ts` timestamp,
+     PRIMARY KEY (`c1`, `c2`),
+     KEY `idx`(`c1`, `c4`) local,
+     KEY `idx2`(`c3`) global partition by hash(`c3`) partitions 4) TTL(expired_ts + INTERVAL 0 SECOND) partition by key(`c1`) partitions 4;
+    **/
+    @Test
+    public void test_ttl_query_with_global_index() throws Exception {
+        String tableName    = "test_ttl_timestamp_with_index";
+        String rowKey1      = "c1";
+        String rowKey2      = "c2";
+        String intCol       = "c3";
+        String intCol2      = "c4";
+        String expireCol    = "expired_ts";
+        String prefixKey = "test";
+        long[] keyIds = { 1L, 2L };
+        try {
+            // 1. insert records with null expired_ts
+            for (long id : keyIds) {
+                client.insert(tableName).setRowKey(colVal(rowKey1, prefixKey), colVal(rowKey2, id))
+                        .addMutateColVal(colVal(intCol, id+100))
+                        .addMutateColVal(colVal(intCol2, id+200))
+                        .addMutateColVal(colVal(expireCol, null)).execute();
+            }
+            // 2. query all inserted records
+            QueryResultSet resultSet = client.query(tableName)
+                                        .indexName("idx2")
+                                        .setScanRangeColumns(intCol)
+                                        .addScanRange(new Object[] {101L}, new Object[] {102L})
+                                        .execute();
+            Assert.assertEquals(resultSet.cacheSize(), keyIds.length);
+
+            // 3. update the expired_ts
+            Timestamp curTs = new Timestamp(System.currentTimeMillis());
+            client.update(tableName).setRowKey(colVal(rowKey1, prefixKey), colVal(rowKey2, keyIds[1]))
+                    .addMutateColVal(colVal(expireCol, curTs)).execute();
+
+            // 3. re-query all inserted records, the expired record won't be returned
+            resultSet = client.query(tableName)
+                        .indexName("idx2")
+                        .setScanRangeColumns(intCol2)
+                        .addScanRange(new Object[] {101L}, new Object[] {102L})
+                        .execute();
+            Assert.assertEquals(resultSet.cacheSize(), 1);
+            Assert.assertTrue(resultSet.next());
+            Row row = resultSet.getResultRow();
+            Assert.assertEquals(row.get(rowKey2), keyIds[0]);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        } finally {
+            for (long id : keyIds) {
+                client.delete(tableName).setRowKey(colVal(rowKey1, prefixKey), colVal(rowKey2, id)).execute();
+            }
+        }
+    }
 
 }
