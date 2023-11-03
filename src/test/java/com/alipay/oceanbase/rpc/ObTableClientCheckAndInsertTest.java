@@ -59,22 +59,14 @@ public class ObTableClientCheckAndInsertTest extends ObTableClientTestBase {
         syncRefreshMetaHelper(obTableClient);
     }
 
-    @BeforeClass
-    public static void testVersion() throws Exception {
-        final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
-        obTableClient.init();
-        if (ObGlobal.obVsnMajor() <= 0) {
-            // ob version is invalid
-            Assert.assertTrue(false);
-        } else if (ObGlobal.obVsnMajor() != 4) {
-            // todo: only support in 4.x currently
-            Assert.assertTrue(false);
-        }
-    }
-
     @Test
     // test check and insert
     public void testCheckAndInsert() throws Exception {
+        // todo: only support in 4.x currently
+        if (ObTableClientTestUtil.isOBVersionLessThan(ObTableClientTestUtil.obVsn4000)) {
+            return;
+        }
+
         final String TABLE_NAME = "test_mutation";
 
         TableQuery tableQuery = client.query(TABLE_NAME);
