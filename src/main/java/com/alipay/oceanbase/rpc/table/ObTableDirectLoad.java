@@ -42,6 +42,8 @@ import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+
+import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -89,6 +91,12 @@ public class ObTableDirectLoad extends AbstractPropertyAware {
         this.tableName = tableName;
         this.parameter = parameter;
         this.forceCreate = forceCreate;
+        initProperties();
+    }
+
+    @Override
+    public void setProperties(Properties properties) {
+        this.properties = properties;
         initProperties();
     }
 
@@ -338,14 +346,15 @@ public class ObTableDirectLoad extends AbstractPropertyAware {
         }
     }
 
-    private ObPayload rpcCall(ObPayload request) throws Exception {
+    private ObPayload rpcCall(ObTableDirectLoadRequest request) throws Exception {
         int tries = 0;
         while (true) {
             try {
+                request.setTimeout(table.getObTableExecuteTimeout());
                 return table.execute(request);
             } catch (Exception e) {
-                logger.warn(String.format("table execute failed, table:%s, tries:%d", this, tries),
-                    e);
+                logger.warn(String.format("table execute failed, table:%s, tries:%d, request:%s",
+                    this, tries, request), e);
                 if (tries < runtimeRetryTimes) {
                     Thread.sleep(runtimeRetryInterval);
                 } else {
