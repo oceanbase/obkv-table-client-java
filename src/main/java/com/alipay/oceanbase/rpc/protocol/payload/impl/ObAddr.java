@@ -42,12 +42,29 @@ public class ObAddr /*extends ObUnisVersion*/implements ObSimplePayload {
         return version;
     }
 
+    public String getIPString() {
+        String ipStr = new String();
+        if (version == VER.IPV4) {
+            ipStr = String.format("%d.%d.%d.%d", (ip[0] >> 24) & 0XFF, (ip[0] >> 16) & 0XFF,
+                (ip[0] >> 8) & 0XFF, (ip[0]) & 0XFF);
+        }
+        return ipStr;
+    }
+
     public int getPort() {
         return port;
     }
 
     public void setPort(int port) {
         this.port = port;
+    }
+
+    public String toString() {
+        String str = new String();
+        if (version == VER.IPV4) {
+            str = String.format("%s:%d", getIPString(), port);
+        }
+        return str;
     }
 
     @Override
