@@ -1677,14 +1677,20 @@ public class LocationUtil {
     }
 
     public static void parseObVerionFromLogin(String serverVersion) {
-        // serverVersion is like "OceanBase 4.0.0.0"
-        Pattern pattern = Pattern.compile("OceanBase\\s+(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)");
+        Pattern pattern;
+        if (serverVersion.startsWith("OceanBase_CE")) {
+            // serverVersion in CE is like "OceanBase_CE 4.0.0.0"
+            pattern = Pattern.compile("OceanBase_CE\\s+(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)");
+        } else {
+            // serverVersion is like "OceanBase 4.0.0.0"
+            pattern = Pattern.compile("OceanBase\\s+(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)");
+        }
         Matcher matcher = pattern.matcher(serverVersion);
         if (matcher.find() && ObGlobal.OB_VERSION == 0) {
             ObGlobal.OB_VERSION = ObGlobal.calcVersion(Integer.parseInt(matcher.group(1)),
-                (short) Integer.parseInt(matcher.group(2)),
-                (byte) Integer.parseInt(matcher.group(3)),
-                (byte) Integer.parseInt(matcher.group(4)));
+                    (short) Integer.parseInt(matcher.group(2)),
+                    (byte) Integer.parseInt(matcher.group(3)),
+                    (byte) Integer.parseInt(matcher.group(4)));
         }
     }
 }
