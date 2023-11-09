@@ -32,8 +32,8 @@ import static org.junit.Assert.assertEquals;
 
 public class ObTableConnectionTest {
     public ObTableClient client;
-    private int          connCnt = 100;
-    private boolean      isMannual   = false;
+    private int          connCnt   = 100;
+    private boolean      isMannual = false;
 
     @Before
     public void setup() throws Exception {

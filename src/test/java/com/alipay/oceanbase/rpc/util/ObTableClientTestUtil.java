@@ -27,18 +27,18 @@ import static com.alipay.oceanbase.rpc.ObGlobal.OB_VERSION;
 import static com.alipay.oceanbase.rpc.ObGlobal.calcVersion;
 
 public class ObTableClientTestUtil {
-    public static String    FULL_USER_NAME          = "full-user-name";
-    public static String    PARAM_URL               = "config-url";
-    public static String    PASSWORD                = "password";
-    public static String    PROXY_SYS_USER_NAME     = "sys-user-name";
-    public static String    PROXY_SYS_USER_PASSWORD = "sys-user-password";
+    public static String  FULL_USER_NAME          = "full-user-name";
+    public static String  PARAM_URL               = "config-url";
+    public static String  PASSWORD                = "password";
+    public static String  PROXY_SYS_USER_NAME     = "sys-user-name";
+    public static String  PROXY_SYS_USER_PASSWORD = "sys-user-password";
 
-    public static boolean   USE_ODP                 = false;
-    public static String    ODP_IP                  = "ip-addr";
-    public static int       ODP_PORT                = 0;
-    public static String    ODP_DATABASE            = "database-name";
+    public static boolean USE_ODP                 = false;
+    public static String  ODP_IP                  = "ip-addr";
+    public static int     ODP_PORT                = 0;
+    public static String  ODP_DATABASE            = "database-name";
 
-    public static String    JDBC_URL                = "jdbc-url";
+    public static String  JDBC_URL                = "jdbc-url";
 
     public static ObTableClient newTestClient() throws Exception {
         ObTableClient obTableClient = new ObTableClient();
