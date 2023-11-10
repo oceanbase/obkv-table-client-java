@@ -151,7 +151,10 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
 
     public Map<Long, ObPair<Long, ObTableParam>> getPartitions() throws Exception {
         String indexName = tableQuery.getIndexName();
-        String indexTableName = obTableClient.getIndexTableName(tableName, indexName, tableQuery.getScanRangeColumns());
+        String indexTableName = tableName;
+        if (!this.obTableClient.isOdpMode()) {
+            indexTableName = obTableClient.getIndexTableName(tableName, indexName, tableQuery.getScanRangeColumns());
+        }
 
         this.partitionObTables = new HashMap<Long, ObPair<Long, ObTableParam>>();
         for (ObNewRange rang : this.tableQuery.getKeyRanges()) {
