@@ -2106,9 +2106,8 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
             // c1 >= 3 && c1 <= 4 ( scan range c1 > 4 )
             filters_1.addFilter(c1_GE_3, c1_LE_4);
-            updateResult = client.increment("test_mutation_with_range")
-                .setFilter(filters_1).addMutateRow(row(colVal("c4", 100L)))
-                .setScanRangeColumns("c1", "c1sk")
+            updateResult = client.increment("test_mutation_with_range").setFilter(filters_1)
+                .addMutateRow(row(colVal("c4", 100L))).setScanRangeColumns("c1", "c1sk")
                 .addScanRange(new Object[] { 4L, "A" }, new Object[] { 200L, "z" }).execute();
             Assert.assertEquals(1, updateResult.getAffectedRows());
             /* To confirm changing. re-query to get the latest data */
