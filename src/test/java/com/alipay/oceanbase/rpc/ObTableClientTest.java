@@ -2008,8 +2008,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
             // mutation will automatically remove duplicate key in rowkey and mutatecolval
             Insert insert_2 = insert().setRowKey(row(colVal("c1", 5L), colVal("c2", "row_5")))
                 .addMutateColVal(colVal("c1", 5L), colVal("c2", "row_5"))
-                .addMutateColVal(colVal("c3", new byte[] { 1 }))
-                .addMutateColVal(colVal("c4", 5L));
+                .addMutateColVal(colVal("c3", new byte[] { 1 })).addMutateColVal(colVal("c4", 5L));
             Update update_1 = update().setRowKey(row(colVal("c1", 0L), colVal("c2", "row_0")))
                 .addMutateRow(row(colVal("c1", 0L), colVal("c2", "row_0")))
                 .addMutateColVal(colVal("c3", new byte[] { 1 })).addMutateColVal(colVal("c4", 0L));
@@ -2028,21 +2027,22 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
             // test duplicate rowkey update
             Update update_2 = update().setRowKey(row(colVal("c1", 0L), colVal("c2", "row_0")))
-                    .addMutateColVal(colVal("c3", new byte[] { 10 }))
-                    .addMutateColVal(colVal("c4", 0L));
+                .addMutateColVal(colVal("c3", new byte[] { 10 })).addMutateColVal(colVal("c4", 0L));
             InsertOrUpdate iou_1 = insertOrUpdate()
-                    .setRowKey(row(colVal("c1", 0L), colVal("c2", "row_0")))
-                    .addMutateColVal(colVal("c3", new byte[] { 1 }))
-                    .addMutateColVal(colVal("c4", 1L));
+                .setRowKey(row(colVal("c1", 0L), colVal("c2", "row_0")))
+                .addMutateColVal(colVal("c3", new byte[] { 1 })).addMutateColVal(colVal("c4", 1L));
             InsertOrUpdate iou_2 = insertOrUpdate()
-                    .setRowKey(row(colVal("c1", 0L), colVal("c2", "row_0")))
-                    .addMutateColVal(colVal("c3", new byte[] { 2 }))
-                    .addMutateColVal(colVal("c4", 2L));
+                .setRowKey(row(colVal("c1", 0L), colVal("c2", "row_0")))
+                .addMutateColVal(colVal("c3", new byte[] { 2 })).addMutateColVal(colVal("c4", 2L));
+            Increment inc_0 = increment().setRowKey(row(colVal("c1", 0L), colVal("c2", "row_0")))
+                .addMutateRow(row(colVal("c4", 100L)));
+            Append apd_0 = append().setRowKey(row(colVal("c1", 0L), colVal("c2", "row_0")))
+                .addMutateRow(row(colVal("c3", new byte[] { 0 })));
 
             batchResult = client.batchOperation("test_mutation")
-                    .addOperation(update_2, iou_1, iou_2).execute();
+                .addOperation(update_2, iou_1, iou_2, inc_0, apd_0).execute();
             Assert.assertEquals(0, batchResult.getWrongCount());
-            Assert.assertEquals(3, batchResult.getCorrectCount());
+            Assert.assertEquals(5, batchResult.getCorrectCount());
             Assert.assertEquals(0, batchResult.getCorrectIdx()[0]);
             Assert.assertEquals(1, batchResult.get(1).getAffectedRows());
             Assert.assertEquals(1, batchResult.get(2).getAffectedRows());
