@@ -109,6 +109,12 @@ public class SimpleTableDemo {
                 System.out.println("key_6 -> " + "c2:" + tableClient.get((long)6)[0] + ", c3:" + tableClient.get((long)6)[1]);
             }
 
+            // batch:
+            batchOps = tableClient.batch2();
+            if (!batchOps) {
+                System.out.println("batch ops error");
+            }
+
             // scan
             boolean queryRet = tableClient.query();
             if (!queryRet) {

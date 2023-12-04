@@ -292,5 +292,74 @@ public class TableClient {
         }
     }
 
+    // batch for single tablet: one of the the operation execute failed,
+    // batch will rollback and return the first error code
+    public boolean batch2() {
+        if (obTableClient == null) {
+            System.out.println("table client is null");
+            return false;
+        }
+        try {
+            TableBatchOps batchOps = obTableClient.batch(tableName);
+            batchOps.get((long)1, new String[]{"c2", "c3"});
+            batchOps.insert((long)5, new String[]{"c2", "c3"}, new Object[]{(int)5, "batch new c3_5"});
+            // insert a row with duplicated primary key, return error
+            batchOps.insert((long)5, new String[]{"c2", "c3"}, new Object[]{(int)5, "batch new c3_5"});
+            batchOps.update((long)5, new String[]{"c2"}, new Object[]{(int)55});
+            List<Object> retObj = batchOps.execute();
+            if (retObj.size() != 4) {
+                System.out.println("batch Ops error");
+                return false;
+            }
+            System.out.println("batch Ops success.");
+            return true;
+        } catch (Exception e) {
+            System.out.println("fail to execute batch ops: " + e);
+            return false;
+        }
+    }
+
+    /*
+        schema:
+        CREATE TABLE IF NOT EXISTS `test_partition_table` (
+            `c1` bigint NOT NULL,
+            `c2` int NOT NULL,
+            `c3` varchar(20) DEFAULT NULL,
+            PRIMARY KEY (`c1`)
+        ) partition by key(`c1`) partitions 3;
+
+        Note: We cannot ensure atomicity when a batch has operations across tablets/partitions,
+              only ensure atomicity for operations on the same partition.
+        For example:
+            test_partition_table is a partition table and will have three tablets in observer.
+            Rows with key '1' and '4' are in same tablets, they will execute atomic. However,
+            Rows with key '1' and '3' are in diferent tablets, their execution are not atomic
+            if one of them execute failed.
+    */
+    public boolean batch3() {
+        if (obTableClient == null) {
+            System.out.println("table client is null");
+            return false;
+        }
+        try {
+            tableName = "test_partition_table";
+            TableBatchOps batchOps = obTableClient.batch(tableName);
+            batchOps.insert((long)1, new String[]{"c2", "c3"}, new Object[]{(int)1, "batch new c3_5"});
+            batchOps.insert((long)2, new String[]{"c2", "c3"}, new Object[]{(int)2, "batch new c3_5"});
+            batchOps.insert((long)3, new String[]{"c2", "c3"}, new Object[]{(int)3, "batch new c3_5"});
+            batchOps.insert((long)4, new String[]{"c2", "c3"}, new Object[]{(int)4, "batch new c3_5"});
+            List<Object> retObj = batchOps.execute();
+            if (retObj.size() != 4) {
+                System.out.println("batch Ops error");
+                return false;
+            }
+            System.out.println("batch Ops success.");
+            return true;
+        } catch (Exception e) {
+            System.out.println("fail to execute batch ops: " + e);
+            return false;
+        }
+    }
+
     // todo: others op.
 }
