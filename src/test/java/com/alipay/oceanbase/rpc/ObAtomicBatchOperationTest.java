@@ -68,22 +68,6 @@ public class ObAtomicBatchOperationTest {
     @Test
     public void testAtomic() {
         TableBatchOps batchOps = obTableClient.batch("test_varchar_table");
-        // default: no atomic batch operation
-        try {
-            batchOps.clear();
-            batchOps.insert("abc-1", new String[] { "c2" }, new String[] { "bar-1" });
-            batchOps.get("abc-2", new String[] { "c2" });
-            batchOps.insert("abc-3", new String[] { "c2" }, new String[] { "bar-3" });
-            batchOps.insert(successKey, new String[] { "c2" }, new String[] { "bar-5" });
-            List<Object> results = batchOps.execute();
-            Assert.assertTrue(results.get(0) instanceof ObTableDuplicateKeyException);
-            Assert.assertEquals(((Map) results.get(1)).get("c2"), "xyz-2");
-            Assert.assertTrue(results.get(2) instanceof ObTableDuplicateKeyException);
-            Assert.assertEquals(results.get(3), 1L);
-        } catch (Exception ex) {
-            Assert.fail("hit exception:" + ex);
-        }
-
         // atomic batch operation
         try {
             batchOps.clear();

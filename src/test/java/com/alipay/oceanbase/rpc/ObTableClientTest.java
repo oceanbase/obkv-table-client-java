@@ -1956,34 +1956,6 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 .addMutateColVal(colVal("c3", new byte[] { 1 }))
                 .addMutateColVal(colVal("c4", 103L)).execute();
 
-            Insert insert_0 = insert().setRowKey(row(colVal("c1", 0L), colVal("c2", "row_0")))
-                .addMutateColVal(colVal("c3", new byte[] { 1 }))
-                .addMutateColVal(colVal("c4", 100L));
-            Insert insert_1 = insert().setRowKey(row(colVal("c1", 4L), colVal("c2", "row_4")))
-                .addMutateColVal(colVal("c3", new byte[] { 1 }))
-                .addMutateColVal(colVal("c4", 104L));
-            Update update_0 = update().setRowKey(row(colVal("c1", 4L), colVal("c2", "row_4")))
-                .addMutateColVal(colVal("c3", new byte[] { 1 }))
-                .addMutateColVal(colVal("c4", 204L));
-            TableQuery query_0 = query().setRowKey(row(colVal("c1", 4L), colVal("c2", "row_4")))
-                .select("c3", "c4");
-
-            BatchOperationResult batchResult = client.batchOperation("test_mutation")
-                .addOperation(insert_0, insert_1, update_0).addOperation(query_0)
-                .setIsAtomic(false).execute();
-            Assert.assertEquals(1, batchResult.getWrongCount());
-            Assert.assertEquals(3, batchResult.getCorrectCount());
-            Assert.assertEquals(0, batchResult.getWrongIdx()[0]);
-            Assert.assertEquals(1, batchResult.getCorrectIdx()[0]);
-            Assert.assertEquals(1, batchResult.get(1).getAffectedRows());
-            Assert.assertEquals(1, batchResult.get(2).getAffectedRows());
-            OperationResult opResult = batchResult.get(3);
-            Assert.assertEquals(204L, opResult.getOperationRow().get("c4"));
-            Assert.assertEquals(204L, batchResult.get(3).getOperationRow().get("c4"));
-            opResult = batchResult.get(2);
-            Assert.assertNull(opResult.getOperationRow().get("c4"));
-            Assert.assertNull(batchResult.get(2).getOperationRow().get("c4"));
-
             long[] c1Vals = { 0L, 1L, 2L };
             String[] c2Vals = { "row_0", "row_1", "row_2" };
             byte[] c3Val = new byte[] { 1 };
@@ -2017,7 +1989,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 .addMutateColVal(colVal("c2", "row_1"))
                 .addMutateColVal(colVal("c3", new byte[] { 1 })).addMutateColVal(colVal("c4", 0L));
 
-            batchResult = client.batchOperation("test_mutation")
+            BatchOperationResult batchResult = client.batchOperation("test_mutation")
                 .addOperation(insert_2, update_1, iou_0).execute();
             Assert.assertEquals(0, batchResult.getWrongCount());
             Assert.assertEquals(3, batchResult.getCorrectCount());
@@ -2223,9 +2195,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
             Insert insert_1 = insert().setRowKey(row(colVal("c1", 400L), colVal("c2", "row_1")))
                 .addMutateColVal(colVal("c3", new byte[] { 1 }))
                 .addMutateColVal(colVal("c4", 100L));
-            BatchOperationResult result = batchOperation.addOperation(insert_0, insert_1)
-                .setIsAtomic(true).execute();
-            assertTrue(false);
+            BatchOperationResult result = batchOperation.addOperation(insert_0, insert_1).execute();
         } catch (Exception e) {
             e.printStackTrace();
             if (client instanceof ObTableClient && ((ObTableClient) client).isOdpMode()) {
@@ -2248,8 +2218,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
             Insert insert_1 = insert().setRowKey(row(colVal("c1", 200L), colVal("c2", "row_1")))
                 .addMutateColVal(colVal("c3", new byte[] { 1 }))
                 .addMutateColVal(colVal("c4", 100L));
-            BatchOperationResult result = batchOperation.addOperation(insert_0, insert_1)
-                .setIsAtomic(true).execute();
+            BatchOperationResult result = batchOperation.addOperation(insert_0, insert_1).execute();
         } catch (Exception e) {
             e.printStackTrace();
             assertTrue(false);

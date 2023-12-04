@@ -28,6 +28,7 @@ public interface TableBatchOps {
 
     String getTableName();
 
+    @Deprecated
     void setAtomicOperation(boolean atomicOperation);
 
     boolean isAtomicOperation();
