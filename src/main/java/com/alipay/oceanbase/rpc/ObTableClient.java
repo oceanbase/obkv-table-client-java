@@ -2019,6 +2019,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @param keyRanges scan range
      * @param columns columns name to InsertOrUpdate
      * @param values new values
+     * @param usePut use put or not
      * @return execute result
      * @throws Exception exception
      */

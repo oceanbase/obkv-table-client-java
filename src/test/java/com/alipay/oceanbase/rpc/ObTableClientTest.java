@@ -2005,6 +2005,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
             }
 
             // test duplicate rowkey in mutatecolval and rowkey
+            // mutation will automatically remove duplicate key in rowkey and mutatecolval
             Insert insert_2 = insert().setRowKey(row(colVal("c1", 5L), colVal("c2", "row_5")))
                 .addMutateColVal(colVal("c1", 5L), colVal("c2", "row_5"))
                 .addMutateColVal(colVal("c3", new byte[] { 1 })).addMutateColVal(colVal("c4", 5L));
@@ -2020,6 +2021,28 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 .addOperation(insert_2, update_1, iou_0).execute();
             Assert.assertEquals(0, batchResult.getWrongCount());
             Assert.assertEquals(3, batchResult.getCorrectCount());
+            Assert.assertEquals(0, batchResult.getCorrectIdx()[0]);
+            Assert.assertEquals(1, batchResult.get(1).getAffectedRows());
+            Assert.assertEquals(1, batchResult.get(2).getAffectedRows());
+
+            // test duplicate rowkey update
+            Update update_2 = update().setRowKey(row(colVal("c1", 0L), colVal("c2", "row_0")))
+                .addMutateColVal(colVal("c3", new byte[] { 10 })).addMutateColVal(colVal("c4", 0L));
+            InsertOrUpdate iou_1 = insertOrUpdate()
+                .setRowKey(row(colVal("c1", 0L), colVal("c2", "row_0")))
+                .addMutateColVal(colVal("c3", new byte[] { 1 })).addMutateColVal(colVal("c4", 1L));
+            InsertOrUpdate iou_2 = insertOrUpdate()
+                .setRowKey(row(colVal("c1", 0L), colVal("c2", "row_0")))
+                .addMutateColVal(colVal("c3", new byte[] { 2 })).addMutateColVal(colVal("c4", 2L));
+            Increment inc_0 = increment().setRowKey(row(colVal("c1", 0L), colVal("c2", "row_0")))
+                .addMutateRow(row(colVal("c4", 100L)));
+            Append apd_0 = append().setRowKey(row(colVal("c1", 0L), colVal("c2", "row_0")))
+                .addMutateRow(row(colVal("c3", new byte[] { 0 })));
+
+            batchResult = client.batchOperation("test_mutation")
+                .addOperation(update_2, iou_1, iou_2, inc_0, apd_0).execute();
+            Assert.assertEquals(0, batchResult.getWrongCount());
+            Assert.assertEquals(5, batchResult.getCorrectCount());
             Assert.assertEquals(0, batchResult.getCorrectIdx()[0]);
             Assert.assertEquals(1, batchResult.get(1).getAffectedRows());
             Assert.assertEquals(1, batchResult.get(2).getAffectedRows());
@@ -2091,72 +2114,42 @@ public class ObTableClientTest extends ObTableClientTestBase {
             ObTableFilterList filters_1 = andList();
 
             // c1 = 0 && c1 = 0
-            if (((ObTableClient) client).isOdpMode()) {
-                filters_0.addFilter(c1_EQ_0, c1_EQ_0);
-                MutationResult updateResult = client.update("test_mutation_with_range")
-                    .setFilter(filters_0)
-                    .addMutateRow(row(colVal("c2", new byte[] { 1 }), colVal("c3", "update1")))
-                    .setScanRangeColumns("c1")
-                    .addScanRange(new Object[] { 0L }, new Object[] { 200L }).execute();
-                Assert.assertEquals(1, updateResult.getAffectedRows());
-                /* To confirm changing. re-query to get the latest data */
-                ObTableValueFilter confirm_0 = compareVal(ObCompareOp.EQ, "c3", "update1");
-                tableQuery.setFilter(confirm_0);
-                QueryResultSet result = tableQuery.execute();
-                Assert.assertEquals(1, result.cacheSize());
-            } else {
-                filters_0.addFilter(c1_EQ_0, c1_EQ_0);
-                MutationResult updateResult = client.update("test_mutation_with_range")
-                    .setFilter(filters_0)
-                    .addMutateRow(row(colVal("c2", new byte[] { 1 }), colVal("c3", "update1")))
-                    .setScanRangeColumns("c1", "c1sk")
-                    .addScanRange(new Object[] { 0L, "A" }, new Object[] { 200L, "z" }).execute();
-                Assert.assertEquals(1, updateResult.getAffectedRows());
-                /* To confirm changing. re-query to get the latest data */
-                ObTableValueFilter confirm_0 = compareVal(ObCompareOp.EQ, "c3", "update1");
-                tableQuery.setFilter(confirm_0);
-                QueryResultSet result = tableQuery.execute();
-                Assert.assertEquals(1, result.cacheSize());
-            }
+            filters_0.addFilter(c1_EQ_0, c1_EQ_0);
+            MutationResult updateResult = client.update("test_mutation_with_range")
+                .setFilter(filters_0)
+                .addMutateRow(row(colVal("c2", new byte[] { 1 }), colVal("c3", "update1")))
+                .setScanRangeColumns("c1", "c1sk")
+                .addScanRange(new Object[] { 0L, "A" }, new Object[] { 200L, "z" }).execute();
+            Assert.assertEquals(1, updateResult.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            ObTableValueFilter confirm_0 = compareVal(ObCompareOp.EQ, "c3", "update1");
+            tableQuery.setFilter(confirm_0);
+            QueryResultSet result = tableQuery.execute();
+            Assert.assertEquals(1, result.cacheSize());
 
             // c1 >= 3 && c1 <= 4 ( scan range c1 > 4 )
-            if (((ObTableClient) client).isOdpMode()) {
-                filters_1.addFilter(c1_GE_3, c1_LE_4);
-                MutationResult updateResult = client.increment("test_mutation_with_range")
-                    .setFilter(filters_1).addMutateRow(row(colVal("c4", 100L)))
-                    .setScanRangeColumns("c1")
-                    .addScanRange(new Object[] { 4L }, new Object[] { 200L }).execute();
-                Assert.assertEquals(1, updateResult.getAffectedRows());
-                /* To confirm changing. re-query to get the latest data */
-                ObTableValueFilter confirm_1 = compareVal(ObCompareOp.EQ, "c4", 104L);
-                tableQuery.setFilter(confirm_1);
-                QueryResultSet result = tableQuery.execute();
-                Assert.assertEquals(1, result.cacheSize());
-            } else {
-                filters_1.addFilter(c1_GE_3, c1_LE_4);
-                MutationResult updateResult = client.increment("test_mutation_with_range")
-                    .setFilter(filters_1).addMutateRow(row(colVal("c4", 100L)))
-                    .setScanRangeColumns("c1", "c1sk")
-                    .addScanRange(new Object[] { 4L, "A" }, new Object[] { 200L, "z" }).execute();
-                Assert.assertEquals(1, updateResult.getAffectedRows());
-                /* To confirm changing. re-query to get the latest data */
-                ObTableValueFilter confirm_1 = compareVal(ObCompareOp.EQ, "c4", 104L);
-                tableQuery.setFilter(confirm_1);
-                QueryResultSet result = tableQuery.execute();
-                Assert.assertEquals(1, result.cacheSize());
-            }
+            filters_1.addFilter(c1_GE_3, c1_LE_4);
+            updateResult = client.increment("test_mutation_with_range").setFilter(filters_1)
+                .addMutateRow(row(colVal("c4", 100L))).setScanRangeColumns("c1", "c1sk")
+                .addScanRange(new Object[] { 4L, "A" }, new Object[] { 200L, "z" }).execute();
+            Assert.assertEquals(1, updateResult.getAffectedRows());
+            /* To confirm changing. re-query to get the latest data */
+            ObTableValueFilter confirm_1 = compareVal(ObCompareOp.EQ, "c4", 104L);
+            tableQuery.setFilter(confirm_1);
+            result = tableQuery.execute();
+            Assert.assertEquals(1, result.cacheSize());
 
             // only scan
             if (((ObTableClient) client).isOdpMode()) {
-                MutationResult updateResult = client.update("test_mutation_with_range")
+                updateResult = client.update("test_mutation_with_range")
                     .addMutateRow(row(colVal("c2", new byte[] { 1 }), colVal("c3", "update2")))
-                    .setScanRangeColumns("c1")
-                    .addScanRange(new Object[] { 4L }, new Object[] { 9L }).execute();
+                    .setScanRangeColumns("c1", "c1sk")
+                    .addScanRange(new Object[] { 4L, "A" }, new Object[] { 9L, "z" }).execute();
                 Assert.assertEquals(2, updateResult.getAffectedRows());
                 /* To confirm changing. re-query to get the latest data */
                 ObTableValueFilter confirm_2 = compareVal(ObCompareOp.EQ, "c3", "update2");
                 tableQuery.setFilter(confirm_2);
-                QueryResultSet result = tableQuery.execute();
+                result = tableQuery.execute();
                 Assert.assertEquals(2, result.cacheSize());
 
                 try {
@@ -2176,7 +2169,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                     }
                 }
             } else {
-                MutationResult updateResult = client.update("test_mutation_with_range")
+                updateResult = client.update("test_mutation_with_range")
                     .addMutateRow(row(colVal("c2", new byte[] { 1 }), colVal("c3", "update2")))
                     .setScanRangeColumns("c1", "c1sk")
                     .addScanRange(new Object[] { 4L, "A" }, new Object[] { 9L, "z" }).execute();
@@ -2184,7 +2177,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 /* To confirm changing. re-query to get the latest data */
                 ObTableValueFilter confirm_2 = compareVal(ObCompareOp.EQ, "c3", "update2");
                 tableQuery.setFilter(confirm_2);
-                QueryResultSet result = tableQuery.execute();
+                result = tableQuery.execute();
                 Assert.assertEquals(2, result.cacheSize());
             }
         } finally {

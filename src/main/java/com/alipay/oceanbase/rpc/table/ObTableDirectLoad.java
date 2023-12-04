@@ -19,6 +19,8 @@ package com.alipay.oceanbase.rpc.table;
 
 import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.property.AbstractPropertyAware;
+import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.ObSimplePayload;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObAddr;
@@ -36,37 +38,66 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.direct_load.ObTableDirectL
 import com.alipay.oceanbase.rpc.protocol.payload.impl.direct_load.ObTableDirectLoadResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.direct_load.ObTableLoadClientStatus;
 import com.alipay.oceanbase.rpc.util.ObBytesString;
+import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+
+import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class ObTableDirectLoad {
+import org.slf4j.Logger;
 
-    private ObTable                 table       = null;
+import static com.alipay.oceanbase.rpc.property.Property.*;
+
+public class ObTableDirectLoad extends AbstractPropertyAware {
+
+    private static final Logger     logger               = TableClientLoggerFactory
+                                                             .getLogger(ObTableDirectLoad.class);
+
+    private ObTable                 table                = null;
     private String                  tableName;
-    private ObDirectLoadParameter   parameter   = null;
-    private boolean                 forceCreate = false;
+    private ObDirectLoadParameter   parameter            = null;
+    private boolean                 forceCreate          = false;
 
-    private long                    tableId     = 0;
-    private long                    taskId      = 0;
-    private String[]                columnNames = new String[0];
-    private ObTableLoadClientStatus status      = ObTableLoadClientStatus.MAX_STATUS;
-    private ResultCodes             errorCode   = ResultCodes.OB_SUCCESS;
-    private ObAddr                  srvAddr     = null;
+    private long                    tableId              = 0;
+    private long                    taskId               = 0;
+    private String[]                columnNames          = new String[0];
+    private ObTableLoadClientStatus status               = ObTableLoadClientStatus.MAX_STATUS;
+    private int                     errorCode            = ResultCodes.OB_SUCCESS.errorCode;
+    private ObAddr                  srvAddr              = null;
 
     private Timer                   timer;
 
+    /* Properities */
+    protected int                   runtimeRetryTimes    = RUNTIME_RETRY_TIMES.getDefaultInt();
+    protected int                   runtimeRetryInterval = RUNTIME_RETRY_INTERVAL.getDefaultInt();
+
     public ObTableDirectLoad(ObTable table, String tableName, ObDirectLoadParameter parameter,
                              boolean forceCreate) {
-        if (ObGlobal.OB_VERSION < ObGlobal.OB_VERSION_4_2_1_0)
+        if (ObGlobal.OB_VERSION < ObGlobal.OB_VERSION_4_2_1_0) {
+            logger.warn("not supported ob version {}", ObGlobal.obVsnString());
             throw new ObTableException("not supported ob version " + ObGlobal.obVsnString(),
                 ResultCodes.OB_NOT_SUPPORTED.errorCode);
+        }
+        if (table == null || tableName == null || tableName.isEmpty() || parameter == null) {
+            logger.warn("invalid args, table:{}, tableName:{}, parameter:{}", table, tableName,
+                parameter);
+            throw new IllegalArgumentException("invalid args: " + table + ", " + tableName + ", "
+                                               + parameter);
+        }
         this.table = table;
         this.tableName = tableName;
         this.parameter = parameter;
         this.forceCreate = forceCreate;
+        initProperties();
+    }
+
+    @Override
+    public void setProperties(Properties properties) {
+        this.properties = properties;
+        initProperties();
     }
 
     public ObTable getTable() {
@@ -117,7 +148,7 @@ public class ObTableDirectLoad {
         return status == ObTableLoadClientStatus.ABORT;
     }
 
-    public ResultCodes getErrorCode() {
+    public int getErrorCode() {
         return errorCode;
     }
 
@@ -126,21 +157,18 @@ public class ObTableDirectLoad {
     }
 
     public String toString() {
-        String str = String.format("{table_id:%d, task_id:%d, column_names:[", tableId, taskId);
-        for (int i = 0; i < columnNames.length; ++i) {
-            if (i > 0) {
-                str += ",";
-            }
-            str += columnNames[i];
-        }
-        str += String
-            .format("], status:%s, error_code:%d}", status.toString(), errorCode.errorCode);
-        return str;
+        return String.format("{tableName:%s, tableId:%d, taskId:%d}", tableName, tableId, taskId);
+    }
+
+    private void initProperties() {
+        runtimeRetryTimes = parseToInt(RUNTIME_RETRY_TIMES.getKey(), runtimeRetryTimes);
+        runtimeRetryInterval = parseToInt(RUNTIME_RETRY_INTERVAL.getKey(), runtimeRetryInterval);
     }
 
     public void begin() throws Exception {
         if (status != ObTableLoadClientStatus.MAX_STATUS) {
-            throw new ObTableException("unexpected status to begin, status:" + status.toString(),
+            logger.warn("unexpected status to begin, table:{}, status:{}", this, status);
+            throw new ObTableException("unexpected status to begin, status:" + status,
                 ResultCodes.OB_STATE_NOT_MATCH.errorCode);
         }
         ObTableDirectLoadBeginArg arg = new ObTableDirectLoadBeginArg();
@@ -158,23 +186,27 @@ public class ObTableDirectLoad {
         columnNames = res.getColumnNames();
         status = res.getStatus();
         errorCode = res.getErrorCode();
+        logger.info("begin suceess, table:{}", this);
         startHeartBeat();
     }
 
     public void commit() throws Exception {
         if (!isRunning()) {
-            throw new ObTableException("unexpected status to commit, status:" + status.toString(),
+            logger.warn("unexpected status to commit, table:{}, status:{}", this, status);
+            throw new ObTableException("unexpected status to commit, status:" + status,
                 ResultCodes.OB_STATE_NOT_MATCH.errorCode);
         }
         ObTableDirectLoadCommitArg arg = new ObTableDirectLoadCommitArg();
         arg.setTableId(tableId);
         arg.setTaskId(taskId);
         execute(ObTableDirectLoadOperationType.COMMIT, arg);
+        logger.info("commit suceess, table:{}", this);
     }
 
     public void abort() throws Exception {
         if (status == ObTableLoadClientStatus.MAX_STATUS) {
-            throw new ObTableException("unexpected status to abort, status:" + status.toString(),
+            logger.warn("unexpected status to abort, table:{}, status:{}", this, status);
+            throw new ObTableException("unexpected status to abort, status:" + status,
                 ResultCodes.OB_STATE_NOT_MATCH.errorCode);
         }
         if (isAbort()) {
@@ -184,13 +216,14 @@ public class ObTableDirectLoad {
         arg.setTableId(tableId);
         arg.setTaskId(taskId);
         execute(ObTableDirectLoadOperationType.ABORT, arg);
+        logger.info("abort suceess, table:{}", this);
         stopHeartBeat();
     }
 
     public ObTableLoadClientStatus getStatus() throws Exception {
         if (status == ObTableLoadClientStatus.MAX_STATUS) {
-            throw new ObTableException("unexpected status to get status, status:"
-                                       + status.toString(),
+            logger.warn("unexpected status to get status, table:{}, status:{}", this, status);
+            throw new ObTableException("unexpected status to get status, status:" + status,
                 ResultCodes.OB_STATE_NOT_MATCH.errorCode);
         }
         ObTableDirectLoadGetStatusArg arg = new ObTableDirectLoadGetStatusArg();
@@ -205,7 +238,8 @@ public class ObTableDirectLoad {
 
     public void insert(ObDirectLoadBucket bucket) throws Exception {
         if (!isRunning()) {
-            throw new ObTableException("unexpected status to insert, status:" + status.toString(),
+            logger.warn("unexpected status to insert, table:{}, status:{}", this, status);
+            throw new ObTableException("unexpected status to insert, status:" + status,
                 ResultCodes.OB_STATE_NOT_MATCH.errorCode);
         }
         ObTableDirectLoadInsertArg arg = new ObTableDirectLoadInsertArg();
@@ -233,10 +267,12 @@ public class ObTableDirectLoad {
                     heartBeat();
                 } catch (Exception e) {
                     stopHeartBeat();
+                    logger.info(String.format("heart beat failed, table:%s", this), e);
                 }
             }
         };
         timer.schedule(task, 0, 10000);
+        logger.info("start heart beat, table:{}", this);
     }
 
     private void stopHeartBeat() {
@@ -244,6 +280,7 @@ public class ObTableDirectLoad {
             timer.cancel();
             timer = null;
         }
+        logger.info("stop heart beat, table:{}", this);
     }
 
     private void execute(ObTableDirectLoadOperationType operationType, ObSimplePayload arg,
@@ -256,14 +293,17 @@ public class ObTableDirectLoad {
         header.setOperationType(operationType);
         request.setHeader(header);
         request.setArgContent(new ObBytesString(arg.encode()));
-        ObTableDirectLoadResult result = (ObTableDirectLoadResult) table.execute(request);
+        ObTableDirectLoadResult result = (ObTableDirectLoadResult) rpcCall(request);
         if (result.getHeader().getOperationType() != operationType) {
+            logger.warn("unexpected result operation type, table:{}, reqOpType:{}, resOpType:{}",
+                this, operationType, result.getHeader().getOperationType());
             throw new ObTableException("unexpected result operation type:"
-                                       + result.getHeader().getOperationType().toString()
-                                       + ", request operation type:" + operationType.toString(),
+                                       + result.getHeader().getOperationType()
+                                       + ", request operation type:" + operationType,
                 ResultCodes.OB_ERR_UNEXPECTED.errorCode);
         }
         if (result.getResContent().length() == 0) {
+            logger.warn("unexpected empty res content, table:{}, OpType:{}", this, operationType);
             throw new ObTableException("unexpected empty res content",
                 ResultCodes.OB_ERR_UNEXPECTED.errorCode);
         }
@@ -289,16 +329,39 @@ public class ObTableDirectLoad {
         header.setOperationType(operationType);
         request.setHeader(header);
         request.setArgContent(new ObBytesString(arg.encode()));
-        ObTableDirectLoadResult result = (ObTableDirectLoadResult) table.execute(request);
+        ObTableDirectLoadResult result = (ObTableDirectLoadResult) rpcCall(request);
         if (result.getHeader().getOperationType() != operationType) {
+            logger.warn("unexpected result operation type, table:{}, reqOpType:{}, resOpType:{}",
+                this, operationType, result.getHeader().getOperationType());
             throw new ObTableException("unexpected result operation type:"
-                                       + result.getHeader().getOperationType().toString()
-                                       + ", request operation type:" + operationType.toString(),
+                                       + result.getHeader().getOperationType()
+                                       + ", request operation type:" + operationType,
                 ResultCodes.OB_ERR_UNEXPECTED.errorCode);
         }
         if (result.getResContent().length() != 0) {
+            logger.warn("unexpected res content not empty, table:{}, OpType:{}", this,
+                operationType);
             throw new ObTableException("unexpected res content not empty",
                 ResultCodes.OB_ERR_UNEXPECTED.errorCode);
+        }
+    }
+
+    private ObPayload rpcCall(ObTableDirectLoadRequest request) throws Exception {
+        int tries = 0;
+        while (true) {
+            try {
+                request.setTimeout(table.getObTableExecuteTimeout());
+                return table.execute(request);
+            } catch (Exception e) {
+                logger.warn(String.format("table execute failed, table:%s, tries:%d, request:%s",
+                    this, tries, request), e);
+                if (tries < runtimeRetryTimes) {
+                    Thread.sleep(runtimeRetryInterval);
+                } else {
+                    throw e;
+                }
+                ++tries;
+            }
         }
     }
 

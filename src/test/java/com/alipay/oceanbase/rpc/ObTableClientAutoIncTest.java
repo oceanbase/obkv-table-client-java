@@ -65,6 +65,12 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
         syncRefreshMetaHelper(obTableClient);
     }
 
+    private void executeSQL(String createSQL) throws SQLException {
+        Connection connection = ObTableClientTestUtil.getConnection();
+        Statement statement = connection.createStatement();
+        statement.execute(createSQL);
+    }
+
     private void dropTable(String tableName) throws SQLException {
         // use sql to drop table
         Connection connection = ObTableClientTestUtil.getConnection();
@@ -72,25 +78,25 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
         statement.execute("drop table " + tableName);
     }
 
-    @BeforeClass
-    public static void testVersion() throws Exception {
-        final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
-        obTableClient.init();
-        if (ObGlobal.obVsnMajor() <= 0) {
-            // ob version is invalid
-            Assert.assertTrue(false);
-        } else if (ObGlobal.obVsnMajor() != 4) {
-            // todo: only support in 4.x currently
-            Assert.assertTrue(false);
-        }
-    }
-
     @Test
     // Test auto increment on rowkey
     public void testAutoIncrementRowkey() throws Exception {
+        // todo: only support in 4.x currently
+        if (ObTableClientTestUtil.isOBVersionLessThan(ObTableClientTestUtil.obVsn4000)) {
+            return;
+        }
+
         final String TABLE_NAME = "test_auto_increment_rowkey";
 
         try {
+            executeSQL("CREATE TABLE IF NOT EXISTS `test_auto_increment_rowkey` ("
+                       + "`c1` int auto_increment,"
+                       + "`c2` int NOT NULL,"
+                       + "`c3` int DEFAULT NULL,"
+                       + "`c4` varchar(255) DEFAULT NULL,"
+                       + "PRIMARY KEY(`c1`, `c2`)) partition by range columns(`c2`)"
+                       + "(PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (1000));");
+
             client.insert(TABLE_NAME, new Object[] { 0, 1 }, new String[] { "c3" },
                 new Object[] { 1 });
 
@@ -301,9 +307,22 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
     @Test
     // Test auto increment on not rowkey
     public void testAutoIncrementNotRowkey() throws Exception {
+        // todo: only support in 4.x currently
+        if (ObTableClientTestUtil.isOBVersionLessThan(ObTableClientTestUtil.obVsn4000)) {
+            return;
+        }
+
         final String TABLE_NAME = "test_auto_increment_not_rowkey";
 
         try {
+            executeSQL("CREATE TABLE IF NOT EXISTS `test_auto_increment_not_rowkey` ("
+                       + "`c1` int NOT NULL,"
+                       + "`c2` int DEFAULT NULL,"
+                       + "`c3` tinyint auto_increment,"
+                       + "`c4` varchar(255) DEFAULT NULL,"
+                       + "PRIMARY KEY(`c1`)) partition by range columns(`c1`)"
+                       + "(PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (1000));");
+
             client
                 .insert(TABLE_NAME, new Object[] { 1 }, new String[] { "c2" }, new Object[] { 1 });
 

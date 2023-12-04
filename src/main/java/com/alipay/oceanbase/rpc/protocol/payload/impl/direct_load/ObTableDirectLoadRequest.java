@@ -25,6 +25,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObAddr;
 import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.ObBytesString;
 import com.alipay.oceanbase.rpc.util.Serialization;
+import com.alipay.oceanbase.rpc.util.TraceUtil;
 
 import io.netty.buffer.ByteBuf;
 
@@ -41,6 +42,10 @@ public class ObTableDirectLoadRequest extends AbstractPayload implements Credent
 
     public ObTableDirectLoadRequest() {
         setVersion(2);
+    }
+
+    public void setTimeout(long timeout) {
+        this.timeout = timeout;
     }
 
     public Header getHeader() {
@@ -69,6 +74,11 @@ public class ObTableDirectLoadRequest extends AbstractPayload implements Credent
             throw new NullPointerException();
         }
         this.argContent = argContent;
+    }
+
+    public String toString() {
+        return String.format("%s {header:%s, argContent:%d}", TraceUtil.formatTraceMessage(this),
+            header, argContent.length());
     }
 
     /*
@@ -136,6 +146,10 @@ public class ObTableDirectLoadRequest extends AbstractPayload implements Credent
 
         public void setOperationType(ObTableDirectLoadOperationType operationType) {
             this.operationType = operationType;
+        }
+
+        public String toString() {
+            return String.format("{addr:%s, operationType:%s}", addr, operationType);
         }
 
         /**
