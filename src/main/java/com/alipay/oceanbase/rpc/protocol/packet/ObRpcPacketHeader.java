@@ -77,6 +77,7 @@ public class ObRpcPacketHeader {
     public static final int  CONTEXT_FLAG                              = 1 << 11;
     public static final int  UNNEED_RESPONSE_FLAG                      = 1 << 10;
     public static final int  REQUIRE_REROUTING_FLAG                    = 1 << 9;
+    public static final int  IS_KV_REQUEST_FALG                        = 1 << 5;
 
     private int              pcode;
     private short            hlen                                      = 0;
@@ -121,7 +122,7 @@ public class ObRpcPacketHeader {
         #define OB_LOG_LEVEL_TRACE 4
         #define OB_LOG_LEVEL_DEBUG 5
          */
-        flag = 0x7; // let ObServer determine the ob log level.
+        flag = 0x7 | IS_KV_REQUEST_FALG; // let ObServer determine the ob log level.
     }
 
     /*
