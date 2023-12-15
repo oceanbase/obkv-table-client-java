@@ -237,3 +237,4 @@ public class ObTableErrMsgTest {
         assertTrue(thrown.getMessage().contains("[-4007][OB_NOT_SUPPORTED][assign virtual generated column not supported]"));
     }
 }
+
