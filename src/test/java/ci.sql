@@ -277,4 +277,12 @@ CREATE TABLE IF NOT EXISTS `test_auto_increment_not_rowkey` (
         PARTITION p0 VALUES LESS THAN (100),
         PARTITION p1 VALUES LESS THAN (1000));
 
+CREATE TABLE IF NOT EXISTS  `error_message_table` (
+    `c1` bigint(20) not null,
+    `c2` varchar(5) not null,
+    `c3` datetime default current_timestamp,
+    `c4` varchar(5) generated always as (SUBSTRING(c2, 1)),
+    `c5` double default 0,
+    PRIMARY KEY (`c1``));
+
 alter system set kv_hotkey_throttle_threshold = 50;
