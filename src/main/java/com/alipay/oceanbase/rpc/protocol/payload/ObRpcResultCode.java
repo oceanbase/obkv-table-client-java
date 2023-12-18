@@ -132,6 +132,16 @@ public class ObRpcResultCode extends AbstractPayload {
     }
 
     /*
+     * Get error msg.
+     */
+    public String getErrMsg() {
+        if (msg != null && msg.length > 0) {
+            return new String(msg, 0, msg.length - 1);
+        }
+        return new String(msg);
+    }
+
+    /*
      * Set msg.
      */
     public void setMsg(byte[] msg) {
