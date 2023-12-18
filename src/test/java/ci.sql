@@ -256,7 +256,7 @@ CREATE TABLE `test_ttl_timestamp` (
  `c1` bigint NOT NULL,
  `c2` varchar(20) DEFAULT NULL,
  `c3` bigint DEFAULT NULL,
- `expired_ts` timestamp,
+ `expired_ts` timestamp(6),
 PRIMARY KEY (`c1`)) TTL(expired_ts + INTERVAL 0 SECOND);
 
 CREATE TABLE IF NOT EXISTS `test_auto_increment_rowkey` (
@@ -382,7 +382,7 @@ CREATE TABLE IF NOT EXISTS `test_ttl_timestamp_with_index` (
 `c2` bigint NOT NULL,
 `c3` bigint DEFAULT NULL,
 `c4` bigint DEFAULT NULL,
-`expired_ts` timestamp,
+`expired_ts` timestamp(6),
 PRIMARY KEY (`c1`, `c2`),
 KEY `idx`(`c1`, `c4`) local,
 KEY `idx2`(`c3`) global partition by hash(`c3`) partitions 4)
