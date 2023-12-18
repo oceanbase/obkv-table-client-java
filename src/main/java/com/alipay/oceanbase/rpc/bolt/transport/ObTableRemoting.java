@@ -20,6 +20,7 @@ package com.alipay.oceanbase.rpc.bolt.transport;
 import com.alipay.oceanbase.rpc.bolt.protocol.ObTablePacket;
 import com.alipay.oceanbase.rpc.bolt.protocol.ObTablePacketCode;
 import com.alipay.oceanbase.rpc.exception.ExceptionUtil;
+import com.alipay.oceanbase.rpc.exception.ObTableLoginException;
 import com.alipay.oceanbase.rpc.exception.ObTableRoutingWrongException;
 import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
@@ -56,6 +57,11 @@ public class ObTableRemoting extends BaseRemoting {
         request.setUniqueId(conn.getUniqueId());
 
         if (request instanceof Credentialable) {
+            if (conn.getCredential() == null) {
+                String errMessage = TraceUtil.formatTraceMessage(conn, request, "credential is null");
+                logger.warn(errMessage);
+                throw new ObTableUnexpectedException(errMessage);
+            }
             ((Credentialable) request).setCredential(conn.getCredential());
         }
 
