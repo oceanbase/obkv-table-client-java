@@ -34,7 +34,7 @@ public class BatchOperation {
     private Table        client;
     boolean              withResult;
     private List<Object> operations;
-    boolean              isAtomic = false;
+    boolean              isAtomic = true;
 
     /*
      * default constructor
@@ -96,6 +96,7 @@ public class BatchOperation {
         return this;
     }
 
+    @Deprecated
     public BatchOperation setIsAtomic(boolean isAtomic) {
         this.isAtomic = isAtomic;
         return this;

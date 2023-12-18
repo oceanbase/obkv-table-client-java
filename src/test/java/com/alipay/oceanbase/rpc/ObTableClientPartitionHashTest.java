@@ -359,15 +359,15 @@ public class ObTableClientPartitionHashTest {
     @Test
     public void testBatch() throws Exception {
         long timeStamp = System.currentTimeMillis();
-        obTableClient.insert("testHash", new Object[] { timeStamp + 1L, "partition".getBytes(),
+        obTableClient.insert("testHash", new Object[] { timeStamp, "Q1".getBytes(),
                 timeStamp }, new String[] { "V" }, new Object[] { "value1L".getBytes() });
-        obTableClient.insert("testHash", new Object[] { timeStamp + 5L, "partition".getBytes(),
+        obTableClient.insert("testHash", new Object[] { timeStamp, "Q2".getBytes(),
                 timeStamp }, new String[] { "V" }, new Object[] { "value1L".getBytes() });
         TableBatchOps tableBatchOps = obTableClient.batch("testHash");
-        tableBatchOps.delete(new Object[] { timeStamp + 1L, "partition".getBytes(), timeStamp });
-        tableBatchOps.insert(new Object[] { timeStamp + 3L, "partition".getBytes(), timeStamp },
+        tableBatchOps.delete(new Object[] { timeStamp, "Q1".getBytes(), timeStamp });
+        tableBatchOps.insert(new Object[] { timeStamp, "Q3".getBytes(), timeStamp },
             new String[] { "V" }, new Object[] { "value2".getBytes() });
-        tableBatchOps.replace(new Object[] { timeStamp + 5L, "partition".getBytes(), timeStamp },
+        tableBatchOps.replace(new Object[] { timeStamp, "Q2".getBytes(), timeStamp },
             new String[] { "V" }, new Object[] { "value2".getBytes() });
         List<Object> batchResult = tableBatchOps.execute();
         Assert.assertEquals(3, batchResult.size());
@@ -376,30 +376,30 @@ public class ObTableClientPartitionHashTest {
         Assert.assertEquals(2L, batchResult.get(2));
 
         Map<String, Object> getResult = obTableClient.get("testHash", new Object[] {
-                timeStamp + 1L, "partition".getBytes(), timeStamp }, new String[] { "K", "Q", "T",
+                timeStamp, "Q1".getBytes(), timeStamp }, new String[] { "K", "Q", "T",
                 "V" });
 
         Assert.assertEquals(0, getResult.size());
 
         getResult = obTableClient.get("testHash",
-            new Object[] { timeStamp + 3L, "partition".getBytes(), timeStamp }, new String[] { "K",
+            new Object[] { timeStamp, "Q2".getBytes(), timeStamp }, new String[] { "K",
                     "Q", "T", "V" });
 
         Assert.assertEquals(4, getResult.size());
 
-        Assert.assertEquals(timeStamp + 3L, getResult.get("K"));
-        Assert.assertEquals("partition", new String((byte[]) getResult.get("Q")));
+        Assert.assertEquals(timeStamp, getResult.get("K"));
+        Assert.assertEquals("Q2", new String((byte[]) getResult.get("Q")));
         Assert.assertEquals(timeStamp, getResult.get("T"));
         Assert.assertEquals("value2", new String((byte[]) getResult.get("V")));
 
         getResult = obTableClient.get("testHash",
-            new Object[] { timeStamp + 5L, "partition".getBytes(), timeStamp }, new String[] { "K",
+            new Object[] { timeStamp, "Q3".getBytes(), timeStamp }, new String[] { "K",
                     "Q", "T", "V" });
 
         Assert.assertEquals(4, getResult.size());
 
-        Assert.assertEquals(timeStamp + 5L, getResult.get("K"));
-        Assert.assertEquals("partition", new String((byte[]) getResult.get("Q")));
+        Assert.assertEquals(timeStamp, getResult.get("K"));
+        Assert.assertEquals("Q3", new String((byte[]) getResult.get("Q")));
         Assert.assertEquals(timeStamp, getResult.get("T"));
         Assert.assertEquals("value2", new String((byte[]) getResult.get("V")));
     }
@@ -408,15 +408,15 @@ public class ObTableClientPartitionHashTest {
     public void testBatchConcurrent() throws Exception {
         long timeStamp = System.currentTimeMillis();
         obTableClient.setRuntimeBatchExecutor(Executors.newFixedThreadPool(3));
-        obTableClient.insert("testHash", new Object[] { timeStamp + 1L, "partition".getBytes(),
+        obTableClient.insert("testHash", new Object[] { timeStamp, "Q1".getBytes(),
                 timeStamp }, new String[] { "V" }, new Object[] { "value1L".getBytes() });
-        obTableClient.insert("testHash", new Object[] { timeStamp + 5L, "partition".getBytes(),
+        obTableClient.insert("testHash", new Object[] { timeStamp, "Q2".getBytes(),
                 timeStamp }, new String[] { "V" }, new Object[] { "value1L".getBytes() });
         TableBatchOps tableBatchOps = obTableClient.batch("testHash");
-        tableBatchOps.delete(new Object[] { timeStamp + 1L, "partition".getBytes(), timeStamp });
-        tableBatchOps.insert(new Object[] { timeStamp + 3L, "partition".getBytes(), timeStamp },
+        tableBatchOps.delete(new Object[] { timeStamp, "Q1".getBytes(), timeStamp });
+        tableBatchOps.insert(new Object[] { timeStamp, "Q3".getBytes(), timeStamp },
             new String[] { "V" }, new Object[] { "value2".getBytes() });
-        tableBatchOps.replace(new Object[] { timeStamp + 5L, "partition".getBytes(), timeStamp },
+        tableBatchOps.replace(new Object[] { timeStamp, "Q2".getBytes(), timeStamp },
             new String[] { "V" }, new Object[] { "value2".getBytes() });
         List<Object> batchResult = tableBatchOps.execute();
         Assert.assertEquals(3, batchResult.size());
@@ -425,30 +425,30 @@ public class ObTableClientPartitionHashTest {
         Assert.assertEquals(2L, batchResult.get(2));
 
         Map<String, Object> getResult = obTableClient.get("testHash", new Object[] {
-                timeStamp + 1L, "partition".getBytes(), timeStamp }, new String[] { "K", "Q", "T",
+                timeStamp, "Q1".getBytes(), timeStamp }, new String[] { "K", "Q", "T",
                 "V" });
 
         Assert.assertEquals(0, getResult.size());
 
         getResult = obTableClient.get("testHash",
-            new Object[] { timeStamp + 3L, "partition".getBytes(), timeStamp }, new String[] { "K",
+            new Object[] { timeStamp, "Q2".getBytes(), timeStamp }, new String[] { "K",
                     "Q", "T", "V" });
 
         Assert.assertEquals(4, getResult.size());
 
-        Assert.assertEquals(timeStamp + 3L, getResult.get("K"));
-        Assert.assertEquals("partition", new String((byte[]) getResult.get("Q")));
+        Assert.assertEquals(timeStamp, getResult.get("K"));
+        Assert.assertEquals("Q2", new String((byte[]) getResult.get("Q")));
         Assert.assertEquals(timeStamp, getResult.get("T"));
         Assert.assertEquals("value2", new String((byte[]) getResult.get("V")));
 
         getResult = obTableClient.get("testHash",
-            new Object[] { timeStamp + 5L, "partition".getBytes(), timeStamp }, new String[] { "K",
+            new Object[] { timeStamp, "Q3".getBytes(), timeStamp }, new String[] { "K",
                     "Q", "T", "V" });
 
         Assert.assertEquals(4, getResult.size());
 
-        Assert.assertEquals(timeStamp + 5L, getResult.get("K"));
-        Assert.assertEquals("partition", new String((byte[]) getResult.get("Q")));
+        Assert.assertEquals(timeStamp, getResult.get("K"));
+        Assert.assertEquals("Q3", new String((byte[]) getResult.get("Q")));
         Assert.assertEquals(timeStamp, getResult.get("T"));
         Assert.assertEquals("value2", new String((byte[]) getResult.get("V")));
     }
@@ -458,15 +458,15 @@ public class ObTableClientPartitionHashTest {
         long timeStamp = System.currentTimeMillis();
         ThreadLocalMap.setProcessHighPriority();
         obTableClient.setRuntimeBatchExecutor(Executors.newFixedThreadPool(3));
-        obTableClient.insert("testHash", new Object[] { timeStamp + 1L, "partition".getBytes(),
+        obTableClient.insert("testHash", new Object[] { timeStamp, "Q1".getBytes(),
                 timeStamp }, new String[] { "V" }, new Object[] { "value1L".getBytes() });
-        obTableClient.insert("testHash", new Object[] { timeStamp + 5L, "partition".getBytes(),
+        obTableClient.insert("testHash", new Object[] { timeStamp, "Q2".getBytes(),
                 timeStamp }, new String[] { "V" }, new Object[] { "value1L".getBytes() });
         TableBatchOps tableBatchOps = obTableClient.batch("testHash");
-        tableBatchOps.delete(new Object[] { timeStamp + 1L, "partition".getBytes(), timeStamp });
-        tableBatchOps.insert(new Object[] { timeStamp + 3L, "partition".getBytes(), timeStamp },
+        tableBatchOps.delete(new Object[] { timeStamp, "Q1".getBytes(), timeStamp });
+        tableBatchOps.insert(new Object[] { timeStamp, "Q3".getBytes(), timeStamp },
             new String[] { "V" }, new Object[] { "value2".getBytes() });
-        tableBatchOps.replace(new Object[] { timeStamp + 5L, "partition".getBytes(), timeStamp },
+        tableBatchOps.replace(new Object[] { timeStamp, "Q2".getBytes(), timeStamp },
             new String[] { "V" }, new Object[] { "value2".getBytes() });
         List<Object> batchResult = tableBatchOps.execute();
         Assert.assertEquals(3, batchResult.size());
@@ -475,30 +475,30 @@ public class ObTableClientPartitionHashTest {
         Assert.assertEquals(2L, batchResult.get(2));
 
         Map<String, Object> getResult = obTableClient.get("testHash", new Object[] {
-                timeStamp + 1L, "partition".getBytes(), timeStamp }, new String[] { "K", "Q", "T",
+                timeStamp, "Q1".getBytes(), timeStamp }, new String[] { "K", "Q", "T",
                 "V" });
 
         Assert.assertEquals(0, getResult.size());
 
         getResult = obTableClient.get("testHash",
-            new Object[] { timeStamp + 3L, "partition".getBytes(), timeStamp }, new String[] { "K",
+            new Object[] { timeStamp, "Q2".getBytes(), timeStamp }, new String[] { "K",
                     "Q", "T", "V" });
 
         Assert.assertEquals(4, getResult.size());
 
-        Assert.assertEquals(timeStamp + 3L, getResult.get("K"));
-        Assert.assertEquals("partition", new String((byte[]) getResult.get("Q")));
+        Assert.assertEquals(timeStamp, getResult.get("K"));
+        Assert.assertEquals("Q2", new String((byte[]) getResult.get("Q")));
         Assert.assertEquals(timeStamp, getResult.get("T"));
         Assert.assertEquals("value2", new String((byte[]) getResult.get("V")));
 
         getResult = obTableClient.get("testHash",
-            new Object[] { timeStamp + 5L, "partition".getBytes(), timeStamp }, new String[] { "K",
+            new Object[] { timeStamp , "Q3".getBytes(), timeStamp }, new String[] { "K",
                     "Q", "T", "V" });
 
         Assert.assertEquals(4, getResult.size());
 
-        Assert.assertEquals(timeStamp + 5L, getResult.get("K"));
-        Assert.assertEquals("partition", new String((byte[]) getResult.get("Q")));
+        Assert.assertEquals(timeStamp, getResult.get("K"));
+        Assert.assertEquals("Q3", new String((byte[]) getResult.get("Q")));
         Assert.assertEquals(timeStamp, getResult.get("T"));
         Assert.assertEquals("value2", new String((byte[]) getResult.get("V")));
     }

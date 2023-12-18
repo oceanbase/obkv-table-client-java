@@ -292,5 +292,58 @@ public class TableClient {
         }
     }
 
+    // batch for single tablet: one of the the operation execute failed,
+    // batch will rollback in observer and throw related Exception
+    public boolean batch2() {
+        if (obTableClient == null) {
+            System.out.println("table client is null");
+            return false;
+        }
+        try {
+            TableBatchOps batchOps = obTableClient.batch(tableName);
+            batchOps.get((long)1, new String[]{"c2", "c3"});
+            batchOps.insert((long)5, new String[]{"c2", "c3"}, new Object[]{(int)5, "batch new c3_5"});
+            // insert a row with duplicated primary key, return error
+            batchOps.insert((long)5, new String[]{"c2", "c3"}, new Object[]{(int)5, "batch new c3_5"});
+            batchOps.update((long)5, new String[]{"c2"}, new Object[]{(int)55});
+            List<Object> retObj = batchOps.execute();
+            if (retObj.size() != 4) {
+                System.out.println("batch Ops error");
+                return false;
+            }
+            System.out.println("batch Ops success.");
+            return true;
+        } catch (Exception e) {
+            System.out.println("fail to execute batch ops: " + e);
+            return false;
+        }
+    }
+
+    /*
+       batch opertion do not support cross partition, it will throw ObTablePartitionConsistentException
+    */
+    public boolean batch3() {
+        if (obTableClient == null) {
+            System.out.println("table client is null");
+            return false;
+        }
+        try {
+            tableName = "test_partition_table";
+            TableBatchOps batchOps = obTableClient.batch(tableName);
+            batchOps.insert((long)1, new String[]{"c2", "c3"}, new Object[]{(int)1, "batch new c3_5"});
+            batchOps.insert((long)2, new String[]{"c2", "c3"}, new Object[]{(int)2, "batch new c3_5"});
+            List<Object> retObj = batchOps.execute();
+            if (retObj.size() != 2) {
+                System.out.println("batch Ops error");
+                return false;
+            }
+            System.out.println("batch Ops success.");
+            return true;
+        } catch (ObTablePartitionConsistentException e) {
+            System.out.println("do not support across partition in batch operation" + e);
+            return false;
+        }
+    }
+
     // todo: others op.
 }

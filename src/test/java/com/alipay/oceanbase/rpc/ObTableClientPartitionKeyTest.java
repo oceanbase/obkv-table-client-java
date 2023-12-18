@@ -524,14 +524,14 @@ public class ObTableClientPartitionKeyTest {
                 new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
                 new String[] { "V" }, new Object[] { "value1".getBytes() });
             obTableClient.insert(TEST_TABLE,
-                new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp },
+                new Object[] { "key1_3".getBytes(), "partition".getBytes(), timeStamp },
                 new String[] { "V" }, new Object[] { "value1".getBytes() });
             TableBatchOps tableBatchOps = obTableClient.batch(TEST_TABLE);
             tableBatchOps.delete(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
                     timeStamp });
-            tableBatchOps.insert(new Object[] { "key2_1".getBytes(), "partition".getBytes(),
+            tableBatchOps.insert(new Object[] { "key1_2".getBytes(), "partition".getBytes(),
                     timeStamp }, new String[] { "V" }, new Object[] { "value2".getBytes() });
-            tableBatchOps.replace(new Object[] { "key3_1".getBytes(), "partition".getBytes(),
+            tableBatchOps.replace(new Object[] { "key1_3".getBytes(), "partition".getBytes(),
                     timeStamp }, new String[] { "V" }, new Object[] { "value2".getBytes() });
             List<Object> batchResult = tableBatchOps.execute();
             Assert.assertEquals(3, batchResult.size());
@@ -545,22 +545,22 @@ public class ObTableClientPartitionKeyTest {
 
             Assert.assertEquals(0, getResult.size());
 
-            getResult = obTableClient.get(TEST_TABLE, new Object[] { "key2_1".getBytes(),
+            getResult = obTableClient.get(TEST_TABLE, new Object[] { "key1_2".getBytes(),
                     "partition".getBytes(), timeStamp }, new String[] { "K", "Q", "T", "V" });
 
             Assert.assertEquals(4, getResult.size());
 
-            Assert.assertEquals("key2_1", new String((byte[]) getResult.get("K")));
+            Assert.assertEquals("key1_2", new String((byte[]) getResult.get("K")));
             Assert.assertEquals("partition", new String((byte[]) getResult.get("Q")));
             Assert.assertEquals(timeStamp, getResult.get("T"));
             Assert.assertEquals("value2", new String((byte[]) getResult.get("V")));
 
-            getResult = obTableClient.get(TEST_TABLE, new Object[] { "key3_1".getBytes(),
+            getResult = obTableClient.get(TEST_TABLE, new Object[] { "key1_3".getBytes(),
                     "partition".getBytes(), timeStamp }, new String[] { "K", "Q", "T", "V" });
 
             Assert.assertEquals(4, getResult.size());
 
-            Assert.assertEquals("key3_1", new String((byte[]) getResult.get("K")));
+            Assert.assertEquals("key1_3", new String((byte[]) getResult.get("K")));
             Assert.assertEquals("partition", new String((byte[]) getResult.get("Q")));
             Assert.assertEquals(timeStamp, getResult.get("T"));
             Assert.assertEquals("value2", new String((byte[]) getResult.get("V")));
@@ -571,9 +571,9 @@ public class ObTableClientPartitionKeyTest {
             obTableClient.delete(TEST_TABLE,
                 new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp });
             obTableClient.delete(TEST_TABLE,
-                new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp });
+                new Object[] { "key1_2".getBytes(), "partition".getBytes(), timeStamp });
             obTableClient.delete(TEST_TABLE,
-                new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp });
+                new Object[] { "key1_3".getBytes(), "partition".getBytes(), timeStamp });
         }
     }
 
@@ -587,14 +587,14 @@ public class ObTableClientPartitionKeyTest {
                 new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
                 new String[] { "V" }, new Object[] { "value1".getBytes() });
             obTableClient.insert(TEST_TABLE,
-                new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp },
+                new Object[] { "key1_3".getBytes(), "partition".getBytes(), timeStamp },
                 new String[] { "V" }, new Object[] { "value1".getBytes() });
             TableBatchOps tableBatchOps = obTableClient.batch(TEST_TABLE);
             tableBatchOps.delete(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
                     timeStamp });
-            tableBatchOps.insert(new Object[] { "key2_1".getBytes(), "partition".getBytes(),
+            tableBatchOps.insert(new Object[] { "key1_2".getBytes(), "partition".getBytes(),
                     timeStamp }, new String[] { "V" }, new Object[] { "value2".getBytes() });
-            tableBatchOps.replace(new Object[] { "key3_1".getBytes(), "partition".getBytes(),
+            tableBatchOps.replace(new Object[] { "key1_3".getBytes(), "partition".getBytes(),
                     timeStamp }, new String[] { "V" }, new Object[] { "value2".getBytes() });
             List<Object> batchResult = tableBatchOps.execute();
             Assert.assertEquals(3, batchResult.size());
@@ -608,22 +608,22 @@ public class ObTableClientPartitionKeyTest {
 
             Assert.assertEquals(0, getResult.size());
 
-            getResult = obTableClient.get(TEST_TABLE, new Object[] { "key2_1".getBytes(),
+            getResult = obTableClient.get(TEST_TABLE, new Object[] { "key1_2".getBytes(),
                     "partition".getBytes(), timeStamp }, new String[] { "K", "Q", "T", "V" });
 
             Assert.assertEquals(4, getResult.size());
 
-            Assert.assertEquals("key2_1", new String((byte[]) getResult.get("K")));
+            Assert.assertEquals("key1_2", new String((byte[]) getResult.get("K")));
             Assert.assertEquals("partition", new String((byte[]) getResult.get("Q")));
             Assert.assertEquals(timeStamp, getResult.get("T"));
             Assert.assertEquals("value2", new String((byte[]) getResult.get("V")));
 
-            getResult = obTableClient.get(TEST_TABLE, new Object[] { "key3_1".getBytes(),
+            getResult = obTableClient.get(TEST_TABLE, new Object[] { "key1_3".getBytes(),
                     "partition".getBytes(), timeStamp }, new String[] { "K", "Q", "T", "V" });
 
             Assert.assertEquals(4, getResult.size());
 
-            Assert.assertEquals("key3_1", new String((byte[]) getResult.get("K")));
+            Assert.assertEquals("key1_3", new String((byte[]) getResult.get("K")));
             Assert.assertEquals("partition", new String((byte[]) getResult.get("Q")));
             Assert.assertEquals(timeStamp, getResult.get("T"));
             Assert.assertEquals("value2", new String((byte[]) getResult.get("V")));
@@ -635,9 +635,9 @@ public class ObTableClientPartitionKeyTest {
             obTableClient.delete(TEST_TABLE,
                 new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp });
             obTableClient.delete(TEST_TABLE,
-                new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp });
+                new Object[] { "key1_2".getBytes(), "partition".getBytes(), timeStamp });
             obTableClient.delete(TEST_TABLE,
-                new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp });
+                new Object[] { "key1_3".getBytes(), "partition".getBytes(), timeStamp });
         }
     }
 
@@ -652,14 +652,14 @@ public class ObTableClientPartitionKeyTest {
                 new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
                 new String[] { "V" }, new Object[] { "value1".getBytes() });
             obTableClient.insert(TEST_TABLE,
-                new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp },
+                new Object[] { "key1_3".getBytes(), "partition".getBytes(), timeStamp },
                 new String[] { "V" }, new Object[] { "value1".getBytes() });
             TableBatchOps tableBatchOps = obTableClient.batch(TEST_TABLE);
             tableBatchOps.delete(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
                     timeStamp });
-            tableBatchOps.insert(new Object[] { "key2_1".getBytes(), "partition".getBytes(),
+            tableBatchOps.insert(new Object[] { "key1_2".getBytes(), "partition".getBytes(),
                     timeStamp }, new String[] { "V" }, new Object[] { "value2".getBytes() });
-            tableBatchOps.replace(new Object[] { "key3_1".getBytes(), "partition".getBytes(),
+            tableBatchOps.replace(new Object[] { "key1_3".getBytes(), "partition".getBytes(),
                     timeStamp }, new String[] { "V" }, new Object[] { "value2".getBytes() });
             List<Object> batchResult = tableBatchOps.execute();
             Assert.assertEquals(3, batchResult.size());
@@ -673,22 +673,22 @@ public class ObTableClientPartitionKeyTest {
 
             Assert.assertEquals(0, getResult.size());
 
-            getResult = obTableClient.get(TEST_TABLE, new Object[] { "key2_1".getBytes(),
+            getResult = obTableClient.get(TEST_TABLE, new Object[] { "key1_2".getBytes(),
                     "partition".getBytes(), timeStamp }, new String[] { "K", "Q", "T", "V" });
 
             Assert.assertEquals(4, getResult.size());
 
-            Assert.assertEquals("key2_1", new String((byte[]) getResult.get("K")));
+            Assert.assertEquals("key1_2", new String((byte[]) getResult.get("K")));
             Assert.assertEquals("partition", new String((byte[]) getResult.get("Q")));
             Assert.assertEquals(timeStamp, getResult.get("T"));
             Assert.assertEquals("value2", new String((byte[]) getResult.get("V")));
 
-            getResult = obTableClient.get(TEST_TABLE, new Object[] { "key3_1".getBytes(),
+            getResult = obTableClient.get(TEST_TABLE, new Object[] { "key1_3".getBytes(),
                     "partition".getBytes(), timeStamp }, new String[] { "K", "Q", "T", "V" });
 
             Assert.assertEquals(4, getResult.size());
 
-            Assert.assertEquals("key3_1", new String((byte[]) getResult.get("K")));
+            Assert.assertEquals("key1_3", new String((byte[]) getResult.get("K")));
             Assert.assertEquals("partition", new String((byte[]) getResult.get("Q")));
             Assert.assertEquals(timeStamp, getResult.get("T"));
             Assert.assertEquals("value2", new String((byte[]) getResult.get("V")));
@@ -700,9 +700,9 @@ public class ObTableClientPartitionKeyTest {
             obTableClient.delete(TEST_TABLE,
                 new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp });
             obTableClient.delete(TEST_TABLE,
-                new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp });
+                new Object[] { "key1_2".getBytes(), "partition".getBytes(), timeStamp });
             obTableClient.delete(TEST_TABLE,
-                new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp });
+                new Object[] { "key1_3".getBytes(), "partition".getBytes(), timeStamp });
         }
     }
 

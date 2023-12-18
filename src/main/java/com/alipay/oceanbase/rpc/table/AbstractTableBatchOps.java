@@ -24,7 +24,7 @@ public abstract class AbstractTableBatchOps implements TableBatchOps {
 
     protected String            tableName;
 
-    protected boolean           atomicOperation;
+    protected boolean           atomicOperation = true;
 
     protected ObTableEntityType entityType = ObTableEntityType.DYNAMIC;
 
@@ -111,6 +111,7 @@ public abstract class AbstractTableBatchOps implements TableBatchOps {
      * Set atomic operation.
      */
     @Override
+    @Deprecated
     public void setAtomicOperation(boolean atomicOperation) {
         this.atomicOperation = atomicOperation;
     }
