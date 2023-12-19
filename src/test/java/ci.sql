@@ -395,6 +395,6 @@ CREATE TABLE IF NOT EXISTS  `error_message_table` (
     `c3` datetime default current_timestamp,
     `c4` varchar(5) generated always as (SUBSTRING(c2, 1)),
     `c5` double default 0,
-    PRIMARY KEY (`c1``));
+    PRIMARY KEY (`c1`));
 
 alter system set kv_hotkey_throttle_threshold = 50;
