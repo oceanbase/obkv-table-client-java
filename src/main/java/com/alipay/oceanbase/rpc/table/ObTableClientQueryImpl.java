@@ -143,7 +143,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             String indexName = tableQuery.getIndexName();
             String indexTableName = tableName;
             if (!this.obTableClient.isOdpMode()) {
-                indexTableName = obTableClient.getIndexTableName(tableName, indexName, tableQuery.getScanRangeColumns());
+                indexTableName = obTableClient.getIndexTableName(tableName, indexName,
+                    tableQuery.getScanRangeColumns());
             }
 
             for (ObNewRange rang : tableQuery.getKeyRanges()) {
@@ -162,8 +163,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                 }
                 ObBorderFlag borderFlag = rang.getBorderFlag();
                 List<ObPair<Long, ObTableParam>> pairs = obTableClient.getTables(indexTableName,
-                        start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false,
-                        false, obTableClient.getReadRoute());
+                    start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false,
+                    false, obTableClient.getReadRoute());
                 for (ObPair<Long, ObTableParam> pair : pairs) {
                     partitionObTables.put(pair.getLeft(), pair);
                 }

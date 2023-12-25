@@ -54,14 +54,6 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
                    + 2 + 3;
     }
 
-    protected int encodeHeader(byte[] bytes, int idx) {
-        int headerLen = (int) getObUniVersionHeaderLength(getVersion(), getPayloadContentSize());
-        System.arraycopy(encodeObUniVersionHeader(getVersion(), getPayloadContentSize()), 0, bytes,
-            idx, headerLen);
-        idx += headerLen;
-        return idx;
-    }
-
     protected int encodeCredential(byte[] bytes, int idx) {
         byte[] strbytes = Serialization.encodeBytesString(credential);
         System.arraycopy(strbytes, 0, bytes, idx, strbytes.length);

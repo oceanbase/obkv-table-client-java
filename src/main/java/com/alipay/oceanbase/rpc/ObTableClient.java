@@ -18,15 +18,18 @@
 package com.alipay.oceanbase.rpc;
 
 import com.alibaba.fastjson.JSON;
+import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.constant.Constants;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.batch.QueryByBatch;
 import com.alipay.oceanbase.rpc.location.LocationUtil;
+import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.location.model.*;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPartIdCalculator;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionLevel;
 import com.alipay.oceanbase.rpc.mutation.*;
+import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
@@ -910,8 +913,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @param scanRangeColumns columns that need to be scaned
      * @return the real table name
      */
-    public String getIndexTableName(final String dataTableName, final String indexName, List<String> scanRangeColumns)
-            throws Exception {
+    public String getIndexTableName(final String dataTableName, final String indexName,
+                                    List<String> scanRangeColumns) throws Exception {
         String indexTableName = dataTableName;
         if (indexName != null && !indexName.equals("PRIMARY")) {
             String tmpTableName = constructIndexTableName(dataTableName, indexName);
@@ -925,9 +928,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (indexInfo.getIndexType().isGlobalIndex()) {
                 indexTableName = tmpTableName;
                 if (scanRangeColumns.isEmpty()) {
-                    throw new ObTableException("query by global index need add all index keys in order");
+                    throw new ObTableException(
+                        "query by global index need add all index keys in order");
                 } else {
-                    addRowKeyElement(indexTableName, scanRangeColumns.toArray(new String[scanRangeColumns.size()]));
+                    addRowKeyElement(indexTableName,
+                        scanRangeColumns.toArray(new String[scanRangeColumns.size()]));
                 }
             }
         }
@@ -935,17 +940,17 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     public String constructIndexTableName(final String dataTableName, final String indexName)
-            throws Exception {
+                                                                                             throws Exception {
         // construct index table name
         TableEntry entry = tableLocations.get(dataTableName);
         Long dataTableId = null;
         try {
             if (entry == null) {
                 ObServerAddr addr = serverRoster.getServer(serverAddressPriorityTimeout,
-                        serverAddressCachingTimeout);
+                    serverAddressCachingTimeout);
                 dataTableId = LocationUtil.getTableIdFromRemote(addr, sysUA,
-                        tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout, tenantName,
-                        database, dataTableName);
+                    tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout, tenantName,
+                    database, dataTableName);
             } else {
                 dataTableId = entry.getTableId();
             }
@@ -957,7 +962,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     public ObIndexInfo getOrRefreshIndexInfo(final String indexName, final String indexTableName)
-            throws Exception {
+                                                                                                 throws Exception {
         ObIndexInfo indexInfo = indexinfos.get(indexName);
         if (indexInfo != null) {
             return indexInfo;
@@ -968,8 +973,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         boolean acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
         if (!acquired) {
             String errMsg = "try to lock index infos refreshing timeout " + "dataSource:"
-                    + dataSourceName + " ,indexName:" + indexName + " , timeout:"
-                    + tableEntryRefreshLockTimeout + ".";
+                            + dataSourceName + " ,indexName:" + indexName + " , timeout:"
+                            + tableEntryRefreshLockTimeout + ".";
             RUNTIME.error(errMsg);
             throw new ObTableEntryRefreshException(errMsg);
         }
@@ -979,21 +984,21 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 return indexInfo;
             } else {
                 logger.info("index info is not exist, create new index info, indexName: {}",
-                        indexName);
+                    indexName);
                 int serverSize = serverRoster.getMembers().size();
                 int refreshTryTimes = tableEntryRefreshTryTimes > serverSize ? serverSize
-                        : tableEntryRefreshTryTimes;
+                    : tableEntryRefreshTryTimes;
                 for (int i = 0; i < refreshTryTimes; i++) {
                     ObServerAddr serverAddr = serverRoster.getServer(serverAddressPriorityTimeout,
-                            serverAddressCachingTimeout);
+                        serverAddressCachingTimeout);
                     indexInfo = getIndexInfoFromRemote(serverAddr, sysUA,
-                            tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
-                            indexTableName);
+                        tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
+                        indexTableName);
                     if (indexInfo != null) {
                         indexinfos.put(indexName, indexInfo);
                     } else {
                         RUNTIME.error("get index info from remote is null, index name: {}",
-                                indexName);
+                            indexName);
                     }
                 }
                 return indexInfo;
@@ -2265,6 +2270,27 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                         final List<ObNewRange> keyRanges,
                                         final ObTableOperation operation, final boolean withResult)
                                                                                                    throws Exception {
+        return mutationWithFilter(tableQuery, rowKey, keyRanges, operation, withResult, false,
+            false);
+    }
+
+    /**
+     * execute mutation with filter
+     * @param tableQuery table query
+     * @param rowKey row key which want to mutate
+     * @param keyRanges scan range
+     * @param operation table operation
+     * @param withResult whether to bring back result
+     * @param checkAndExecute whether execute check and execute instead of query and mutate
+     * @param checkExists whether to check exists or not
+     * @return execute result
+     * @throws Exception exception
+     */
+    public ObPayload mutationWithFilter(final TableQuery tableQuery, final Object[] rowKey,
+                                        final List<ObNewRange> keyRanges,
+                                        final ObTableOperation operation, final boolean withResult,
+                                        final boolean checkAndExecute, final boolean checkExists)
+                                                                                                 throws Exception {
         final long start = System.currentTimeMillis();
         if (tableQuery != null && tableQuery.getObTableQuery().getKeyRanges().isEmpty()) {
             // fill a whole range if no range is added explicitly.
@@ -2287,6 +2313,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 request.setTableId(tableParam.getTableId());
                 // partId/tabletId
                 request.setPartitionId(tableParam.getPartitionId());
+                request.getTableQueryAndMutate().setIsCheckAndExecute(checkAndExecute);
+                request.getTableQueryAndMutate().setIsCheckNoExists(!checkExists);
                 ObPayload result = obTable.execute(request);
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
                 MonitorUtil.info(request, database, tableQuery.getTableName(), "QUERY_AND_MUTATE",
@@ -2515,6 +2543,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         request.setTableQueryAndMutate(queryAndMutate);
         request.setEntityType(ObTableEntityType.KV);
         return request;
+    }
+
+    /**
+     * checkAndInsUp.
+     */
+    public CheckAndInsUp checkAndInsUp(String tableName, ObTableFilter filter,
+                                       InsertOrUpdate insUp, boolean checkExists) {
+        return new CheckAndInsUp(this, tableName, filter, insUp, checkExists);
     }
 
     /**

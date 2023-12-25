@@ -21,10 +21,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum ObIndexType {
-    IndexTypeIsNot(0), IndexTypeNormalLocal(1), IndexTypeUniqueLocal(2), IndexTypeNormalGlobal(3),
-    IndexTypeUniqueGlobal(4), IndexTypePrimary(5), IndexTypeDomainCtxcat(6), IndexTypeNormalGlobalLocalStorage(7),
-    IndexTypeUniqueGlobalLocalStorage(8), IndexTypeSpatialLocal(10), IndexTypeSpatialGlobal(11),
-    IndexTypeSpatialGlobalLocalStorage(12), IndexTypeMax(13);
+    IndexTypeIsNot(0), IndexTypeNormalLocal(1), IndexTypeUniqueLocal(2), IndexTypeNormalGlobal(3), IndexTypeUniqueGlobal(
+                                                                                                                         4), IndexTypePrimary(
+                                                                                                                                              5), IndexTypeDomainCtxcat(
+                                                                                                                                                                        6), IndexTypeNormalGlobalLocalStorage(
+                                                                                                                                                                                                              7), IndexTypeUniqueGlobalLocalStorage(
+                                                                                                                                                                                                                                                    8), IndexTypeSpatialLocal(
+                                                                                                                                                                                                                                                                              10), IndexTypeSpatialGlobal(
+                                                                                                                                                                                                                                                                                                          11), IndexTypeSpatialGlobalLocalStorage(
+                                                                                                                                                                                                                                                                                                                                                  12), IndexTypeMax(
+                                                                                                                                                                                                                                                                                                                                                                    13);
 
     private int                              value;
     private static Map<Integer, ObIndexType> map = new HashMap<Integer, ObIndexType>();
@@ -62,7 +68,7 @@ public enum ObIndexType {
 
     public boolean isGlobalIndex() {
         return valueOf(value) == ObIndexType.IndexTypeNormalGlobal
-                || valueOf(value) == ObIndexType.IndexTypeUniqueGlobal
-                || valueOf(value) == ObIndexType.IndexTypeSpatialGlobal;
+               || valueOf(value) == ObIndexType.IndexTypeUniqueGlobal
+               || valueOf(value) == ObIndexType.IndexTypeSpatialGlobal;
     }
 }
