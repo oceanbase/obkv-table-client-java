@@ -61,6 +61,8 @@ public class LocationUtil {
 
     private static final String OB_VERSION_SQL                   = "SELECT /*+READ_CONSISTENCY(WEAK)*/ OB_VERSION() AS CLUSTER_VERSION;";
 
+    private static final String OB_TENANT_EXIST_SQL              = "SELECT /*+READ_CONSISTENCY(WEAK)*/ tenant_id from __all_tenant where tenant_name = ?;";
+
     @Deprecated
     @SuppressWarnings("unused")
     private static final String PROXY_PLAIN_SCHEMA_SQL_FORMAT    = "SELECT /*+READ_CONSISTENCY(WEAK)*/ partition_id, svr_ip, sql_port, table_id, role, part_num, replica_num, schema_version, spare1 "
@@ -476,6 +478,23 @@ public class LocationUtil {
         }
     }
 
+    // check tenant exist or not
+    private static void checkTenantExistFromRemote(Connection connection, TableEntryKey key)
+                                                                     throws ObTableEntryRefreshException {
+        try (PreparedStatement ps = connection.prepareStatement(OB_TENANT_EXIST_SQL)) {
+            ps.setString(1, key.getTenantName());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    throw new ObTableEntryRefreshException("fail to get tenant id from remote");
+                }
+            } catch (Exception e) {
+                throw new ObTableEntryRefreshException("fail to get tenant id from remote", e);
+            }
+        } catch (Exception e) {
+            throw new ObTableEntryRefreshException("fail to get tenant id from remote", e);
+        }
+    }
+
     private static TableEntry getTableEntryFromRemote(Connection connection, TableEntryKey key,
                                                       boolean initialized)
                                                                           throws ObTableEntryRefreshException {
@@ -486,6 +505,7 @@ public class LocationUtil {
             if (ObGlobal.obVsnMajor() == 0) {
                 getObVersionFromRemote(connection);
             }
+            checkTenantExistFromRemote(connecting, key);
             if (ObGlobal.obVsnMajor() >= 4) {
                 if (key.getTableName().equals(Constants.ALL_DUMMY_TABLE)) {
                     ps = connection.prepareStatement(PROXY_DUMMY_LOCATION_SQL_V4);

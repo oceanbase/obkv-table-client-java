@@ -127,14 +127,15 @@ public class ObTableOperation extends AbstractPayload {
         obTableOperation.setOperationType(type);
         ObITableEntity entity = new ObTableEntity();
         obTableOperation.setEntity(entity);
-        for (int i = 0; i < rowKeys.length; i++) {
-            Object rowkey = rowKeys[i];
-            ObObjMeta rowkeyMeta = ObObjType.defaultObjMeta(rowkey);
-
-            ObObj obj = new ObObj();
-            obj.setMeta(rowkeyMeta);
-            obj.setValue(rowkey);
-            entity.addRowKeyValue(obj);
+        if (rowKeys != null) {
+            for (int i = 0; i < rowKeys.length; i++) {
+                Object rowkey = rowKeys[i];
+                ObObjMeta rowkeyMeta = ObObjType.defaultObjMeta(rowkey);
+                ObObj obj = new ObObj();
+                obj.setMeta(rowkeyMeta);
+                obj.setValue(rowkey);
+                entity.addRowKeyValue(obj);
+            }
         }
 
         if (columns != null) {

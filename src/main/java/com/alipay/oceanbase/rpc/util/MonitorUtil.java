@@ -116,8 +116,8 @@ public class MonitorUtil {
         if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
             endpoint = endpoint.replaceAll(",", "#");
         }
-
-        String argsValue = buildParamsString(Arrays.asList(rowKeys));
+        // if rowkeys is empty point, then append "rowKeys:null" into log message
+        String argsValue = rowKeys.isEmpty() ? "rowKeys:null" : buildParamsString(Arrays.asList(rowKeys));
 
         ResultCodes resultCode = ResultCodes.valueOf(result.getHeader().getErrno());
         String res = "";
@@ -162,8 +162,8 @@ public class MonitorUtil {
         if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
             endpoint = endpoint.replaceAll(",", "#");
         }
-
-        String argsValue = buildParamsString(rowKeys);
+        // if rowkeys is empty point, then append "rowKeys:null" into log message
+        String argsValue = rowKeys.isEmpty() ? "rowKeys:null" : buildParamsString(rowKeys);
 
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(traceId).append(" - ").append(database).append(",").append(tableName)

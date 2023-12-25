@@ -535,4 +535,22 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             dropTable(TABLE_NAME);
         }
     }
+    
+    // CREATE TABLE IF NOT EXISTS `test_auto_increment_one_rowkey` (`c1` int auto_increment, `c2` int NOT NULL, PRIMARY KEY(`c1`));
+    @Test
+    // test insert null into auto increment column
+    public void testAutoColumnRowKey() throws Exception {
+        final String TABLE_NAME = "test_auto_increment_one_rowkey";
+        try {
+            final ObTableClient client = (ObTableClient) this.client;
+            client.addRowKeyElement(TABLE_NAME, new String[] { "c1" });
+            try {
+                client.insert(TABLE_NAME, null, new String[] { "c2" }, new Object[] { 1 });
+            } catch (Exception e) {
+                Assert.assertEquals("Cannot read the array length because \"rowKeys\" is null",
+                        ((NullPointerException) e).getMessage());
+            }
+        } finally {
+        }
+    }
 }
