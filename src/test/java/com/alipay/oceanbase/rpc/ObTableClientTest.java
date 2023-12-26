@@ -2357,6 +2357,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                                                   partition by range columns (`c1`) ( PARTITION p0 VALUES LESS THAN (300),
                                                   PARTITION p1 VALUES LESS THAN (1000), PARTITION p2 VALUES LESS THAN MAXVALUE);
          */
+        final ObTableClient client = (ObTableClient) this.client;
         client.addRowKeyElement("test_query_filter_mutate", new String[] { "c1" }); //同索引列的值一样
         String[] allColumnNames = new String[] { "c1", "c2", "c3", "c4" };
         String[] columnNames = new String[] { "c2", "c3", "c4" };
@@ -2434,6 +2435,36 @@ public class ObTableClientTest extends ObTableClientTestBase {
             client.delete("test_query_filter_mutate", new Object[] { 0L });
             client.delete("test_query_filter_mutate", new Object[] { 1L });
             client.delete("test_query_filter_mutate", new Object[] { 2L });
+        }
+    }
+
+    @Test
+    public void testInsertMutation() throws Exception {
+        long timestamp = System.currentTimeMillis();
+        TableQuery tableQuery = client.query("sync_item");
+
+        try {
+            //insert
+            MutationResult insertResult = client.insert("sync_item")
+                    .setRowKey(row(colVal("uid", "a1"),
+                            colVal("object_id", "b1")))
+                    .addMutateColVal(colVal("type", 1))
+                    .addMutateColVal(colVal("ver_oid", "1"))
+                    .addMutateColVal(colVal("ver_ts", timestamp))
+                    .addMutateColVal(colVal("data_id", "data"))
+                    .execute();
+            Assert.assertEquals(1, insertResult.getAffectedRows());
+            //insert null -> not null col
+            try {
+                client.insert("sync_item")
+                        .setRowKey(row(colVal("uid", "a2")))
+                        .execute();
+            } catch (ObTableException e) {
+                Assert.assertEquals(ResultCodes.OB_BAD_NULL_ERROR.errorCode, e.getErrorCode());
+            }
+        } catch (Exception e) {
+            Assert.assertEquals("RowKey size mismatch, rowKey list is {uid=0, object_id=1}but found[a2]", e.getMessage());
+        } finally {
         }
     }
 }

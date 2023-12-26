@@ -1181,6 +1181,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
     }
 
+    public void checkRowKeyValid(TableEntry tableEntry, Object[] rowKey) throws Exception {
+        if (rowKey.length < tableEntry.getRowKeyElement().size()) {
+            throw new IllegalArgumentException("RowKey size mismatch, rowKey list is " + tableEntry.getRowKeyElement()
+                    + "but found" + Arrays.toString(rowKey));
+        }
+    }
+
     /**
      *
      * @param tableName table want to get
@@ -1210,6 +1217,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                                                            throws Exception {
         TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh);
 
+        checkRowKeyValid(tableEntry, rowKey);
+        
         long partId = getPartition(tableEntry, rowKey);
 
         return getTable(tableName, tableEntry, partId, waitForRefresh, route);
