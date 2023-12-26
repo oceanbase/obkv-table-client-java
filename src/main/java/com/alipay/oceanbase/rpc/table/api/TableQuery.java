@@ -64,14 +64,13 @@ public interface TableQuery {
      */
     TableQuery limit(int limit);
 
+    /* can not use offset without valid limit value. limit lessThan 0 && offset bigThan 0 */
     /**
      * Row count offset, default: 0
      * 
      * @param offset limit offset
      * @param limit limit count
      * @return this TableQuery
-     * 
-     * tips: can not use offset without valid limit value : limit < 0 && offset > 0
      */
     TableQuery limit(int offset, int limit);
 
