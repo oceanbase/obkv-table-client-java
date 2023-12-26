@@ -505,7 +505,7 @@ public class LocationUtil {
             if (ObGlobal.obVsnMajor() == 0) {
                 getObVersionFromRemote(connection);
             }
-            checkTenantExistFromRemote(connecting, key);
+            checkTenantExistFromRemote(connection, key);
             if (ObGlobal.obVsnMajor() >= 4) {
                 if (key.getTableName().equals(Constants.ALL_DUMMY_TABLE)) {
                     ps = connection.prepareStatement(PROXY_DUMMY_LOCATION_SQL_V4);
