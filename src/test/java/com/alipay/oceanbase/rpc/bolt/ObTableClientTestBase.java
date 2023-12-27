@@ -46,6 +46,10 @@ public abstract class ObTableClientTestBase {
 
     public Table client;
 
+    public void setClient(Table client) {
+        this.client = client;
+    }
+
     @After
     public void close() throws Exception {
         if (null != this.client && this.client instanceof ObTableClient) {

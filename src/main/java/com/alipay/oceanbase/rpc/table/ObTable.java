@@ -396,7 +396,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         ((ObTableOperationResult) result).setExecutePort(port);
         ExceptionUtil.throwObTableException(ip, port, obTableOperationResult.getSequence(),
             obTableOperationResult.getUniqueId(), obTableOperationResult.getHeader().getErrno(),
-                obTableOperationResult.getHeader().getErrMsg());
+            obTableOperationResult.getHeader().getErrMsg());
     }
 
     /*

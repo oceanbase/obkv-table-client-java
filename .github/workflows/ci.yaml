@@ -1,0 +1,60 @@
+#-
+# #%L
+# OBKV Table Client Framework
+# %%
+# Copyright (C) 2023 OceanBase
+# %%
+# OBKV Table Client Framework is licensed under Mulan PSL v2.
+# You can use this software according to the terms and conditions of the Mulan PSL v2.
+# You may obtain a copy of Mulan PSL v2 at:
+#          http://license.coscl.org.cn/MulanPSL2
+# THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+# EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+# MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+# See the Mulan PSL v2 for more details.
+# #L%
+
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - 'example/**'
+      - '**.md'
+      - '.*'
+  pull_request:
+    paths-ignore:
+      - 'example/**'
+      - '**.md'
+      - '.*'
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          java-version: '8'
+          distribution: 'zulu'
+          cache: 'maven'
+      - name: Maven Build
+        run: mvn -B clean verify -Dgpg.skip -DskipTests=true
+
+  test-obkv-table-client-java:
+    name: Test (obkv-table-client-java)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          java-version: '8'
+          distribution: 'zulu'
+          cache: 'maven'
+      - name: Maven Test
+        run: mvn verify -Dgpg.skip -Dtest=ObTableClientITCase

@@ -454,7 +454,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             long uniqueId = obTableOperationResult.getUniqueId() == 0 ? obTableOperationRequest
                 .getUniqueId() : obTableOperationResult.getUniqueId();
             ExceptionUtil.throwObTableException(ip, port, sequence, uniqueId,
-                obTableOperationResult.getHeader().getErrno(), obTableOperationResult.getHeader().getErrMsg());
+                obTableOperationResult.getHeader().getErrno(), obTableOperationResult.getHeader()
+                    .getErrMsg());
         }
 
         void checkObTableQueryAndMutateResult(String ip, int port, ObPayload result) {
@@ -601,7 +602,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 long uniqueId = obTableOperationResult.getUniqueId() == 0 ? obTableOperationRequest
                     .getUniqueId() : obTableOperationResult.getUniqueId();
                 ExceptionUtil.throwObTableException(ip, port, sequence, uniqueId,
-                    obTableOperationResult.getHeader().getErrno(), obTableOperationResult.getHeader().getErrMsg());
+                    obTableOperationResult.getHeader().getErrno(), obTableOperationResult
+                        .getHeader().getErrMsg());
             } else if (result instanceof ObTableQueryAndMutateResult) {
                 // TODO: Add func like throwObTableException()
                 //       which will output the ip / port / error information
@@ -1209,7 +1211,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                boolean waitForRefresh, ObServerRoute route)
                                                                                            throws Exception {
         TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh);
-        
+
         long partId = getPartition(tableEntry, rowKey);
 
         return getTable(tableName, tableEntry, partId, waitForRefresh, route);
