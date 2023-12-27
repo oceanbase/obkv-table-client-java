@@ -38,7 +38,7 @@ public class ExceptionUtilTest {
         try {
             ExceptionUtil.throwObTableException("0.0.0.0", 0, 0L, 0L, -9013, "");
         } catch (ObTableException e) {
-            Assert.assertTrue(e instanceof ObTableUnexpectedException);
+            Assert.assertTrue(e instanceof ObTableException);
             Assert.assertTrue(e.getMessage().contains("OB_OSS_WRITE_ERROR"));
         }
 

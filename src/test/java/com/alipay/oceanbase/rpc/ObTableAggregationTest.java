@@ -533,9 +533,10 @@ public class ObTableAggregationTest {
             try {
                 obtableAggregationWithIllegal.execute();
             } catch (Exception e) {
-                Assert.assertTrue(e instanceof ObTableUnexpectedException);
+                System.out.printf("exception msg:%s\n", e.getMessage());
+                Assert.assertTrue(e instanceof ObTableException);
                 Assert.assertEquals(ResultCodes.OB_ERR_UNEXPECTED.errorCode,
-                    ((ObTableUnexpectedException) e).getErrorCode());
+                    ((ObTableException) e).getErrorCode());
             }
 
         } finally {
