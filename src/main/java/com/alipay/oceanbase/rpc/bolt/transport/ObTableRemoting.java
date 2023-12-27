@@ -58,7 +58,8 @@ public class ObTableRemoting extends BaseRemoting {
 
         if (request instanceof Credentialable) {
             if (conn.getCredential() == null) {
-                String errMessage = TraceUtil.formatTraceMessage(conn, request, "credential is null");
+                String errMessage = TraceUtil.formatTraceMessage(conn, request,
+                    "credential is null");
                 logger.warn(errMessage);
                 throw new ObTableUnexpectedException(errMessage);
             }

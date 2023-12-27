@@ -168,8 +168,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 }
             } else {
                 results.add(ExceptionUtil.convertToObTableException(result.getExecuteHost(),
-                    result.getExecutePort(), result.getSequence(), result.getUniqueId(),
-                        errCode, result.getHeader().getErrMsg()));
+                    result.getExecutePort(), result.getSequence(), result.getUniqueId(), errCode,
+                    result.getHeader().getErrMsg()));
             }
         }
         return results;
@@ -201,8 +201,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 }
             } else {
                 results.add(ExceptionUtil.convertToObTableException(result.getExecuteHost(),
-                    result.getExecutePort(), result.getSequence(), result.getUniqueId(),
-                        errCode, result.getHeader().getErrMsg()));
+                    result.getExecutePort(), result.getSequence(), result.getUniqueId(), errCode,
+                    result.getHeader().getErrMsg()));
             }
         }
         return results;

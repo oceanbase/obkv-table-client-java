@@ -151,10 +151,9 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
                         results.add(realResult.getAffectedRows());
                 }
             } else {
-                results
-                    .add(ExceptionUtil.convertToObTableException(obTable.getIp(),
-                        obTable.getPort(), realResult.getSequence(), realResult.getUniqueId(),
-                        errCode, realResult.getHeader().getErrMsg()));
+                results.add(ExceptionUtil.convertToObTableException(obTable.getIp(),
+                    obTable.getPort(), realResult.getSequence(), realResult.getUniqueId(), errCode,
+                    realResult.getHeader().getErrMsg()));
             }
         }
         return results;
@@ -192,10 +191,9 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
                                                    + realResult.getOperationType());
                 }
             } else {
-                results
-                    .add(ExceptionUtil.convertToObTableException(obTable.getIp(),
-                        obTable.getPort(), realResult.getSequence(), realResult.getUniqueId(),
-                        errCode, realResult.getHeader().getErrMsg()));
+                results.add(ExceptionUtil.convertToObTableException(obTable.getIp(),
+                    obTable.getPort(), realResult.getSequence(), realResult.getUniqueId(), errCode,
+                    realResult.getHeader().getErrMsg()));
             }
         }
         return results;

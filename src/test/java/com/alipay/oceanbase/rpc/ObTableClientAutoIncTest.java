@@ -535,7 +535,7 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
             dropTable(TABLE_NAME);
         }
     }
-    
+
     // CREATE TABLE IF NOT EXISTS `test_auto_increment_one_rowkey` (`c1` int auto_increment, `c2` int NOT NULL, PRIMARY KEY(`c1`));
     @Test
     // test insert null into auto increment column
@@ -548,7 +548,7 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
                 client.insert(TABLE_NAME, null, new String[] { "c2" }, new Object[] { 1 });
             } catch (Exception e) {
                 Assert.assertEquals("Cannot read the array length because \"rowKeys\" is null",
-                        ((NullPointerException) e).getMessage());
+                    ((NullPointerException) e).getMessage());
             }
         } finally {
         }
