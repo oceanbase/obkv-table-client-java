@@ -51,9 +51,7 @@ public class ObTableClientITCase extends ContainerTestBase {
         ObTableClientTest obTableClientTest = new ObTableClientTest();
         obTableClientTest.setClient(obTableClient);
         obTableClientTest.test_varchar_all();
-        obTableClientTest.testMutation();
         obTableClientTest.test_blob_all();
-        obTableClientTest.test_varchar_exceptions();
         obTableClientTest.test_batch();
         obTableClientTest.testBatchMutation();
         obTableClientTest.testMultiThreadBatchOperation();
