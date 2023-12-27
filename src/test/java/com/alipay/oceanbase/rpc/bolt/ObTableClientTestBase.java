@@ -209,8 +209,9 @@ public abstract class ObTableClientTestBase {
             exception = ex;
         }
         assertNotNull(exception);
-        assertEquals(ResultCodes.OB_ERR_COLUMN_NOT_FOUND.errorCode, exception.getErrorCode());
-        assertTrue(exception.getMessage().contains("column not found"));
+        System.out.printf("exception msg：%s\n", exception.getMessage());
+        assertEquals(ResultCodes.OB_ERR_BAD_FIELD_ERROR.errorCode, exception.getErrorCode());
+        assertTrue(exception.getMessage().contains("Unknown column"));
 
         exception = null;
         try {
@@ -220,8 +221,9 @@ public abstract class ObTableClientTestBase {
             exception = ex;
         }
         assertNotNull(exception);
-        assertEquals(ResultCodes.OB_OBJ_TYPE_ERROR.errorCode, exception.getErrorCode());
-        assertTrue(exception.getMessage().contains("rowkey/column type not match"));
+        System.out.printf("exception msg：%s\n", exception.getMessage());
+        assertEquals(ResultCodes.OB_KV_COLUMN_TYPE_NOT_MATCH.errorCode, exception.getErrorCode());
+        assertTrue(exception.getMessage().contains("Column type for 'c1' not match, schema column type is 'VARCHAR', input column type is 'INT'"));
 
         exception = null;
         try {
@@ -231,8 +233,9 @@ public abstract class ObTableClientTestBase {
             exception = ex;
         }
         assertNotNull(exception);
-        assertEquals(ResultCodes.OB_OBJ_TYPE_ERROR.errorCode, exception.getErrorCode());
-        assertTrue(exception.getMessage().contains("rowkey/column type not match"));
+        System.out.printf("exception msg：%s\n", exception.getMessage());
+        assertEquals(ResultCodes.OB_KV_COLUMN_TYPE_NOT_MATCH.errorCode, exception.getErrorCode());
+        assertTrue(exception.getMessage().contains("Column type for 'c2' not match, schema column type is 'VARCHAR', input column type is 'INT'"));
 
         exception = null;
         try {
@@ -242,8 +245,9 @@ public abstract class ObTableClientTestBase {
             exception = ex;
         }
         assertNotNull(exception);
+        System.out.printf("exception msg：%s\n", exception.getMessage());
         assertEquals(ResultCodes.OB_BAD_NULL_ERROR.errorCode, exception.getErrorCode());
-        assertTrue(exception.getMessage().contains("column doesn't have a default value"));
+        assertTrue(exception.getMessage().contains("Column 'c2' cannot be null"));
 
         // TODO timeout
     }
@@ -253,11 +257,11 @@ public abstract class ObTableClientTestBase {
         assertEquals(1L, client.insert("test_varchar_table", "foo", new String[] { "c2" },
             new String[] { "bar" }));
 
-        ObTableDuplicateKeyException ex = null;
+        ObTableException ex = null;
         try {
             assertEquals(1L, client.insert("test_varchar_table", "foo", new String[] { "c2" },
                 new String[] { "baz" }));
-        } catch (ObTableDuplicateKeyException t) {
+        } catch (ObTableException t) {
             ex = t;
         }
         assertNotNull(ex);
@@ -265,7 +269,7 @@ public abstract class ObTableClientTestBase {
         try {
             assertEquals(1L, client.insert("test_varchar_table", "foo", new String[] { "c2" },
                 new String[] { "bar" }));
-        } catch (ObTableDuplicateKeyException t) {
+        } catch (ObTableException t) {
             ex = t;
         }
         assertNotNull(ex);
@@ -278,13 +282,13 @@ public abstract class ObTableClientTestBase {
             client.insert("test_blob_table", "foo", new String[] { "c2" },
                 new Object[] { "bar".getBytes() }));
 
-        ObTableDuplicateKeyException ex = null;
+        ObTableException ex = null;
         try {
             assertEquals(
                 1L,
                 client.insert("test_blob_table", "foo", new String[] { "c2" },
                     new Object[] { "baz".getBytes() }));
-        } catch (ObTableDuplicateKeyException t) {
+        } catch (ObTableException t) {
             ex = t;
         }
         assertNotNull(ex);
@@ -294,7 +298,7 @@ public abstract class ObTableClientTestBase {
                 1L,
                 client.insert("test_blob_table", "foo", new String[] { "c2" },
                     new Object[] { "bar".getBytes() }));
-        } catch (ObTableDuplicateKeyException t) {
+        } catch (ObTableException t) {
             ex = t;
         }
         assertNotNull(ex);
@@ -311,11 +315,11 @@ public abstract class ObTableClientTestBase {
             client.insert("test_longblob_table", "foo", new String[] { "c2" },
                 new Object[] { "bar".getBytes() }));
 
-        ObTableDuplicateKeyException ex = null;
+        ObTableException ex = null;
         try {
             assertEquals(1L, client.insert("test_longblob_table", "foo", new String[] { "c2" },
                 new Object[] { "baz".getBytes() }));
-        } catch (ObTableDuplicateKeyException t) {
+        } catch (ObTableException t) {
             ex = t;
         }
         assertNotNull(ex);
@@ -323,7 +327,7 @@ public abstract class ObTableClientTestBase {
         try {
             assertEquals(1L, client.insert("test_longblob_table", "foo", new String[] { "c2" },
                 new Object[] { "bar".getBytes() }));
-        } catch (ObTableDuplicateKeyException t) {
+        } catch (ObTableException t) {
             ex = t;
         }
         assertNotNull(ex);
