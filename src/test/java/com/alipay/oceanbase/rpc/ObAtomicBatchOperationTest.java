@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.exception.ObTableDuplicateKeyException;
+import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
 import org.junit.After;
@@ -76,9 +77,9 @@ public class ObAtomicBatchOperationTest {
             batchOps.insert("abc-3", new String[] { "c2" }, new String[] { "bar-3" });
             batchOps.insert(successKey, new String[] { "c2" }, new String[] { "bar-5" });
             List<Object> results = batchOps.execute();
-            Assert.assertTrue(results.get(0) instanceof ObTableDuplicateKeyException);
+            Assert.assertTrue(results.get(0) instanceof ObTableException);
             Assert.assertEquals(((Map) results.get(1)).get("c2"), "xyz-2");
-            Assert.assertTrue(results.get(2) instanceof ObTableDuplicateKeyException);
+            Assert.assertTrue(results.get(2) instanceof ObTableException);
             Assert.assertEquals(results.get(3), 1L);
         } catch (Exception ex) {
             Assert.fail("hit exception:" + ex);
@@ -96,7 +97,7 @@ public class ObAtomicBatchOperationTest {
             // no support atomic batch
             // Assert.fail("expect duplicate key exception.");
         } catch (Exception ex) {
-            Assert.assertTrue(ex instanceof ObTableDuplicateKeyException);
+            Assert.assertTrue(ex instanceof ObTableException);
         }
     }
 

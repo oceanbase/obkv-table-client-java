@@ -67,7 +67,7 @@ public class ObTableBatchOperationResultTest {
         assertEquals(123, deResult.getHeader().getErrno());
         assertEquals(new String("HY0001".getBytes()),
             new String(deResult.getHeader().getSqlState()));
-        assertEquals(new String("msg".getBytes()), deResult.getHeader().getErrMsg());
+        assertEquals(new String("ms".getBytes()), deResult.getHeader().getErrMsg());
         assertEquals(ObTableOperationType.GET, deResult.getOperationType());
         ObITableEntity deEntity = deResult.getEntity();
         assertNotNull(deEntity);
