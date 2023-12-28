@@ -33,10 +33,10 @@ import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderL
  */
 public class ObTableBatchOperation extends AbstractPayload {
 
+    private boolean                isSamePropertiesNames;
     private List<ObTableOperation> tableOperations = new ArrayList<ObTableOperation>();
     private boolean                isReadOnly      = true;
     private boolean                isSameType      = true;
-    private boolean                isSamePropertiesNames;
 
     /*
      * Encode.
@@ -46,31 +46,38 @@ public class ObTableBatchOperation extends AbstractPayload {
         byte[] bytes = new byte[(int) getPayloadSize()];
         int idx = 0;
 
+
         // 0. encode header
         int headerLen = (int) getObUniVersionHeaderLength(getVersion(), getPayloadContentSize());
         System.arraycopy(encodeObUniVersionHeader(getVersion(), getPayloadContentSize()), 0, bytes,
             idx, headerLen);
         idx += headerLen;
 
-        // 1. encode Operation
+        // 1. encode isSamePropertiesNames
+        System.arraycopy(Serialization.encodeI8(isSamePropertiesNames ? (byte) 1 : (byte) 0), 0,
+                bytes, idx, 1);
+        idx++;
+
+        // 2. encode Operation
         int len = Serialization.getNeedBytes(tableOperations.size());
         System.arraycopy(Serialization.encodeVi64(tableOperations.size()), 0, bytes, idx, len);
         idx += len;
-        for (ObTableOperation tableOperation : tableOperations) {
-            len = (int) tableOperation.getPayloadSize();
-            System.arraycopy(tableOperation.encode(), 0, bytes, idx, len);
+        for (int i = 0; i < tableOperations.size(); i++) {
+            ObTableOperation operation = tableOperations.get(i);
+            if (i != 0 && isSamePropertiesNames) {
+                operation.getEntity().setOnlyEncodeValue(true);
+            }
+            len = (int) operation.getPayloadSize();
+            System.arraycopy(operation.encode(), 0, bytes, idx, len);
             idx += len;
         }
 
-        // 2. encode others
+        // 3. encode others
         System
             .arraycopy(Serialization.encodeI8(isReadOnly ? (byte) 1 : (byte) 0), 0, bytes, idx, 1);
         idx++;
         System
             .arraycopy(Serialization.encodeI8(isSameType ? (byte) 1 : (byte) 0), 0, bytes, idx, 1);
-        idx++;
-        System.arraycopy(Serialization.encodeI8(isSamePropertiesNames ? (byte) 1 : (byte) 0), 0,
-            bytes, idx, 1);
 
         return bytes;
     }
@@ -106,12 +113,19 @@ public class ObTableBatchOperation extends AbstractPayload {
     @Override
     public long getPayloadContentSize() {
         long payloadContentSize = 0;
+
+        payloadContentSize+=1; // isSamePropertiesNames
+
         payloadContentSize += Serialization.getNeedBytes(tableOperations.size());
-        for (ObTableOperation operation : tableOperations) {
+        for (int i = 0; i < tableOperations.size(); i++) {
+            ObTableOperation operation = tableOperations.get(i);
+            if (i != 0 && isSamePropertiesNames) {
+                operation.getEntity().setOnlyEncodeValue(true);
+            }
             payloadContentSize += operation.getPayloadSize();
         }
 
-        return payloadContentSize + 3;
+        return payloadContentSize + 2;
     }
 
     /*

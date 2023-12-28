@@ -109,6 +109,14 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
     }
 
     /*
+     * Put.
+     */
+    @Override
+    public void put(Object[] rowkeys, String[] columns, Object[] values) {
+        addObTableClientOperation(ObTableOperationType.PUT, rowkeys, columns, values);
+    }
+
+    /*
      * Replace.
      */
     @Override
@@ -193,6 +201,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                     case REPLACE:
                     case INCREMENT:
                     case APPEND:
+                    case PUT:
                         results.add(new MutationResult(result));
                         break;
                     default:
@@ -247,12 +256,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             obTableOperations.getRight().add(new ObPair<Integer, ObTableOperation>(i, operation));
         }
 
-        if (atomicOperation) {
-            if (partitionOperationsMap.size() > 1) {
-                throw new ObTablePartitionConsistentException(
-                    "require atomic operation but found across partition may cause consistent problem ");
-            }
-        }
+//        if (atomicOperation) {
+//            if (partitionOperationsMap.size() > 1) {
+//                throw new ObTablePartitionConsistentException(
+//                    "require atomic operation but found across partition may cause consistent problem ");
+//            }
+//        }
         return partitionOperationsMap;
     }
 

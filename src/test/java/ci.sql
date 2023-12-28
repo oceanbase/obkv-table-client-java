@@ -309,4 +309,12 @@ CREATE TABLE  IF NOT EXISTS `sync_item` (
     DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci
     PARTITION BY KEY(`uid`) PARTITIONS 32;
 
+CREATE TABLE  IF NOT EXISTS `batch_put` (
+    `id` varchar(20) NOT NULL,
+    `c1` bigint DEFAULT NULL,
+    `c2` bigint DEFAULT NULL,
+    `c3` varchar(32) DEFAULT NULL,
+    `c4` bigint DEFAULT NULL,
+    PRIMARY KEY(`id`)) PARTITION BY KEY(`id`) PARTITIONS 32;
+
 alter system set kv_hotkey_throttle_threshold = 50;

@@ -172,8 +172,11 @@ public abstract class AbstractObTableEntity extends AbstractPayload implements O
             String name = entry.getKey();
             ObObj property = entry.getValue();
 
-            int keyLen = Serialization.getNeedBytes(name);
-            System.arraycopy(Serialization.encodeVString(name), 0, bytes, idx, keyLen);
+            int keyLen = 0;
+            if (!isOnlyEncodeValue()) {
+                keyLen = Serialization.getNeedBytes(name);
+                System.arraycopy(Serialization.encodeVString(name), 0, bytes, idx, keyLen);
+            }
             idx += keyLen;
             byte[] objBytes = property.encode();
             System.arraycopy(objBytes, 0, bytes, idx, objBytes.length);
@@ -229,7 +232,9 @@ public abstract class AbstractObTableEntity extends AbstractPayload implements O
             size += this.getRowKeyValue(i).getEncodedSize();
         }
         for (Map.Entry<String, ObObj> entry : this.getProperties().entrySet()) {
-            size += Serialization.getNeedBytes(entry.getKey());
+            if (!isOnlyEncodeValue()) {
+                size += Serialization.getNeedBytes(entry.getKey());
+            }
             size += entry.getValue().getEncodedSize();
         }
 

@@ -26,7 +26,17 @@ public abstract class AbstractTableBatchOps implements TableBatchOps {
 
     protected boolean           atomicOperation;
 
+    protected boolean           isSamePropertiesNames;
+
     protected ObTableEntityType entityType = ObTableEntityType.DYNAMIC;
+
+    public boolean isSamePropertiesNames() {
+        return isSamePropertiesNames;
+    }
+
+    public void setSamePropertiesNames(boolean samePropertiesNames) {
+        isSamePropertiesNames = samePropertiesNames;
+    }
 
     /**
      * Get.
