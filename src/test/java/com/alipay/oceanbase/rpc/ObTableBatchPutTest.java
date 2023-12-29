@@ -41,17 +41,12 @@ public class ObTableBatchPutTest {
     ObTableClient        client;
     public static String tableName    = "batch_put";
     public static String idColumnName = "hello world";
-    public static String c1ColumnName = "c1";
-    public static String c2ColumnName = "c2";
-    public static String c3ColumnName = "c3";
-    public static String c4ColumnName = "c4";
 
     @Before
     public void setup() throws Exception {
         final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
         obTableClient.init();
         this.client = obTableClient;
-//        client.addRowKeyElement(tableName, new String[] { idColumnName });
     }
 
     /*
@@ -80,10 +75,6 @@ public class ObTableBatchPutTest {
             e.printStackTrace();
             assertTrue(false);
         } finally {
-            client.addRowKeyElement(tableName, new String[] { idColumnName });
-            for (long i = 0; i < 100; i++) {
-                client.delete(tableName).addScanRange(String.valueOf(i), String.valueOf(i)).execute();
-            }
         }
     }
 }

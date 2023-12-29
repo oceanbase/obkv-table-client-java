@@ -299,6 +299,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 .toObTableConsistencyLevel());
         }
         subRequest.setBatchOperationAsAtomic(isAtomicOperation());
+        subRequest.getBatchOperation().setSamePropertiesNames(isSamePropertiesNames());
         ObTableBatchOperationResult subObTableBatchOperationResult;
 
         boolean needRefreshTableEntry = false;
