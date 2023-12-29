@@ -311,10 +311,11 @@ CREATE TABLE  IF NOT EXISTS `sync_item` (
 
 CREATE TABLE  IF NOT EXISTS `batch_put` (
     `id` varchar(20) NOT NULL,
-    `c1` bigint DEFAULT NULL,
-    `c2` bigint DEFAULT NULL,
-    `c3` varchar(32) DEFAULT NULL,
-    `c4` bigint DEFAULT NULL,
-    PRIMARY KEY(`id`)) PARTITION BY KEY(`id`) PARTITIONS 32;
+    `c_1` varchar(32) NOT NULL,
+    `t_1` datetime(3) DEFAULT NULL,
+    `t_2` timestamp(3) DEFAULT NULL,
+    `t_3` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `b_1` bigint(20) DEFAULT NULL,
+    PRIMARY KEY(`id`, `c_1`)) partition by key(`id`) subpartition by key(`c_1`) subpartitions 4 partitions 97;
 
 alter system set kv_hotkey_throttle_threshold = 50;
