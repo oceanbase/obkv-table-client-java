@@ -1292,17 +1292,15 @@ public class LocationUtil {
         List<ObComparableKV<ObPartitionKey, Long>> bounds = new ArrayList<ObComparableKV<ObPartitionKey, Long>>();
         Map<String, Long> partNameIdMap = new HashMap<String, Long>();
         Map<Long, Long> partTabletIdMap = new HashMap<Long, Long>();
-        ObRangePartDesc subRangePartDesc = null;
-        if (isSubPart) {
-            subRangePartDesc = (ObRangePartDesc) tableEntry.getPartitionInfo().getSubPartDesc();
-        }
+        ObPartDesc subPartDesc = tableEntry.getPartitionInfo().getSubPartDesc();
+
         long idx = 0L;
         while (rs.next()) {
-            if (null != subRangePartDesc && !isSubPart && subRangePartDesc.getPartNum() == 0) {
+            if (null != subPartDesc && !isSubPart && subPartDesc.getPartNum() == 0) {
                 // client only support template partition table
                 // so the sub_part_num is a constant and will store in subPartDesc which is different from proxy
                 long subPartNum = rs.getLong("sub_part_num");
-                subRangePartDesc.setPartNum((int) subPartNum);
+                subPartDesc.setPartNum((int) subPartNum);
             }
 
             String highBoundVal = rs.getString("high_bound_val");

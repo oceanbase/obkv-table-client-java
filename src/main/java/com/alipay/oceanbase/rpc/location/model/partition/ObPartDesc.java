@@ -242,4 +242,6 @@ public abstract class ObPartDesc {
                                                                                ObTablePartitionConsistentException;
 
     public abstract Long getRandomPartId();
+
+    public abstract  void setPartNum(int partNum);
 }

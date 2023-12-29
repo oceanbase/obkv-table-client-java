@@ -26,6 +26,7 @@ import com.alipay.oceanbase.rpc.util.TimeUtils;
 import io.netty.buffer.ByteBuf;
 
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.time.*;
 import java.util.*;
 
@@ -929,10 +930,13 @@ public enum ObObjType {
          * Parse to comparable.
          */
         @Override
-        public Timestamp parseToComparable(Object o, ObCollationType ct)
-                                                                        throws IllegalArgumentException,
-                                                                        FeatureNotSupportedException {
-            return parseTimestamp(this, o, ct);
+        public Date parseToComparable(Object o, ObCollationType ct)
+                throws IllegalArgumentException,
+                FeatureNotSupportedException {
+            if (o instanceof String) {
+                return TimeUtils.strToDate((String) o);
+            }
+            return (Date) o;
         }
     },
     // The TIMESTAMP data type is used for values that contain both date and time parts.
@@ -1821,6 +1825,26 @@ public enum ObObjType {
 
         throw new IllegalArgumentException(obObjType.name() + "can not parseToComparable with "
                                            + collationType + "argument:" + object);
+    }
+
+    public static Date parseToDate(ObObjType obObjType, Object object,
+                                           ObCollationType collationType) throws Exception{
+        if (object instanceof Date) {
+            return (Date) object;
+        }
+
+        if (object instanceof java.util.Date) {
+            return (Date) object;
+        }
+
+        if (object instanceof String) {
+            String str = (String)object;
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            return dateFormat.parse(str);
+        }
+
+        throw new IllegalArgumentException(obObjType.name() + "can not parseToComparable with "
+                + collationType + "argument:" + object);
     }
 
     /*

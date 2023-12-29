@@ -100,6 +100,12 @@ public class ObListPartDesc extends ObPartDesc {
     }
 
     /*
+     * Set part num.
+     */
+    public void setPartNum(int partNum) {
+    }
+
+    /*
      * Get part ids.
      */
     @Override

@@ -28,8 +28,11 @@ import org.junit.Test;
 
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.Map;
 
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.*;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class ObTableBatchPutTest {
@@ -46,12 +49,11 @@ public class ObTableBatchPutTest {
     /*
         CREATE TABLE  IF NOT EXISTS `batch_put` (
             `id` varchar(20) NOT NULL,
-            `c_1` varchar(32) NOT NULL,
-            `t_1` datetime(3) DEFAULT NULL,
+            `b_1` varchar(32) DEFAULT NULL,
+            `t_1` datetime(3) NOT NULL,
             `t_2` timestamp(3) DEFAULT NULL,
             `t_3` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-            `b_1` bigint(20) DEFAULT NULL,
-            PRIMARY KEY(`id`, `c_1`)) partition by key(`id`) subpartition by key(`c_1`) subpartitions 4 partitions 97;
+            PRIMARY KEY(`id`, `t_1`)) partition by range columns(`t_1`) subpartition by key(`id`));
      */
     @Test
     public void test_batch_put() throws Exception {
@@ -64,12 +66,11 @@ public class ObTableBatchPutTest {
                 Timestamp ts = new Timestamp(timeInSeconds);
                 java.util.Date date = new Date(timeInSeconds);
                 Row rowKey = new Row(colVal("id", String.valueOf(i)), // `id` varchar(20)
-                        colVal("c_1", String.valueOf(i))); // `id` varchar(20)
+                        colVal("t_1", date));                         // `t_1` varchar(20)
                 Put putOp = put().setRowKey(rowKey)
-                        .addMutateColVal(colVal("t_1", date))          // `t_1` datetime(3)
+                        .addMutateColVal(colVal("b_1", String.valueOf(i)))  // `b_1` varchar(32)
                         .addMutateColVal(colVal("t_2", ts))            // `t_2` timestamp(3)
-                        .addMutateColVal(colVal("t_3", ts))            // `t_3` timestamp(3)
-                        .addMutateColVal(colVal("b_1", i));            // `b_1` bigint(20)
+                        .addMutateColVal(colVal("t_3", ts));           // `t_3` timestamp(3)
                 batchOperation.addOperation(putOp);
             }
             BatchOperationResult result = batchOperation.setIsAtomic(true).execute();
