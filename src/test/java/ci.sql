@@ -311,11 +311,27 @@ CREATE TABLE  IF NOT EXISTS `sync_item` (
 
 CREATE TABLE  IF NOT EXISTS `batch_put` (
     `id` varchar(20) NOT NULL,
-    `c_1` varchar(32) NOT NULL,
-    `t_1` datetime(3) DEFAULT NULL,
+    `b_1` varchar(32) DEFAULT NULL,
+    `t_1` datetime(3) NOT NULL,
     `t_2` timestamp(3) DEFAULT NULL,
     `t_3` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `b_1` bigint(20) DEFAULT NULL,
-    PRIMARY KEY(`id`, `c_1`)) partition by key(`id`) subpartition by key(`c_1`) subpartitions 4 partitions 97;
+    `c_1` bigint(20) default NULL,
+    PRIMARY KEY(`id`, `t_1`)) partition by range columns(`t_1`) subpartition by key(`id`) subpartition template (
+    subpartition `p0`,
+    subpartition `p1`,
+    subpartition `p2`,
+    subpartition `p3`,
+    subpartition `p4`,
+    subpartition `p5`,
+    subpartition `p6`,
+    subpartition `p7`,
+    subpartition `p8`,
+    subpartition `p9`,
+    subpartition `p10`)
+    (partition `p0` values less than ('2023-12-01 00:00:00'),
+     partition `p1` values less than ('2023-12-10 00:00:00'),
+     partition `p2` values less than ('2023-12-20 00:00:00'),
+     partition `p3` values less than ('2023-12-30 00:00:00'),
+     partition `p4` values less than ('2024-01-01 00:00:00'));
 
 alter system set kv_hotkey_throttle_threshold = 50;

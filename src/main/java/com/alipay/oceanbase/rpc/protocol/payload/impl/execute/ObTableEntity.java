@@ -28,7 +28,7 @@ public class ObTableEntity extends AbstractObTableEntity {
     private ObRowKey           rowKey     = new ObRowKey();
     private Map<String, ObObj> properties = new HashMap<String, ObObj>();
 
-    private boolean onlyEncodeValue;
+    private boolean            onlyEncodeValue;
 
     public void setOnlyEncodeValue(boolean onlyEncodeValue) {
         this.onlyEncodeValue = onlyEncodeValue;

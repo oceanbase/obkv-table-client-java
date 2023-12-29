@@ -454,7 +454,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             long uniqueId = obTableOperationResult.getUniqueId() == 0 ? obTableOperationRequest
                 .getUniqueId() : obTableOperationResult.getUniqueId();
             ExceptionUtil.throwObTableException(ip, port, sequence, uniqueId,
-                obTableOperationResult.getHeader().getErrno(), obTableOperationResult.getHeader().getErrMsg());
+                obTableOperationResult.getHeader().getErrno(), obTableOperationResult.getHeader()
+                    .getErrMsg());
         }
 
         void checkObTableQueryAndMutateResult(String ip, int port, ObPayload result) {
@@ -601,7 +602,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 long uniqueId = obTableOperationResult.getUniqueId() == 0 ? obTableOperationRequest
                     .getUniqueId() : obTableOperationResult.getUniqueId();
                 ExceptionUtil.throwObTableException(ip, port, sequence, uniqueId,
-                    obTableOperationResult.getHeader().getErrno(), obTableOperationResult.getHeader().getErrMsg());
+                    obTableOperationResult.getHeader().getErrno(), obTableOperationResult
+                        .getHeader().getErrMsg());
             } else if (result instanceof ObTableQueryAndMutateResult) {
                 // TODO: Add func like throwObTableException()
                 //       which will output the ip / port / error information
@@ -1209,7 +1211,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                boolean waitForRefresh, ObServerRoute route)
                                                                                            throws Exception {
         TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh);
-        
+
         long partId = getPartition(tableEntry, rowKey);
 
         return getTable(tableName, tableEntry, partId, waitForRefresh, route);
@@ -1795,34 +1797,34 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws Exception exception
      */
     public ObPayload putWithResult(final String tableName, final Object[] rowKey,
-                                      final List<ObNewRange> keyRanges, final String[] columns,
-                                      final Object[] values) throws Exception {
+                                   final List<ObNewRange> keyRanges, final String[] columns,
+                                   final Object[] values) throws Exception {
         final long start = System.currentTimeMillis();
         return executeMutation(tableName,
-                new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {
-                    /**
-                     * Execute.
-                     */
-                    @Override
-                    public ObPayload execute(ObPair<Long, ObTableParam> obPair) throws Exception {
-                        long TableTime = System.currentTimeMillis();
-                        ObTableParam tableParam = obPair.getRight();
-                        ObTable obTable = tableParam.getObTable();
-                        ObTableOperationRequest request = ObTableOperationRequest.getInstance(
-                                tableName, PUT, rowKey, columns, values,
-                                obTable.getObTableOperationTimeout());
-                        request.setTableId(tableParam.getTableId());
-                        // partId/tabletId
-                        request.setPartitionId(tableParam.getPartitionId());
-                        ObPayload result = obTable.execute(request);
-                        String endpoint = obTable.getIp() + ":" + obTable.getPort();
-                        MonitorUtil.info(request, database, tableName, "PUT", endpoint, rowKey,
-                                (ObTableOperationResult) result, TableTime - start,
-                                System.currentTimeMillis() - TableTime, getslowQueryMonitorThreshold());
-                        checkResult(obTable.getIp(), obTable.getPort(), request, result);
-                        return result;
-                    }
-                });
+            new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {
+                /**
+                 * Execute.
+                 */
+                @Override
+                public ObPayload execute(ObPair<Long, ObTableParam> obPair) throws Exception {
+                    long TableTime = System.currentTimeMillis();
+                    ObTableParam tableParam = obPair.getRight();
+                    ObTable obTable = tableParam.getObTable();
+                    ObTableOperationRequest request = ObTableOperationRequest.getInstance(
+                        tableName, PUT, rowKey, columns, values,
+                        obTable.getObTableOperationTimeout());
+                    request.setTableId(tableParam.getTableId());
+                    // partId/tabletId
+                    request.setPartitionId(tableParam.getPartitionId());
+                    ObPayload result = obTable.execute(request);
+                    String endpoint = obTable.getIp() + ":" + obTable.getPort();
+                    MonitorUtil.info(request, database, tableName, "PUT", endpoint, rowKey,
+                        (ObTableOperationResult) result, TableTime - start,
+                        System.currentTimeMillis() - TableTime, getslowQueryMonitorThreshold());
+                    checkResult(obTable.getIp(), obTable.getPort(), request, result);
+                    return result;
+                }
+            });
     }
 
     /**

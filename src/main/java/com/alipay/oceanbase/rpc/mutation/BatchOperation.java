@@ -34,7 +34,7 @@ public class BatchOperation {
     private Table        client;
     boolean              withResult;
     private List<Object> operations;
-    boolean              isAtomic = false;
+    boolean              isAtomic              = false;
     boolean              isSamePropertiesNames = false;
 
     public BatchOperation setSamePropertiesNames(boolean samePropertiesNames) {
@@ -135,7 +135,7 @@ public class BatchOperation {
                     case PUT:
                         ((Put) mutation).removeRowkeyFromMutateColval();
                         batchOps.put(mutation.getRowKey(), ((Put) mutation).getColumns(),
-                                ((Put) mutation).getValues());
+                            ((Put) mutation).getValues());
                         break;
                     case DEL:
                         batchOps.delete(mutation.getRowKey());

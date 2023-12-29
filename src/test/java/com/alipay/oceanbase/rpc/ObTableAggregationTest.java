@@ -68,6 +68,7 @@ import static org.junit.Assert.fail;
 
 public class ObTableAggregationTest {
     private ObTableClient client;
+
     @Before
     public void setup() throws Exception {
         System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
@@ -561,20 +562,20 @@ public class ObTableAggregationTest {
     // Test aggregation with big int , should report error out of range
     public void testAggregationWithBigint() throws Exception {
         final String TABLE_NAME = "test_aggregation";
-        try{
+        try {
             final ObTableClient client = (ObTableClient) this.client;
-            client.addRowKeyElement(TABLE_NAME, new String[]{"c1"});
+            client.addRowKeyElement(TABLE_NAME, new String[] { "c1" });
             SimpleDateFormat sdf = new SimpleDateFormat(" yyyy-MM-dd HH:mm:ss ");
             Date date1 = sdf.parse(" 1000-12-10 19:20:00 ");
             Date date2 = sdf.parse(" 1010-07-10 19:20:00 ");
             Date date3 = sdf.parse(" 1100-02-10 19:20:00 ");
 
-            client.insert(TABLE_NAME, "first_row", new String[]{"c2", "c3", "c4", "c5",
-                    "c6", "c7"}, new Object[]{1, 9223372036854775807L, 1.0f, 1.0, (byte) 1, date1});
-            client.insert(TABLE_NAME, "second_row", new String[]{"c2", "c3", "c4", "c5",
-                    "c6", "c7"}, new Object[]{2, 9223372036854775807L, 2.0f, 2.0, (byte) 2, date2});
-            client.insert(TABLE_NAME, "third_row", new String[]{"c2", "c3", "c4", "c5",
-                    "c6", "c7"}, new Object[]{3, 9223372036854775807L, 3.0f, 3.0, (byte) 3, date3});
+            client.insert(TABLE_NAME, "first_row", new String[] { "c2", "c3", "c4", "c5", "c6",
+                    "c7" }, new Object[] { 1, 9223372036854775807L, 1.0f, 1.0, (byte) 1, date1 });
+            client.insert(TABLE_NAME, "second_row", new String[] { "c2", "c3", "c4", "c5", "c6",
+                    "c7" }, new Object[] { 2, 9223372036854775807L, 2.0f, 2.0, (byte) 2, date2 });
+            client.insert(TABLE_NAME, "third_row", new String[] { "c2", "c3", "c4", "c5", "c6",
+                    "c7" }, new Object[] { 3, 9223372036854775807L, 3.0f, 3.0, (byte) 3, date3 });
             ObTableAggregation obtableAggregation = client.aggregate(TABLE_NAME);
 
             // test
@@ -585,11 +586,12 @@ public class ObTableAggregationTest {
             Assert.assertEquals(10L, obtableAggregationResult.get("sum(c3)"));
 
         } catch (Exception e) {
-            Assert.assertTrue(((ObTableException) e).getMessage().contains("[OB_DATA_OUT_OF_RANGE][Out of range value for column 'sum(c3)' at row 0]"));
+            Assert.assertTrue(((ObTableException) e).getMessage().contains(
+                "[OB_DATA_OUT_OF_RANGE][Out of range value for column 'sum(c3)' at row 0]"));
         } finally {
         }
     }
-    
+
     @Test
     // Test aggregation with empty table
     public void testAggregationEmptyVal() throws Exception {
@@ -602,12 +604,12 @@ public class ObTableAggregationTest {
          */
 
         final ObTableClient client = (ObTableClient) this.client;
-        client.addRowKeyElement("test_partition_aggregation", new String[]{"c1"});
+        client.addRowKeyElement("test_partition_aggregation", new String[] { "c1" });
 
         try {
             // with filter
             ObTableAggregation obtableAggregationWithFilter = client
-                    .aggregate("test_partition_aggregation");
+                .aggregate("test_partition_aggregation");
 
             // test
             obtableAggregationWithFilter.max("c2");
@@ -624,7 +626,7 @@ public class ObTableAggregationTest {
 
             // execute
             ObTableAggregationResult obtableAggregationResultWithFilter = obtableAggregationWithFilter
-                    .execute();
+                .execute();
 
             // empty table generate null row
             Assert.assertEquals(5, obtableAggregationResultWithFilter.getRow().size());

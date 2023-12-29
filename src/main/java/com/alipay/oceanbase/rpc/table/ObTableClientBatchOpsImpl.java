@@ -176,8 +176,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 }
             } else {
                 results.add(ExceptionUtil.convertToObTableException(result.getExecuteHost(),
-                    result.getExecutePort(), result.getSequence(), result.getUniqueId(),
-                        errCode, result.getHeader().getErrMsg()));
+                    result.getExecutePort(), result.getSequence(), result.getUniqueId(), errCode,
+                    result.getHeader().getErrMsg()));
             }
         }
         return results;
@@ -210,8 +210,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 }
             } else {
                 results.add(ExceptionUtil.convertToObTableException(result.getExecuteHost(),
-                    result.getExecutePort(), result.getSequence(), result.getUniqueId(),
-                        errCode, result.getHeader().getErrMsg()));
+                    result.getExecutePort(), result.getSequence(), result.getUniqueId(), errCode,
+                    result.getHeader().getErrMsg()));
             }
         }
         return results;
@@ -256,12 +256,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             obTableOperations.getRight().add(new ObPair<Integer, ObTableOperation>(i, operation));
         }
 
-//        if (atomicOperation) {
-//            if (partitionOperationsMap.size() > 1) {
-//                throw new ObTablePartitionConsistentException(
-//                    "require atomic operation but found across partition may cause consistent problem ");
-//            }
-//        }
+        //        if (atomicOperation) {
+        //            if (partitionOperationsMap.size() > 1) {
+        //                throw new ObTablePartitionConsistentException(
+        //                    "require atomic operation but found across partition may cause consistent problem ");
+        //            }
+        //        }
         return partitionOperationsMap;
     }
 

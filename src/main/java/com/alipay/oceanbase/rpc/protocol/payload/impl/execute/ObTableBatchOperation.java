@@ -46,7 +46,6 @@ public class ObTableBatchOperation extends AbstractPayload {
         byte[] bytes = new byte[(int) getPayloadSize()];
         int idx = 0;
 
-
         // 0. encode header
         int headerLen = (int) getObUniVersionHeaderLength(getVersion(), getPayloadContentSize());
         System.arraycopy(encodeObUniVersionHeader(getVersion(), getPayloadContentSize()), 0, bytes,
@@ -55,7 +54,7 @@ public class ObTableBatchOperation extends AbstractPayload {
 
         // 1. encode isSamePropertiesNames
         System.arraycopy(Serialization.encodeI8(isSamePropertiesNames ? (byte) 1 : (byte) 0), 0,
-                bytes, idx, 1);
+            bytes, idx, 1);
         idx++;
 
         // 2. encode Operation
@@ -114,7 +113,7 @@ public class ObTableBatchOperation extends AbstractPayload {
     public long getPayloadContentSize() {
         long payloadContentSize = 0;
 
-        payloadContentSize+=1; // isSamePropertiesNames
+        payloadContentSize += 1; // isSamePropertiesNames
 
         payloadContentSize += Serialization.getNeedBytes(tableOperations.size());
         for (int i = 0; i < tableOperations.size(); i++) {

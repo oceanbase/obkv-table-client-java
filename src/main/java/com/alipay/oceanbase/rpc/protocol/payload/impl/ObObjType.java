@@ -931,8 +931,8 @@ public enum ObObjType {
          */
         @Override
         public Date parseToComparable(Object o, ObCollationType ct)
-                throws IllegalArgumentException,
-                FeatureNotSupportedException {
+                                                                   throws IllegalArgumentException,
+                                                                   FeatureNotSupportedException {
             if (o instanceof String) {
                 return TimeUtils.strToDate((String) o);
             }
@@ -1827,8 +1827,8 @@ public enum ObObjType {
                                            + collationType + "argument:" + object);
     }
 
-    public static Date parseToDate(ObObjType obObjType, Object object,
-                                           ObCollationType collationType) throws Exception{
+    public static Date parseToDate(ObObjType obObjType, Object object, ObCollationType collationType)
+                                                                                                     throws Exception {
         if (object instanceof Date) {
             return (Date) object;
         }
@@ -1838,13 +1838,13 @@ public enum ObObjType {
         }
 
         if (object instanceof String) {
-            String str = (String)object;
+            String str = (String) object;
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
             return dateFormat.parse(str);
         }
 
         throw new IllegalArgumentException(obObjType.name() + "can not parseToComparable with "
-                + collationType + "argument:" + object);
+                                           + collationType + "argument:" + object);
     }
 
     /*

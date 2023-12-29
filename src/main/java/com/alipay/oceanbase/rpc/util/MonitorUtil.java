@@ -117,7 +117,8 @@ public class MonitorUtil {
             endpoint = endpoint.replaceAll(",", "#");
         }
         // if rowkeys is empty point, then append "rowKeys:null" into log message
-        String argsValue = rowKeys == null ? "rowKeys:null" : buildParamsString(Arrays.asList(rowKeys));
+        String argsValue = rowKeys == null ? "rowKeys:null" : buildParamsString(Arrays
+            .asList(rowKeys));
 
         ResultCodes resultCode = ResultCodes.valueOf(result.getHeader().getErrno());
         String res = "";
@@ -163,7 +164,8 @@ public class MonitorUtil {
             endpoint = endpoint.replaceAll(",", "#");
         }
         // if rowkeys is empty point, then append "rowKeys:null" into log message
-        String argsValue = rowKeys == null ? "rowKeys:null" : buildParamsString(Arrays.asList(rowKeys));
+        String argsValue = rowKeys == null ? "rowKeys:null" : buildParamsString(Arrays
+            .asList(rowKeys));
 
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(traceId).append(" - ").append(database).append(",").append(tableName)

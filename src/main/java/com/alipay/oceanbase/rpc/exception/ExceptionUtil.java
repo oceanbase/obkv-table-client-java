@@ -58,7 +58,8 @@ public class ExceptionUtil {
      * @param resultCodes error code return from Ob Server
      */
     public static ObTableException convertToObTableException(String host, int port, long sequence,
-                                                             long uniqueId, int errorCode, String errorMessage) {
+                                                             long uniqueId, int errorCode,
+                                                             String errorMessage) {
         String trace = String.format("Y%X-%016X", uniqueId, sequence);
         String server = host + ":" + port;
         String errMsg = Objects.equals(errorMessage, "") ? "error occur in server" : errorMessage;
@@ -70,8 +71,9 @@ public class ExceptionUtil {
         }
 
         // [errCode][errCodeName][errMsg][server][trace]
-        return new ObTableException("["+ String.valueOf(resultCodes.errorCode) +"]" + "["+ resultCodes.name() +"]" +
-                "[" + errMsg + "]" + "[" + server + "]" + "[" + trace + "]", resultCodes.errorCode);
+        return new ObTableException("[" + String.valueOf(resultCodes.errorCode) + "]" + "["
+                                    + resultCodes.name() + "]" + "[" + errMsg + "]" + "[" + server
+                                    + "]" + "[" + trace + "]", resultCodes.errorCode);
     }
 
     /*

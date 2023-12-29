@@ -30,7 +30,7 @@ import static org.junit.Assert.*;
 
 public class ObTableErrMsgTest {
     ObTableClient        client;
-    public static String tableName    = "error_message_table";
+    public static String tableName = "error_message_table";
 
     @Before
     public void setup() throws Exception {
@@ -237,4 +237,3 @@ public class ObTableErrMsgTest {
         assertTrue(thrown.getMessage().contains("[-4007][OB_NOT_SUPPORTED][assign virtual generated column not supported]"));
     }
 }
-

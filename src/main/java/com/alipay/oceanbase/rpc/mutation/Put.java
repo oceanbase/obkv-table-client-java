@@ -155,17 +155,15 @@ public class Put extends Mutation<Put> {
         removeRowkeyFromMutateColval(this.columns, this.values, this.rowKeyNames);
         if (null == getQuery()) {
             // simple Put, without filter
-            return new MutationResult(((ObTableClient) getClient()).putWithResult(
-                    getTableName(), getRowKey(), getKeyRanges(), columns.toArray(new String[0]),
-                    values.toArray()));
+            return new MutationResult(((ObTableClient) getClient()).putWithResult(getTableName(),
+                getRowKey(), getKeyRanges(), columns.toArray(new String[0]), values.toArray()));
         } else {
             if (checkMutationWithFilter()) {
                 // QueryAndPut
-                ObTableOperation operation = ObTableOperation.getInstance(
-                        ObTableOperationType.PUT, getRowKey(), columns.toArray(new String[0]),
-                        values.toArray());
+                ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.PUT,
+                    getRowKey(), columns.toArray(new String[0]), values.toArray());
                 return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(
-                        getQuery(), getRowKey(), getKeyRanges(), operation, true));
+                    getQuery(), getRowKey(), getKeyRanges(), operation, true));
             } else {
                 throw new ObTableUnexpectedException("should set filter and scan range both");
             }
