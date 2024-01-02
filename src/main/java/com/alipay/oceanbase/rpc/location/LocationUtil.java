@@ -1292,8 +1292,7 @@ public class LocationUtil {
         List<ObComparableKV<ObPartitionKey, Long>> bounds = new ArrayList<ObComparableKV<ObPartitionKey, Long>>();
         Map<String, Long> partNameIdMap = new HashMap<String, Long>();
         Map<Long, Long> partTabletIdMap = new HashMap<Long, Long>();
-        ObRangePartDesc subRangePartDesc = (ObRangePartDesc) tableEntry.getPartitionInfo()
-            .getSubPartDesc();
+        ObPartDesc subRangePartDesc = tableEntry.getPartitionInfo().getSubPartDesc();
         long idx = 0L;
         while (rs.next()) {
             if (null != subRangePartDesc && !isSubPart && subRangePartDesc.getPartNum() == 0) {
