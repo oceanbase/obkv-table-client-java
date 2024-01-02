@@ -1823,7 +1823,7 @@ public enum ObObjType {
             return new Timestamp((Long) object);
         }
 
-        throw new IllegalArgumentException(obObjType.name() + "can not parseToComparable with "
+        throw new IllegalArgumentException(obObjType.name() + " can not parseToComparable with "
                                            + collationType + "argument:" + object);
     }
 

@@ -243,5 +243,5 @@ public abstract class ObPartDesc {
 
     public abstract Long getRandomPartId();
 
-    public abstract void setPartNum(int partNum);
+    public abstract void setPartNum(int n);
 }
