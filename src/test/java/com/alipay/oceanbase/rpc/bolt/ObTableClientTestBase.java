@@ -223,7 +223,10 @@ public abstract class ObTableClientTestBase {
         assertNotNull(exception);
         System.out.printf("exception msg：%s\n", exception.getMessage());
         assertEquals(ResultCodes.OB_KV_COLUMN_TYPE_NOT_MATCH.errorCode, exception.getErrorCode());
-        assertTrue(exception.getMessage().contains("Column type for 'c1' not match, schema column type is 'VARCHAR', input column type is 'INT'"));
+        assertTrue(exception
+            .getMessage()
+            .contains(
+                "Column type for 'c1' not match, schema column type is 'VARCHAR', input column type is 'INT'"));
 
         exception = null;
         try {
@@ -235,7 +238,10 @@ public abstract class ObTableClientTestBase {
         assertNotNull(exception);
         System.out.printf("exception msg：%s\n", exception.getMessage());
         assertEquals(ResultCodes.OB_KV_COLUMN_TYPE_NOT_MATCH.errorCode, exception.getErrorCode());
-        assertTrue(exception.getMessage().contains("Column type for 'c2' not match, schema column type is 'VARCHAR', input column type is 'INT'"));
+        assertTrue(exception
+            .getMessage()
+            .contains(
+                "Column type for 'c2' not match, schema column type is 'VARCHAR', input column type is 'INT'"));
 
         exception = null;
         try {

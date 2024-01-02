@@ -29,6 +29,7 @@ import com.alipay.oceanbase.rpc.util.hash.ObHashSortUtf8mb4;
 import java.io.UnsupportedEncodingException;
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 
 import static com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjType.*;
 
@@ -129,9 +130,10 @@ public class ObHashUtils {
             } else {
                 return ObHashUtils.longHash((Long) value, hashCode);
             }
-        } else if (ObDateTimeType.getValue() == typeValue
-                   || ObTimestampType.getValue() == typeValue) {
+        } else if (ObTimestampType.getValue() == typeValue) {
             return ObHashUtils.timeStampHash((Timestamp) value, hashCode);
+        } else if (ObDateTimeType.getValue() == typeValue) {
+            return ObHashUtils.dateTimeHash((java.util.Date) value, hashCode);
         } else if (ObDateType.getValue() == typeValue) {
             return ObHashUtils.dateHash((Date) value, hashCode);
         } else if (ObVarcharType.getValue() == typeValue || ObCharType.getValue() == typeValue) {
@@ -165,6 +167,18 @@ public class ObHashUtils {
      */
     public static long dateHash(Date d, long hashCode) {
         return longHash(d.getTime(), hashCode);
+    }
+
+    /**
+     * Datetime hash (support DateTime(6)).
+     * @param d input data
+     * @param hashCode old hashCode
+     * @return new hashCode
+     */
+    public static long dateTimeHash(java.util.Date d, long hashCode) {
+        return longHash(
+            (d.getTime() + OffsetDateTime.now().getOffset().getTotalSeconds() * 1000L) * 1000,
+            hashCode);
     }
 
     /**
