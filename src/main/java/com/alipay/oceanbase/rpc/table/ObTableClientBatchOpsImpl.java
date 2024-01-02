@@ -236,6 +236,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             return partitionOperationsMap;
         }
 
+        boolean has_put = false;
         for (int i = 0; i < operations.size(); i++) {
             ObTableOperation operation = operations.get(i);
             ObRowKey rowKeyObject = operation.getEntity().getRowKey();
@@ -243,6 +244,9 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             Object[] rowKey = new Object[rowKeySize];
             for (int j = 0; j < rowKeySize; j++) {
                 rowKey[j] = rowKeyObject.getObj(j).getValue();
+            }
+            if (!has_put && operation.getOperationType() == ObTableOperationType.PUT) {
+                has_put = true;
             }
             ObPair<Long, ObTableParam> tableObPair = obTableClient.getTable(tableName, rowKey,
                 false, false, obTableClient.getRoute(batchOperation.isReadOnly()));
@@ -256,12 +260,13 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             obTableOperations.getRight().add(new ObPair<Integer, ObTableOperation>(i, operation));
         }
 
-        //        if (atomicOperation) {
-        //            if (partitionOperationsMap.size() > 1) {
-        //                throw new ObTablePartitionConsistentException(
-        //                    "require atomic operation but found across partition may cause consistent problem ");
-        //            }
-        //        }
+
+        if (atomicOperation && !has_put) {
+            if (partitionOperationsMap.size() > 1) {
+                throw new ObTablePartitionConsistentException(
+                    "require atomic operation but found across partition may cause consistent problem ");
+            }
+        }
         return partitionOperationsMap;
     }
 
