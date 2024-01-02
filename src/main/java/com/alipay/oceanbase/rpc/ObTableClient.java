@@ -905,6 +905,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * return the table name that need get location
      * for global index: return global index table name
      * others: return primary table name
+     * @param dataTableName table name
+     * @param indexName used index name
+     * @param scanRangeColumns columns that need to be scaned
+     * @return the real table name
      */
     public String getIndexTableName(final String dataTableName, final String indexName, List<String> scanRangeColumns)
             throws Exception {

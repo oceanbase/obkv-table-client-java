@@ -705,7 +705,8 @@ public class LocationUtil {
             if (rs.next()) {
                 tableId = rs.getLong("table_id");
             } else {
-                tableId = 0L;
+                throw new ObTableEntryRefreshException("fail to get " + tableName
+                        + " table_id from remote");
             }
         } catch (Exception e) {
             throw new ObTableEntryRefreshException("fail to get " + tableName
@@ -744,6 +745,8 @@ public class LocationUtil {
                 indexInfo.setDataTableId(rs.getLong("data_table_id"));
                 indexInfo.setIndexTableId(rs.getLong("table_id"));
                 indexInfo.setIndexType(ObIndexType.valueOf(rs.getInt("index_type")));
+            } else {
+                throw new ObTableEntryRefreshException("fail to get index info from remote");
             }
         } catch (Exception e) {
             throw new ObTableEntryRefreshException("fail to get index info from remote", e);

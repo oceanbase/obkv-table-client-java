@@ -27,8 +27,8 @@ public class ObIndexInfo {
     private ObIndexType indexType;
 
     public ObIndexInfo() {
-        this.dataTableId = 0L;
-        this.indexTableId = 0L;
+        this.dataTableId = Constants.OB_INVALID_ID;
+        this.indexTableId = Constants.OB_INVALID_ID;
         this.indexTableName = "";
         this.indexType = ObIndexType.IndexTypeIsNot;
     }

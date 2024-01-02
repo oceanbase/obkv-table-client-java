@@ -122,7 +122,7 @@ public class ObRpcPacketHeader {
         #define OB_LOG_LEVEL_TRACE 4
         #define OB_LOG_LEVEL_DEBUG 5
          */
-        flag = 0x7 | IS_KV_REQUEST_FALG; // let ObServer determine the ob log level.
+        flag = 0x7 | IS_KV_REQUEST_FALG; // 0x7 means let ObServer determine the ob log level.
     }
 
     /*
