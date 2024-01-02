@@ -29,6 +29,7 @@ import org.junit.Test;
 
 import java.sql.Connection;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Executors;
 
@@ -634,6 +635,39 @@ public class ObTableClientPartitionRangeTest {
                     new Object[] { c1, c2, c3.getBytes(), c4 }, new String[] { "c1", "c2", "c3",
                             "c4", "c5" });
                 Assert.assertEquals(5, result.size());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        } finally {
+            cleanPartitionLocationTable(testTable);
+        }
+    }
+
+    @Test
+    public void testPartitionLocationDateTime() throws Exception {
+        // This test case may wrong when you are not in GMT+8 time zone
+        obTableClient.setRunningMode(ObTableClient.RunningMode.NORMAL);
+        String testTable = "testDateTime";
+        obTableClient.addRowKeyElement(testTable, new String[] { "c0", "c1" });
+        try {
+            cleanPartitionLocationTable(testTable);
+            Connection connection = ObTableClientTestUtil.getConnection();
+            Statement statement = connection.createStatement();
+            for (int i = 0; i < 64; i++) {
+                // 1650340800000 -> 2022-04-19 15:00:00 (GMT +8)
+                SimpleDateFormat sdf = new SimpleDateFormat(" yyyy-MM-dd HH:mm:ss ");
+                Date date = new Date(1650340800000L + 10800000L * i);
+                String formattedDate = sdf.format(date);
+
+                // use sql to insert data
+                statement.execute("insert into " + testTable + " values ( '" + formattedDate
+                                  + "' , '" + formattedDate + "' ," + "'value')");
+
+                // get data by obkv interface
+                Map<String, Object> result = obTableClient.get(testTable,
+                    new Object[] { date, date }, new String[] { "c0", "c1", "c2" });
+                Assert.assertEquals(3, result.size());
             }
         } catch (Exception e) {
             e.printStackTrace();

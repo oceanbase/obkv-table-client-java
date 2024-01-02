@@ -2321,22 +2321,20 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
         try {
             // prepare data with insert
-            Insert insert_0 = insert().setRowKey(row(colVal("measurement", "measurement1"),
-                            colVal("tag_key", "tag_key1"),
-                            colVal("tag_value", "tag_value1")  ))
-                    .addMutateColVal(colVal("series_ids", "series_ids1"));
-            Insert insert_1 = insert().setRowKey(row(colVal("measurement", "measurement1"),
-                            colVal("tag_key", "tag_key2"),
-                            colVal("tag_value", "tag_value2")  ))
-                    .addMutateColVal(colVal("series_ids", "series_ids2"));
-            Insert insert_2 = insert().setRowKey(row(colVal("measurement", "measurement1"),
-                            colVal("tag_key", "tag_key3"),
-                            colVal("tag_value", "tag_value3")  ))
-                    .addMutateColVal(colVal("series_ids", "series_ids3"));
+            Insert insert_0 = insert().setRowKey(
+                row(colVal("measurement", "measurement1"), colVal("tag_key", "tag_key1"),
+                    colVal("tag_value", "tag_value1"))).addMutateColVal(
+                colVal("series_ids", "series_ids1"));
+            Insert insert_1 = insert().setRowKey(
+                row(colVal("measurement", "measurement1"), colVal("tag_key", "tag_key2"),
+                    colVal("tag_value", "tag_value2"))).addMutateColVal(
+                colVal("series_ids", "series_ids2"));
+            Insert insert_2 = insert().setRowKey(
+                row(colVal("measurement", "measurement1"), colVal("tag_key", "tag_key3"),
+                    colVal("tag_value", "tag_value3"))).addMutateColVal(
+                colVal("series_ids", "series_ids3"));
             BatchOperationResult batchResult = client.batchOperation("cse_index_1")
-                    .addOperation(insert_0)
-                    .addOperation(insert_1).addOperation(insert_2)
-                    .execute();
+                .addOperation(insert_0).addOperation(insert_1).addOperation(insert_2).execute();
             Assert.assertEquals(0, batchResult.getWrongCount());
             Assert.assertEquals(3, batchResult.getCorrectCount());
 
@@ -2369,12 +2367,12 @@ public class ObTableClientTest extends ObTableClientTestBase {
         Object[] c4 = new Object[] { 10L, null, null, null, null };
         try {
             for (int i = 0; i < c1.length; i++) {
-                client.insert(tableName, c1[i], columnNames, new Object[]{c2[i], c3[i], c4[i]});
+                client.insert(tableName, c1[i], columnNames, new Object[] { c2[i], c3[i], c4[i] });
             }
 
             // query with c4 is null ,limit is 2 and offset 1
             TableQuery tableQuery = client.query(tableName).select(allColumnNames)
-                    .addScanRange(new Object[] { 0L }, new Object[] { 200L }).limit(2, -1);
+                .addScanRange(new Object[] { 0L }, new Object[] { 200L }).limit(2, -1);
             QueryResultSet result = tableQuery.execute();
             int expRowIdx[] = { 2, 3 };
             Assert.assertEquals(result.cacheSize(), expRowIdx.length);
@@ -2383,7 +2381,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 Map<String, Object> value = result.getRow();
                 assertEquals(value.get(allColumnNames[0]), c1[expRowIdx[i]]);
                 assertTrue(Arrays.equals((byte[]) value.get(allColumnNames[1]),
-                        (byte[]) c2[expRowIdx[i]]));
+                    (byte[]) c2[expRowIdx[i]]));
                 assertEquals(value.get(allColumnNames[2]), c3[expRowIdx[i]]);
                 assertEquals(value.get(allColumnNames[3]), c4[expRowIdx[i]]);
             }
@@ -2391,7 +2389,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
         } catch (Exception e) {
             e.printStackTrace();
             Assert.assertEquals("offset can not be use without limit",
-                    ((ObTableException) e).getMessage());
+                ((ObTableException) e).getMessage());
         } finally {
             for (int i = 0; i < c1.length; i++) {
                 client.delete("test_query_filter_mutate", new Object[] { c1[i] });
@@ -2411,16 +2409,15 @@ public class ObTableClientTest extends ObTableClientTestBase {
         final String TABLE_NAME = "test_query_filter_mutate";
         System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
 
-        ((ObTableClient) client)
-                .addRowKeyElement(TABLE_NAME, new String[] { "c1" }); //同索引列的值一样
+        ((ObTableClient) client).addRowKeyElement(TABLE_NAME, new String[] { "c1" }); //同索引列的值一样
 
         try {
-            client.insert(TABLE_NAME, new Object[] { 0L }, new String[] { "c2",
-                    "c3" }, new Object[] { new byte[] { 1 }, "row1" });
-            client.insert(TABLE_NAME, new Object[] { 1L }, new String[] { "c2",
-                    "c3" }, new Object[] { new byte[] { 1 }, "row2" });
-            client.insert(TABLE_NAME, new Object[] { 2L }, new String[] { "c2",
-                    "c3" }, new Object[] { new byte[] { 1 }, "row3" });
+            client.insert(TABLE_NAME, new Object[] { 0L }, new String[] { "c2", "c3" },
+                new Object[] { new byte[] { 1 }, "row1" });
+            client.insert(TABLE_NAME, new Object[] { 1L }, new String[] { "c2", "c3" },
+                new Object[] { new byte[] { 1 }, "row2" });
+            client.insert(TABLE_NAME, new Object[] { 2L }, new String[] { "c2", "c3" },
+                new Object[] { new byte[] { 1 }, "row3" });
 
             TableQuery tableQuery = client.query(TABLE_NAME);
             tableQuery.addScanRange(new Object[] { 0L }, new Object[] { 250L });

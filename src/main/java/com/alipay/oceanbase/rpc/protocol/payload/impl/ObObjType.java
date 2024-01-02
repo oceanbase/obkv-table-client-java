@@ -929,10 +929,13 @@ public enum ObObjType {
          * Parse to comparable.
          */
         @Override
-        public Timestamp parseToComparable(Object o, ObCollationType ct)
-                                                                        throws IllegalArgumentException,
-                                                                        FeatureNotSupportedException {
-            return parseTimestamp(this, o, ct);
+        public Date parseToComparable(Object o, ObCollationType ct)
+                                                                   throws IllegalArgumentException,
+                                                                   FeatureNotSupportedException {
+            if (o instanceof String) {
+                return TimeUtils.strToDate((String) o);
+            }
+            return (Date) o;
         }
     },
     // The TIMESTAMP data type is used for values that contain both date and time parts.
@@ -1819,7 +1822,7 @@ public enum ObObjType {
             return new Timestamp((Long) object);
         }
 
-        throw new IllegalArgumentException(obObjType.name() + "can not parseToComparable with "
+        throw new IllegalArgumentException(obObjType.name() + " can not parseToComparable with "
                                            + collationType + "argument:" + object);
     }
 

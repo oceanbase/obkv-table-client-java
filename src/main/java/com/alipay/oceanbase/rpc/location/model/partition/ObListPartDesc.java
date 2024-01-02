@@ -174,4 +174,8 @@ public class ObListPartDesc extends ObPartDesc {
             .append("sets", this.sets).append("partFuncType", this.getPartFuncType())
             .append("partExpr", this.getPartExpr()).toString();
     }
+
+    @Override
+    public void setPartNum(int n) {
+    }
 }
