@@ -1,3 +1,5 @@
+USE TEST;
+
 CREATE TABLE IF NOT EXISTS `test_varchar_table` (
     `c1` varchar(20) NOT NULL,
     `c2` varchar(20) DEFAULT NULL,

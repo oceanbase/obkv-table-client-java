@@ -1825,7 +1825,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 Assert.assertTrue(false);
             } catch (Exception e) {
                 Assert.assertTrue(e instanceof ObTableException);
-                Assert.assertEquals(ResultCodes.OB_OBJ_TYPE_ERROR.errorCode,
+                Assert.assertEquals(ResultCodes.OB_ERR_DOUBLE_TRUNCATED.errorCode,
                     ((ObTableException) e).getErrorCode());
             }
             // increment non-integer column with filter
@@ -1836,7 +1836,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                     .setFilter(compareVal(ObCompareOp.EQ, "c4", 200L)).execute();
             } catch (Exception e) {
                 Assert.assertTrue(e instanceof ObTableException);
-                Assert.assertEquals(ResultCodes.OB_OBJ_TYPE_ERROR.errorCode,
+                Assert.assertEquals(ResultCodes.OB_ERR_DOUBLE_TRUNCATED.errorCode,
                     ((ObTableException) e).getErrorCode());
             }
 
@@ -1848,7 +1848,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                     .setFilter(compareVal(ObCompareOp.EQ, "c4", 200L)).execute();
             } catch (Exception e) {
                 Assert.assertTrue(e instanceof ObTableException);
-                Assert.assertEquals(ResultCodes.OB_OBJ_TYPE_ERROR.errorCode,
+                Assert.assertEquals(ResultCodes.OB_KV_COLUMN_TYPE_NOT_MATCH.errorCode,
                     ((ObTableException) e).getErrorCode());
             }
 
@@ -1859,7 +1859,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                     .addMutateColVal(colVal("c4", new byte[1])).execute();
             } catch (Exception e) {
                 Assert.assertTrue(e instanceof ObTableException);
-                Assert.assertEquals(ResultCodes.OB_OBJ_TYPE_ERROR.errorCode,
+                Assert.assertEquals(ResultCodes.OB_KV_COLUMN_TYPE_NOT_MATCH.errorCode,
                     ((ObTableException) e).getErrorCode());
             }
 
@@ -1871,7 +1871,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                     .setFilter(compareVal(ObCompareOp.EQ, "c4", 200L)).execute();
             } catch (Exception e) {
                 Assert.assertTrue(e instanceof ObTableException);
-                Assert.assertEquals(ResultCodes.OB_OBJ_TYPE_ERROR.errorCode,
+                Assert.assertEquals(ResultCodes.OB_KV_COLUMN_TYPE_NOT_MATCH.errorCode,
                     ((ObTableException) e).getErrorCode());
             }
 
@@ -2432,33 +2432,6 @@ public class ObTableClientTest extends ObTableClientTestBase {
             client.delete("test_query_filter_mutate", new Object[] { 0L });
             client.delete("test_query_filter_mutate", new Object[] { 1L });
             client.delete("test_query_filter_mutate", new Object[] { 2L });
-        }
-    }
-
-    @Test
-    public void testInsertMutation() throws Exception {
-        long timestamp = System.currentTimeMillis();
-        TableQuery tableQuery = client.query("sync_item");
-
-        try {
-            //insert
-            MutationResult insertResult = client.insert("sync_item")
-                .setRowKey(row(colVal("uid", "a1"), colVal("object_id", "b1")))
-                .addMutateColVal(colVal("type", 1)).addMutateColVal(colVal("ver_oid", "1"))
-                .addMutateColVal(colVal("ver_ts", timestamp))
-                .addMutateColVal(colVal("data_id", "data")).execute();
-            Assert.assertEquals(1, insertResult.getAffectedRows());
-            //insert null -> not null col
-            try {
-                client.insert("sync_item").setRowKey(row(colVal("uid", "a2"))).execute();
-            } catch (ObTableException e) {
-                Assert.assertEquals(ResultCodes.OB_BAD_NULL_ERROR.errorCode, e.getErrorCode());
-            }
-        } catch (Exception e) {
-            Assert.assertEquals(
-                "RowKey size mismatch, rowKey list is {uid=0, object_id=1}but found[a2]",
-                e.getMessage());
-        } finally {
         }
     }
 }

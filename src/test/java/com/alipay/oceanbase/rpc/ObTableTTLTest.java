@@ -75,6 +75,7 @@ public class ObTableTTLTest {
 
             // 3. update the expired_ts
             Timestamp curTs = new Timestamp(System.currentTimeMillis());
+            curTs.setNanos(0);
             client.update(tableName).setRowKey(colVal(keyCol, keyIds[0]))
                 .addMutateColVal(colVal(expireCol, curTs)).execute();
 
@@ -99,7 +100,9 @@ public class ObTableTTLTest {
     public void test_single_operation() throws Exception {
         long rowKey = 3L;
         try {
-            Timestamp ts = new Timestamp(System.currentTimeMillis() + 1000);
+            long timeInMillis = System.currentTimeMillis() + 1000;
+            Timestamp ts = new Timestamp(timeInMillis);
+            ts.setNanos(0);
             client.insert(tableName).setRowKey(colVal(keyCol, rowKey))
                 .addMutateColVal(colVal(valueCol, defaultValue))
                 .addMutateColVal(colVal(expireCol, ts)).execute();
@@ -117,6 +120,7 @@ public class ObTableTTLTest {
 
             // 3. update expired record, affected_rows should be 0
             ts = new Timestamp(System.currentTimeMillis());
+            ts.setNanos(0);
             mutateRes = client.update(tableName).setRowKey(colVal(keyCol, rowKey))
                 .addMutateColVal(colVal(expireCol, ts)).execute();
             assertEquals(1, mutateRes.getAffectedRows());
@@ -126,6 +130,7 @@ public class ObTableTTLTest {
 
             // 4. insertOrUpdate expired record, should insert success
             ts = new Timestamp(System.currentTimeMillis() + 3000);
+            ts.setNanos(0);
             mutateRes = client.insertOrUpdate(tableName).setRowKey(colVal(keyCol, rowKey))
                 .addMutateColVal(colVal(expireCol, ts)).addMutateColVal(colVal(intCol, 50L))
                 .execute();
@@ -148,6 +153,7 @@ public class ObTableTTLTest {
 
             // 6. append a expired record, the behavior is same as append a new record
             ts = new Timestamp(System.currentTimeMillis());
+            ts.setNanos(0);
             mutateRes = client.update(tableName).setRowKey(colVal(keyCol, rowKey))
                 .addMutateColVal(colVal(valueCol, defaultValue))
                 .addMutateColVal(colVal(expireCol, ts)).execute();
@@ -162,6 +168,7 @@ public class ObTableTTLTest {
 
             // 7. replace
             ts = new Timestamp(System.currentTimeMillis());
+            ts.setNanos(0);
             mutateRes = client.update(tableName).setRowKey(colVal(keyCol, rowKey))
                 .addMutateColVal(colVal(valueCol, defaultValue))
                 .addMutateColVal(colVal(expireCol, ts)).execute();
@@ -177,6 +184,7 @@ public class ObTableTTLTest {
 
             // 8. delete
             ts = new Timestamp(System.currentTimeMillis());
+            ts.setNanos(0);
             mutateRes = client.update(tableName).setRowKey(colVal(keyCol, rowKey))
                 .addMutateColVal(colVal(expireCol, ts)).execute();
             assertEquals(1, mutateRes.getAffectedRows());
@@ -199,7 +207,9 @@ public class ObTableTTLTest {
         long[] keyIds = { 5L, 6L };
 
         try {
-            Timestamp curTs = new Timestamp(System.currentTimeMillis());
+            long timeInMillis = System.currentTimeMillis();
+            Timestamp curTs = new Timestamp(timeInMillis);
+            curTs.setNanos(0);
             // 1. insert two records, one expired, one unexpired
             MutationResult res = client.insert(tableName).setRowKey(colVal(keyCol, keyIds[0]))
                 .addMutateColVal(colVal(valueCol, defaultValue))
