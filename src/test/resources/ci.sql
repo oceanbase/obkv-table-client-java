@@ -276,7 +276,7 @@ CREATE TABLE `test_ttl_timestamp` (
  `c1` bigint NOT NULL,
  `c2` varchar(20) DEFAULT NULL,
  `c3` bigint DEFAULT NULL,
- `expired_ts` timestamp,
+ `expired_ts` timestamp(6),
 PRIMARY KEY (`c1`)) TTL(expired_ts + INTERVAL 0 SECOND);
 
 CREATE TABLE IF NOT EXISTS `test_auto_increment_rowkey` (
@@ -296,6 +296,118 @@ CREATE TABLE IF NOT EXISTS `test_auto_increment_not_rowkey` (
     PRIMARY KEY(`c1`)) partition by range columns(`c1`) (
         PARTITION p0 VALUES LESS THAN (100),
         PARTITION p1 VALUES LESS THAN (1000));
+
+CREATE TABLE IF NOT EXISTS `test_global_hash_range` (
+    `C1` int(11) NOT NULL,
+    `C2` int(11) DEFAULT NULL,
+    `C3` int(11) DEFAULT NULL,
+    PRIMARY KEY (`C1`),
+    KEY `idx` (`C2`)  GLOBAL partition by range(C2) (
+        partition p0 values less than (100),
+        partition p1 values less than (200),
+        partition p2 values less than (300)),
+    KEY `idx2` (`C3`)  LOCAL) partition by hash(c1) (
+    partition p0,
+    partition p1,
+    partition p2,
+    partition p3,
+    partition p4);
+
+CREATE TABLE IF NOT EXISTS `test_global_hash_hash` (
+  `c1` int(11) NOT NULL,
+  `c2` int(11) DEFAULT NULL,
+  `c3` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`c1`),
+  KEY `idx` (`c2`) GLOBAL partition by hash(`c2`) (
+    partition p0,
+    partition p1,
+    partition p2,
+    partition p3,
+    partition p4)) partition by hash(`c1`) (
+        partition p0,
+        partition p1,
+        partition p2,
+        partition p3,
+        partition p4,
+        partition p6);
+
+CREATE TABLE IF NOT EXISTS `test_global_key_key` (
+  `c1` int(11) NOT NULL,
+  `c2` int(11) DEFAULT NULL,
+  `c3` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`c1`),
+  KEY `idx` (`c2`) GLOBAL partition by key(`c2`) (
+    partition p0,
+    partition p1,
+    partition p2,
+    partition p3,
+    partition p4)) partition by key(`c1`) (
+        partition p0,
+        partition p1,
+        partition p2,
+        partition p3,
+        partition p4,
+        partition p6);
+
+CREATE TABLE IF NOT EXISTS `test_global_range_range` (
+    `c1` int(11) NOT NULL,
+    `c2` int(11) DEFAULT NULL,
+    `c3` varchar(255) DEFAULT NULL,
+    PRIMARY KEY (`c1`),
+    KEY `idx` (`c2`)  GLOBAL partition by range(c2) (
+        partition p0 values less than (100),
+        partition p1 values less than (200),
+        partition p2 values less than (1000))) partition by range(c1) (
+    partition p0 values less than (100),
+    partition p1 values less than (200),
+    partition p2 values less than (1000));
+
+CREATE TABLE IF NOT EXISTS `test_global_index_no_part` (
+  `C1` int(11) NOT NULL,
+  `C2` int(11) DEFAULT NULL,
+  `C3` int(11) DEFAULT NULL,
+  PRIMARY KEY (`c1`),
+  KEY `idx` (`c2`) GLOBAL,
+  KEY `idx2` (c3) LOCAL) partition by hash(`c1`) (
+    partition p0,
+    partition p1,
+    partition p2,
+    partition p3,
+    partition p4,
+    partition p6);
+
+CREATE TABLE IF NOT EXISTS `test_global_all_no_part` (
+  `C1` int(11) NOT NULL,
+  `C2` int(11) DEFAULT NULL,
+  `C3` int(11) DEFAULT NULL,
+  PRIMARY KEY (`C1`),
+  KEY `idx` (`C2`) GLOBAL,
+  KEY `idx2` (C3) LOCAL);
+
+CREATE TABLE IF NOT EXISTS `test_global_primary_no_part` (
+  `C1` int(11) NOT NULL,
+  `C2` int(11) DEFAULT NULL,
+  `C3` int(11) DEFAULT NULL,
+  PRIMARY KEY (`C1`),
+  KEY `idx` (`C2`) GLOBAL partition by hash(`C2`) (
+    partition p0,
+    partition p1,
+    partition p2,
+    partition p3,
+    partition p4),
+  KEY `idx2` (C3) LOCAL);
+
+CREATE TABLE IF NOT EXISTS `test_ttl_timestamp_with_index` (
+`c1` varchar(20) NOT NULL,
+`c2` bigint NOT NULL,
+`c3` bigint DEFAULT NULL,
+`c4` bigint DEFAULT NULL,
+`expired_ts` timestamp(6),
+PRIMARY KEY (`c1`, `c2`),
+KEY `idx`(`c1`, `c4`) local,
+KEY `idx2`(`c3`) global partition by hash(`c3`) partitions 4)
+TTL(expired_ts + INTERVAL 0 SECOND) partition by key(`c1`) partitions 4;
+
 
 CREATE TABLE IF NOT EXISTS  `error_message_table` (
     `c1` bigint(20) not null,
