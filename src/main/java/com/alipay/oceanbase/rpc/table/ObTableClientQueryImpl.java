@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.table;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.location.model.ObIndexInfo;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
@@ -139,6 +140,12 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             partitionObTables.put(0L, new ObPair<Long, ObTableParam>(0L, new ObTableParam(
                 obTableClient.getOdpTable())));
         } else {
+            String indexName = tableQuery.getIndexName();
+            String indexTableName = tableName;
+            if (!this.obTableClient.isOdpMode()) {
+                indexTableName = obTableClient.getIndexTableName(tableName, indexName, tableQuery.getScanRangeColumns());
+            }
+
             for (ObNewRange rang : tableQuery.getKeyRanges()) {
                 ObRowKey startKey = rang.getStartKey();
                 int startKeySize = startKey.getObjs().size();
@@ -154,9 +161,9 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                     end[i] = endKey.getObj(i).getValue();
                 }
                 ObBorderFlag borderFlag = rang.getBorderFlag();
-                List<ObPair<Long, ObTableParam>> pairs = obTableClient.getTables(tableName, start,
-                    borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false, false,
-                    obTableClient.getReadRoute());
+                List<ObPair<Long, ObTableParam>> pairs = obTableClient.getTables(indexTableName,
+                        start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false,
+                        false, obTableClient.getReadRoute());
                 for (ObPair<Long, ObTableParam> pair : pairs) {
                     partitionObTables.put(pair.getLeft(), pair);
                 }

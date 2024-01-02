@@ -18,6 +18,8 @@
 package com.alipay.oceanbase.rpc.table;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
+import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.location.model.ObIndexInfo;
 import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.stream.async.ObTableClientQueryAsyncStreamResult;
 import com.alipay.oceanbase.rpc.stream.async.ObTableQueryAsyncClientResultSet;
@@ -148,6 +150,12 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
     }
 
     public Map<Long, ObPair<Long, ObTableParam>> getPartitions() throws Exception {
+        String indexName = tableQuery.getIndexName();
+        String indexTableName = tableName;
+        if (!this.obTableClient.isOdpMode()) {
+            indexTableName = obTableClient.getIndexTableName(tableName, indexName, tableQuery.getScanRangeColumns());
+        }
+
         this.partitionObTables = new HashMap<Long, ObPair<Long, ObTableParam>>();
         for (ObNewRange rang : this.tableQuery.getKeyRanges()) {
             ObRowKey startKey = rang.getStartKey();
@@ -164,7 +172,7 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
                 end[i] = endKey.getObj(i).getValue();
             }
             ObBorderFlag borderFlag = rang.getBorderFlag();
-            List<ObPair<Long, ObTableParam>> pairs = this.obTableClient.getTables(this.tableName,
+            List<ObPair<Long, ObTableParam>> pairs = this.obTableClient.getTables(indexTableName,
                 start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false,
                 false);
             for (ObPair<Long, ObTableParam> pair : pairs) {

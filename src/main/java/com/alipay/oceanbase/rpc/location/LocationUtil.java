@@ -32,6 +32,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObColumn;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObGeneratedColumn;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObSimpleColumn;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObIndexType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.parser.ObGeneratedColumnExpressParser;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
 import org.slf4j.Logger;
@@ -60,6 +61,12 @@ public class LocationUtil {
     }
 
     private static final String OB_VERSION_SQL                   = "SELECT /*+READ_CONSISTENCY(WEAK)*/ OB_VERSION() AS CLUSTER_VERSION;";
+
+    private static final String PROXY_INDEX_INFO_SQL             = "SELECT /*+READ_CONSISTENCY(WEAK)*/ data_table_id, table_id, index_type FROM oceanbase.__all_virtual_table " +
+                                                                   "where table_name = ?";
+
+    private static final String PROXY_TABLE_ID_SQL               = "SELECT /*+READ_CONSISTENCY(WEAK)*/ table_id from oceanbase.__all_virtual_proxy_schema " +
+                                                                   "where tenant_name = ? and database_name = ? and table_name = ? limit 1";
 
     private static final String OB_TENANT_EXIST_SQL              = "SELECT /*+READ_CONSISTENCY(WEAK)*/ tenant_id from __all_tenant where tenant_name = ?;";
 
@@ -678,6 +685,84 @@ public class LocationUtil {
             }
         }
         return tableEntry;
+    }
+
+    public static Long getTableIdFromRemote(ObServerAddr obServerAddr, ObUserAuth sysUA,
+                                            long connectTimeout, long socketTimeout, String tenantName,
+                                            String databaseName, String tableName) throws ObTableEntryRefreshException {
+        Long tableId = null;
+        Connection connection = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            String url = formatObServerUrl(obServerAddr, connectTimeout, socketTimeout);
+            connection = getMetaRefreshConnection(url, sysUA);
+            ps = connection.prepareStatement(PROXY_TABLE_ID_SQL);
+            ps.setString(1, tenantName);
+            ps.setString(2, databaseName);
+            ps.setString(3, tableName);
+            rs = ps.executeQuery();
+            if (rs.next()) {
+                tableId = rs.getLong("table_id");
+            } else {
+                throw new ObTableEntryRefreshException("fail to get " + tableName
+                        + " table_id from remote");
+            }
+        } catch (Exception e) {
+            throw new ObTableEntryRefreshException("fail to get " + tableName
+                    + " table_id from remote", e);
+        } finally {
+            try {
+                if (null != rs) {
+                    rs.close();
+                }
+                if (null != ps) {
+                    ps.close();
+                }
+            } catch (SQLException e) {
+                // ignore
+            }
+        }
+        return tableId;
+    }
+
+    public static ObIndexInfo getIndexInfoFromRemote(ObServerAddr obServerAddr, ObUserAuth sysUA,
+                                                     long connectTimeout, long socketTimeout,
+                                                     String indexTableName)
+            throws ObTableEntryRefreshException {
+        ObIndexInfo indexInfo = null;
+        Connection connection = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            String url = formatObServerUrl(obServerAddr, connectTimeout, socketTimeout);
+            connection = getMetaRefreshConnection(url, sysUA);
+            ps = connection.prepareStatement(PROXY_INDEX_INFO_SQL);
+            ps.setString(1, indexTableName);
+            rs = ps.executeQuery();
+            if (rs.next()) {
+                indexInfo = new ObIndexInfo();
+                indexInfo.setDataTableId(rs.getLong("data_table_id"));
+                indexInfo.setIndexTableId(rs.getLong("table_id"));
+                indexInfo.setIndexType(ObIndexType.valueOf(rs.getInt("index_type")));
+            } else {
+                throw new ObTableEntryRefreshException("fail to get index info from remote");
+            }
+        } catch (Exception e) {
+            throw new ObTableEntryRefreshException("fail to get index info from remote", e);
+        } finally {
+            try {
+                if (null != rs) {
+                    rs.close();
+                }
+                if (null != ps) {
+                    ps.close();
+                }
+            } catch (SQLException e) {
+                // ignore
+            }
+        }
+        return indexInfo;
     }
 
     private static void fetchFirstPart(Connection connection, TableEntry tableEntry,
