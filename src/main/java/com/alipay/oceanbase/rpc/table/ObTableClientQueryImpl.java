@@ -121,6 +121,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     public ObTableClientQueryStreamResult executeInternal() throws Exception {
         if (null == obTableClient) {
             throw new ObTableException("table client is null");
+        } else if (tableQuery.getLimit() < 0 && tableQuery.getOffset() > 0) {
+            throw new ObTableException("offset can not be use without limit");
         }
         final long startTime = System.currentTimeMillis();
         Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new HashMap<Long, ObPair<Long, ObTableParam>>();
