@@ -746,10 +746,10 @@ public class LocationUtil {
                 indexInfo.setIndexTableId(rs.getLong("table_id"));
                 indexInfo.setIndexType(ObIndexType.valueOf(rs.getInt("index_type")));
             } else {
-                throw new ObTableEntryRefreshException("fail to get index info from remote");
+                throw new ObTableEntryRefreshException("fail to get index info from remote, result set is empty");
             }
         } catch (Exception e) {
-            throw new ObTableEntryRefreshException("fail to get index info from remote", e);
+            throw new ObTableEntryRefreshException(format("fail to get index info from remote, indexTableName: %s", indexTableName), e);
         } finally {
             try {
                 if (null != rs) {

@@ -913,7 +913,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     public String getIndexTableName(final String dataTableName, final String indexName, List<String> scanRangeColumns)
             throws Exception {
         String indexTableName = dataTableName;
-        if (indexName != null && !indexName.equals("PRIMARY")) {
+        if (indexName != null && !indexName.isEmpty() && !indexName.equalsIgnoreCase("PRIMARY")) {
             String tmpTableName = constructIndexTableName(dataTableName, indexName);
             if (tmpTableName == null) {
                 throw new ObTableException("index table name is null");
