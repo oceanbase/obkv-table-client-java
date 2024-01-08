@@ -25,9 +25,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Mutation<T> {
     private String         tableName;
@@ -436,6 +434,21 @@ public class Mutation<T> {
         for (int i = values.size() - 1; i >= 0; --i) {
             if (rowKeyNames.contains(columns.get(i))) {
                 columns.remove(i);
+                values.remove(i);
+            }
+        }
+    }
+
+    static void removeRowkeyFromMutateColval(LinkedHashSet<String> columns, List<Object> values,
+                                             List<String> rowKeyNames) {
+        if (null == columns || null == rowKeyNames || columns.size() != values.size()) {
+            return;
+        }
+        Iterator<String> itr = columns.iterator();
+        for (int i = values.size() - 1; i >= 0 && itr.hasNext(); --i) {
+            String column = itr.next();
+            if (rowKeyNames.contains(column)) {
+                itr.remove();
                 values.remove(i);
             }
         }

@@ -27,19 +27,20 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationTy
 import com.alipay.oceanbase.rpc.table.api.Table;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
 public class Put extends Mutation<Put> {
-    private List<String> columns = null;
-    private List<Object> values  = null;
+    private LinkedHashSet<String> columns = null;
+    private List<Object>          values  = null;
 
     /*
      * default constructor
      */
     public Put() {
         super();
-        columns = new ArrayList<String>();
+        columns = new LinkedHashSet<String>();
         values = new ArrayList<Object>();
     }
 
@@ -48,7 +49,7 @@ public class Put extends Mutation<Put> {
      */
     public Put(Table client, String tableName) {
         super(client, tableName);
-        columns = new ArrayList<String>();
+        columns = new LinkedHashSet<String>();
         values = new ArrayList<Object>();
     }
 
@@ -105,7 +106,7 @@ public class Put extends Mutation<Put> {
      * get the mutated columns' name
      */
     public String[] getColumns() {
-        return columns.toArray(new String[0]);
+        return columns.toArray(new String[columns.size()]);
     }
 
     /*
@@ -156,12 +157,13 @@ public class Put extends Mutation<Put> {
         if (null == getQuery()) {
             // simple Put, without filter
             return new MutationResult(((ObTableClient) getClient()).putWithResult(getTableName(),
-                getRowKey(), getKeyRanges(), columns.toArray(new String[0]), values.toArray()));
+                getRowKey(), getKeyRanges(), columns.toArray(new String[columns.size()]),
+                values.toArray()));
         } else {
             if (checkMutationWithFilter()) {
                 // QueryAndPut
                 ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.PUT,
-                    getRowKey(), columns.toArray(new String[0]), values.toArray());
+                    getRowKey(), columns.toArray(new String[columns.size()]), values.toArray());
                 return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(
                     getQuery(), getRowKey(), getKeyRanges(), operation, true));
             } else {
