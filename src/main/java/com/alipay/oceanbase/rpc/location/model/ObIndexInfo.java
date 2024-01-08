@@ -68,6 +68,6 @@ public class ObIndexInfo {
     @Override
     public String toString() {
         return "ObIndexInfo{" + "dataTableId=" + dataTableId + ", indexTableId=" + indexTableId
-                + ", indexTableName=" + indexTableName + ", indexType=" + indexType + '}';
+               + ", indexTableName=" + indexTableName + ", indexType=" + indexType + '}';
     }
 }

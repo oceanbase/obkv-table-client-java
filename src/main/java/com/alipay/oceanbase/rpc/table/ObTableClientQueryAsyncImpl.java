@@ -153,7 +153,8 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
         String indexName = tableQuery.getIndexName();
         String indexTableName = tableName;
         if (!this.obTableClient.isOdpMode()) {
-            indexTableName = obTableClient.getIndexTableName(tableName, indexName, tableQuery.getScanRangeColumns());
+            indexTableName = obTableClient.getIndexTableName(tableName, indexName,
+                tableQuery.getScanRangeColumns());
         }
 
         this.partitionObTables = new HashMap<Long, ObPair<Long, ObTableParam>>();
