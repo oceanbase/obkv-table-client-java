@@ -62,11 +62,11 @@ public class LocationUtil {
 
     private static final String OB_VERSION_SQL                   = "SELECT /*+READ_CONSISTENCY(WEAK)*/ OB_VERSION() AS CLUSTER_VERSION;";
 
-    private static final String PROXY_INDEX_INFO_SQL             = "SELECT /*+READ_CONSISTENCY(WEAK)*/ data_table_id, table_id, index_type FROM oceanbase.__all_virtual_table " +
-                                                                   "where table_name = ?";
+    private static final String PROXY_INDEX_INFO_SQL             = "SELECT /*+READ_CONSISTENCY(WEAK)*/ data_table_id, table_id, index_type FROM oceanbase.__all_virtual_table "
+                                                                   + "where table_name = ?";
 
-    private static final String PROXY_TABLE_ID_SQL               = "SELECT /*+READ_CONSISTENCY(WEAK)*/ table_id from oceanbase.__all_virtual_proxy_schema " +
-                                                                   "where tenant_name = ? and database_name = ? and table_name = ? limit 1";
+    private static final String PROXY_TABLE_ID_SQL               = "SELECT /*+READ_CONSISTENCY(WEAK)*/ table_id from oceanbase.__all_virtual_proxy_schema "
+                                                                   + "where tenant_name = ? and database_name = ? and table_name = ? limit 1";
 
     private static final String OB_TENANT_EXIST_SQL              = "SELECT /*+READ_CONSISTENCY(WEAK)*/ tenant_id from __all_tenant where tenant_name = ?;";
 
@@ -688,8 +688,9 @@ public class LocationUtil {
     }
 
     public static Long getTableIdFromRemote(ObServerAddr obServerAddr, ObUserAuth sysUA,
-                                            long connectTimeout, long socketTimeout, String tenantName,
-                                            String databaseName, String tableName) throws ObTableEntryRefreshException {
+                                            long connectTimeout, long socketTimeout,
+                                            String tenantName, String databaseName, String tableName)
+                                                                                                     throws ObTableEntryRefreshException {
         Long tableId = null;
         Connection connection = null;
         PreparedStatement ps = null;
@@ -706,11 +707,11 @@ public class LocationUtil {
                 tableId = rs.getLong("table_id");
             } else {
                 throw new ObTableEntryRefreshException("fail to get " + tableName
-                        + " table_id from remote");
+                                                       + " table_id from remote");
             }
         } catch (Exception e) {
             throw new ObTableEntryRefreshException("fail to get " + tableName
-                    + " table_id from remote", e);
+                                                   + " table_id from remote", e);
         } finally {
             try {
                 if (null != rs) {
@@ -729,7 +730,7 @@ public class LocationUtil {
     public static ObIndexInfo getIndexInfoFromRemote(ObServerAddr obServerAddr, ObUserAuth sysUA,
                                                      long connectTimeout, long socketTimeout,
                                                      String indexTableName)
-            throws ObTableEntryRefreshException {
+                                                                           throws ObTableEntryRefreshException {
         ObIndexInfo indexInfo = null;
         Connection connection = null;
         PreparedStatement ps = null;
@@ -746,10 +747,12 @@ public class LocationUtil {
                 indexInfo.setIndexTableId(rs.getLong("table_id"));
                 indexInfo.setIndexType(ObIndexType.valueOf(rs.getInt("index_type")));
             } else {
-                throw new ObTableEntryRefreshException("fail to get index info from remote, result set is empty");
+                throw new ObTableEntryRefreshException(
+                    "fail to get index info from remote, result set is empty");
             }
         } catch (Exception e) {
-            throw new ObTableEntryRefreshException(format("fail to get index info from remote, indexTableName: %s", indexTableName), e);
+            throw new ObTableEntryRefreshException(format(
+                "fail to get index info from remote, indexTableName: %s", indexTableName), e);
         } finally {
             try {
                 if (null != rs) {

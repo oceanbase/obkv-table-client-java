@@ -16,6 +16,7 @@
  */
 
 package com.alipay.oceanbase.rpc;
+
 import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
@@ -34,7 +35,8 @@ import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
 import static org.junit.Assert.assertEquals;
 
 public class ObTableGlobalIndexTest {
-    ObTableClient        client;
+    ObTableClient client;
+
     @Before
     public void setup() throws Exception {
         setEnableIndexDirectSelect();
@@ -56,8 +58,9 @@ public class ObTableGlobalIndexTest {
     }
 
     public void checkIndexTableRow(String tableName, int recordCount) throws Exception {
-        String sql1 = "select table_name from oceanbase.__all_virtual_table where data_table_id = " +
-                "(select table_id from oceanbase.__all_virtual_table where table_name = '" + tableName + "')";
+        String sql1 = "select table_name from oceanbase.__all_virtual_table where data_table_id = "
+                      + "(select table_id from oceanbase.__all_virtual_table where table_name = '"
+                      + tableName + "')";
         Connection connection = ObTableClientTestUtil.getConnection();
         Statement statement = connection.createStatement();
         ResultSet resultSet = statement.executeQuery(sql1);
@@ -94,8 +97,8 @@ public class ObTableGlobalIndexTest {
             String[] properties_name = { "C2", "C3" };
             for (int i = 0; i < recordCount; i++) {
                 int key = gen_key(i);
-                long affectRows = client.insert(tableName, new Object[] { key }, properties_name ,
-                        new Object[] { key + 1, ("hello " + key).getBytes() });
+                long affectRows = client.insert(tableName, new Object[] { key }, properties_name,
+                    new Object[] { key + 1, ("hello " + key).getBytes() });
                 Assert.assertEquals(1, affectRows);
             }
             // check index table row counts
@@ -104,9 +107,10 @@ public class ObTableGlobalIndexTest {
             // get data
             for (int i = 0; i < recordCount; i++) {
                 int key = gen_key(i);
-                Map<String, Object> result = client.get(tableName, new Object[] { key }, properties_name);
+                Map<String, Object> result = client.get(tableName, new Object[] { key },
+                    properties_name);
                 Assert.assertEquals(key + 1, result.get("C2"));
-                Assert.assertEquals("hello " + key,  result.get("C3"));
+                Assert.assertEquals("hello " + key, result.get("C3"));
             }
 
         } finally {
@@ -129,32 +133,36 @@ public class ObTableGlobalIndexTest {
 
     public void test_update(String tableName, int recordCount) throws Exception {
         try {
-            client.addRowKeyElement(tableName, new String[]{"C1"});
-            String[] properties_name = {"C2", "C3"};
+            client.addRowKeyElement(tableName, new String[] { "C1" });
+            String[] properties_name = { "C2", "C3" };
             // prepare data
             for (int i = 0; i < recordCount; i++) {
                 int key = gen_key(i);
-                long affectRows = client.insert(tableName, new Object[]{key}, properties_name,
-                        new Object[]{key + 1, ("hello " + key).getBytes()});
+                long affectRows = client.insert(tableName, new Object[] { key }, properties_name,
+                    new Object[] { key + 1, ("hello " + key).getBytes() });
                 Assert.assertEquals(1, affectRows);
             }
             // update global index key
             for (int i = 0; i < recordCount; i++) {
                 int key = gen_key(i);
-                long affectRows = client.update(tableName, new Object[]{ key }, new String[] { "C2" }, new Object[] { key + 2 });
+                long affectRows = client.update(tableName, new Object[] { key },
+                    new String[] { "C2" }, new Object[] { key + 2 });
                 Assert.assertEquals(1, affectRows);
-                Map<String, Object> result = client.get(tableName, new Object[] { key }, properties_name);
+                Map<String, Object> result = client.get(tableName, new Object[] { key },
+                    properties_name);
                 Assert.assertEquals(key + 2, result.get("C2"));
-                Assert.assertEquals("hello " + key,  result.get("C3"));
+                Assert.assertEquals("hello " + key, result.get("C3"));
             }
             // update other key
             for (int i = 0; i < recordCount; i++) {
                 int key = gen_key(i);
-                long affectRows = client.update(tableName, new Object[]{ key }, new String[] { "C3" }, new Object[] { "hi " + key });
+                long affectRows = client.update(tableName, new Object[] { key },
+                    new String[] { "C3" }, new Object[] { "hi " + key });
                 Assert.assertEquals(1, affectRows);
-                Map<String, Object> result = client.get(tableName, new Object[] { key }, properties_name);
+                Map<String, Object> result = client.get(tableName, new Object[] { key },
+                    properties_name);
                 Assert.assertEquals(key + 2, result.get("C2"));
-                Assert.assertEquals("hi " + key,  result.get("C3"));
+                Assert.assertEquals("hi " + key, result.get("C3"));
             }
             checkIndexTableRow(tableName, recordCount);
         } finally {
@@ -177,28 +185,30 @@ public class ObTableGlobalIndexTest {
 
     public void test_insert_or_update(String tableName, int recordCount) throws Exception {
         try {
-            client.addRowKeyElement(tableName, new String[]{"C1"});
-            String[] properties_name = {"C2", "C3"};
+            client.addRowKeyElement(tableName, new String[] { "C1" });
+            String[] properties_name = { "C2", "C3" };
             // prepare data: insert
             for (int i = 0; i < recordCount; i++) {
                 int key = gen_key(i);
-                long affectRows = client.insertOrUpdate(tableName, new Object[]{key}, properties_name,
-                        new Object[]{key + 1, ("hello " + key).getBytes()});
+                long affectRows = client.insertOrUpdate(tableName, new Object[] { key },
+                    properties_name, new Object[] { key + 1, ("hello " + key).getBytes() });
                 Assert.assertEquals(1, affectRows);
-                Map<String, Object> result = client.get(tableName, new Object[] { key }, properties_name);
+                Map<String, Object> result = client.get(tableName, new Object[] { key },
+                    properties_name);
                 Assert.assertEquals(key + 1, result.get("C2"));
-                Assert.assertEquals("hello " + key,  result.get("C3"));
+                Assert.assertEquals("hello " + key, result.get("C3"));
             }
 
             // insert again: update
             for (int i = 0; i < recordCount; i++) {
                 int key = gen_key(i);
-                long affectRows = client.insertOrUpdate(tableName, new Object[]{key}, properties_name,
-                        new Object[]{key + 2, ("hi " + key).getBytes()});
+                long affectRows = client.insertOrUpdate(tableName, new Object[] { key },
+                    properties_name, new Object[] { key + 2, ("hi " + key).getBytes() });
                 Assert.assertEquals(1, affectRows);
-                Map<String, Object> result = client.get(tableName, new Object[] { key }, properties_name);
+                Map<String, Object> result = client.get(tableName, new Object[] { key },
+                    properties_name);
                 Assert.assertEquals(key + 2, result.get("C2"));
-                Assert.assertEquals("hi " + key,  result.get("C3"));
+                Assert.assertEquals("hi " + key, result.get("C3"));
             }
 
             checkIndexTableRow(tableName, recordCount);
@@ -222,15 +232,16 @@ public class ObTableGlobalIndexTest {
 
     public void test_replace(String tableName, int recordCount) throws Exception {
         try {
-            client.addRowKeyElement(tableName, new String[]{"C1"});
-            String[] properties_name = {"C2", "C3"};
+            client.addRowKeyElement(tableName, new String[] { "C1" });
+            String[] properties_name = { "C2", "C3" };
             // prepare data: insert
             for (int i = 0; i < recordCount; i++) {
                 int key = gen_key(i);
-                long affectRows = client.replace(tableName, new Object[]{key}, properties_name,
-                        new Object[]{key + 1, ("hello " + key).getBytes()});
+                long affectRows = client.replace(tableName, new Object[] { key }, properties_name,
+                    new Object[] { key + 1, ("hello " + key).getBytes() });
                 Assert.assertEquals(1, affectRows);
-                Map<String, Object> result = client.get(tableName, new Object[]{key}, properties_name);
+                Map<String, Object> result = client.get(tableName, new Object[] { key },
+                    properties_name);
                 Assert.assertEquals(key + 1, result.get("C2"));
                 Assert.assertEquals("hello " + key, result.get("C3"));
             }
@@ -238,10 +249,11 @@ public class ObTableGlobalIndexTest {
             // insert again: update
             for (int i = 0; i < recordCount; i++) {
                 int key = gen_key(i);
-                long affectRows = client.replace(tableName, new Object[]{key}, properties_name,
-                        new Object[]{key + 2, ("hi " + key).getBytes()});
+                long affectRows = client.replace(tableName, new Object[] { key }, properties_name,
+                    new Object[] { key + 2, ("hi " + key).getBytes() });
                 Assert.assertEquals(2, affectRows);
-                Map<String, Object> result = client.get(tableName, new Object[]{key}, properties_name);
+                Map<String, Object> result = client.get(tableName, new Object[] { key },
+                    properties_name);
                 Assert.assertEquals(key + 2, result.get("C2"));
                 Assert.assertEquals("hi " + key, result.get("C3"));
             }
@@ -268,35 +280,38 @@ public class ObTableGlobalIndexTest {
 
     public void test_increment_append(String tableName, int recordCount) throws Exception {
         try {
-            client.addRowKeyElement(tableName, new String[]{"c1"});
-            String[] properties_name = {"c2"};
+            client.addRowKeyElement(tableName, new String[] { "c1" });
+            String[] properties_name = { "c2" };
             // increment without record
             for (int i = 0; i < recordCount; i++) {
                 int key = gen_key(i);
-                Map<String, Object> affect_res = client.increment(tableName, new Object[]{ key },
-                        properties_name, new Object[] { key + 1 }, true);
+                Map<String, Object> affect_res = client.increment(tableName, new Object[] { key },
+                    properties_name, new Object[] { key + 1 }, true);
                 Assert.assertEquals(key + 1, affect_res.get("c2"));
-                Map<String, Object> get_result = client.get(tableName, new Object[]{ key }, properties_name);
-                Assert.assertEquals( key + 1, get_result.get("c2"));
+                Map<String, Object> get_result = client.get(tableName, new Object[] { key },
+                    properties_name);
+                Assert.assertEquals(key + 1, get_result.get("c2"));
             }
 
             // increment without column value
             for (int i = 0; i < recordCount; i++) {
                 int key = gen_key(i);
-                Map<String, Object> affect_res = client.increment(tableName, new Object[]{key},
-                        properties_name, new Object[] { key + 1 }, true);
+                Map<String, Object> affect_res = client.increment(tableName, new Object[] { key },
+                    properties_name, new Object[] { key + 1 }, true);
                 Assert.assertEquals(2 * key + 2, affect_res.get("c2"));
-                Map<String, Object> get_result = client.get(tableName, new Object[]{key}, properties_name);
+                Map<String, Object> get_result = client.get(tableName, new Object[] { key },
+                    properties_name);
                 Assert.assertEquals(2 * key + 2, get_result.get("c2"));
             }
 
             // append with empty column value
             for (int i = 0; i < recordCount; i++) {
                 int key = gen_key(i);
-                Map<String, Object> affect_res = client.append(tableName, new Object[]{key},
-                        new String[] { "c3" }, new Object[] { "hi~".getBytes() }, true);
+                Map<String, Object> affect_res = client.append(tableName, new Object[] { key },
+                    new String[] { "c3" }, new Object[] { "hi~".getBytes() }, true);
                 Assert.assertEquals("hi~", affect_res.get("c3"));
-                Map<String, Object> get_result = client.get(tableName, new Object[]{key}, new String[] { "c3" });
+                Map<String, Object> get_result = client.get(tableName, new Object[] { key },
+                    new String[] { "c3" });
                 Assert.assertEquals("hi~", get_result.get("c3"));
             }
             checkIndexTableRow(tableName, recordCount);
@@ -304,10 +319,11 @@ public class ObTableGlobalIndexTest {
             // append with not empty column value
             for (int i = 0; i < recordCount; i++) {
                 int key = gen_key(i);
-                Map<String, Object> affect_res = client.append(tableName, new Object[]{key},
-                        new String[] { "c3" }, new Object[] { " hi~".getBytes() }, true);
+                Map<String, Object> affect_res = client.append(tableName, new Object[] { key },
+                    new String[] { "c3" }, new Object[] { " hi~".getBytes() }, true);
                 Assert.assertEquals("hi~ hi~", affect_res.get("c3"));
-                Map<String, Object> get_result = client.get(tableName, new Object[]{key}, new String[] { "c3" });
+                Map<String, Object> get_result = client.get(tableName, new Object[] { key },
+                    new String[] { "c3" });
                 Assert.assertEquals("hi~ hi~", get_result.get("c3"));
             }
             checkIndexTableRow(tableName, recordCount);
@@ -344,14 +360,14 @@ public class ObTableGlobalIndexTest {
             Object[] properties_value = null;
             for (int i = 0; i < recordCount; i++) {
                 if (i % 3 == 0) {
-                    properties_value = new Object[] { i + 1,  i + 2 };
+                    properties_value = new Object[] { i + 1, i + 2 };
                 } else if (i % 3 == 1) {
-                    properties_value = new Object[] { i + 100 + 1,  i + 100 + 2 };
+                    properties_value = new Object[] { i + 100 + 1, i + 100 + 2 };
                 } else if (i % 3 == 2) {
-                    properties_value = new Object[] { i + 200 + 1,  i + 200 + 2 };
+                    properties_value = new Object[] { i + 200 + 1, i + 200 + 2 };
                 }
-                long affectRows = client.insert(tableName, new Object[] { i },
-                        properties_name, properties_value);
+                long affectRows = client.insert(tableName, new Object[] { i }, properties_name,
+                    properties_value);
                 Assert.assertEquals(1, affectRows);
             }
 
@@ -360,12 +376,12 @@ public class ObTableGlobalIndexTest {
             query.addScanRange(new Object[] { 0 }, new Object[] { recordCount });
 
             QueryResultSet resultSet = query.execute();
-            int count  = 0;
+            int count = 0;
             while (resultSet.next()) {
                 Map<String, Object> row = resultSet.getRow();
-                int c1 = (int)row.get("C1");
-                int c2 = (int)row.get("C2");
-                int c3 = (int)row.get("C3");
+                int c1 = (int) row.get("C1");
+                int c2 = (int) row.get("C2");
+                int c3 = (int) row.get("C3");
                 if (c1 % 3 == 0) {
                     Assert.assertEquals(c1 + 1, c2);
                     Assert.assertEquals(c1 + 2, c3);
@@ -388,9 +404,9 @@ public class ObTableGlobalIndexTest {
             count = 0;
             while (resultSet2.next()) {
                 Map<String, Object> row = resultSet2.getRow();
-                int c1 = (int)row.get("C1");
-                int c2 = (int)row.get("C2");
-                int c3 = (int)row.get("C3");
+                int c1 = (int) row.get("C1");
+                int c2 = (int) row.get("C2");
+                int c3 = (int) row.get("C3");
                 if (c1 % 3 == 0) {
                     Assert.assertEquals(c1 + 1, c2);
                     Assert.assertEquals(c1 + 2, c3);
@@ -415,16 +431,16 @@ public class ObTableGlobalIndexTest {
             // query by local index, will lookup primary table
             TableQuery query4 = client.query(tableName).indexName("idx2");
             query4.setScanRangeColumns("C3");
-            query4.addScanRange(new Object[] { 0 }, new Object[] { recordCount + 200 + 2});
-            query4.select("C1", "C2","C3");
+            query4.addScanRange(new Object[] { 0 }, new Object[] { recordCount + 200 + 2 });
+            query4.select("C1", "C2", "C3");
             QueryResultSet resultSet4 = query4.execute();
             Assert.assertEquals(resultSet4.cacheSize(), recordCount);
             count = 0;
             while (resultSet4.next()) {
                 Map<String, Object> row = resultSet2.getRow();
-                int c1 = (int)row.get("C1");
-                int c2 = (int)row.get("C2");
-                int c3 = (int)row.get("C3");
+                int c1 = (int) row.get("C1");
+                int c2 = (int) row.get("C2");
+                int c3 = (int) row.get("C3");
                 if (c1 % 3 == 0) {
                     Assert.assertEquals(c1 + 1, c2);
                     Assert.assertEquals(c1 + 2, c3);
@@ -458,14 +474,14 @@ public class ObTableGlobalIndexTest {
             Object[] properties_value = null;
             for (int i = 0; i < recordCount; i++) {
                 if (i % 3 == 0) {
-                    properties_value = new Object[] { i + 1,  i + 2 };
+                    properties_value = new Object[] { i + 1, i + 2 };
                 } else if (i % 3 == 1) {
-                    properties_value = new Object[] { i + 100 + 1,  i + 100 + 2 };
+                    properties_value = new Object[] { i + 100 + 1, i + 100 + 2 };
                 } else if (i % 3 == 2) {
-                    properties_value = new Object[] { i + 200 + 1,  i + 200 + 2 };
+                    properties_value = new Object[] { i + 200 + 1, i + 200 + 2 };
                 }
-                long affectRows = client.insert(tableName, new Object[] { i },
-                        properties_name, properties_value);
+                long affectRows = client.insert(tableName, new Object[] { i }, properties_name,
+                    properties_value);
                 Assert.assertEquals(1, affectRows);
             }
 
@@ -482,9 +498,9 @@ public class ObTableGlobalIndexTest {
             for (int i = 0; i < 5; i++) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();
-                int c1 = (int)row.get("C1");
-                int c2 = (int)row.get("C2");
-                int c3 = (int)row.get("C3");
+                int c1 = (int) row.get("C1");
+                int c2 = (int) row.get("C2");
+                int c3 = (int) row.get("C3");
                 if (c1 % 3 == 0) {
                     Assert.assertEquals(c1 + 1, c2);
                     Assert.assertEquals(c1 + 2, c3);
@@ -514,41 +530,37 @@ public class ObTableGlobalIndexTest {
     **/
     @Test
     public void test_ttl_query_with_global_index() throws Exception {
-        String tableName    = "test_ttl_timestamp_with_index";
-        String rowKey1      = "c1";
-        String rowKey2      = "c2";
-        String intCol       = "c3";
-        String intCol2      = "c4";
-        String expireCol    = "expired_ts";
+        String tableName = "test_ttl_timestamp_with_index";
+        String rowKey1 = "c1";
+        String rowKey2 = "c2";
+        String intCol = "c3";
+        String intCol2 = "c4";
+        String expireCol = "expired_ts";
         String prefixKey = "test";
         long[] keyIds = { 1L, 2L };
         try {
             // 1. insert records with null expired_ts
             for (long id : keyIds) {
                 client.insert(tableName).setRowKey(colVal(rowKey1, prefixKey), colVal(rowKey2, id))
-                        .addMutateColVal(colVal(intCol, id+100))
-                        .addMutateColVal(colVal(intCol2, id+200))
-                        .addMutateColVal(colVal(expireCol, null)).execute();
+                    .addMutateColVal(colVal(intCol, id + 100))
+                    .addMutateColVal(colVal(intCol2, id + 200))
+                    .addMutateColVal(colVal(expireCol, null)).execute();
             }
             // 2. query all inserted records
-            QueryResultSet resultSet = client.query(tableName)
-                                        .indexName("idx2")
-                                        .setScanRangeColumns(intCol)
-                                        .addScanRange(new Object[] {101L}, new Object[] {102L})
-                                        .execute();
+            QueryResultSet resultSet = client.query(tableName).indexName("idx2")
+                .setScanRangeColumns(intCol)
+                .addScanRange(new Object[] { 101L }, new Object[] { 102L }).execute();
             Assert.assertEquals(resultSet.cacheSize(), keyIds.length);
 
             // 3. update the expired_ts
             Timestamp curTs = new Timestamp(System.currentTimeMillis());
-            client.update(tableName).setRowKey(colVal(rowKey1, prefixKey), colVal(rowKey2, keyIds[1]))
-                    .addMutateColVal(colVal(expireCol, curTs)).execute();
+            client.update(tableName)
+                .setRowKey(colVal(rowKey1, prefixKey), colVal(rowKey2, keyIds[1]))
+                .addMutateColVal(colVal(expireCol, curTs)).execute();
 
             // 3. re-query all inserted records, the expired record won't be returned
-            resultSet = client.query(tableName)
-                        .indexName("idx2")
-                        .setScanRangeColumns(intCol2)
-                        .addScanRange(new Object[] {101L}, new Object[] {102L})
-                        .execute();
+            resultSet = client.query(tableName).indexName("idx2").setScanRangeColumns(intCol2)
+                .addScanRange(new Object[] { 101L }, new Object[] { 102L }).execute();
             Assert.assertEquals(resultSet.cacheSize(), 1);
             Assert.assertTrue(resultSet.next());
             Row row = resultSet.getResultRow();
@@ -558,7 +570,8 @@ public class ObTableGlobalIndexTest {
             Assert.assertTrue(false);
         } finally {
             for (long id : keyIds) {
-                client.delete(tableName).setRowKey(colVal(rowKey1, prefixKey), colVal(rowKey2, id)).execute();
+                client.delete(tableName).setRowKey(colVal(rowKey1, prefixKey), colVal(rowKey2, id))
+                    .execute();
             }
         }
     }

@@ -910,8 +910,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @param scanRangeColumns columns that need to be scaned
      * @return the real table name
      */
-    public String getIndexTableName(final String dataTableName, final String indexName, List<String> scanRangeColumns)
-            throws Exception {
+    public String getIndexTableName(final String dataTableName, final String indexName,
+                                    List<String> scanRangeColumns) throws Exception {
         String indexTableName = dataTableName;
         if (indexName != null && !indexName.isEmpty() && !indexName.equalsIgnoreCase("PRIMARY")) {
             String tmpTableName = constructIndexTableName(dataTableName, indexName);
@@ -925,9 +925,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (indexInfo.getIndexType().isGlobalIndex()) {
                 indexTableName = tmpTableName;
                 if (scanRangeColumns.isEmpty()) {
-                    throw new ObTableException("query by global index need add all index keys in order");
+                    throw new ObTableException(
+                        "query by global index need add all index keys in order");
                 } else {
-                    addRowKeyElement(indexTableName, scanRangeColumns.toArray(new String[scanRangeColumns.size()]));
+                    addRowKeyElement(indexTableName,
+                        scanRangeColumns.toArray(new String[scanRangeColumns.size()]));
                 }
             }
         }
@@ -935,17 +937,17 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     public String constructIndexTableName(final String dataTableName, final String indexName)
-            throws Exception {
+                                                                                             throws Exception {
         // construct index table name
         TableEntry entry = tableLocations.get(dataTableName);
         Long dataTableId = null;
         try {
             if (entry == null) {
                 ObServerAddr addr = serverRoster.getServer(serverAddressPriorityTimeout,
-                        serverAddressCachingTimeout);
+                    serverAddressCachingTimeout);
                 dataTableId = LocationUtil.getTableIdFromRemote(addr, sysUA,
-                        tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout, tenantName,
-                        database, dataTableName);
+                    tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout, tenantName,
+                    database, dataTableName);
             } else {
                 dataTableId = entry.getTableId();
             }
@@ -957,7 +959,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     public ObIndexInfo getOrRefreshIndexInfo(final String indexName, final String indexTableName)
-            throws Exception {
+                                                                                                 throws Exception {
         ObIndexInfo indexInfo = indexinfos.get(indexName);
         if (indexInfo != null) {
             return indexInfo;
@@ -968,8 +970,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         boolean acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
         if (!acquired) {
             String errMsg = "try to lock index infos refreshing timeout " + "dataSource:"
-                    + dataSourceName + " ,indexName:" + indexName + " , timeout:"
-                    + tableEntryRefreshLockTimeout + ".";
+                            + dataSourceName + " ,indexName:" + indexName + " , timeout:"
+                            + tableEntryRefreshLockTimeout + ".";
             RUNTIME.error(errMsg);
             throw new ObTableEntryRefreshException(errMsg);
         }
@@ -979,21 +981,21 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 return indexInfo;
             } else {
                 logger.info("index info is not exist, create new index info, indexName: {}",
-                        indexName);
+                    indexName);
                 int serverSize = serverRoster.getMembers().size();
                 int refreshTryTimes = tableEntryRefreshTryTimes > serverSize ? serverSize
-                        : tableEntryRefreshTryTimes;
+                    : tableEntryRefreshTryTimes;
                 for (int i = 0; i < refreshTryTimes; i++) {
                     ObServerAddr serverAddr = serverRoster.getServer(serverAddressPriorityTimeout,
-                            serverAddressCachingTimeout);
+                        serverAddressCachingTimeout);
                     indexInfo = getIndexInfoFromRemote(serverAddr, sysUA,
-                            tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
-                            indexTableName);
+                        tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
+                        indexTableName);
                     if (indexInfo != null) {
                         indexinfos.put(indexName, indexInfo);
                     } else {
                         RUNTIME.error("get index info from remote is null, index name: {}",
-                                indexName);
+                            indexName);
                     }
                 }
                 return indexInfo;
