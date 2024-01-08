@@ -37,6 +37,9 @@ import static com.alipay.oceanbase.rpc.util.TraceUtil.formatTraceMessage;
 
 public class MonitorUtil {
     private static String buildParamsString(List<Object> rowKeys) {
+        if (rowKeys == null) {
+            return "";
+        }
         StringBuilder stringBuilder = new StringBuilder();
         for (Object value : rowKeys) {
             if (value instanceof byte[]) {
@@ -117,8 +120,8 @@ public class MonitorUtil {
             endpoint = endpoint.replaceAll(",", "#");
         }
         // if rowkeys is empty point, then append "rowKeys:null" into log message
-        String argsValue = rowKeys == null ? "rowKeys:null" : buildParamsString(Arrays
-            .asList(rowKeys));
+        String argsValue = (rowKeys == null || rowKeys.length == 0) ? "rowKeys:null"
+            : buildParamsString(Arrays.asList(rowKeys));
 
         ResultCodes resultCode = ResultCodes.valueOf(result.getHeader().getErrno());
         String res = "";
@@ -164,8 +167,8 @@ public class MonitorUtil {
             endpoint = endpoint.replaceAll(",", "#");
         }
         // if rowkeys is empty point, then append "rowKeys:null" into log message
-        String argsValue = rowKeys == null ? "rowKeys:null" : buildParamsString(Arrays
-            .asList(rowKeys));
+        String argsValue = (rowKeys == null || rowKeys.isEmpty()) ? "rowKeys:null"
+            : buildParamsString(rowKeys);
 
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(traceId).append(" - ").append(database).append(",").append(tableName)
@@ -282,5 +285,27 @@ public class MonitorUtil {
             MONITOR.info(logMessage(formatTraceMessage(payload), database, tableName, methodName, endpoint,
                 params, result, routeTableTime, executeTime));
         }
+    }
+
+    /**
+     * for tablet op
+     */
+    private static void logTabletOpMessage(final ObPayload payload, String database,
+                                           String tableName, String methodName, String endpoint,
+                                           ObTableTabletOp tabletOp, int resultSize,
+                                           long executeTime, long slowQueryMonitorThreshold) {
+        if (executeTime < slowQueryMonitorThreshold) {
+            return;
+        }
+        String traceId = formatTraceMessage(payload);
+        MONITOR.info(logMessage(traceId, database, tableName,
+            methodName + "-" + tabletOp.getTabletId(), endpoint, null, resultSize, executeTime));
+    }
+
+    public static void info(final ObPayload payload, String database, String tableName,
+                            String methodName, String endpoint, ObTableTabletOp tabletOp,
+                            int resultSize, long executeTime, long slowQueryMonitorThreshold) {
+        logTabletOpMessage(payload, database, tableName, methodName, endpoint, tabletOp,
+            resultSize, executeTime, slowQueryMonitorThreshold);
     }
 }

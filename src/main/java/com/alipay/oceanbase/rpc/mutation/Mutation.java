@@ -89,7 +89,7 @@ public class Mutation<T> {
     /*
      * get row key
      */
-    protected Object[] getRowKey() {
+    public Object[] getRowKey() {
         return rowKey;
     }
 

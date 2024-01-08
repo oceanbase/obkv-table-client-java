@@ -17,6 +17,8 @@
 
 package com.alipay.oceanbase.rpc.table.api;
 
+import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
+import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.mutation.*;
 
 import java.util.Map;
@@ -97,4 +99,6 @@ public interface Table {
 
     void addProperty(String property, String value);
 
+    CheckAndInsUp checkAndInsUp(String tableName, ObTableFilter filter, InsertOrUpdate insUp,
+                                boolean checkExists);
 }

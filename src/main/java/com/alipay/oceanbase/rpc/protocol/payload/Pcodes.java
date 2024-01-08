@@ -31,4 +31,5 @@ public interface Pcodes {
     int OB_TABLE_API_EXECUTE_QUERY_SYNC = 0x1106;
 
     int OB_TABLE_API_DIRECT_LOAD        = 0x1123;
+    int OB_TABLE_API_LS_EXECUTE         = 0x1125;
 }

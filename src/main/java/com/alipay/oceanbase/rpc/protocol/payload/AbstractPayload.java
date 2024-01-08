@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.alipay.oceanbase.rpc.property.Property.RPC_OPERATION_TIMEOUT;
+import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
 import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderLength;
 
 /*
@@ -154,4 +155,16 @@ public abstract class AbstractPayload implements ObPayload {
     public void setSequence(long sequence) {
         this.sequence = sequence;
     }
+
+    /*
+     * encode unis header
+     */
+    protected int encodeHeader(byte[] bytes, int idx) {
+        int headerLen = (int) getObUniVersionHeaderLength(getVersion(), getPayloadContentSize());
+        System.arraycopy(encodeObUniVersionHeader(getVersion(), getPayloadContentSize()), 0, bytes,
+            idx, headerLen);
+        idx += headerLen;
+        return idx;
+    }
+
 }
