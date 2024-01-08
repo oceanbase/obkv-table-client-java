@@ -28,6 +28,16 @@ public class ObTableEntity extends AbstractObTableEntity {
     private ObRowKey           rowKey     = new ObRowKey();
     private Map<String, ObObj> properties = new HashMap<String, ObObj>();
 
+    private boolean            onlyEncodeValue;
+
+    public void setOnlyEncodeValue(boolean onlyEncodeValue) {
+        this.onlyEncodeValue = onlyEncodeValue;
+    }
+
+    public boolean isOnlyEncodeValue() {
+        return onlyEncodeValue;
+    }
+
     /*
      * Set row key value.
      */

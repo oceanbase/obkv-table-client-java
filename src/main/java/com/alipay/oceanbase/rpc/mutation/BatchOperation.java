@@ -34,7 +34,13 @@ public class BatchOperation {
     private Table        client;
     boolean              withResult;
     private List<Object> operations;
-    boolean              isAtomic = false;
+    boolean              isAtomic              = false;
+    boolean              isSamePropertiesNames = false;
+
+    public BatchOperation setSamePropertiesNames(boolean samePropertiesNames) {
+        isSamePropertiesNames = samePropertiesNames;
+        return this;
+    }
 
     /*
      * default constructor
@@ -126,6 +132,11 @@ public class BatchOperation {
                         batchOps.insert(mutation.getRowKey(), ((Insert) mutation).getColumns(),
                             ((Insert) mutation).getValues());
                         break;
+                    case PUT:
+                        ((Put) mutation).removeRowkeyFromMutateColval();
+                        batchOps.put(mutation.getRowKey(), ((Put) mutation).getColumns(),
+                            ((Put) mutation).getValues());
+                        break;
                     case DEL:
                         batchOps.delete(mutation.getRowKey());
                         break;
@@ -168,6 +179,7 @@ public class BatchOperation {
             }
         }
         batchOps.setAtomicOperation(isAtomic);
+        batchOps.setSamePropertiesNames(isSamePropertiesNames);
         return new BatchOperationResult(batchOps.executeWithResult());
     }
 }

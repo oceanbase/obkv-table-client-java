@@ -32,6 +32,10 @@ public interface TableBatchOps {
 
     boolean isAtomicOperation();
 
+    boolean isSamePropertiesNames();
+
+    void setSamePropertiesNames(boolean samePropertiesNames);
+
     void setEntityType(ObTableEntityType entityType);
 
     ObTableEntityType getEntityType();
@@ -51,6 +55,8 @@ public interface TableBatchOps {
     void insert(Object rowkey, String[] columns, Object[] values);
 
     void insert(Object[] rowkeys, String[] columns, Object[] values);
+
+    void put(Object[] rowkeys, String[] columns, Object[] values);
 
     void replace(Object rowkey, String[] columns, Object[] values);
 

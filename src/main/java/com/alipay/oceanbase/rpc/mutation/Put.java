@@ -17,20 +17,31 @@
 
 package com.alipay.oceanbase.rpc.mutation;
 
+import com.alipay.oceanbase.rpc.ObTableClient;
+import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
+import com.alipay.oceanbase.rpc.filter.ObTableFilter;
+import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperation;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
 import com.alipay.oceanbase.rpc.table.api.Table;
 
-/*
- * Put impl.
- * Need fill all columns when use put impl.
- * Server will do override when use put impl.
- */
-public class Put extends InsertOrUpdate {
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+
+public class Put extends Mutation<Put> {
+    private LinkedHashSet<String> columns = null;
+    private List<Object>          values  = null;
+
     /*
      * default constructor
      */
     public Put() {
         super();
-        super.usePut();
+        columns = new LinkedHashSet<String>();
+        values = new ArrayList<Object>();
     }
 
     /*
@@ -38,6 +49,126 @@ public class Put extends InsertOrUpdate {
      */
     public Put(Table client, String tableName) {
         super(client, tableName);
-        super.usePut();
+        columns = new LinkedHashSet<String>();
+        values = new ArrayList<Object>();
+    }
+
+    /*
+     * set the Row Key of mutation with Row and keep scan range
+     */
+    @Override
+    public Put setRowKey(Row rowKey) {
+        return setRowKeyOnly(rowKey);
+    }
+
+    /*
+     * set the Row Key of mutation with ColumnValues and keep scan range
+     */
+    @Override
+    public Put setRowKey(ColumnValue... rowKey) {
+        return setRowKeyOnly(rowKey);
+    }
+
+    /*
+     * add filter into mutation (use QueryAndMutate) and scan range
+     */
+    public Put setFilter(ObTableFilter filter) throws Exception {
+        return setFilterOnly(filter);
+    }
+
+    /*
+     * get operation type
+     */
+    public ObTableOperationType getOperationType() {
+        return ObTableOperationType.PUT;
+    }
+
+    /*
+     * add mutated Row
+     */
+    public Put addMutateRow(Row rows) {
+        if (null == rows) {
+            throw new IllegalArgumentException("Invalid null rowKey set into Put");
+        } else if (0 == rows.getMap().size()) {
+            throw new IllegalArgumentException("input row key should not be empty");
+        }
+
+        // set mutate row into Put
+        for (Map.Entry<String, Object> entry : rows.getMap().entrySet()) {
+            columns.add(entry.getKey());
+            values.add(entry.getValue());
+        }
+
+        return this;
+    }
+
+    /*
+     * get the mutated columns' name
+     */
+    public String[] getColumns() {
+        return columns.toArray(new String[columns.size()]);
+    }
+
+    /*
+     * get the mutated columns' value
+     */
+    public Object[] getValues() {
+        return values.toArray();
+    }
+
+    /*
+     * add mutated ColumnValues
+     */
+    public Put addMutateColVal(ColumnValue... columnValues) throws Exception {
+        if (null == columnValues) {
+            throw new IllegalArgumentException("Invalid null columnValues set into Put");
+        }
+
+        // set mutate row into Put
+        for (ColumnValue columnValue : columnValues) {
+            if (columns.contains(columnValue.getColumnName())) {
+                throw new ObTableException("Duplicate column in Row Key");
+            }
+            columns.add(columnValue.getColumnName());
+            values.add(columnValue.getValue());
+        }
+
+        return this;
+    }
+
+    /*
+     * Remove rowkey from mutateColval
+     */
+    public Put removeRowkeyFromMutateColval() {
+        removeRowkeyFromMutateColval(this.columns, this.values, this.rowKeyNames);
+        return this;
+    }
+
+    /*
+     * execute
+     */
+    public MutationResult execute() throws Exception {
+        if (null == getTableName()) {
+            throw new ObTableException("table name is null");
+        } else if (null == getClient()) {
+            throw new ObTableException("client is null");
+        }
+
+        if (null == getQuery()) {
+            // simple Put, without filter
+            return new MutationResult(((ObTableClient) getClient()).putWithResult(getTableName(),
+                getRowKey(), getKeyRanges(), columns.toArray(new String[columns.size()]),
+                values.toArray()));
+        } else {
+            if (checkMutationWithFilter()) {
+                // QueryAndPut
+                ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.PUT,
+                    getRowKey(), columns.toArray(new String[columns.size()]), values.toArray());
+                return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(
+                    getQuery(), getRowKey(), getKeyRanges(), operation, true));
+            } else {
+                throw new ObTableUnexpectedException("should set filter and scan range both");
+            }
+        }
     }
 }

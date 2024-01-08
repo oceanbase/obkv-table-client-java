@@ -198,4 +198,7 @@ public interface ObITableEntity extends ObPayload {
      */
     long getPropertiesCount();
 
+    void setOnlyEncodeValue(boolean onlyEncodeValue);
+
+    boolean isOnlyEncodeValue();
 }

@@ -72,6 +72,11 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.insert(rowkeys, columns, values);
     }
 
+    @Override
+    public void put(Object[] rowkeys, String[] columns, Object[] values) {
+        tableBatchOps.put(rowkeys, columns, values);
+    }
+
     /*
      * Replace.
      */
@@ -167,4 +172,14 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         super.setAtomicOperation(atomicOperation);
         tableBatchOps.setAtomicOperation(atomicOperation);
     }
+
+    public boolean isSamePropertiesNames() {
+        return super.isSamePropertiesNames();
+    }
+
+    public void setSamePropertiesNames(boolean samePropertiesNames) {
+        super.setSamePropertiesNames(samePropertiesNames);
+        tableBatchOps.setSamePropertiesNames(samePropertiesNames);
+    }
+
 }
