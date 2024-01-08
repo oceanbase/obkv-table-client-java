@@ -153,7 +153,7 @@ public class Put extends Mutation<Put> {
         } else if (null == getClient()) {
             throw new ObTableException("client is null");
         }
-        removeRowkeyFromMutateColval(this.columns, this.values, this.rowKeyNames);
+
         if (null == getQuery()) {
             // simple Put, without filter
             return new MutationResult(((ObTableClient) getClient()).putWithResult(getTableName(),
