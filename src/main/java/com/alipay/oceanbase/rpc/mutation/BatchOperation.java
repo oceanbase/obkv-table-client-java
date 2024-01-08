@@ -18,9 +18,11 @@
 package com.alipay.oceanbase.rpc.mutation;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
+import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
+import com.alipay.oceanbase.rpc.table.ObTableClientLSBatchOpsImpl;
 import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
@@ -34,7 +36,8 @@ public class BatchOperation {
     private Table        client;
     boolean              withResult;
     private List<Object> operations;
-    boolean              isAtomic = false;
+    boolean              isAtomic         = false;
+    boolean              hasCheckAndInsUp = false;
 
     /*
      * default constructor
@@ -96,6 +99,15 @@ public class BatchOperation {
         return this;
     }
 
+    /*
+     * add CheckAndInsUp
+     */
+    public BatchOperation addOperation(CheckAndInsUp... insUps) {
+        this.operations.addAll(Arrays.asList(insUps));
+        this.hasCheckAndInsUp = true;
+        return this;
+    }
+
     public BatchOperation setIsAtomic(boolean isAtomic) {
         this.isAtomic = isAtomic;
         return this;
@@ -103,9 +115,16 @@ public class BatchOperation {
 
     @SuppressWarnings("unchecked")
     public BatchOperationResult execute() throws Exception {
-        // add rowkeyElement
-        boolean hasSetRowkeyElement = false;
+        if (hasCheckAndInsUp) {
+            return executeWithLSBatchOp();
+        } else {
+            return executeWithNormalBatchOp();
+        }
+    }
+
+    public BatchOperationResult executeWithNormalBatchOp() throws Exception {
         TableBatchOps batchOps = client.batch(tableName);
+        boolean hasSetRowkeyElement = false;
 
         for (Object operation : operations) {
             if (operation instanceof Mutation) {
@@ -168,6 +187,33 @@ public class BatchOperation {
             }
         }
         batchOps.setAtomicOperation(isAtomic);
+        return new BatchOperationResult(batchOps.executeWithResult());
+    }
+
+    public BatchOperationResult executeWithLSBatchOp() throws Exception {
+        ObTableClientLSBatchOpsImpl batchOps;
+        if (client instanceof ObTableClient) {
+            batchOps = new ObTableClientLSBatchOpsImpl(tableName, (ObTableClient) client);
+            boolean hasSetRowkeyElement = false;
+            for (Object operation : operations) {
+                if (operation instanceof CheckAndInsUp) {
+                    CheckAndInsUp checkAndInsUp = (CheckAndInsUp) operation;
+                    batchOps.addOperation(checkAndInsUp);
+                    List<String> rowKeyNames = checkAndInsUp.getInsUp().getRowKeyNames();
+                    if (!hasSetRowkeyElement && rowKeyNames != null) {
+                        ((ObTableClient) client).addRowKeyElement(tableName,
+                            rowKeyNames.toArray(new String[0]));
+                        hasSetRowkeyElement = true;
+                    }
+                } else {
+                    throw new IllegalArgumentException(
+                        "the operation in LS batch must be checkAndInsUp");
+                }
+            }
+        } else {
+            throw new IllegalArgumentException(
+                "execute batch using ObTable diretly is not supporeted");
+        }
         return new BatchOperationResult(batchOps.executeWithResult());
     }
 }
