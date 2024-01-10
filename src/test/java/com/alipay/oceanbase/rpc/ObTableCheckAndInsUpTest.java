@@ -297,4 +297,52 @@ public class ObTableCheckAndInsUpTest {
             }
         }
     }
+
+    @Test
+    public void testBatchCheckInsUpMutPart() throws Exception {
+        if (!isVersionSupported()) {
+            System.out.println("current version is not supported, current version: "
+                    + ObGlobal.OB_VERSION);
+            return;
+        }
+        // insert two record in different partition
+        // insert (100, "c2_val", "c3_val", 100)
+        InsertOrUpdate insertOrUpdate = client.insertOrUpdate(TABLE_NAME);
+        insertOrUpdate.setRowKey(row(colVal("c1", 100L), colVal("c2", "c2_val")));
+        insertOrUpdate.addMutateRow(row(colVal("c3", "c3_v0"), colVal("c4", 100L)));
+        MutationResult res = insertOrUpdate.execute();
+        Assert.assertEquals(1, res.getAffectedRows());
+        // insert (400, "c2_val", "c3_val", 400)
+        insertOrUpdate = client.insertOrUpdate(TABLE_NAME);
+        insertOrUpdate.setRowKey(row(colVal("c1", 400L), colVal("c2", "c2_val")));
+        insertOrUpdate.addMutateRow(row(colVal("c3", "c3_val"), colVal("c4", 400L)));
+        res = insertOrUpdate.execute();
+        Assert.assertEquals(1, res.getAffectedRows());
+
+        try {
+            BatchOperation batchOperation = client.batchOperation(TABLE_NAME);
+            // 1. check exists not match: insup(100, 'c2_val', 'c3_val', 200) if exists c4 > 100
+            InsertOrUpdate insertOrUpdate1 = new InsertOrUpdate();
+            insertOrUpdate1.setRowKey(row(colVal("c1", 100L), colVal("c2", "c2_val")));
+            insertOrUpdate1.addMutateRow(row(colVal("c3", "c3_val"), colVal("c4", 200L)));
+            ObTableFilter filter = compareVal(ObCompareOp.GT, "c4", 100L);
+            CheckAndInsUp checkAndInsUp1 = new CheckAndInsUp(filter, insertOrUpdate1, true);
+            // 2. check not exists match: insup(400, 'c2_val', 'c3_val', 500) if not exists c4 >= 500
+            InsertOrUpdate insertOrUpdate2 = new InsertOrUpdate();
+            insertOrUpdate2.setRowKey(row(colVal("c1", 400L), colVal("c2", "c2_val")));
+            insertOrUpdate2.addMutateRow(row(colVal("c3", "c3_val"), colVal("c4", 500L)));
+            ObTableFilter filter2 = compareVal(ObCompareOp.GE, "c4", 500L);
+            CheckAndInsUp checkAndInsUp2 = new CheckAndInsUp(filter2, insertOrUpdate2, false);
+
+            // 3. execute batch
+            batchOperation.addOperation(checkAndInsUp1, checkAndInsUp2);
+            BatchOperationResult result = batchOperation.execute();
+            Assert.assertEquals(2, result.getCorrectCount());
+            Assert.assertEquals(0, result.get(0).getAffectedRows());
+            Assert.assertEquals(1, result.get(1).getAffectedRows());
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        }
+    }
 }
