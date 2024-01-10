@@ -136,7 +136,10 @@ public class MonitorUtil {
                     res = String.valueOf(result.getAffectedRows());
             }
         }
-        String errorCodeStringValue = resultCode.toString();
+        String errorCodeStringValue = "UnknownErrorCode";
+        if (resultCode != null) {
+            errorCodeStringValue = resultCode.toString();
+        }
 
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(traceId).append(" - ").append(database).append(",").append(tableName)
