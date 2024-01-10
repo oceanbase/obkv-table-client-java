@@ -1825,7 +1825,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 Assert.assertTrue(false);
             } catch (Exception e) {
                 Assert.assertTrue(e instanceof ObTableException);
-                Assert.assertEquals(ResultCodes.OB_ERR_DOUBLE_TRUNCATED.errorCode,
+                Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
                     ((ObTableException) e).getErrorCode());
             }
             // increment non-integer column with filter
@@ -1836,7 +1836,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                     .setFilter(compareVal(ObCompareOp.EQ, "c4", 200L)).execute();
             } catch (Exception e) {
                 Assert.assertTrue(e instanceof ObTableException);
-                Assert.assertEquals(ResultCodes.OB_ERR_DOUBLE_TRUNCATED.errorCode,
+                Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
                     ((ObTableException) e).getErrorCode());
             }
 
@@ -1859,7 +1859,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                     .addMutateColVal(colVal("c4", new byte[1])).execute();
             } catch (Exception e) {
                 Assert.assertTrue(e instanceof ObTableException);
-                Assert.assertEquals(ResultCodes.OB_KV_COLUMN_TYPE_NOT_MATCH.errorCode,
+                Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
                     ((ObTableException) e).getErrorCode());
             }
 
@@ -1871,7 +1871,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                     .setFilter(compareVal(ObCompareOp.EQ, "c4", 200L)).execute();
             } catch (Exception e) {
                 Assert.assertTrue(e instanceof ObTableException);
-                Assert.assertEquals(ResultCodes.OB_KV_COLUMN_TYPE_NOT_MATCH.errorCode,
+                Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
                     ((ObTableException) e).getErrorCode());
             }
 
