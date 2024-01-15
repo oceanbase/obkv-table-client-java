@@ -262,6 +262,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
     public void partitionExecute(ObTableOperationResult[] results,
                                  Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> partitionOperation)
                                                                                                                                    throws Exception {
+        long partIdx = partitionOperation.getKey();
         ObTableParam tableParam = partitionOperation.getValue().getLeft();
         long tableId = tableParam.getTableId();
         long partId = tableParam.getPartitionId();
@@ -318,7 +319,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 if (obTableClient.isOdpMode()) {
                     subObTable = obTableClient.getOdpTable();
                 } else {
-                    // 重试时重新 getTable
+                    // getTable() when we need retry
+                    // we should use partIdx to get table
                     if (tryTimes > 1) {
                         if (route == null) {
                             route = obTableClient.getRoute(batchOperation.isReadOnly());
@@ -327,7 +329,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                             route.setBlackList(failedServerList);
                         }
                         subObTable = obTableClient
-                            .getTable(tableName, partId, needRefreshTableEntry,
+                            .getTable(tableName, partIdx, needRefreshTableEntry,
                                 obTableClient.isTableEntryRefreshIntervalWait(), route).getRight()
                             .getObTable();
                     }
