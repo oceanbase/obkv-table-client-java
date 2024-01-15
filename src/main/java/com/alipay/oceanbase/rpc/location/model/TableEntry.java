@@ -237,8 +237,9 @@ public class TableEntry {
     public String toString() {
         return "TableEntry{" + "tableId=" + tableId + ", partitionNum=" + partitionNum
                + ", replicaNum=" + replicaNum + ", partitionInfo=" + partitionInfo
-               + ", refreshTimeMills=" + refreshTimeMills + ", refreshAllTimeMills=" + refreshAllTimeMills +  ", rowKeyElement=" + rowKeyElement
-               + ", tableLocation=" + tableLocation + ", tableEntryKey=" + tableEntryKey
-               + ", partitionEntry=" + partitionEntry + '}';
+               + ", refreshTimeMills=" + refreshTimeMills + ", refreshAllTimeMills="
+               + refreshAllTimeMills + ", rowKeyElement=" + rowKeyElement + ", tableLocation="
+               + tableLocation + ", tableEntryKey=" + tableEntryKey + ", partitionEntry="
+               + partitionEntry + '}';
     }
 }

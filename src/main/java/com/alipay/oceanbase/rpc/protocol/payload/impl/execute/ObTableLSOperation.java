@@ -131,8 +131,8 @@ public class ObTableLSOperation extends AbstractPayload {
         this.tabletOperations.add(tabletOperation);
         int length = this.tabletOperations.size();
         if (length == 1 && tabletOperation.isSameType()) {
-           setIsSameType(true);
-           return;
+            setIsSameType(true);
+            return;
         }
 
         if (isSameType()

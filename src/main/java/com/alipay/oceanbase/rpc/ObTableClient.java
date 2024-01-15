@@ -1034,7 +1034,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws Exception if fail
      */
     public TableEntry getOrRefreshTableEntry(final String tableName, final boolean refresh,
-                                             final boolean waitForRefresh, boolean fetchAll) throws Exception {
+                                             final boolean waitForRefresh, boolean fetchAll)
+                                                                                            throws Exception {
 
         TableEntry tableEntry = tableLocations.get(tableName);
         // attempt the cached data and try best to avoid lock
@@ -1050,7 +1051,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             long current = System.currentTimeMillis();
             long interval = current - tableEntry.getRefreshTimeMills();
             long fetchAllInterval = current - tableEntry.getRefreshAllTimeMills();
-            if ((fetchAll && (fetchAllInterval < punishInterval)) || (!fetchAll && (interval < punishInterval))) {
+            if ((fetchAll && (fetchAllInterval < punishInterval))
+                || (!fetchAll && (interval < punishInterval))) {
                 if (waitForRefresh) {
                     long toHoldTime = punishInterval - interval;
                     logger
@@ -1101,8 +1103,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 // control refresh frequency less than 100 milli second
                 // just in case of connecting to OB Server failed or change master
                 long interval = System.currentTimeMillis() - tableEntry.getRefreshTimeMills();
-                long fetchAllInterval = System.currentTimeMillis() - tableEntry.getRefreshAllTimeMills();
-                if ((fetchAll && (fetchAllInterval < punishInterval)) || (!fetchAll && (interval < punishInterval))) {
+                long fetchAllInterval = System.currentTimeMillis()
+                                        - tableEntry.getRefreshAllTimeMills();
+                if ((fetchAll && (fetchAllInterval < punishInterval))
+                    || (!fetchAll && (interval < punishInterval))) {
                     return tableEntry;
                 }
             }
@@ -1175,7 +1179,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws ObTableEntryRefreshException
      */
     private TableEntry refreshTableEntry(TableEntry tableEntry, String tableName)
-            throws ObTableEntryRefreshException {
+                                                                                 throws ObTableEntryRefreshException {
         return refreshTableEntry(tableEntry, tableName, false);
     }
 
@@ -1188,7 +1192,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws ObTableEntryRefreshException
      */
     private TableEntry refreshTableEntry(TableEntry tableEntry, String tableName, boolean fetchAll)
-                                                                                 throws ObTableEntryRefreshException {
+                                                                                                   throws ObTableEntryRefreshException {
         TableEntryKey tableEntryKey = new TableEntryKey(clusterName, tenantName, database,
             tableName);
         try {
