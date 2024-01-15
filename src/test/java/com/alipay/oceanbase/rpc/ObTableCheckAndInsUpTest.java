@@ -25,6 +25,7 @@ import com.alipay.oceanbase.rpc.mutation.Delete;
 import com.alipay.oceanbase.rpc.mutation.InsertOrUpdate;
 import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
 import org.junit.Assert;
 import org.junit.Before;
@@ -343,6 +344,63 @@ public class ObTableCheckAndInsUpTest {
         } catch (Exception e) {
             e.printStackTrace();
             Assert.assertTrue(false);
+        }
+    }
+
+    /*
+    CREATE TABLE IF NOT EXISTS `test_bigint_table` (
+      `c1` bigint(20) NOT NULL,
+      `c2` bigint(20) DEFAULT NULL,
+      PRIMARY KEY (`c1`)
+    );
+     */
+    @Test
+    public void testNonPartCheckAndInsUp() throws Exception {
+        String tableName = "test_bigint_table";
+        if (!isVersionSupported()) {
+            System.out.println("current version is not supported, current version: "
+                    + ObGlobal.OB_VERSION);
+            return;
+        }
+        // pre-clean data
+        client.delete(tableName).addScanRange(ObObj.getMin(), ObObj.getMax()).execute();
+        try {
+            // 1. single operation
+            // check not exists match: insup(1, 100) if not exists c2 <= 100
+            InsertOrUpdate insertOrUpdate1 = new InsertOrUpdate();
+            insertOrUpdate1.setRowKey(row(colVal("c1", 1L)));
+            insertOrUpdate1.addMutateRow(row(colVal("c2", 100L)));
+            ObTableFilter filter1 = compareVal(ObCompareOp.GE, "c2", 100L);
+            CheckAndInsUp checkAndInsUp1 = client.checkAndInsUp(tableName, filter1, insertOrUpdate1, false);
+            MutationResult result1 = checkAndInsUp1.execute();
+            Assert.assertEquals(1, result1.getAffectedRows());
+
+            // 2. batch oepration
+            BatchOperation batchOperation = client.batchOperation(tableName);
+            // 2.1 check exists match: insup(1, 200) if exists c2 < 100
+            InsertOrUpdate insertOrUpdate2 = new InsertOrUpdate();
+            insertOrUpdate2.setRowKey(row(colVal("c1", 1L)));
+            insertOrUpdate2.addMutateRow(row(colVal("c2", 200L)));
+            ObTableFilter filter2 = compareVal(ObCompareOp.LT, "c2", 200L);
+            CheckAndInsUp checkAndInsUp2 = new CheckAndInsUp(filter2, insertOrUpdate2, true);
+
+            // 2.2 check not exists match: insup(2, 200) if not exists c2 >= 200
+            InsertOrUpdate insertOrUpdate3 = new InsertOrUpdate();
+            insertOrUpdate3.setRowKey(row(colVal("c1", 2L)));
+            insertOrUpdate3.addMutateRow(row(colVal("c2", 200L)));
+            ObTableFilter filter3 = compareVal(ObCompareOp.GE, "c2", 200L);
+            CheckAndInsUp checkAndInsUp3 = new CheckAndInsUp(filter3, insertOrUpdate3, false);
+
+            // 3. execute batch
+            batchOperation.addOperation(checkAndInsUp2, checkAndInsUp3);
+            BatchOperationResult result = batchOperation.execute();
+            Assert.assertEquals(2, result.getCorrectCount());
+            Assert.assertEquals(1, result.get(0).getAffectedRows());
+            Assert.assertEquals(1, result.get(1).getAffectedRows());
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        } finally {
         }
     }
 }
