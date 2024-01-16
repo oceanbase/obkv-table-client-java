@@ -590,6 +590,9 @@ public class ObTableAggregationTest {
             Assert.assertTrue(((ObTableException) e).getMessage().contains(
                 "[OB_DATA_OUT_OF_RANGE][Out of range value for column 'sum(c3)' at row 0]"));
         } finally {
+            client.delete("test_aggregation", "first_row");
+            client.delete("test_aggregation", "second_row");
+            client.delete("test_aggregation", "third_row");
         }
     }
 

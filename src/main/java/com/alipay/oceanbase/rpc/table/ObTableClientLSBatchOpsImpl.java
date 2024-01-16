@@ -257,10 +257,10 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     public void partitionExecute(ObTableOperationResult[] results,
                                  Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> partitionOperation)
             throws Exception {
-        long partIdx =  partitionOperation.getKey();
         ObTableParam tableParam = partitionOperation.getValue().getLeft();
         long tableId = tableParam.getTableId();
         long partId = tableParam.getPartitionId();
+        long originPartId = tableParam.getPartId();
         ObTable subObTable = tableParam.getObTable();
         List<ObPair<Integer, ObTableSingleOp>> subOperationWithIndexList = partitionOperation
                 .getValue().getRight();
@@ -311,7 +311,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
-                        subObTable = obTableClient.getTable(tableName, partIdx, needRefreshTableEntry,
+                        subObTable = obTableClient.getTable(tableName, originPartId, needRefreshTableEntry,
                                         obTableClient.isTableEntryRefreshIntervalWait(), route).
                                             getRight().getObTable();
                     }

@@ -1368,7 +1368,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                                                            throws Exception {
         TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh);
 
-        long partId = getPartition(tableEntry, rowKey);
+        long partId = getPartition(tableEntry, rowKey); // partition id in 3.x, origin partId in 4.x
 
         return getTable(tableName, tableEntry, partId, waitForRefresh, route);
     }
@@ -1427,7 +1427,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     /**
      * get addr by pardId
      * @param tableName table want to get
-     * @param partId partId where table located (should be partIdx)
+     * @param partId partId where table located (partition id in 3.x)
      * @param refresh whether to refresh
      * @param waitForRefresh whether wait for refresh
      * @param route ObServer route
@@ -1445,7 +1445,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * get addr from table entry by pardId
      * @param tableName table want to get
      * @param tableEntry tableEntry
-     * @param partId partId where table located
+     * @param partId partId where table located (partition id in 3.x)
      * @param waitForRefresh whether wait for refresh
      * @param route ObServer route
      * @return ObPair of partId and table
@@ -1483,6 +1483,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
 
         ObTableParam param = new ObTableParam(obTable);
+        param.setPartId(partId); // used in getTable(), 4.x may change the origin partId
         if (ObGlobal.obVsnMajor() >= 4 && tableEntry != null) {
             long logicID = partId;
             if (tableEntry.getPartitionInfo() != null
