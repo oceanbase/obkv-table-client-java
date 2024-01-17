@@ -42,6 +42,7 @@ public class TableEntry {
     private Long                             replicaNum            = Constants.OB_INVALID_ID;
     private ObPartitionInfo                  partitionInfo         = null;
     private volatile long                    refreshTimeMills;
+    private volatile long                    refreshAllTimeMills;
     private Map<String, Integer>             rowKeyElement         = null;
 
     // table location
@@ -144,10 +145,24 @@ public class TableEntry {
     }
 
     /*
+     * Get refresh time mills.
+     */
+    public long getRefreshAllTimeMills() {
+        return refreshAllTimeMills;
+    }
+
+    /*
      * Set refresh time mills.
      */
     public void setRefreshTimeMills(long refreshTimeMills) {
         this.refreshTimeMills = refreshTimeMills;
+    }
+
+    /*
+     * Set refresh all time mills.
+     */
+    public void setRefreshAllTimeMills(long refreshAllTimeMills) {
+        this.refreshAllTimeMills = refreshAllTimeMills;
     }
 
     public Map<String, Integer> getRowKeyElement() {
@@ -222,8 +237,9 @@ public class TableEntry {
     public String toString() {
         return "TableEntry{" + "tableId=" + tableId + ", partitionNum=" + partitionNum
                + ", replicaNum=" + replicaNum + ", partitionInfo=" + partitionInfo
-               + ", refreshTimeMills=" + refreshTimeMills + ", rowKeyElement=" + rowKeyElement
-               + ", tableLocation=" + tableLocation + ", tableEntryKey=" + tableEntryKey
-               + ", partitionEntry=" + partitionEntry + '}';
+               + ", refreshTimeMills=" + refreshTimeMills + ", refreshAllTimeMills="
+               + refreshAllTimeMills + ", rowKeyElement=" + rowKeyElement + ", tableLocation="
+               + tableLocation + ", tableEntryKey=" + tableEntryKey + ", partitionEntry="
+               + partitionEntry + '}';
     }
 }

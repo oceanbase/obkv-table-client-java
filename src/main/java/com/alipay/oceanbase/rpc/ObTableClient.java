@@ -27,9 +27,9 @@ import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.location.model.*;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPartIdCalculator;
+import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionInfo;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionLevel;
 import com.alipay.oceanbase.rpc.mutation.*;
-import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
@@ -763,7 +763,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (failures.incrementAndGet() > runtimeContinuousFailureCeiling) {
             logger.warn("refresh table entry {} while execute failed times exceeded {}, msg: {}",
                 tableName, runtimeContinuousFailureCeiling, errorMsg);
-            getOrRefreshTableEntry(tableName, true, isTableEntryRefreshIntervalWait());
+            getOrRefreshTableEntry(tableName, true, isTableEntryRefreshIntervalWait(), true);
             failures.set(0);
         }
     }
@@ -1021,6 +1021,21 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     public TableEntry getOrRefreshTableEntry(final String tableName, final boolean refresh,
                                              final boolean waitForRefresh) throws Exception {
+        return getOrRefreshTableEntry(tableName, refresh, waitForRefresh, false);
+    }
+
+    /**
+     * Get or refresh table entry.
+     * @param tableName table name
+     * @param refresh is re-fresh
+     * @param waitForRefresh wait re-fresh
+     * @param fetchAll fetch all data from server if needed
+     * @return this
+     * @throws Exception if fail
+     */
+    public TableEntry getOrRefreshTableEntry(final String tableName, final boolean refresh,
+                                             final boolean waitForRefresh, boolean fetchAll)
+                                                                                            throws Exception {
 
         TableEntry tableEntry = tableLocations.get(tableName);
         // attempt the cached data and try best to avoid lock
@@ -1035,7 +1050,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             punishInterval = Math.min(punishInterval, tableEntryRefreshIntervalCeiling);
             long current = System.currentTimeMillis();
             long interval = current - tableEntry.getRefreshTimeMills();
-            if (interval < punishInterval) {
+            long fetchAllInterval = current - tableEntry.getRefreshAllTimeMills();
+            if ((fetchAll && (fetchAllInterval < punishInterval))
+                || (!fetchAll && (interval < punishInterval))) {
                 if (waitForRefresh) {
                     long toHoldTime = punishInterval - interval;
                     logger
@@ -1079,13 +1096,17 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
             if (tableEntry != null) {
                 // the server roster is ordered by priority
-                long interval = (long) (tableEntryRefreshIntervalBase * Math.pow(2,
+                long punishInterval = (long) (tableEntryRefreshIntervalBase * Math.pow(2,
                     -serverRoster.getMaxPriority()));
-                interval = interval <= tableEntryRefreshIntervalCeiling ? interval
+                punishInterval = punishInterval <= tableEntryRefreshIntervalCeiling ? punishInterval
                     : tableEntryRefreshIntervalCeiling;
                 // control refresh frequency less than 100 milli second
                 // just in case of connecting to OB Server failed or change master
-                if (((System.currentTimeMillis() - tableEntry.getRefreshTimeMills())) < interval) {
+                long interval = System.currentTimeMillis() - tableEntry.getRefreshTimeMills();
+                long fetchAllInterval = System.currentTimeMillis()
+                                        - tableEntry.getRefreshAllTimeMills();
+                if ((fetchAll && (fetchAllInterval < punishInterval))
+                    || (!fetchAll && (interval < punishInterval))) {
                     return tableEntry;
                 }
             }
@@ -1108,7 +1129,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
                 for (int i = 0; i < refreshTryTimes; i++) {
                     try {
-                        return refreshTableEntry(tableEntry, tableName);
+                        return refreshTableEntry(tableEntry, tableName, fetchAll);
                     } catch (ObTableNotExistException e) {
                         RUNTIME.error("getOrRefreshTableEntry meet exception", e);
                         throw e;
@@ -1159,12 +1180,24 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     private TableEntry refreshTableEntry(TableEntry tableEntry, String tableName)
                                                                                  throws ObTableEntryRefreshException {
+        return refreshTableEntry(tableEntry, tableName, false);
+    }
+
+    /**
+     * 刷新 table entry 元数据
+     * @param tableEntry
+     * @param tableName
+     * @param fetchAll
+     * @return
+     * @throws ObTableEntryRefreshException
+     */
+    private TableEntry refreshTableEntry(TableEntry tableEntry, String tableName, boolean fetchAll)
+                                                                                                   throws ObTableEntryRefreshException {
         TableEntryKey tableEntryKey = new TableEntryKey(clusterName, tenantName, database,
             tableName);
         try {
-
             // if table entry is exist we just need to refresh table locations
-            if (tableEntry != null) {
+            if (tableEntry != null && !fetchAll) {
                 tableEntry = loadTableEntryLocationWithPriority(serverRoster, //
                     tableEntryKey,//
                     tableEntry,//
@@ -1216,6 +1249,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 tableEntry), e);
         }
         tableLocations.put(tableName, tableEntry);
+        if (fetchAll) {
+            tableEntry.setRefreshAllTimeMills(System.currentTimeMillis());
+        }
         tableEntryRefreshContinuousFailureCount.set(0);
         if (logger.isInfoEnabled()) {
             logger.info(
@@ -1292,7 +1328,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private ReplicaLocation getPartitionLocation(TableEntry tableEntry, long partId,
                                                  ObServerRoute route) {
         if (ObGlobal.obVsnMajor() >= 4 && tableEntry.isPartitionTable()) {
-            long TabletId = tableEntry.getPartitionInfo().getPartTabletIdMap().get(partId);
+            ObPartitionInfo partInfo = tableEntry.getPartitionInfo();
+            Map<Long, Long> tabletIdMap = partInfo.getPartTabletIdMap();
+            long TabletId = tabletIdMap.get(partId);
             return tableEntry.getPartitionEntry().getPartitionLocationWithTabletId(TabletId)
                 .getReplica(route);
         } else {
@@ -1330,7 +1368,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                                                            throws Exception {
         TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh);
 
-        long partId = getPartition(tableEntry, rowKey);
+        long partId = getPartition(tableEntry, rowKey); // partition id in 3.x, origin partId in 4.x
 
         return getTable(tableName, tableEntry, partId, waitForRefresh, route);
     }
@@ -1389,7 +1427,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     /**
      * get addr by pardId
      * @param tableName table want to get
-     * @param partId partId where table located
+     * @param partId partId where table located (partition id in 3.x)
      * @param refresh whether to refresh
      * @param waitForRefresh whether wait for refresh
      * @param route ObServer route
@@ -1407,7 +1445,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * get addr from table entry by pardId
      * @param tableName table want to get
      * @param tableEntry tableEntry
-     * @param partId partId where table located
+     * @param partId partId where table located (partition id in 3.x)
      * @param waitForRefresh whether wait for refresh
      * @param route ObServer route
      * @return ObPair of partId and table
@@ -1445,6 +1483,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
 
         ObTableParam param = new ObTableParam(obTable);
+        param.setPartId(partId); // used in getTable(), 4.x may change the origin partId
         if (ObGlobal.obVsnMajor() >= 4 && tableEntry != null) {
             long logicID = partId;
             if (tableEntry.getPartitionInfo() != null
