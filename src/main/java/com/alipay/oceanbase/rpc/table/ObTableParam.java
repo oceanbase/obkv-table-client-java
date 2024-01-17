@@ -26,6 +26,7 @@ public class ObTableParam {
     private ObTable obTable;
     private long    tableId     = OB_INVALID_ID;
     private long    partitionId = INVALID_TABLET_ID; // partition id in 3.x aka tablet id in 4.x
+    private long    partId      = INVALID_TABLET_ID; // origin part id in 4.x, can be used when retry
 
     /*
      * constructor
@@ -97,5 +98,19 @@ public class ObTableParam {
      */
     public void setPartitionId(long partitionId) {
         this.partitionId = partitionId;
+    }
+
+    /*
+     * Get partId (partition id in 3.x, originPartId in 4.x)
+     */
+    public long getPartId() {
+        return this.partId;
+    }
+
+    /*
+     * Set partId
+     */
+    public void setPartId(long partId) {
+        this.partId = partId;
     }
 }

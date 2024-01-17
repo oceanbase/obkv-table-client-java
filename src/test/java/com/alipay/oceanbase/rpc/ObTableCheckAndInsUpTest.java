@@ -303,7 +303,7 @@ public class ObTableCheckAndInsUpTest {
     public void testBatchCheckInsUpMutPart() throws Exception {
         if (!isVersionSupported()) {
             System.out.println("current version is not supported, current version: "
-                    + ObGlobal.OB_VERSION);
+                               + ObGlobal.OB_VERSION);
             return;
         }
         // insert two record in different partition
@@ -359,7 +359,7 @@ public class ObTableCheckAndInsUpTest {
         String tableName = "test_bigint_table";
         if (!isVersionSupported()) {
             System.out.println("current version is not supported, current version: "
-                    + ObGlobal.OB_VERSION);
+                               + ObGlobal.OB_VERSION);
             return;
         }
         // pre-clean data
@@ -371,7 +371,8 @@ public class ObTableCheckAndInsUpTest {
             insertOrUpdate1.setRowKey(row(colVal("c1", 1L)));
             insertOrUpdate1.addMutateRow(row(colVal("c2", 100L)));
             ObTableFilter filter1 = compareVal(ObCompareOp.GE, "c2", 100L);
-            CheckAndInsUp checkAndInsUp1 = client.checkAndInsUp(tableName, filter1, insertOrUpdate1, false);
+            CheckAndInsUp checkAndInsUp1 = client.checkAndInsUp(tableName, filter1,
+                insertOrUpdate1, false);
             MutationResult result1 = checkAndInsUp1.execute();
             Assert.assertEquals(1, result1.getAffectedRows());
 
