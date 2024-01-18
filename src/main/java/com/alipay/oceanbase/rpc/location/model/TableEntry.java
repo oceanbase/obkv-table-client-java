@@ -17,8 +17,10 @@
 
 package com.alipay.oceanbase.rpc.location.model;
 
+import com.alipay.oceanbase.rpc.location.model.partition.ObPartIdCalculator;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionInfo;
+import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionLevel;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 
 import java.util.HashMap;
@@ -219,6 +221,20 @@ public class TableEntry {
                 "partition table partition entry is not ready. key" + tableEntryKey);
         }
     }
+
+    /*
+     * Get PartIdx from partId(logicId, partition id in 3.x)
+     */
+    public long getPartIdx(long partId) {
+        long partIdx = partId;
+        if (this.getPartitionInfo() != null
+                && this.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
+            partIdx = ObPartIdCalculator.getPartIdx(partId, this.getPartitionInfo()
+                    .getSubPartDesc().getPartNum());
+        }
+        return partIdx;
+    }
+
 
     /*
      * Prepare for weak read.

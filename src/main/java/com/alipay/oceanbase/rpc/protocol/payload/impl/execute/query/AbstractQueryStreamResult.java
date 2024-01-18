@@ -31,7 +31,6 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.QueryStreamResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObQueryOperationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
-import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.table.ObTableParam;
 import io.netty.buffer.ByteBuf;
 
@@ -53,6 +52,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     protected long                                                             operationTimeout    = -1;
     protected String                                                           tableName;
     protected ObTableEntityType                                                entityType;
+    // Map<logicId, ObPair<logicId, param>>
     private Map<Long, ObPair<Long, ObTableParam>>                              expectant;
     private List<String>                                                       cacheProperties     = new LinkedList<String>();
     private LinkedList<List<ObObj>>                                            cacheRows           = new LinkedList<List<ObObj>>();

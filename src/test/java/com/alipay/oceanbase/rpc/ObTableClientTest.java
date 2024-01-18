@@ -60,6 +60,7 @@ import java.util.*;
 
 import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.*;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.*;
+import static com.alipay.oceanbase.rpc.util.ObTableClientTestUtil.cleanTable;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -2320,6 +2321,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
     public void testBatchInsertJudge() throws Exception {
 
         try {
+            cleanTable("cse_index_1");
             // prepare data with insert
             Insert insert_0 = insert().setRowKey(
                 row(colVal("measurement", "measurement1"), colVal("tag_key", "tag_key1"),
@@ -2342,6 +2344,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
             e.printStackTrace();
             Assert.assertTrue(false);
         } finally {
+            cleanTable("cse_index_1");
         }
     }
 
