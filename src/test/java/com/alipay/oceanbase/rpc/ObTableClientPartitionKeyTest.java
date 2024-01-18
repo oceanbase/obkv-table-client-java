@@ -753,7 +753,7 @@ public class ObTableClientPartitionKeyTest {
         obTableClient.setRunningMode(ObTableClient.RunningMode.NORMAL);
         String testTable = "testPartitionKeyComplex";
         obTableClient.addRowKeyElement(testTable,
-                new String[] { "c0", "c1", "c2", "c3", "c4", "c5" });
+            new String[] { "c0", "c1", "c2", "c3", "c4", "c5" });
         try {
             cleanTable(testTable);
             byte c0 = (byte) 0;
@@ -762,18 +762,14 @@ public class ObTableClientPartitionKeyTest {
             String c3 = generateRandomStringByUUID(10);
             String c4 = generateRandomStringByUUID(5) + c2 + generateRandomStringByUUID(5);
             String c5 = generateRandomStringByUUID(5) + c3 + generateRandomStringByUUID(5);
-            TableQuery query = obTableClient.query(testTable)
-                    .addScanRange(
-                            new Object[]{c0, c1, c2, c3, c4, c5},
-                            new Object[]{c0, c1, c2, c3, c4, c5}
-                    )
-                    .select("c1", "c2", "c3", "c4", "c5", "c6")
-                    .setFilter(
-                            andList(
-                                    compareVal(ObCompareOp.GE, "c2", 0),
-                                    compareVal(ObCompareOp.LE, "c3", 0)
-                            )
-                    );
+            TableQuery query = obTableClient
+                .query(testTable)
+                .addScanRange(new Object[] { c0, c1, c2, c3, c4, c5 },
+                    new Object[] { c0, c1, c2, c3, c4, c5 })
+                .select("c1", "c2", "c3", "c4", "c5", "c6")
+                .setFilter(
+                    andList(compareVal(ObCompareOp.GE, "c2", 0),
+                        compareVal(ObCompareOp.LE, "c3", 0)));
             QueryResultSet resultSet = query.execute();
             Assert.assertEquals(0, resultSet.cacheSize());
         } catch (Exception e) {

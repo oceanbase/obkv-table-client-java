@@ -228,13 +228,12 @@ public class TableEntry {
     public long getPartIdx(long partId) {
         long partIdx = partId;
         if (this.getPartitionInfo() != null
-                && this.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
+            && this.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
             partIdx = ObPartIdCalculator.getPartIdx(partId, this.getPartitionInfo()
-                    .getSubPartDesc().getPartNum());
+                .getSubPartDesc().getPartNum());
         }
         return partIdx;
     }
-
 
     /*
      * Prepare for weak read.

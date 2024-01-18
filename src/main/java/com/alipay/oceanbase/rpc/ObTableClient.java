@@ -1558,7 +1558,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @param endInclusive whether include end key
      * @param refresh whether to refresh
      * @param waitForRefresh whether wait for refresh
-     * @return list of ObPair of partId and table obTableParams result of List<Pair<logicId, obTableParams>>
+     * @return list of ObPair of partId and table obTableParams result of List(Pair(logicId, obTableParams))
      * @throws Exception exception
      */
     public List<ObPair<Long, ObTableParam>> getTables(String tableName, Object[] start,
@@ -1579,7 +1579,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @param refresh whether to refresh
      * @param waitForRefresh whether wait for refresh
      * @param route server route
-     * @return list of ObPair of partId and table List<Pair<logicId, Param>>
+     * @return list of ObPair of partId and table List(Pair(logicId, Param))
      * @throws Exception exception
      */
     public List<ObPair<Long, ObTableParam>> getTables(String tableName, Object[] start,
