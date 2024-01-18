@@ -1558,7 +1558,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @param endInclusive whether include end key
      * @param refresh whether to refresh
      * @param waitForRefresh whether wait for refresh
-     * @return list of ObPair of partId and table obTableParams result of List(Pair(logicId, obTableParams))
+     * @return list of ObPair of partId(logicId) and table obTableParams
      * @throws Exception exception
      */
     public List<ObPair<Long, ObTableParam>> getTables(String tableName, Object[] start,
@@ -1579,7 +1579,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @param refresh whether to refresh
      * @param waitForRefresh whether wait for refresh
      * @param route server route
-     * @return list of ObPair of partId and table List(Pair(logicId, Param))
+     * @return list of ObPair of partId(logicId) and tableParam
      * @throws Exception exception
      */
     public List<ObPair<Long, ObTableParam>> getTables(String tableName, Object[] start,
@@ -1591,11 +1591,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         // 1. get TableEntry information
         TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh);
         // 2. get replica location
-        // pair<logicId(partition id in 3.x), replica>
+        // partIdWithReplicaList -> List<pair<logicId(partition id in 3.x), replica>>
         List<ObPair<Long, ReplicaLocation>> partIdWithReplicaList = getPartitionReplica(tableEntry,
             start, startInclusive, end, endInclusive, route);
 
-        // result in List<Pair<logicId, obTableParams>>
+        // obTableParams -> List<Pair<logicId, obTableParams>>
         List<ObPair<Long, ObTableParam>> obTableParams = new ArrayList<ObPair<Long, ObTableParam>>();
         for (ObPair<Long, ReplicaLocation> partIdWithReplica : partIdWithReplicaList) {
             long partId = partIdWithReplica.getLeft();

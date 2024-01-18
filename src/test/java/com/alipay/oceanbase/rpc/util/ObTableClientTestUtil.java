@@ -67,7 +67,6 @@ public class ObTableClientTestUtil {
         return DriverManager.getConnection(JDBC_URL, userNames[0], PASSWORD);
     }
 
-
     public static void cleanTable(String tableName) throws Exception {
         Connection connection = ObTableClientTestUtil.getConnection();
         Statement statement = connection.createStatement();
