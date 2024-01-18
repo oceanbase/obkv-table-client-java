@@ -1283,6 +1283,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return generatePartId(partId1, partId2);
     }
 
+    /*
+     * Get logicId(partition id in 3.x from giving range
+     */
     private List<Long> getPartitionsForLevelTwo(TableEntry tableEntry, Object[] start,
                                                 boolean startIncluded, Object[] end,
                                                 boolean endIncluded) throws Exception {
@@ -1306,22 +1309,23 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return partIds;
     }
 
+    /**
+     *
+     * @param tableEntry
+     * @param partId accept logic id (partId partitionId in 3.x)
+     * @param route
+     * @return
+     */
     private ObPair<Long, ReplicaLocation> getPartitionReplica(TableEntry tableEntry, long partId,
                                                               ObServerRoute route) {
-        long logicID = partId;
-        if (tableEntry != null && tableEntry.getPartitionInfo() != null
-            && tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
-            logicID = ObPartIdCalculator.getPartIdx(partId, tableEntry.getPartitionInfo()
-                .getSubPartDesc().getPartNum());
-        }
-        return new ObPair<Long, ReplicaLocation>(partId, getPartitionLocation(tableEntry, logicID,
+        return new ObPair<Long, ReplicaLocation>(partId, getPartitionLocation(tableEntry, partId,
             route));
     }
 
     /**
      *
      * @param tableEntry
-     * @param partId
+     * @param partId accept logic id (partId partitionId in 3.x)
      * @param route
      * @return
      */
@@ -1330,7 +1334,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (ObGlobal.obVsnMajor() >= 4 && tableEntry.isPartitionTable()) {
             ObPartitionInfo partInfo = tableEntry.getPartitionInfo();
             Map<Long, Long> tabletIdMap = partInfo.getPartTabletIdMap();
-            long TabletId = tabletIdMap.get(partId);
+            long partIdx = tableEntry.getPartIdx(partId);
+            long TabletId = tabletIdMap.get(partIdx);
             return tableEntry.getPartitionEntry().getPartitionLocationWithTabletId(TabletId)
                 .getReplica(route);
         } else {
@@ -1368,7 +1373,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                                                            throws Exception {
         TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh);
 
-        long partId = getPartition(tableEntry, rowKey); // partition id in 3.x, origin partId in 4.x
+        long partId = getPartition(tableEntry, rowKey); // partition id in 3.x, origin partId in 4.x, logicId
 
         return getTable(tableName, tableEntry, partId, waitForRefresh, route);
     }
@@ -1427,7 +1432,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     /**
      * get addr by pardId
      * @param tableName table want to get
-     * @param partId partId where table located (partition id in 3.x)
+     * @param partId partId of table (logicId, partition id in 3.x)
      * @param refresh whether to refresh
      * @param waitForRefresh whether wait for refresh
      * @param route ObServer route
@@ -1445,7 +1450,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * get addr from table entry by pardId
      * @param tableName table want to get
      * @param tableEntry tableEntry
-     * @param partId partId where table located (partition id in 3.x)
+     * @param partId partId of table (logicId, partition id in 3.x)
      * @param waitForRefresh whether wait for refresh
      * @param route ObServer route
      * @return ObPair of partId and table
@@ -1485,14 +1490,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         ObTableParam param = new ObTableParam(obTable);
         param.setPartId(partId); // used in getTable(), 4.x may change the origin partId
         if (ObGlobal.obVsnMajor() >= 4 && tableEntry != null) {
-            long logicID = partId;
-            if (tableEntry.getPartitionInfo() != null
-                && tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
-                logicID = ObPartIdCalculator.getPartIdx(partId, tableEntry.getPartitionInfo()
-                    .getSubPartDesc().getPartNum());
-            }
+            long partIdx = tableEntry.getPartIdx(partId);
             partId = tableEntry.isPartitionTable() ? tableEntry.getPartitionInfo()
-                .getPartTabletIdMap().get(logicID) : partId;
+                .getPartTabletIdMap().get(partIdx) : partId;
         }
 
         param.setTableId(tableEntry.getTableId());
@@ -1538,9 +1538,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             List<Long> partIds = getPartitionsForLevelTwo(tableEntry, start, startIncluded, end,
                 endIncluded);
             for (Long partId : partIds) {
-                long logicID = extractSubpartIdx(partId);
                 replicas.add(new ObPair<Long, ReplicaLocation>(partId, getPartitionLocation(
-                    tableEntry, logicID, route)));
+                    tableEntry, partId, route)));
             }
         } else {
             RUNTIME.error("not allowed bigger than level two");
@@ -1559,7 +1558,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @param endInclusive whether include end key
      * @param refresh whether to refresh
      * @param waitForRefresh whether wait for refresh
-     * @return list of ObPair of partId and table
+     * @return list of ObPair of partId(logicId) and table obTableParams
      * @throws Exception exception
      */
     public List<ObPair<Long, ObTableParam>> getTables(String tableName, Object[] start,
@@ -1580,7 +1579,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @param refresh whether to refresh
      * @param waitForRefresh whether wait for refresh
      * @param route server route
-     * @return list of ObPair of partId and table
+     * @return list of ObPair of partId(logicId) and tableParam
      * @throws Exception exception
      */
     public List<ObPair<Long, ObTableParam>> getTables(String tableName, Object[] start,
@@ -1592,9 +1591,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         // 1. get TableEntry information
         TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh);
         // 2. get replica location
+        // partIdWithReplicaList -> List<pair<logicId(partition id in 3.x), replica>>
         List<ObPair<Long, ReplicaLocation>> partIdWithReplicaList = getPartitionReplica(tableEntry,
             start, startInclusive, end, endInclusive, route);
 
+        // obTableParams -> List<Pair<logicId, obTableParams>>
         List<ObPair<Long, ObTableParam>> obTableParams = new ArrayList<ObPair<Long, ObTableParam>>();
         for (ObPair<Long, ReplicaLocation> partIdWithReplica : partIdWithReplicaList) {
             long partId = partIdWithReplica.getLeft();
@@ -1621,11 +1622,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
             ObTableParam param = new ObTableParam(obTable);
             if (ObGlobal.obVsnMajor() >= 4) {
+                long partIdx = tableEntry.getPartIdx(partId);
                 partId = tableEntry.isPartitionTable() ? tableEntry.getPartitionInfo()
-                    .getPartTabletIdMap().get(partId) : partId;
+                    .getPartTabletIdMap().get(partIdx) : partId;
             }
 
             param.setTableId(tableEntry.getTableId());
+            // real partition(tablet) id
             param.setPartitionId(partId);
 
             addr.recordAccess();

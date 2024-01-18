@@ -22,6 +22,8 @@ import com.alipay.oceanbase.rpc.ObTableClient;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.UUID;
 
 import static com.alipay.oceanbase.rpc.ObGlobal.OB_VERSION;
 import static com.alipay.oceanbase.rpc.ObGlobal.calcVersion;
@@ -63,6 +65,20 @@ public class ObTableClientTestUtil {
     public static Connection getConnection() throws SQLException {
         String[] userNames = FULL_USER_NAME.split("#");
         return DriverManager.getConnection(JDBC_URL, userNames[0], PASSWORD);
+    }
+
+    public static void cleanTable(String tableName) throws Exception {
+        Connection connection = ObTableClientTestUtil.getConnection();
+        Statement statement = connection.createStatement();
+        statement.execute("delete from " + tableName);
+    }
+
+    public static String generateRandomStringByUUID(int times) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < times; i++) {
+            sb.append(UUID.randomUUID().toString().replaceAll("-", ""));
+        }
+        return sb.toString();
     }
 
     public static boolean isOBVersionGreaterEqualThan(long targetVersion) {

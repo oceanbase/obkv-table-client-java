@@ -252,7 +252,6 @@ CREATE TABLE `test_throttle` (
         PARTITION p1 VALUES LESS THAN (1000000),
         PARTITION p2 VALUES LESS THAN MAXVALUE);
 
-
 CREATE TABLE test_aggregation (
     `c1` varchar(255),
     `c2` int NOT NULL,
