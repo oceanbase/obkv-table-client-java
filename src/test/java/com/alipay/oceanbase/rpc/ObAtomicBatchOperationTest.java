@@ -101,4 +101,93 @@ public class ObAtomicBatchOperationTest {
         }
     }
 
+    @Test
+    public void testBatchOperation() {
+        TableBatchOps batchOps = obTableClient.batch("test_varchar_table");
+        try {
+            // 测试 isReadOnly: false, isSameType: false, isSamePropertiesNames: false
+            {
+                batchOps.clear();
+                batchOps.insert("abc-1", new String[] {"c1", "c2" }, new String[] { "bar-1", "bar-2"});
+                batchOps.get("abc-2", new String[] { "c2" });
+                batchOps.insert("abc-3", new String[] { "c2" }, new String[] { "bar-3" });
+
+                Assert.assertFalse(batchOps.getObTableBatchOperation().isReadOnly());
+                Assert.assertFalse(batchOps.getObTableBatchOperation().isSameType());
+                Assert.assertFalse(batchOps.getObTableBatchOperation().isSamePropertiesNames());
+            }
+            // 测试 isReadOnly: true, isSameType: true, isSamePropertiesNames: false
+            {
+                batchOps.clear();
+                batchOps.get("abc-2", new String[] { "c1", "c2", "c3" });
+                batchOps.get("abc-3", new String[] { "c1", "c2", "c4"  });
+                batchOps.get("abc-4", new String[] { "c1", "c2"  });
+
+                Assert.assertTrue(batchOps.getObTableBatchOperation().isReadOnly());
+                Assert.assertTrue(batchOps.getObTableBatchOperation().isSameType());
+                Assert.assertFalse(batchOps.getObTableBatchOperation().isSamePropertiesNames());
+
+                batchOps.clear();
+                batchOps.get("abc-2", new String[] { "c1", "c2", "c3" });
+                batchOps.get("abc-3", new String[] { "c1", "c2", "c4"  });
+                batchOps.get("abc-4", new String[] { "c1", "c2", "c3"  });
+
+                Assert.assertTrue(batchOps.getObTableBatchOperation().isReadOnly());
+                Assert.assertTrue(batchOps.getObTableBatchOperation().isSameType());
+                Assert.assertFalse(batchOps.getObTableBatchOperation().isSamePropertiesNames());
+            }
+            // 测试 isReadOnly: true, isSameType: true, isSamePropertiesNames: true
+            {
+                batchOps.clear();
+                batchOps.get("abc-2", new String[] { "c1", "c2", "c3" });
+                batchOps.get("abc-3", new String[] { "c1", "c2", "c3"  });
+                batchOps.get("abc-4", new String[] { "c1", "c2", "c3"  });
+
+                Assert.assertTrue(batchOps.getObTableBatchOperation().isReadOnly());
+                Assert.assertTrue(batchOps.getObTableBatchOperation().isSameType());
+                Assert.assertTrue(batchOps.getObTableBatchOperation().isSamePropertiesNames());
+            }
+            // 测试 isReadOnly: false, isSameType: false, isSamePropertiesNames: true
+            {
+                batchOps.clear();
+                batchOps.get("abc-2", new String[] { "c1", "c2", "c3" });
+                batchOps.get("abc-3", new String[] { "c1", "c3", "c2"  });
+                batchOps.get("abc-4", new String[] { "c1", "c2", "c3"  });
+                batchOps.insert("abc-4", new String[] { "c3", "c2", "c1"  }, new String[] { "bar-3","bar-3","bar-3" });
+                batchOps.insert("abc-4", new String[] { "c1", "c2", "c3"  }, new String[] { "bar-2","bar-2","bar-2" });
+
+                Assert.assertFalse(batchOps.getObTableBatchOperation().isReadOnly());
+                Assert.assertFalse(batchOps.getObTableBatchOperation().isSameType());
+                Assert.assertTrue(batchOps.getObTableBatchOperation().isSamePropertiesNames());
+            }
+            // 测试 isReadOnly: false, isSameType: false, isSamePropertiesNames: false
+            {
+                batchOps.clear();
+                batchOps.get("abc-2", new String[] { "c1", "c2", "c3" });
+                batchOps.get("abc-3", new String[] { "c1", "c2", "c3"  });
+                batchOps.get("abc-4", new String[] { "c1", "c2"  });
+                batchOps.insert("abc-4", new String[] { "c1", "c2", "c3"  }, new String[] { "bar-3","bar-3","bar-3" });
+                batchOps.insert("abc-4", new String[] { "c1", "c2", "c3"  }, new String[] { "bar-2","bar-2","bar-2" });
+
+                Assert.assertFalse(batchOps.getObTableBatchOperation().isReadOnly());
+                Assert.assertFalse(batchOps.getObTableBatchOperation().isSameType());
+                Assert.assertFalse(batchOps.getObTableBatchOperation().isSamePropertiesNames());
+
+                batchOps.clear();
+                batchOps.get("abc-2", new String[] { "c1", "c2", "c3" });
+                batchOps.get("abc-3", new String[] { "c1", "c4", "c3"  });
+                batchOps.insert("abc-4", new String[] { "c1", "c2", "c3"  }, new String[] { "bar-3","bar-3","bar-3" });
+                batchOps.insert("abc-4", new String[] { "c2", "c3", "c1"  }, new String[] { "bar-2","bar-2","bar-2" });
+
+                Assert.assertFalse(batchOps.getObTableBatchOperation().isReadOnly());
+                Assert.assertFalse(batchOps.getObTableBatchOperation().isSameType());
+                Assert.assertFalse(batchOps.getObTableBatchOperation().isSamePropertiesNames());
+            }
+
+        } catch (Exception ex) {
+            Assert.fail("hit exception:" + ex);
+        }
+
+    }
+
 }

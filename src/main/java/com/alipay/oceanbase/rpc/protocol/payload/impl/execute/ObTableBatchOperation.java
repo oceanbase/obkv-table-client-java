@@ -36,7 +36,7 @@ public class ObTableBatchOperation extends AbstractPayload {
     private List<ObTableOperation> tableOperations = new ArrayList<ObTableOperation>();
     private boolean                isReadOnly      = true;
     private boolean                isSameType      = true;
-    private boolean                isSamePropertiesNames;
+    private boolean                isSamePropertiesNames = true;
 
     /*
      * Encode.
@@ -136,6 +136,17 @@ public class ObTableBatchOperation extends AbstractPayload {
                 .get(length - 2).getOperationType()) {
             isSameType = false;
         }
+        // 判断是否是 same_properties_name
+        if (isSamePropertiesNames && length > 1) {
+            ObTableOperation prev = tableOperations.get(length - 2);
+            ObTableOperation curr = tableOperations.get(length - 1);
+            if (prev.getEntity().getPropertiesCount() != curr.getEntity().getPropertiesCount()) {
+                isSamePropertiesNames = false;
+            } else {
+                isSamePropertiesNames = prev.getEntity().getProperties().keySet()
+                        .equals(curr.getEntity().getProperties().keySet());
+            }
+        }
     }
 
     /*
@@ -145,9 +156,11 @@ public class ObTableBatchOperation extends AbstractPayload {
         this.tableOperations = tableOperations;
         this.isReadOnly = true;
         this.isSameType = true;
+        this.isSamePropertiesNames = true;
         ObTableOperationType prevType = null;
+        ObTableOperation preOp = null;
         for (ObTableOperation o : tableOperations) {
-            if (this.isReadOnly || this.isSameType) {
+            if (this.isReadOnly || this.isSameType || this.isSamePropertiesNames) {
                 if (!o.isReadonly()) {
                     this.isReadOnly = false;
                 }
@@ -155,6 +168,18 @@ public class ObTableBatchOperation extends AbstractPayload {
                     this.isSameType = false;
                 } else {
                     prevType = o.getOperationType();
+                }
+
+                if(this.isSamePropertiesNames){
+                    if(preOp == null){
+                        preOp = o;
+                    }else if (preOp.getEntity().getPropertiesCount() != o.getEntity().getPropertiesCount()) {
+                        this.isSamePropertiesNames = false;
+                    } else {
+                        this.isSamePropertiesNames = preOp.getEntity().getProperties().keySet()
+                                .equals(o.getEntity().getProperties().keySet());
+                    }
+                    preOp = o;
                 }
             } else {
                 return;
