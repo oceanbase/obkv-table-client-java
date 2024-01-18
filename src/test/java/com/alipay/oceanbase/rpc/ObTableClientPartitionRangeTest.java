@@ -33,6 +33,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Executors;
 
+import static com.alipay.oceanbase.rpc.util.ObTableClientTestUtil.cleanTable;
+import static com.alipay.oceanbase.rpc.util.ObTableClientTestUtil.generateRandomStringByUUID;
 import static java.lang.StrictMath.abs;
 
 public class ObTableClientPartitionRangeTest {
@@ -596,20 +598,6 @@ public class ObTableClientPartitionRangeTest {
         }
     }
 
-    public void cleanPartitionLocationTable(String tableName) throws Exception {
-        Connection connection = ObTableClientTestUtil.getConnection();
-        Statement statement = connection.createStatement();
-        statement.execute("delete from " + tableName);
-    }
-
-    static String generateRandomStringByUUID(int times) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < times; i++) {
-            sb.append(UUID.randomUUID().toString().replaceAll("-", ""));
-        }
-        return sb.toString();
-    }
-
     @Test
     public void testPartitionLocation() throws Exception {
         obTableClient.setRunningMode(ObTableClient.RunningMode.NORMAL);
@@ -617,7 +605,7 @@ public class ObTableClientPartitionRangeTest {
         obTableClient.addRowKeyElement(testTable, new String[] { "c1", "c2", "c3", "c4" });
         Random rng = new Random();
         try {
-            cleanPartitionLocationTable(testTable);
+            cleanTable(testTable);
             Connection connection = ObTableClientTestUtil.getConnection();
             Statement statement = connection.createStatement();
             for (int i = 0; i < 64; i++) {
@@ -640,7 +628,7 @@ public class ObTableClientPartitionRangeTest {
             e.printStackTrace();
             Assert.assertTrue(false);
         } finally {
-            cleanPartitionLocationTable(testTable);
+            cleanTable(testTable);
         }
     }
 
@@ -651,7 +639,7 @@ public class ObTableClientPartitionRangeTest {
         String testTable = "testDateTime";
         obTableClient.addRowKeyElement(testTable, new String[] { "c0", "c1" });
         try {
-            cleanPartitionLocationTable(testTable);
+            cleanTable(testTable);
             Connection connection = ObTableClientTestUtil.getConnection();
             Statement statement = connection.createStatement();
             for (int i = 0; i < 64; i++) {
@@ -673,7 +661,7 @@ public class ObTableClientPartitionRangeTest {
             e.printStackTrace();
             Assert.assertTrue(false);
         } finally {
-            cleanPartitionLocationTable(testTable);
+            cleanTable(testTable);
         }
     }
 }

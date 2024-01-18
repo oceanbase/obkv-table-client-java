@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.exception.ObTablePartitionConsistentException;
 import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
+import com.alipay.oceanbase.rpc.filter.ObCompareOp;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
@@ -35,8 +36,12 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.Executors;
+
+import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.andList;
+import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.compareVal;
+import static com.alipay.oceanbase.rpc.util.ObTableClientTestUtil.cleanTable;
+import static com.alipay.oceanbase.rpc.util.ObTableClientTestUtil.generateRandomStringByUUID;
 
 public class ObTableClientPartitionKeyTest {
 
@@ -706,20 +711,6 @@ public class ObTableClientPartitionKeyTest {
         }
     }
 
-    public void cleanPartitionLocationTable(String tableName) throws Exception {
-        Connection connection = ObTableClientTestUtil.getConnection();
-        Statement statement = connection.createStatement();
-        statement.execute("delete from " + tableName);
-    }
-
-    static String generateRandomStringByUUID(int times) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < times; i++) {
-            sb.append(UUID.randomUUID().toString().replaceAll("-", ""));
-        }
-        return sb.toString();
-    }
-
     @Test
     public void testPartitionLocation() throws Exception {
         obTableClient.setRunningMode(ObTableClient.RunningMode.NORMAL);
@@ -727,7 +718,7 @@ public class ObTableClientPartitionKeyTest {
         obTableClient.addRowKeyElement(testTable,
             new String[] { "c0", "c1", "c2", "c3", "c4", "c5" });
         try {
-            cleanPartitionLocationTable(testTable);
+            cleanTable(testTable);
             Connection connection = ObTableClientTestUtil.getConnection();
             Statement statement = connection.createStatement();
             for (int i = 0; i < 64; i++) {
@@ -753,7 +744,39 @@ public class ObTableClientPartitionKeyTest {
             e.printStackTrace();
             Assert.assertTrue(false);
         } finally {
-            cleanPartitionLocationTable(testTable);
+            cleanTable(testTable);
+        }
+    }
+
+    @Test
+    public void testTwoPartitionQuery() throws Exception {
+        obTableClient.setRunningMode(ObTableClient.RunningMode.NORMAL);
+        String testTable = "testPartitionKeyComplex";
+        obTableClient.addRowKeyElement(testTable,
+            new String[] { "c0", "c1", "c2", "c3", "c4", "c5" });
+        try {
+            cleanTable(testTable);
+            byte c0 = (byte) 0;
+            int c1 = 10001;
+            long c2 = 100001;
+            String c3 = generateRandomStringByUUID(10);
+            String c4 = generateRandomStringByUUID(5) + c2 + generateRandomStringByUUID(5);
+            String c5 = generateRandomStringByUUID(5) + c3 + generateRandomStringByUUID(5);
+            TableQuery query = obTableClient
+                .query(testTable)
+                .addScanRange(new Object[] { c0, c1, c2, c3, c4, c5 },
+                    new Object[] { c0, c1, c2, c3, c4, c5 })
+                .select("c1", "c2", "c3", "c4", "c5", "c6")
+                .setFilter(
+                    andList(compareVal(ObCompareOp.GE, "c2", 0),
+                        compareVal(ObCompareOp.LE, "c3", 0)));
+            QueryResultSet resultSet = query.execute();
+            Assert.assertEquals(0, resultSet.cacheSize());
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        } finally {
+            cleanTable(testTable);
         }
     }
 }

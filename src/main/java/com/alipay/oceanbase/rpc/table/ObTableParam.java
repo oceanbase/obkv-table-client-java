@@ -26,7 +26,7 @@ public class ObTableParam {
     private ObTable obTable;
     private long    tableId     = OB_INVALID_ID;
     private long    partitionId = INVALID_TABLET_ID; // partition id in 3.x aka tablet id in 4.x
-    private long    partId      = INVALID_TABLET_ID; // origin part id in 4.x, can be used when retry
+    private long    partId      = INVALID_TABLET_ID; // logicId, partition id in 3.x, can be used when retry
 
     /*
      * constructor

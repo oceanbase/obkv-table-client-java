@@ -125,6 +125,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             throw new ObTableException("offset can not be use without limit");
         }
         final long startTime = System.currentTimeMillis();
+        // partitionObTables -> Map<logicId, Pair<logicId, param>>
         Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new HashMap<Long, ObPair<Long, ObTableParam>>();
         // fill a whole range if no range is added explicitly.
         if (tableQuery.getKeyRanges().isEmpty()) {
@@ -162,6 +163,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                     end[i] = endKey.getObj(i).getValue();
                 }
                 ObBorderFlag borderFlag = rang.getBorderFlag();
+                // pairs -> List<Pair<logicId, param>>
                 List<ObPair<Long, ObTableParam>> pairs = obTableClient.getTables(indexTableName,
                     start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false,
                     false, obTableClient.getReadRoute());
