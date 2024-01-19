@@ -428,7 +428,7 @@ CREATE TABLE IF NOT EXISTS `test_auto_increment_one_rowkey` (
     `c1` int auto_increment,
     `c2` int NOT NULL, PRIMARY KEY(`c1`));
 
-CREATE TABLE  IF NOT EXISTS `sync_item` (
+CREATE TABLE IF NOT EXISTS `sync_item` (
     `uid` varchar(20) NOT NULL,
     `object_id` varchar(32) NOT NULL,
     `type` int(11) NULL,
@@ -439,5 +439,13 @@ CREATE TABLE  IF NOT EXISTS `sync_item` (
     index idx1(`uid`, `type`) local)
     DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci
     PARTITION BY KEY(`uid`) PARTITIONS 32;
+
+CREATE TABLE IF NOT EXISTS `test_put` (
+    `id` varchar(20) NOT NULL,
+    `c1` bigint DEFAULT NULL,
+    `c2` bigint DEFAULT NULL,
+    `c3` varchar(32) DEFAULT NULL,
+    `c4` bigint DEFAULT NULL,
+    PRIMARY KEY(`id`)) PARTITION BY KEY(`id`) PARTITIONS 32;
 
 alter system set kv_hotkey_throttle_threshold = 50;

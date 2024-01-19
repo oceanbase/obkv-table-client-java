@@ -93,6 +93,14 @@ public abstract class AbstractTableBatchOps implements TableBatchOps {
     }
 
     /**
+     * Put.
+     */
+    @Override
+    public void put(Object rowkey, String[] columns, Object[] values) {
+        put(new Object[] { rowkey }, columns, values);
+    }
+
+    /**
      * Get table name.
      */
     @Override

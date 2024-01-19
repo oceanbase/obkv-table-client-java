@@ -117,6 +117,14 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
     }
 
     /*
+     * Put.
+     */
+    @Override
+    public void put(Object[] rowkeys, String[] columns, Object[] values) {
+        addObTableOperation(ObTableOperationType.PUT, rowkeys, columns, values);
+    }
+
+    /*
      * Add ob table operation.
      */
     public void addObTableOperation(ObTableOperationType type, Object[] rowkeys, String[] columns,
