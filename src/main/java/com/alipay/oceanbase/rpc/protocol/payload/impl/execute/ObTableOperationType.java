@@ -28,7 +28,10 @@ public enum ObTableOperationType {
     APPEND(7), // append column value
     SCAN(8), // query
     TTL(9), // observer internal type, not used by client
-    CHECK_AND_INSERT_UP(10), INVALID(11);
+    CHECK_AND_INSERT_UP(10),
+    PUT(11), // override row
+    TRIGGER(12), // internal op type
+    INVALID(15);
 
     private int                                       value;
     private static Map<Integer, ObTableOperationType> map             = new HashMap<Integer, ObTableOperationType>();

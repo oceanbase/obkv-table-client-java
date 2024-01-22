@@ -138,6 +138,14 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         throw new FeatureNotSupportedException();
     }
 
+    /*
+     * Put.
+     */
+    @Override
+    public void put(Object[] rowkeys, String[] columns, Object[] values) {
+        throw new FeatureNotSupportedException();
+    }
+
     private void addOperation(ObTableSingleOp singleOp) {
         batchOperation.add(singleOp);
     }

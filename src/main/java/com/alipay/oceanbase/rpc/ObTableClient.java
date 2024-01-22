@@ -1999,6 +1999,47 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /**
+     * put with result
+     * @param tableName which table to put
+     * @param rowKey insert row key
+     * @param keyRanges scan range
+     * @param columns columns name to put
+     * @param values new values
+     * @return execute result
+     * @throws Exception exception
+     */
+    public ObPayload putWithResult(final String tableName, final Object[] rowKey,
+                                   final List<ObNewRange> keyRanges, final String[] columns,
+                                   final Object[] values) throws Exception {
+        final long start = System.currentTimeMillis();
+        return executeMutation(tableName,
+                new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {
+                    /**
+                     * Execute.
+                     */
+                    @Override
+                    public ObPayload execute(ObPair<Long, ObTableParam> obPair) throws Exception {
+                        long TableTime = System.currentTimeMillis();
+                        ObTableParam tableParam = obPair.getRight();
+                        ObTable obTable = tableParam.getObTable();
+                        ObTableOperationRequest request = ObTableOperationRequest.getInstance(
+                                tableName, PUT, rowKey, columns, values,
+                                obTable.getObTableOperationTimeout());
+                        request.setTableId(tableParam.getTableId());
+                        // partId/tabletId
+                        request.setPartitionId(tableParam.getPartitionId());
+                        ObPayload result = obTable.execute(request);
+                        String endpoint = obTable.getIp() + ":" + obTable.getPort();
+                        MonitorUtil.info(request, database, tableName, "PUT", endpoint, rowKey,
+                                (ObTableOperationResult) result, TableTime - start,
+                                System.currentTimeMillis() - TableTime, getslowQueryMonitorThreshold());
+                        checkResult(obTable.getIp(), obTable.getPort(), request, result);
+                        return result;
+                    }
+                });
+    }
+
+    /**
      * Replace.
      */
     public Replace replace(String tableName) {

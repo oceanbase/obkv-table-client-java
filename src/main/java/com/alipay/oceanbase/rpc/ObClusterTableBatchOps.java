@@ -105,6 +105,14 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
     }
 
     /*
+     * Put.
+     */
+    @Override
+    public void put(Object[] rowkeys, String[] columns, Object[] values) {
+        tableBatchOps.put(rowkeys, columns, values);
+    }
+
+    /*
      * Execute.
      */
     @Override

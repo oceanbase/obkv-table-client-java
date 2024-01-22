@@ -142,6 +142,14 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         addObTableClientOperation(ObTableOperationType.APPEND, rowkeys, columns, values);
     }
 
+    /*
+     * Put.
+     */
+    @Override
+    public void put(Object[] rowkeys, String[] columns, Object[] values) {
+        addObTableClientOperation(ObTableOperationType.PUT, rowkeys, columns, values);
+    }
+
     private void addObTableClientOperation(ObTableOperationType type, Object[] rowkeys,
                                            String[] columns, Object[] values) {
         ObTableOperation instance = ObTableOperation.getInstance(type, rowkeys, columns, values);
@@ -193,6 +201,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                     case REPLACE:
                     case INCREMENT:
                     case APPEND:
+                    case PUT:
                         results.add(new MutationResult(result));
                         break;
                     default:
