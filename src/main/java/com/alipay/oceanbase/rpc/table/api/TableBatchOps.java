@@ -60,6 +60,10 @@ public interface TableBatchOps {
 
     void insertOrUpdate(Object[] rowkeys, String[] columns, Object[] values);
 
+    void put(Object rowkey, String[] columns, Object[] values);
+
+    void put(Object[] rowkeys, String[] columns, Object[] values);
+
     /**
      * increment the value
      * @param rowkey the primary key
