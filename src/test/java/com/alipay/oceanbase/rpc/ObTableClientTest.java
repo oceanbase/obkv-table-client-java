@@ -2295,14 +2295,15 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 .execute("insert into test_datetime_table values (0, '2022-04-21 12:00:00.001', '2022-04-21 12:00:00.001', '2022-04-21 12:00:00.001')");
 
             // 2022-04-21 12:00:00.001 CST = 1650513600001 -> insert by sql, get by obkv client
-            Map<String, Object> res = client.get("test_datetime_table", "0", new String[] { "c2", "c3", "c4" });
+            Map<String, Object> res = client.get("test_datetime_table", "0", new String[] { "c2",
+                    "c3", "c4" });
             Assert.assertEquals(date1, res.get("c2"));
             Assert.assertEquals(date1, res.get("c3"));
             Assert.assertNotEquals(date1, res.get("c4")); // datetime -> second
 
             // 2022-04-21 15:00:00.001 CST = 1650524400001 -> insert by obkv client, get by sql
-            client
-                .insert("test_datetime_table", "1", new String[] { "c2", "c3", "c4" }, new Object[] { date2, date2, date3 });
+            client.insert("test_datetime_table", "1", new String[] { "c2", "c3", "c4" },
+                new Object[] { date2, date2, date3 });
             ResultSet resultSet = statement
                 .executeQuery("select * from test_datetime_table where c1 = 1");
             resultSet.next();
