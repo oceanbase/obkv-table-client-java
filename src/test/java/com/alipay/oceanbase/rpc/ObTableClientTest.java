@@ -55,7 +55,11 @@ import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.*;
 
 import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.*;
@@ -2266,40 +2270,48 @@ public class ObTableClientTest extends ObTableClientTestBase {
     public void testDateTime() throws Exception {
         final ObTableClient client = (ObTableClient) this.client;
         client.addRowKeyElement("test_datetime_table", new String[] { "c1" });
+        /*
+            CREATE TABLE IF NOT EXISTS `test_datetime_table` (
+            `c1` varchar(20) NOT NULL,
+            `c2` datetime(6) DEFAULT NULL,
+            `c3` datetime(3) DEFAULT NULL,
+            `c4` datetime DEFAULT NULL,
+             PRIMARY KEY (`c1`)
+            );
+         */
 
         SimpleDateFormat sdf = new SimpleDateFormat(" yyyy-MM-dd HH:mm:ss ");
-        Date date1 = sdf.parse(" 2022-04-21 12:00:00 ");
-        // 1650513600000 -> 2022-04-21 4:00:00
-        Date date11 = new Date(1650513600000L);
-        Date date2 = sdf.parse(" 2022-04-21 15:00:00 ");
+        // 1650513600001 -> 2022-04-21 12:00:00.001
+        Date date1 = new Date(1650513600001L);
+        // 1650524400001 -> 2022-04-21 15:00:00.001 for c2/c3
+        Date date2 = new Date(1650524400001L);
+        // 1650524400000 -> 2022-04-21 15:00:00 for c4
+        Date date3 = new Date(1650524400000L);
         try {
             // client.insert("test_datetime_table", "0", new String[] { "c2" }, new Object[] { date1 });
             Connection connection = ObTableClientTestUtil.getConnection();
             Statement statement = connection.createStatement();
             statement
-                .execute("insert into test_datetime_table values (0, FROM_UNIXTIME(1650513600))");
+                .execute("insert into test_datetime_table values (0, '2022-04-21 12:00:00.001', '2022-04-21 12:00:00.001', '2022-04-21 12:00:00.001')");
 
-            // 2022-04-21 12:00:00 CST = 1650513600000 -> insert by sql, get by obkv client
-            Map<String, Object> res = client.get("test_datetime_table", "0", new String[] { "c2" });
+            // 2022-04-21 12:00:00.001 CST = 1650513600001 -> insert by sql, get by obkv client
+            Map<String, Object> res = client.get("test_datetime_table", "0", new String[] { "c2", "c3", "c4" });
             Assert.assertEquals(date1, res.get("c2"));
-            Assert.assertEquals(date11, res.get("c2"));
-            Assert.assertEquals(date1.getTime(), ((Date) res.get("c2")).getTime());
-            Assert.assertEquals(date11.getTime(), ((Date) res.get("c2")).getTime());
-            Assert.assertEquals(1650513600000L, ((Date) res.get("c2")).getTime());
-            System.out.println(date1);
-            System.out.println(date11);
-            System.out.println(res.get("c2"));
+            Assert.assertEquals(date1, res.get("c3"));
+            Assert.assertNotEquals(date1, res.get("c4")); // datetime -> second
 
-            // 2022-04-21 15:00:00 CST = 1650524400000 -> insert by obkv client, get by sql
+            // 2022-04-21 15:00:00.001 CST = 1650524400001 -> insert by obkv client, get by sql
             client
-                .insert("test_datetime_table", "1", new String[] { "c2" }, new Object[] { date2 });
+                .insert("test_datetime_table", "1", new String[] { "c2", "c3", "c4" }, new Object[] { date2, date2, date3 });
             ResultSet resultSet = statement
                 .executeQuery("select * from test_datetime_table where c1 = 1");
             resultSet.next();
             Assert.assertEquals(date2, resultSet.getTimestamp("c2"));
-            Assert.assertEquals(date2.getTime(), resultSet.getDate("c2").getTime());
-            Assert.assertEquals(1650524400000L, resultSet.getDate("c2").getTime());
-            System.out.println(date2);
+            Assert.assertEquals(1650524400001L, resultSet.getDate("c2").getTime());
+            Assert.assertEquals(date2, resultSet.getTimestamp("c3"));
+            Assert.assertEquals(1650524400001L, resultSet.getDate("c3").getTime());
+            Assert.assertEquals(date3, resultSet.getTimestamp("c4"));
+            Assert.assertEquals(1650524400000L, resultSet.getDate("c4").getTime());
         } finally {
             client.delete("test_datetime_table").setRowKey(colVal("c1", "0")).execute();
             client.delete("test_datetime_table").setRowKey(colVal("c1", "1")).execute();
@@ -2435,6 +2447,47 @@ public class ObTableClientTest extends ObTableClientTestBase {
             client.delete("test_query_filter_mutate", new Object[] { 0L });
             client.delete("test_query_filter_mutate", new Object[] { 1L });
             client.delete("test_query_filter_mutate", new Object[] { 2L });
+        }
+    }
+
+    @Test
+    public void testTimeStamp() throws Exception {
+        /*
+         CREATE TABLE IF NOT EXISTS `test_timestamp_table` (
+            `c1` varchar(20) NOT NULL,
+            `c2` timestamp(6) DEFAULT NULL,
+            `c3` timestamp(3) DEFAULT NULL,
+            `c4` timestamp DEFAULT NULL,
+             PRIMARY KEY (`c1`)
+            );
+         */
+        final String TABLE_NAME = "test_timestamp_table";
+        System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
+        ((ObTableClient) client).addRowKeyElement(TABLE_NAME, new String[] { "c1" }); //同索引列的值一样
+        try {
+            LocalDateTime localDateTime = LocalDateTime.of(1997, 7, 1, 0, 0);
+            ZonedDateTime zonedDateTime = localDateTime.atOffset(ZoneOffset.UTC).toZonedDateTime();
+            long seconds = zonedDateTime.toEpochSecond();
+            int nanos = zonedDateTime.getNano() + 1000; // 1 micro second
+            long milliseconds = seconds * 1_000;
+            Timestamp timestamp6 = new Timestamp(milliseconds);
+            Timestamp timestamp3 = new Timestamp(milliseconds);
+            Timestamp timestamp = new Timestamp(milliseconds);
+            // Timestamp: 1997-07-01 08:00:00.000001
+            timestamp6.setNanos(nanos);
+
+            client.insert(TABLE_NAME, new Object[] { "key_0" }, new String[] { "c2", "c3", "c4" },
+                    new Object[] { timestamp6, timestamp3, timestamp });
+
+            Map<String, Object> values = client.get("test_timestamp_table", "key_0",
+                    new String[] { "c2", "c3", "c4" });
+
+            assertEquals(timestamp6, values.get("c2"));
+            assertEquals(timestamp3, values.get("c3"));
+            assertEquals(timestamp, values.get("c4"));
+            assertEquals(timestamp6.toString(), values.get("c2").toString());
+        } finally {
+            client.delete("test_timestamp_table", new Object[] { "key_0" });
         }
     }
 }
