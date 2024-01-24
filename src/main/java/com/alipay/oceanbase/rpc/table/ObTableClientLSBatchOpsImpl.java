@@ -144,25 +144,26 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
     public void addOperation(CheckAndInsUp checkAndInsUp) {
         InsertOrUpdate insUp = checkAndInsUp.getInsUp();
-        ObTableSingleOp singleOp = new ObTableSingleOp();
 
-        ObTableOperation operation = ObTableOperation.getInstance(
-            ObTableOperationType.INSERT_OR_UPDATE, insUp.getRowKey(), insUp.getColumns(),
-            insUp.getValues());
-        ObTableBatchOperation operations = new ObTableBatchOperation();
-        operations.addTableOperation(operation);
-        singleOp.setMutations(operations);
-
-        ObTableQuery tableQuery = new ObTableQuery();
+        ObTableSingleOpQuery query = new ObTableSingleOpQuery();
         ObNewRange range = new ObNewRange();
         range.setStartKey(ObRowKey.getInstance(insUp.getRowKey()));
         range.setEndKey(ObRowKey.getInstance(insUp.getRowKey()));
-        tableQuery.addKeyRange(range);
-        tableQuery.setFilterString(checkAndInsUp.getFilter().toString());
-        singleOp.setTableQuery(tableQuery);
-        singleOp.setIsCheckAndExecute(true);
+        query.addScanRange(range);
+        query.setFilterString(checkAndInsUp.getFilter().toString());
+
+        String[] rowKeyNames = checkAndInsUp.getInsUp().getRowKeyNames().toArray(new String[0]);
+        Object[] rowKey = checkAndInsUp.getInsUp().getRowKey();
+        String[] propertiesNames = checkAndInsUp.getInsUp().getColumns();
+        Object[] propertiesValues = checkAndInsUp.getInsUp().getValues();
+        ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKey, propertiesNames, propertiesValues);
+
+        ObTableSingleOp singleOp = new ObTableSingleOp();
+        singleOp.setSingleOpType(ObTableOperationType.CHECK_AND_INSERT_UP);
         singleOp.setIsCheckNoExists(!checkAndInsUp.isCheckExists());
-        singleOp.setSingleOpType(ObTableSingleOpType.QUERY_AND_MUTATE);
+        singleOp.setQuery(query);
+        singleOp.addEntity(entity);
+
         addOperation(singleOp);
     }
 
@@ -225,7 +226,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
         for (int i = 0; i < operations.size(); i++) {
             ObTableSingleOp operation = operations.get(i);
-            ObRowKey rowKeyObject = operation.getTableQuery().getKeyRanges().get(0).getStartKey();
+            ObRowKey rowKeyObject = operation.getScanRange().get(0).getStartKey();
             int rowKeySize = rowKeyObject.getObjs().size();
             Object[] rowKey = new Object[rowKeySize];
             for (int j = 0; j < rowKeySize; j++) {
@@ -272,9 +273,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         }
         ObTableTabletOp tabletOp = new ObTableTabletOp();
         tabletOp.setSingleOperations(subOperations);
-        tabletOp.setTableId(tableId);
         tabletOp.setTabletId(partId);
         subRequest.addTabletOperation(tabletOp);
+        subRequest.setTableId(tableId);
         subRequest.setEntityType(entityType);
         subRequest.setTimeout(subObTable.getObTableOperationTimeout());
 
