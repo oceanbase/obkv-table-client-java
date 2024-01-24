@@ -67,14 +67,18 @@ CREATE TABLE IF NOT EXISTS `test_varbinary_table` (
     );
 
 CREATE TABLE IF NOT EXISTS `test_timestamp_table` (
-     `c1` varchar(20) NOT NULL,
-     `c2` timestamp DEFAULT NULL,
+    `c1` varchar(20) NOT NULL,
+    `c2` timestamp(6) DEFAULT NULL,
+    `c3` timestamp(3) DEFAULT NULL,
+    `c4` timestamp DEFAULT NULL,
      PRIMARY KEY (`c1`)
     );
 
 CREATE TABLE IF NOT EXISTS `test_datetime_table` (
-     `c1` varchar(20) NOT NULL,
-     `c2` datetime DEFAULT NULL,
+    `c1` varchar(20) NOT NULL,
+    `c2` datetime(6) DEFAULT NULL,
+    `c3` datetime(3) DEFAULT NULL,
+    `c4` datetime DEFAULT NULL,
      PRIMARY KEY (`c1`)
     );
 
