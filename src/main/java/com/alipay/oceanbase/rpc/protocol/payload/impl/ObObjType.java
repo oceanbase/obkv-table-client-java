@@ -921,8 +921,9 @@ public enum ObObjType {
          */
         @Override
         public ObObjMeta getDefaultObjMeta() {
+            // scale set into 6 means microSecond
             return new ObObjMeta(this, ObCollationLevel.CS_LEVEL_NUMERIC,
-                ObCollationType.CS_TYPE_BINARY, (byte) 10);
+                ObCollationType.CS_TYPE_BINARY, (byte) 6);
         }
 
         /*
@@ -946,7 +947,10 @@ public enum ObObjType {
          */
         @Override
         public byte[] encode(Object obj) {
-            return Serialization.encodeVi64(((Date) obj).getTime() * 1000L);
+            long timeInMicroseconds = ((Timestamp)obj).getTime() * 1_000;
+            int nanoSeconds = ((Timestamp)obj).getNanos() % 1_000_000;
+            timeInMicroseconds += nanoSeconds / 1_000;
+            return Serialization.encodeVi64(timeInMicroseconds);
         }
 
         /*
@@ -954,7 +958,12 @@ public enum ObObjType {
          */
         @Override
         public Object decode(ByteBuf buf, ObCollationType type) {
-            return new Timestamp(Serialization.decodeVi64(buf) / 1000L);
+            long timestampMicro = Serialization.decodeVi64(buf);
+            long timestampMilli = timestampMicro / 1_000;
+            int nanos = (int) (timestampMicro % 1_000) * 1_000;
+            Timestamp timestamp = new Timestamp(timestampMilli);
+            timestamp.setNanos(timestamp.getNanos() + nanos);
+            return timestamp;
         }
 
         /*
@@ -970,8 +979,9 @@ public enum ObObjType {
          */
         @Override
         public ObObjMeta getDefaultObjMeta() {
+            // scale set into 6 means microSecond
             return new ObObjMeta(this, ObCollationLevel.CS_LEVEL_NUMERIC,
-                ObCollationType.CS_TYPE_BINARY, (byte) 10);
+                ObCollationType.CS_TYPE_BINARY, (byte) 6);
         }
 
         /*
