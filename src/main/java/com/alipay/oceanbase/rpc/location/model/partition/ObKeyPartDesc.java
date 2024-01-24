@@ -25,6 +25,7 @@ import org.apache.commons.lang.builder.ToStringBuilder;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +38,7 @@ import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.LCD;
  */
 public class ObKeyPartDesc extends ObPartDesc {
     private static final Logger logger    = TableClientLoggerFactory.getLogger(ObKeyPartDesc.class);
+    private List<Long>          completeWorks;
 
     private int                 partSpace = 0;
     private int                 partNum   = 0;
@@ -74,6 +76,11 @@ public class ObKeyPartDesc extends ObPartDesc {
      */
     public void setPartNum(int partNum) {
         this.partNum = partNum;
+        List<Long> partIds = new ArrayList<Long>();
+        for (long i = 0; i < partNum; i++) {
+            partIds.add(i);
+        }
+        completeWorks = Collections.unmodifiableList(partIds);
     }
 
     /*
@@ -82,12 +89,32 @@ public class ObKeyPartDesc extends ObPartDesc {
     @Override
     public List<Long> getPartIds(Object[] start, boolean startInclusive, Object[] end,
                                  boolean endInclusive) {
-        List<Object[]> rowKeys = new ArrayList<Object[]>();
-        rowKeys.add(start);
-        rowKeys.add(end);
-        List<Long> partIds = new ArrayList<Long>();
-        partIds.add(getPartId(rowKeys, true));
-        return partIds;
+        try {
+            // eval rowkey
+            List<Object> startValues = evalRowKeyValues(start);
+            List<Object> endValues = evalRowKeyValues(end);
+
+            if (startValues == null || endValues == null) {
+                throw new NumberFormatException("can not parseToComparable start value ["
+                                                + startValues + "] or end value [" + endValues
+                                                + "] to long");
+            }
+
+            if (startValues.equals(endValues)) {
+                List<Object[]> rowKeys = new ArrayList<Object[]>();
+                List<Long> partIds = new ArrayList<Long>();
+                rowKeys.add(start);
+                partIds.add(getPartId(rowKeys, false));
+                return partIds;
+            } else {
+                // partition key is different in key partition
+                return completeWorks;
+            }
+        } catch (IllegalArgumentException e) {
+            logger.error(LCD.convert("01-00002"), e);
+            throw new IllegalArgumentException(
+                "ObKeyPartDesc get part id come across illegal params", e);
+        }
     }
 
     /*
@@ -161,7 +188,6 @@ public class ObKeyPartDesc extends ObPartDesc {
             throw new IllegalArgumentException(
                 "ObKeyPartDesc get part id come across illegal params", e);
         }
-
     }
 
     private boolean equalsWithCollationType(ObCollationType collationType, Object s, Object t)
