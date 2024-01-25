@@ -26,7 +26,14 @@ public enum ObTableOperationType {
     INSERT_OR_UPDATE(4), // INSERT or UPDATE, columns not in arguments will remain unchanged
     REPLACE(5), // DELETE & INSERT, columns not in arguments will change to default value
     INCREMENT(6), // the column must be can be cast to long. if exist increase, else  insert
-    APPEND(7);// append column value
+    APPEND(7),// append column value
+    SCAN(8), // query
+    TTL(9), // observer internal type, not used by client
+    CHECK_AND_INSERT_UP(10),
+    INVALID(11);
+
+
+
 
     private int                                       value;
     private static Map<Integer, ObTableOperationType> map = new HashMap<Integer, ObTableOperationType>();

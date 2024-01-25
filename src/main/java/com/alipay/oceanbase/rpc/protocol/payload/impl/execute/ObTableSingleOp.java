@@ -18,17 +18,18 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutate;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
-import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
-import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderLength;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ObTableSingleOp extends AbstractPayload {
-    private ObTableQueryAndMutate queryAndMutate = new ObTableQueryAndMutate();
-    private ObTableSingleOpType   singleOpType;
+    private ObTableOperationType   singleOpType;
+    private ObTableSingleOpFlag singleOpFlag = new ObTableSingleOpFlag();
+    private ObTableSingleOpQuery query = new ObTableSingleOpQuery();
+    private List<ObTableSingleOpEntity> entities = new ArrayList<>();
 
     /*
      * Encode.
@@ -42,14 +43,29 @@ public class ObTableSingleOp extends AbstractPayload {
         idx = encodeHeader(bytes, idx);
 
         // 1. encode op type
-        byte opTypeVal = singleOpType.getValue();
+        byte opTypeVal = singleOpType.getByteValue();
         System.arraycopy(Serialization.encodeI8(opTypeVal), 0, bytes, idx, 1);
         idx += 1;
 
-        // 1. encode query and mutate/op
-        int len = (int) queryAndMutate.getPayloadSize();
-        System.arraycopy(queryAndMutate.encode(), 0, bytes, idx, len);
+        long flag = singleOpFlag.getValue();
+        int len = Serialization.getNeedBytes(flag);
+        System.arraycopy(Serialization.encodeVi64(flag), 0, bytes, idx, len);
         idx += len;
+
+        // 2. encode single op query
+        len = (int) query.getPayloadSize();
+        System.arraycopy(query.encode(), 0, bytes, idx, len);
+        idx += len;
+
+        // 3. encode entities
+        len = Serialization.getNeedBytes(entities.size());
+        System.arraycopy(Serialization.encodeVi64(entities.size()), 0, bytes, idx, len);
+        idx += len;
+        for (ObTableSingleOpEntity entity : entities) {
+            len = (int) entity.getPayloadSize();
+            System.arraycopy(entity.encode(), 0, bytes, idx, len);
+            idx += len;
+        }
 
         return bytes;
     }
@@ -61,12 +77,16 @@ public class ObTableSingleOp extends AbstractPayload {
     public Object decode(ByteBuf buf) {
         super.decode(buf);
 
-        this.queryAndMutate = new ObTableQueryAndMutate();
-        this.queryAndMutate.decode(buf);
+        this.singleOpType = ObTableOperationType.valueOf(Serialization.decodeI8(buf.readByte()));
+        this.singleOpFlag.setValue(Serialization.decodeVi64(buf));
+        this.query.decode(buf);
+        int len = (int) Serialization.decodeVi64(buf);
+        for (int i = 0; i < len; i++) {
+            ObTableSingleOpEntity entity = new ObTableSingleOpEntity();
+            entity.decode(buf);
+            entities.add(entity);
+        }
 
-        byte opTypeVal = Serialization.decodeI8(buf);
-
-        this.singleOpType.setValue(opTypeVal);
         return this;
     }
 
@@ -76,53 +96,54 @@ public class ObTableSingleOp extends AbstractPayload {
     @Override
     public long getPayloadContentSize() {
 
-        long opTypeLen = Serialization.getNeedBytes(singleOpType.getValue());
-        return queryAndMutate.getPayloadSize() + opTypeLen;
-
+        long payloadContentSize = Serialization.getNeedBytes(singleOpType.getByteValue());
+        payloadContentSize += Serialization.getNeedBytes(singleOpFlag.getValue());
+        payloadContentSize += query.getPayloadSize();
+        payloadContentSize += Serialization.getNeedBytes(entities.size());
+        for (ObTableSingleOpEntity entity : entities) {
+            payloadContentSize += entity.getPayloadSize();
+        }
+        return payloadContentSize;
     }
 
-    /*
-     * Get table query.
-     */
-    public ObTableQuery getTableQuery() {
-        return queryAndMutate.getTableQuery();
+    public List<ObNewRange> getScanRange() {
+        return query.getScanRanges();
     }
 
-    /*
-     * Set table query.
-     */
-    public void setTableQuery(ObTableQuery tableQuery) {
-        this.queryAndMutate.setTableQuery(tableQuery);
-    }
-
-    /*
-     * Get mutations.
-     */
-    public ObTableBatchOperation getMutations() {
-        return queryAndMutate.getMutations();
-    }
-
-    /*
-     * Set mutations.
-     */
-    public void setMutations(ObTableBatchOperation mutations) {
-        this.queryAndMutate.setMutations(mutations);
-    }
-
-    public void setIsCheckAndExecute(boolean isCheckAndExecute) {
-        queryAndMutate.setIsCheckAndExecute(isCheckAndExecute);
+    public void addScanRange(ObNewRange range)
+    {
+       this.addScanRange(range);
     }
 
     public void setIsCheckNoExists(boolean isCheckNoExists) {
-        queryAndMutate.setIsCheckNoExists(isCheckNoExists);
+        singleOpFlag.setIsCheckNotExists(isCheckNoExists);
     }
 
-    public ObTableSingleOpType getSingleOpType() {
+    public ObTableOperationType getSingleOpType() {
         return singleOpType;
     }
 
-    public void setSingleOpType(ObTableSingleOpType singleOpType) {
+    public void setSingleOpType(ObTableOperationType singleOpType) {
         this.singleOpType = singleOpType;
     }
 
+    public ObTableSingleOpQuery getQuery() {
+        return query;
+    }
+
+    public void setQuery(ObTableSingleOpQuery query) {
+        this.query = query;
+    }
+
+    public List<ObTableSingleOpEntity> getEntities() {
+        return entities;
+    }
+
+    public void setEntities(List<ObTableSingleOpEntity> entities) {
+        this.entities = entities;
+    }
+
+    public void addEntity(ObTableSingleOpEntity entity) {
+       this.entities.add(entity);
+    }
 }
