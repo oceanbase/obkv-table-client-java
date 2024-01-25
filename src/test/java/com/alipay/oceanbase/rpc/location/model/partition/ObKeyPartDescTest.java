@@ -192,24 +192,27 @@ public class ObKeyPartDescTest {
             keyBinary.getPartIds(startKey2, false, endKey1, false));
 
         try {
-            keyBinary.getPartIds(startKey1, false, endKey3, false);
-            Assert.fail();
+            List<Long> ans = keyBinary.getPartIds(startKey1, false, endKey3, false);
+            Assert.assertEquals(16, ans.size());
         } catch (Exception e) {
-
+            e.printStackTrace();
+            Assert.assertTrue(false);
         }
 
         try {
-            keyBinary.getPartIds(startKey3, false, endKey1, true);
-            Assert.fail();
+            List<Long> ans = keyBinary.getPartIds(startKey3, false, endKey1, true);
+            Assert.assertEquals(16, ans.size());
         } catch (Exception e) {
-
+            e.printStackTrace();
+            Assert.assertTrue(false);
         }
 
         try {
-            keyBinary.getPartIds(startKey1, false, endKey4, true);
-            Assert.fail();
+            List<Long> ans = keyBinary.getPartIds(startKey1, false, endKey4, true);
+            Assert.assertEquals(16, ans.size());
         } catch (Exception e) {
-
+            e.printStackTrace();
+            Assert.assertTrue(false);
         }
 
         Assert.assertEquals(keyUtf8_CI.getPartIds(startKey1, true, endKey1, true),

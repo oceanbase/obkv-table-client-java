@@ -20,6 +20,10 @@ package com.alipay.oceanbase.rpc;
 import com.alipay.oceanbase.rpc.exception.ObTablePartitionConsistentException;
 import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.filter.ObCompareOp;
+import com.alipay.oceanbase.rpc.mutation.BatchOperation;
+import com.alipay.oceanbase.rpc.mutation.Row;
+import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
+import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
@@ -40,12 +44,14 @@ import java.util.concurrent.Executors;
 
 import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.andList;
 import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.compareVal;
+import static com.alipay.oceanbase.rpc.mutation.MutationFactory.*;
 import static com.alipay.oceanbase.rpc.util.ObTableClientTestUtil.cleanTable;
 import static com.alipay.oceanbase.rpc.util.ObTableClientTestUtil.generateRandomStringByUUID;
 
 public class ObTableClientPartitionKeyTest {
 
     private ObTableClient obTableClient;
+    private ObTableClient normalClient;
     private String        TEST_TABLE = null;
 
     @Before
@@ -72,6 +78,14 @@ public class ObTableClientPartitionKeyTest {
         obTableClient.setRunningMode(ObTableClient.RunningMode.HBASE);
         obTableClient.init();
 
+        final ObTableClient normalClient = ObTableClientTestUtil.newTestClient();
+        normalClient.setMetadataRefreshInterval(100);
+        normalClient.addProperty("connectTimeout", "100000");
+        normalClient.addProperty("socketTimeout", "100000");
+        normalClient.setTableEntryAcquireSocketTimeout(10000);
+        normalClient.setRunningMode(ObTableClient.RunningMode.NORMAL);
+        normalClient.init();
+
         if (obTableClient.isOdpMode()) {
             TEST_TABLE = "testKey";
         } else {
@@ -80,6 +94,7 @@ public class ObTableClientPartitionKeyTest {
         }
 
         this.obTableClient = obTableClient;
+        this.normalClient = normalClient;
     }
 
     @After
@@ -210,6 +225,7 @@ public class ObTableClientPartitionKeyTest {
     @Test
     public void testQuery() throws Exception {
         long timeStamp = System.currentTimeMillis();
+        cleanTable(TEST_TABLE);
         if (!obTableClient.isOdpMode()) {
             obTableClient.insert(TEST_TABLE,
                 new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
@@ -223,10 +239,17 @@ public class ObTableClientPartitionKeyTest {
                     timeStamp }, new Object[] { "key2_1".getBytes(), "partition".getBytes(),
                     timeStamp });
             try {
-                tableQuery.execute();
-                Assert.fail();
+                QueryResultSet resultSet = tableQuery.execute();
+                int resultCount = 0;
+                while (resultSet.next()) {
+                    Map<String, Object> value = resultSet.getRow();
+                    resultCount += 1;
+                }
+                Assert.assertFalse(resultSet.next());
+                Assert.assertEquals(2, resultCount);
             } catch (Exception e) {
-                Assert.assertTrue(e instanceof ObTablePartitionConsistentException);
+                e.printStackTrace();
+                Assert.assertTrue(false);
             }
             tableQuery = obTableClient.query(TEST_TABLE);
             tableQuery.addScanRange(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
@@ -333,12 +356,7 @@ public class ObTableClientPartitionKeyTest {
                 e.printStackTrace();
                 Assert.assertTrue(false);
             } finally {
-                obTableClient.delete(TEST_TABLE,
-                    new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp });
-                obTableClient.delete(TEST_TABLE,
-                    new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp + 1 });
-                obTableClient.delete(TEST_TABLE,
-                    new Object[] { "key1_2".getBytes(), "partition".getBytes(), timeStamp });
+                cleanTable(TEST_TABLE);
             }
         }
     }
@@ -777,6 +795,70 @@ public class ObTableClientPartitionKeyTest {
             Assert.assertTrue(false);
         } finally {
             cleanTable(testTable);
+        }
+    }
+
+    private void insertMultiPartition(ObTableClient obTableClient, int count, String tableName)
+                                                                                               throws Exception {
+        int num = 1;
+        if (count <= 5) {
+            while (num <= count) {
+                String uid = "GU1" + String.format("%04d", num);
+                String object_id = "GO1" + String.format("%04d", num);
+                String ver_oid = "GV1" + String.format("%04d", num);
+                String data_id = "GD1" + String.format("%04d", num);
+                Row rowKey = row(colVal("id", Integer.toUnsignedLong(num)), colVal("uid", uid),
+                    colVal("object_id", object_id));
+                Row rows = row(colVal("type", num), colVal("ver_oid", ver_oid),
+                    colVal("ver_ts", System.currentTimeMillis()), colVal("data_id", data_id));
+                MutationResult result = obTableClient.insert(tableName).setRowKey(rowKey)
+                    .addMutateRow(rows).execute();
+                Assert.assertEquals(1, result.getAffectedRows());
+                num++;
+            }
+        } else {
+            BatchOperation batchOperation = obTableClient.batchOperation(tableName);
+            while (num <= count) {
+                String uid = "GU1" + String.format("%04d", num);
+                String object_id = "GO1" + String.format("%04d", num);
+                String ver_oid = "GV1" + String.format("%04d", num);
+                String data_id = "GD1" + String.format("%04d", num);
+                Row rowKey = row(colVal("id", Integer.toUnsignedLong(num)), colVal("uid", uid),
+                    colVal("object_id", object_id));
+                Row rows = row(colVal("type", num), colVal("ver_oid", ver_oid),
+                    colVal("ver_ts", System.currentTimeMillis()), colVal("data_id", data_id));
+                batchOperation.addOperation(insert().setRowKey(rowKey).addMutateRow(rows));
+                num++;
+                if (num % 100 == 0 || num == count + 1) {
+                    BatchOperationResult result = batchOperation.execute();
+                    batchOperation = obTableClient.batchOperation(tableName);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testHashKeyQuery() throws Exception {
+        String tableName = "hash_key_sub_part";
+        try {
+            normalClient.addRowKeyElement(tableName, new String[] { "id", "uid" });
+            insertMultiPartition(normalClient, 20, tableName);
+            TableQuery query = normalClient.query(tableName);
+            QueryResultSet resultSet;
+            query.clear();
+            query.addScanRange(new Object[] { 1L, "GU20004", "GO10001" }, new Object[] { 30L,
+                    "GU20004", "GO10030" });
+            resultSet = query.execute();
+
+            int resultCount = 0;
+            while (resultSet.next()) {
+                Map<String, Object> value = resultSet.getRow();
+                resultCount += 1;
+            }
+            Assert.assertFalse(resultSet.next());
+            Assert.assertEquals(19, resultCount);
+        } finally {
+            cleanTable(tableName);
         }
     }
 }

@@ -309,48 +309,21 @@ CREATE TABLE IF NOT EXISTS `test_global_hash_range` (
         partition p0 values less than (100),
         partition p1 values less than (200),
         partition p2 values less than (300)),
-    KEY `idx2` (`C3`)  LOCAL) partition by hash(c1) (
-    partition p0,
-    partition p1,
-    partition p2,
-    partition p3,
-    partition p4);
+    KEY `idx2` (`C3`)  LOCAL) partition by hash(c1) partitions 5;
 
 CREATE TABLE IF NOT EXISTS `test_global_hash_hash` (
   `c1` int(11) NOT NULL,
   `c2` int(11) DEFAULT NULL,
   `c3` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`c1`),
-  KEY `idx` (`c2`) GLOBAL partition by hash(`c2`) (
-    partition p0,
-    partition p1,
-    partition p2,
-    partition p3,
-    partition p4)) partition by hash(`c1`) (
-        partition p0,
-        partition p1,
-        partition p2,
-        partition p3,
-        partition p4,
-        partition p6);
+  KEY `idx` (`c2`) GLOBAL partition by hash(`c2`) partitions 5) partition by hash(`c1`) partitions 7;;
 
 CREATE TABLE IF NOT EXISTS `test_global_key_key` (
   `c1` int(11) NOT NULL,
   `c2` int(11) DEFAULT NULL,
   `c3` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`c1`),
-  KEY `idx` (`c2`) GLOBAL partition by key(`c2`) (
-    partition p0,
-    partition p1,
-    partition p2,
-    partition p3,
-    partition p4)) partition by key(`c1`) (
-        partition p0,
-        partition p1,
-        partition p2,
-        partition p3,
-        partition p4,
-        partition p6);
+  KEY `idx` (`c2`) GLOBAL partition by key(`c2`) partitions 5) partition by key(`c1`) partitions 7;
 
 CREATE TABLE IF NOT EXISTS `test_global_range_range` (
     `c1` int(11) NOT NULL,
@@ -392,12 +365,7 @@ CREATE TABLE IF NOT EXISTS `test_global_primary_no_part` (
   `C2` int(11) DEFAULT NULL,
   `C3` int(11) DEFAULT NULL,
   PRIMARY KEY (`C1`),
-  KEY `idx` (`C2`) GLOBAL partition by hash(`C2`) (
-    partition p0,
-    partition p1,
-    partition p2,
-    partition p3,
-    partition p4),
+  KEY `idx` (`C2`) GLOBAL partition by hash(`C2`) partitions 5,
   KEY `idx2` (C3) LOCAL);
 
 CREATE TABLE IF NOT EXISTS `test_ttl_timestamp_with_index` (
@@ -443,5 +411,16 @@ CREATE TABLE  IF NOT EXISTS `sync_item` (
     index idx1(`uid`, `type`) local)
     DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci
     PARTITION BY KEY(`uid`) PARTITIONS 32;
+
+CREATE TABLE `hash_key_sub_part` (
+    `id` bigint(11) NOT NULL,
+    `uid` varchar(20) NOT NULL,
+    `object_id` varchar(32) NOT NULL,
+    `type` int(11) DEFAULT NULL,
+    `ver_oid` varchar(32) DEFAULT NULL,
+    `ver_ts` bigint(20) DEFAULT NULL,
+    `data_id` varchar(32) DEFAULT NULL,
+    PRIMARY KEY (`id`, `uid`, `object_id`)
+) DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci PARTITION BY HASH(`id`) SUBPARTITION BY KEY(`uid`) subpartitions 4 PARTITIONS 8;
 
 alter system set kv_hotkey_throttle_threshold = 50;

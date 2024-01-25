@@ -1284,7 +1284,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /*
-     * Get logicId(partition id in 3.x from giving range
+     * Get logicId(partition id in 3.x) from giving range
      */
     private List<Long> getPartitionsForLevelTwo(TableEntry tableEntry, Object[] start,
                                                 boolean startIncluded, Object[] end,
@@ -1300,9 +1300,26 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             .getPartIds(start, startIncluded, end, endIncluded);
 
         List<Long> partIds = new ArrayList<Long>();
-        for (Long partId1 : partIds1) {
+        if (partIds1.isEmpty()) {
+            // do nothing
+        } else if (partIds1.size() == 1) {
+            long firstPartId = partIds1.get(0);
             for (Long partId2 : partIds2) {
-                partIds.add(generatePartId(partId1, partId2));
+                partIds.add(generatePartId(firstPartId, partId2));
+            }
+        } else {
+            // construct all sub partition idx
+            long subPartNum = tableEntry.getPartitionInfo().getSubPartDesc().getPartNum();
+            List<Long> subPartIds = new ArrayList<Long>();
+            for (long i = 0; i < subPartNum; i++) {
+                subPartIds.add(i);
+            }
+            partIds2 = Collections.unmodifiableList(subPartIds);
+
+            for (Long partId1 : partIds1) {
+                for (Long partId2 : partIds2) {
+                    partIds.add(generatePartId(partId1, partId2));
+                }
             }
         }
 
