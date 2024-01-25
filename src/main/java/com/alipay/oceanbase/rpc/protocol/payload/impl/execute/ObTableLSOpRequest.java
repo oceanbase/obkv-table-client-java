@@ -144,4 +144,9 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
     public void setCredential(ObBytesString credential) {
         this.credential = credential;
     }
+
+    public void setTableId(long tableId) {
+        this.lsOperation.setTableId(tableId);
+    }
 }
+

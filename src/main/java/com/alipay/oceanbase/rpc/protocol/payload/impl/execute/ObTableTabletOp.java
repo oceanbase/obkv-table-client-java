@@ -39,7 +39,6 @@ OB_UNIS_DEF_SERIALIZE(ObTableTabletOp,
  */
 public class ObTableTabletOp extends AbstractPayload {
     private List<ObTableSingleOp> singleOperations = new ArrayList<>();
-    private long tableId = Constants.OB_INVALID_ID; // vi64
     private long tabletId = Constants.INVALID_TABLET_ID; // i64
     ObTableTabletOpFlag optionFlag = new ObTableTabletOpFlag();
 
@@ -56,17 +55,12 @@ public class ObTableTabletOp extends AbstractPayload {
         // 0. encode header
         idx = encodeHeader(bytes, idx);
 
-        // 1. encode table id
-        int len = Serialization.getNeedBytes(tableId);
-        System.arraycopy(Serialization.encodeVi64(tableId), 0, bytes, idx, len);
-        idx += len;
-
-        // 2. encode tablet id
+        // 1. encode tablet id
         System.arraycopy(Serialization.encodeI64(tabletId), 0, bytes, idx, 8);
         idx += 8;
 
         // 2. encode option flag
-        len = Serialization.getNeedBytes(optionFlag.getValue());
+        int len = Serialization.getNeedBytes(optionFlag.getValue());
         System.arraycopy(Serialization.encodeVi64(optionFlag.getValue()), 0, bytes, idx, len);
         idx += len;
 
@@ -91,8 +85,7 @@ public class ObTableTabletOp extends AbstractPayload {
         // 0. decode header
         super.decode(buf);
 
-        // 1. decode table id and tablet id
-        this.tableId = Serialization.decodeVi64(buf);
+        // 1. decode tablet id
         this.tabletId = Serialization.decodeI64(buf);
 
         // 2. decode other flags
@@ -121,7 +114,7 @@ public class ObTableTabletOp extends AbstractPayload {
             payloadContentSize += operation.getPayloadSize();
         }
 
-        return payloadContentSize + Serialization.getNeedBytes(tableId) + tabletIdSize + Serialization.getNeedBytes(optionFlag.getValue());
+        return payloadContentSize + tabletIdSize + Serialization.getNeedBytes(optionFlag.getValue());
     }
 
     /*
@@ -136,7 +129,7 @@ public class ObTableTabletOp extends AbstractPayload {
      */
     public void setSingleOperations(List<ObTableSingleOp> singleOperations) {
         setIsSameType(true);
-        ObTableSingleOpType prevType = null;
+        ObTableOperationType prevType = null;
         for (ObTableSingleOp o : singleOperations) {
             if (prevType != null && prevType != o.getSingleOpType()) {
                 setIsSameType(false);
@@ -145,10 +138,6 @@ public class ObTableTabletOp extends AbstractPayload {
             }
         }
         this.singleOperations = singleOperations;
-    }
-
-    public void setTableId(long tableId) {
-        this.tableId = tableId;
     }
 
     public void setTabletId(long tabletId) {
