@@ -98,7 +98,6 @@ public class ObHashPartDesc extends ObPartDesc {
     public List<Long> getPartIds(Object[] start, boolean startInclusive, Object[] end,
                                  boolean endInclusive) {
         // close set
-
         try {
             List<Object> startValues = evalRowKeyValues(start);
             Object startValue = startValues.get(0);
@@ -130,7 +129,6 @@ public class ObHashPartDesc extends ObPartDesc {
             throw new IllegalArgumentException(
                 "ObHashPartDesc get part id come across illegal params", e);
         }
-
     }
 
     /*
@@ -185,7 +183,6 @@ public class ObHashPartDesc extends ObPartDesc {
                     throw new ObTablePartitionConsistentException(
                         "across partition operation may cause consistent problem " + rowKeys);
                 }
-
             }
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException(
