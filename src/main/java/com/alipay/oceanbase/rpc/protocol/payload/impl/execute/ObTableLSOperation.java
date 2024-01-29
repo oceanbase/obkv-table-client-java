@@ -236,6 +236,14 @@ public class ObTableLSOperation extends AbstractPayload {
         optionFlag.setFlagIsSameType(isSameType);
     }
 
+    public boolean isSamePropertiesNames() {
+        return optionFlag.getFlagIsSamePropertiesNames();
+    }
+
+    public void setIsSamePropertiesNames(boolean isSamePropertiesNames) {
+        optionFlag.setFlagIsSamePropertiesNames(isSamePropertiesNames);
+    }
+
     public long getTableId() {
         return tableId;
     }
@@ -243,6 +251,22 @@ public class ObTableLSOperation extends AbstractPayload {
     public void setTableId(long tableId) {
         this.tableId = tableId;
     }
+
+    public void prepareOption() {
+        // set isSamePropertiesNames into entities
+        if (isSamePropertiesNames()) {
+            for (ObTableTabletOp tabletOp : tabletOperations) {
+                for (ObTableSingleOp singleOp : tabletOp.getSingleOperations()) {
+                    for (ObTableSingleOpEntity entity : singleOp.getEntities()) {
+                        entity.setIgnoreEncodePropertiesColumnNames(true);
+                    }
+                }
+            }
+        }
+
+        // todo: set other option
+    }
+
 
     public void prepareColumnNamesBitMap() {
         // prepare rowkey idx map

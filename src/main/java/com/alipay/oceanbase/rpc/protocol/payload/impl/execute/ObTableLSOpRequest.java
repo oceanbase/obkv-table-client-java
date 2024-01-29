@@ -38,7 +38,7 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
     protected ObBytesString           credential;
     protected ObTableEntityType       entityType       = ObTableEntityType.DYNAMIC;
     protected ObTableConsistencyLevel consistencyLevel = ObTableConsistencyLevel.STRONG;
-    private ObTableLSOperation        lsOperation      = new ObTableLSOperation();
+    private ObTableLSOperation        lsOperation      = null;
 
     /*
      * Get pcode.
@@ -115,9 +115,10 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
      */
     public void addTabletOperation(ObTableTabletOp tabletOp) {
         lsOperation.addTabletOperation(tabletOp);
-        // Since we only have one tablet operation
-        // We do the LS operation prepare here
-        lsOperation.prepareColumnNamesBitMap();
+    }
+
+    public void setLsOperation(ObTableLSOperation lsOperation) {
+        this.lsOperation = lsOperation;
     }
 
     /*
