@@ -115,6 +115,9 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
      */
     public void addTabletOperation(ObTableTabletOp tabletOp) {
         lsOperation.addTabletOperation(tabletOp);
+        // Since we only have one tablet operation
+        // We do the LS operation prepare here
+        lsOperation.prepareColumnNamesBitMap();
     }
 
     /*

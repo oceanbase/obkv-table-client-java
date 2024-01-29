@@ -25,10 +25,9 @@ import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-
-import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
-import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderLength;
+import java.util.Set;
 
 /*
 OB_UNIS_DEF_SERIALIZE(ObTableTabletOp,
@@ -40,6 +39,9 @@ OB_UNIS_DEF_SERIALIZE(ObTableTabletOp,
 public class ObTableTabletOp extends AbstractPayload {
     private List<ObTableSingleOp> singleOperations = new ArrayList<>();
     private long tabletId = Constants.INVALID_TABLET_ID; // i64
+
+    private Set<String> rowKeyNamesSet = new HashSet<>();
+    private Set<String> propertiesNamesSet = new HashSet<>();
     ObTableTabletOpFlag optionFlag = new ObTableTabletOpFlag();
 
     private static final int tabletIdSize = 8;
@@ -131,6 +133,12 @@ public class ObTableTabletOp extends AbstractPayload {
         setIsSameType(true);
         ObTableOperationType prevType = null;
         for (ObTableSingleOp o : singleOperations) {
+            // get union column names
+            rowKeyNamesSet.addAll(o.getQuery().getScanRangeColumns());
+            for (ObTableSingleOpEntity e: o.getEntities()) {
+                rowKeyNamesSet.addAll(e.getRowKeyNames());
+                propertiesNamesSet.addAll(e.getPropertiesNames());
+            }
             if (prevType != null && prevType != o.getSingleOpType()) {
                 setIsSameType(false);
             } else {
@@ -152,4 +160,11 @@ public class ObTableTabletOp extends AbstractPayload {
 
     public void setIsSameType(boolean isSameType) { optionFlag.setFlagIsSameType(isSameType);}
 
+    public Set<String> getRowKeyNamesSet() {
+        return rowKeyNamesSet;
+    }
+
+    public Set<String> getPropertiesNamesSet() {
+        return propertiesNamesSet;
+    }
 }

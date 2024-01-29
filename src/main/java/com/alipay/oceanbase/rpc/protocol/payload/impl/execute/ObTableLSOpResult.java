@@ -31,6 +31,7 @@ import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderL
 public class ObTableLSOpResult extends AbstractPayload {
 
     private List<ObTableTabletOpResult> results = new ArrayList<ObTableTabletOpResult>();
+    private List<String> propertiesColumnNames = new ArrayList<>();
 
     /*
      * Get pcode.
@@ -51,8 +52,17 @@ public class ObTableLSOpResult extends AbstractPayload {
         // 0. encode header
         idx = encodeHeader(bytes, idx);
 
-        // 1. encode results
-        int len = Serialization.getNeedBytes(this.results.size());
+        // 1. encode columnNames
+        int len = Serialization.getNeedBytes(this.propertiesColumnNames.size());
+        System.arraycopy(Serialization.encodeVi64(this.propertiesColumnNames.size()), 0, bytes, idx, len);
+        for (String columnName : propertiesColumnNames) {
+            len =  Serialization.getNeedBytes(columnName);
+            System.arraycopy(Serialization.encodeVString(columnName), 0, bytes, idx, len);
+            idx += len;
+        }
+
+        // 2. encode results
+        len = Serialization.getNeedBytes(this.results.size());
         System.arraycopy(Serialization.encodeVi64(this.results.size()), 0, bytes, idx, len);
         idx += len;
 
@@ -73,11 +83,19 @@ public class ObTableLSOpResult extends AbstractPayload {
         // 0. decode version
         super.decode(buf);
 
-        // 1. decode results
+        // 1. decode column names
         int len = (int) Serialization.decodeVi64(buf);
+        for (int i = 0; i < len; i++) {
+            String column = Serialization.decodeVString(buf);
+            propertiesColumnNames.add(column);
+        }
+
+        // 2. decode results
+        len = (int) Serialization.decodeVi64(buf);
         results = new ArrayList<ObTableTabletOpResult>(len);
         for (int i = 0; i < len; i++) {
             ObTableTabletOpResult tabletOpResult = new ObTableTabletOpResult();
+            tabletOpResult.setPropertiesColumnNames(this.propertiesColumnNames);
             tabletOpResult.decode(buf);
             results.add(tabletOpResult);
         }
