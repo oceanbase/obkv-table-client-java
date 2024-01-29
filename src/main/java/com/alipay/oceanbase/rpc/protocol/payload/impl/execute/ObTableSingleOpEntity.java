@@ -167,7 +167,6 @@ public class ObTableSingleOpEntity extends AbstractPayload {
 
         if (ignoreEncodePropertiesColumnNames) {
             payloadContentSize += Serialization.getNeedBytes(0L);
-            payloadContentSize += payloadContentSize;
         } else {
             payloadContentSize += Serialization.getNeedBytes(propertiesBitLen);
             payloadContentSize += propertiesBitMap.length;
