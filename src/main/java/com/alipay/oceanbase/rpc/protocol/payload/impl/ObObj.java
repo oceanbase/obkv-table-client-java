@@ -26,9 +26,12 @@ public class ObObj implements ObSimplePayload {
 
     private static ObObj MAX_OBJECT;
     private static ObObj MIN_OBJECT;
+    private static long  MAX_OBJECT_VALUE = -2L;
+    private static long  MIN_OBJECT_VALUE = -3L;
+
     static {
-        MAX_OBJECT = new ObObj(ObObjType.ObExtendType.getDefaultObjMeta(), -2L);
-        MIN_OBJECT = new ObObj(ObObjType.ObExtendType.getDefaultObjMeta(), -3L);
+        MAX_OBJECT = new ObObj(ObObjType.ObExtendType.getDefaultObjMeta(), MAX_OBJECT_VALUE);
+        MIN_OBJECT = new ObObj(ObObjType.ObExtendType.getDefaultObjMeta(), MIN_OBJECT_VALUE);
     }
 
     /*
@@ -156,7 +159,11 @@ public class ObObj implements ObSimplePayload {
      */
     public static ObObj getInstance(Object value) {
         ObObjMeta meta = ObObjType.defaultObjMeta(value);
-        return new ObObj(meta, value);
+        if (value instanceof ObObj) {
+            return new ObObj(meta, ((ObObj) value).getValue());
+        } else {
+            return new ObObj(meta, value);
+        }
     }
 
     /*
@@ -180,5 +187,15 @@ public class ObObj implements ObSimplePayload {
     public String toString() {
         return "ObObj{" + "meta=" + meta + ", valueLength=" + valueLength + ", value=" + value
                + '}';
+    }
+
+    public boolean isMinObj() {
+        return (getMeta().getType() == ObObjType.ObExtendType)
+               && ((long) getValue() == MIN_OBJECT_VALUE);
+    }
+
+    public boolean isMaxObj() {
+        return (getMeta().getType() == ObObjType.ObExtendType)
+               && ((long) getValue() == MAX_OBJECT_VALUE);
     }
 }

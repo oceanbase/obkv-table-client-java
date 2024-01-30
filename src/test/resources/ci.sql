@@ -416,4 +416,18 @@ CREATE TABLE `hash_key_sub_part` (
     PRIMARY KEY (`id`, `uid`, `object_id`)
 ) DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci PARTITION BY HASH(`id`) SUBPARTITION BY KEY(`uid`) subpartitions 4 PARTITIONS 8;
 
+CREATE TABLE IF NOT EXISTS `test_table_object` (
+    `c1` tinyint primary key,
+    `c2` smallint not null,
+    `c3` int not null,
+    `c4` bigint not null,
+    `c5` varchar(128) not null,
+    `c6` varbinary(128) not null,
+    `c7` float not null,
+    `c8` double not null,
+    `c9` timestamp(6) not null,
+    `c10` datetime(6) not null,
+    `c11` int default null
+);
+
 alter system set kv_hotkey_throttle_threshold = 50;

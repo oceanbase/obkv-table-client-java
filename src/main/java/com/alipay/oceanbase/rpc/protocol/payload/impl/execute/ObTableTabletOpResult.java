@@ -127,3 +127,4 @@ public class ObTableTabletOpResult extends AbstractPayload {
         this.propertiesColumnNames = propertiesColumnNames;
     }
 }
+

@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
+import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.filter.ObCompareOp;
 import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.mutation.BatchOperation;
@@ -25,12 +26,16 @@ import com.alipay.oceanbase.rpc.mutation.Delete;
 import com.alipay.oceanbase.rpc.mutation.InsertOrUpdate;
 import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
+import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
+import com.alipay.oceanbase.rpc.util.TimeUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.sql.Timestamp;
+import java.util.Date;
 import java.util.Map;
 
 import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.compareVal;
@@ -402,6 +407,86 @@ public class ObTableCheckAndInsUpTest {
             e.printStackTrace();
             Assert.assertTrue(false);
         } finally {
+        }
+    }
+
+    /*
+    CREATE TABLE IF NOT EXISTS `test_table_object` (
+        `c1` tinyint primary key,
+        `c2` smallint not null,
+        `c3` int not null,
+        `c4` bigint not null,
+        `c5` varchar(128) not null,
+        `c6` varbinary(128) not null,
+        `c7` float not null,
+        `c8` double not null,
+        `c9` timestamp not null,
+        `c10` datetime not null
+    );
+     */
+    @Test
+    public void testCheckAndInsUpWithDiffObj() throws Exception {
+        String tableName = "test_table_object";
+        if (!isVersionSupported()) {
+            System.out.println("current version is not supported, current version: "
+                               + ObGlobal.OB_VERSION);
+            return;
+        }
+        // pre-clean data
+        client.delete(tableName).addScanRange(ObObj.getMin(), ObObj.getMax()).execute();
+
+        // 1. check not exists match: insup(1, 1, 1, 1, "hello", "world", 1.0f, 1.0d, now(), now()) if not exists c3 >= 200
+        Byte c1Val = 1;
+        short c2Val = 1;
+        int c3Val = 1;
+        long c4Val = 1;
+        String c5Val = "hello";
+        byte[] c6Val = "world".getBytes();
+        float c7Val = 1.0f;
+        double c8Val = 1.0d;
+        long timeInMillis = System.currentTimeMillis();
+        Timestamp c9Val = new Timestamp(timeInMillis);
+        Date c10Val = TimeUtils.strToDate("2024-01-30");
+        Object c11Val = null;
+
+        Object[] values = { c2Val, c3Val, c4Val, c5Val, c6Val, c7Val, c8Val, c9Val, c10Val, c11Val };
+        String[] columns = { "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11" };
+
+        InsertOrUpdate insertOrUpdate1 = new InsertOrUpdate();
+        insertOrUpdate1.setRowKey(row(colVal("c1", c1Val)));
+        for (int i = 0; i < values.length; i++) {
+            insertOrUpdate1.addMutateRow(row(colVal(columns[i], values[i])));
+        }
+        ObTableFilter filter1 = compareVal(ObCompareOp.GE, "c3", 200);
+        CheckAndInsUp checkAndInsUp1 = new CheckAndInsUp(filter1, insertOrUpdate1, false);
+        BatchOperation batchOperation = client.batchOperation(tableName);
+        batchOperation.addOperation(checkAndInsUp1);
+        BatchOperationResult result = batchOperation.execute();
+        Assert.assertEquals(1, result.size());
+        Assert.assertEquals(1, result.get(0).getAffectedRows());
+
+        // 2. check not exists: insup(c1, c2, c3) (2, min, max) if not exists c3 >= 200
+        // just test the table object deserialize
+        try {
+            Object[] values2 = { ObObj.getMin(), ObObj.getMax() };
+            String[] columns2 = { "c2", "c3" };
+            c1Val = 2;
+
+            InsertOrUpdate insertOrUpdate2 = new InsertOrUpdate();
+            insertOrUpdate2.setRowKey(row(colVal("c1", c1Val)));
+            for (int i = 1; i < values2.length; i++) {
+                insertOrUpdate2.addMutateRow(row(colVal(columns2[i], values2[i])));
+            }
+            ObTableFilter filter2 = compareVal(ObCompareOp.GE, "c3", 200);
+            CheckAndInsUp checkAndInsUp2 = new CheckAndInsUp(filter2, insertOrUpdate2, false);
+            batchOperation = client.batchOperation(tableName);
+            batchOperation.addOperation(checkAndInsUp2);
+            result = batchOperation.execute();
+            Assert.assertTrue(false); // cannot reach here
+        } catch (ObTableException e) {
+            e.printStackTrace();
+            Assert
+                .assertEquals(ResultCodes.OB_KV_COLUMN_TYPE_NOT_MATCH.errorCode, e.getErrorCode());
         }
     }
 }

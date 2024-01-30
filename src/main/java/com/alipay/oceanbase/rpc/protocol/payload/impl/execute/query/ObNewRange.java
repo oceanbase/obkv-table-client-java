@@ -257,4 +257,12 @@ public class ObNewRange implements ObSimplePayload {
         return range;
     }
 
+    public long getFlag() {
+        return flag;
+    }
+
+    public void setFlag(long flag) {
+        this.flag = flag;
+    }
+
 }
