@@ -72,7 +72,7 @@ public class OceanBaseContainer extends JdbcDatabaseContainer<OceanBaseContainer
 
     @Override
     public String getDriverClassName() {
-        return "com.oceanbase.jdbc.Driver";
+        return "com.mysql.cj.jdbc.Driver";
     }
 
     public Integer getSqlPort() {
@@ -90,7 +90,7 @@ public class OceanBaseContainer extends JdbcDatabaseContainer<OceanBaseContainer
 
     public String getJdbcUrl(String databaseName) {
         String additionalUrlParams = constructUrlParameters("?", "&");
-        return "jdbc:oceanbase://" + getHost() + ":" + getSqlPort() + "/" + databaseName
+        return "jdbc:mysql://" + getHost() + ":" + getSqlPort() + "/" + databaseName
                + additionalUrlParams;
     }
 
