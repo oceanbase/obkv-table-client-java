@@ -89,7 +89,7 @@ public class ObTableSingleOpResult extends AbstractPayload {
         // 2. decode types
         this.operationType = ObTableOperationType.valueOf(Serialization.decodeI8(buf.readByte()));
 
-        // 3. decode Entity TODO 需要check一下errno
+        // 3. decode Entity
         this.entity.setAggPropertiesNames(propertiesColumnNames);
         this.entity.decode(buf);
 

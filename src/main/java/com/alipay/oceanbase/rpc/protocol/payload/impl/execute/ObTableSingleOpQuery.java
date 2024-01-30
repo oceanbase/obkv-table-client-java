@@ -209,6 +209,10 @@ public class ObTableSingleOpQuery extends AbstractPayload {
         this.scanRanges.add(scanRange);
     }
 
+    public void addScanRangeColumns(List<String> scanRangeColumns) {
+        this.scanRangeColumns = scanRangeColumns;
+    }
+
     public String getFilterString() {
         return filterString;
     }

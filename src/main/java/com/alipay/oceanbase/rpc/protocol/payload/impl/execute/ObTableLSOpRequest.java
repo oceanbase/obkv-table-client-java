@@ -100,7 +100,7 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
      */
     @Override
     public long getPayloadContentSize() {
-        return lsOperation.getPayloadSize() + Serialization.getNeedBytes(credential) + 1 + 1 + 1;
+        return lsOperation.getPayloadSize() + Serialization.getNeedBytes(credential) + 1 + 1;
     }
 
     /*
@@ -153,4 +153,3 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
         this.lsOperation.setTableId(tableId);
     }
 }
-

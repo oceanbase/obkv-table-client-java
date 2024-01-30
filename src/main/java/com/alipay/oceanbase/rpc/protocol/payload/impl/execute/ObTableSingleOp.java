@@ -47,17 +47,18 @@ public class ObTableSingleOp extends AbstractPayload {
         System.arraycopy(Serialization.encodeI8(opTypeVal), 0, bytes, idx, 1);
         idx += 1;
 
+        // 2. encode op flag
         long flag = singleOpFlag.getValue();
         int len = Serialization.getNeedBytes(flag);
         System.arraycopy(Serialization.encodeVi64(flag), 0, bytes, idx, len);
         idx += len;
 
-        // 2. encode single op query
+        // 3. encode single op query
         len = (int) query.getPayloadSize();
         System.arraycopy(query.encode(), 0, bytes, idx, len);
         idx += len;
 
-        // 3. encode entities
+        // 4. encode entities
         len = Serialization.getNeedBytes(entities.size());
         System.arraycopy(Serialization.encodeVi64(entities.size()), 0, bytes, idx, len);
         idx += len;

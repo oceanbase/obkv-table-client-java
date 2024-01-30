@@ -344,13 +344,7 @@ CREATE TABLE IF NOT EXISTS `test_global_index_no_part` (
   `C3` int(11) DEFAULT NULL,
   PRIMARY KEY (`c1`),
   KEY `idx` (`c2`) GLOBAL,
-  KEY `idx2` (c3) LOCAL) partition by hash(`c1`) (
-    partition p0,
-    partition p1,
-    partition p2,
-    partition p3,
-    partition p4,
-    partition p6);
+  KEY `idx2` (c3) LOCAL) partition by hash(`c1`) partitions 7;
 
 CREATE TABLE IF NOT EXISTS `test_global_all_no_part` (
   `C1` int(11) NOT NULL,
@@ -378,7 +372,6 @@ PRIMARY KEY (`c1`, `c2`),
 KEY `idx`(`c1`, `c4`) local,
 KEY `idx2`(`c3`) global partition by hash(`c3`) partitions 4)
 TTL(expired_ts + INTERVAL 0 SECOND) partition by key(`c1`) partitions 4;
-
 
 CREATE TABLE IF NOT EXISTS  `error_message_table` (
     `c1` bigint(20) not null,

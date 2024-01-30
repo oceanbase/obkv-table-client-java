@@ -149,6 +149,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         ObNewRange range = new ObNewRange();
         range.setStartKey(ObRowKey.getInstance(insUp.getRowKey()));
         range.setEndKey(ObRowKey.getInstance(insUp.getRowKey()));
+        query.addScanRangeColumns(insUp.getRowKeyNames());
         query.addScanRange(range);
         query.setFilterString(checkAndInsUp.getFilter().toString());
 
@@ -156,7 +157,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         Object[] rowKey = checkAndInsUp.getInsUp().getRowKey();
         String[] propertiesNames = checkAndInsUp.getInsUp().getColumns();
         Object[] propertiesValues = checkAndInsUp.getInsUp().getValues();
-        ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKey, propertiesNames, propertiesValues);
+        ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKey,
+            propertiesNames, propertiesValues);
 
         ObTableSingleOp singleOp = new ObTableSingleOp();
         singleOp.setSingleOpType(ObTableOperationType.CHECK_AND_INSERT_UP);

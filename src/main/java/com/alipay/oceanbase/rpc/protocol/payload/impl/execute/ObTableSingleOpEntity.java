@@ -75,7 +75,9 @@ public class ObTableSingleOpEntity extends AbstractPayload {
 
         // 3. encode property bitmap
         if (ignoreEncodePropertiesColumnNames) {
+            len = Serialization.getNeedBytes(0L);
             System.arraycopy(Serialization.encodeVi64(0L), 0, bytes, idx, len);
+            idx += len;
         } else {
             len = Serialization.getNeedBytes(propertiesBitLen);
             System.arraycopy(Serialization.encodeVi64(propertiesBitLen), 0, bytes, idx, len);
@@ -107,6 +109,7 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         // 0. decode header
         super.decode(buf);
 
+        // 1. rowkey bitmap
         rowKeyBitLen = Serialization.decodeVi64(buf);
         rowKeyBitMap = new byte[(int) Math.ceil(rowKeyBitLen / 8.0)];
         for (int i = 0; i < rowKeyBitMap.length; i++) {
@@ -120,6 +123,7 @@ public class ObTableSingleOpEntity extends AbstractPayload {
             }
         }
 
+        // 2. rowkey obobj
         int len = (int) Serialization.decodeVi64(buf);
         for (int i = 0; i < len; i++) {
             ObObj obj = new ObObj();
@@ -127,11 +131,12 @@ public class ObTableSingleOpEntity extends AbstractPayload {
             rowkey.add(obj);
         }
 
+        // 3. properties bitmap
         propertiesBitLen = Serialization.decodeVi64(buf);
         propertiesBitMap = new byte[(int) Math.ceil(propertiesBitLen / 8.0)];
         for (int i = 0; i < propertiesBitMap.length; i++) {
             propertiesBitMap[i] = Serialization.decodeI8(buf);
-            for (int j = 0; j < 8; i++) {
+            for (int j = 0; j < 8; j++) {
                 if ((propertiesBitMap[i] & (1 << j)) != 0) {
                     if (i * 8 + j < aggPropertiesNames.size()) {
                         propertiesNames.add(aggPropertiesNames.get(i * 8 + j));
@@ -140,6 +145,7 @@ public class ObTableSingleOpEntity extends AbstractPayload {
             }
         }
 
+        // 4. properties obobj
         len = (int) Serialization.decodeVi64(buf);
         for (int i = 0; i < len; i++) {
             ObObj obj = new ObObj();
