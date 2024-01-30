@@ -143,7 +143,6 @@ public class ObTableLSOperation extends AbstractPayload {
             rowKeyNames.add(rowkeyName);
         }
 
-
         // 5. decode properties names
         len = (int) Serialization.decodeVi64(buf);
         for (int i = 0; i < len; i++) {
@@ -259,16 +258,16 @@ public class ObTableLSOperation extends AbstractPayload {
                 for (ObTableSingleOp singleOp : tabletOp.getSingleOperations()) {
                     for (ObTableSingleOpEntity entity : singleOp.getEntities()) {
                         entity.setIgnoreEncodePropertiesColumnNames(true);
+                        // todo: set other option in one loop
                     }
                 }
             }
         }
 
-        // todo: set other option
+        // todo: set other option in other loop
     }
 
-
-    public void prepareColumnNamesBitMap() {
+    public void collectColumnNamesIdxMap() {
         // prepare rowkey idx map
         long index = 0;
         for (String rowkeyName : rowKeyNamesSet) {
@@ -284,7 +283,31 @@ public class ObTableLSOperation extends AbstractPayload {
             this.propertiesColumnNamesIdxMap.put(propertiesName, index);
             index += 1;
         }
+    }
 
+    /*
+     * beforeOption is used to collect necessary data from entity before prepareOption
+     */
+    public void beforeOption() {
+        boolean isSamePropertiesColumnNames = true;
+
+        for (ObTableTabletOp tabletOp : tabletOperations) {
+            for (ObTableSingleOp singleOp : tabletOp.getSingleOperations()) {
+                for (ObTableSingleOpEntity entity : singleOp.getEntities()) {
+                    // if column names are the same, then the length should be the same
+                    isSamePropertiesColumnNames = entity.isSamePropertiesColumnNamesLen(this.propertiesColumnNamesIdxMap.size());
+                    if (!isSamePropertiesColumnNames) break;
+                }
+                if (!isSamePropertiesColumnNames) break;
+            }
+            if (!isSamePropertiesColumnNames) break;
+        }
+
+        if (isSamePropertiesColumnNames) this.setIsSamePropertiesNames(true);
+    }
+
+
+    public void prepareColumnNamesBitMap() {
         // adjust query & entity
         for (ObTableTabletOp tabletOp : tabletOperations) {
             for (ObTableSingleOp singleOp : tabletOp.getSingleOperations()) {
@@ -295,5 +318,12 @@ public class ObTableLSOperation extends AbstractPayload {
                 }
             }
         }
+    }
+
+    public void prepare() {
+        this.collectColumnNamesIdxMap();
+        this.beforeOption();
+        this.prepareOption();
+        this.prepareColumnNamesBitMap();
     }
 }

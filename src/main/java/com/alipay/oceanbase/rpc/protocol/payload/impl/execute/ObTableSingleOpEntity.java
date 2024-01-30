@@ -243,6 +243,13 @@ public class ObTableSingleOpEntity extends AbstractPayload {
     }
 
     /*
+     *
+     */
+    public boolean isSamePropertiesColumnNamesLen(int columnNameIdxMapLen) {
+        return columnNameIdxMapLen == this.propertiesNames.size();
+    }
+
+    /*
      * adjustRowkeyColumnName should be execute in the last
      */
     public void adjustRowkeyColumnName(Map<String, Long> columnNameIdxMap) {

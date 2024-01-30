@@ -51,7 +51,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     private ExecutorService       executorService;
     private boolean               returningAffectedEntity = false;
     private List<ObTableSingleOp> batchOperation;
-    private boolean isSamePropertiesNames = false;
 
     /*
      * Ob table client batch ops impl.
@@ -278,11 +277,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
         ObTableLSOperation lsOperation = new ObTableLSOperation();
         lsOperation.addTabletOperation(tabletOp);
-        lsOperation.setIsSamePropertiesNames(isSamePropertiesNames);
         // Since we only have one tablet operation
         // We do the LS operation prepare here
-        lsOperation.prepareOption();
-        lsOperation.prepareColumnNamesBitMap();
+        lsOperation.prepare();
 
         subRequest.setLsOperation(lsOperation);
         subRequest.setTableId(tableId);
@@ -539,13 +536,5 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
     public void setReturningAffectedEntity(boolean returningAffectedEntity) {
         this.returningAffectedEntity = returningAffectedEntity;
-    }
-
-    public void setSamePropertiesNames(boolean isSamePropertiesNames) {
-        this.isSamePropertiesNames = isSamePropertiesNames;
-    }
-
-    public boolean isSamePropertiesNames() {
-        return this.isSamePropertiesNames;
     }
 }

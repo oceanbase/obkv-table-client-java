@@ -38,7 +38,6 @@ public class BatchOperation {
     private List<Object> operations;
     boolean              isAtomic         = false;
     boolean              hasCheckAndInsUp = false;
-    boolean              isSamePropertiesNames = false;
 
     /*
      * default constructor
@@ -112,13 +111,6 @@ public class BatchOperation {
     public BatchOperation setIsAtomic(boolean isAtomic) {
         this.isAtomic = isAtomic;
         return this;
-    }
-
-    /*
-     * Only work for checkAndInsertUp now
-     */
-    public void setSamePropertiesNames(boolean isSamePropertiesNames) {
-        this.isSamePropertiesNames = isSamePropertiesNames;
     }
 
     @SuppressWarnings("unchecked")
@@ -202,7 +194,6 @@ public class BatchOperation {
         ObTableClientLSBatchOpsImpl batchOps;
         if (client instanceof ObTableClient) {
             batchOps = new ObTableClientLSBatchOpsImpl(tableName, (ObTableClient) client);
-            batchOps.setSamePropertiesNames(isSamePropertiesNames);
             boolean hasSetRowkeyElement = false;
             for (Object operation : operations) {
                 if (operation instanceof CheckAndInsUp) {
