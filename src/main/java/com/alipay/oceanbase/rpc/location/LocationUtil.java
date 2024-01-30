@@ -244,7 +244,7 @@ public class LocationUtil {
     private static String formatObServerUrl(ObServerAddr obServerAddr, long connectTimeout,
                                             long socketTimeout) {
         return format(
-            "jdbc:oceanbase://%s/oceanbase?useUnicode=true&characterEncoding=utf-8&connectTimeout=%d&socketTimeout=%d",
+            "jdbc:mysql://%s/oceanbase?useUnicode=true&characterEncoding=utf-8&connectTimeout=%d&socketTimeout=%d",
             obServerAddr.getIp() + ":" + obServerAddr.getSqlPort(), connectTimeout, socketTimeout);
     }
 
@@ -258,11 +258,11 @@ public class LocationUtil {
     private static Connection getMetaRefreshConnection(String url, ObUserAuth sysUA)
                                                                                     throws ObTableEntryRefreshException {
         try {
-            Class.forName("com.alipay.oceanbase.jdbc.Driver");
+            Class.forName("com.mysql.cj.jdbc.Driver");
         } catch (ClassNotFoundException e) {
             RUNTIME.error(LCD.convert("01-00006"), e.getMessage(), e);
             throw new ObTableEntryRefreshException(format(
-                "fail to find com.alipay.oceanbase.jdbc.Driver, errMsg=%s", e.getMessage()), e);
+                "fail to find com.mysql.cj.jdbc.Driver, errMsg=%s", e.getMessage()), e);
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00005"), e.getMessage(), e);
             throw new ObTableEntryRefreshException("fail to decode proxyro password", e);
