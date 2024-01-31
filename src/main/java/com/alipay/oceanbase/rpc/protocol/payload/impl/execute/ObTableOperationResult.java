@@ -101,10 +101,8 @@ public class ObTableOperationResult extends AbstractPayload {
      */
     @Override
     public long getPayloadContentSize() {
-        return header.getPayloadSize()
-                + entity.getPayloadSize()
-                + Serialization.getNeedBytes(affectedRows)
-                + 1; // operation type
+        return header.getPayloadSize() + entity.getPayloadSize()
+               + Serialization.getNeedBytes(affectedRows) + 1; // operation type
     }
 
     /*
