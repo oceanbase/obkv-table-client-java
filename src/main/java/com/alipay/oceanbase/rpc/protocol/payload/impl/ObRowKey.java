@@ -45,6 +45,10 @@ public class ObRowKey {
         return objs;
     }
 
+    public void setObjs(List<ObObj> objs) {
+        this.objs = objs;
+    }
+
     /*
      * Get obj.
      */

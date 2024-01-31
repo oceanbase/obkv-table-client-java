@@ -130,5 +130,4 @@ public class ObTableBatchOperationResult extends AbstractPayload {
     public void addAllResults(List<ObTableOperationResult> results) {
         this.results.addAll(results);
     }
-
 }

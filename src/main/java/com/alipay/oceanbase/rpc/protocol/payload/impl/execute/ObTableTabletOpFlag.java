@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
 public class ObTableTabletOpFlag {
     private static final int FLAG_IS_SAME_TYPE             = 1 << 0;
+    // Maybe useless, we use isSameProperties flag from LSOp
     private static final int FLAG_IS_SAME_PROPERTIES_NAMES = 1 << 1;
     private long             flags                         = 0;
 
