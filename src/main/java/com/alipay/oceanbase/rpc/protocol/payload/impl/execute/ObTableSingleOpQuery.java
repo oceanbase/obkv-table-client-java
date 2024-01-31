@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObTableSerialUtil;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
@@ -66,8 +67,8 @@ public class ObTableSingleOpQuery extends AbstractPayload {
         System.arraycopy(Serialization.encodeVi64(scanRanges.size()), 0, bytes, idx, len);
         idx += len;
         for (ObNewRange range : scanRanges) {
-            len =  range.getEncodedSize();
-            System.arraycopy(range.encode(), 0, bytes, idx, len);
+            len =  ObTableSerialUtil.getEncodedSize(range);
+            System.arraycopy(ObTableSerialUtil.encode(range), 0, bytes, idx, len);
             idx += len;
         }
 
@@ -108,7 +109,7 @@ public class ObTableSingleOpQuery extends AbstractPayload {
         int len = (int) Serialization.decodeVi64(buf);
         for (int i = 0; i < len; i++) {
             ObNewRange range = new ObNewRange();
-            range.decode(buf);
+            ObTableSerialUtil.decode(buf, range);
             scanRanges.add(range);
         }
 
@@ -130,7 +131,7 @@ public class ObTableSingleOpQuery extends AbstractPayload {
 
         payloadContentSize += Serialization.getNeedBytes(scanRanges.size());
         for (ObNewRange range : scanRanges) {
-            payloadContentSize += range.getEncodedSize();
+            payloadContentSize += ObTableSerialUtil.getEncodedSize(range);
         }
 
         return payloadContentSize + Serialization.getNeedBytes(indexName)

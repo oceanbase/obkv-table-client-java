@@ -21,6 +21,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjMeta;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjType;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObTableSerialUtil;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -68,8 +69,8 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         System.arraycopy(Serialization.encodeVi64(rowkey.size()), 0, bytes, idx, len);
         idx += len;
         for (ObObj obj : rowkey) {
-            len =  obj.getEncodedSize();
-            System.arraycopy(obj.encode(), 0, bytes, idx, len);
+            len =  ObTableSerialUtil.getEncodedSize(obj);
+            System.arraycopy(ObTableSerialUtil.encode(obj), 0, bytes, idx, len);
             idx += len;
         }
 
@@ -93,8 +94,8 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         System.arraycopy(Serialization.encodeVi64(propertiesValues.size()), 0, bytes, idx, len);
         idx += len;
         for (ObObj obj : propertiesValues) {
-            len =  obj.getEncodedSize();
-            System.arraycopy(obj.encode(), 0, bytes, idx, len);
+            len =  ObTableSerialUtil.getEncodedSize(obj);
+            System.arraycopy(ObTableSerialUtil.encode(obj), 0, bytes, idx, len);
             idx += len;
         }
 
@@ -132,7 +133,7 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         int len = (int) Serialization.decodeVi64(buf);
         for (int i = 0; i < len; i++) {
             ObObj obj = new ObObj();
-            obj.decode(buf);
+            ObTableSerialUtil.decode(buf, obj);
             rowkey.add(obj);
         }
 
@@ -144,7 +145,7 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         len = (int) Serialization.decodeVi64(buf);
         for (int i = 0; i < len; i++) {
             ObObj obj = new ObObj();
-            obj.decode(buf);
+            ObTableSerialUtil.decode(buf, obj);
             propertiesValues.add(obj);
         }
 
@@ -163,7 +164,7 @@ public class ObTableSingleOpEntity extends AbstractPayload {
 
         payloadContentSize += Serialization.getNeedBytes(rowkey.size());
         for (ObObj obj : rowkey) {
-            payloadContentSize += obj.getEncodedSize();
+            payloadContentSize += ObTableSerialUtil.getEncodedSize(obj);
         }
 
         if (ignoreEncodePropertiesColumnNames) {
@@ -175,7 +176,7 @@ public class ObTableSingleOpEntity extends AbstractPayload {
 
         payloadContentSize += Serialization.getNeedBytes(propertiesValues.size());
         for (ObObj obj : propertiesValues) {
-            payloadContentSize += obj.getEncodedSize();
+            payloadContentSize += ObTableSerialUtil.getEncodedSize(obj);
         }
 
         return payloadContentSize;
@@ -204,10 +205,7 @@ public class ObTableSingleOpEntity extends AbstractPayload {
             for (int i = 0; i < rowKey.length; i++) {
                 String name = rowKeyNames[i];
                 Object rowkey = rowKey[i];
-                ObObjMeta rowkeyMeta = ObObjType.defaultObjMeta(rowkey);
-                ObObj obj = new ObObj();
-                obj.setMeta(rowkeyMeta);
-                obj.setValue(rowkey);
+                ObObj obj = ObObj.getInstance(rowkey);
                 entity.addRowKeyValue(name, obj);
             }
         }
@@ -215,10 +213,7 @@ public class ObTableSingleOpEntity extends AbstractPayload {
             for (int i = 0; i < propertiesNames.length; i++) {
                 String name = propertiesNames[i];
                 Object value = propertiesValues[i];
-                ObObjMeta meta = ObObjType.defaultObjMeta(value);
-                ObObj c = new ObObj();
-                c.setMeta(meta);
-                c.setValue(value);
+                ObObj c = ObObj.getInstance(value);
                 entity.addPropertyValue(name, c);
             }
         }
