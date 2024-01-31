@@ -22,8 +22,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
 import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderLength;
@@ -37,9 +36,13 @@ public class ObTableLSOperation extends AbstractPayload {
     private long tableId = Constants.OB_INVALID_ID;;
 
     // common column names for all single operation
-    // todo: not used currently, will support soon
     private List<String> rowKeyNames = new ArrayList<>();
+    private Set<String> rowKeyNamesSet = new HashSet<>();
+    private Map<String, Long> rowkeyColumnNamesIdxMap = new HashMap<>();
+
     private List<String> propertiesNames = new ArrayList<>();
+    private Set<String> propertiesNamesSet = new HashSet<>();
+    private Map<String, Long> propertiesColumnNamesIdxMap = new HashMap<>();
 
     private ObTableLSOpFlag       optionFlag       = new ObTableLSOpFlag();
 
@@ -98,12 +101,12 @@ public class ObTableLSOperation extends AbstractPayload {
             idx += len;
         }
 
-        // 2. encode option flag
+        // 6. encode option flag
         len = Serialization.getNeedBytes(optionFlag.getValue());
         System.arraycopy(Serialization.encodeVi64(optionFlag.getValue()), 0, bytes, idx, len);
         idx += len;
 
-        // 3. encode Operation
+        // 7. encode Operation
         len = Serialization.getNeedBytes(tabletOperations.size());
         System.arraycopy(Serialization.encodeVi64(tabletOperations.size()), 0, bytes, idx, len);
         idx += len;
@@ -139,7 +142,6 @@ public class ObTableLSOperation extends AbstractPayload {
             String rowkeyName = Serialization.decodeVString(buf);
             rowKeyNames.add(rowkeyName);
         }
-
 
         // 5. decode properties names
         len = (int) Serialization.decodeVi64(buf);
@@ -202,6 +204,11 @@ public class ObTableLSOperation extends AbstractPayload {
     public void addTabletOperation(ObTableTabletOp tabletOperation) {
         this.tabletOperations.add(tabletOperation);
         int length = this.tabletOperations.size();
+
+        // set column names
+        this.rowKeyNamesSet.addAll(tabletOperation.getRowKeyNamesSet());
+        this.propertiesNamesSet.addAll(tabletOperation.getPropertiesNamesSet());
+
         if (length == 1 && tabletOperation.isSameType()) {
             setIsSameType(true);
             return;
@@ -228,6 +235,14 @@ public class ObTableLSOperation extends AbstractPayload {
         optionFlag.setFlagIsSameType(isSameType);
     }
 
+    public boolean isSamePropertiesNames() {
+        return optionFlag.getFlagIsSamePropertiesNames();
+    }
+
+    public void setIsSamePropertiesNames(boolean isSamePropertiesNames) {
+        optionFlag.setFlagIsSamePropertiesNames(isSamePropertiesNames);
+    }
+
     public long getTableId() {
         return tableId;
     }
@@ -236,4 +251,79 @@ public class ObTableLSOperation extends AbstractPayload {
         this.tableId = tableId;
     }
 
+    public void prepareOption() {
+        // set isSamePropertiesNames into entities
+        if (isSamePropertiesNames()) {
+            for (ObTableTabletOp tabletOp : tabletOperations) {
+                for (ObTableSingleOp singleOp : tabletOp.getSingleOperations()) {
+                    for (ObTableSingleOpEntity entity : singleOp.getEntities()) {
+                        entity.setIgnoreEncodePropertiesColumnNames(true);
+                        // todo: set other option in one loop
+                    }
+                }
+            }
+        }
+
+        // todo: set other option in other loop
+    }
+
+    public void collectColumnNamesIdxMap() {
+        // prepare rowkey idx map
+        long index = 0;
+        for (String rowkeyName : rowKeyNamesSet) {
+            this.rowKeyNames.add(rowkeyName);
+            this.rowkeyColumnNamesIdxMap.put(rowkeyName, index);
+            index += 1;
+        }
+
+        // prepare properties idx map
+        index = 0;
+        for (String propertiesName : propertiesNamesSet) {
+            this.propertiesNames.add(propertiesName);
+            this.propertiesColumnNamesIdxMap.put(propertiesName, index);
+            index += 1;
+        }
+    }
+
+    /*
+     * beforeOption is used to collect necessary data from entity before prepareOption
+     */
+    public void beforeOption() {
+        boolean isSamePropertiesColumnNames = true;
+
+        for (ObTableTabletOp tabletOp : tabletOperations) {
+            for (ObTableSingleOp singleOp : tabletOp.getSingleOperations()) {
+                for (ObTableSingleOpEntity entity : singleOp.getEntities()) {
+                    // if column names are the same, then the length should be the same
+                    isSamePropertiesColumnNames = entity.isSamePropertiesColumnNamesLen(this.propertiesColumnNamesIdxMap.size());
+                    if (!isSamePropertiesColumnNames) break;
+                }
+                if (!isSamePropertiesColumnNames) break;
+            }
+            if (!isSamePropertiesColumnNames) break;
+        }
+
+        if (isSamePropertiesColumnNames) this.setIsSamePropertiesNames(true);
+    }
+
+
+    public void prepareColumnNamesBitMap() {
+        // adjust query & entity
+        for (ObTableTabletOp tabletOp : tabletOperations) {
+            for (ObTableSingleOp singleOp : tabletOp.getSingleOperations()) {
+                singleOp.getQuery().adjustScanRangeColumns(rowkeyColumnNamesIdxMap);
+                for (ObTableSingleOpEntity entity : singleOp.getEntities()) {
+                    entity.adjustRowkeyColumnName(rowkeyColumnNamesIdxMap);
+                    entity.adjustPropertiesColumnName(propertiesColumnNamesIdxMap);
+                }
+            }
+        }
+    }
+
+    public void prepare() {
+        this.collectColumnNamesIdxMap();
+        this.beforeOption();
+        this.prepareOption();
+        this.prepareColumnNamesBitMap();
+    }
 }

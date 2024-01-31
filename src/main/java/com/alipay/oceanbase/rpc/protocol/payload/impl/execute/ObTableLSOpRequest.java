@@ -38,7 +38,7 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
     protected ObBytesString           credential;
     protected ObTableEntityType       entityType       = ObTableEntityType.DYNAMIC;
     protected ObTableConsistencyLevel consistencyLevel = ObTableConsistencyLevel.STRONG;
-    private ObTableLSOperation        lsOperation      = new ObTableLSOperation();
+    private ObTableLSOperation        lsOperation      = null;
 
     /*
      * Get pcode.
@@ -100,7 +100,8 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
      */
     @Override
     public long getPayloadContentSize() {
-        return lsOperation.getPayloadSize() + Serialization.getNeedBytes(credential) + 1 + 1 + 1;
+        return lsOperation.getPayloadSize() + Serialization.getNeedBytes(credential) + 1 // entityType
+               + 1; // consistencyLevel
     }
 
     /*
@@ -115,6 +116,10 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
      */
     public void addTabletOperation(ObTableTabletOp tabletOp) {
         lsOperation.addTabletOperation(tabletOp);
+    }
+
+    public void setLsOperation(ObTableLSOperation lsOperation) {
+        this.lsOperation = lsOperation;
     }
 
     /*
@@ -149,4 +154,3 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
         this.lsOperation.setTableId(tableId);
     }
 }
-
