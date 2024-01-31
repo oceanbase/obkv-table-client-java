@@ -35,7 +35,7 @@ public class ObTableTabletOpResult extends AbstractPayload {
 
     @Override
     public int getPcode() {
-        return Pcodes.OB_TABLE_API_BATCH_EXECUTE;
+        return Pcodes.OB_TABLE_API_LS_EXECUTE;
     }
 
     /*

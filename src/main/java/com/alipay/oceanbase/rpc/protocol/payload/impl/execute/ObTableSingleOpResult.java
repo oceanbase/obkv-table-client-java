@@ -38,7 +38,7 @@ public class ObTableSingleOpResult extends AbstractPayload {
      */
     @Override
     public int getPcode() {
-        return Pcodes.OB_TABLE_API_EXECUTE;
+        return Pcodes.OB_TABLE_API_LS_EXECUTE;
     }
 
     /*
@@ -104,8 +104,10 @@ public class ObTableSingleOpResult extends AbstractPayload {
      */
     @Override
     public long getPayloadContentSize() {
-        return 1 + header.getPayloadSize() + entity.getPayloadSize()
-                + Serialization.getNeedBytes(affectedRows);
+        return header.getPayloadSize()
+                + entity.getPayloadSize()
+                + Serialization.getNeedBytes(affectedRows)
+                + 1; // operation type
     }
 
     /*

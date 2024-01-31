@@ -101,6 +101,21 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         return bytes;
     }
 
+    private byte[] parseBitMap(long bitLen, List<String> aggColumnNames, List<String> columnNames, ByteBuf buf) {
+        byte[] bitMap = new byte[(int) Math.ceil(bitLen / 8.0)];
+        for (int i = 0; i < bitMap.length; i++) {
+            bitMap[i] = Serialization.decodeI8(buf);
+            for (int j = 0; j < 8; j++) {
+                if ((bitMap[i] & (1 << j)) != 0) {
+                    if (i * 8 + j < aggColumnNames.size()) {
+                        columnNames.add(aggColumnNames.get(i * 8 + j));
+                    }
+                }
+            }
+        }
+        return bitMap;
+    }
+
     /*
      * Decode.
      */
@@ -111,17 +126,7 @@ public class ObTableSingleOpEntity extends AbstractPayload {
 
         // 1. rowkey bitmap
         rowKeyBitLen = Serialization.decodeVi64(buf);
-        rowKeyBitMap = new byte[(int) Math.ceil(rowKeyBitLen / 8.0)];
-        for (int i = 0; i < rowKeyBitMap.length; i++) {
-            rowKeyBitMap[i] = Serialization.decodeI8(buf);
-            for (int j = 0; j < 8; i++) {
-                if ((rowKeyBitMap[i] & (1 << j)) != 0) {
-                    if (i * 8 + j < aggRowKeyNames.size()) {
-                        rowKeyNames.add(aggRowKeyNames.get(i * 8 + j));
-                    }
-                }
-            }
-        }
+        rowKeyBitMap = parseBitMap(rowKeyBitLen, aggRowKeyNames, rowKeyNames, buf);
 
         // 2. rowkey obobj
         int len = (int) Serialization.decodeVi64(buf);
@@ -133,17 +138,7 @@ public class ObTableSingleOpEntity extends AbstractPayload {
 
         // 3. properties bitmap
         propertiesBitLen = Serialization.decodeVi64(buf);
-        propertiesBitMap = new byte[(int) Math.ceil(propertiesBitLen / 8.0)];
-        for (int i = 0; i < propertiesBitMap.length; i++) {
-            propertiesBitMap[i] = Serialization.decodeI8(buf);
-            for (int j = 0; j < 8; j++) {
-                if ((propertiesBitMap[i] & (1 << j)) != 0) {
-                    if (i * 8 + j < aggPropertiesNames.size()) {
-                        propertiesNames.add(aggPropertiesNames.get(i * 8 + j));
-                    }
-                }
-            }
-        }
+        propertiesBitMap = parseBitMap(propertiesBitLen, aggPropertiesNames, propertiesNames, buf);
 
         // 4. properties obobj
         len = (int) Serialization.decodeVi64(buf);
@@ -249,21 +244,17 @@ public class ObTableSingleOpEntity extends AbstractPayload {
     }
 
     /*
-     *
+     * isSamePropertiesColumnNamesLen check whether length is equal
      */
     public boolean isSamePropertiesColumnNamesLen(int columnNameIdxMapLen) {
         return columnNameIdxMapLen == this.propertiesNames.size();
     }
 
-    /*
-     * adjustRowkeyColumnName should be execute in the last
-     */
     public void adjustRowkeyColumnName(Map<String, Long> columnNameIdxMap) {
         this.rowKeyBitLen = columnNameIdxMap.size();
         int size = (int) Math.ceil(columnNameIdxMap.size() / 8.0);
         byte[] byteArray = new byte[size];
         List<Long> columnNameIdx = new LinkedList<>();
-
 
         for (String name : rowKeyNames) {
             Long index = columnNameIdxMap.get(name);

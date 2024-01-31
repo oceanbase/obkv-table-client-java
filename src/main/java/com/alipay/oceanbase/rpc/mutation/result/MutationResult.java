@@ -51,28 +51,18 @@ public class MutationResult extends OperationResult {
      */
     public long getAffectedRows() {
         long affectedRows = 0;
-        if (result instanceof ObTableSingleOpResult) {
-            switch (result.getPcode()) {
-                case Pcodes.OB_TABLE_API_EXECUTE:
-                    affectedRows = ((ObTableSingleOpResult) result).getAffectedRows();
-                    break;
-                case Pcodes.OB_TABLE_API_QUERY_AND_MUTATE:
-                    affectedRows = ((ObTableQueryAndMutateResult) result).getAffectedRows();
-                    break;
-                default:
-                    throw new ObTableException("unknown result type: " + result.getPcode());
-            }
-        } else {
-            switch (result.getPcode()) {
-                case Pcodes.OB_TABLE_API_EXECUTE:
-                    affectedRows = ((ObTableOperationResult) result).getAffectedRows();
-                    break;
-                case Pcodes.OB_TABLE_API_QUERY_AND_MUTATE:
-                    affectedRows = ((ObTableQueryAndMutateResult) result).getAffectedRows();
-                    break;
-                default:
-                    throw new ObTableException("unknown result type: " + result.getPcode());
-            }
+        switch (result.getPcode()) {
+            case Pcodes.OB_TABLE_API_EXECUTE:
+                affectedRows = ((ObTableOperationResult) result).getAffectedRows();
+                break;
+            case Pcodes.OB_TABLE_API_QUERY_AND_MUTATE:
+                affectedRows = ((ObTableQueryAndMutateResult) result).getAffectedRows();
+                break;
+            case Pcodes.OB_TABLE_API_LS_EXECUTE:
+                affectedRows = ((ObTableSingleOpResult) result).getAffectedRows();
+                break;
+            default:
+                throw new ObTableException("unknown result type: " + result.getPcode());
         }
         return affectedRows;
     }
@@ -82,28 +72,18 @@ public class MutationResult extends OperationResult {
      */
     public Row getOperationRow() {
         Map<String, Object> rowsMap;
-        if (result instanceof ObTableSingleOpResult) {
-            switch (result.getPcode()) {
-                case Pcodes.OB_TABLE_API_EXECUTE:
-                    rowsMap = ((ObTableSingleOpResult) result).getEntity().getSimpleProperties();
-                    break;
-                case Pcodes.OB_TABLE_API_QUERY_AND_MUTATE:
-                    throw new ObTableException("could not get query and mutate result now"
-                                               + result.getPcode());
-                default:
-                    throw new ObTableException("unknown result type: " + result.getPcode());
-            }
-        } else {
-            switch (result.getPcode()) {
-                case Pcodes.OB_TABLE_API_EXECUTE:
-                    rowsMap = ((ObTableOperationResult) result).getEntity().getSimpleProperties();
-                    break;
-                case Pcodes.OB_TABLE_API_QUERY_AND_MUTATE:
-                    throw new ObTableException("could not get query and mutate result now"
-                                               + result.getPcode());
-                default:
-                    throw new ObTableException("unknown result type: " + result.getPcode());
-            }
+        switch (result.getPcode()) {
+            case Pcodes.OB_TABLE_API_EXECUTE:
+                rowsMap = ((ObTableOperationResult) result).getEntity().getSimpleProperties();
+                break;
+            case Pcodes.OB_TABLE_API_QUERY_AND_MUTATE:
+                throw new ObTableException("could not get query and mutate result now"
+                                           + result.getPcode());
+            case Pcodes.OB_TABLE_API_LS_EXECUTE:
+                rowsMap = ((ObTableSingleOpResult) result).getEntity().getSimpleProperties();
+                break;
+            default:
+                throw new ObTableException("unknown result type: " + result.getPcode());
         }
         return new Row(rowsMap);
     }

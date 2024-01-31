@@ -87,7 +87,7 @@ public class ObTableOperationResult extends AbstractPayload {
         // 2. decode itself
         this.operationType = ObTableOperationType.valueOf(Serialization.decodeI8(buf.readByte()));
 
-        // 3. decode Entity TODO 需要check一下errno
+        // 3. decode Entity
         this.entity.decode(buf);
 
         // 4. decode affected rows
@@ -101,8 +101,10 @@ public class ObTableOperationResult extends AbstractPayload {
      */
     @Override
     public long getPayloadContentSize() {
-        return 1 + header.getPayloadSize() + entity.getPayloadSize()
-               + Serialization.getNeedBytes(affectedRows);
+        return header.getPayloadSize()
+                + entity.getPayloadSize()
+                + Serialization.getNeedBytes(affectedRows)
+                + 1; // operation type
     }
 
     /*
