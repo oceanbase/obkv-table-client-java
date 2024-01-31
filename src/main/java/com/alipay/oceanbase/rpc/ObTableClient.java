@@ -388,6 +388,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     "The addr{}:{} failed to put into table roster, the node status may be wrong, Ignore",
                     addr.getIp(), addr.getSvrPort());
                 RUNTIME.warn("initMetadata meet exception", e);
+                e.printStackTrace();
             }
         }
         if (servers.isEmpty()) {
