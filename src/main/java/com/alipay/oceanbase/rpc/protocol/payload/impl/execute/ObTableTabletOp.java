@@ -19,15 +19,10 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutate;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /*
 OB_UNIS_DEF_SERIALIZE(ObTableTabletOp,
@@ -40,8 +35,8 @@ public class ObTableTabletOp extends AbstractPayload {
     private List<ObTableSingleOp> singleOperations = new ArrayList<>();
     private long tabletId = Constants.INVALID_TABLET_ID; // i64
 
-    private Set<String> rowKeyNamesSet = new HashSet<>();
-    private Set<String> propertiesNamesSet = new HashSet<>();
+    private Set<String> rowKeyNamesSet = new LinkedHashSet<>();
+    private Set<String> propertiesNamesSet = new LinkedHashSet<>();
     ObTableTabletOpFlag optionFlag = new ObTableTabletOpFlag();
 
     private static final int tabletIdSize = 8;

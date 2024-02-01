@@ -2307,12 +2307,10 @@ public class ObTableClientTest extends ObTableClientTestBase {
             ResultSet resultSet = statement
                 .executeQuery("select * from test_datetime_table where c1 = 1");
             resultSet.next();
+            // since getDate will miss micro second in mysql, we use getTimestamp here
             Assert.assertEquals(date2, resultSet.getTimestamp("c2"));
-            Assert.assertEquals(1650524400001L, resultSet.getDate("c2").getTime());
             Assert.assertEquals(date2, resultSet.getTimestamp("c3"));
-            Assert.assertEquals(1650524400001L, resultSet.getDate("c3").getTime());
             Assert.assertEquals(date3, resultSet.getTimestamp("c4"));
-            Assert.assertEquals(1650524400000L, resultSet.getDate("c4").getTime());
         } finally {
             client.delete("test_datetime_table").setRowKey(colVal("c1", "0")).execute();
             client.delete("test_datetime_table").setRowKey(colVal("c1", "1")).execute();
