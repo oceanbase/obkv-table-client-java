@@ -37,11 +37,11 @@ public class ObTableLSOperation extends AbstractPayload {
 
     // common column names for all single operation
     private List<String> rowKeyNames = new ArrayList<>();
-    private Set<String> rowKeyNamesSet = new HashSet<>();
+    private Set<String> rowKeyNamesSet = new LinkedHashSet<>();
     private Map<String, Long> rowkeyColumnNamesIdxMap = new HashMap<>();
 
     private List<String> propertiesNames = new ArrayList<>();
-    private Set<String> propertiesNamesSet = new HashSet<>();
+    private Set<String> propertiesNamesSet = new LinkedHashSet<>();
     private Map<String, Long> propertiesColumnNamesIdxMap = new HashMap<>();
 
     private ObTableLSOpFlag       optionFlag       = new ObTableLSOpFlag();

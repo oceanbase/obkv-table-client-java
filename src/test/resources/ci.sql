@@ -246,6 +246,16 @@ CREATE TABLE `test_mutation` (
           PARTITION p1 VALUES LESS THAN (1000),
           PARTITION p2 VALUES LESS THAN MAXVALUE);
 
+CREATE TABLE `test_mutation_column_reverse` (
+     `c2` bigint NOT NULL,
+     `c1` varchar(20) NOT NULL,
+     `c3` varbinary(1024) DEFAULT NULL,
+     `c4` bigint DEFAULT NULL,
+     PRIMARY KEY(`c2`, `c1`)) partition by range columns (`c2`) (
+PARTITION p0 VALUES LESS THAN (300),
+PARTITION p1 VALUES LESS THAN (1000),
+PARTITION p2 VALUES LESS THAN MAXVALUE);
+
 CREATE TABLE `test_throttle` (
     `c1` bigint NOT NULL,
     `c2` varchar(20) NOT NULL,

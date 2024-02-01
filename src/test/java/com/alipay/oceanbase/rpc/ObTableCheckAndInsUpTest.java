@@ -221,6 +221,51 @@ public class ObTableCheckAndInsUpTest {
     }
 
     @Test
+    public void testBatchWithReverseRowKwyColumn() throws Exception {
+        if (!isVersionSupported()) {
+            System.out.println("current version is not supported, current version: "
+                               + ObGlobal.OB_VERSION);
+            return;
+        }
+        String testTable = "test_mutation_column_reverse";
+
+        try {
+            // 1. check exists match: insup (c2, c1, c3, c4) (5, 'c2_v0', c3_v0, 100) if not exists c3 is not null;
+            InsertOrUpdate insertOrUpdate1 = new InsertOrUpdate();
+            insertOrUpdate1.setRowKey(row(colVal("c2", 5L), colVal("c1", "c2_v0")));
+            insertOrUpdate1.addMutateRow(row(colVal("c4", 100L)));
+            ObTableFilter filter = compareVal(ObCompareOp.IS_NOT, "c3", null);
+            CheckAndInsUp checkAndInsUp1 = new CheckAndInsUp(filter, insertOrUpdate1, false);
+
+            // 2. check exists not match: insup (c2, c1, c3, c4) (5, 'c2_v0', 'c3_v1', 200) if exists c4 < 200 ;
+            InsertOrUpdate insertOrUpdate2 = new InsertOrUpdate();
+            insertOrUpdate2.setRowKey(row(colVal("c2", 5L), colVal("c1", "c2_v0")));
+            insertOrUpdate2.addMutateRow(row(colVal("c3", "c3_v1".getBytes()), colVal("c4", 200L)));
+            filter = compareVal(ObCompareOp.LT, "c4", 200L);
+            CheckAndInsUp checkAndInsUp2 = new CheckAndInsUp(filter, insertOrUpdate2, true);
+
+            BatchOperation batchOperation = client.batchOperation(testTable);
+            batchOperation.addOperation(checkAndInsUp1, checkAndInsUp2);
+            BatchOperationResult batchOperationResult = batchOperation.execute();
+            Assert.assertEquals(2, batchOperationResult.size());
+            Assert.assertEquals(1, batchOperationResult.get(0).getAffectedRows());
+            Assert.assertEquals(1, batchOperationResult.get(1).getAffectedRows());
+
+            Map<String, Object> res = client.get(testTable, new Object[] { 5L, "c2_v0" }, null);
+            Assert.assertEquals("c3_v1", new String((byte[]) res.get("c3"), "UTF-8"));
+            Assert.assertEquals(200L, res.get("c4"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        } finally {
+            Delete delete = client.delete(testTable);
+            delete.setRowKey(row(colVal("c1", 5L), colVal("c2", "c2_v0")));
+            MutationResult res = delete.execute();
+            Assert.assertEquals(1, res.getAffectedRows());
+        }
+    }
+
+    @Test
     public void testSingleCheckInsUp() throws Exception {
         if (!isVersionSupported()) {
             System.out.println("current version is not supported, current version: "
