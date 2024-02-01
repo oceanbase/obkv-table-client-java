@@ -154,14 +154,14 @@ public class ObTable extends AbstractObTable implements Lifecycle {
 
     private void initProperties() {
         obTableConnectTimeout = parseToInt(RPC_CONNECT_TIMEOUT.getKey(), obTableConnectTimeout);
+        obTableConnectTryTimes = parseToInt(RPC_CONNECT_TRY_TIMES.getKey(), obTableConnectTryTimes);
         obTableExecuteTimeout = parseToInt(RPC_EXECUTE_TIMEOUT.getKey(), obTableExecuteTimeout);
         obTableLoginTimeout = parseToInt(RPC_LOGIN_TIMEOUT.getKey(), obTableLoginTimeout);
+        obTableLoginTryTimes = parseToInt(RPC_LOGIN_TRY_TIMES.getKey(), obTableLoginTryTimes);
         obTableOperationTimeout = parseToLong(RPC_OPERATION_TIMEOUT.getKey(),
             obTableOperationTimeout);
         obTableConnectionPoolSize = parseToInt(SERVER_CONNECTION_POOL_SIZE.getKey(),
             obTableConnectionPoolSize);
-        obTableConnectTryTimes = parseToInt(RPC_CONNECT_TRY_TIMES.getKey(), obTableConnectTryTimes);
-        obTableLoginTryTimes = parseToInt(RPC_LOGIN_TRY_TIMES.getKey(), obTableLoginTryTimes);
         nettyBufferLowWatermark = parseToInt(NETTY_BUFFER_LOW_WATERMARK.getKey(),
             nettyBufferLowWatermark);
         nettyBufferHighWatermark = parseToInt(NETTY_BUFFER_HIGH_WATERMARK.getKey(),

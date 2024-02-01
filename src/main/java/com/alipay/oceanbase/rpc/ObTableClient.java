@@ -250,10 +250,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     private void initProperties() {
+        rpcConnectTimeout = parseToInt(RPC_CONNECT_TIMEOUT.getKey(), rpcConnectTimeout);
+
         // metadata.refresh.interval is preferred.
-        metadataRefreshInterval = parseToLong(METADATA_REFRESH_INTERNAL.getKey(),
-            metadataRefreshInterval);
         metadataRefreshInterval = parseToLong(METADATA_REFRESH_INTERVAL.getKey(),
+            metadataRefreshInterval);
+        metadataRefreshInterval = parseToLong(METADATA_REFRESH_INTERNAL.getKey(),
             metadataRefreshInterval);
 
         metadataRefreshLockTimeout = parseToLong(METADATA_REFRESH_LOCK_TIMEOUT.getKey(),
@@ -269,25 +271,37 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             rsListAcquireTryTimes);
 
         // rs.list.acquire.retry.interval is preferred.
-        rsListAcquireRetryInterval = parseToLong(RS_LIST_ACQUIRE_RETRY_INTERNAL.getKey(),
-            rsListAcquireRetryInterval);
         rsListAcquireRetryInterval = parseToLong(RS_LIST_ACQUIRE_RETRY_INTERVAL.getKey(),
             rsListAcquireRetryInterval);
+        rsListAcquireRetryInterval = parseToLong(RS_LIST_ACQUIRE_RETRY_INTERNAL.getKey(),
+            rsListAcquireRetryInterval);
+
+        tableEntryAcquireConnectTimeout = parseToLong(TABLE_ENTRY_ACQUIRE_CONNECT_TIMEOUT.getKey(),
+            tableEntryAcquireConnectTimeout);
+
+        tableEntryAcquireSocketTimeout = parseToLong(TABLE_ENTRY_ACQUIRE_SOCKET_TIMEOUT.getKey(),
+            tableEntryAcquireSocketTimeout);
 
         // table.entry.refresh.interval.base is preferred.
-        tableEntryRefreshIntervalBase = parseToLong(TABLE_ENTRY_REFRESH_INTERNAL_BASE.getKey(),
-            tableEntryRefreshIntervalBase);
         tableEntryRefreshIntervalBase = parseToLong(TABLE_ENTRY_REFRESH_INTERVAL_BASE.getKey(),
+            tableEntryRefreshIntervalBase);
+        tableEntryRefreshIntervalBase = parseToLong(TABLE_ENTRY_REFRESH_INTERNAL_BASE.getKey(),
             tableEntryRefreshIntervalBase);
 
         // table.entry.refresh.interval.ceiling is preferred.
         tableEntryRefreshIntervalCeiling = parseToLong(
-            TABLE_ENTRY_REFRESH_INTERNAL_CEILING.getKey(), tableEntryRefreshIntervalCeiling);
-        tableEntryRefreshIntervalCeiling = parseToLong(
             TABLE_ENTRY_REFRESH_INTERVAL_CEILING.getKey(), tableEntryRefreshIntervalCeiling);
+        tableEntryRefreshIntervalCeiling = parseToLong(
+            TABLE_ENTRY_REFRESH_INTERNAL_CEILING.getKey(), tableEntryRefreshIntervalCeiling);
+
+        tableEntryRefreshIntervalWait = parseToBoolean(TABLE_ENTRY_REFRESH_INTERVAL_WAIT.getKey(),
+            tableEntryRefreshIntervalWait);
 
         tableEntryRefreshLockTimeout = parseToLong(TABLE_ENTRY_REFRESH_LOCK_TIMEOUT.getKey(),
             tableEntryRefreshLockTimeout);
+
+        tableEntryRefreshTryTimes = parseToInt(TABLE_ENTRY_REFRESH_TYE_TIMES.getKey(),
+            tableEntryRefreshTryTimes);
 
         tableEntryRefreshContinuousFailureCeiling = parseToInt(
             TABLE_ENTRY_REFRESH_CONTINUOUS_FAILURE_CEILING.getKey(),
@@ -309,8 +323,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         runtimeMaxWait = parseToLong(RUNTIME_MAX_WAIT.getKey(), runtimeMaxWait);
 
         runtimeBatchMaxWait = parseToLong(RUNTIME_BATCH_MAX_WAIT.getKey(), runtimeBatchMaxWait);
-
-        rpcConnectTimeout = parseToInt(RPC_CONNECT_TIMEOUT.getKey(), rpcConnectTimeout);
 
         rpcExecuteTimeout = parseToInt(RPC_EXECUTE_TIMEOUT.getKey(), rpcExecuteTimeout);
 
@@ -2665,8 +2677,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         tcIndex = username.indexOf('#');
         if (-1 == utIndex || -1 == tcIndex || utIndex >= tcIndex) {
             RUNTIME.error(String.format("invalid full username, username=%s", username));
-            throw new IllegalArgumentException(String.format("invalid full username, username=%s",
-                username));
+            throw new IllegalArgumentException(
+                String
+                    .format(
+                        "invalid full username, username=%s (which should be userName@tenantName#clusterName)",
+                        username));
         }
 
         String user = username.substring(0, utIndex);
@@ -2792,7 +2807,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
 
         if (StringUtils.isBlank(db)) {
-            throw new IllegalArgumentException(String.format("database is empty. url=%s", paramURL));
+            throw new IllegalArgumentException(String.format(
+                "database is empty in paramURL(configURL). url=%s", paramURL));
         }
         setDatabase(db);
         this.paramURL = paramURL;
