@@ -676,7 +676,7 @@ public class ObTableClientPartitionRangeTest {
             // 1651334400000L -> 2022-05-01 00:00:00 (GMT +8)
             Date date = new Date(1651334400000L);
             long affectedRows = obTableClient.insert(testTable, new Object[] { date, date },
-                    new String[] { "c2" }, new Object[] {"value"});
+                new String[] { "c2" }, new Object[] { "value" });
             Assert.assertTrue("Insert should fail since no partition could be inserted", false);
         } catch (IndexOutOfBoundsException e) {
             // do nothing
