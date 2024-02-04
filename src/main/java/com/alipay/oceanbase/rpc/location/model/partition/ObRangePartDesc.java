@@ -227,8 +227,13 @@ public class ObRangePartDesc extends ObPartDesc {
                 this.orderedCompareColumns);
             ObPartitionKey searchKey = ObPartitionKey.getInstance(orderedCompareColumns,
                 comparableElement);
-            return upperBound(this.bounds, new ObComparableKV<ObPartitionKey, Long>(searchKey,
-                (long) -1));
+
+            int pos = upperBound(this.bounds, new ObComparableKV<ObPartitionKey, Long>(searchKey, (long) -1));
+            if (pos >= this.bounds.size()) {
+                throw new ArrayIndexOutOfBoundsException("Table has no partition for value in " + this.getPartExpr());
+            } else {
+                return pos;
+            }
         } catch (IllegalArgumentException e) {
             RUNTIME.error(LCD.convert("01-00025"), e);
             throw new IllegalArgumentException("ObRangePartDesc get getBoundsIdx error", e);
@@ -266,7 +271,7 @@ public class ObRangePartDesc extends ObPartDesc {
 
     private static <T extends Comparable<? super T>> int upperBound(List<T> list, T key) {
         int first = 0;
-        int len = list.size() - 1;
+        int len = list.size();
         int half = 0;
         int middle = 0;
         while (len > 0) {
