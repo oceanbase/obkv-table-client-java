@@ -17,8 +17,7 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public enum ObTableOperationType {
 
@@ -32,7 +31,20 @@ public enum ObTableOperationType {
     CHECK_AND_INSERT_UP(10), INVALID(11);
 
     private int                                       value;
-    private static Map<Integer, ObTableOperationType> map = new HashMap<Integer, ObTableOperationType>();
+    private static Map<Integer, ObTableOperationType> map             = new HashMap<Integer, ObTableOperationType>();
+    private static final List<Boolean>                needEncodeQuery = Arrays.asList(false, // GET
+                                                                          false, // INSERT
+                                                                          false, // DEL
+                                                                          false, // UPDATE
+                                                                          false, // INSERT_OR_UPDATE
+                                                                          false, // REPLACE
+                                                                          false, // INCREMENT
+                                                                          false, // APPEND
+                                                                          false, // SCAN
+                                                                          false, // TTL
+                                                                          true, // CHECK_AND_INSERT_UP
+                                                                          false // INVALID
+                                                                          );
 
     ObTableOperationType(int value) {
         this.value = value;
@@ -70,5 +82,9 @@ public enum ObTableOperationType {
      */
     public boolean isReadonly() {
         return this.value == GET.value;
+    }
+
+    public static boolean needEncodeQuery(ObTableOperationType type) {
+        return needEncodeQuery.get(type.value);
     }
 }

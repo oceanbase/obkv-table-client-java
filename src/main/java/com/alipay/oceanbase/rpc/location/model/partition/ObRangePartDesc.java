@@ -228,9 +228,11 @@ public class ObRangePartDesc extends ObPartDesc {
             ObPartitionKey searchKey = ObPartitionKey.getInstance(orderedCompareColumns,
                 comparableElement);
 
-            int pos = upperBound(this.bounds, new ObComparableKV<ObPartitionKey, Long>(searchKey, (long) -1));
+            int pos = upperBound(this.bounds, new ObComparableKV<ObPartitionKey, Long>(searchKey,
+                (long) -1));
             if (pos >= this.bounds.size()) {
-                throw new ArrayIndexOutOfBoundsException("Table has no partition for value in " + this.getPartExpr());
+                throw new ArrayIndexOutOfBoundsException("Table has no partition for value in "
+                                                         + this.getPartExpr());
             } else {
                 return pos;
             }
