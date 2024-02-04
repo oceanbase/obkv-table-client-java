@@ -664,4 +664,27 @@ public class ObTableClientPartitionRangeTest {
             cleanTable(testTable);
         }
     }
+
+    @Test
+    public void testNotInAnyPartition() throws Exception {
+        obTableClient.setRunningMode(ObTableClient.RunningMode.NORMAL);
+        String testTable = "testDateTime";
+        obTableClient.addRowKeyElement(testTable, new String[] { "c0", "c1" });
+        try {
+            cleanTable(testTable);
+
+            // 1651334400000L -> 2022-05-01 00:00:00 (GMT +8)
+            Date date = new Date(1651334400000L);
+            long affectedRows = obTableClient.insert(testTable, new Object[] { date, date },
+                    new String[] { "c2" }, new Object[] {"value"});
+            Assert.assertTrue("Insert should fail since no partition could be inserted", false);
+        } catch (IndexOutOfBoundsException e) {
+            // do nothing
+            Assert.assertEquals("Table has no partition for value in c0", e.getMessage());
+        } catch (Exception e) {
+            Assert.assertTrue("Unexpected exception has occurred", false);
+        } finally {
+            cleanTable(testTable);
+        }
+    }
 }
