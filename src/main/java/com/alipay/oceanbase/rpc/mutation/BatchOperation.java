@@ -207,7 +207,7 @@ public class BatchOperation {
                     }
                 } else {
                     throw new IllegalArgumentException(
-                        "the operation in LS batch must be checkAndInsUp");
+                        "The operations in batch must be all checkAndInsUp or all non-checkAndInsUp");
                 }
             }
         } else {
