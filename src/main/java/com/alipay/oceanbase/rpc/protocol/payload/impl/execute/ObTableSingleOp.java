@@ -54,9 +54,11 @@ public class ObTableSingleOp extends AbstractPayload {
         idx += len;
 
         // 3. encode single op query
-        len = (int) query.getPayloadSize();
-        System.arraycopy(query.encode(), 0, bytes, idx, len);
-        idx += len;
+        if (ObTableOperationType.needEncodeQuery(singleOpType)) {
+            len = (int) query.getPayloadSize();
+            System.arraycopy(query.encode(), 0, bytes, idx, len);
+            idx += len;
+        }
 
         // 4. encode entities
         len = Serialization.getNeedBytes(entities.size());
@@ -80,7 +82,9 @@ public class ObTableSingleOp extends AbstractPayload {
 
         this.singleOpType = ObTableOperationType.valueOf(Serialization.decodeI8(buf.readByte()));
         this.singleOpFlag.setValue(Serialization.decodeVi64(buf));
-        this.query.decode(buf);
+        if (ObTableOperationType.needEncodeQuery(this.singleOpType)) {
+            this.query.decode(buf);
+        }
         int len = (int) Serialization.decodeVi64(buf);
         for (int i = 0; i < len; i++) {
             ObTableSingleOpEntity entity = new ObTableSingleOpEntity();
@@ -96,10 +100,11 @@ public class ObTableSingleOp extends AbstractPayload {
      */
     @Override
     public long getPayloadContentSize() {
-
         long payloadContentSize = Serialization.getNeedBytes(singleOpType.getByteValue());
         payloadContentSize += Serialization.getNeedBytes(singleOpFlag.getValue());
-        payloadContentSize += query.getPayloadSize();
+        if (ObTableOperationType.needEncodeQuery(singleOpType)) {
+            payloadContentSize += query.getPayloadSize();
+        }
         payloadContentSize += Serialization.getNeedBytes(entities.size());
         for (ObTableSingleOpEntity entity : entities) {
             payloadContentSize += entity.getPayloadSize();
