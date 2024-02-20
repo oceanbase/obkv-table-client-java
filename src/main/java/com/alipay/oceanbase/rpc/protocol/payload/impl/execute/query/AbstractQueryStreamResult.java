@@ -174,7 +174,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         return (ObTableQueryResult) result;
     }
 
-    protected ObTableQueryAsyncResult checkObTableQuerySyncResult(Object result) {
+    protected ObTableQueryAsyncResult checkObTableQueryAsyncResult(Object result) {
         if (result == null) {
             throw new ObTableException("client get unexpected NULL result");
         }
@@ -278,18 +278,18 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         }
     }
 
-    private void cacheResultRows(ObTableQueryAsyncResult tableQuerySyncResult) {
-        cacheRows.addAll(tableQuerySyncResult.getAffectedEntity().getPropertiesRows());
-        cacheProperties = tableQuerySyncResult.getAffectedEntity().getPropertiesNames();
+    private void cacheResultRows(ObTableQueryAsyncResult tableQueryAsyncResult) {
+        cacheRows.addAll(tableQueryAsyncResult.getAffectedEntity().getPropertiesRows());
+        cacheProperties = tableQueryAsyncResult.getAffectedEntity().getPropertiesNames();
     }
 
     protected void cacheStreamNext(ObPair<Long, ObTableParam> partIdWithObTable,
-                                   ObTableQueryAsyncResult tableQuerySyncResult) {
-        cacheResultRows(tableQuerySyncResult);
-        if (tableQuerySyncResult.getAffectedEntity().isStream()
-            && tableQuerySyncResult.getAffectedEntity().isStreamNext()) {
+                                   ObTableQueryAsyncResult tableQueryAsyncResult) {
+        cacheResultRows(tableQueryAsyncResult);
+        if (tableQueryAsyncResult.getAffectedEntity().isStream()
+            && tableQueryAsyncResult.getAffectedEntity().isStreamNext()) {
             partitionLastResult.addLast(new ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>(
-                partIdWithObTable, tableQuerySyncResult.getAffectedEntity()));
+                partIdWithObTable, tableQueryAsyncResult.getAffectedEntity()));
         }
     }
 

@@ -100,7 +100,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             Thread.sleep(client.getRuntimeRetryInterval());
         }
 
-        cacheStreamNext(partIdWithObTable, checkObTableQuerySyncResult(result));
+        cacheStreamNext(partIdWithObTable, checkObTableQueryAsyncResult(result));
 
         ObTableQueryAsyncResult obTableQueryAsyncResult = (ObTableQueryAsyncResult) result;
         if (obTableQueryAsyncResult.isEnd()) {

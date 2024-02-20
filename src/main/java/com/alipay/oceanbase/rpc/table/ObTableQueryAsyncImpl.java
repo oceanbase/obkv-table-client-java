@@ -94,12 +94,12 @@ public class ObTableQueryAsyncImpl extends AbstractTableQueryImpl {
 
         obTableQueryAsyncStreamResult.init(type, sessionId);
 
-        QueryResultSet querySyncResultSet = new QueryResultSet(obTableQueryAsyncStreamResult);
+        QueryResultSet queryAsyncResultSet = new QueryResultSet(obTableQueryAsyncStreamResult);
         boolean hasMore = !obTableQueryAsyncStreamResult.isEnd();
-        querySyncResultSet.setHasMore(hasMore);
-        querySyncResultSet.setSessionId(obTableQueryAsyncStreamResult.getSessionId());
+        queryAsyncResultSet.setHasMore(hasMore);
+        queryAsyncResultSet.setSessionId(obTableQueryAsyncStreamResult.getSessionId());
         this.sessionId = obTableQueryAsyncStreamResult.getSessionId();
-        return querySyncResultSet;
+        return queryAsyncResultSet;
     }
 
     @Override

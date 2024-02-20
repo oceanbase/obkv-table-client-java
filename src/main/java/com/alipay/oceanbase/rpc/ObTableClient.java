@@ -1691,8 +1691,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     @Override
     public TableQuery queryByBatchV2(String tableName) {
-        ObTableClientQueryAsyncImpl querySync = new ObTableClientQueryAsyncImpl(tableName, this);
-        return new ObClusterTableAsyncQuery(querySync);
+        ObTableClientQueryAsyncImpl queryAsync = new ObTableClientQueryAsyncImpl(tableName, this);
+        return new ObClusterTableAsyncQuery(queryAsync);
     }
 
     @Override
@@ -2534,11 +2534,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             tableQuery.setEntityType(request.getEntityType());
             return new ObClusterTableQuery(tableQuery).executeInternal();
         } else if (request instanceof ObTableQueryAsyncRequest) {
-            ObTableClientQueryAsyncImpl tableClientQuerySync = new ObTableClientQueryAsyncImpl(
+            ObTableClientQueryAsyncImpl tableClientQueryAsync = new ObTableClientQueryAsyncImpl(
                 request.getTableName(), ((ObTableQueryAsyncRequest) request)
                     .getObTableQueryRequest().getTableQuery(), this);
-            tableClientQuerySync.setEntityType(request.getEntityType());
-            return new ObClusterTableAsyncQuery(tableClientQuerySync)
+            tableClientQueryAsync.setEntityType(request.getEntityType());
+            return new ObClusterTableAsyncQuery(tableClientQueryAsync)
                 .executeInternal(((ObTableQueryAsyncRequest) request).getQueryType());
         } else if (request instanceof ObTableBatchOperationRequest) {
             ObTableClientBatchOpsImpl batchOps = new ObTableClientBatchOpsImpl(
