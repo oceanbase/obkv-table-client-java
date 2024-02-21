@@ -300,6 +300,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 .toObTableConsistencyLevel());
         }
         subRequest.setBatchOperationAsAtomic(isAtomicOperation());
+        subRequest.setBatchOpReturnOneResult(isReturnOneResult());
         ObTableBatchOperationResult subObTableBatchOperationResult;
 
         boolean needRefreshTableEntry = false;

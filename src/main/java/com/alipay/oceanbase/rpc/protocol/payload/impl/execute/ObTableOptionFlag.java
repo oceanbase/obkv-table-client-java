@@ -22,7 +22,7 @@ import java.util.Map;
 
 public enum ObTableOptionFlag {
 
-    DEFAULT(0), RETURNING_ROWKEY(1 << 0), USE_PUT(1 << 1);
+    DEFAULT(0), RETURNING_ROWKEY(1 << 0), USE_PUT(1 << 1), RETURN_ONE_RES(1 << 2);
 
     private int                                    value;
     private static Map<Integer, ObTableOptionFlag> map = new HashMap<Integer, ObTableOptionFlag>();
@@ -87,6 +87,16 @@ public enum ObTableOptionFlag {
     public void setUsePut(boolean usePut) {
         if (usePut) {
             this.value |= USE_PUT.value;
+        }
+    }
+
+    public boolean isReturnOneResult() {
+        return (this.value & RETURN_ONE_RES.value) == 1;
+    }
+
+    public void setReturnOneResult(boolean returnOneResult) {
+        if (returnOneResult) {
+            this.value |= RETURN_ONE_RES.value;
         }
     }
 }

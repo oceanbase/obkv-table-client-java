@@ -32,6 +32,10 @@ public interface TableBatchOps {
 
     boolean isAtomicOperation();
 
+    void setReturnOneResult(boolean returnOneResult);
+
+    boolean isReturnOneResult();
+
     void setEntityType(ObTableEntityType entityType);
 
     ObTableEntityType getEntityType();
