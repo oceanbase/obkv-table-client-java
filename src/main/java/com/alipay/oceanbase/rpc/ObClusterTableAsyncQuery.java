@@ -31,44 +31,44 @@ import com.alipay.oceanbase.rpc.table.ObTableParam;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
 public class ObClusterTableAsyncQuery extends AbstractTableQuery {
-    private final ObTableClientQueryAsyncImpl tableClientQuerySync;
+    private final ObTableClientQueryAsyncImpl tableClientQueryAsync;
 
-    ObClusterTableAsyncQuery(ObTableClientQueryAsyncImpl tableClientQuerySync) {
-        this.tableClientQuerySync = tableClientQuerySync;
+    ObClusterTableAsyncQuery(ObTableClientQueryAsyncImpl tableClientQueryAsync) {
+        this.tableClientQueryAsync = tableClientQueryAsync;
     }
 
     @Override
     public ObTableQuery getObTableQuery() {
-        return tableClientQuerySync.getObTableQuery();
+        return tableClientQueryAsync.getObTableQuery();
     }
 
     @Override
     public String getTableName() {
-        return tableClientQuerySync.getTableName();
+        return tableClientQueryAsync.getTableName();
     }
 
     @Override
     public QueryResultSet execute() throws Exception {
-        return tableClientQuerySync.execute();
+        return tableClientQueryAsync.execute();
     }
 
     @Override
     public QueryResultSet executeInit(ObPair<Long, ObTableParam> entry) throws Exception {
-        return tableClientQuerySync.executeInit(entry);
+        return tableClientQueryAsync.executeInit(entry);
     }
 
     @Override
     public QueryResultSet executeNext(ObPair<Long, ObTableParam> entry) throws Exception {
-        return tableClientQuerySync.executeNext(entry);
+        return tableClientQueryAsync.executeNext(entry);
     }
 
     ObTableClientQueryAsyncStreamResult executeInternal(ObQueryOperationType type) throws Exception {
-        return tableClientQuerySync.executeInternal(type);
+        return tableClientQueryAsync.executeInternal(type);
     }
 
     @Override
     public TableQuery select(String... columns) {
-        tableClientQuerySync.select(columns);
+        tableClientQueryAsync.select(columns);
         return this;
     }
 
@@ -79,69 +79,69 @@ public class ObClusterTableAsyncQuery extends AbstractTableQuery {
 
     @Override
     public TableQuery limit(int offset, int limit) {
-        tableClientQuerySync.limit(offset, limit);
+        tableClientQueryAsync.limit(offset, limit);
         return this;
     }
 
     @Override
     public TableQuery addScanRange(Object[] start, boolean startEquals, Object[] end,
                                    boolean endEquals) {
-        tableClientQuerySync.addScanRange(start, startEquals, end, endEquals);
+        tableClientQueryAsync.addScanRange(start, startEquals, end, endEquals);
         return this;
     }
 
     @Override
     public TableQuery addScanRangeStartsWith(Object[] start, boolean startEquals) {
-        tableClientQuerySync.addScanRangeStartsWith(start, startEquals);
+        tableClientQueryAsync.addScanRangeStartsWith(start, startEquals);
         return this;
     }
 
     @Override
     public TableQuery addScanRangeEndsWith(Object[] end, boolean endEquals) {
-        tableClientQuerySync.addScanRangeStartsWith(end, endEquals);
+        tableClientQueryAsync.addScanRangeStartsWith(end, endEquals);
         return this;
     }
 
     @Override
     public TableQuery scanOrder(boolean forward) {
-        tableClientQuerySync.scanOrder(forward);
+        tableClientQueryAsync.scanOrder(forward);
         return this;
     }
 
     @Override
     public TableQuery indexName(String indexName) {
-        tableClientQuerySync.indexName(indexName);
+        tableClientQueryAsync.indexName(indexName);
         return this;
     }
 
     @Override
     public TableQuery filterString(String filterString) {
-        tableClientQuerySync.filterString(filterString);
+        tableClientQueryAsync.filterString(filterString);
         return this;
     }
 
     @Override
     public TableQuery setHTableFilter(ObHTableFilter obHTableFilter) {
-        return tableClientQuerySync.setHTableFilter(obHTableFilter);
+        return tableClientQueryAsync.setHTableFilter(obHTableFilter);
     }
 
     @Override
     public TableQuery setBatchSize(int batchSize) {
-        return tableClientQuerySync.setBatchSize(batchSize);
+        return tableClientQueryAsync.setBatchSize(batchSize);
     }
 
     @Override
     public TableQuery setMaxResultSize(long maxResultSize) {
-        return tableClientQuerySync.setMaxResultSize(maxResultSize);
+        return tableClientQueryAsync.setMaxResultSize(maxResultSize);
     }
 
     @Override
     public void clear() {
-        tableClientQuerySync.clear();
+        tableClientQueryAsync.clear();
     }
 
     public void setEntityType(ObTableEntityType entityType) {
         super.setEntityType(entityType);
-        tableClientQuerySync.setEntityType(entityType);
+        tableClientQueryAsync.setEntityType(entityType);
     }
 }

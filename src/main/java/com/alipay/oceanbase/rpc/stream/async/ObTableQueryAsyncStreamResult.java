@@ -40,7 +40,7 @@ public class ObTableQueryAsyncStreamResult extends AbstractQueryStreamResult {
                                                    ObPayload streamRequest) throws Exception {
         Object result = partIdWithObTable.getRight().getObTable().execute(streamRequest);//执行query start/ query next等等
 
-        cacheStreamNext(partIdWithObTable, checkObTableQuerySyncResult(result));
+        cacheStreamNext(partIdWithObTable, checkObTableQueryAsyncResult(result));
 
         ObTableQueryAsyncResult obTableQueryAsyncResult = (ObTableQueryAsyncResult) result;
         isEnd = obTableQueryAsyncResult.isEnd();

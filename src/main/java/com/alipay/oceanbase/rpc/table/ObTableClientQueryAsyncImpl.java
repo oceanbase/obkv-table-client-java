@@ -117,11 +117,11 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
         obTableClientQueryASyncStreamResult.setClient(obTableClient);
         obTableClientQueryASyncStreamResult.init(type, sessionId);
 
-        QueryResultSet querySyncResultSet = new QueryResultSet(obTableClientQueryASyncStreamResult);
+        QueryResultSet queryAsyncResultSet = new QueryResultSet(obTableClientQueryASyncStreamResult);
         this.hasMore = !obTableClientQueryASyncStreamResult.isEnd();
-        querySyncResultSet.setHasMore(this.hasMore);
+        queryAsyncResultSet.setHasMore(this.hasMore);
         obTableClientQueryASyncStreamResult.setHasMore(this.hasMore);
-        querySyncResultSet.setSessionId(obTableClientQueryASyncStreamResult.getSessionId());
+        queryAsyncResultSet.setSessionId(obTableClientQueryASyncStreamResult.getSessionId());
         this.sessionId = obTableClientQueryASyncStreamResult.getSessionId();
 
         return obTableClientQueryASyncStreamResult;
@@ -139,11 +139,11 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
         obTableClientQueryASyncStreamResult.setClient(obTableClient);
         obTableClientQueryASyncStreamResult.init(type, entry, sessionId);
 
-        QueryResultSet querySyncResultSet = new QueryResultSet(obTableClientQueryASyncStreamResult);
+        QueryResultSet queryAsyncResultSet = new QueryResultSet(obTableClientQueryASyncStreamResult);
         this.hasMore = !obTableClientQueryASyncStreamResult.isEnd();
-        querySyncResultSet.setHasMore(this.hasMore);
+        queryAsyncResultSet.setHasMore(this.hasMore);
         obTableClientQueryASyncStreamResult.setHasMore(this.hasMore);
-        querySyncResultSet.setSessionId(obTableClientQueryASyncStreamResult.getSessionId());
+        queryAsyncResultSet.setSessionId(obTableClientQueryASyncStreamResult.getSessionId());
         this.sessionId = obTableClientQueryASyncStreamResult.getSessionId();
 
         return obTableClientQueryASyncStreamResult;
