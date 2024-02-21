@@ -97,6 +97,8 @@ public enum ObTableOptionFlag {
     public void setReturnOneResult(boolean returnOneResult) {
         if (returnOneResult) {
             this.value |= RETURN_ONE_RES.value;
+        } else {
+            this.value &= ~(RETURN_ONE_RES.value);
         }
     }
 }

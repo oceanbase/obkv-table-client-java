@@ -165,6 +165,8 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
     public void setBatchOpReturnOneResult(boolean returnOneResult) {
         if (returnOneResult == true) {
             this.option_flag.setReturnOneResult(true);
+        } else {
+            this.option_flag.setReturnOneResult(false);
         }
     }
 }
