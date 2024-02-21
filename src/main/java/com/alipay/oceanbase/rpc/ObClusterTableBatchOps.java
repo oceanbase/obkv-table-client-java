@@ -175,4 +175,10 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         super.setAtomicOperation(atomicOperation);
         tableBatchOps.setAtomicOperation(atomicOperation);
     }
+
+    @Override
+    public void setReturnOneResult(boolean returnOneResult) {
+        super.setReturnOneResult(returnOneResult);
+        tableBatchOps.setReturnOneResult(returnOneResult);
+    }
 }

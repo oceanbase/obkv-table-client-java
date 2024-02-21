@@ -149,7 +149,9 @@ public class ObTableBatchOperation extends AbstractPayload {
         if (isSamePropertiesNames && length > 1) {
             ObTableOperation prev = tableOperations.get(length - 2);
             ObTableOperation curr = tableOperations.get(length - 1);
-            if (prev.getEntity().getPropertiesCount() != curr.getEntity().getPropertiesCount()) {
+            if (prev.getEntity() == null || curr.getEntity() == null) {
+                isSamePropertiesNames = false;
+            } else if (prev.getEntity().getPropertiesCount() != curr.getEntity().getPropertiesCount()) {
                 isSamePropertiesNames = false;
             } else {
                 isSamePropertiesNames =

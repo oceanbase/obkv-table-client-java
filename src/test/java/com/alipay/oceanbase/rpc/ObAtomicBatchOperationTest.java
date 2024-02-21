@@ -63,6 +63,10 @@ public class ObAtomicBatchOperationTest {
             obTableClient.delete("test_varchar_table", key);
         }
         obTableClient.delete("test_varchar_table", successKey);
+        for (int i = 1; i <= 9; i++) {
+            String key = "abcd-" + i;
+            obTableClient.delete("test_varchar_table", key);
+        }
         obTableClient.close();
     }
 
@@ -190,4 +194,56 @@ public class ObAtomicBatchOperationTest {
 
     }
 
+    @Test
+    public void testReturnOneRes() {
+        TableBatchOps batchOps = obTableClient.batch("test_varchar_table");
+        // default: no ReturnOneRes batch operation
+        try {
+            batchOps.clear();
+            batchOps.insert("abcd-1", new String[] { "c2" }, new String[] { "returnOne-1" });
+            batchOps.insert("abcd-2", new String[] { "c2" }, new String[] { "returnOne-2" });
+            batchOps.insert("abcd-3", new String[] { "c2" }, new String[] { "returnOne-3" });
+            List<Object> results = batchOps.execute();
+            Assert.assertEquals(results.size(), 3);
+            Assert.assertEquals(results.get(0), 1L);
+            Assert.assertEquals(results.get(1), 1L);
+            Assert.assertEquals(results.get(2), 1L);
+        } catch (Exception ex) {
+            Assert.fail("hit exception:" + ex);
+        }
+
+        // no atomic ReturnOneRes batch operation
+        try {
+            batchOps.clear();
+            batchOps.setAtomicOperation(false);
+            batchOps.setReturnOneResult(true);
+            batchOps.insert("abcd-7", new String[] { "c2" }, new String[] { "returnOne-7" });
+            batchOps.insert("abcd-8", new String[] { "c2" }, new String[] { "returnOne-8" });
+            batchOps.insert("abcd-9", new String[] { "c2" }, new String[] { "returnOne-9" });
+            List<Object> results = batchOps.execute();
+            Assert.assertEquals(results.size(), 3);
+            Assert.assertEquals(results.get(0), 3L);
+            Assert.assertEquals(results.get(1), 3L);
+            Assert.assertEquals(results.get(2), 3L);
+        } catch (Exception ex) {
+            Assert.assertTrue(ex instanceof ObTableException);
+        }
+
+        // atomic ReturnOneRes batch operation
+        try {
+            batchOps.clear();
+            batchOps.setAtomicOperation(true);
+            batchOps.setReturnOneResult(true);
+            batchOps.insert("abcd-4", new String[] { "c2" }, new String[] { "returnOne-4" });
+            batchOps.insert("abcd-5", new String[] { "c2" }, new String[] { "returnOne-5" });
+            batchOps.insert("abcd-6", new String[] { "c2" }, new String[] { "returnOne-6" });
+            List<Object> results = batchOps.execute();
+            Assert.assertEquals(results.size(), 3);
+            Assert.assertEquals(results.get(0), 3L);
+            Assert.assertEquals(results.get(1), 3L);
+            Assert.assertEquals(results.get(2), 3L);
+        } catch (Exception ex) {
+            Assert.assertTrue(ex instanceof ObTableException);
+        }
+    }
 }

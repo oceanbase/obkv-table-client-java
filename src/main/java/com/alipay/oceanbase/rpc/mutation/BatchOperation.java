@@ -37,6 +37,7 @@ public class BatchOperation {
     boolean              withResult;
     private List<Object> operations;
     boolean              isAtomic         = false;
+    boolean              returnOneResult  = false;
     boolean              hasCheckAndInsUp = false;
 
     /*
@@ -110,6 +111,11 @@ public class BatchOperation {
 
     public BatchOperation setIsAtomic(boolean isAtomic) {
         this.isAtomic = isAtomic;
+        return this;
+    }
+
+    public BatchOperation setReturnOneResult(boolean returnOneResult) {
+        this.returnOneResult = returnOneResult;
         return this;
     }
 
@@ -190,6 +196,7 @@ public class BatchOperation {
             }
         }
         batchOps.setAtomicOperation(isAtomic);
+        batchOps.setReturnOneResult(returnOneResult);
         return new BatchOperationResult(batchOps.executeWithResult());
     }
 
