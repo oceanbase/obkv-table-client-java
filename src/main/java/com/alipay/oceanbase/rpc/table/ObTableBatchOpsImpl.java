@@ -140,6 +140,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
     public List<Object> execute() throws RemotingException, InterruptedException {
 
         request.setBatchOperationAsAtomic(isAtomicOperation());
+        request.setBatchOpReturnOneResult(isReturnOneResult());
         Object result = obTable.execute(request);
         checkObTableOperationResult(result);
 
@@ -173,6 +174,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
     public List<Object> executeWithResult() throws Exception {
 
         request.setBatchOperationAsAtomic(isAtomicOperation());
+        request.setBatchOpReturnOneResult(isReturnOneResult());
         Object result = obTable.execute(request);
         checkObTableOperationResult(result);
 

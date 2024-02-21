@@ -161,4 +161,10 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
     public void setBatchOperationAsAtomic(boolean batchOperationAsAtomic) {
         this.batchOperationAsAtomic = batchOperationAsAtomic;
     }
+
+    public void setBatchOpReturnOneResult(boolean returnOneResult) {
+        if (returnOneResult == true) {
+            this.option_flag.setReturnOneResult(true);
+        }
+    }
 }
