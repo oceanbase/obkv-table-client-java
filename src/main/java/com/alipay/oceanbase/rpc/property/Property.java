@@ -76,7 +76,7 @@ public enum Property {
 
     TABLE_ENTRY_REFRESH_LOCK_TIMEOUT("table.entry.refresh.lock.timeout", 4000L, "刷新TABLE地址的锁超时时间"),
 
-    TABLE_ENTRY_REFRESH_TYE_TIMES("table.entry.refresh.try.times", 3, "刷新TABLE地址的尝试次数"),
+    TABLE_ENTRY_REFRESH_TRY_TIMES("table.entry.refresh.try.times", 3, "刷新TABLE地址的尝试次数"),
 
     TABLE_ENTRY_REFRESH_CONTINUOUS_FAILURE_CEILING(
                                                    "table.entry.refresh.continuous.failure.ceiling",
