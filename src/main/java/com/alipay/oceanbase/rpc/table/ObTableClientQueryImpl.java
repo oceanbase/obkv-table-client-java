@@ -123,6 +123,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             throw new ObTableException("table client is null");
         } else if (tableQuery.getLimit() < 0 && tableQuery.getOffset() > 0) {
             throw new ObTableException("offset can not be use without limit");
+        } else if (tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("table name is null");
         }
         final long startTime = System.currentTimeMillis();
         // partitionObTables -> Map<logicId, Pair<logicId, param>>

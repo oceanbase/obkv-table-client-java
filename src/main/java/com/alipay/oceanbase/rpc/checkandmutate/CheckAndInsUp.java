@@ -75,7 +75,7 @@ public class CheckAndInsUp {
     }
 
     public MutationResult execute() throws Exception {
-        if (null == tableName) {
+        if (null == tableName || tableName.isEmpty()) {
             throw new ObTableException("table name is null");
         } else if (null == client) {
             throw new ObTableException("client is null");
