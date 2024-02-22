@@ -197,21 +197,6 @@ public class ObAtomicBatchOperationTest {
     @Test
     public void testReturnOneRes() {
         TableBatchOps batchOps = obTableClient.batch("test_varchar_table");
-        // default: no ReturnOneRes batch operation
-        try {
-            batchOps.clear();
-            batchOps.insert("abcd-1", new String[] { "c2" }, new String[] { "returnOne-1" });
-            batchOps.insert("abcd-2", new String[] { "c2" }, new String[] { "returnOne-2" });
-            batchOps.insert("abcd-3", new String[] { "c2" }, new String[] { "returnOne-3" });
-            List<Object> results = batchOps.execute();
-            Assert.assertEquals(results.size(), 3);
-            Assert.assertEquals(results.get(0), 1L);
-            Assert.assertEquals(results.get(1), 1L);
-            Assert.assertEquals(results.get(2), 1L);
-        } catch (Exception ex) {
-            Assert.fail("hit exception:" + ex);
-        }
-
         // no atomic ReturnOneRes batch operation
         try {
             batchOps.clear();
@@ -244,6 +229,23 @@ public class ObAtomicBatchOperationTest {
             Assert.assertEquals(results.get(2), 3L);
         } catch (Exception ex) {
             Assert.assertTrue(ex instanceof ObTableException);
+        }
+
+        // default: no ReturnOneRes batch operation
+        try {
+            batchOps.clear();
+            batchOps.setAtomicOperation(false);
+            batchOps.setReturnOneResult(false);
+            batchOps.insert("abcd-1", new String[] { "c2" }, new String[] { "returnOne-1" });
+            batchOps.insert("abcd-2", new String[] { "c2" }, new String[] { "returnOne-2" });
+            batchOps.insert("abcd-3", new String[] { "c2" }, new String[] { "returnOne-3" });
+            List<Object> results = batchOps.execute();
+            Assert.assertEquals(results.size(), 3);
+            Assert.assertEquals(results.get(0), 1L);
+            Assert.assertEquals(results.get(1), 1L);
+            Assert.assertEquals(results.get(2), 1L);
+        } catch (Exception ex) {
+            Assert.fail("hit exception:" + ex);
         }
     }
 }
