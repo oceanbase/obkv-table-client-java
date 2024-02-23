@@ -292,6 +292,13 @@ CREATE TABLE `test_ttl_timestamp` (
  `expired_ts` timestamp(6),
 PRIMARY KEY (`c1`)) TTL(expired_ts + INTERVAL 0 SECOND);
 
+CREATE TABLE `test_ttl_timestamp_5s` (
+    `c1` bigint NOT NULL,
+    `c2` varchar(20) DEFAULT NULL,
+    `c3` bigint DEFAULT NULL,
+    `expired_ts` timestamp(6),
+PRIMARY KEY (`c1`)) TTL(expired_ts + INTERVAL 5 SECOND);
+
 CREATE TABLE IF NOT EXISTS `test_auto_increment_rowkey` (
     `c1` int auto_increment,
     `c2` int NOT NULL,
