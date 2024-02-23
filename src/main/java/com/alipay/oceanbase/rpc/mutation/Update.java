@@ -122,7 +122,7 @@ public class Update extends Mutation<Update> {
      * execute
      */
     public MutationResult execute() throws Exception {
-        if (null == getTableName()) {
+        if (null == getTableName() || getTableName().isEmpty()) {
             throw new ObTableException("table name is null");
         } else if (null == getClient()) {
             throw new ObTableException("client is null");

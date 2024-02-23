@@ -123,6 +123,9 @@ public class BatchOperation {
     }
 
     public BatchOperationResult executeWithNormalBatchOp() throws Exception {
+        if (tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("table name is null");
+        }
         TableBatchOps batchOps = client.batch(tableName);
         boolean hasSetRowkeyElement = false;
 
@@ -191,6 +194,9 @@ public class BatchOperation {
     }
 
     public BatchOperationResult executeWithLSBatchOp() throws Exception {
+        if (tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("table name is null");
+        }
         ObTableClientLSBatchOpsImpl batchOps;
         if (client instanceof ObTableClient) {
             batchOps = new ObTableClientLSBatchOpsImpl(tableName, (ObTableClient) client);

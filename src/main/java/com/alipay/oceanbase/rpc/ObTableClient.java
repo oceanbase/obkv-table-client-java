@@ -518,6 +518,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     private <T> T execute(String tableName, TableExecuteCallback<T> callback, ObServerRoute route)
                                                                                                   throws Exception {
+        if (tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("table name is null");
+        }
         boolean needRefreshTableEntry = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
@@ -670,6 +673,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     private <T> T executeMutation(String tableName, MutationExecuteCallback<T> callback,
                                   ObServerRoute route) throws Exception {
+        if (tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("table name is null");
+        }
         boolean needRefreshTableEntry = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
@@ -1050,6 +1056,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                              final boolean waitForRefresh, boolean fetchAll)
                                                                                             throws Exception {
 
+        if (tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("table name is null");
+        }
         TableEntry tableEntry = tableLocations.get(tableName);
         // attempt the cached data and try best to avoid lock
         if (tableEntry != null) {
@@ -1713,6 +1722,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     @Override
     public Map<String, Object> get(final String tableName, final Object[] rowKey,
                                    final String[] columns) throws Exception {
+        if (tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("table name is null");
+        }
         final long startTime = System.currentTimeMillis();
         final ObReadConsistency obReadConsistency = this.getReadConsistency();
         return execute(tableName, new TableExecuteCallback<Map<String, Object>>(rowKey) {
@@ -1752,6 +1764,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     @Override
     public long update(final String tableName, final Object[] rowKey, final String[] columns,
                        final Object[] values) throws Exception {
+        if (tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("table name is null");
+        }
         final long start = System.currentTimeMillis();
         return execute(tableName, new TableExecuteCallback<Long>(rowKey) {
             /**
@@ -1831,6 +1846,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     @Override
     public long delete(final String tableName, final Object[] rowKey) throws Exception {
+        if (tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("table name is null");
+        }
         final long start = System.currentTimeMillis();
         return execute(tableName, new TableExecuteCallback<Long>(rowKey) {
 
@@ -1909,6 +1927,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     @Override
     public long insert(final String tableName, final Object[] rowKey, final String[] columns,
                        final Object[] values) throws Exception {
+        if (tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("table name is null");
+        }
         final long start = System.currentTimeMillis();
         return execute(tableName, new TableExecuteCallback<Long>(rowKey) {
             /**
@@ -1989,6 +2010,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     @Override
     public long replace(final String tableName, final Object[] rowKey, final String[] columns,
                         final Object[] values) throws Exception {
+        if (tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("table name is null");
+        }
         final long start = System.currentTimeMillis();
         return execute(tableName, new TableExecuteCallback<Long>(rowKey) {
             /**
@@ -2069,6 +2093,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     @Override
     public long insertOrUpdate(final String tableName, final Object[] rowKey,
                                final String[] columns, final Object[] values) throws Exception {
+        if (tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("table name is null");
+        }
         final long start = System.currentTimeMillis();
         return execute(tableName, new TableExecuteCallback<Long>(rowKey) {
             /**
@@ -2169,6 +2196,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     public Map<String, Object> increment(final String tableName, final Object[] rowKey,
                                          final String[] columns, final Object[] values,
                                          final boolean withResult) throws Exception {
+        if (tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("table name is null");
+        }
         final long start = System.currentTimeMillis();
         return execute(tableName, new TableExecuteCallback<Map<String, Object>>(rowKey) {
             /**
@@ -2256,6 +2286,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     public Map<String, Object> append(final String tableName, final Object[] rowKey,
                                       final String[] columns, final Object[] values,
                                       final boolean withResult) throws Exception {
+        if (tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("table name is null");
+        }
         final long start = System.currentTimeMillis();
         return execute(tableName, new TableExecuteCallback<Map<String, Object>>(rowKey) {
             @Override
@@ -2491,6 +2524,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                        final boolean withResult) throws Exception {
         ObTableQuery obTableQuery = tableQuery.getObTableQuery();
         String tableName = tableQuery.getTableName();
+        if (tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("table name is null");
+        }
 
         ObTableBatchOperation operations = new ObTableBatchOperation();
 
@@ -2518,6 +2554,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws Exception if fail
      */
     public ObPayload execute(final ObTableAbstractOperationRequest request) throws Exception {
+        if (request.getTableName() == null || request.getTableName().isEmpty()) {
+            throw new IllegalArgumentException("table name is null");
+        }
         if (request instanceof ObTableOperationRequest) {
             ObTableBatchOperation batchOperation = new ObTableBatchOperation();
             batchOperation.addTableOperation(((ObTableOperationRequest) request)
@@ -2946,6 +2985,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                           + Arrays.toString(columns));
             throw new IllegalArgumentException("add row key element error table " + tableName
                                                + " column " + Arrays.toString(columns));
+        }
+        if (tableName == null || tableName.length() == 0) {
+            throw new IllegalArgumentException("table name is null");
         }
         Map<String, Integer> rowKeyElement = new HashMap<String, Integer>();
         for (int i = 0; i < columns.length; i++) {
