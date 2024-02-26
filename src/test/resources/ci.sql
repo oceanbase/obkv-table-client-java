@@ -448,4 +448,10 @@ CREATE TABLE IF NOT EXISTS `test_put` (
     `c4` bigint DEFAULT NULL,
     PRIMARY KEY(`id`)) PARTITION BY KEY(`id`) PARTITIONS 32;
 
+CREATE TABLE IF NOT EXISTS `group_put` (
+    `pk` varchar(20) NOT NULL,
+    `c1` bigint DEFAULT NULL,
+    `c2` varchar(32) DEFAULT NULL,
+    PRIMARY KEY(`pk`)) PARTITION BY KEY(`pk`) PARTITIONS 32;
+
 alter system set kv_hotkey_throttle_threshold = 50;
