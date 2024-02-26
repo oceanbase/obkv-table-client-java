@@ -86,7 +86,6 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                 client.resetExecuteContinuousFailureCount(indexTableName);
                 break;
             } catch (Exception e) {
-                System.out.println("indexTableName:" + indexTableName);
                 if (client.isOdpMode()) {
                     if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
                         if (e instanceof ObTableException) {
