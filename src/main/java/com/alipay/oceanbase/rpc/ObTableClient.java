@@ -579,7 +579,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     } else if (ex instanceof ObTableException
                                && ((ObTableException) ex).isNeedRefreshTableEntry()) {
                         needRefreshTableEntry = true;
-
+                        System.out.println("refresh entry in ObTableClient");
                         logger
                             .warn(
                                 "refresh table while meet Exception needing refresh, errorCode: {}, errorMsg: {}",
@@ -784,6 +784,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 tableName, runtimeContinuousFailureCeiling, errorMsg);
             getOrRefreshTableEntry(tableName, true, isTableEntryRefreshIntervalWait(), true);
             failures.set(0);
+        } else {
+            logger.warn("error msg: {}, current continues failure count: {}",  errorMsg, failures);
         }
     }
 

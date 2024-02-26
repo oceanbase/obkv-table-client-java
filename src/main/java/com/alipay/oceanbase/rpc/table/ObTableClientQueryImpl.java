@@ -54,6 +54,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
      */
     public ObTableClientQueryImpl() {
         this.tableName = null;
+        this.indexTableName = null;
         this.obTableClient = null;
         this.tableQuery = new ObTableQuery();
         this.rowKey = null;
@@ -64,6 +65,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
      */
     public ObTableClientQueryImpl(String tableName, ObTableClient client) {
         this.tableName = tableName;
+        this.indexTableName = tableName;
         this.obTableClient = client;
         this.tableQuery = new ObTableQuery();
         this.rowKey = null;
@@ -74,6 +76,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
      */
     public ObTableClientQueryImpl(String tableName, ObTableQuery tableQuery, ObTableClient client) {
         this.tableName = tableName;
+        this.indexTableName = tableName;
         this.obTableClient = client;
         this.tableQuery = tableQuery;
         this.rowKey = null;
@@ -144,7 +147,6 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                 obTableClient.getOdpTable())));
         } else {
             String indexName = tableQuery.getIndexName();
-            String indexTableName = tableName;
             if (!this.obTableClient.isOdpMode()) {
                 indexTableName = obTableClient.getIndexTableName(tableName, indexName,
                     tableQuery.getScanRangeColumns());
@@ -196,6 +198,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         obTableClientQueryStreamResult.setTableQuery(tableQuery);
         obTableClientQueryStreamResult.setEntityType(entityType);
         obTableClientQueryStreamResult.setTableName(tableName);
+        obTableClientQueryStreamResult.setIndexTableName(indexTableName);
         obTableClientQueryStreamResult.setExpectant(partitionObTables);
         obTableClientQueryStreamResult.setClient(obTableClient);
         obTableClientQueryStreamResult.setOperationTimeout(operationTimeout);
