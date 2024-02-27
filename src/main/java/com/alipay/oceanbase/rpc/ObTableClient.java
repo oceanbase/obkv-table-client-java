@@ -579,6 +579,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     } else if (ex instanceof ObTableException
                                && ((ObTableException) ex).isNeedRefreshTableEntry()) {
                         needRefreshTableEntry = true;
+
                         logger
                             .warn(
                                 "refresh table while meet Exception needing refresh, errorCode: {}, errorMsg: {}",
