@@ -784,6 +784,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 tableName, runtimeContinuousFailureCeiling, errorMsg);
             getOrRefreshTableEntry(tableName, true, isTableEntryRefreshIntervalWait(), true);
             failures.set(0);
+        } else {
+            logger.warn("error msg: {}, current continues failure count: {}",  errorMsg, failures);
         }
     }
 
