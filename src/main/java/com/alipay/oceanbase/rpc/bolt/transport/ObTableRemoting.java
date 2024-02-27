@@ -96,8 +96,11 @@ public class ObTableRemoting extends BaseRemoting {
             response.decodePacketHeader();
             ObCompressType compressType = response.getHeader().getObCompressType();
             if (compressType != INVALID_COMPRESSOR && compressType != NONE_COMPRESSOR) {
-                String errMessage = TraceUtil.formatTraceMessage(conn, request,
-                        "Rpc Result is compressed. Java Client is not supported. msg:" + response.getMessage());
+                String errMessage = TraceUtil.formatTraceMessage(
+                    conn,
+                    request,
+                    "Rpc Result is compressed. Java Client is not supported. msg:"
+                            + response.getMessage());
                 logger.warn(errMessage);
                 throw new FeatureNotSupportedException(errMessage);
             }

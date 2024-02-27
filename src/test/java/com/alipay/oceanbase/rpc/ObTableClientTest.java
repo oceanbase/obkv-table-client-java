@@ -2494,20 +2494,18 @@ public class ObTableClientTest extends ObTableClientTestBase {
     public void testQueryWithEmptyTable() throws Exception {
         // test query with empty table name.
         try {
-            client.insert("", new Object[]{0L}, new String[]{"c2", "c3"},
-                    new Object[]{new byte[]{1}, "row1"});
+            client.insert("", new Object[] { 0L }, new String[] { "c2", "c3" }, new Object[] {
+                    new byte[] { 1 }, "row1" });
         } catch (IllegalArgumentException e) {
-            Assert.assertEquals("table name is null",
-                   ((IllegalArgumentException) e).getMessage());
+            Assert.assertEquals("table name is null", ((IllegalArgumentException) e).getMessage());
         }
         try {
             TableQuery tableQuery = client.query("");
-            tableQuery.addScanRange(new Object[]{0L}, new Object[]{250L});
+            tableQuery.addScanRange(new Object[] { 0L }, new Object[] { 250L });
             tableQuery.select("c1", "c2");
             QueryResultSet result = tableQuery.execute();
         } catch (IllegalArgumentException e) {
-            Assert.assertEquals("table name is null",
-                   ((IllegalArgumentException) e).getMessage());
+            Assert.assertEquals("table name is null", ((IllegalArgumentException) e).getMessage());
         }
         // test insertOrUpdate
         final ObTableClient client1 = ObTableClientTestUtil.newTestClient();
@@ -2518,13 +2516,11 @@ public class ObTableClientTest extends ObTableClientTestBase {
             long lastTime = getMaxAccessTime(client1);
             Thread.sleep(10000);
             // test_query_filter_mutate
-            client1.insertOrUpdate("", "foo", new String[] { "c2" },
-                new String[] { "bar" });
+            client1.insertOrUpdate("", "foo", new String[] { "c2" }, new String[] { "bar" });
             long nowTime = getMaxAccessTime(client1);
             Assert.assertTrue(nowTime - lastTime > 8000);
-        }  catch (IllegalArgumentException e) {
-            Assert.assertEquals("table name is null",
-                   ((IllegalArgumentException) e).getMessage());
+        } catch (IllegalArgumentException e) {
+            Assert.assertEquals("table name is null", ((IllegalArgumentException) e).getMessage());
         }
     }
 }

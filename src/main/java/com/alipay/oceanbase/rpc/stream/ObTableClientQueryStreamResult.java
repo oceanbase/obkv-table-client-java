@@ -77,9 +77,9 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                             route.setBlackList(failedServerList);
                         }
                         subObTable = client
-                            .getTable(indexTableName, partIdWithIndex.getLeft(), needRefreshTableEntry,
-                                client.isTableEntryRefreshIntervalWait(), route).getRight()
-                            .getObTable();
+                            .getTable(indexTableName, partIdWithIndex.getLeft(),
+                                needRefreshTableEntry, client.isTableEntryRefreshIntervalWait(),
+                                route).getRight().getObTable();
                     }
                 }
                 result = subObTable.execute(request);
@@ -122,7 +122,7 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                             logger
                                 .warn(
                                     "tablename:{} partition id:{} exhaust retry when replica not readable: {}",
-                                     indexTableName, partIdWithIndex.getLeft(), e.getMessage(), e);
+                                    indexTableName, partIdWithIndex.getLeft(), e.getMessage(), e);
                             throw e;
                         }
                     } else if (e instanceof ObTableException
@@ -131,7 +131,7 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                         logger
                             .warn(
                                 "tablename:{} partition id:{} stream query refresh table while meet Exception needing refresh, errorCode: {}",
-                                 indexTableName, partIdWithIndex.getLeft(),
+                                indexTableName, partIdWithIndex.getLeft(),
                                 ((ObTableException) e).getErrorCode(), e);
                         if (client.isRetryOnChangeMasterTimes()
                             && (tryTimes - 1) < client.getRuntimeRetryTimes()) {
