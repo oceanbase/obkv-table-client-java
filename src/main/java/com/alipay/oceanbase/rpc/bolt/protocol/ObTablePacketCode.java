@@ -111,8 +111,9 @@ public enum ObTablePacketCode implements CommandCode {
          */
         @Override
         public ObPayload newPayload(ObRpcPacketHeader header) {
-            throw new ObTableRoutingWrongException("Receive rerouting response packet. " +
-                    "Java client is not supported and need to Refresh table router entry");
+            throw new ObTableRoutingWrongException(
+                "Receive rerouting response packet. "
+                        + "Java client is not supported and need to Refresh table router entry");
         }
     }, //
     OB_ERROR_PACKET(Pcodes.OB_ERROR_PACKET) {
@@ -160,8 +161,9 @@ public enum ObTablePacketCode implements CommandCode {
             case Pcodes.OB_TABLE_API_LS_EXECUTE:
                 return OB_TABLE_API_LS_EXECUTE;
             case Pcodes.OB_TABLE_API_MOVE:
-                throw new ObTableRoutingWrongException("Receive rerouting response packet. " +
-                        "Java client is not supported and need to Refresh table router entry");
+                throw new ObTableRoutingWrongException(
+                    "Receive rerouting response packet. "
+                            + "Java client is not supported and need to Refresh table router entry");
             case Pcodes.OB_ERROR_PACKET:
                 return OB_ERROR_PACKET;
         }

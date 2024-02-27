@@ -438,12 +438,16 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     /*
      * Get index table name.
      */
-    public String getIndexTableName() { return indexTableName; }
+    public String getIndexTableName() {
+        return indexTableName;
+    }
 
     /*
      * Set index table name.
      */
-    public void setIndexTableName(String indexTableName) { this.indexTableName = indexTableName; }
+    public void setIndexTableName(String indexTableName) {
+        this.indexTableName = indexTableName;
+    }
 
     /*
      * Get entity type.

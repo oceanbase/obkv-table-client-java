@@ -32,7 +32,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
 
     protected ObTableQuery tableQuery;
     // TableEntry key
-    protected String indexTableName;
+    protected String       indexTableName;
 
     /*
      * Select.
