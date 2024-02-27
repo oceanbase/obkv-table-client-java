@@ -2519,11 +2519,12 @@ public class ObTableClientTest extends ObTableClientTestBase {
             Thread.sleep(10000);
             // test_query_filter_mutate
             client1.insertOrUpdate("", "foo", new String[] { "c2" },
-                    new String[] { "bar" });
+                new String[] { "bar" });
             long nowTime = getMaxAccessTime(client1);
             Assert.assertTrue(nowTime - lastTime > 8000);
         }  catch (IllegalArgumentException e) {
             Assert.assertEquals("table name is null",
-                   ((IllegalArgumentException) e).getMessage());        }
+                   ((IllegalArgumentException) e).getMessage());
+        }
     }
 }
