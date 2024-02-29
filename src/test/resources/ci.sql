@@ -446,6 +446,21 @@ CREATE TABLE IF NOT EXISTS `test_put` (
     `c2` bigint DEFAULT NULL,
     `c3` varchar(32) DEFAULT NULL,
     `c4` bigint DEFAULT NULL,
-    PRIMARY KEY(`id`)) PARTITION BY KEY(`id`) PARTITIONS 32;
+    `expired_ts` timestamp(6) NOT NULL,
+    PRIMARY KEY(`id`)) TTL(expired_ts + INTERVAL 1 SECOND) PARTITION BY KEY(`id`) PARTITIONS 32;
+
+CREATE TABLE IF NOT EXISTS `test_put_with_local_index` (
+    `id` varchar(20) NOT NULL,
+    `c1` bigint DEFAULT NULL,
+    index idx1(`c1`) local,
+    `expired_ts` timestamp(6) NOT NULL,
+    PRIMARY KEY(`id`)) TTL(expired_ts + INTERVAL 1 SECOND) PARTITION BY KEY(`id`) PARTITIONS 32;
+
+CREATE TABLE IF NOT EXISTS `test_put_with_global_index` (
+    `id` varchar(20) NOT NULL,
+    `c1` bigint DEFAULT NULL,
+    index idx1(`c1`) global,
+    `expired_ts` timestamp(6) NOT NULL,
+    PRIMARY KEY(`id`)) TTL(expired_ts + INTERVAL 1 SECOND) PARTITION BY KEY(`id`) PARTITIONS 32;
 
 alter system set kv_hotkey_throttle_threshold = 50;

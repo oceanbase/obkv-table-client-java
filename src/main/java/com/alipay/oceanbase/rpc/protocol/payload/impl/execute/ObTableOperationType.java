@@ -29,7 +29,9 @@ public enum ObTableOperationType {
     APPEND(7),// append column value
     SCAN(8),// scan value
     TTL(9),// expire value
-    PUT(10);// put value
+    CHECK_AND_INSERT_UP(10),
+    PUT(11),// put value
+    TRIGGER(12); // internal type
 
     private int                                       value;
     private static Map<Integer, ObTableOperationType> map = new HashMap<Integer, ObTableOperationType>();
