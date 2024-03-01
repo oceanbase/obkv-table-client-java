@@ -935,22 +935,22 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return the real table name
      */
     public String getIndexTableName(final String dataTableName, final String indexName,
-                                    List<String> scanRangeColumns) throws Exception {
+                                    List<String> scanRangeColumns, boolean forceRefreshIndexInfo) throws Exception {
         String indexTableName = dataTableName;
         if (indexName != null && !indexName.isEmpty() && !indexName.equalsIgnoreCase("PRIMARY")) {
             String tmpTableName = constructIndexTableName(dataTableName, indexName);
             if (tmpTableName == null) {
                 throw new ObTableException("index table name is null");
             }
-            ObIndexInfo indexInfo = getOrRefreshIndexInfo(indexName, tmpTableName);
+            ObIndexInfo indexInfo = getOrRefreshIndexInfo(tmpTableName, forceRefreshIndexInfo);
             if (indexInfo == null) {
-                throw new ObTableException("index info is null");
+                throw new ObTableException("index info is null, indexTableName:" + tmpTableName);
             }
             if (indexInfo.getIndexType().isGlobalIndex()) {
                 indexTableName = tmpTableName;
                 if (scanRangeColumns.isEmpty()) {
                     throw new ObTableException(
-                        "query by global index need add all index keys in order");
+                        "query by global index need add all index keys in order, indexTableName:" + indexTableName);
                 } else {
                     addRowKeyElement(indexTableName,
                         scanRangeColumns.toArray(new String[scanRangeColumns.size()]));
@@ -982,30 +982,29 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return "__idx_" + dataTableId + "_" + indexName;
     }
 
-    public ObIndexInfo getOrRefreshIndexInfo(final String indexName, final String indexTableName)
-                                                                                                 throws Exception {
-        ObIndexInfo indexInfo = indexinfos.get(indexName);
-        if (indexInfo != null) {
+    public ObIndexInfo getOrRefreshIndexInfo(final String indexTableName, boolean forceRefresh) throws Exception {
+
+        ObIndexInfo indexInfo = indexinfos.get(indexTableName);
+        if (!forceRefresh && indexInfo != null) {
             return indexInfo;
         }
         Lock tempLock = new ReentrantLock();
-        Lock lock = refreshIndexInfoLocks.putIfAbsent(indexName, tempLock);
+        Lock lock = refreshIndexInfoLocks.putIfAbsent(indexTableName, tempLock);
         lock = (lock == null) ? tempLock : lock;
         boolean acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
         if (!acquired) {
             String errMsg = "try to lock index infos refreshing timeout " + "dataSource:"
-                            + dataSourceName + " ,indexName:" + indexName + " , timeout:"
+                            + dataSourceName + " ,indexTableName:" + indexTableName + " , timeout:"
                             + tableEntryRefreshLockTimeout + ".";
             RUNTIME.error(errMsg);
             throw new ObTableEntryRefreshException(errMsg);
         }
         try {
-            indexInfo = indexinfos.get(indexName);
-            if (indexInfo != null) {
+            indexInfo = indexinfos.get(indexTableName);
+            if (!forceRefresh && indexInfo != null) {
                 return indexInfo;
             } else {
-                logger.info("index info is not exist, create new index info, indexName: {}",
-                    indexName);
+                logger.info("index info is not exist, create new index info, indexTableName: {}", indexTableName);
                 int serverSize = serverRoster.getMembers().size();
                 int refreshTryTimes = tableEntryRefreshTryTimes > serverSize ? serverSize
                     : tableEntryRefreshTryTimes;
@@ -1016,10 +1015,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
                         indexTableName);
                     if (indexInfo != null) {
-                        indexinfos.put(indexName, indexInfo);
+                        indexinfos.put(indexTableName, indexInfo);
                     } else {
-                        RUNTIME.error("get index info from remote is null, index name: {}",
-                            indexName);
+                        RUNTIME.error("get index info from remote is null, indexTableName: {}",
+                            indexTableName);
                     }
                 }
                 return indexInfo;

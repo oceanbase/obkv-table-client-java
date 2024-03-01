@@ -94,12 +94,22 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                         throw e;
                     }
                 } else if (e instanceof ObTableGlobalIndexRouteException) {
-                    logger
-                        .warn(
-                            "meet global index route expcetion: indexTableName:{}.partition id:{}, errorCode: {}, retry times {}",
-                            indexTableName, partIdWithObTable.getLeft(),
-                            ((ObTableException) e).getErrorCode(), tryTimes, e);
-                    throw e;
+                    if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
+                        logger
+                            .warn(
+                                "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, retry times {}",
+                                indexTableName, partIdWithObTable.getLeft(),
+                                ((ObTableException) e).getErrorCode(), tryTimes, e);
+                        indexTableName = client.getIndexTableName(tableName, tableQuery.getIndexName(),
+                                tableQuery.getScanRangeColumns(), true);
+                    } else {
+                        logger
+                            .warn(
+                                "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, reach max retry times {}",
+                                indexTableName, partIdWithObTable.getLeft(),
+                                ((ObTableException) e).getErrorCode(), tryTimes, e);
+                        throw e;
+                    }
                 } else {
                     client.calculateContinuousFailure(indexTableName, e.getMessage());
                     throw e;
