@@ -45,6 +45,7 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
 
     public ObTableClientQueryAsyncImpl(String tableName, ObTableClient client) {
         this.tableName = tableName;
+        this.indexTableName = tableName;
         this.obTableClient = client;
         this.tableQuery = new ObTableQuery();
     }
@@ -52,6 +53,7 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
     public ObTableClientQueryAsyncImpl(String tableName, ObTableQuery tableQuery,
                                        ObTableClient client) {
         this.tableName = tableName;
+        this.indexTableName = tableName;
         this.obTableClient = client;
         this.tableQuery = tableQuery;
     }
@@ -112,16 +114,17 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
         obTableClientQueryASyncStreamResult.setTableQuery(tableQuery);
         obTableClientQueryASyncStreamResult.setEntityType(entityType);
         obTableClientQueryASyncStreamResult.setTableName(tableName);
+        obTableClientQueryASyncStreamResult.setIndexTableName(indexTableName);
         obTableClientQueryASyncStreamResult.setExpectant(partitionObTables);
         obTableClientQueryASyncStreamResult.setOperationTimeout(operationTimeout);
         obTableClientQueryASyncStreamResult.setClient(obTableClient);
         obTableClientQueryASyncStreamResult.init(type, sessionId);
 
-        QueryResultSet querySyncResultSet = new QueryResultSet(obTableClientQueryASyncStreamResult);
+        QueryResultSet queryAsyncResultSet = new QueryResultSet(obTableClientQueryASyncStreamResult);
         this.hasMore = !obTableClientQueryASyncStreamResult.isEnd();
-        querySyncResultSet.setHasMore(this.hasMore);
+        queryAsyncResultSet.setHasMore(this.hasMore);
         obTableClientQueryASyncStreamResult.setHasMore(this.hasMore);
-        querySyncResultSet.setSessionId(obTableClientQueryASyncStreamResult.getSessionId());
+        queryAsyncResultSet.setSessionId(obTableClientQueryASyncStreamResult.getSessionId());
         this.sessionId = obTableClientQueryASyncStreamResult.getSessionId();
 
         return obTableClientQueryASyncStreamResult;
@@ -134,16 +137,17 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
         obTableClientQueryASyncStreamResult.setTableQuery(tableQuery);
         obTableClientQueryASyncStreamResult.setEntityType(entityType);
         obTableClientQueryASyncStreamResult.setTableName(tableName);
+        obTableClientQueryASyncStreamResult.setIndexTableName(indexTableName);
         obTableClientQueryASyncStreamResult.setExpectant(partitionObTables);
         obTableClientQueryASyncStreamResult.setOperationTimeout(operationTimeout);
         obTableClientQueryASyncStreamResult.setClient(obTableClient);
         obTableClientQueryASyncStreamResult.init(type, entry, sessionId);
 
-        QueryResultSet querySyncResultSet = new QueryResultSet(obTableClientQueryASyncStreamResult);
+        QueryResultSet queryAsyncResultSet = new QueryResultSet(obTableClientQueryASyncStreamResult);
         this.hasMore = !obTableClientQueryASyncStreamResult.isEnd();
-        querySyncResultSet.setHasMore(this.hasMore);
+        queryAsyncResultSet.setHasMore(this.hasMore);
         obTableClientQueryASyncStreamResult.setHasMore(this.hasMore);
-        querySyncResultSet.setSessionId(obTableClientQueryASyncStreamResult.getSessionId());
+        queryAsyncResultSet.setSessionId(obTableClientQueryASyncStreamResult.getSessionId());
         this.sessionId = obTableClientQueryASyncStreamResult.getSessionId();
 
         return obTableClientQueryASyncStreamResult;
@@ -151,7 +155,6 @@ public class ObTableClientQueryAsyncImpl extends AbstractTableQueryImpl {
 
     public Map<Long, ObPair<Long, ObTableParam>> getPartitions() throws Exception {
         String indexName = tableQuery.getIndexName();
-        String indexTableName = tableName;
         if (!this.obTableClient.isOdpMode()) {
             indexTableName = obTableClient.getIndexTableName(tableName, indexName,
                 tableQuery.getScanRangeColumns());

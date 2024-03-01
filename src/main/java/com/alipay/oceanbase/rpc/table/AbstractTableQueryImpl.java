@@ -31,6 +31,8 @@ import java.util.List;
 public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
 
     protected ObTableQuery tableQuery;
+    // TableEntry key
+    protected String       indexTableName;
 
     /*
      * Select.
@@ -180,5 +182,13 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
     public TableQuery setMaxResultSize(long maxResultSize) {
         this.tableQuery.setMaxResultSize(maxResultSize);
         return this;
+    }
+
+    public String getIndexTableName() {
+        return indexTableName;
+    }
+
+    public void setIndexTableName(String indexTableName) {
+        this.indexTableName = indexTableName;
     }
 }

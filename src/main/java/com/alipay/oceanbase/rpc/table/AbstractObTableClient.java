@@ -56,7 +56,7 @@ public abstract class AbstractObTableClient extends AbstractTable {
     protected boolean         tableEntryRefreshIntervalWait             = TABLE_ENTRY_REFRESH_INTERVAL_WAIT
                                                                             .getDefaultBoolean();
 
-    protected int             tableEntryRefreshTryTimes                 = TABLE_ENTRY_REFRESH_TYE_TIMES
+    protected int             tableEntryRefreshTryTimes                 = TABLE_ENTRY_REFRESH_TRY_TIMES
                                                                             .getDefaultInt();
 
     protected long            tableEntryRefreshLockTimeout              = TABLE_ENTRY_REFRESH_LOCK_TIMEOUT

@@ -51,6 +51,10 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     protected ObTableQuery                                                     tableQuery;
     protected long                                                             operationTimeout    = -1;
     protected String                                                           tableName;
+    // use to store the TableEntry Key:
+    // primary index or local index: key is primary table name
+    // global index: key is index table name (be like: __idx_<data_table_id>_<index_name>)
+    protected String                                                           indexTableName;
     protected ObTableEntityType                                                entityType;
     private Map<Long, ObPair<Long, ObTableParam>>                              expectant;                                                                                     // Map<logicId, ObPair<logicId, param>>
     private List<String>                                                       cacheProperties     = new LinkedList<String>();
@@ -174,7 +178,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         return (ObTableQueryResult) result;
     }
 
-    protected ObTableQueryAsyncResult checkObTableQuerySyncResult(Object result) {
+    protected ObTableQueryAsyncResult checkObTableQueryAsyncResult(Object result) {
         if (result == null) {
             throw new ObTableException("client get unexpected NULL result");
         }
@@ -278,18 +282,18 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         }
     }
 
-    private void cacheResultRows(ObTableQueryAsyncResult tableQuerySyncResult) {
-        cacheRows.addAll(tableQuerySyncResult.getAffectedEntity().getPropertiesRows());
-        cacheProperties = tableQuerySyncResult.getAffectedEntity().getPropertiesNames();
+    private void cacheResultRows(ObTableQueryAsyncResult tableQueryAsyncResult) {
+        cacheRows.addAll(tableQueryAsyncResult.getAffectedEntity().getPropertiesRows());
+        cacheProperties = tableQueryAsyncResult.getAffectedEntity().getPropertiesNames();
     }
 
     protected void cacheStreamNext(ObPair<Long, ObTableParam> partIdWithObTable,
-                                   ObTableQueryAsyncResult tableQuerySyncResult) {
-        cacheResultRows(tableQuerySyncResult);
-        if (tableQuerySyncResult.getAffectedEntity().isStream()
-            && tableQuerySyncResult.getAffectedEntity().isStreamNext()) {
+                                   ObTableQueryAsyncResult tableQueryAsyncResult) {
+        cacheResultRows(tableQueryAsyncResult);
+        if (tableQueryAsyncResult.getAffectedEntity().isStream()
+            && tableQueryAsyncResult.getAffectedEntity().isStreamNext()) {
             partitionLastResult.addLast(new ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>(
-                partIdWithObTable, tableQuerySyncResult.getAffectedEntity()));
+                partIdWithObTable, tableQueryAsyncResult.getAffectedEntity()));
         }
     }
 
@@ -429,6 +433,20 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
      */
     public void setTableName(String tableName) {
         this.tableName = tableName;
+    }
+
+    /*
+     * Get index table name.
+     */
+    public String getIndexTableName() {
+        return indexTableName;
+    }
+
+    /*
+     * Set index table name.
+     */
+    public void setIndexTableName(String indexTableName) {
+        this.indexTableName = indexTableName;
     }
 
     /*

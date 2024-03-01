@@ -29,9 +29,9 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class ObbTableQuerySyncPayloadTest {
+public class ObTableQueryAsyncPayloadTest {
     @Test
-    public void test_ObTableQuerySync() {
+    public void test_ObTableQueryAsync() {
         ObTableQuery obTableQuery = getObTableQuery();
         byte[] bytes = obTableQuery.encode();
         ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer();
@@ -44,7 +44,7 @@ public class ObbTableQuerySyncPayloadTest {
     }
 
     @Test
-    public void test_ObTableQuerySyncResult() {
+    public void test_ObTableQueryAsyncResult() {
         ObTableQueryAsyncResult obTableQueryAsyncResult = new ObTableQueryAsyncResult();
         ObTableQueryResult obTableQueryResult = new ObTableQueryResult();
         obTableQueryResult.setRowCount(0);
@@ -88,9 +88,9 @@ public class ObbTableQuerySyncPayloadTest {
         return obTableQuery;
     }
 
-    private void checkObTableQuery(ObTableQuery obTableQuerySync, ObTableQuery newObTableQuerySync) {
-        ObTableQuery obTableQuery = obTableQuerySync;
-        ObTableQuery obTableQuery1 = newObTableQuerySync;
+    private void checkObTableQuery(ObTableQuery obTableQueryAsync, ObTableQuery newObTableQueryAsync) {
+        ObTableQuery obTableQuery = obTableQueryAsync;
+        ObTableQuery obTableQuery1 = newObTableQueryAsync;
         checkObNewRange(obTableQuery.getKeyRanges().get(0), obTableQuery1.getKeyRanges().get(0));
         assertEquals(obTableQuery.getSelectColumns().get(0), obTableQuery1.getSelectColumns()
             .get(0));

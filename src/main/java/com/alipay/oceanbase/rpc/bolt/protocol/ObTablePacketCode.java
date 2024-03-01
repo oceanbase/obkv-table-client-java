@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.bolt.protocol;
 
+import com.alipay.oceanbase.rpc.exception.ObTableRoutingWrongException;
 import com.alipay.oceanbase.rpc.protocol.packet.ObRpcPacketHeader;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
@@ -104,6 +105,17 @@ public enum ObTablePacketCode implements CommandCode {
             return new ObTableLSOpResult();
         }
     }, //
+    OB_TABLE_API_MOVE(Pcodes.OB_TABLE_API_MOVE) {
+        /**
+         * New payload.
+         */
+        @Override
+        public ObPayload newPayload(ObRpcPacketHeader header) {
+            throw new ObTableRoutingWrongException(
+                "Receive rerouting response packet. "
+                        + "Java client is not supported and need to Refresh table router entry");
+        }
+    }, //
     OB_ERROR_PACKET(Pcodes.OB_ERROR_PACKET) {
         /*
          * New payload.
@@ -148,6 +160,10 @@ public enum ObTablePacketCode implements CommandCode {
                 return OB_TABLE_API_DIRECT_LOAD;
             case Pcodes.OB_TABLE_API_LS_EXECUTE:
                 return OB_TABLE_API_LS_EXECUTE;
+            case Pcodes.OB_TABLE_API_MOVE:
+                throw new ObTableRoutingWrongException(
+                    "Receive rerouting response packet. "
+                            + "Java client is not supported and need to Refresh table router entry");
             case Pcodes.OB_ERROR_PACKET:
                 return OB_ERROR_PACKET;
         }

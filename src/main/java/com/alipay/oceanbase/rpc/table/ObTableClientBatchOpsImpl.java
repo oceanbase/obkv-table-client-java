@@ -448,6 +448,9 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
      */
     public ObTableBatchOperationResult executeInternal() throws Exception {
 
+        if (tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("table name is null");
+        }
         long start = System.currentTimeMillis();
         List<ObTableOperation> operations = batchOperation.getTableOperations();
         final ObTableOperationResult[] obTableOperationResults = new ObTableOperationResult[operations

@@ -220,6 +220,8 @@ public enum ObTableObjType {
             return ObObjType.ObTimestampType;
         } else if (tableObjType == ObTableDateTimeType) {
             return ObObjType.ObDateTimeType;
+        } else if (tableObjType == ObTableMinType || tableObjType == ObTableMaxType) {
+            return ObObjType.ObExtendType;
         }
 
         throw new IllegalArgumentException("cannot get ObTableObjType, invalid table obj type: "

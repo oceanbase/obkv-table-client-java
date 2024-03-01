@@ -437,7 +437,7 @@ public class ObTableGlobalIndexTest {
             Assert.assertEquals(resultSet4.cacheSize(), recordCount);
             count = 0;
             while (resultSet4.next()) {
-                Map<String, Object> row = resultSet2.getRow();
+                Map<String, Object> row = resultSet4.getRow();
                 int c1 = (int) row.get("C1");
                 int c2 = (int) row.get("C2");
                 int c3 = (int) row.get("C3");

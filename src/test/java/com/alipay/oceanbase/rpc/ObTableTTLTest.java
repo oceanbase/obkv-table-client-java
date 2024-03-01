@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc;
 
+import com.alipay.oceanbase.rpc.filter.ObCompareOp;
 import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
@@ -29,6 +30,7 @@ import org.junit.Test;
 import java.sql.Timestamp;
 import java.util.Map;
 
+import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.compareVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -93,7 +95,64 @@ public class ObTableTTLTest {
                 client.delete(tableName).setRowKey(colVal(keyCol, id)).execute();
             }
         }
+    }
 
+    @Test
+    public void testQueryOffset() throws Exception {
+        long[] keyIds = { 1L, 2L, 3L, 4L };
+        String tableName = "test_ttl_timestamp_5s";
+        try {
+            Timestamp curTs = new Timestamp(System.currentTimeMillis());
+
+            // 1. insert records with current expired_ts
+            client.insert(tableName).setRowKey(colVal(keyCol, 1L))
+                .addMutateColVal(colVal(valueCol, defaultValue))
+                .addMutateColVal(colVal(expireCol, curTs)).execute();
+
+            client.insert(tableName).setRowKey(colVal(keyCol, 2L))
+                .addMutateColVal(colVal(valueCol, defaultValue))
+                .addMutateColVal(colVal(expireCol, curTs)).execute();
+
+            client.insert(tableName).setRowKey(colVal(keyCol, 3L))
+                .addMutateColVal(colVal(valueCol, defaultValue))
+                .addMutateColVal(colVal(expireCol, null)).execute();
+
+            client.insert(tableName).setRowKey(colVal(keyCol, 4L))
+                .addMutateColVal(colVal(valueCol, defaultValue))
+                .addMutateColVal(colVal(expireCol, null)).execute();
+
+            //+----+-------------+------+----------------------------+
+            //| c1 | c2          | c3   | expired_ts                 |
+            //+----+-------------+------+----------------------------+
+            //|  1 | hello world | NULL | xxx                        |
+            //|  2 | hello world | NULL | xxx                        |
+            //|  3 | hello world | NULL | NULL                       |
+            //|  4 | hello world | NULL | NULL                       |
+            //+----+-------------+------+----------------------------+
+            Thread.sleep(6000);
+
+            // 2. query offset-2
+            QueryResultSet resultSet = client.query(tableName).addScanRange(keyIds[0], keyIds[3])
+                .limit(2, 4).execute();
+            Assert.assertEquals(resultSet.cacheSize(), 0);
+
+            // 2. query offset-0 && limit-2 and c1 >= 0
+            resultSet = client.query(tableName).addScanRange(keyIds[0], keyIds[3]).limit(0, 2)
+                .setFilter(compareVal(ObCompareOp.GE, keyCol, 0)).execute();
+            Assert.assertEquals(resultSet.cacheSize(), 2);
+
+            // 3. query offset-2 && limit-2 and c1 >= 0
+            resultSet = client.query(tableName).addScanRange(keyIds[0], keyIds[3]).limit(2, 2)
+                .setFilter(compareVal(ObCompareOp.GE, keyCol, 0)).execute();
+            Assert.assertEquals(resultSet.cacheSize(), 0);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        } finally {
+            for (long id : keyIds) {
+                client.delete(tableName).setRowKey(colVal(keyCol, id)).execute();
+            }
+        }
     }
 
     @Test

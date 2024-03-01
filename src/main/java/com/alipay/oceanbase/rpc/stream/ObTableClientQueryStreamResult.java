@@ -77,13 +77,13 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                             route.setBlackList(failedServerList);
                         }
                         subObTable = client
-                            .getTable(tableName, partIdWithIndex.getLeft(), needRefreshTableEntry,
-                                client.isTableEntryRefreshIntervalWait(), route).getRight()
-                            .getObTable();
+                            .getTable(indexTableName, partIdWithIndex.getLeft(),
+                                needRefreshTableEntry, client.isTableEntryRefreshIntervalWait(),
+                                route).getRight().getObTable();
                     }
                 }
                 result = subObTable.execute(request);
-                client.resetExecuteContinuousFailureCount(tableName);
+                client.resetExecuteContinuousFailureCount(indexTableName);
                 break;
             } catch (Exception e) {
                 if (client.isOdpMode()) {
@@ -92,18 +92,18 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                             logger
                                 .warn(
                                     "tablename:{} stream query execute while meet Exception needing retry, errorCode: {}, errorMsg: {}, try times {}",
-                                    tableName, ((ObTableException) e).getErrorCode(),
+                                    indexTableName, ((ObTableException) e).getErrorCode(),
                                     e.getMessage(), tryTimes);
                         } else if (e instanceof IllegalArgumentException) {
                             logger
                                 .warn(
                                     "tablename:{} stream query execute while meet Exception needing retry, try times {}, errorMsg: {}",
-                                    tableName, tryTimes, e.getMessage());
+                                    indexTableName, tryTimes, e.getMessage());
                         } else {
                             logger
                                 .warn(
                                     "tablename:{} stream query execute while meet Exception needing retry, try times {}",
-                                    tableName, tryTimes, e);
+                                    indexTableName, tryTimes, e);
                         }
                     } else {
                         throw e;
@@ -113,7 +113,7 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                         if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
                             logger.warn(
                                 "tablename:{} partition id:{} retry when replica not readable: {}",
-                                tableName, partIdWithIndex.getLeft(), e.getMessage(), e);
+                                indexTableName, partIdWithIndex.getLeft(), e.getMessage(), e);
                             if (failedServerList == null) {
                                 failedServerList = new HashSet<String>();
                             }
@@ -122,7 +122,7 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                             logger
                                 .warn(
                                     "tablename:{} partition id:{} exhaust retry when replica not readable: {}",
-                                    tableName, partIdWithIndex.getLeft(), e.getMessage(), e);
+                                    indexTableName, partIdWithIndex.getLeft(), e.getMessage(), e);
                             throw e;
                         }
                     } else if (e instanceof ObTableException
@@ -131,21 +131,21 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                         logger
                             .warn(
                                 "tablename:{} partition id:{} stream query refresh table while meet Exception needing refresh, errorCode: {}",
-                                tableName, partIdWithIndex.getLeft(),
+                                indexTableName, partIdWithIndex.getLeft(),
                                 ((ObTableException) e).getErrorCode(), e);
                         if (client.isRetryOnChangeMasterTimes()
                             && (tryTimes - 1) < client.getRuntimeRetryTimes()) {
                             logger
                                 .warn(
                                     "tablename:{} partition id:{} stream query retry while meet Exception needing refresh, errorCode: {} , retry times {}",
-                                    tableName, partIdWithIndex.getLeft(),
+                                    indexTableName, partIdWithIndex.getLeft(),
                                     ((ObTableException) e).getErrorCode(), tryTimes, e);
                         } else {
-                            client.calculateContinuousFailure(tableName, e.getMessage());
+                            client.calculateContinuousFailure(indexTableName, e.getMessage());
                             throw e;
                         }
                     } else {
-                        client.calculateContinuousFailure(tableName, e.getMessage());
+                        client.calculateContinuousFailure(indexTableName, e.getMessage());
                         throw e;
                     }
                 }

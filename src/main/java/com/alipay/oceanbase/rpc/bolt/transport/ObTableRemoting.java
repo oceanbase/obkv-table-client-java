@@ -19,10 +19,8 @@ package com.alipay.oceanbase.rpc.bolt.transport;
 
 import com.alipay.oceanbase.rpc.bolt.protocol.ObTablePacket;
 import com.alipay.oceanbase.rpc.bolt.protocol.ObTablePacketCode;
-import com.alipay.oceanbase.rpc.exception.ExceptionUtil;
-import com.alipay.oceanbase.rpc.exception.ObTableLoginException;
-import com.alipay.oceanbase.rpc.exception.ObTableRoutingWrongException;
-import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
+import com.alipay.oceanbase.rpc.exception.*;
+import com.alipay.oceanbase.rpc.protocol.packet.ObCompressType;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Credentialable;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
@@ -34,6 +32,9 @@ import com.alipay.remoting.*;
 import com.alipay.remoting.exception.RemotingException;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
+
+import static com.alipay.oceanbase.rpc.protocol.packet.ObCompressType.INVALID_COMPRESSOR;
+import static com.alipay.oceanbase.rpc.protocol.packet.ObCompressType.NONE_COMPRESSOR;
 
 public class ObTableRemoting extends BaseRemoting {
 
@@ -93,9 +94,17 @@ public class ObTableRemoting extends BaseRemoting {
         try {
             // decode packet header first
             response.decodePacketHeader();
-
+            ObCompressType compressType = response.getHeader().getObCompressType();
+            if (compressType != INVALID_COMPRESSOR && compressType != NONE_COMPRESSOR) {
+                String errMessage = TraceUtil.formatTraceMessage(
+                    conn,
+                    request,
+                    "Rpc Result is compressed. Java Client is not supported. msg:"
+                            + response.getMessage());
+                logger.warn(errMessage);
+                throw new FeatureNotSupportedException(errMessage);
+            }
             ByteBuf buf = response.getPacketContentBuf();
-
             // If response indicates the request is routed to wrong server, we should refresh the routing meta.
             if (response.getHeader().isRoutingWrong()) {
                 String errMessage = TraceUtil.formatTraceMessage(conn, request,
