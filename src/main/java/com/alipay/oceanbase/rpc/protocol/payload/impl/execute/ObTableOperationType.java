@@ -46,6 +46,7 @@ public enum ObTableOperationType {
                                                                           false, // SCAN
                                                                           false, // TTL
                                                                           true, // CHECK_AND_INSERT_UP
+                                                                          false, // PUT
                                                                           false // INVALID
                                                                           );
 

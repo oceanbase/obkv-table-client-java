@@ -211,9 +211,10 @@ public class BatchOperation {
             throw new IllegalArgumentException("table name is null");
         }
         ObTableClientLSBatchOpsImpl batchOps;
+        boolean hasSetRowkeyElement = false;
+
         if (client instanceof ObTableClient) {
             batchOps = new ObTableClientLSBatchOpsImpl(tableName, (ObTableClient) client);
-            boolean hasSetRowkeyElement = false;
             for (Object operation : operations) {
                 if (operation instanceof CheckAndInsUp) {
                     CheckAndInsUp checkAndInsUp = (CheckAndInsUp) operation;
@@ -224,6 +225,18 @@ public class BatchOperation {
                             rowKeyNames.toArray(new String[0]));
                         hasSetRowkeyElement = true;
                     }
+                } else if (operation instanceof Mutation) {
+                    Mutation mutation = (Mutation) operation;
+                    batchOps.addOperation(mutation);
+                    if (!hasSetRowkeyElement && mutation.getRowKeyNames() != null) {
+                        List<String> rowKeyNames = mutation.getRowKeyNames();
+                        ((ObTableClient) client).addRowKeyElement(tableName,
+                                rowKeyNames.toArray(new String[0]));
+                        hasSetRowkeyElement = true;
+                    }
+                } else if (operation instanceof TableQuery) {
+                    TableQuery query = (TableQuery) operation;
+                    batchOps.addOperation(query);
                 } else {
                     throw new IllegalArgumentException(
                         "The operations in batch must be all checkAndInsUp or all non-checkAndInsUp");
@@ -233,6 +246,7 @@ public class BatchOperation {
             throw new IllegalArgumentException(
                 "execute batch using ObTable diretly is not supporeted");
         }
+        batchOps.setReturningAffectedEntity(withResult);
         return new BatchOperationResult(batchOps.executeWithResult());
     }
 }
