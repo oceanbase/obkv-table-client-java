@@ -21,12 +21,14 @@ import com.alipay.oceanbase.rpc.ObTableClient;
 
 import static com.alipay.oceanbase.rpc.protocol.payload.Constants.INVALID_TABLET_ID;
 import static com.alipay.oceanbase.rpc.protocol.payload.Constants.OB_INVALID_ID;
+import static com.alipay.oceanbase.rpc.protocol.payload.Constants.INVALID_LS_ID;
 
 public class ObTableParam {
     private ObTable obTable;
     private long    tableId     = OB_INVALID_ID;
     private long    partitionId = INVALID_TABLET_ID; // partition id in 3.x aka tablet id in 4.x
     private long    partId      = INVALID_TABLET_ID; // logicId, partition id in 3.x, can be used when retry
+    private long 	lsId        = INVALID_LS_ID;
 
     /*
      * constructor
@@ -113,4 +115,19 @@ public class ObTableParam {
     public void setPartId(long partId) {
         this.partId = partId;
     }
+
+    /*
+     * Set lsId
+     */
+    public long getLsId() {
+        return lsId;
+    }
+
+    /*
+     * Get lsId
+     */
+    public void setLsId(long lsId) {
+        this.lsId = lsId;
+    }
+
 }

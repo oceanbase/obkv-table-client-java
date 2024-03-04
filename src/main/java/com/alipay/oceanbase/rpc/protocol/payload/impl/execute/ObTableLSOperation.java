@@ -326,4 +326,9 @@ public class ObTableLSOperation extends AbstractPayload {
         this.prepareOption();
         this.prepareColumnNamesBitMap();
     }
+
+    public long getLsId() {
+        return lsId;
+    }
+
 }

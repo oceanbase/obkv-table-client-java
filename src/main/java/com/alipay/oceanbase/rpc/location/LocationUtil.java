@@ -49,6 +49,7 @@ import static com.alipay.oceanbase.rpc.location.model.partition.ObPartitionKey.M
 import static com.alipay.oceanbase.rpc.util.RandomUtil.getRandomNum;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
 import static java.lang.String.format;
+import static com.alipay.oceanbase.rpc.protocol.payload.Constants.INVALID_LS_ID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -154,9 +155,11 @@ public class LocationUtil {
 
     private static final String PROXY_LOCATION_SQL_PARTITION_V4  = "SELECT /*+READ_CONSISTENCY(WEAK)*/ A.tablet_id as tablet_id, A.svr_ip as svr_ip, A.sql_port as sql_port, "
                                                                    + "A.table_id as table_id, A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, B.stop_time as stop_time "
-                                                                   + ", A.spare1 as replica_type "
+                                                                   + ", A.spare1 as replica_type, D.ls_id as ls_id "
                                                                    + "FROM oceanbase.__all_virtual_proxy_schema A inner join oceanbase.__all_server B on A.svr_ip = B.svr_ip and A.sql_port = B.inner_port "
-                                                                   + "WHERE tenant_name = ? and database_name=? and table_name = ? and tablet_id in ({0})";
+                                                                   + "inner join oceanbase.DBA_OB_TENANTS C on C.tenant_name = A.tenant_name "
+                                                                   + "left join oceanbase.CDB_OB_TABLET_TO_LS D on D.tenant_id = C.tenant_id and D.tablet_id = A.tablet_id "
+                                                                   + "WHERE C.tenant_name = ? and database_name= ? and table_name = ? and A.tablet_id in ({0}) ";
 
     private static final String PROXY_FIRST_PARTITION_SQL_V4     = "SELECT /*+READ_CONSISTENCY(WEAK)*/ part_id, part_name, tablet_id, high_bound_val, sub_part_num "
                                                                    + "FROM oceanbase.__all_virtual_proxy_partition "
@@ -945,11 +948,18 @@ public class LocationUtil {
                                                                                    throws SQLException,
                                                                                    ObTablePartitionLocationRefreshException {
         Map<Long, ObPartitionLocation> partitionLocation = new HashMap<Long, ObPartitionLocation>();
+        Map<Long, Long> tabletLsIdMap = new HashMap<>();
         while (rs.next()) {
             ReplicaLocation replica = buildReplicaLocation(rs);
             long partitionId;
             if (ObGlobal.obVsnMajor() >= 4) {
                 partitionId = rs.getLong("tablet_id");
+                long lsId = rs.getLong("ls_id");
+                if (!rs.wasNull()) {
+                    tabletLsIdMap.put(partitionId, lsId);
+                } else {
+                    tabletLsIdMap.put(partitionId, INVALID_LS_ID); // non-partitioned table
+                }
             } else {
                 partitionId = rs.getLong("partition_id");
                 if (tableEntry.isPartitionTable()
@@ -975,6 +985,7 @@ public class LocationUtil {
         }
         ObPartitionEntry partitionEntry = new ObPartitionEntry();
         partitionEntry.setPartitionLocation(partitionLocation);
+        partitionEntry.setTabletLsIdMap(tabletLsIdMap);
 
         if (ObGlobal.obVsnMajor() < 4) {
             for (long i = 0; i < tableEntry.getPartitionNum(); i++) {

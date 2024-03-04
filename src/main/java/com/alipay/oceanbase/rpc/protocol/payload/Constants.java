@@ -31,4 +31,6 @@ public interface Constants {
 
     long  UNSIGNED_INT32_MAX = (1L << 32) - 1;
 
+    long  INVALID_LS_ID = -1;
+
 }

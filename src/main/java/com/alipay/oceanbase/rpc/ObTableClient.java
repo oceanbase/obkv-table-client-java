@@ -1533,6 +1533,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             long partIdx = tableEntry.getPartIdx(partId);
             partId = tableEntry.isPartitionTable() ? tableEntry.getPartitionInfo()
                 .getPartTabletIdMap().get(partIdx) : partId;
+            param.setLsId(tableEntry.getPartitionEntry().getLsId(partId));
         }
 
         param.setTableId(tableEntry.getTableId());

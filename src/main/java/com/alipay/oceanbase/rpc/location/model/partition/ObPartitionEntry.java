@@ -25,6 +25,8 @@ import java.util.Map;
 public class ObPartitionEntry {
     private Map<Long, ObPartitionLocation> partitionLocation = new HashMap<Long, ObPartitionLocation>();
 
+    private Map<Long, Long> tabletLsIdMap = new HashMap<>(); // mapping from tablet id to ls id
+
     public Map<Long, ObPartitionLocation> getPartitionLocation() {
         return partitionLocation;
     }
@@ -83,4 +85,14 @@ public class ObPartitionEntry {
     public String toString() {
         return "ObPartitionEntry{" + "partitionLocation=" + partitionLocation + '}';
     }
+
+    public Map<Long, Long> getTabletLsIdMap() {
+        return tabletLsIdMap;
+    }
+
+    public void setTabletLsIdMap(Map<Long, Long> tabletLsIdMap) {
+        this.tabletLsIdMap = tabletLsIdMap;
+    }
+
+    public long getLsId(long tabletId) { return tabletLsIdMap.get(tabletId); }
 }
