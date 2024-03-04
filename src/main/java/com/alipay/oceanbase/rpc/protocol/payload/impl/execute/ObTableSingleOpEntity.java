@@ -350,4 +350,13 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         }
         return values;
     }
+
+    public List<ObObj> getRowkey() {
+        return rowkey;
+    }
+
+    public void setRowkey(List<ObObj> rowkey) {
+        this.rowkey = rowkey;
+    }
+
 }

@@ -85,7 +85,7 @@ public class ObGlobal {
         boolean isSupp = false;
         if (OB_VERSION != 0) {
             if (obVsnMajor() == 4 && obVsnMinor() == 2 && obVsnMajorPatch() == 3
-                    && OB_VERSION > calcVersion(4, 2, 3, 0)) {
+                    && OB_VERSION >= OB_VERSION_4_2_3_0) {
                 isSupp = true;
             }
         }
@@ -93,6 +93,8 @@ public class ObGlobal {
     }
 
     public static final long OB_VERSION_4_2_1_0 = calcVersion(4, (short) 2, (byte) 1, (byte) 0);
+
+    public static final long OB_VERSION_4_2_3_0 = calcVersion(4, (short) 2, (byte) 3, (byte) 0);
 
     public static long       OB_VERSION         = calcVersion(0, (short) 0, (byte) 0, (byte) 0);
 }
