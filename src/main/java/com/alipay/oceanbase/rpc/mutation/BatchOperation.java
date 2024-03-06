@@ -129,7 +129,7 @@ public class BatchOperation {
         }
     }
 
-    public BatchOperationResult executeWithNormalBatchOp() throws Exception {
+    private BatchOperationResult executeWithNormalBatchOp() throws Exception {
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
         }
@@ -206,7 +206,7 @@ public class BatchOperation {
         return new BatchOperationResult(batchOps.executeWithResult());
     }
 
-    public BatchOperationResult executeWithLSBatchOp() throws Exception {
+    private BatchOperationResult executeWithLSBatchOp() throws Exception {
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
         }
