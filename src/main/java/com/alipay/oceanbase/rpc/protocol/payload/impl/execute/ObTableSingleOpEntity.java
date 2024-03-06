@@ -104,12 +104,17 @@ public class ObTableSingleOpEntity extends AbstractPayload {
 
     private byte[] parseBitMap(long bitLen, List<String> aggColumnNames, List<String> columnNames, ByteBuf buf) {
         byte[] bitMap = new byte[(int) Math.ceil(bitLen / 8.0)];
-        for (int i = 0; i < bitMap.length; i++) {
-            bitMap[i] = Serialization.decodeI8(buf);
-            for (int j = 0; j < 8; j++) {
-                if ((bitMap[i] & (1 << j)) != 0) {
-                    if (i * 8 + j < aggColumnNames.size()) {
-                        columnNames.add(aggColumnNames.get(i * 8 + j));
+        if (bitLen == 0) {
+            // is same properties names
+            columnNames.addAll(aggColumnNames);
+        } else {
+            for (int i = 0; i < bitMap.length; i++) {
+                bitMap[i] = Serialization.decodeI8(buf);
+                for (int j = 0; j < 8; j++) {
+                    if ((bitMap[i] & (1 << j)) != 0) {
+                        if (i * 8 + j < aggColumnNames.size()) {
+                            columnNames.add(aggColumnNames.get(i * 8 + j));
+                        }
                     }
                 }
             }
@@ -195,12 +200,12 @@ public class ObTableSingleOpEntity extends AbstractPayload {
     public static ObTableSingleOpEntity getInstance(String[] rowKeyNames, Object[] rowKey,
                                                     String[] propertiesNames, Object[] propertiesValues) {
         ObTableSingleOpEntity entity = new ObTableSingleOpEntity();
-        if (!areArraysSameLengthOrBothNull(rowKeyNames, rowKey) || !areArraysSameLengthOrBothNull(propertiesNames, propertiesValues)) {
+        if (!areArraysSameLengthOrBothNull(rowKeyNames, rowKey)) {
             throw new IllegalArgumentException(String.format(
-                    "column length should be equals to values length, rowkeyNames: %s, rowkey: %s,"
-                            + "propertiesNames: %s," + "propertiesValues: %s",rowKeyNames,
-                            rowKey, propertiesNames, propertiesValues));
+                    "rowKey names length should be equals to rowKey values length, rowkeyNames: %s, rowkey: %s,",
+                    rowKeyNames, rowKey));
         }
+
         if (rowKey != null) {
             for (int i = 0; i < rowKey.length; i++) {
                 String name = rowKeyNames[i];
@@ -212,12 +217,14 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         if (propertiesNames != null) {
             for (int i = 0; i < propertiesNames.length; i++) {
                 String name = propertiesNames[i];
-                Object value = propertiesValues[i];
+                Object value = null;
+                if (propertiesValues != null) {
+                    value = propertiesValues[i];
+                }
                 ObObj c = ObObj.getInstance(value);
                 entity.addPropertyValue(name, c);
             }
         }
-
         return entity;
     }
 
@@ -346,7 +353,7 @@ public class ObTableSingleOpEntity extends AbstractPayload {
     public Map<String, Object> getSimpleProperties() {
         Map<String, Object> values = new HashMap<String, Object>((int) propertiesValues.size());
         for (int i = 0; i < propertiesValues.size(); i++) {
-            values.put(propertiesNames.get(i), propertiesValues.get(i));
+            values.put(propertiesNames.get(i), propertiesValues.get(i).getValue());
         }
         return values;
     }

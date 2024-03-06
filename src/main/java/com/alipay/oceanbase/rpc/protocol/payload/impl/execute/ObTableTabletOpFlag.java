@@ -21,6 +21,7 @@ public class ObTableTabletOpFlag {
     private static final int FLAG_IS_SAME_TYPE             = 1 << 0;
     // Maybe useless, we use isSameProperties flag from LSOp
     private static final int FLAG_IS_SAME_PROPERTIES_NAMES = 1 << 1;
+    private static final int FLAG_IS_READ_ONLY = 1 << 2;
     private long             flags                         = 0;
 
     public void setFlagIsSameType(boolean isSameType) {
@@ -39,6 +40,14 @@ public class ObTableTabletOpFlag {
         }
     }
 
+    public void setFlagIsReadOnly(boolean isReadOnly) {
+        if (isReadOnly) {
+            flags |= FLAG_IS_READ_ONLY;
+        } else {
+            flags &= ~FLAG_IS_READ_ONLY;
+        }
+    }
+
     public long getValue() {
         return flags;
     }
@@ -53,5 +62,9 @@ public class ObTableTabletOpFlag {
 
     public boolean getFlagIsSamePropertiesNames() {
         return (flags & FLAG_IS_SAME_PROPERTIES_NAMES) != 0;
+    }
+
+    public boolean getFlagIsReadOnly() {
+        return (flags & FLAG_IS_READ_ONLY) != 0;
     }
 }

@@ -50,7 +50,7 @@ public enum ObTableObjType {
             ObObjMeta objMeta = objType.getDefaultObjMeta();
             objMeta.setCsType(ObCollationType.CS_TYPE_BINARY);
             obj.setMeta(objMeta);
-            obj.setValue(objType.decode(buf, objMeta.getCsType()));
+            obj.setValueFromTableObj(objType.decode(buf, objMeta.getCsType()));
         }
     },
 
@@ -107,7 +107,7 @@ public enum ObTableObjType {
             ObObjType objType = getObjType(this);
             ObObjMeta objMeta = objType.getDefaultObjMeta();
             obj.setMeta(objMeta);
-            obj.setValue(-2L);
+            obj.setValueFromTableObj(-2L);
         }
 
         public int getEncodedSize(ObObj obj) {
@@ -128,7 +128,7 @@ public enum ObTableObjType {
             ObObjType objType = getObjType(this);
             ObObjMeta objMeta = objType.getDefaultObjMeta();
             obj.setMeta(objMeta);
-            obj.setValue(-3L);
+            obj.setValueFromTableObj(-3L);
         }
 
         public int getEncodedSize(ObObj obj) {
@@ -260,7 +260,7 @@ public enum ObTableObjType {
         ObObjType objType = getObjType(this);
         ObObjMeta objMeta = objType.getDefaultObjMeta();
         obj.setMeta(objMeta);
-        obj.setValue(objType.decode(buf, objMeta.getCsType()));
+        obj.setValueFromTableObj(objType.decode(buf, objMeta.getCsType()));
     }
 
     public int getEncodedSize(ObObj obj) {
@@ -297,7 +297,7 @@ public enum ObTableObjType {
         meta.setCsLevel(ObCollationLevel.valueOf(Serialization.decodeI8(buf.readByte())));
         meta.setCsType(ObCollationType.valueOf(Serialization.decodeI8(buf.readByte())));
         meta.setScale(Serialization.decodeI8(buf.readByte()));
-        obj.setValue(objType.decode(buf, meta.getCsType()));
+        obj.setValueFromTableObj(objType.decode(buf, meta.getCsType()));
     }
 
     public int getEncodedSizeWithMeta(ObObj obj) {

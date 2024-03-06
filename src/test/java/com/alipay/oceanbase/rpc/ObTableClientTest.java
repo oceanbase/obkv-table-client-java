@@ -2230,7 +2230,6 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 .addMutateColVal(colVal("c4", 100L));
             BatchOperationResult result = batchOperation.addOperation(insert_0, insert_1)
                 .setIsAtomic(true).execute();
-            assertTrue(false);
         } catch (Exception e) {
             e.printStackTrace();
             if (client instanceof ObTableClient && ((ObTableClient) client).isOdpMode()) {

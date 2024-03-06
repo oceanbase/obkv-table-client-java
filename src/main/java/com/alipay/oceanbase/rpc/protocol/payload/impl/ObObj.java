@@ -198,4 +198,9 @@ public class ObObj implements ObSimplePayload {
         return (getMeta().getType() == ObObjType.ObExtendType)
                && ((long) getValue() == MAX_OBJECT_VALUE);
     }
+
+    // set value directly, do not wrapped by ObVString when type is varchar
+    public void setValueFromTableObj(Object value) {
+        this.value = value;
+    }
 }

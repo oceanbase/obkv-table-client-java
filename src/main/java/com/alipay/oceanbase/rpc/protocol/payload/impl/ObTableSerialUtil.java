@@ -44,7 +44,11 @@ public class ObTableSerialUtil {
             throw new IllegalArgumentException("cannot get ObTableObjType, buf is null");
         }
         byte type = Serialization.decodeI8(buf);
-        return ObTableObjType.valueOf(type);
+        ObTableObjType objType = ObTableObjType.valueOf(type);
+        if (objType == null) {
+            throw new IllegalArgumentException("cannot get table object type from value");
+        }
+        return objType;
     }
 
     static public int getEncodedSize(ObNewRange range) {
