@@ -23,6 +23,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import java.util.Objects;
 
 import static com.alipay.oceanbase.rpc.protocol.payload.ResultCodes.OB_DESERIALIZE_ERROR;
+import static com.alipay.oceanbase.rpc.protocol.payload.ResultCodes.OB_ERR_KV_GLOBAL_INDEX_ROUTE;
 
 public class ExceptionUtil {
 
@@ -70,10 +71,16 @@ public class ExceptionUtil {
                 errorCode);
         }
 
-        // [errCode][errCodeName][errMsg][server][trace]
-        return new ObTableException("[" + String.valueOf(resultCodes.errorCode) + "]" + "["
-                                    + resultCodes.name() + "]" + "[" + errMsg + "]" + "[" + server
-                                    + "]" + "[" + trace + "]", resultCodes.errorCode);
+        if (resultCodes.errorCode == OB_ERR_KV_GLOBAL_INDEX_ROUTE.errorCode) {
+            return new ObTableGlobalIndexRouteException("[" + String.valueOf(resultCodes.errorCode) + "]" + "["
+                    + resultCodes.name() + "]" + "[" + errMsg + "]" + "[" + server
+                    + "]" + "[" + trace + "]", resultCodes.errorCode);
+        } else {
+            // [errCode][errCodeName][errMsg][server][trace]
+            return new ObTableException("[" + String.valueOf(resultCodes.errorCode) + "]" + "["
+                    + resultCodes.name() + "]" + "[" + errMsg + "]" + "[" + server
+                    + "]" + "[" + trace + "]", resultCodes.errorCode);
+        }
     }
 
     /*

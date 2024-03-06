@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.stream;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.exception.ObTableGlobalIndexRouteException;
 import com.alipay.oceanbase.rpc.exception.ObTableReplicaNotReadableException;
 import com.alipay.oceanbase.rpc.exception.ObTableTimeoutExcetion;
 import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
@@ -142,6 +143,23 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                                     ((ObTableException) e).getErrorCode(), tryTimes, e);
                         } else {
                             client.calculateContinuousFailure(indexTableName, e.getMessage());
+                            throw e;
+                        }
+                    } else if (e instanceof ObTableGlobalIndexRouteException) {
+                        if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
+                            logger
+                                .warn(
+                                    "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, retry times {}",
+                                    indexTableName, partIdWithIndex.getLeft(),
+                                    ((ObTableException) e).getErrorCode(), tryTimes, e);
+                            indexTableName = client.getIndexTableName(tableName, tableQuery.getIndexName(),
+                                    tableQuery.getScanRangeColumns(), true);
+                        } else {
+                            logger
+                                .warn(
+                                    "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, reach max retry times {}",
+                                    indexTableName, partIdWithIndex.getLeft(),
+                                    ((ObTableException) e).getErrorCode(), tryTimes, e);
                             throw e;
                         }
                     } else {

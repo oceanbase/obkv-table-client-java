@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.stream.async;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.exception.ObTableGlobalIndexRouteException;
 import com.alipay.oceanbase.rpc.exception.ObTableTimeoutExcetion;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
@@ -90,6 +91,23 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                                 ((ObTableException) e).getErrorCode(), tryTimes);
                     } else {
                         client.calculateContinuousFailure(indexTableName, e.getMessage());
+                        throw e;
+                    }
+                } else if (e instanceof ObTableGlobalIndexRouteException) {
+                    if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
+                        logger
+                            .warn(
+                                "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, retry times {}",
+                                indexTableName, partIdWithObTable.getLeft(),
+                                ((ObTableException) e).getErrorCode(), tryTimes, e);
+                        indexTableName = client.getIndexTableName(tableName, tableQuery.getIndexName(),
+                                tableQuery.getScanRangeColumns(), true);
+                    } else {
+                        logger
+                            .warn(
+                                "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, reach max retry times {}",
+                                indexTableName, partIdWithObTable.getLeft(),
+                                ((ObTableException) e).getErrorCode(), tryTimes, e);
                         throw e;
                     }
                 } else {
