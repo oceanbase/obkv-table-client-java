@@ -28,6 +28,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.sql.Connection;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -710,6 +712,51 @@ public class ObTableLsBatchTest {
                 Delete delete = client.delete(TABLE_NAME);
                 delete.setRowKey(row(colVal("c1", curRow[0]), colVal("c2", curRow[1])));
                 delete.execute();
+            }
+        }
+    }
+
+    @Test
+    public void testPut() throws Exception {
+        // put operation should set binlog_row_image minimal
+        Connection connection = ObTableClientTestUtil.getConnection();
+        Statement statement = connection.createStatement();
+        statement.execute("SET GLOBAL binlog_row_image= 'minimal'");
+
+        BatchOperation batchOperation = client.batchOperation(TABLE_NAME);
+        Object values[][] = {
+                {1L, "c2_val", "c3_val", 100L},
+                {200L, "c2_val", "c3_val", 100L},
+                {401L, "c2_val", "c3_val", 100L},
+                {2000L, "c2_val", "c3_val", 100L},
+                {100001L, "c2_val", "c3_val", 100L},
+                {10000002L, "c2_val", "c3_val", 100L},
+        };
+        int rowCnt = values.length;
+
+        try {
+            for (int i = 0; i < rowCnt; i++) {
+                Object[] curRow = values[i];
+                Put put = new Put();
+                put.setRowKey(row(colVal("c1", curRow[0]), colVal("c2", curRow[1])));
+                put.addMutateRow(row(colVal("c3", curRow[2]), colVal("c4", curRow[3])));
+                batchOperation.addOperation(put);
+            }
+            BatchOperationResult batchOperationResult = batchOperation.execute();
+            Assert.assertEquals(rowCnt, batchOperationResult.size());
+            for (int j = 0; j < rowCnt; j++) {
+                Assert.assertEquals(1, batchOperationResult.get(j).getAffectedRows());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        } finally {
+            statement.execute("SET GLOBAL binlog_row_image= 'FULL'");
+            for (int j = 0; j < rowCnt; j++) {
+                Delete delete = client.delete(TABLE_NAME);
+                delete.setRowKey(row(colVal("c1", values[j][0]), colVal("c2", values[j][1])));
+                MutationResult res = delete.execute();
+                Assert.assertEquals(1, res.getAffectedRows());
             }
         }
     }
