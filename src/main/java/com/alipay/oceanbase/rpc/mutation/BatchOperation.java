@@ -40,6 +40,9 @@ public class BatchOperation {
     boolean              isAtomic         = false;
     boolean              returnOneResult  = false;
     boolean              hasCheckAndInsUp = false;
+    boolean              hasGet = false;
+    ObTableOperationType lastType = ObTableOperationType.INVALID;
+    boolean              isSameType = true;
 
     /*
      * default constructor
@@ -81,6 +84,11 @@ public class BatchOperation {
      * add queries
      */
     public BatchOperation addOperation(TableQuery... queries) {
+        if (isSameType && lastType != ObTableOperationType.INVALID && lastType != ObTableOperationType.GET) {
+            isSameType = false;
+        }
+
+        lastType = ObTableOperationType.GET;
         this.operations.addAll(Arrays.asList(queries));
         return this;
     }
@@ -89,6 +97,12 @@ public class BatchOperation {
      * add mutations
      */
     public BatchOperation addOperation(Mutation... mutations) {
+        for (int i = 0; i < mutations.length; i++) {
+            if (isSameType && lastType != ObTableOperationType.INVALID && lastType != mutations[i].getOperationType()) {
+                isSameType = false;
+            }
+            lastType = mutations[i].getOperationType();
+        }
         this.operations.addAll(Arrays.asList(mutations));
         return this;
     }
@@ -97,6 +111,12 @@ public class BatchOperation {
      * add mutations
      */
     public BatchOperation addOperation(List<Mutation> mutations) {
+        for (int i = 0; i < mutations.size(); i++) {
+            if (isSameType && lastType != ObTableOperationType.INVALID && lastType != mutations.get(i).getOperationType()) {
+                isSameType = false;
+            }
+            lastType = mutations.get(i).getOperationType();
+        }
         this.operations.addAll(mutations);
         return this;
     }
@@ -105,6 +125,10 @@ public class BatchOperation {
      * add CheckAndInsUp
      */
     public BatchOperation addOperation(CheckAndInsUp... insUps) {
+        if (isSameType && lastType != ObTableOperationType.INVALID && lastType != ObTableOperationType.CHECK_AND_INSERT_UP) {
+            isSameType = false;
+        }
+        lastType = ObTableOperationType.CHECK_AND_INSERT_UP;
         this.operations.addAll(Arrays.asList(insUps));
         this.hasCheckAndInsUp = true;
         return this;
@@ -122,6 +146,14 @@ public class BatchOperation {
 
     @SuppressWarnings("unchecked")
     public BatchOperationResult execute() throws Exception {
+        if (returnOneResult && !(isSameType && (
+                lastType == ObTableOperationType.INSERT ||
+                lastType == ObTableOperationType.PUT ||
+                lastType == ObTableOperationType.REPLACE ||
+                lastType == ObTableOperationType.DEL))) {
+            throw new IllegalArgumentException("returnOneResult only support multi-insert/put/replace/del");
+        }
+
         if (hasCheckAndInsUp || ObGlobal.isLsOpSupport()) {
             return executeWithLSBatchOp();
         } else {
@@ -254,6 +286,8 @@ public class BatchOperation {
         }
 
         batchOps.setReturningAffectedEntity(withResult);
+        batchOps.setReturnOneResult(returnOneResult);
+        batchOps.setAtomicOperation(isAtomic);
         return new BatchOperationResult(batchOps.executeWithResult());
     }
 }

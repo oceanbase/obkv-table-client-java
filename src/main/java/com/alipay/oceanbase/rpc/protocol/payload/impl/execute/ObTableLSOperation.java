@@ -227,6 +227,10 @@ public class ObTableLSOperation extends AbstractPayload {
         this.lsId = lsId;
     }
 
+    public void setReturnOneResult(boolean returnOneResult) {
+        optionFlag.setReturnOneResult(returnOneResult);
+    }
+
     public boolean isSameType() {
         return optionFlag.getFlagIsSameType();
     }

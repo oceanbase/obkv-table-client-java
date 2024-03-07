@@ -306,11 +306,10 @@ public class ObTableLsBatchTest {
                 batchOperation.addOperation(insert);
             }
 
+            batchOperation.setReturnOneResult(true);
             BatchOperationResult batchOperationResult = batchOperation.execute();
-            Assert.assertEquals(rowCnt, batchOperationResult.size());
-            for (int j = 0; j < rowCnt; j++) {
-                Assert.assertEquals(1, batchOperationResult.get(j).getAffectedRows());
-            }
+            Assert.assertEquals(1, batchOperationResult.size());
+            Assert.assertEquals(rowCnt, batchOperationResult.get(0).getAffectedRows());
         } catch (Exception e) {
             e.printStackTrace();
             Assert.assertTrue(false);
@@ -529,11 +528,10 @@ public class ObTableLsBatchTest {
                     batchOperation.addOperation(replace);
                 }
 
+                batchOperation.setReturnOneResult(true);
                 BatchOperationResult batchOperationResult = batchOperation.execute();
-                Assert.assertEquals(rowCnt, batchOperationResult.size());
-                for (int j = 0; j < rowCnt; j++) {
-                    Assert.assertEquals(2, batchOperationResult.get(j).getAffectedRows());
-                }
+                Assert.assertEquals(1, batchOperationResult.size());
+                Assert.assertEquals(rowCnt * 2, batchOperationResult.get(0).getAffectedRows());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -742,11 +740,10 @@ public class ObTableLsBatchTest {
                 put.addMutateRow(row(colVal("c3", curRow[2]), colVal("c4", curRow[3])));
                 batchOperation.addOperation(put);
             }
+            batchOperation.setReturnOneResult(true);
             BatchOperationResult batchOperationResult = batchOperation.execute();
-            Assert.assertEquals(rowCnt, batchOperationResult.size());
-            for (int j = 0; j < rowCnt; j++) {
-                Assert.assertEquals(1, batchOperationResult.get(j).getAffectedRows());
-            }
+            Assert.assertEquals(1, batchOperationResult.size());
+            Assert.assertEquals(rowCnt, batchOperationResult.get(0).getAffectedRows());
         } catch (Exception e) {
             e.printStackTrace();
             Assert.assertTrue(false);

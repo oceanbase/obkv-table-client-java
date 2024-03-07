@@ -360,6 +360,15 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             singleOperations.getRight().add(new ObPair(i, operation));
         }
 
+<<<<<<< HEAD
+=======
+        if (atomicOperation) {
+            if (lsOperationsMap.size() > 1) {
+                throw new ObTablePartitionConsistentException(
+                        "require atomic operation but found across ls may cause consistent problem");
+            }
+        }
+>>>>>>> 25e5233 ([OBKV] ObTableLsOp adapt to returnOneResult)
         return lsOperationsMap;
     }
 
@@ -379,6 +388,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         ObTableLSOpRequest tableLsOpRequest = new ObTableLSOpRequest();
         ObTableLSOperation tableLsOp = new ObTableLSOperation();
         tableLsOp.setLsId(lsId);
+        tableLsOp.setReturnOneResult(returnOneResult);
         // fetch the following parameters in first entry for routing
         long tableId = 0;
         long originPartId = 0;
@@ -514,45 +524,62 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
         List<ObTableTabletOpResult> tabletOpResults = subLSOpResult.getResults();
         int affectedRows = 0;
-        for (int i = 0; i < tabletOpResults.size(); i++) {
-            List<ObTableSingleOpResult> singleOpResults = tabletOpResults.get(i).getResults();
-            for (int j = 0; j < singleOpResults.size(); j++) {
-                affectedRows += singleOpResults.size();
+
+        if (returnOneResult) {
+            if (results[0] == null) {
+                results[0] = new ObTableSingleOpResult();
             }
-            List<ObPair<Integer, ObTableSingleOp>> singleOperationsWithIndexList = lsOperationWithIndexList.get(i);
-            if (singleOpResults.size() < singleOperationsWithIndexList.size()) {
-                // only one result when it across failed
-                // only one result when hkv puts
-                if (singleOpResults.size() == 1 && entityType == ObTableEntityType.HKV) {
-                    ObTableSingleOpResult subObTableSingleOpResult = singleOpResults.get(0);
-                    subObTableSingleOpResult.setExecuteHost(subObTable.getIp());
-                    subObTableSingleOpResult.setExecutePort(subObTable.getPort());
-                    for (ObPair<Integer, ObTableSingleOp> SubOperationWithIndexList : singleOperationsWithIndexList) {
-                        results[SubOperationWithIndexList.getLeft()] = subObTableSingleOpResult;
+
+            ObTableSingleOpResult singleOpResult = tabletOpResults.get(0).getResults().get(0);
+            if (singleOpResult.getHeader().getErrno() != ResultCodes.OB_SUCCESS.errorCode) {
+                results[0].getHeader().setErrno(singleOpResult.getHeader().getErrno());
+                results[0].getHeader().setMsg(singleOpResult.getHeader().getMsg());
+            }
+            results[0].setAffectedRows(results[0].getAffectedRows() +
+                    tabletOpResults.get(0).getResults().get(0).getAffectedRows());
+        } else {
+            for (int i = 0; i < tabletOpResults.size(); i++) {
+                List<ObTableSingleOpResult> singleOpResults = tabletOpResults.get(i).getResults();
+                for (int j = 0; j < singleOpResults.size(); j++) {
+                    affectedRows += singleOpResults.size();
+                }
+                List<ObPair<Integer, ObTableSingleOp>> singleOperationsWithIndexList = lsOperationWithIndexList.get(i);
+                if (singleOpResults.size() < singleOperationsWithIndexList.size()) {
+                    // only one result when it across failed
+                    // only one result when hkv puts
+                    if (singleOpResults.size() == 1 && entityType == ObTableEntityType.HKV) {
+                        ObTableSingleOpResult subObTableSingleOpResult = singleOpResults.get(0);
+                        subObTableSingleOpResult.setExecuteHost(subObTable.getIp());
+                        subObTableSingleOpResult.setExecutePort(subObTable.getPort());
+                        for (ObPair<Integer, ObTableSingleOp> SubOperationWithIndexList : singleOperationsWithIndexList) {
+                            results[SubOperationWithIndexList.getLeft()] = subObTableSingleOpResult;
+                        }
+                    } else {
+                        throw new IllegalArgumentException(
+                                "check batch operation result size error: operation size ["
+                                        + singleOperationsWithIndexList.size() + "] result size ["
+                                        + singleOpResults.size() + "]");
                     }
                 } else {
-                    throw new IllegalArgumentException(
-                            "check batch operation result size error: operation size ["
-                                    + singleOperationsWithIndexList.size() + "] result size ["
-                                    + singleOpResults.size() + "]");
-                }
-            } else {
-                if (singleOpResults.size() != singleOperationsWithIndexList.size()) {
-                    throw new ObTableUnexpectedException("check batch result error: ls "
-                            + lsId + " expect result size "
-                            + singleOperationsWithIndexList.size()
-                            + " actual result size "
-                            + singleOpResults.size()
-                            + " for " + i + "th tablet operation");
-                }
-                for (int j = 0; j < singleOperationsWithIndexList.size(); j++) {
-                    ObTableSingleOpResult subObTableSingleOpResult = singleOpResults.get(j);
-                    subObTableSingleOpResult.setExecuteHost(subObTable.getIp());
-                    subObTableSingleOpResult.setExecutePort(subObTable.getPort());
-                    results[singleOperationsWithIndexList.get(j).getLeft()] = subObTableSingleOpResult;
+                    if (singleOpResults.size() != singleOperationsWithIndexList.size()) {
+                        throw new ObTableUnexpectedException("check batch result error: ls "
+                                + lsId + " expect result size "
+                                + singleOperationsWithIndexList.size()
+                                + " actual result size "
+                                + singleOpResults.size()
+                                + " for " + i + "th tablet operation");
+                    }
+                    for (int j = 0; j < singleOperationsWithIndexList.size(); j++) {
+                        ObTableSingleOpResult subObTableSingleOpResult = singleOpResults.get(j);
+                        subObTableSingleOpResult.setExecuteHost(subObTable.getIp());
+                        subObTableSingleOpResult.setExecutePort(subObTable.getPort());
+                        results[singleOperationsWithIndexList.get(j).getLeft()] = subObTableSingleOpResult;
+                    }
                 }
             }
         }
+
+
         String endpoint = subObTable.getIp() + ":" + subObTable.getPort();
         MonitorUtil.info(tableLsOpRequest, subObTable.getDatabase(), tableName,
                 "LS_BATCH-Execute-", endpoint, tableLsOp,
@@ -569,8 +596,12 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             throw new IllegalArgumentException("table name is null");
         }
         long start = System.currentTimeMillis();
-        final ObTableSingleOpResult[] obTableOperationResults = new ObTableSingleOpResult[batchOperation
-            .size()];
+        ObTableSingleOpResult[] obTableOperationResults = null;
+        if (returnOneResult) {
+            obTableOperationResults = new ObTableSingleOpResult[1];
+        } else {
+            obTableOperationResults = new ObTableSingleOpResult[batchOperation.size()];
+        }
         Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> lsOperations = partitionPrepare();
         long getTableTime = System.currentTimeMillis();
         final Map<Object, Object> context = ThreadLocalMap.getContextMap();
@@ -580,6 +611,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 lsOperations.size());
             for (final Map.Entry<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> entry : lsOperations
                 .entrySet()) {
+                ObTableSingleOpResult[] finalObTableOperationResults = obTableOperationResults;
                 executor.execute(new ConcurrentTask() {
                     /*
                      * Do task.
@@ -588,7 +620,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     public void doTask() {
                         try {
                             ThreadLocalMap.transmitContextMap(context);
-                            partitionExecute(obTableOperationResults, entry);
+                            partitionExecute(finalObTableOperationResults, entry);
                         } catch (Exception e) {
                             logger.error(LCD.convert("01-00026"), e);
                             executor.collectExceptions(e);
