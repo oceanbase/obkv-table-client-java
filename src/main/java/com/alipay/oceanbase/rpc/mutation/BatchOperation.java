@@ -212,11 +212,13 @@ public class BatchOperation {
         }
         ObTableClientLSBatchOpsImpl batchOps;
         boolean hasSetRowkeyElement = false;
+        int checkAndInsUPCnt = 0;
 
         if (client instanceof ObTableClient) {
             batchOps = new ObTableClientLSBatchOpsImpl(tableName, (ObTableClient) client);
             for (Object operation : operations) {
                 if (operation instanceof CheckAndInsUp) {
+                    checkAndInsUPCnt++;
                     CheckAndInsUp checkAndInsUp = (CheckAndInsUp) operation;
                     batchOps.addOperation(checkAndInsUp);
                     List<String> rowKeyNames = checkAndInsUp.getInsUp().getRowKeyNames();
@@ -246,6 +248,11 @@ public class BatchOperation {
             throw new IllegalArgumentException(
                 "execute batch using ObTable diretly is not supporeted");
         }
+
+        if (checkAndInsUPCnt > 0 && checkAndInsUPCnt != operations.size()) {
+            throw new IllegalArgumentException("Can not mix checkAndInsUP and other types operation in batch");
+        }
+
         batchOps.setReturningAffectedEntity(withResult);
         return new BatchOperationResult(batchOps.executeWithResult());
     }
