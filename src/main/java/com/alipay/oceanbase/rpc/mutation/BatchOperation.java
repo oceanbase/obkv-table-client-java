@@ -184,6 +184,11 @@ public class BatchOperation {
                         batchOps.append(mutation.getRowKey(), ((Append) mutation).getColumns(),
                             ((Append) mutation).getValues(), withResult);
                         break;
+                    case PUT:
+                        ((Put) mutation).removeRowkeyFromMutateColval();
+                        batchOps.append(mutation.getRowKey(), ((Put) mutation).getColumns(),
+                                ((Put) mutation).getValues(), withResult);
+                        break;
                     default:
                         throw new ObTableException("unknown operation type " + type);
                 }
