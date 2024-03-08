@@ -253,12 +253,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             obTableOperations.getRight().add(new ObPair(i, operation));
         }
 
-        if (atomicOperation) {
-            if (partitionOperationsMap.size() > 1) {
-                throw new ObTablePartitionConsistentException(
-                        "require atomic operation but found across partition may cause consistent problem ");
-            }
-        }
         return partitionOperationsMap;
     }
 
