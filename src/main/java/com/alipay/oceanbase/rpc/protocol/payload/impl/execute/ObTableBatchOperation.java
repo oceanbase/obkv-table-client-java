@@ -33,9 +33,9 @@ import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderL
  */
 public class ObTableBatchOperation extends AbstractPayload {
 
-    private List<ObTableOperation> tableOperations = new ArrayList<ObTableOperation>();
-    private boolean                isReadOnly      = true;
-    private boolean                isSameType      = true;
+    private List<ObTableOperation> tableOperations       = new ArrayList<ObTableOperation>();
+    private boolean                isReadOnly            = true;
+    private boolean                isSameType            = true;
     private boolean                isSamePropertiesNames = true;
 
     /*
@@ -140,8 +140,8 @@ public class ObTableBatchOperation extends AbstractPayload {
             isReadOnly = false;
         }
         if (isSameType
-                && length > 1
-                && tableOperations.get(length - 1).getOperationType() != tableOperations
+            && length > 1
+            && tableOperations.get(length - 1).getOperationType() != tableOperations
                 .get(length - 2).getOperationType()) {
             isSameType = false;
         }
@@ -151,11 +151,13 @@ public class ObTableBatchOperation extends AbstractPayload {
             ObTableOperation curr = tableOperations.get(length - 1);
             if (prev.getEntity() == null || curr.getEntity() == null) {
                 isSamePropertiesNames = false;
-            } else if (prev.getEntity().getPropertiesCount() != curr.getEntity().getPropertiesCount()) {
+            } else if (prev.getEntity().getPropertiesCount() != curr.getEntity()
+                .getPropertiesCount()) {
                 isSamePropertiesNames = false;
             } else {
-                isSamePropertiesNames =
-                        mapKeysToSetIgnoringCase(prev.getEntity().getProperties().keySet()).equals(mapKeysToSetIgnoringCase(curr.getEntity().getProperties().keySet()));
+                isSamePropertiesNames = mapKeysToSetIgnoringCase(
+                    prev.getEntity().getProperties().keySet()).equals(
+                    mapKeysToSetIgnoringCase(curr.getEntity().getProperties().keySet()));
             }
         }
     }
@@ -183,12 +185,13 @@ public class ObTableBatchOperation extends AbstractPayload {
 
                 if (this.isSamePropertiesNames) {
                     if (firstKeySetIgnoreCase == null) {
-                        firstKeySetIgnoreCase = mapKeysToSetIgnoringCase(o.getEntity().getProperties().keySet());
+                        firstKeySetIgnoreCase = mapKeysToSetIgnoringCase(o.getEntity()
+                            .getProperties().keySet());
                     } else if (firstKeySetIgnoreCase.size() != o.getEntity().getPropertiesCount()) {
                         this.isSamePropertiesNames = false;
                     } else {
-                        this.isSamePropertiesNames =
-                                firstKeySetIgnoreCase.equals(mapKeysToSetIgnoringCase(o.getEntity().getProperties().keySet()));
+                        this.isSamePropertiesNames = firstKeySetIgnoreCase
+                            .equals(mapKeysToSetIgnoringCase(o.getEntity().getProperties().keySet()));
                     }
                 }
             } else {

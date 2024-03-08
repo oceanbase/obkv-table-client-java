@@ -140,6 +140,10 @@ public class ObTableTabletOp extends AbstractPayload {
                 prevType = o.getSingleOpType();
             }
         }
+
+        if (isSameType() && singleOperations.get(0).getSingleOpType() == ObTableOperationType.GET) {
+            setIsReadOnly(true);
+        }
         this.singleOperations = singleOperations;
     }
 
@@ -154,6 +158,8 @@ public class ObTableTabletOp extends AbstractPayload {
     public boolean isSameType() { return optionFlag.getFlagIsSameType(); }
 
     public void setIsSameType(boolean isSameType) { optionFlag.setFlagIsSameType(isSameType);}
+
+    public void setIsReadOnly(boolean isReadOnly) { optionFlag.setFlagIsReadOnly(isReadOnly);}
 
     public Set<String> getRowKeyNamesSet() {
         return rowKeyNamesSet;

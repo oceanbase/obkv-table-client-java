@@ -43,7 +43,7 @@ import static org.junit.Assert.assertTrue;
  **/
 public class ObTablePutTest {
     ObTableClient        client;
-    public static String tableName    = "test_put";
+    public static String tableName = "test_put";
 
     @Before
     public void setup() throws Exception {
@@ -72,21 +72,15 @@ public class ObTablePutTest {
             Timestamp curTs = new Timestamp(System.currentTimeMillis());
             curTs.setNanos(0);
             client.put(tableName).setRowKey(colVal("id", "id0"))
-                    .addMutateColVal(colVal("expired_ts", curTs))
-                    .execute();
+                .addMutateColVal(colVal("expired_ts", curTs)).execute();
+            client.put(tableName).setRowKey(colVal("id", "id0")).addMutateColVal(colVal("c1", 1L))
+                .addMutateColVal(colVal("expired_ts", curTs)).execute();
+            client.put(tableName).setRowKey(colVal("id", "id0")).addMutateColVal(colVal("c1", 1L))
+                .addMutateColVal(colVal("c2", 2L)).addMutateColVal(colVal("expired_ts", curTs))
+                .execute();
             client.put(tableName).setRowKey(colVal("id", "id0"))
-                    .addMutateColVal(colVal("c1", 1L))
-                    .addMutateColVal(colVal("expired_ts", curTs))
-                    .execute();
-            client.put(tableName).setRowKey(colVal("id", "id0"))
-                    .addMutateColVal(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", 2L))
-                    .addMutateColVal(colVal("expired_ts", curTs))
-                    .execute();
-            client.put(tableName).setRowKey(colVal("id", "id0"))
-                    .addMutateColVal(colVal("c3", "c3"))
-                    .addMutateColVal(colVal("expired_ts", curTs))
-                    .execute();
+                .addMutateColVal(colVal("c3", "c3")).addMutateColVal(colVal("expired_ts", curTs))
+                .execute();
         } catch (Exception e) {
             e.printStackTrace();
             Assert.assertTrue(false);
