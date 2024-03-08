@@ -40,9 +40,9 @@ public class BatchOperation {
     boolean              isAtomic         = false;
     boolean              returnOneResult  = false;
     boolean              hasCheckAndInsUp = false;
-    boolean              hasGet = false;
-    ObTableOperationType lastType = ObTableOperationType.INVALID;
-    boolean              isSameType = true;
+    boolean              hasGet           = false;
+    ObTableOperationType lastType         = ObTableOperationType.INVALID;
+    boolean              isSameType       = true;
 
     /*
      * default constructor
@@ -84,7 +84,8 @@ public class BatchOperation {
      * add queries
      */
     public BatchOperation addOperation(TableQuery... queries) {
-        if (isSameType && lastType != ObTableOperationType.INVALID && lastType != ObTableOperationType.GET) {
+        if (isSameType && lastType != ObTableOperationType.INVALID
+            && lastType != ObTableOperationType.GET) {
             isSameType = false;
         }
 
@@ -98,7 +99,8 @@ public class BatchOperation {
      */
     public BatchOperation addOperation(Mutation... mutations) {
         for (int i = 0; i < mutations.length; i++) {
-            if (isSameType && lastType != ObTableOperationType.INVALID && lastType != mutations[i].getOperationType()) {
+            if (isSameType && lastType != ObTableOperationType.INVALID
+                && lastType != mutations[i].getOperationType()) {
                 isSameType = false;
             }
             lastType = mutations[i].getOperationType();
@@ -112,7 +114,8 @@ public class BatchOperation {
      */
     public BatchOperation addOperation(List<Mutation> mutations) {
         for (int i = 0; i < mutations.size(); i++) {
-            if (isSameType && lastType != ObTableOperationType.INVALID && lastType != mutations.get(i).getOperationType()) {
+            if (isSameType && lastType != ObTableOperationType.INVALID
+                && lastType != mutations.get(i).getOperationType()) {
                 isSameType = false;
             }
             lastType = mutations.get(i).getOperationType();
@@ -125,7 +128,8 @@ public class BatchOperation {
      * add CheckAndInsUp
      */
     public BatchOperation addOperation(CheckAndInsUp... insUps) {
-        if (isSameType && lastType != ObTableOperationType.INVALID && lastType != ObTableOperationType.CHECK_AND_INSERT_UP) {
+        if (isSameType && lastType != ObTableOperationType.INVALID
+            && lastType != ObTableOperationType.CHECK_AND_INSERT_UP) {
             isSameType = false;
         }
         lastType = ObTableOperationType.CHECK_AND_INSERT_UP;
@@ -146,12 +150,12 @@ public class BatchOperation {
 
     @SuppressWarnings("unchecked")
     public BatchOperationResult execute() throws Exception {
-        if (returnOneResult && !(isSameType && (
-                lastType == ObTableOperationType.INSERT ||
-                lastType == ObTableOperationType.PUT ||
-                lastType == ObTableOperationType.REPLACE ||
-                lastType == ObTableOperationType.DEL))) {
-            throw new IllegalArgumentException("returnOneResult only support multi-insert/put/replace/del");
+        if (returnOneResult
+            && !(isSameType && (lastType == ObTableOperationType.INSERT
+                                || lastType == ObTableOperationType.PUT
+                                || lastType == ObTableOperationType.REPLACE || lastType == ObTableOperationType.DEL))) {
+            throw new IllegalArgumentException(
+                "returnOneResult only support multi-insert/put/replace/del");
         }
 
         if (hasCheckAndInsUp || ObGlobal.isLsOpSupport()) {
@@ -265,7 +269,7 @@ public class BatchOperation {
                     if (!hasSetRowkeyElement && mutation.getRowKeyNames() != null) {
                         List<String> rowKeyNames = mutation.getRowKeyNames();
                         ((ObTableClient) client).addRowKeyElement(tableName,
-                                rowKeyNames.toArray(new String[0]));
+                            rowKeyNames.toArray(new String[0]));
                         hasSetRowkeyElement = true;
                     }
                 } else if (operation instanceof TableQuery) {
@@ -282,7 +286,8 @@ public class BatchOperation {
         }
 
         if (checkAndInsUPCnt > 0 && checkAndInsUPCnt != operations.size()) {
-            throw new IllegalArgumentException("Can not mix checkAndInsUP and other types operation in batch");
+            throw new IllegalArgumentException(
+                "Can not mix checkAndInsUP and other types operation in batch");
         }
 
         batchOps.setReturningAffectedEntity(withResult);

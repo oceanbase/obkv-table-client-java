@@ -186,7 +186,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         Object[] rowKey = query.getRowKey().getValues();
         String[] propertiesNames = query.getSelectColumns().toArray(new String[0]);
         ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKey,
-                propertiesNames, null);
+            propertiesNames, null);
 
         ObTableSingleOp singleOp = new ObTableSingleOp();
         singleOp.setSingleOpType(ObTableOperationType.GET);
@@ -204,8 +204,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         ObTableOperationType type = mutation.getOperationType();
         switch (type) {
             case GET:
-                throw new IllegalArgumentException("Invalid type in batch operation, "
-                        + type);
+                throw new IllegalArgumentException("Invalid type in batch operation, " + type);
             case INSERT:
                 ((Insert) mutation).removeRowkeyFromMutateColval();
                 rowKeyNames = ((Insert) mutation).getRowKeyNames().toArray(new String[0]);
@@ -264,7 +263,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         }
 
         ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKey,
-                propertiesNames, propertiesValues);
+            propertiesNames, propertiesValues);
         ObTableSingleOp singleOp = new ObTableSingleOp();
         singleOp.setSingleOpType(type);
         singleOp.addEntity(entity);
@@ -360,15 +359,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             singleOperations.getRight().add(new ObPair(i, operation));
         }
 
-<<<<<<< HEAD
-=======
-        if (atomicOperation) {
-            if (lsOperationsMap.size() > 1) {
-                throw new ObTablePartitionConsistentException(
-                        "require atomic operation but found across ls may cause consistent problem");
-            }
-        }
->>>>>>> 25e5233 ([OBKV] ObTableLsOp adapt to returnOneResult)
         return lsOperationsMap;
     }
 
@@ -674,13 +664,15 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         }
 
         if (obTableOperationResults.length <= 0) {
-            throw new ObTableUnexpectedException("Ls batch execute returns zero single operation results");
+            throw new ObTableUnexpectedException(
+                "Ls batch execute returns zero single operation results");
         }
 
-        MonitorUtil.info(obTableOperationResults[0], obTableClient.getDatabase(), tableName, "LS_BATCH", "",
-            obTableOperationResults.length, getTableTime - start, System.currentTimeMillis()
-                                                                  - getTableTime,
-            obTableClient.getslowQueryMonitorThreshold());
+        MonitorUtil
+            .info(obTableOperationResults[0], obTableClient.getDatabase(), tableName, "LS_BATCH",
+                "", obTableOperationResults.length, getTableTime - start,
+                System.currentTimeMillis() - getTableTime,
+                obTableClient.getslowQueryMonitorThreshold());
 
         return obTableOperationResults;
     }

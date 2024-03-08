@@ -85,7 +85,7 @@ public class ObGlobal {
         boolean isSupp = false;
         if (OB_VERSION != 0) {
             if (obVsnMajor() == 4 && obVsnMinor() == 2 && obVsnMajorPatch() == 3
-                    && OB_VERSION >= OB_VERSION_4_2_3_0) {
+                && OB_VERSION >= OB_VERSION_4_2_3_0) {
                 isSupp = true;
             }
         }

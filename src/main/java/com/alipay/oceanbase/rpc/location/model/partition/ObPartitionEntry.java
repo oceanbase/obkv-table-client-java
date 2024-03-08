@@ -25,7 +25,8 @@ import java.util.Map;
 public class ObPartitionEntry {
     private Map<Long, ObPartitionLocation> partitionLocation = new HashMap<Long, ObPartitionLocation>();
 
-    private Map<Long, Long> tabletLsIdMap = new HashMap<>(); // mapping from tablet id to ls id
+    // mapping from tablet id to ls id, and the part id to tablet id mapping is in ObPartitionInfo
+    private Map<Long, Long> tabletLsIdMap = new HashMap<>();
 
     public Map<Long, ObPartitionLocation> getPartitionLocation() {
         return partitionLocation;

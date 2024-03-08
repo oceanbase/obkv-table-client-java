@@ -30,6 +30,7 @@ public class ObPartitionInfo {
     private ObPartDesc           firstPartDesc   = null;
     private ObPartDesc           subPartDesc     = null;
     private List<ObColumn>       partColumns     = new ArrayList<ObColumn>(1);
+    // mapping from part id to tablet id, and the tablet id to ls id mapping is in ObPartitionInfo
     private Map<Long, Long>      partTabletIdMap = null;
     private Map<String, Long>    partNameIdMap   = null;
     private Map<String, Integer> rowKeyElement   = null;

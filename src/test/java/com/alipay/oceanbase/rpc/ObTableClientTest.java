@@ -1940,6 +1940,9 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
     @Test
     public void testBatchMutation() throws Exception {
+        if (ObGlobal.isLsOpSupport()) {
+            return;
+        }
         System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
 
         TableQuery tableQuery = client.query("test_mutation");

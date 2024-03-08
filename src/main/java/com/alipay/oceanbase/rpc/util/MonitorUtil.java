@@ -293,10 +293,10 @@ public class MonitorUtil {
     /**
      * for tablet op
      */
-    private static void logLsOpMessage(final ObPayload payload, String database,
-                                           String tableName, String methodName, String endpoint,
-                                           ObTableLSOperation lsOperation, int resultSize,
-                                           long executeTime, long slowQueryMonitorThreshold) {
+    private static void logLsOpMessage(final ObPayload payload, String database, String tableName,
+                                       String methodName, String endpoint,
+                                       ObTableLSOperation lsOperation, int resultSize,
+                                       long executeTime, long slowQueryMonitorThreshold) {
         if (executeTime < slowQueryMonitorThreshold) {
             return;
         }
@@ -308,7 +308,7 @@ public class MonitorUtil {
     public static void info(final ObPayload payload, String database, String tableName,
                             String methodName, String endpoint, ObTableLSOperation lsOperation,
                             int resultSize, long executeTime, long slowQueryMonitorThreshold) {
-        logLsOpMessage(payload, database, tableName, methodName, endpoint, lsOperation,
-            resultSize, executeTime, slowQueryMonitorThreshold);
+        logLsOpMessage(payload, database, tableName, methodName, endpoint, lsOperation, resultSize,
+            executeTime, slowQueryMonitorThreshold);
     }
 }

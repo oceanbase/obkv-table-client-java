@@ -20,7 +20,7 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 public class ObTableLSOpFlag {
     private static final int FLAG_IS_SAME_TYPE             = 1 << 0;
     private static final int FLAG_IS_SAME_PROPERTIES_NAMES = 1 << 1;
-    private static final int FLAG_RETURN_ONE_RESULT = 1 << 2;
+    private static final int FLAG_RETURN_ONE_RESULT        = 1 << 2;
     private long             flags                         = 0;
 
     public void setFlagIsSameType(boolean isSameType) {
