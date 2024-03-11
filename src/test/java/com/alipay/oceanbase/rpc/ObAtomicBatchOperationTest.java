@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.exception.ObTableDuplicateKeyException;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.mutation.Insert;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
 import org.junit.After;
@@ -28,6 +29,9 @@ import org.junit.Test;
 
 import java.util.List;
 import java.util.Map;
+
+import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
+import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
 
 public class ObAtomicBatchOperationTest {
     private static final int    dataSetSize = 4;
@@ -52,7 +56,7 @@ public class ObAtomicBatchOperationTest {
             String key = "abc-" + i;
             String val = "xyz-" + i;
             this.obTableClient.insert("test_varchar_table", key, new String[] { "c2" },
-                new String[] { val });
+                    new String[] { val });
         }
     }
 
@@ -213,10 +217,8 @@ public class ObAtomicBatchOperationTest {
             batchOps.insert("abcd-8", new String[] { "c2" }, new String[] { "returnOne-8" });
             batchOps.insert("abcd-9", new String[] { "c2" }, new String[] { "returnOne-9" });
             List<Object> results = batchOps.execute();
-            Assert.assertEquals(results.size(), 3);
+            Assert.assertEquals(results.size(), 1);
             Assert.assertEquals(results.get(0), 3L);
-            Assert.assertEquals(results.get(1), 3L);
-            Assert.assertEquals(results.get(2), 3L);
         } catch (Exception ex) {
             Assert.assertTrue(ex instanceof ObTableException);
         }
@@ -230,10 +232,8 @@ public class ObAtomicBatchOperationTest {
             batchOps.insert("abcd-5", new String[] { "c2" }, new String[] { "returnOne-5" });
             batchOps.insert("abcd-6", new String[] { "c2" }, new String[] { "returnOne-6" });
             List<Object> results = batchOps.execute();
-            Assert.assertEquals(results.size(), 3);
+            Assert.assertEquals(results.size(), 1);
             Assert.assertEquals(results.get(0), 3L);
-            Assert.assertEquals(results.get(1), 3L);
-            Assert.assertEquals(results.get(2), 3L);
         } catch (Exception ex) {
             Assert.assertTrue(ex instanceof ObTableException);
         }
