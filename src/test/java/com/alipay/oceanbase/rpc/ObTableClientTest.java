@@ -30,6 +30,7 @@ import com.alipay.oceanbase.rpc.mutation.result.*;
 import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregation;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateRequest;
@@ -2522,5 +2523,38 @@ public class ObTableClientTest extends ObTableClientTestBase {
         } catch (IllegalArgumentException e) {
             Assert.assertEquals("table name is null", ((IllegalArgumentException) e).getMessage());
         }
+    }
+
+    @Test
+    public void testQueryWithScanOrder() throws Exception {
+        String tableName = "test_query_scan_order";
+        ((ObTableClient) client).addRowKeyElement(tableName, new String[]{"c1", "c2"});
+        try {
+            client.insert(tableName, new Object[] { 0, 0 }, new String[] { "c3" }, new Object[] {
+                        2});
+            client.insert(tableName, new Object[] { 0, 1 }, new String[] { "c3" }, new Object[] {
+                    1});
+
+            Object[] start = {0, ObObj.getMin()};
+            Object[] end = {0, ObObj.getMax()};
+            QueryResultSet resultSet = client.query(tableName).indexName("idx")
+                    .setScanRangeColumns("c1", "c3")
+                    .addScanRange(start, end)
+                    .scanOrder(true)
+                    .select("c1", "c2", "c3")
+                    .execute();
+            Assert.assertEquals(2, resultSet.cacheSize());
+            int pre_value = 0;
+            while(resultSet.next()) {
+                Map<String, Object> valueMap = resultSet.getRow();
+                Assert.assertTrue(pre_value < (int)valueMap.get("c3") );
+                pre_value = (int)valueMap.get("c3");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            client.delete(tableName);
+        }
+
     }
 }

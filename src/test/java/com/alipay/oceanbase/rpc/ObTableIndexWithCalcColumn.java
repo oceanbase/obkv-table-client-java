@@ -15,12 +15,12 @@
  * #L%
  */
 
-package com.alipay.oceanbase.rpc.util;
+package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.mutation.Row;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
+import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -54,6 +54,7 @@ public class ObTableIndexWithCalcColumn {
     String[] AllColumns = {"id", "adiu", "mode", "time", "tag", "content"};
     int recordCount = 10;
     ObTableClient client;
+
     @Before
     public void setup() throws Exception {
         setEnableIndexDirectSelect();
@@ -110,7 +111,7 @@ public class ObTableIndexWithCalcColumn {
     public void addTTLAttribute(int expire_secord) throws Exception {
         Connection connection = ObTableClientTestUtil.getConnection();
         Statement statement = connection.createStatement();
-        statement.execute("alter table " + TableName + " TTL (time + INTERVAL "+ expire_secord +" SECOND)");
+        statement.execute("alter table " + TableName + " TTL (time + INTERVAL " + expire_secord + " SECOND)");
     }
 
     private void checkIndexData(long count) throws Exception {
@@ -148,7 +149,6 @@ public class ObTableIndexWithCalcColumn {
     }
 
 
-
     @Test
     public void test_with_ttl_attribute() throws Exception {
         recordCount = 10;
@@ -178,7 +178,6 @@ public class ObTableIndexWithCalcColumn {
             deleteTable();
         }
     }
-
 
 
     public void insert(String op_type, int count, boolean fill_autoinc) throws Exception {
@@ -220,14 +219,14 @@ public class ObTableIndexWithCalcColumn {
             }
 
             // do update
-            Row rowKey = row(colVal("id",id), colVal("adiu", adiu));
+            Row rowKey = row(colVal("id", id), colVal("adiu", adiu));
             Row row = row();
             String update_mode = String.format(StringFormat, "mode_update", i);
             String update_tag = String.format(StringFormat, "mode_tag", i);
             String update_content = String.format(StringFormat, "mode_content", i);
             row.add(colVal("mode", update_mode));
-            row.add(colVal("tag",  update_tag));
-            row.add(colVal("content",  update_content));
+            row.add(colVal("tag", update_tag));
+            row.add(colVal("content", update_content));
             if ("update".equalsIgnoreCase(op_type)) {
                 client.update(TableName).setRowKey(rowKey).addMutateRow(row).execute();
             }
@@ -245,9 +244,9 @@ public class ObTableIndexWithCalcColumn {
             Assert.assertEquals(update_tag, valueMap_2.get("tag"));
             Assert.assertEquals(update_content, valueMap_2.get("content"));
             if (is_expired) {
-                Assert.assertTrue(time1.after((Timestamp)valueMap_2.get("time")));
+                Assert.assertTrue(time1.after((Timestamp) valueMap_2.get("time")));
             } else {
-                Assert.assertTrue(time1.before((Timestamp)valueMap_2.get("time")));
+                Assert.assertTrue(time1.before((Timestamp) valueMap_2.get("time")));
             }
         }
     }
@@ -272,7 +271,7 @@ public class ObTableIndexWithCalcColumn {
 
     public void test_update() throws Exception {
         try {
-            insert("insert",recordCount, true);
+            insert("insert", recordCount, true);
             Thread.sleep(1000);
             update("update", recordCount, false);
             checkIndexData(recordCount);
@@ -285,7 +284,7 @@ public class ObTableIndexWithCalcColumn {
     }
 
     public void test_insert_up() throws Exception {
-        try{
+        try {
             insert("insertOrUpdate", recordCount, true);
             Thread.sleep(1000);
             update("insertOrUpdate", recordCount, false);
@@ -298,7 +297,7 @@ public class ObTableIndexWithCalcColumn {
     }
 
     public void test_replace() throws Exception {
-        try{
+        try {
             insert("replace", recordCount, true);
             Thread.sleep(1000);
             update("replace", recordCount, false);
@@ -311,7 +310,7 @@ public class ObTableIndexWithCalcColumn {
     }
 
     public void test_delete() throws Exception {
-        try{
+        try {
             insert("insert", recordCount, true);
             checkIndexData(recordCount);
             for (int i = 1; i <= recordCount; i++) {
@@ -320,7 +319,7 @@ public class ObTableIndexWithCalcColumn {
                 Map<String, Object> valueMap = client.get(TableName, new Object[]{id, adiu}, AllColumns);
                 Assert.assertEquals(id, valueMap.get("id"));
                 Assert.assertEquals(String.format(StringFormat, "adiu", id), valueMap.get("adiu"));
-                Row rowKey = row(colVal("id",id), colVal("adiu", adiu));
+                Row rowKey = row(colVal("id", id), colVal("adiu", adiu));
                 client.delete(TableName).setRowKey(rowKey).execute();
             }
             checkIndexData(0);
@@ -409,3 +408,4 @@ public class ObTableIndexWithCalcColumn {
             Assert.assertEquals(resultSet2.cacheSize(), recordCount);
         }
     }
+}
