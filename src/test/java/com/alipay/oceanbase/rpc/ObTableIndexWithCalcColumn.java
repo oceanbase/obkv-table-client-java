@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.util;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.mutation.Row;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import org.junit.After;
 import org.junit.Assert;
@@ -408,4 +409,3 @@ public class ObTableIndexWithCalcColumn {
             Assert.assertEquals(resultSet2.cacheSize(), recordCount);
         }
     }
-}
