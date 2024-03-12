@@ -407,15 +407,15 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             .getResults();
 
         if (returnOneResult) {
+            ObTableOperationResult subObTableOperationResult = subObTableOperationResults.get(0);
             if (results[0] == null) {
                 results[0] = new ObTableOperationResult();
+                subObTableOperationResult.setExecuteHost(subObTable.getIp());
+                subObTableOperationResult.setExecutePort(subObTable.getPort());
+                results[0] = subObTableOperationResult;
+            } else {
+                results[0].setAffectedRows(results[0].getAffectedRows() + subObTableOperationResult.getAffectedRows());
             }
-            ObTableOperationResult subObTableOperationResult = subObTableOperationResults
-                    .get(0);
-            subObTableOperationResult.setExecuteHost(subObTable.getIp());
-            subObTableOperationResult.setExecutePort(subObTable.getPort());
-            subObTableOperationResult.setAffectedRows(results[0].getAffectedRows() + subObTableOperationResult.getAffectedRows());
-            results[0] = subObTableOperationResult;
         } else {
             if (subObTableOperationResults.size() < subOperations.getTableOperations().size()) {
                 // only one result when it across failed
@@ -467,19 +467,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
         }
-        List<ObTableOperation> operations = batchOperation.getTableOperations();
-        if (operations.isEmpty()) {
-            throw new IllegalArgumentException("operations is empty");
-        }
-        ObTableOperationType lastType = operations.get(0).getOperationType();
-        if (returnOneResult
-                && !(batchOperation.isSameType() && (lastType == ObTableOperationType.INSERT
-                || lastType == ObTableOperationType.PUT
-                || lastType == ObTableOperationType.REPLACE || lastType == ObTableOperationType.DEL))) {
-            throw new IllegalArgumentException(
-                    "returnOneResult only support multi-insert/put/replace/del");
-        }
         long start = System.currentTimeMillis();
+        List<ObTableOperation> operations = batchOperation.getTableOperations();
         ObTableOperationResult[] obTableOperationResults = null;
         if (returnOneResult) {
             obTableOperationResults = new ObTableOperationResult[1];
