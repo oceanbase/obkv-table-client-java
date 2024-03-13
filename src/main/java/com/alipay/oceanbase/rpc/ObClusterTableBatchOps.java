@@ -17,9 +17,7 @@
 
 package com.alipay.oceanbase.rpc;
 
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableBatchOperation;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableBatchOperationResult;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.table.AbstractTableBatchOps;
 import com.alipay.oceanbase.rpc.table.ObTableClientBatchOpsImpl;
 
@@ -117,6 +115,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
      */
     @Override
     public List<Object> execute() throws Exception {
+        preCheck();
         return tableBatchOps.execute();
     }
 
@@ -125,6 +124,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
      */
     @Override
     public List<Object> executeWithResult() throws Exception {
+        preCheck();
         return tableBatchOps.executeWithResult();
     }
 
@@ -132,6 +132,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
      * Execute internal.
      */
     public ObTableBatchOperationResult executeInternal() throws Exception {
+        preCheck();
         return tableBatchOps.executeInternal();
     }
 
@@ -180,5 +181,20 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
     public void setReturnOneResult(boolean returnOneResult) {
         super.setReturnOneResult(returnOneResult);
         tableBatchOps.setReturnOneResult(returnOneResult);
+    }
+
+    void preCheck() {
+        List<ObTableOperation> operations = this.tableBatchOps.getObTableBatchOperation().getTableOperations();
+        if (operations.isEmpty()) {
+            throw new IllegalArgumentException("operations is empty");
+        }
+        ObTableOperationType lastType = operations.get(0).getOperationType();
+        if (returnOneResult
+                && !(this.tableBatchOps.getObTableBatchOperation().isSameType() && (lastType == ObTableOperationType.INSERT
+                || lastType == ObTableOperationType.PUT
+                || lastType == ObTableOperationType.REPLACE || lastType == ObTableOperationType.DEL))) {
+            throw new IllegalArgumentException(
+                    "returnOneResult only support multi-insert/put/replace/del");
+        }
     }
 }
