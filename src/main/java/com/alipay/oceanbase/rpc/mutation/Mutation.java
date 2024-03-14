@@ -179,12 +179,6 @@ public class Mutation<T> {
         this.rowKey = Keys.toArray();
         this.rowKeyNames = columnNames;
 
-        // set row key in table
-        if (null != tableName) {
-            ((ObTableClient) client)
-                .addRowKeyElement(tableName, columnNames.toArray(new String[0]));
-        }
-
         // renew scan range of QueryAndMutate
         if (null != query) {
             query.addScanRange(this.rowKey, this.rowKey);
@@ -217,12 +211,6 @@ public class Mutation<T> {
         this.rowKey = Keys.toArray();
         this.rowKeyNames = columnNames;
 
-        // set row key in table
-        if (null != tableName) {
-            ((ObTableClient) client)
-                .addRowKeyElement(tableName, columnNames.toArray(new String[0]));
-        }
-
         hasSetRowKey = true;
         return (T) this;
     }
@@ -250,12 +238,6 @@ public class Mutation<T> {
         }
         this.rowKey = Keys.toArray();
         this.rowKeyNames = columnNames;
-
-        // set row key in table
-        if (null != tableName) {
-            ((ObTableClient) client)
-                .addRowKeyElement(tableName, columnNames.toArray(new String[0]));
-        }
 
         // renew scan range of QueryAndMutate
         if (null != query) {
@@ -289,12 +271,6 @@ public class Mutation<T> {
         }
         this.rowKey = Keys.toArray();
         this.rowKeyNames = columnNames;
-
-        // set row key in table
-        if (null != tableName) {
-            ((ObTableClient) client)
-                .addRowKeyElement(tableName, columnNames.toArray(new String[0]));
-        }
 
         hasSetRowKey = true;
         return (T) this;
@@ -358,13 +334,7 @@ public class Mutation<T> {
         query.setScanRangeColumns(columnNames);
 
         // set row key in table
-        if (null != tableName && null != client) {
-            if (!((ObTableClient) client).isOdpMode()) {
-                // TODO: adapt OCP
-                //      OCP must conclude all rowkey now
-                ((ObTableClient) client).addRowKeyElement(tableName, columnNames);
-            }
-        } else {
+        if (null == tableName || null == client) {
             throw new ObTableException("invalid table name: " + tableName + ", or invalid client: "
                                        + client + " while setting scan range columns");
         }

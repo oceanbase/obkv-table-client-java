@@ -53,6 +53,8 @@ public class ObTableCheckAndInsUpTest {
         final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
         obTableClient.init();
         this.client = obTableClient;
+        client.addRowKeyElement(TABLE_NAME, new String[] {"c1"});
+
     }
 
     private boolean isVersionSupported() {
@@ -230,6 +232,7 @@ public class ObTableCheckAndInsUpTest {
         String testTable = "test_mutation_column_reverse";
 
         try {
+            client.addRowKeyElement(testTable, new String[] {"c2"});
             // 1. check exists match: insup (c2, c1, c3, c4) (5, 'c2_v0', c3_v0, 100) if not exists c3 is not null;
             InsertOrUpdate insertOrUpdate1 = new InsertOrUpdate();
             insertOrUpdate1.setRowKey(row(colVal("c2", 5L), colVal("c1", "c2_v0")));

@@ -127,17 +127,10 @@ public class BatchOperation {
             throw new IllegalArgumentException("table name is null");
         }
         TableBatchOps batchOps = client.batch(tableName);
-        boolean hasSetRowkeyElement = false;
 
         for (Object operation : operations) {
             if (operation instanceof Mutation) {
                 Mutation mutation = (Mutation) operation;
-                if (!hasSetRowkeyElement && mutation.getRowKeyNames() != null) {
-                    List<String> rowKeyNames = mutation.getRowKeyNames();
-                    ((ObTableClient) client).addRowKeyElement(tableName,
-                        rowKeyNames.toArray(new String[0]));
-                    hasSetRowkeyElement = true;
-                }
                 ObTableOperationType type = mutation.getOperationType();
                 switch (type) {
                     case GET:
@@ -200,17 +193,11 @@ public class BatchOperation {
         ObTableClientLSBatchOpsImpl batchOps;
         if (client instanceof ObTableClient) {
             batchOps = new ObTableClientLSBatchOpsImpl(tableName, (ObTableClient) client);
-            boolean hasSetRowkeyElement = false;
             for (Object operation : operations) {
                 if (operation instanceof CheckAndInsUp) {
                     CheckAndInsUp checkAndInsUp = (CheckAndInsUp) operation;
                     batchOps.addOperation(checkAndInsUp);
                     List<String> rowKeyNames = checkAndInsUp.getInsUp().getRowKeyNames();
-                    if (!hasSetRowkeyElement && rowKeyNames != null) {
-                        ((ObTableClient) client).addRowKeyElement(tableName,
-                            rowKeyNames.toArray(new String[0]));
-                        hasSetRowkeyElement = true;
-                    }
                 } else {
                     throw new IllegalArgumentException(
                         "The operations in batch must be all checkAndInsUp or all non-checkAndInsUp");

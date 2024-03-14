@@ -68,7 +68,7 @@ public class ObTableClientCheckAndInsertTest extends ObTableClientTestBase {
         }
 
         final String TABLE_NAME = "test_mutation";
-
+        ((ObTableClient) client).addRowKeyElement(TABLE_NAME, new String[] {"c1"});
         TableQuery tableQuery = client.query(TABLE_NAME);
         tableQuery.addScanRange(new Object[] { 0L, "\0" }, new Object[] { 200L, "\254" });
         tableQuery.select("c1", "c2", "c3", "c4");

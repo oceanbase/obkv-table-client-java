@@ -539,6 +539,7 @@ public class ObTableGlobalIndexTest {
         String prefixKey = "test";
         long[] keyIds = { 1L, 2L };
         try {
+            ((ObTableClient) client).addRowKeyElement(tableName, new String[] {"c1"});
             // 1. insert records with null expired_ts
             for (long id : keyIds) {
                 client.insert(tableName).setRowKey(colVal(rowKey1, prefixKey), colVal(rowKey2, id))
