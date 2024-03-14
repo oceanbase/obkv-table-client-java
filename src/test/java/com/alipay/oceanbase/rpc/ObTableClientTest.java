@@ -2528,17 +2528,17 @@ public class ObTableClientTest extends ObTableClientTestBase {
     @Test
     public void testQueryWithScanOrder() throws Exception {
         String tableName = "test_query_scan_order";
-        ((ObTableClient) client).addRowKeyElement(tableName, new String[]{"c1", "c2"});
+        ((ObTableClient) client).addRowKeyElement(tableName, new String[]{"c1"});
         try {
-            client.insert(tableName, new Object[] { 0, 0 }, new String[] { "c3" }, new Object[] {
-                        2});
-            client.insert(tableName, new Object[] { 0, 1 }, new String[] { "c3" }, new Object[] {
-                    1});
+            client.insert(tableName, new Object[] { 0 }, new String[] { "c2", "c3" },
+                    new Object[] {0, 2});
+            client.insert(tableName, new Object[] { 0 }, new String[] { "c2", "c3" },
+                    new Object[] {0, 1});
 
             Object[] start = {0, ObObj.getMin()};
             Object[] end = {0, ObObj.getMax()};
             QueryResultSet resultSet = client.query(tableName).indexName("idx")
-                    .setScanRangeColumns("c1", "c3")
+                    .setScanRangeColumns("c2", "c3")
                     .addScanRange(start, end)
                     .scanOrder(true)
                     .select("c1", "c2", "c3")
@@ -2555,6 +2555,5 @@ public class ObTableClientTest extends ObTableClientTestBase {
         } finally {
             client.delete(tableName);
         }
-
     }
 }
