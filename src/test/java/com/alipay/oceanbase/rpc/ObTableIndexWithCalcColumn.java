@@ -368,12 +368,12 @@ public class ObTableIndexWithCalcColumn {
         }
 
         // query with local index
-        Timestamp start_time1 = new Timestamp(System.currentTimeMillis() - 10000);
+        Timestamp start_time1 = new Timestamp(System.currentTimeMillis() - 100000);
         start_time1.setNanos(0);
         String start_adiu1 = String.format(StringFormat, "adiu", 1);
         String start_mode1 = String.format(StringFormat, "mode", 1);
         Object[] start1 = {0L, start_adiu1, start_time1, start_mode1};
-        Timestamp end_time1 = new Timestamp(System.currentTimeMillis());
+        Timestamp end_time1 = new Timestamp(System.currentTimeMillis() + 100000);
         end_time1.setNanos(0);
         String end_adiu1 = String.format(StringFormat, "adiu", recordCount);
         String end_mode1 = String.format(StringFormat, "mode", recordCount);
@@ -388,12 +388,12 @@ public class ObTableIndexWithCalcColumn {
             Assert.assertEquals(resultSet1.cacheSize(), recordCount);
         }
         // query with global index
-        Timestamp startTime2 = new Timestamp(System.currentTimeMillis() - 10000);
+        Timestamp startTime2 = new Timestamp(System.currentTimeMillis() - 100000);
         startTime2.setNanos(0);
         String start_tag = String.format(StringFormat, "tag", 1);
         String start_mode = String.format(StringFormat, "mode", 1);
         Object[] start2 = {startTime2, start_tag, start_mode};
-        Timestamp endTime2 = new Timestamp(System.currentTimeMillis());
+        Timestamp endTime2 = new Timestamp(System.currentTimeMillis() + 100000);
         endTime2.setNanos(0);
         String end_tag = String.format(StringFormat, "tag", recordCount);
         String end_mode = String.format(StringFormat, "mode", recordCount);
