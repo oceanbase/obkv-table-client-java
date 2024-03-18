@@ -141,11 +141,50 @@ public enum ObTableObjType {
     // 15 ObTableUInt32Type
     // 16 ObTableUInt64Type
 
-    ObTableInvalidType(17) {
+    ObTableTinyTextType(17) {
+        public void decode(ByteBuf buf, ObObj obj) {
+            decodeWithUtf8(buf, obj);
+        }
+    },
+
+    ObTableTextType(18) {
+        public void decode(ByteBuf buf, ObObj obj) {
+            decodeWithUtf8(buf, obj);
+        }
+    },
+
+    ObTableMediumTextType(19) {
+        public void decode(ByteBuf buf, ObObj obj) {
+            decodeWithUtf8(buf, obj);
+        }
+    },
+
+    ObTableLongTextType(20) {
+        public void decode(ByteBuf buf, ObObj obj) {
+            decodeWithUtf8(buf, obj);
+        }
+    },
+
+    ObTableTinyBlobType(21) {
+    },
+
+    ObTableBlobType(22) {
+    },
+
+    ObTableMediumBlobType(23) {
+    },
+
+    ObTableLongBlobType(24) {
+    },
+
+    ObTableInvalidType(25) {
     };
 
     private int                                 value;
-    private static Map<Integer, ObTableObjType> map = new HashMap<Integer, ObTableObjType>();
+    // mapping from value to enum
+    private static Map<Integer, ObTableObjType> valueMap = new HashMap<Integer, ObTableObjType>();
+    // mapping from ObTableObjType to ObObjType
+    private static Map<ObTableObjType, ObObjType> tableObjTypeMap = new HashMap<>();
 
     ObTableObjType(int value) {
         this.value = value;
@@ -153,7 +192,7 @@ public enum ObTableObjType {
 
     static {
         for (ObTableObjType type : ObTableObjType.values()) {
-            map.put(type.value, type);
+            valueMap.put(type.value, type);
         }
     }
 
@@ -164,7 +203,7 @@ public enum ObTableObjType {
             // only for GET operation default value
             return ObTableNullType;
         } else if (objType == ObObjType.ObTinyIntType) {
-            return ObTableObjType.ObTableTinyIntType;
+            return ObTableTinyIntType;
         } else if (objType == ObObjType.ObSmallIntType) {
             return ObTableObjType.ObTableSmallIntType;
         } else if (objType == ObObjType.ObInt32Type) {
@@ -197,42 +236,44 @@ public enum ObTableObjType {
                                            + objType.getClass().getName());
     }
 
-    public static ObObjType getObjType(ObTableObjType tableObjType) {
-        if (tableObjType == ObTableNullType) {
-            return ObObjType.ObNullType;
-        } else if (tableObjType == ObTableTinyIntType) {
-            return ObObjType.ObTinyIntType;
-        } else if (tableObjType == ObTableSmallIntType) {
-            return ObObjType.ObSmallIntType;
-        } else if (tableObjType == ObTableInt32Type) {
-            return ObObjType.ObInt32Type;
-        } else if (tableObjType == ObTableInt64Type) {
-            return ObObjType.ObInt64Type;
-        } else if (tableObjType == ObTableVarcharType) {
-            return ObObjType.ObVarcharType;
-        } else if (tableObjType == ObTableVarbinaryType) {
-            return ObObjType.ObVarcharType;
-        } else if (tableObjType == ObTableDoubleType) {
-            return ObObjType.ObDoubleType;
-        } else if (tableObjType == ObTableFloatType) {
-            return ObObjType.ObFloatType;
-        } else if (tableObjType == ObTableTimestampType) {
-            return ObObjType.ObTimestampType;
-        } else if (tableObjType == ObTableDateTimeType) {
-            return ObObjType.ObDateTimeType;
-        } else if (tableObjType == ObTableMinType || tableObjType == ObTableMaxType) {
-            return ObObjType.ObExtendType;
-        }
+    static {
+        tableObjTypeMap.put(ObTableNullType, ObObjType.ObNullType);
+        tableObjTypeMap.put(ObTableTinyIntType, ObObjType.ObTinyIntType);
+        tableObjTypeMap.put(ObTableSmallIntType, ObObjType.ObSmallIntType);
+        tableObjTypeMap.put(ObTableInt32Type, ObObjType.ObInt32Type);
+        tableObjTypeMap.put(ObTableInt64Type, ObObjType.ObInt64Type);
+        tableObjTypeMap.put(ObTableVarcharType, ObObjType.ObVarcharType);
+        tableObjTypeMap.put(ObTableVarbinaryType, ObObjType.ObVarcharType);
+        tableObjTypeMap.put(ObTableDoubleType, ObObjType.ObDoubleType);
+        tableObjTypeMap.put(ObTableFloatType, ObObjType.ObFloatType);
+        tableObjTypeMap.put(ObTableTimestampType, ObObjType.ObTimestampType);
+        tableObjTypeMap.put(ObTableDateTimeType, ObObjType.ObDateTimeType);
+        tableObjTypeMap.put(ObTableTinyTextType, ObObjType.ObTinyTextType);
+        tableObjTypeMap.put(ObTableTextType, ObObjType.ObTextType);
+        tableObjTypeMap.put(ObTableMediumTextType, ObObjType.ObMediumTextType);
+        tableObjTypeMap.put(ObTableLongTextType, ObObjType.ObLongTextType);
+        tableObjTypeMap.put(ObTableTinyBlobType, ObObjType.ObTinyTextType);
+        tableObjTypeMap.put(ObTableBlobType, ObObjType.ObTextType);
+        tableObjTypeMap.put(ObTableMediumBlobType, ObObjType.ObMediumTextType);
+        tableObjTypeMap.put(ObTableLongBlobType, ObObjType.ObLongTextType);
+        tableObjTypeMap.put(ObTableMinType, ObObjType.ObExtendType);
+        tableObjTypeMap.put(ObTableMaxType, ObObjType.ObExtendType);
+    }
 
-        throw new IllegalArgumentException("cannot get ObTableObjType, invalid table obj type: "
-                                           + tableObjType.getClass().getName());
+    public static ObObjType getObjType(ObTableObjType tableObjType) {
+        ObObjType objType = tableObjTypeMap.get(tableObjType);
+        if (objType == null) {
+            throw new IllegalArgumentException("cannot get ObTableObjType, invalid table obj type: "
+                    + tableObjType.getClass().getName());
+        }
+        return objType;
     }
 
     /*
      * Value of.
      */
     public static ObTableObjType valueOf(int value) {
-        return map.get(value);
+        return valueMap.get(value);
     }
 
     /*
@@ -304,6 +345,14 @@ public enum ObTableObjType {
         ObObjType objType = getObjType(this);
         int len = DEFAULT_TABLE_OBJ_META_SIZE + objType.getEncodedSize(obj.getValue());
         return len;
+    }
+
+    public void decodeWithUtf8(ByteBuf buf, ObObj obj) {
+        ObObjType objType = getObjType(this);
+        ObObjMeta objMeta = objType.getDefaultObjMeta();
+        objMeta.setCsType(ObCollationType.CS_TYPE_UTF8MB4_GENERAL_CI);
+        obj.setMeta(objMeta);
+        obj.setValueFromTableObj(objType.decode(buf, objMeta.getCsType()));
     }
 
     public static int DEFAULT_TABLE_OBJ_TYPE_SIZE = 1;

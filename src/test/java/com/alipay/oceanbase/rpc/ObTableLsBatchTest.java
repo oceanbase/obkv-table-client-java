@@ -160,7 +160,15 @@ public class ObTableLsBatchTest {
             `c8` double not null,
             `c9` timestamp(6) not null,
             `c10` datetime(6) not null,
-            `c11` int default null
+            `c11` int default null,
+            `c12` tinytext DEFAULT NULL,
+            `c13` text DEFAULT NULL,
+            `c14` mediumtext DEFAULT NULL,
+            `c15` longtext DEFAULT NULL,
+            `c16` tinyblob DEFAULT NULL,
+            `c17` blob DEFAULT NULL,
+            `c18` mediumblob DEFAULT NULL,
+            `c19` longblob DEFAULT NULL
         );
      */
     @Test
@@ -176,13 +184,25 @@ public class ObTableLsBatchTest {
 
         // prepare data
         Object values[][] = {
-                {(byte)1, (short)1, (int)1, 1L, "c5_val", "c6_val".getBytes(), 100.0f, 200.0d, c9Val, c10Val, null},
-                {(byte)2, (short)2, (int)2, 2L, "c5_val", "c6_val".getBytes(), 100.0f, 200.0d, c9Val, c10Val, null},
-                {(byte)3, (short)3, (int)3, 3L, "c5_val", "c6_val".getBytes(), 100.0f, 200.0d, c9Val, c10Val, null},
-                {(byte)4, (short)4, (int)4, 4L, "c5_val", "c6_val".getBytes(), 100.0f, 200.0d, c9Val, c10Val, null},
-                {(byte)5, (short)5, (int)5, 5L, "c5_val", "c6_val".getBytes(), 100.0f, 200.0d, c9Val, c10Val, null},
-                {(byte)6, (short)6, (int)6, 6L, "c5_val", "c6_val".getBytes(), 100.0f, 200.0d, c9Val, c10Val, null}
-        };
+                {(byte)1, (short)1, (int)1, 1L, "c5_val", "c6_val".getBytes(), 100.0f, 200.0d, c9Val, c10Val, null,
+                        "c12_val", "c13_val", "c14_val", "c15_val", "c16_val".getBytes(), "c17_val".getBytes(),
+                        "c18_val".getBytes(), "c19_val".getBytes()},
+                {(byte)2, (short)2, (int)2, 2L, "c5_val", "c6_val".getBytes(), 100.0f, 200.0d, c9Val, c10Val, null,
+                        "c12_val", "c13_val", "c14_val", "c15_val", "c16_val".getBytes(), "c17_val".getBytes(),
+                        "c18_val".getBytes(), "c19_val".getBytes()},
+                {(byte)3, (short)3, (int)3, 3L, "c5_val", "c6_val".getBytes(), 100.0f, 200.0d, c9Val, c10Val, null,
+                        "c12_val", "c13_val", "c14_val", "c15_val", "c16_val".getBytes(), "c17_val".getBytes(),
+                        "c18_val".getBytes(), "c19_val".getBytes()},
+                {(byte)4, (short)4, (int)4, 4L, "c5_val", "c6_val".getBytes(), 100.0f, 200.0d, c9Val, c10Val, null,
+                        "c12_val", "c13_val", "c14_val", "c15_val", "c16_val".getBytes(), "c17_val".getBytes(),
+                        "c18_val".getBytes(), "c19_val".getBytes()},
+                {(byte)5, (short)5, (int)5, 5L, "c5_val", "c6_val".getBytes(), 100.0f, 200.0d, c9Val, c10Val, null,
+                        "c12_val", "c13_val", "c14_val", "c15_val", "c16_val".getBytes(), "c17_val".getBytes(),
+                        "c18_val".getBytes(), "c19_val".getBytes()},
+                {(byte)6, (short)6, (int)6, 6L, "c5_val", "c6_val".getBytes(), 100.0f, 200.0d, c9Val, c10Val, null,
+                        "c12_val", "c13_val", "c14_val", "c15_val", "c16_val".getBytes(), "c17_val".getBytes(),
+                        "c18_val".getBytes(), "c19_val".getBytes()}
+};
 
         int rowCnt = values.length;
 
@@ -212,7 +232,8 @@ public class ObTableLsBatchTest {
                 for (int i = 0; i < rowCnt; i++) {
                     Object[] curRow = values[i];
                     TableQuery query = query().setRowKey(row(colVal("c1", curRow[0])))
-                            .select("c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11");
+                            .select("c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10",
+                                    "c11", "c12", "c13", "c14", "c15", "c16", "c17", "c18", "c19");
                     batchOperation.addOperation(query);
                 }
                 BatchOperationResult res = batchOperation.execute();
@@ -235,6 +256,14 @@ public class ObTableLsBatchTest {
             {
                 // get columns idx, 1 means get c1
                 int columns[][] = {
+                        {3, 8, 14, 11, 18, 5, 12, 6, 19, 10, 15, 7, 1, 4, 9, 13, 2, 16, 17},
+                        {5, 15, 6, 10, 2, 12, 7, 17, 18, 11, 3, 8, 13, 1, 16, 4, 9, 14},
+                        {13, 10, 5, 15, 1, 8, 11, 9, 7, 16, 4, 17, 6, 2, 12, 3, 14},
+                        {14, 6, 9, 2, 5, 3, 15, 10, 12, 8, 11, 7, 1, 16, 4, 13},
+                        {11, 3, 7, 12, 8, 10, 4, 6, 15, 2, 5, 1, 14, 9, 13},
+                        {8, 12, 5, 14, 3, 7, 1, 11, 6, 9, 10, 2, 4, 13},
+                        {10, 4, 13, 1, 8, 7, 5, 11, 6, 3, 12, 2, 9},
+                        {9, 3, 10, 5, 7, 1, 8, 6, 11, 4, 12, 2},
                         {7, 3, 11, 5, 6, 2, 9, 1, 8, 4, 10},
                         {5, 2, 7, 9, 1, 8, 6, 3, 10, 4},
                         {5, 3, 1, 8, 6, 4, 7, 2, 9},

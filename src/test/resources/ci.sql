@@ -444,8 +444,17 @@ CREATE TABLE IF NOT EXISTS `test_table_object` (
     `c8` double not null,
     `c9` timestamp(6) not null,
     `c10` datetime(6) not null,
-    `c11` int default null
+    `c11` int default null,
+    `c12` tinytext DEFAULT NULL,
+    `c13` text DEFAULT NULL,
+    `c14` mediumtext DEFAULT NULL,
+    `c15` longtext DEFAULT NULL,
+    `c16` tinyblob DEFAULT NULL,
+    `c17` blob DEFAULT NULL,
+    `c18` mediumblob DEFAULT NULL,
+    `c19` longblob DEFAULT NULL
 );
+
 CREATE TABLE IF NOT EXISTS `test_put` (
     `id` varchar(20) NOT NULL,
     `c1` bigint DEFAULT NULL,
