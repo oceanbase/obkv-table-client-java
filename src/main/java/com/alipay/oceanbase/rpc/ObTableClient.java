@@ -156,6 +156,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private int                                               odpPort                                 = 2883;
 
     private ObTable                                           odpTable                                = null;
+    // tableGroup <-> Table
+    private ConcurrentHashMap<String, Lock>                   TableGroupCacheLocks                    = new ConcurrentHashMap<String, Lock>();
+    private ConcurrentHashMap<String, String>                 TableGroupCache                         = new ConcurrentHashMap<String, String>();  // tableGroup -> Table
+    private ConcurrentHashMap<String, String>                 TableGroupInverted                      = new ConcurrentHashMap<String, String>();  // Table -> tableGroup
 
     /*
      * Init.
@@ -572,7 +576,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             }
                         } else {
                             logger.warn("exhaust retry when replica not readable: {}",
-                                ex.getMessage());
+                                    ex.getMessage());
                             RUNTIME.error("replica not readable", ex);
                             throw ex;
                         }
@@ -1285,6 +1289,50 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /**
+     * 根据 tableGroup 获取其中一个tableName
+     * physicalTableName Complete table from table group
+     * @param physicalTableName 
+     * @param tableGroupName
+     * @return
+* @throws Exception
+     */
+    private String refreshTableNameByTableGroup(String physicalTableName, String tableGroupName) throws Exception {
+        TableEntryKey tableEntryKey = new TableEntryKey(clusterName, tenantName, database,
+        tableGroupName);
+        String oldTableName = physicalTableName;
+        try {
+            physicalTableName = loadTableNameWithGroupName(serverRoster, //
+                    tableEntryKey,//
+                    tableEntryAcquireConnectTimeout,//
+                    tableEntryAcquireSocketTimeout,//
+                    serverAddressPriorityTimeout,//
+                    serverAddressCachingTimeout, sysUA);
+        } catch (ObTableNotExistException e) {
+            RUNTIME.error("refreshTableNameByTableGroup from tableGroup meet exception", e);
+            throw e;
+        } catch (ObTableServerCacheExpiredException e) {
+            RUNTIME.error("refreshTableEntry from tableGroup meet exception", e);
+            throw e;
+        } catch (Exception e) {
+            RUNTIME.error("refreshTableEntry from tableGroup meet exception", tableEntryKey, physicalTableName, e);
+            throw new ObTableNotExistException(String.format(
+                    "failed to get table name key=%s original tableName=%s ", tableEntryKey,
+                    physicalTableName), e);
+        }
+        if (!TableGroupInverted.isEmpty() && TableGroupInverted.containsKey(oldTableName)) {
+            TableGroupInverted.remove(oldTableName, tableGroupName);
+        }
+        TableGroupCache.put(tableGroupName, physicalTableName);
+        TableGroupInverted.put(physicalTableName, tableGroupName);
+        if (logger.isInfoEnabled()) {
+            logger.info(
+                    "get table name from tableGroup, dataSource: {}, tableName: {}, refresh: {} key:{} realTableName:{} ",
+                    dataSourceName, tableGroupName, true, tableEntryKey, physicalTableName);
+        }
+        return physicalTableName;
+    }
+
+    /**
      * 根据 rowkey 获取分区 id
      * @param tableEntry
      * @param rowKey
@@ -1676,6 +1724,79 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
 
         return obTableParams;
+    }
+
+    /**
+     * get table name with table group
+     * @param tableGroupName
+     * @param refresh
+     * @return
+     * @throws Exception
+     */
+    public String tryGetTableNameFromTableGroupCache(final String tableGroupName, final boolean refresh) throws Exception {
+        String physicalTableName = TableGroupCache.get(tableGroupName);  // tableGroup -> Table
+        // get tableName from cache
+        if (physicalTableName != null && !refresh) {
+            return physicalTableName;
+        }
+
+        // not find in cache, should get tableName from observer
+        Lock tempLock = new ReentrantLock();
+        Lock lock = TableGroupCacheLocks.putIfAbsent(tableGroupName, tempLock);
+        lock = (lock == null) ? tempLock : lock; // check the first lock
+
+        // attempt lock the refreshing action, avoiding concurrent refreshing
+        // use the time-out mechanism, avoiding the rpc hanging up
+        boolean acquired = lock.tryLock(metadataRefreshLockTimeout, TimeUnit.MILLISECONDS);
+
+        if (!acquired) {
+            String errMsg = "try to lock tableGroup inflect timeout " + "dataSource:"
+                    + dataSourceName + " ,tableName:" + tableGroupName
+                    + " , timeout:" + metadataRefreshLockTimeout + ".";
+            RUNTIME.error(errMsg);
+            throw new ObTableEntryRefreshException(errMsg);
+        }
+
+        try {
+            String newPhyTableName = TableGroupCache.get(tableGroupName);
+            if (((physicalTableName == null) && (newPhyTableName == null))
+                    || (refresh && newPhyTableName.equalsIgnoreCase(physicalTableName))) {
+                if (logger.isInfoEnabled()) {
+                    if (physicalTableName != null) {
+                        logger.info(
+                                "realTableName need refresh, create new table entry, tablename: {}",
+                                tableGroupName);
+                    } else {
+                        logger.info("realTableName not exist, create new table entry, tablename: {}",
+                        tableGroupName);
+                    }
+                }
+
+                try {
+                    return refreshTableNameByTableGroup(physicalTableName, tableGroupName);
+                } catch (ObTableNotExistException e) {
+                    RUNTIME.error("getOrRefreshTableName from TableGroup meet exception", e);
+                    throw e;
+                } catch (ObTableServerCacheExpiredException e) {
+                    RUNTIME.error("getOrRefreshTableName from TableGroup meet exception", e);
+
+                    if (logger.isInfoEnabled()) {
+                        logger.info("server addr is expired and it will refresh metadata.");
+                    }
+                    syncRefreshMetadata();
+                } catch (Throwable t) {
+                    RUNTIME.error("getOrRefreshTableName from TableGroup meet exception", t);
+                    throw t;
+                }
+                // failure reach the try times may all the server change
+                if (logger.isInfoEnabled()) {
+                    logger.info("refresh table Name from TableGroup failure");
+                }
+            }
+            return newPhyTableName;
+        } finally {
+            lock.unlock();
+        }
     }
 
     /**
@@ -2569,13 +2690,25 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 .executeInternal();
             return batchOpsResult.getResults().get(0);
         } else if (request instanceof ObTableQueryRequest) {
-            ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(request.getTableName(),
+            // TableGroup -> TableName
+            String tableName = request.getTableName();
+            if (((ObTableQueryRequest) request).getTableQuery().isHbaseQuery() 
+                    && isTableGroupName(tableName)) {
+                tableName = tryGetTableNameFromTableGroupCache(tableName, false);
+            }
+            ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(tableName,
                 ((ObTableQueryRequest) request).getTableQuery(), this);
             tableQuery.setEntityType(request.getEntityType());
             return new ObClusterTableQuery(tableQuery).executeInternal();
         } else if (request instanceof ObTableQueryAsyncRequest) {
+            // TableGroup -> TableName
+            String tableName = request.getTableName();
+            if (((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery().isHbaseQuery() 
+                    && isTableGroupName(tableName)) {
+                tableName = tryGetTableNameFromTableGroupCache(tableName, false);
+            }
             ObTableClientQueryAsyncImpl tableClientQueryAsync = new ObTableClientQueryAsyncImpl(
-                request.getTableName(), ((ObTableQueryAsyncRequest) request)
+                tableName, ((ObTableQueryAsyncRequest) request)
                     .getObTableQueryRequest().getTableQuery(), this);
             tableClientQueryAsync.setEntityType(request.getEntityType());
             return new ObClusterTableAsyncQuery(tableClientQueryAsync)
@@ -3083,6 +3216,32 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                + ", \n serverIdc = " + serverRoster.getServerLdcLocation()
                + ", \n tableLocations = " + tableLocations + ", \n tableRoster = " + tableRoster
                + ", \n ocpModel = " + ocpModel + "\n}\n";
+    }
+
+    public ConcurrentHashMap<String, String> getTableGroupInverted() {
+        return TableGroupInverted;
+    }
+
+    public ConcurrentHashMap<String, String> getTableGroupCache() {
+        return TableGroupCache;
+    }
+
+    /**
+     * get table route fail than clear table group message
+     * @param tableGroupName
+     */
+    public void eraseTableGroupFromCache(String tableGroupName) {
+        // clear table group cache
+        TableGroupInverted.remove(TableGroupCache.get(tableGroupName));
+        TableGroupCache.remove(tableGroupName);
+        TableGroupCacheLocks.remove(tableGroupName);
+    }
+
+    /*
+    * check table name whether group name
+    */
+    public boolean isTableGroupName(String tabName) {
+        return !tabName.contains("$");
     }
 
 }

@@ -37,7 +37,7 @@ import java.util.Map;
 
 public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
-    private final String        tableName;
+    private String        tableName;
     private final ObTableClient obTableClient;
 
     private Row                 rowKey;       // only used by BatchOperation
@@ -194,6 +194,11 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             }
         }
 
+        if (tableQuery.isHbaseQuery() && obTableClient.getTableGroupInverted().containsKey(tableName)
+            && tableName.equalsIgnoreCase(obTableClient.getTableGroupCache().get(obTableClient.getTableGroupInverted().get(tableName)))) {
+            tableName = obTableClient.getTableGroupInverted().get(tableName);
+        }
+
         ObTableClientQueryStreamResult obTableClientQueryStreamResult = new ObTableClientQueryStreamResult();
         obTableClientQueryStreamResult.setTableQuery(tableQuery);
         obTableClientQueryStreamResult.setEntityType(entityType);
@@ -234,6 +239,10 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
      */
     public String getTableName() {
         return tableName;
+    }
+
+    public void setTableName(String tabName) {
+        this.tableName = tabName;
     }
 
     /*

@@ -162,4 +162,67 @@ public class ObHTableOperationRequest {
 
     }
 
+    public ObTableAbstractOperationRequest obTableGroupOperationRequest() {
+        ObTableAbstractOperationRequest request = null;
+        if (timestamp == -1) {
+            timestamp = System.currentTimeMillis();
+        }
+        ObTableQuery obTableQuery = null;
+        ObHTableFilter filter = null;
+        ObNewRange obNewRange = null;
+        switch (operationType) {
+            case GET:
+                request = new ObTableQueryRequest();
+                obTableQuery = new ObTableQuery();
+                obTableQuery.setIndexName("PRIMARY");
+                filter = new ObHTableFilter();
+                obTableQuery.sethTableFilter(filter);
+
+                obNewRange = new ObNewRange();
+                obNewRange
+                        .setStartKey(ObRowKey.getInstance(rowKey, ObObj.getMin(), ObObj.getMin()));
+                obNewRange.setEndKey(ObRowKey.getInstance(rowKey, ObObj.getMax(), ObObj.getMax()));
+                obTableQuery.addKeyRange(obNewRange);
+                obTableQuery.addSelectColumn("K");
+                obTableQuery.addSelectColumn("Q");
+                obTableQuery.addSelectColumn("T");
+                obTableQuery.addSelectColumn("V");
+
+                request.setTableName(getTableName());
+                ((ObTableQueryRequest) request).setTableQuery(obTableQuery);
+                ((ObTableQueryRequest) request).setPartitionId(Constants.INVALID_TABLET_ID);
+
+                break;
+            case SCAN:
+                request = new ObTableQueryRequest();
+                obTableQuery = new ObTableQuery();
+                obTableQuery.setIndexName("PRIMARY");
+                filter = new ObHTableFilter();
+                obTableQuery.sethTableFilter(filter);
+
+                obNewRange = new ObNewRange();
+                obNewRange
+                        .setStartKey(ObRowKey.getInstance(rowKey, ObObj.getMin(), ObObj.getMin()));
+                obNewRange.setEndKey(ObRowKey.getInstance(rowKey, ObObj.getMax(), ObObj.getMax()));
+                obTableQuery.addKeyRange(obNewRange);
+                obTableQuery.addSelectColumn("K");
+                obTableQuery.addSelectColumn("Q");
+                obTableQuery.addSelectColumn("T");
+                obTableQuery.addSelectColumn("V");
+
+                request.setTableName(getTableName());
+                ((ObTableQueryRequest) request).setTableQuery(obTableQuery);
+                ((ObTableQueryRequest) request).setPartitionId(Constants.INVALID_TABLET_ID);
+
+                break;
+            default:
+                throw new RuntimeException("operationType invalid: " + operationType);
+        }
+
+        request.setEntityType(ObTableEntityType.HKV);
+
+        return request;
+
+    }
+
 }
