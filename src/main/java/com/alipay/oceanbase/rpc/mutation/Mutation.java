@@ -479,10 +479,7 @@ public class Mutation<T> {
         if (rowKeys != null) {
             for (int i = 0; i < rowKeys.length; i++) {
                 Object rowkey = rowKeys[i];
-                ObObjMeta rowkeyMeta = ObObjType.defaultObjMeta(rowkey);
-                ObObj obj = new ObObj();
-                obj.setMeta(rowkeyMeta);
-                obj.setValue(rowkey);
+                ObObj obj = ObObj.getInstance(rowkey);
                 rowKeyRow.add(rowKeyNames[i], obj);
             }
         }
@@ -495,11 +492,7 @@ public class Mutation<T> {
                 if (properties != null) {
                     value = properties[i];
                 }
-                ObObjMeta meta = ObObjType.defaultObjMeta(value);
-
-                ObObj c = new ObObj();
-                c.setMeta(meta);
-                c.setValue(value);
+                ObObj c = ObObj.getInstance(value);
                 mutation.addColVal(name, c);
             }
         }
