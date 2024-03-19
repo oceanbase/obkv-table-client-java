@@ -173,6 +173,10 @@ public class LocationUtil {
     private static final String home                             = System.getProperty("user.home",
                                                                      "/home/admin");
 
+    private static final String TABLE_GROUP_GET_TABLE_NAME_V4    = "SELECT /*+READ_CONSISTENCY(WEAK)*/ table_name " +
+                                                                    "FROM oceanbase.CDB_OB_TABLEGROUP_TABLES " +
+                                                                    "WHERE tablegroup_name = ? and tenant_id = ? limit 1;";
+
     private static final int    TEMPLATE_PART_ID                 = -1;
 
     private abstract static class TableEntryRefreshWithPriorityCallback<T> {
@@ -438,6 +442,102 @@ public class LocationUtil {
     }
 
     /*
+     * load Table Name With table Group
+     */
+    public static String loadTableNameWithGroupName(final ServerRoster serverRoster,
+                                                   final TableEntryKey key,
+                                                   final long connectTimeout,
+                                                   final long socketTimeout,
+                                                   final long priorityTimeout,
+                                                   final long cachingTimeout,
+                                                   final ObUserAuth sysUA)
+            throws ObTableNotExistException {
+        Connection connection = null;
+        String realTableName = "";
+        String url = "";
+        ObServerAddr addr = serverRoster.getServer(priorityTimeout, cachingTimeout);
+        try {
+            url = formatObServerUrl(addr, connectTimeout, socketTimeout);
+            connection = getMetaRefreshConnection(url, sysUA);
+            realTableName = getTableNameByGroupNameFromRemote(connection, key);
+            serverRoster.resetPriority(addr);
+        } catch (ObTableNotExistException e) {
+            RUNTIME.error("callTableEntryNameWithPriority meet exception", e);
+            serverRoster.downgradePriority(addr);
+            throw e;
+        } catch (Exception e) {
+            throw new ObTableNotExistException(format(
+                    "fail to get table name from remote url=%s, key=%s", url, key), e);
+        } catch (Throwable t) {
+            RUNTIME.error("callTableEntryNameWithPriority meet exception", t);
+            throw t;
+        } finally {
+            try {
+                if (null != connection) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                // ignore
+            }
+        }
+        if (realTableName != null && !realTableName.isEmpty()) {
+            return realTableName;
+        } else {
+            throw new ObTableNotExistException("table name is invalid, addr = " + addr + " key =" + key + " tableName =" + realTableName);
+        }
+        
+    }
+
+    /*
+     * get TableName From Remote with Group
+     */
+    private static String getTableNameByGroupNameFromRemote(Connection connection, TableEntryKey key)
+            throws ObTableNotExistException {
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        String realTableName = "";
+        int tenantId = -1;
+        try {
+            if (ObGlobal.obVsnMajor() == 0) {
+                getObVersionFromRemote(connection);
+            }
+            tenantId = checkTenantExistFromRemote(connection, key);
+            if (ObGlobal.obVsnMajor() >= 4) {
+                ps = connection.prepareStatement(TABLE_GROUP_GET_TABLE_NAME_V4);
+                ps.setString(1, key.getTableName());
+                ps.setString(2, String.valueOf(tenantId));
+            } else {
+                throw new ObTableNotExistException(format(
+                        "fail to get table name from remote in low version than 4, key=%s", key));
+            }
+            rs = ps.executeQuery();
+            while (rs.next()) {
+                realTableName = rs.getString("table_name");
+            }
+        } catch (ObTableNotExistException e) {
+            // avoid to refresh meta for ObTableNotExistException
+            RUNTIME.error("getTableNameByGroupNameFromRemote meet exception", e);
+            throw e;
+        } catch (Exception e) {
+            RUNTIME.error("getTableNameByGroupNameFromRemote meet exception", e);
+            throw new ObTableNotExistException(format(
+                    "fail to get table name from remote, key=%s", key), e);
+        } finally {
+            try {
+                if (null != rs) {
+                    rs.close();
+                }
+                if (null != ps) {
+                    ps.close();
+                }
+            } catch (SQLException e) {
+                // ignore
+            }
+        }
+        return realTableName;
+    }
+
+    /*
      * Load table entry randomly.
      */
     public static TableEntry loadTableEntryRandomly(final List<ObServerAddr> rsList,//
@@ -486,13 +586,15 @@ public class LocationUtil {
     }
 
     // check tenant exist or not
-    private static void checkTenantExistFromRemote(Connection connection, TableEntryKey key)
+    private static int checkTenantExistFromRemote(Connection connection, TableEntryKey key)
                                                                      throws ObTableEntryRefreshException {
         try (PreparedStatement ps = connection.prepareStatement(OB_TENANT_EXIST_SQL)) {
             ps.setString(1, key.getTenantName());
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) {
                     throw new ObTableEntryRefreshException("fail to get tenant id from remote");
+                } else {
+                    return rs.getInt("tenant_id");
                 }
             } catch (Exception e) {
                 throw new ObTableEntryRefreshException("fail to get tenant id from remote", e);
@@ -508,11 +610,12 @@ public class LocationUtil {
         PreparedStatement ps = null;
         ResultSet rs = null;
         TableEntry tableEntry;
+        int tenantId = -1;
         try {
             if (ObGlobal.obVsnMajor() == 0) {
                 getObVersionFromRemote(connection);
             }
-            checkTenantExistFromRemote(connection, key);
+            tenantId = checkTenantExistFromRemote(connection, key);
             if (ObGlobal.obVsnMajor() >= 4) {
                 if (key.getTableName().equals(Constants.ALL_DUMMY_TABLE)) {
                     ps = connection.prepareStatement(PROXY_DUMMY_LOCATION_SQL_V4);
