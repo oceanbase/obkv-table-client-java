@@ -33,6 +33,10 @@ public class BatchOperationResult {
         this.results = results;
     }
 
+    public List<Object> getResults() {
+        return results;
+    }
+
     /*
      * get result
      */
