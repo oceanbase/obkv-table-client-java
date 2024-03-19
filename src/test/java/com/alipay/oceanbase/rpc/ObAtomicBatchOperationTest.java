@@ -325,4 +325,59 @@ public class ObAtomicBatchOperationTest {
             }
         }
     }
+
+    @Test
+    public void testBatchGet() throws Exception {
+        try {
+            {
+                // insert
+                TableBatchOps batchOps = obTableClient.batch("test_varchar_table");
+                batchOps.clear();
+                batchOps.insert("batch_get-1", new String[] { "c2" }, new String[] { "bar-1" });
+                batchOps.insert("batch_get-2", new String[] { "c2" }, new String[] { "bar-2" });
+                batchOps.insert("batch_get-3", new String[] { "c2" }, new String[] { "bar-3" });
+                batchOps.insert("batch_get-4", new String[] { "c2" }, new String[] { "bar-4" });
+                batchOps.setReturnOneResult(true);
+                List<Object> results = batchOps.execute();
+                Assert.assertEquals(results.get(0), 4L);
+            }
+            {
+                // get
+                TableBatchOps batchOps = obTableClient.batch("test_varchar_table");
+                batchOps.clear();
+                batchOps.get("batch_get-1", new String[] { "c2" });
+                batchOps.get("batch_get-2", new String[] { "c2" });
+                batchOps.get("batch_get-3", new String[] { "c2" });
+                batchOps.get("batch_get-4", new String[] { "c2" });
+                List<Object> results = batchOps.execute();
+                Assert.assertEquals(results.size(), 4L);
+                Assert.assertEquals(((Map) results.get(0)).get("c2"), "bar-1");
+                Assert.assertEquals(((Map) results.get(1)).get("c2"), "bar-2");
+                Assert.assertEquals(((Map) results.get(2)).get("c2"), "bar-3");
+                Assert.assertEquals(((Map) results.get(3)).get("c2"), "bar-4");
+            }
+            {
+                // get
+                TableBatchOps batchOps = obTableClient.batch("test_varchar_table");
+                batchOps.clear();
+                batchOps.get("batch_get-1", new String[] { "c2" });
+                batchOps.get("batch_get-2", new String[] { "c2" });
+                batchOps.get("batch_get-1", new String[] { "c2" });
+                batchOps.get("batch_get-2", new String[] { "c2" });
+                List<Object> results = batchOps.execute();
+                Assert.assertEquals(results.size(), 4L);
+                Assert.assertEquals(((Map) results.get(0)).get("c2"), "bar-1");
+                Assert.assertEquals(((Map) results.get(1)).get("c2"), "bar-2");
+                Assert.assertEquals(((Map) results.get(2)).get("c2"), "bar-1");
+                Assert.assertEquals(((Map) results.get(3)).get("c2"), "bar-2");
+            }
+        } catch (Exception ex) {
+            Assert.fail("hit exception:" + ex);
+        } finally {
+            for (int i = 1; i <= 4; i++) {
+                String key = "batch_get-" + i;
+                obTableClient.delete("test_varchar_table", key);
+            }
+        }
+    }
 }
