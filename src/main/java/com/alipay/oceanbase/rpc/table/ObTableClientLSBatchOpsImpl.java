@@ -22,8 +22,7 @@ import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
-import com.alipay.oceanbase.rpc.mutation.InsertOrUpdate;
-import com.alipay.oceanbase.rpc.mutation.Mutation;
+import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
@@ -31,6 +30,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutate;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
+import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.MonitorUtil;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
@@ -166,6 +166,100 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         singleOp.setQuery(query);
         singleOp.addEntity(entity);
 
+        addOperation(singleOp);
+    }
+
+    public void addOperation(TableQuery query) throws Exception {
+        // entity
+        String[] rowKeyNames = query.getRowKey().getColumns();
+        if (rowKeyNames == null || rowKeyNames.length == 0) {
+            throw new IllegalArgumentException("rowKey is empty in get op");
+        }
+        Object[] rowKey = query.getRowKey().getValues();
+        String[] propertiesNames = query.getSelectColumns().toArray(new String[0]);
+        ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKey,
+                propertiesNames, null);
+
+        ObTableSingleOp singleOp = new ObTableSingleOp();
+        singleOp.setSingleOpType(ObTableOperationType.GET);
+        singleOp.addEntity(entity);
+        addOperation(singleOp);
+    }
+
+    public void addOperation(Mutation mutation) throws Exception {
+        // entity
+        String[] rowKeyNames = null;
+        Object[] rowKey = null;
+        String[] propertiesNames = null;
+        Object[] propertiesValues = null;
+
+        ObTableOperationType type = mutation.getOperationType();
+        switch (type) {
+            case GET:
+                throw new IllegalArgumentException("Invalid type in batch operation, "
+                        + type);
+            case INSERT:
+                ((Insert) mutation).removeRowkeyFromMutateColval();
+                rowKeyNames = ((Insert) mutation).getRowKeyNames().toArray(new String[0]);
+                rowKey = mutation.getRowKey();
+                propertiesNames = ((Insert) mutation).getColumns();
+                propertiesValues = ((Insert) mutation).getValues();
+                break;
+            case DEL:
+                rowKeyNames = ((Delete) mutation).getRowKeyNames().toArray(new String[0]);
+                rowKey = mutation.getRowKey();
+                break;
+            case UPDATE:
+                ((Update) mutation).removeRowkeyFromMutateColval();
+                rowKeyNames = ((Update) mutation).getRowKeyNames().toArray(new String[0]);
+                rowKey = mutation.getRowKey();
+                propertiesNames = ((Update) mutation).getColumns();
+                propertiesValues = ((Update) mutation).getValues();
+                break;
+            case INSERT_OR_UPDATE:
+                ((InsertOrUpdate) mutation).removeRowkeyFromMutateColval();
+                rowKeyNames = ((InsertOrUpdate) mutation).getRowKeyNames().toArray(new String[0]);
+                rowKey = mutation.getRowKey();
+                propertiesNames = ((InsertOrUpdate) mutation).getColumns();
+                propertiesValues = ((InsertOrUpdate) mutation).getValues();
+                break;
+            case REPLACE:
+                ((Replace) mutation).removeRowkeyFromMutateColval();
+                rowKeyNames = ((Replace) mutation).getRowKeyNames().toArray(new String[0]);
+                rowKey = mutation.getRowKey();
+                propertiesNames = ((Replace) mutation).getColumns();
+                propertiesValues = ((Replace) mutation).getValues();
+                break;
+            case INCREMENT:
+                ((Increment) mutation).removeRowkeyFromMutateColval();
+                rowKeyNames = ((Increment) mutation).getRowKeyNames().toArray(new String[0]);
+                rowKey = mutation.getRowKey();
+                propertiesNames = ((Increment) mutation).getColumns();
+                propertiesValues = ((Increment) mutation).getValues();
+                break;
+            case APPEND:
+                ((Append) mutation).removeRowkeyFromMutateColval();
+                rowKeyNames = ((Append) mutation).getRowKeyNames().toArray(new String[0]);
+                rowKey = mutation.getRowKey();
+                propertiesNames = ((Append) mutation).getColumns();
+                propertiesValues = ((Append) mutation).getValues();
+                break;
+            case PUT:
+                ((Put) mutation).removeRowkeyFromMutateColval();
+                rowKeyNames = ((Put) mutation).getRowKeyNames().toArray(new String[0]);
+                rowKey = mutation.getRowKey();
+                propertiesNames = ((Put) mutation).getColumns();
+                propertiesValues = ((Put) mutation).getValues();
+                break;
+            default:
+                throw new ObTableException("unknown operation type " + type);
+        }
+
+        ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKey,
+                propertiesNames, propertiesValues);
+        ObTableSingleOp singleOp = new ObTableSingleOp();
+        singleOp.setSingleOpType(type);
+        singleOp.addEntity(entity);
         addOperation(singleOp);
     }
 
