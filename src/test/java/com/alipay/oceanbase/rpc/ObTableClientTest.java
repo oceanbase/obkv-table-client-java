@@ -1652,6 +1652,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
     @Test
     public void testMutation() throws Exception {
         System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
+        ((ObTableClient) client).addRowKeyElement("test_mutation", new String[] {"c1"});
 
         TableQuery tableQuery = client.query("test_mutation");
         tableQuery.addScanRange(new Object[] { 0L, "\0" }, new Object[] { 200L, "\254" });
@@ -1908,6 +1909,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
     @Test
     public void testPut() throws Exception {
         System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
+        ((ObTableClient) client).addRowKeyElement("test_mutation", new String[] {"c1"});
         try {
             // put
             MutationResult insertOrUpdateResult = client.put("test_mutation")
@@ -1941,7 +1943,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
     @Test
     public void testBatchMutation() throws Exception {
         System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
-
+        ((ObTableClient) client).addRowKeyElement("test_mutation", new String[] {"c1"});
         TableQuery tableQuery = client.query("test_mutation");
         tableQuery.addScanRange(new Object[] { 0L, "\0" }, new Object[] { 200L, "\254" });
         tableQuery.select("c1", "c2", "c3", "c4");
@@ -2221,6 +2223,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
     public void testAtomicBatchMutation() throws Exception {
         try {
             // atomic batch operation can not span partitions
+            ((ObTableClient) client).addRowKeyElement("test_mutation", new String[] {"c1"});
             BatchOperation batchOperation = client.batchOperation("test_mutation");
             Insert insert_0 = insert().setRowKey(row(colVal("c1", 100L), colVal("c2", "row_0")))
                 .addMutateColVal(colVal("c3", new byte[] { 1 }))
@@ -2333,6 +2336,8 @@ public class ObTableClientTest extends ObTableClientTestBase {
 
         try {
             cleanTable("cse_index_1");
+            ((ObTableClient) client).addRowKeyElement("cse_index_1", new String[] {"measurement"});
+
             // prepare data with insert
             Insert insert_0 = insert().setRowKey(
                 row(colVal("measurement", "measurement1"), colVal("tag_key", "tag_key1"),

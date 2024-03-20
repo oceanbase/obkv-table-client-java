@@ -216,7 +216,7 @@ public class ObRangePartDesc extends ObPartDesc {
     }
 
     public int getBoundsIdx(Object... rowKey) {
-        if (rowKey.length != rowKeyElement.size()) {
+        if (rowKey.length < rowKeyElement.size()) {
             throw new IllegalArgumentException("row key is consist of " + rowKeyElement
                                                + "but found" + Arrays.toString(rowKey));
         }
