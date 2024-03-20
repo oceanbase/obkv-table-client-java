@@ -451,7 +451,7 @@ CREATE TABLE `test_query_scan_order` (
   `c1` int(12) NOT NULL,
   `c2` int(11) NOT NULL,
   `c3` int(11) NOT NULL,
-  PRIMARY KEY (`c1`),
+  PRIMARY KEY (`c1`, `c2`),
   KEY `idx` (`c1`, `c3`) BLOCK_SIZE 16384 LOCAL
 ) partition by hash(c1)
 (partition `p0`,

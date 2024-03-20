@@ -2530,15 +2530,15 @@ public class ObTableClientTest extends ObTableClientTestBase {
         String tableName = "test_query_scan_order";
         ((ObTableClient) client).addRowKeyElement(tableName, new String[]{"c1"});
         try {
-            client.insert(tableName, new Object[] { 0 }, new String[] { "c2", "c3" },
-                    new Object[] {0, 2});
-            client.insert(tableName, new Object[] { 0 }, new String[] { "c2", "c3" },
-                    new Object[] {0, 1});
-
+            client.insert(tableName, new Object[] { 0, 1 }, new String[] { "c3" },
+                    new Object[] { 2 });
+            client.insert(tableName, new Object[] { 0, 2 }, new String[] { "c3" },
+                    new Object[] { 1 });
+            // Forward
             Object[] start = {0, ObObj.getMin()};
-            Object[] end = {0, ObObj.getMax()};
+            Object[] end = {1, ObObj.getMax()};
             QueryResultSet resultSet = client.query(tableName).indexName("idx")
-                    .setScanRangeColumns("c2", "c3")
+                    .setScanRangeColumns("c1", "c3")
                     .addScanRange(start, end)
                     .scanOrder(true)
                     .select("c1", "c2", "c3")
@@ -2550,10 +2550,25 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 Assert.assertTrue(pre_value < (int)valueMap.get("c3") );
                 pre_value = (int)valueMap.get("c3");
             }
+            // Reverse
+            QueryResultSet resultSet2 = client.query(tableName).indexName("idx")
+                    .setScanRangeColumns("c1", "c3")
+                    .addScanRange(start, end)
+                    .scanOrder(false)
+                    .select("c1", "c2", "c3")
+                    .execute();
+            Assert.assertEquals(2, resultSet2.cacheSize());
+            pre_value = 3;
+            while(resultSet2.next()) {
+                Map<String, Object> valueMap = resultSet2.getRow();
+                Assert.assertTrue(pre_value > (int)valueMap.get("c3") );
+                pre_value = (int)valueMap.get("c3");
+            }
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            client.delete(tableName);
+            client.delete(tableName, new Object[] { 0, 1 });
+            client.delete(tableName, new Object[] { 0, 2 });
         }
     }
 }
