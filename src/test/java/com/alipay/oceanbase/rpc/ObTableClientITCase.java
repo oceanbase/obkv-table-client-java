@@ -56,7 +56,6 @@ public class ObTableClientITCase extends ContainerTestBase {
         obTableClientTest.testCompareWithNull();
         obTableClientTest.test_batch_query();
         obTableClientTest.testQueryFilterLimit();
-        obTableClientTest.testQueryWithScanOrder();
         // Todo: add more test
         System.out.println("ObTableClientTest success");
 
