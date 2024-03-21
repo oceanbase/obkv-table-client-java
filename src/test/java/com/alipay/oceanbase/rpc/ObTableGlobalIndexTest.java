@@ -462,10 +462,10 @@ public class ObTableGlobalIndexTest {
     @Test
     public void test_query_sync() throws Exception {
         String tableName = "test_global_hash_range";
-        test_query_sync(tableName);
+        test_query_async(tableName);
     }
 
-    public void test_query_sync(String tableName) throws Exception {
+    public void test_query_async(String tableName) throws Exception {
         try {
             client.addRowKeyElement(tableName, new String[] { "C1" });
             // prepare data
@@ -486,7 +486,7 @@ public class ObTableGlobalIndexTest {
             }
 
             // query sync by global index
-            TableQuery query = client.queryByBatchV2(tableName).indexName("idx");
+            TableQuery query = client.query(tableName).indexName("idx");
             query.setScanRangeColumns("C2");
             query.addScanRange(new Object[] { 0 }, new Object[] { recordCount + 200 + 1 });
             query.select("C1", "C2", "C3");

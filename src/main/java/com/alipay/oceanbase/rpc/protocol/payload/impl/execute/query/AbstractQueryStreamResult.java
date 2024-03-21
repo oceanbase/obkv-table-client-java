@@ -17,34 +17,33 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
-import com.alipay.oceanbase.rpc.exception.FeatureNotSupportedException;
-import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.ObTableClient;
+import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.model.ObReadConsistency;
+import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
+import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableStreamRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.QueryStreamResult;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObQueryOperationType;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
+import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.table.ObTableParam;
 import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class AbstractQueryStreamResult extends AbstractPayload implements
                                                                        QueryStreamResult {
 
-    private ReentrantLock                                                      lock                = new ReentrantLock();
-    private volatile boolean                                                   initialized         = false;
+    protected ReentrantLock                                                    lock                = new ReentrantLock();
+    protected volatile boolean                                                 initialized         = false;
     private volatile boolean                                                   closed              = false;
     protected volatile List<ObObj>                                             row                 = null;
     protected volatile int                                                     rowIndex            = -1;
@@ -56,9 +55,9 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     // global index: key is index table name (be like: __idx_<data_table_id>_<index_name>)
     protected String                                                           indexTableName;
     protected ObTableEntityType                                                entityType;
-    private Map<Long, ObPair<Long, ObTableParam>>                              expectant;                                                                                     // Map<logicId, ObPair<logicId, param>>
-    private List<String>                                                       cacheProperties     = new LinkedList<String>();
-    private LinkedList<List<ObObj>>                                            cacheRows           = new LinkedList<List<ObObj>>();
+    protected Map<Long, ObPair<Long, ObTableParam>>                            expectant;                                                                                     // Map<logicId, ObPair<logicId, param>>
+    protected List<String>                                                     cacheProperties     = new LinkedList<String>();
+    protected LinkedList<List<ObObj>>                                          cacheRows           = new LinkedList<List<ObObj>>();
     private LinkedList<ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>> partitionLastResult = new LinkedList<ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>>();
     private ObReadConsistency                                                  readConsistency     = ObReadConsistency.STRONG;
 
@@ -95,6 +94,153 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     }
 
     /*
+     * Common logic for execute, send the request to server
+     */
+    protected ObPayload commonExecute(ObTableClient client,
+                                               Logger logger,
+                                               ObPair<Long, ObTableParam> partIdWithIndex,
+                                               ObPayload request) throws Exception {
+        Object result;
+        ObTable subObTable = partIdWithIndex.getRight().getObTable();
+        boolean needRefreshTableEntry = false;
+        int tryTimes = 0;
+        long startExecute = System.currentTimeMillis();
+        Set<String> failedServerList = null;
+        ObServerRoute route = null;
+        while (true) {
+            client.checkStatus();
+            long currentExecute = System.currentTimeMillis();
+            long costMillis = currentExecute - startExecute;
+            if (costMillis > client.getRuntimeMaxWait()) {
+                long uniqueId = request.getUniqueId();
+                long sequence = request.getSequence();
+                String trace = String.format("Y%X-%016X", uniqueId, sequence);
+                throw new ObTableTimeoutExcetion("[" + trace + "]" + " has tried " + tryTimes
+                        + " times and it has waited " + costMillis
+                        + "/ms which exceeds response timeout "
+                        + client.getRuntimeMaxWait() + "/ms");
+            }
+            tryTimes++;
+            try {
+                // 重试时重新 getTable
+                if (tryTimes > 1) {
+                    if (client.isOdpMode()) {
+                        subObTable = client.getOdpTable();
+                    } else {
+                        if (route == null) {
+                            route = client.getReadRoute();
+                        }
+                        if (failedServerList != null) {
+                            route.setBlackList(failedServerList);
+                        }
+                        subObTable = client
+                                .getTable(indexTableName, partIdWithIndex.getLeft(),
+                                        needRefreshTableEntry, client.isTableEntryRefreshIntervalWait(),
+                                        route).getRight().getObTable();
+                    }
+                }
+                result = subObTable.execute(request);
+                client.resetExecuteContinuousFailureCount(indexTableName);
+                break;
+            } catch (Exception e) {
+                if (client.isOdpMode()) {
+                    if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
+                        if (e instanceof ObTableException) {
+                            logger
+                                    .warn(
+                                            "tablename:{} stream query execute while meet Exception needing retry, errorCode: {}, errorMsg: {}, try times {}",
+                                            indexTableName, ((ObTableException) e).getErrorCode(),
+                                            e.getMessage(), tryTimes);
+                        } else if (e instanceof IllegalArgumentException) {
+                            logger
+                                    .warn(
+                                            "tablename:{} stream query execute while meet Exception needing retry, try times {}, errorMsg: {}",
+                                            indexTableName, tryTimes, e.getMessage());
+                        } else {
+                            logger
+                                    .warn(
+                                            "tablename:{} stream query execute while meet Exception needing retry, try times {}",
+                                            indexTableName, tryTimes, e);
+                        }
+                    } else {
+                        throw e;
+                    }
+                } else {
+                    if (e instanceof ObTableReplicaNotReadableException) {
+                        if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
+                            logger.warn(
+                                    "tablename:{} partition id:{} retry when replica not readable: {}",
+                                    indexTableName, partIdWithIndex.getLeft(), e.getMessage(), e);
+                            if (failedServerList == null) {
+                                failedServerList = new HashSet<String>();
+                            }
+                            failedServerList.add(subObTable.getIp());
+                        } else {
+                            logger
+                                    .warn(
+                                            "tablename:{} partition id:{} exhaust retry when replica not readable: {}",
+                                            indexTableName, partIdWithIndex.getLeft(), e.getMessage(), e);
+                            throw e;
+                        }
+                    } else if (e instanceof ObTableException) {
+                        if ((((ObTableException) e).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode
+                                || ((ObTableException) e).getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode)
+                                && ((ObTableQueryRequest) request).getTableQuery().isHbaseQuery()
+                                && client.getTableGroupInverted().get(indexTableName) != null) {
+                            // table not exists && hbase mode && table group exists , three condition both
+                            client.eraseTableGroupFromCache(tableName);
+                        }
+                        if (((ObTableException) e).isNeedRefreshTableEntry()) {
+                            needRefreshTableEntry = true;
+                            logger
+                                    .warn(
+                                            "tablename:{} partition id:{} stream query refresh table while meet Exception needing refresh, errorCode: {}",
+                                            indexTableName, partIdWithIndex.getLeft(),
+                                            ((ObTableException) e).getErrorCode(), e);
+                            if (client.isRetryOnChangeMasterTimes()
+                                    && (tryTimes - 1) < client.getRuntimeRetryTimes()) {
+                                logger
+                                        .warn(
+                                                "tablename:{} partition id:{} stream query retry while meet Exception needing refresh, errorCode: {} , retry times {}",
+                                                indexTableName, partIdWithIndex.getLeft(),
+                                                ((ObTableException) e).getErrorCode(), tryTimes, e);
+                            } else {
+                                client.calculateContinuousFailure(indexTableName, e.getMessage());
+                                throw e;
+                            }
+                        } else {
+                            client.calculateContinuousFailure(indexTableName, e.getMessage());
+                            throw e;
+                        }
+                    } else if (e instanceof ObTableGlobalIndexRouteException) {
+                        if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
+                            logger
+                                    .warn(
+                                            "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, retry times {}",
+                                            indexTableName, partIdWithIndex.getLeft(),
+                                            ((ObTableException) e).getErrorCode(), tryTimes, e);
+                            indexTableName = client.getIndexTableName(tableName, tableQuery.getIndexName(),
+                                    tableQuery.getScanRangeColumns(), true);
+                        } else {
+                            logger
+                                    .warn(
+                                            "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, reach max retry times {}",
+                                            indexTableName, partIdWithIndex.getLeft(),
+                                            ((ObTableException) e).getErrorCode(), tryTimes, e);
+                            throw e;
+                        }
+                    } else {
+                        client.calculateContinuousFailure(indexTableName, e.getMessage());
+                        throw e;
+                    }
+                }
+            }
+            Thread.sleep(client.getRuntimeRetryInterval());
+        }
+        return (ObPayload) result;
+    }
+
+    /*
      * Next.
      */
     public boolean next() throws Exception {
@@ -128,7 +274,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
             for (Map.Entry<Long, ObPair<Long, ObTableParam>> entry : expectant.entrySet()) {
                 // mark the refer partition
                 referPartition.add(entry);
-                ObTableQueryResult tableQueryResult = referToNewPartition(entry.getValue());
+                ObTableQueryResult tableQueryResult = (ObTableQueryResult) referToNewPartition(entry.getValue());
                 if (tableQueryResult.getRowCount() == 0) {
                     continue;
                 }
@@ -148,12 +294,12 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         }
     }
 
-    private void nextRow() {
+    protected void nextRow() {
         rowIndex = rowIndex + 1;
         row = cacheRows.poll();
     }
 
-    private void checkStatus() throws IllegalStateException {
+    protected void checkStatus() throws IllegalStateException {
         if (!initialized) {
             throw new IllegalStateException("table " + tableName
                                             + "query stream result is not initialized");
@@ -220,46 +366,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         partIdWithObTable.getRight().getObTable().execute(streamRequest);
     }
 
-    private ObTableQueryResult referToNewPartition(ObPair<Long, ObTableParam> partIdWithObTable)
-                                                                                                throws Exception {
-        ObTableQueryRequest request = new ObTableQueryRequest();
-        request.setTableName(tableName);
-        request.setTableQuery(tableQuery);
-        request.setPartitionId(partIdWithObTable.getRight().getPartitionId());
-        request.setTableId(partIdWithObTable.getRight().getTableId());
-        request.setEntityType(entityType);
-        if (operationTimeout > 0) {
-            request.setTimeout(operationTimeout);
-        } else {
-            request.setTimeout(partIdWithObTable.getRight().getObTable()
-                .getObTableOperationTimeout());
-        }
-        request.setConsistencyLevel(getReadConsistency().toObTableConsistencyLevel());
-        return execute(partIdWithObTable, request);
-    }
-
-    private ObTableQueryAsyncResult referToNewPartition(ObPair<Long, ObTableParam> partIdWithObTable,
-                                                        ObQueryOperationType type, long sessionID)
-                                                                                                  throws Exception {
-        ObTableQueryAsyncRequest asyncRequest = new ObTableQueryAsyncRequest();
-        ObTableQueryRequest request = new ObTableQueryRequest();
-
-        request.setTableName(tableName);
-        request.setTableQuery(tableQuery);
-        request.setPartitionId(partIdWithObTable.getRight().getPartitionId());
-        request.setTableId(partIdWithObTable.getRight().getTableId());
-        request.setEntityType(entityType);
-        asyncRequest.setObTableQueryRequest(request);
-        asyncRequest.setQueryType(type);
-        asyncRequest.setQuerySessionId(sessionID);
-        if (operationTimeout > 0) {
-            asyncRequest.setTimeout(operationTimeout);
-        } else {
-            asyncRequest.setTimeout(partIdWithObTable.getRight().getObTable()
-                .getObTableOperationTimeout());
-        }
-        return executeAsync(partIdWithObTable, asyncRequest);
-    }
+    protected abstract ObPayload referToNewPartition(ObPair<Long, ObTableParam> partIdWithObTable) throws Exception;
 
     protected abstract ObTableQueryResult execute(ObPair<Long, ObTableParam> partIdWithObTable,
                                                   ObPayload streamRequest) throws Exception;
@@ -268,7 +375,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                                             ObPayload streamRequest)
                                                                                     throws Exception;
 
-    private void cacheResultRows(ObTableQueryResult tableQueryResult) {
+    protected void cacheResultRows(ObTableQueryResult tableQueryResult) {
         cacheRows.addAll(tableQueryResult.getPropertiesRows());
         cacheProperties = tableQueryResult.getPropertiesNames();
     }
@@ -330,33 +437,10 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
             }
             expectant.clear();
         } else {
-            // query not support BatchSize, use queryByBatch instead queryByBatchV2
+            // query not support BatchSize
             throw new ObTableException(
-                "query not support BatchSize, use queryByBatch / queryByBatchV2"
-                        + " instead, BatchSize:" + tableQuery.getBatchSize());
+                "simple query not support BatchSize, use executeAsync() instead, BatchSize:" + tableQuery.getBatchSize());
         }
-        initialized = true;
-    }
-
-    public void init(ObQueryOperationType type, long sessionID) throws Exception {
-        if (initialized) {
-            return;
-        }
-        for (Map.Entry<Long, ObPair<Long, ObTableParam>> entry : expectant.entrySet()) {
-            // mark the refer partition
-            referToNewPartition(entry.getValue(), type, sessionID);
-        }
-        expectant.clear();
-        initialized = true;
-    }
-
-    public void init(ObQueryOperationType type, ObPair<Long, ObTableParam> entry, long sessionID)
-                                                                                                 throws Exception {
-        if (initialized) {
-            return;
-        }
-        referToNewPartition(entry, type, sessionID);
-        expectant.clear();
         initialized = true;
     }
 

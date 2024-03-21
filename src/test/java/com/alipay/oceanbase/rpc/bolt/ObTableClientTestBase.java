@@ -576,7 +576,7 @@ public abstract class ObTableClientTestBase {
                         new Object[] { c2[i] });
                 }
                 // 123 <= xxx <= 567
-                TableQuery tableQuery = client.queryByBatch("test_varchar_table");
+                TableQuery tableQuery = client.query("test_varchar_table");
                 QueryResultSet result = tableQuery.setKeys("c1").select("c2").setBatchSize(1)
                     .addScanRange("123", true, "567", true).execute();
                 for (int i = 0; i < 5; i++) {
@@ -587,7 +587,7 @@ public abstract class ObTableClientTestBase {
                 Assert.assertFalse(result.next());
 
                 // 123 <= xxx < 567
-                tableQuery = client.queryByBatch("test_varchar_table");
+                tableQuery = client.query("test_varchar_table");
                 result = tableQuery.setKeys("c1").select("c1", "c2").setBatchSize(1)
                     .addScanRange("123", true, "567", false).execute();
                 for (int i = 0; i < 4; i++) {
@@ -608,8 +608,8 @@ public abstract class ObTableClientTestBase {
 
     @Test
     public void test_limit_query_2() throws Exception {
-        TableQuery tableQuery = client.queryByBatch("test_varchar_table");
-        TableQuery tableQuery2 = client.queryByBatch("test_varchar_table");
+        TableQuery tableQuery = client.query("test_varchar_table");
+        TableQuery tableQuery2 = client.query("test_varchar_table");
         tableQuery.setOperationTimeout(100000);
         assertNotNull(tableQuery.getObTableQuery());
         tableQuery.setEntityType(new ObTableQueryRequest().getEntityType());
@@ -691,32 +691,11 @@ public abstract class ObTableClientTestBase {
             assertTrue(true);
         }
 
-        if ((client instanceof ObTableClient) && ((ObTableClient) client).isOdpMode()) {
-            // TODO: support stream result
-        } else {
-            ObTable obTable = new ObTable();
-            try {
-                tableQuery
-                    .executeInit(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
-                fail();
-            } catch (Exception e) {
-                assertTrue(true);
-            }
-
-            try {
-                tableQuery
-                    .executeNext(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
-                fail();
-            } catch (Exception e) {
-                assertTrue(true);
-            }
-        }
-
         tableQuery.clear();
     }
 
     @Test
-    public void test_batch_query() throws Exception {
+    public void test_async_query() throws Exception {
         /*
         * CREATE TABLE `test_varchar_table` (
              `c1` varchar(20) NOT NULL,
@@ -737,7 +716,7 @@ public abstract class ObTableClientTestBase {
                     new Object[] { c2[i] });
             }
             //非阻塞query
-            TableQuery tableQuery = client.queryByBatchV2("test_varchar_table");
+            TableQuery tableQuery = client.query("test_varchar_table");
             // 查询结果集
             tableQuery.select("c2");
             tableQuery.limit(5);
@@ -764,61 +743,6 @@ public abstract class ObTableClientTestBase {
             }
 
         }
-    }
-
-    @Test
-    public void test_batch_query_coverage() throws Exception {
-        TableQuery tableQuery = client.queryByBatchV2("test_varchar_table");
-        TableQuery tableQuery2 = client.queryByBatchV2("test_varchar_table");
-        tableQuery.setOperationTimeout(100000);
-        assertNotNull(tableQuery.getObTableQuery());
-        tableQuery.setEntityType(new ObTableQueryRequest().getEntityType());
-        assertNotNull(tableQuery.getEntityType());
-        assertEquals("test_varchar_table", tableQuery.getTableName());
-        tableQuery.addScanRange("1", "2");
-        tableQuery2.addScanRangeStartsWith("1");
-        tableQuery2.addScanRangeEndsWith("2");
-        assertEquals(1, tableQuery.getObTableQuery().getKeyRanges().size());
-        assertEquals(2, tableQuery2.getObTableQuery().getKeyRanges().size());
-
-        tableQuery.scanOrder(true);
-        tableQuery.indexName("test");
-        tableQuery.primaryIndex();
-        tableQuery.filterString("111");
-        tableQuery.setHTableFilter(new ObHTableFilter());
-        tableQuery.limit(10);
-        tableQuery.limit(10, 10);
-        tableQuery.setMaxResultSize(100000);
-
-        try {
-            tableQuery.addScanRange(new Object[] { "1" }, new Object[] { "3" }).setKeys("c1", "c1");
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-
-        try {
-            tableQuery.setKeys("c1", "c3").select("c2", "c1");
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-
-        ObTable obTable = new ObTable();
-        try {
-            tableQuery.executeInit(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-
-        try {
-            tableQuery.executeNext(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-        tableQuery.clear();
     }
 
     @Test
@@ -851,23 +775,6 @@ public abstract class ObTableClientTestBase {
                 new Object[] { "567c2" });
 
             tableQuery = client.query("test_varchar_table");
-
-            ObTable obTable = new ObTable();
-            try {
-                tableQuery
-                    .executeInit(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
-                fail();
-            } catch (Exception e) {
-                assertTrue(true);
-            }
-
-            try {
-                tableQuery
-                    .executeNext(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
-                fail();
-            } catch (Exception e) {
-                assertTrue(true);
-            }
             tableQuery.setMaxResultSize(100000);
             tableQuery.clear();
 

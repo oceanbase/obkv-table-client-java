@@ -24,23 +24,14 @@ import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.filter.*;
 import com.alipay.oceanbase.rpc.location.model.ObServerAddr;
 import com.alipay.oceanbase.rpc.location.model.ServerRoster;
-import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.mutation.result.*;
 import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregation;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateResult;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObQueryOperationType;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
-import com.alipay.oceanbase.rpc.stream.async.ObTableQueryAsyncStreamResult;
-import com.alipay.oceanbase.rpc.table.ObTable;
-import com.alipay.oceanbase.rpc.table.ObTableClientQueryAsyncImpl;
-import com.alipay.oceanbase.rpc.table.ObTableClientQueryImpl;
-import com.alipay.oceanbase.rpc.table.ObTableParam;
 import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
@@ -507,7 +498,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
     }
 
     @Test
-    public void test_batch_query() throws Exception {
+    public void test_async_query() throws Exception {
         /*
         * CREATE TABLE `test_batch_query` (
              `c1` bigint NOT NULL,
@@ -532,7 +523,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
             }
 
             // 非阻塞query
-            TableQuery tableQuery = client1.queryByBatchV2("test_batch_query");
+            TableQuery tableQuery = client1.query("test_batch_query");
 
             // 测试 filter string 生成函数
             ObTableValueFilter filter_0 = new ObTableValueFilter(ObCompareOp.EQ, "c3", "value");
@@ -648,69 +639,6 @@ public class ObTableClientTest extends ObTableClientTestBase {
         }
     }
 
-    @Test
-    public void test_batch_query_coverage() {
-        ObTableClient client1 = new ObTableClient();
-
-        TableQuery tableQuery = client1.query("test_batch_query");
-        ObTable obTable = new ObTable();
-        try {
-            tableQuery.executeInit(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-
-        try {
-            tableQuery.executeNext(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-        try {
-            tableQuery.setMaxResultSize(100000);
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-        tableQuery.clear();
-
-        ObTableClientQueryImpl obTableClientQuery = new ObTableClientQueryImpl("test_batch_query",
-            client1);
-        try {
-            obTableClientQuery.executeInit(new ObPair<Long, ObTableParam>(0L, new ObTableParam(
-                obTable)));
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-        try {
-            obTableClientQuery.executeNext(new ObPair<Long, ObTableParam>(0L, new ObTableParam(
-                obTable)));
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-
-        ObTableClientQueryAsyncImpl obTableClientQueryAsync = new ObTableClientQueryAsyncImpl(
-            "test_batch_query", tableQuery.getObTableQuery(), client1);
-        obTableClientQueryAsync.getSessionId();
-        try {
-            obTableClientQueryAsync.setKeys("c1", "c3");
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-        try {
-            obTableClientQueryAsync.executeInternal(ObQueryOperationType.QUERY_START);
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-
-        ObTableQueryAsyncStreamResult obTableQueryAsyncStreamResult = new ObTableQueryAsyncStreamResult();
-        obTableQueryAsyncStreamResult.setSessionId(100000);
-        obTableQueryAsyncStreamResult.getSessionId();
-        obTableQueryAsyncStreamResult.setEnd(true);
-    }
 
     @Test
     public void testQueryWithFilter() throws Exception {

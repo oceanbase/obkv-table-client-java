@@ -21,7 +21,6 @@ import com.alibaba.fastjson.JSON;
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.constant.Constants;
 import com.alipay.oceanbase.rpc.exception.*;
-import com.alipay.oceanbase.rpc.batch.QueryByBatch;
 import com.alipay.oceanbase.rpc.location.LocationUtil;
 import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.location.model.*;
@@ -1820,17 +1819,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return new ObClusterTableQuery(tableQuery);
     }
 
-    @Override
-    public TableQuery queryByBatchV2(String tableName) {
-        ObTableClientQueryAsyncImpl queryAsync = new ObTableClientQueryAsyncImpl(tableName, this);
-        return new ObClusterTableAsyncQuery(queryAsync);
-    }
-
-    @Override
-    public TableQuery queryByBatch(String tableName) throws Exception {
-        return new QueryByBatch(query(tableName));
-    }
-
     /**
      * Batch.
      */
@@ -2707,12 +2695,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     && isTableGroupName(tableName)) {
                 tableName = tryGetTableNameFromTableGroupCache(tableName, false);
             }
-            ObTableClientQueryAsyncImpl tableClientQueryAsync = new ObTableClientQueryAsyncImpl(
-                tableName, ((ObTableQueryAsyncRequest) request)
-                    .getObTableQueryRequest().getTableQuery(), this);
-            tableClientQueryAsync.setEntityType(request.getEntityType());
-            return new ObClusterTableAsyncQuery(tableClientQueryAsync)
-                .executeInternal(((ObTableQueryAsyncRequest) request).getQueryType());
+            ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(
+                    tableName, ((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery(), this);
+            tableQuery.setEntityType(request.getEntityType());
+            return new ObClusterTableQuery(tableQuery).asyncExecuteInternal();
         } else if (request instanceof ObTableBatchOperationRequest) {
             ObTableClientBatchOpsImpl batchOps = new ObTableClientBatchOpsImpl(
                 request.getTableName(),

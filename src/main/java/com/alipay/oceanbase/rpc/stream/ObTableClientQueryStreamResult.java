@@ -44,149 +44,33 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                                            .getLogger(ObTableClientQueryStreamResult.class);
     protected ObTableClient     client;
 
+    protected ObTableQueryResult referToNewPartition(ObPair<Long, ObTableParam> partIdWithObTable)
+            throws Exception {
+        ObTableQueryRequest request = new ObTableQueryRequest();
+        request.setTableName(tableName);
+        request.setTableQuery(tableQuery);
+        request.setPartitionId(partIdWithObTable.getRight().getPartitionId());
+        request.setTableId(partIdWithObTable.getRight().getTableId());
+        request.setEntityType(entityType);
+        if (operationTimeout > 0) {
+            request.setTimeout(operationTimeout);
+        } else {
+            request.setTimeout(partIdWithObTable.getRight().getObTable()
+                    .getObTableOperationTimeout());
+        }
+        request.setConsistencyLevel(getReadConsistency().toObTableConsistencyLevel());
+        return execute(partIdWithObTable, request);
+    }
+
+    @Override
     protected ObTableQueryResult execute(ObPair<Long, ObTableParam> partIdWithIndex,
                                          ObPayload request) throws Exception {
-        Object result;
-        ObTable subObTable = partIdWithIndex.getRight().getObTable();
-        boolean needRefreshTableEntry = false;
-        int tryTimes = 0;
-        long startExecute = System.currentTimeMillis();
-        Set<String> failedServerList = null;
-        ObServerRoute route = null;
-        while (true) {
-            client.checkStatus();
-            long currentExecute = System.currentTimeMillis();
-            long costMillis = currentExecute - startExecute;
-            if (costMillis > client.getRuntimeMaxWait()) {
-                long uniqueId = request.getUniqueId();
-                long sequence = request.getSequence();
-                String trace = String.format("Y%X-%016X", uniqueId, sequence);
-                throw new ObTableTimeoutExcetion("[" + trace + "]" + " has tried " + tryTimes
-                                                 + " times and it has waited " + costMillis
-                                                 + "/ms which exceeds response timeout "
-                                                 + client.getRuntimeMaxWait() + "/ms");
-            }
-            tryTimes++;
-            try {
-                // 重试时重新 getTable
-                if (tryTimes > 1) {
-                    if (client.isOdpMode()) {
-                        subObTable = client.getOdpTable();
-                    } else {
-                        if (route == null) {
-                            route = client.getReadRoute();
-                        }
-                        if (failedServerList != null) {
-                            route.setBlackList(failedServerList);
-                        }
-                        subObTable = client
-                            .getTable(indexTableName, partIdWithIndex.getLeft(),
-                                needRefreshTableEntry, client.isTableEntryRefreshIntervalWait(),
-                                route).getRight().getObTable();
-                    }
-                }
-                result = subObTable.execute(request);
-                client.resetExecuteContinuousFailureCount(indexTableName);
-                break;
-            } catch (Exception e) {
-                if (client.isOdpMode()) {
-                    if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
-                        if (e instanceof ObTableException) {
-                            logger
-                                .warn(
-                                    "tablename:{} stream query execute while meet Exception needing retry, errorCode: {}, errorMsg: {}, try times {}",
-                                    indexTableName, ((ObTableException) e).getErrorCode(),
-                                    e.getMessage(), tryTimes);
-                        } else if (e instanceof IllegalArgumentException) {
-                            logger
-                                .warn(
-                                    "tablename:{} stream query execute while meet Exception needing retry, try times {}, errorMsg: {}",
-                                    indexTableName, tryTimes, e.getMessage());
-                        } else {
-                            logger
-                                .warn(
-                                    "tablename:{} stream query execute while meet Exception needing retry, try times {}",
-                                    indexTableName, tryTimes, e);
-                        }
-                    } else {
-                        throw e;
-                    }
-                } else {
-                    if (e instanceof ObTableReplicaNotReadableException) {
-                        if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
-                            logger.warn(
-                                "tablename:{} partition id:{} retry when replica not readable: {}",
-                                indexTableName, partIdWithIndex.getLeft(), e.getMessage(), e);
-                            if (failedServerList == null) {
-                                failedServerList = new HashSet<String>();
-                            }
-                            failedServerList.add(subObTable.getIp());
-                        } else {
-                            logger
-                                .warn(
-                                    "tablename:{} partition id:{} exhaust retry when replica not readable: {}",
-                                    indexTableName, partIdWithIndex.getLeft(), e.getMessage(), e);
-                            throw e;
-                        }
-                    } else if (e instanceof ObTableException) {
-                        if ((((ObTableException) e).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode
-                                    || ((ObTableException) e).getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode)
-                                && ((ObTableQueryRequest) request).getTableQuery().isHbaseQuery()
-                                && client.getTableGroupInverted().get(indexTableName) != null) {
-                            // table not exists && hbase mode && table group exists , three condition both
-                            client.eraseTableGroupFromCache(tableName);
-                        }
-                        if (((ObTableException) e).isNeedRefreshTableEntry()) {
-                            needRefreshTableEntry = true;
-                            logger
-                                    .warn(
-                                            "tablename:{} partition id:{} stream query refresh table while meet Exception needing refresh, errorCode: {}",
-                                            indexTableName, partIdWithIndex.getLeft(),
-                                            ((ObTableException) e).getErrorCode(), e);
-                            if (client.isRetryOnChangeMasterTimes()
-                                    && (tryTimes - 1) < client.getRuntimeRetryTimes()) {
-                                logger
-                                        .warn(
-                                                "tablename:{} partition id:{} stream query retry while meet Exception needing refresh, errorCode: {} , retry times {}",
-                                                indexTableName, partIdWithIndex.getLeft(),
-                                                ((ObTableException) e).getErrorCode(), tryTimes, e);
-                            } else {
-                                client.calculateContinuousFailure(indexTableName, e.getMessage());
-                                throw e;
-                            }
-                        } else {
-                            client.calculateContinuousFailure(indexTableName, e.getMessage());
-                            throw e;
-                        }
-                    } else if (e instanceof ObTableGlobalIndexRouteException) {
-                        if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
-                            logger
-                                .warn(
-                                    "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, retry times {}",
-                                    indexTableName, partIdWithIndex.getLeft(),
-                                    ((ObTableException) e).getErrorCode(), tryTimes, e);
-                            indexTableName = client.getIndexTableName(tableName, tableQuery.getIndexName(),
-                                    tableQuery.getScanRangeColumns(), true);
-                        } else {
-                            logger
-                                .warn(
-                                    "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, reach max retry times {}",
-                                    indexTableName, partIdWithIndex.getLeft(),
-                                    ((ObTableException) e).getErrorCode(), tryTimes, e);
-                            throw e;
-                        }
-                    } else {
-                        client.calculateContinuousFailure(indexTableName, e.getMessage());
-                        throw e;
-                    }
-                }
-            }
-            Thread.sleep(client.getRuntimeRetryInterval());
-        }
+        // execute request
+        ObTableQueryResult result = (ObTableQueryResult) commonExecute(this.client, logger, partIdWithIndex, request);
 
         cacheStreamNext(partIdWithIndex, checkObTableQueryResult(result));
 
-        return (ObTableQueryResult) result;
+        return result;
     }
 
     @Override

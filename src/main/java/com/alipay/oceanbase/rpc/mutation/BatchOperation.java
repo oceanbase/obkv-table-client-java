@@ -218,7 +218,7 @@ public class BatchOperation {
             }
         } else {
             throw new IllegalArgumentException(
-                "execute batch using ObTable diretly is not supporeted");
+                "execute batch using ObTable directly is not supported");
         }
         return new BatchOperationResult(batchOps.executeWithResult());
     }

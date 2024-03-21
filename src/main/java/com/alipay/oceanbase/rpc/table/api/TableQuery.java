@@ -48,9 +48,7 @@ public interface TableQuery {
 
     QueryResultSet execute() throws Exception;
 
-    QueryResultSet executeInit(ObPair<Long, ObTableParam> entry) throws Exception;
-
-    QueryResultSet executeNext(ObPair<Long, ObTableParam> entry) throws Exception;
+    QueryResultSet asyncExecute() throws Exception;
 
     TableQuery select(String... columns);
 
