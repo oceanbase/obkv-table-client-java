@@ -478,4 +478,9 @@ CREATE TABLE IF NOT EXISTS `test_put_with_global_index` (
     `expired_ts` timestamp(6) NOT NULL,
     PRIMARY KEY(`id`)) TTL(expired_ts + INTERVAL 1 SECOND) PARTITION BY KEY(`id`) PARTITIONS 32;
 
+CREATE TABLE IF NOT EXISTS `test_group_commit` (
+     `c1` bigint NOT NULL,
+     `c2` bigint NOT NULL,
+     primary key(`c1`)) PARTITION BY KEY(`c1`) PARTITIONS 32;
+
 alter system set kv_hotkey_throttle_threshold = 50;
