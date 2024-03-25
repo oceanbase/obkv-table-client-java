@@ -26,6 +26,7 @@ import com.alipay.oceanbase.rpc.table.ObTableClientLSBatchOpsImpl;
 import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
+import com.alipay.oceanbase.rpc.ObGlobal;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,7 +38,11 @@ public class BatchOperation {
     boolean              withResult;
     private List<Object> operations;
     boolean              isAtomic         = false;
+    boolean              returnOneResult  = false;
     boolean              hasCheckAndInsUp = false;
+    boolean              hasGet           = false;
+    ObTableOperationType lastType         = ObTableOperationType.INVALID;
+    boolean              isSameType       = true;
 
     /*
      * default constructor
@@ -79,6 +84,12 @@ public class BatchOperation {
      * add queries
      */
     public BatchOperation addOperation(TableQuery... queries) {
+        if (isSameType && lastType != ObTableOperationType.INVALID
+            && lastType != ObTableOperationType.GET) {
+            isSameType = false;
+        }
+
+        lastType = ObTableOperationType.GET;
         this.operations.addAll(Arrays.asList(queries));
         return this;
     }
@@ -87,6 +98,13 @@ public class BatchOperation {
      * add mutations
      */
     public BatchOperation addOperation(Mutation... mutations) {
+        for (int i = 0; i < mutations.length; i++) {
+            if (isSameType && lastType != ObTableOperationType.INVALID
+                && lastType != mutations[i].getOperationType()) {
+                isSameType = false;
+            }
+            lastType = mutations[i].getOperationType();
+        }
         this.operations.addAll(Arrays.asList(mutations));
         return this;
     }
@@ -95,6 +113,13 @@ public class BatchOperation {
      * add mutations
      */
     public BatchOperation addOperation(List<Mutation> mutations) {
+        for (int i = 0; i < mutations.size(); i++) {
+            if (isSameType && lastType != ObTableOperationType.INVALID
+                && lastType != mutations.get(i).getOperationType()) {
+                isSameType = false;
+            }
+            lastType = mutations.get(i).getOperationType();
+        }
         this.operations.addAll(mutations);
         return this;
     }
@@ -103,6 +128,11 @@ public class BatchOperation {
      * add CheckAndInsUp
      */
     public BatchOperation addOperation(CheckAndInsUp... insUps) {
+        if (isSameType && lastType != ObTableOperationType.INVALID
+            && lastType != ObTableOperationType.CHECK_AND_INSERT_UP) {
+            isSameType = false;
+        }
+        lastType = ObTableOperationType.CHECK_AND_INSERT_UP;
         this.operations.addAll(Arrays.asList(insUps));
         this.hasCheckAndInsUp = true;
         return this;
@@ -113,16 +143,29 @@ public class BatchOperation {
         return this;
     }
 
+    public BatchOperation setReturnOneResult(boolean returnOneResult) {
+        this.returnOneResult = returnOneResult;
+        return this;
+    }
+
     @SuppressWarnings("unchecked")
     public BatchOperationResult execute() throws Exception {
-        if (hasCheckAndInsUp) {
+        if (returnOneResult
+            && !(isSameType && (lastType == ObTableOperationType.INSERT
+                                || lastType == ObTableOperationType.PUT
+                                || lastType == ObTableOperationType.REPLACE || lastType == ObTableOperationType.DEL))) {
+            throw new IllegalArgumentException(
+                "returnOneResult only support multi-insert/put/replace/del");
+        }
+
+        if (hasCheckAndInsUp || ObGlobal.isLsOpSupport()) {
             return executeWithLSBatchOp();
         } else {
             return executeWithNormalBatchOp();
         }
     }
 
-    public BatchOperationResult executeWithNormalBatchOp() throws Exception {
+    private BatchOperationResult executeWithNormalBatchOp() throws Exception {
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
         }
@@ -178,6 +221,11 @@ public class BatchOperation {
                         batchOps.append(mutation.getRowKey(), ((Append) mutation).getColumns(),
                             ((Append) mutation).getValues(), withResult);
                         break;
+                    case PUT:
+                        ((Put) mutation).removeRowkeyFromMutateColval();
+                        batchOps.put(mutation.getRowKey(), ((Put) mutation).getColumns(),
+                                ((Put) mutation).getValues());
+                        break;
                     default:
                         throw new ObTableException("unknown operation type " + type);
                 }
@@ -190,19 +238,23 @@ public class BatchOperation {
             }
         }
         batchOps.setAtomicOperation(isAtomic);
+        batchOps.setReturnOneResult(returnOneResult);
         return new BatchOperationResult(batchOps.executeWithResult());
     }
 
-    public BatchOperationResult executeWithLSBatchOp() throws Exception {
+    private BatchOperationResult executeWithLSBatchOp() throws Exception {
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
         }
         ObTableClientLSBatchOpsImpl batchOps;
+        boolean hasSetRowkeyElement = false;
+        int checkAndInsUpCnt = 0;
+
         if (client instanceof ObTableClient) {
             batchOps = new ObTableClientLSBatchOpsImpl(tableName, (ObTableClient) client);
-            boolean hasSetRowkeyElement = false;
             for (Object operation : operations) {
                 if (operation instanceof CheckAndInsUp) {
+                    checkAndInsUpCnt++;
                     CheckAndInsUp checkAndInsUp = (CheckAndInsUp) operation;
                     batchOps.addOperation(checkAndInsUp);
                     List<String> rowKeyNames = checkAndInsUp.getInsUp().getRowKeyNames();
@@ -211,6 +263,18 @@ public class BatchOperation {
                             rowKeyNames.toArray(new String[0]));
                         hasSetRowkeyElement = true;
                     }
+                } else if (operation instanceof Mutation) {
+                    Mutation mutation = (Mutation) operation;
+                    batchOps.addOperation(mutation);
+                    if (!hasSetRowkeyElement && mutation.getRowKeyNames() != null) {
+                        List<String> rowKeyNames = mutation.getRowKeyNames();
+                        ((ObTableClient) client).addRowKeyElement(tableName,
+                            rowKeyNames.toArray(new String[0]));
+                        hasSetRowkeyElement = true;
+                    }
+                } else if (operation instanceof TableQuery) {
+                    TableQuery query = (TableQuery) operation;
+                    batchOps.addOperation(query);
                 } else {
                     throw new IllegalArgumentException(
                         "The operations in batch must be all checkAndInsUp or all non-checkAndInsUp");
@@ -220,6 +284,15 @@ public class BatchOperation {
             throw new IllegalArgumentException(
                 "execute batch using ObTable diretly is not supporeted");
         }
+
+        if (checkAndInsUpCnt > 0 && checkAndInsUpCnt != operations.size()) {
+            throw new IllegalArgumentException(
+                "Can not mix checkAndInsUP and other types operation in batch");
+        }
+
+        batchOps.setReturningAffectedEntity(withResult);
+        batchOps.setReturnOneResult(returnOneResult);
+        batchOps.setAtomicOperation(isAtomic);
         return new BatchOperationResult(batchOps.executeWithResult());
     }
 }

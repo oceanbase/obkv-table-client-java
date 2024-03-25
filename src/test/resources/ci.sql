@@ -410,7 +410,7 @@ CREATE TABLE IF NOT EXISTS `test_auto_increment_one_rowkey` (
     `c1` int auto_increment,
     `c2` int NOT NULL, PRIMARY KEY(`c1`));
 
-CREATE TABLE  IF NOT EXISTS `sync_item` (
+CREATE TABLE IF NOT EXISTS `sync_item` (
     `uid` varchar(20) NOT NULL,
     `object_id` varchar(32) NOT NULL,
     `type` int(11) NULL,
@@ -444,7 +444,38 @@ CREATE TABLE IF NOT EXISTS `test_table_object` (
     `c8` double not null,
     `c9` timestamp(6) not null,
     `c10` datetime(6) not null,
-    `c11` int default null
+    `c11` int default null,
+    `c12` tinytext DEFAULT NULL,
+    `c13` text DEFAULT NULL,
+    `c14` mediumtext DEFAULT NULL,
+    `c15` longtext DEFAULT NULL,
+    `c16` tinyblob DEFAULT NULL,
+    `c17` blob DEFAULT NULL,
+    `c18` mediumblob DEFAULT NULL,
+    `c19` longblob DEFAULT NULL
 );
+
+CREATE TABLE IF NOT EXISTS `test_put` (
+    `id` varchar(20) NOT NULL,
+    `c1` bigint DEFAULT NULL,
+    `c2` bigint DEFAULT NULL,
+    `c3` varchar(32) DEFAULT NULL,
+    `c4` bigint DEFAULT NULL,
+    `expired_ts` timestamp(6) NOT NULL,
+    PRIMARY KEY(`id`)) TTL(expired_ts + INTERVAL 1 SECOND) PARTITION BY KEY(`id`) PARTITIONS 32;
+
+CREATE TABLE IF NOT EXISTS `test_put_with_local_index` (
+    `id` varchar(20) NOT NULL,
+    `c1` bigint DEFAULT NULL,
+    index idx1(`c1`) local,
+    `expired_ts` timestamp(6) NOT NULL,
+    PRIMARY KEY(`id`)) TTL(expired_ts + INTERVAL 1 SECOND) PARTITION BY KEY(`id`) PARTITIONS 32;
+
+CREATE TABLE IF NOT EXISTS `test_put_with_global_index` (
+    `id` varchar(20) NOT NULL,
+    `c1` bigint DEFAULT NULL,
+    index idx1(`c1`) global,
+    `expired_ts` timestamp(6) NOT NULL,
+    PRIMARY KEY(`id`)) TTL(expired_ts + INTERVAL 1 SECOND) PARTITION BY KEY(`id`) PARTITIONS 32;
 
 alter system set kv_hotkey_throttle_threshold = 50;
