@@ -24,13 +24,11 @@ import io.netty.buffer.ByteBuf;
 
 import java.util.*;
 
-import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
-import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderLength;
-
 public class ObTableLSOperation extends AbstractPayload {
 
     private List<ObTableTabletOp> tabletOperations = new ArrayList<ObTableTabletOp>();
     private long                  lsId             = INVALID_LS_ID;                   // i64
+
     private String tableName;
 
     private long tableId = Constants.OB_INVALID_ID;;
@@ -227,6 +225,10 @@ public class ObTableLSOperation extends AbstractPayload {
         this.lsId = lsId;
     }
 
+    public void setReturnOneResult(boolean returnOneResult) {
+        optionFlag.setReturnOneResult(returnOneResult);
+    }
+
     public boolean isSameType() {
         return optionFlag.getFlagIsSameType();
     }
@@ -326,4 +328,13 @@ public class ObTableLSOperation extends AbstractPayload {
         this.prepareOption();
         this.prepareColumnNamesBitMap();
     }
+
+    public long getLsId() {
+        return lsId;
+    }
+
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
+
 }

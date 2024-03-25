@@ -18,11 +18,11 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
 import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderLength;
@@ -33,10 +33,10 @@ import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderL
  */
 public class ObTableBatchOperation extends AbstractPayload {
 
-    private List<ObTableOperation> tableOperations = new ArrayList<ObTableOperation>();
-    private boolean                isReadOnly      = true;
-    private boolean                isSameType      = true;
-    private boolean                isSamePropertiesNames;
+    private List<ObTableOperation> tableOperations       = new ArrayList<ObTableOperation>();
+    private boolean                isReadOnly            = true;
+    private boolean                isSameType            = true;
+    private boolean                isSamePropertiesNames = true;
 
     /*
      * Encode.
@@ -122,6 +122,15 @@ public class ObTableBatchOperation extends AbstractPayload {
     }
 
     /*
+     * hash_map keys to TreeSet IgnoringCase
+     */
+    public TreeSet<String> mapKeysToSetIgnoringCase(Set<String> keys) {
+        TreeSet<String> keySetIgnoreCase = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        keySetIgnoreCase.addAll(keys);
+        return keySetIgnoreCase;
+    }
+
+    /*
      * Add table operation.
      */
     public void addTableOperation(ObTableOperation tableOperation) {
@@ -136,6 +145,21 @@ public class ObTableBatchOperation extends AbstractPayload {
                 .get(length - 2).getOperationType()) {
             isSameType = false;
         }
+        // 判断是否是 same_properties_name
+        if (isSamePropertiesNames && length > 1) {
+            ObTableOperation prev = tableOperations.get(length - 2);
+            ObTableOperation curr = tableOperations.get(length - 1);
+            if (prev.getEntity() == null || curr.getEntity() == null) {
+                isSamePropertiesNames = false;
+            } else if (prev.getEntity().getPropertiesCount() != curr.getEntity()
+                .getPropertiesCount()) {
+                isSamePropertiesNames = false;
+            } else {
+                isSamePropertiesNames = mapKeysToSetIgnoringCase(
+                    prev.getEntity().getProperties().keySet()).equals(
+                    mapKeysToSetIgnoringCase(curr.getEntity().getProperties().keySet()));
+            }
+        }
     }
 
     /*
@@ -145,9 +169,11 @@ public class ObTableBatchOperation extends AbstractPayload {
         this.tableOperations = tableOperations;
         this.isReadOnly = true;
         this.isSameType = true;
+        this.isSamePropertiesNames = true;
         ObTableOperationType prevType = null;
+        TreeSet<String> firstKeySetIgnoreCase = null;
         for (ObTableOperation o : tableOperations) {
-            if (this.isReadOnly || this.isSameType) {
+            if (this.isReadOnly || this.isSameType || this.isSamePropertiesNames) {
                 if (!o.isReadonly()) {
                     this.isReadOnly = false;
                 }
@@ -155,6 +181,18 @@ public class ObTableBatchOperation extends AbstractPayload {
                     this.isSameType = false;
                 } else {
                     prevType = o.getOperationType();
+                }
+
+                if (this.isSamePropertiesNames) {
+                    if (firstKeySetIgnoreCase == null) {
+                        firstKeySetIgnoreCase = mapKeysToSetIgnoringCase(o.getEntity()
+                            .getProperties().keySet());
+                    } else if (firstKeySetIgnoreCase.size() != o.getEntity().getPropertiesCount()) {
+                        this.isSamePropertiesNames = false;
+                    } else {
+                        this.isSamePropertiesNames = firstKeySetIgnoreCase
+                            .equals(mapKeysToSetIgnoringCase(o.getEntity().getProperties().keySet()));
+                    }
                 }
             } else {
                 return;

@@ -100,8 +100,8 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                                 "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, retry times {}",
                                 indexTableName, partIdWithObTable.getLeft(),
                                 ((ObTableException) e).getErrorCode(), tryTimes, e);
-                        indexTableName = client.getIndexTableName(tableName, tableQuery.getIndexName(),
-                                tableQuery.getScanRangeColumns(), true);
+                        indexTableName = client.getIndexTableName(tableName,
+                            tableQuery.getIndexName(), tableQuery.getScanRangeColumns(), true);
                     } else {
                         logger
                             .warn(

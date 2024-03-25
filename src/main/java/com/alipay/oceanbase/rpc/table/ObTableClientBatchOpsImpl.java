@@ -142,6 +142,14 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         addObTableClientOperation(ObTableOperationType.APPEND, rowkeys, columns, values);
     }
 
+    /*
+     * Put.
+     */
+    @Override
+    public void put(Object[] rowkeys, String[] columns, Object[] values) {
+        addObTableClientOperation(ObTableOperationType.PUT, rowkeys, columns, values);
+    }
+
     private void addObTableClientOperation(ObTableOperationType type, Object[] rowkeys,
                                            String[] columns, Object[] values) {
         ObTableOperation instance = ObTableOperation.getInstance(type, rowkeys, columns, values);
@@ -193,6 +201,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                     case REPLACE:
                     case INCREMENT:
                     case APPEND:
+                    case PUT:
                         results.add(new MutationResult(result));
                         break;
                     default:
@@ -247,12 +256,6 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             obTableOperations.getRight().add(new ObPair<Integer, ObTableOperation>(i, operation));
         }
 
-        if (atomicOperation) {
-            if (partitionOperationsMap.size() > 1) {
-                throw new ObTablePartitionConsistentException(
-                    "require atomic operation but found across partition may cause consistent problem ");
-            }
-        }
         return partitionOperationsMap;
     }
 
@@ -291,6 +294,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 .toObTableConsistencyLevel());
         }
         subRequest.setBatchOperationAsAtomic(isAtomicOperation());
+        subRequest.setBatchOpReturnOneResult(isReturnOneResult());
         ObTableBatchOperationResult subObTableBatchOperationResult;
 
         boolean needRefreshTableEntry = false;
@@ -402,38 +406,50 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         List<ObTableOperationResult> subObTableOperationResults = subObTableBatchOperationResult
             .getResults();
 
-        if (subObTableOperationResults.size() < subOperations.getTableOperations().size()) {
-            // only one result when it across failed
-            // only one result when hkv puts
-            if (subObTableOperationResults.size() == 1) {
-                ObTableOperationResult subObTableOperationResult = subObTableOperationResults
-                    .get(0);
+        if (returnOneResult) {
+            ObTableOperationResult subObTableOperationResult = subObTableOperationResults.get(0);
+            if (results[0] == null) {
+                results[0] = new ObTableOperationResult();
                 subObTableOperationResult.setExecuteHost(subObTable.getIp());
                 subObTableOperationResult.setExecutePort(subObTable.getPort());
-                for (ObPair<Integer, ObTableOperation> aSubOperationWithIndexList : subOperationWithIndexList) {
-                    results[aSubOperationWithIndexList.getLeft()] = subObTableOperationResult;
-                }
+                results[0] = subObTableOperationResult;
             } else {
-                // unexpected result found
-                throw new IllegalArgumentException(
-                    "check batch operation result size error: operation size ["
-                            + subOperations.getTableOperations().size() + "] result size ["
-                            + subObTableOperationResults.size() + "]");
+                results[0].setAffectedRows(results[0].getAffectedRows() + subObTableOperationResult.getAffectedRows());
             }
         } else {
-            if (subOperationWithIndexList.size() != subObTableOperationResults.size()) {
-                throw new ObTableUnexpectedException("check batch result error: partition "
-                                                     + partId + " expect result size "
-                                                     + subOperationWithIndexList.size()
-                                                     + " actual result size "
-                                                     + subObTableOperationResults.size());
-            }
-            for (int i = 0; i < subOperationWithIndexList.size(); i++) {
-                ObTableOperationResult subObTableOperationResult = subObTableOperationResults
-                    .get(i);
-                subObTableOperationResult.setExecuteHost(subObTable.getIp());
-                subObTableOperationResult.setExecutePort(subObTable.getPort());
-                results[subOperationWithIndexList.get(i).getLeft()] = subObTableOperationResult;
+            if (subObTableOperationResults.size() < subOperations.getTableOperations().size()) {
+                // only one result when it across failed
+                // only one result when hkv puts
+                if (subObTableOperationResults.size() == 1) {
+                    ObTableOperationResult subObTableOperationResult = subObTableOperationResults
+                            .get(0);
+                    subObTableOperationResult.setExecuteHost(subObTable.getIp());
+                    subObTableOperationResult.setExecutePort(subObTable.getPort());
+                    for (ObPair<Integer, ObTableOperation> aSubOperationWithIndexList : subOperationWithIndexList) {
+                        results[aSubOperationWithIndexList.getLeft()] = subObTableOperationResult;
+                    }
+                } else {
+                    // unexpected result found
+                    throw new IllegalArgumentException(
+                            "check batch operation result size error: operation size ["
+                                    + subOperations.getTableOperations().size() + "] result size ["
+                                    + subObTableOperationResults.size() + "]");
+                }
+            } else {
+                if (subOperationWithIndexList.size() != subObTableOperationResults.size()) {
+                    throw new ObTableUnexpectedException("check batch result error: partition "
+                            + partId + " expect result size "
+                            + subOperationWithIndexList.size()
+                            + " actual result size "
+                            + subObTableOperationResults.size());
+                }
+                for (int i = 0; i < subOperationWithIndexList.size(); i++) {
+                    ObTableOperationResult subObTableOperationResult = subObTableOperationResults
+                            .get(i);
+                    subObTableOperationResult.setExecuteHost(subObTable.getIp());
+                    subObTableOperationResult.setExecutePort(subObTable.getPort());
+                    results[subOperationWithIndexList.get(i).getLeft()] = subObTableOperationResult;
+                }
             }
         }
         String endpoint = subObTable.getIp() + ":" + subObTable.getPort();
@@ -453,8 +469,13 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         }
         long start = System.currentTimeMillis();
         List<ObTableOperation> operations = batchOperation.getTableOperations();
-        final ObTableOperationResult[] obTableOperationResults = new ObTableOperationResult[operations
-            .size()];
+        ObTableOperationResult[] obTableOperationResults = null;
+        if (returnOneResult) {
+            obTableOperationResults = new ObTableOperationResult[1];
+        } else {
+            obTableOperationResults = new ObTableOperationResult[operations.size()];
+        }
+
         Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> partitions = partitionPrepare();
         long getTableTime = System.currentTimeMillis();
         final Map<Object, Object> context = ThreadLocalMap.getContextMap();
@@ -462,7 +483,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             final ConcurrentTaskExecutor executor = new ConcurrentTaskExecutor(executorService,
                 partitions.size());
             for (final Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> entry : partitions
-                .entrySet()) {
+                    .entrySet()) {
+                ObTableOperationResult[] finalObTableOperationResults = obTableOperationResults;
                 executor.execute(new ConcurrentTask() {
                     /*
                      * Do task.
@@ -471,7 +493,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                     public void doTask() {
                         try {
                             ThreadLocalMap.transmitContextMap(context);
-                            partitionExecute(obTableOperationResults, entry);
+                            partitionExecute(finalObTableOperationResults, entry);
                         } catch (Exception e) {
                             logger.error(LCD.convert("01-00026"), e);
                             executor.collectExceptions(e);

@@ -81,8 +81,8 @@ public class ExceptionUtil {
         } else {
             // [errCode][errCodeName][errMsg][server][trace]
             return new ObTableException("[" + String.valueOf(resultCodes.errorCode) + "]" + "["
-                    + resultCodes.name() + "]" + "[" + errMsg + "]" + "[" + server
-                    + "]" + "[" + trace + "]", resultCodes.errorCode);
+                                        + resultCodes.name() + "]" + "[" + errMsg + "]" + "["
+                                        + server + "]" + "[" + trace + "]", resultCodes.errorCode);
         }
     }
 

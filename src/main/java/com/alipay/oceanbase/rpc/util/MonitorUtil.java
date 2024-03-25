@@ -293,22 +293,22 @@ public class MonitorUtil {
     /**
      * for tablet op
      */
-    private static void logTabletOpMessage(final ObPayload payload, String database,
-                                           String tableName, String methodName, String endpoint,
-                                           ObTableTabletOp tabletOp, int resultSize,
-                                           long executeTime, long slowQueryMonitorThreshold) {
+    private static void logLsOpMessage(final ObPayload payload, String database, String tableName,
+                                       String methodName, String endpoint,
+                                       ObTableLSOperation lsOperation, int resultSize,
+                                       long executeTime, long slowQueryMonitorThreshold) {
         if (executeTime < slowQueryMonitorThreshold) {
             return;
         }
         String traceId = formatTraceMessage(payload);
         MONITOR.info(logMessage(traceId, database, tableName,
-            methodName + "-" + tabletOp.getTabletId(), endpoint, null, resultSize, executeTime));
+            methodName + "-" + lsOperation.getLsId(), endpoint, null, resultSize, executeTime));
     }
 
     public static void info(final ObPayload payload, String database, String tableName,
-                            String methodName, String endpoint, ObTableTabletOp tabletOp,
+                            String methodName, String endpoint, ObTableLSOperation lsOperation,
                             int resultSize, long executeTime, long slowQueryMonitorThreshold) {
-        logTabletOpMessage(payload, database, tableName, methodName, endpoint, tabletOp,
-            resultSize, executeTime, slowQueryMonitorThreshold);
+        logLsOpMessage(payload, database, tableName, methodName, endpoint, lsOperation, resultSize,
+            executeTime, slowQueryMonitorThreshold);
     }
 }
