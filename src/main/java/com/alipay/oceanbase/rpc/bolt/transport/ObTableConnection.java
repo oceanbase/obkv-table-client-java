@@ -27,6 +27,7 @@ import com.alipay.oceanbase.rpc.util.*;
 import com.alipay.remoting.Connection;
 import org.slf4j.Logger;
 
+import java.net.ConnectException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -205,6 +206,19 @@ public class ObTableConnection {
                     "Check connection failed for address: " + connection.getUrl()
                             + ", maybe write overflow!");
             }
+        }
+    }
+
+    public void reConnectAndLogin(String msg) throws ObTableException {
+        try {
+            reconnect(msg);
+        } catch (ConnectException ex) {
+            // cannot connect to ob server, need refresh table location
+            throw new ObTableServerConnectException(ex);
+        } catch (ObTableServerConnectException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new ObTableConnectionStatusException("check status failed", ex);
         }
     }
 
