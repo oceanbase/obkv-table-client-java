@@ -28,9 +28,6 @@ import java.util.List;
 import java.util.Map;
 
 public class Replace extends Mutation<Replace> {
-    private List<String> columns;
-    private List<Object> values;
-
     /*
      * default constructor
      */
