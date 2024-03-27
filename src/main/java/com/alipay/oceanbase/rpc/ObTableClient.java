@@ -1738,7 +1738,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @param tableGroupName table group name
      * @param refresh if refresh or not
      * @return actual table name
-     * @throws Exception
+     * @throws Exception exception
      */
     public String tryGetTableNameFromTableGroupCache(final String tableGroupName,
                                                      final boolean refresh) throws Exception {
