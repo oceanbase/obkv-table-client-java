@@ -96,10 +96,9 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     /*
      * Common logic for execute, send the request to server
      */
-    protected ObPayload commonExecute(ObTableClient client,
-                                               Logger logger,
-                                               ObPair<Long, ObTableParam> partIdWithIndex,
-                                               ObPayload request) throws Exception {
+    protected ObPayload commonExecute(ObTableClient client, Logger logger,
+                                      ObPair<Long, ObTableParam> partIdWithIndex, ObPayload request)
+                                                                                                    throws Exception {
         Object result;
         ObTable subObTable = partIdWithIndex.getRight().getObTable();
         boolean needRefreshTableEntry = false;
@@ -116,9 +115,9 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                 long sequence = request.getSequence();
                 String trace = String.format("Y%X-%016X", uniqueId, sequence);
                 throw new ObTableTimeoutExcetion("[" + trace + "]" + " has tried " + tryTimes
-                        + " times and it has waited " + costMillis
-                        + "/ms which exceeds response timeout "
-                        + client.getRuntimeMaxWait() + "/ms");
+                                                 + " times and it has waited " + costMillis
+                                                 + "/ms which exceeds response timeout "
+                                                 + client.getRuntimeMaxWait() + "/ms");
             }
             tryTimes++;
             try {
@@ -134,9 +133,9 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                             route.setBlackList(failedServerList);
                         }
                         subObTable = client
-                                .getTable(indexTableName, partIdWithIndex.getLeft(),
-                                        needRefreshTableEntry, client.isTableEntryRefreshIntervalWait(),
-                                        route).getRight().getObTable();
+                            .getTable(indexTableName, partIdWithIndex.getLeft(),
+                                needRefreshTableEntry, client.isTableEntryRefreshIntervalWait(),
+                                route).getRight().getObTable();
                     }
                 }
                 result = subObTable.execute(request);
@@ -147,20 +146,20 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
                         if (e instanceof ObTableException) {
                             logger
-                                    .warn(
-                                            "tablename:{} stream query execute while meet Exception needing retry, errorCode: {}, errorMsg: {}, try times {}",
-                                            indexTableName, ((ObTableException) e).getErrorCode(),
-                                            e.getMessage(), tryTimes);
+                                .warn(
+                                    "tablename:{} stream query execute while meet Exception needing retry, errorCode: {}, errorMsg: {}, try times {}",
+                                    indexTableName, ((ObTableException) e).getErrorCode(),
+                                    e.getMessage(), tryTimes);
                         } else if (e instanceof IllegalArgumentException) {
                             logger
-                                    .warn(
-                                            "tablename:{} stream query execute while meet Exception needing retry, try times {}, errorMsg: {}",
-                                            indexTableName, tryTimes, e.getMessage());
+                                .warn(
+                                    "tablename:{} stream query execute while meet Exception needing retry, try times {}, errorMsg: {}",
+                                    indexTableName, tryTimes, e.getMessage());
                         } else {
                             logger
-                                    .warn(
-                                            "tablename:{} stream query execute while meet Exception needing retry, try times {}",
-                                            indexTableName, tryTimes, e);
+                                .warn(
+                                    "tablename:{} stream query execute while meet Exception needing retry, try times {}",
+                                    indexTableName, tryTimes, e);
                         }
                     } else {
                         throw e;
@@ -169,41 +168,41 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     if (e instanceof ObTableReplicaNotReadableException) {
                         if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
                             logger.warn(
-                                    "tablename:{} partition id:{} retry when replica not readable: {}",
-                                    indexTableName, partIdWithIndex.getLeft(), e.getMessage(), e);
+                                "tablename:{} partition id:{} retry when replica not readable: {}",
+                                indexTableName, partIdWithIndex.getLeft(), e.getMessage(), e);
                             if (failedServerList == null) {
                                 failedServerList = new HashSet<String>();
                             }
                             failedServerList.add(subObTable.getIp());
                         } else {
                             logger
-                                    .warn(
-                                            "tablename:{} partition id:{} exhaust retry when replica not readable: {}",
-                                            indexTableName, partIdWithIndex.getLeft(), e.getMessage(), e);
+                                .warn(
+                                    "tablename:{} partition id:{} exhaust retry when replica not readable: {}",
+                                    indexTableName, partIdWithIndex.getLeft(), e.getMessage(), e);
                             throw e;
                         }
                     } else if (e instanceof ObTableException) {
-                        if ((((ObTableException) e).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode
-                                || ((ObTableException) e).getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode)
-                                && ((ObTableQueryRequest) request).getTableQuery().isHbaseQuery()
-                                && client.getTableGroupInverted().get(indexTableName) != null) {
+                        if ((((ObTableException) e).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode || ((ObTableException) e)
+                            .getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode)
+                            && ((ObTableQueryRequest) request).getTableQuery().isHbaseQuery()
+                            && client.getTableGroupInverted().get(indexTableName) != null) {
                             // table not exists && hbase mode && table group exists , three condition both
                             client.eraseTableGroupFromCache(tableName);
                         }
                         if (((ObTableException) e).isNeedRefreshTableEntry()) {
                             needRefreshTableEntry = true;
                             logger
-                                    .warn(
-                                            "tablename:{} partition id:{} stream query refresh table while meet Exception needing refresh, errorCode: {}",
-                                            indexTableName, partIdWithIndex.getLeft(),
-                                            ((ObTableException) e).getErrorCode(), e);
+                                .warn(
+                                    "tablename:{} partition id:{} stream query refresh table while meet Exception needing refresh, errorCode: {}",
+                                    indexTableName, partIdWithIndex.getLeft(),
+                                    ((ObTableException) e).getErrorCode(), e);
                             if (client.isRetryOnChangeMasterTimes()
-                                    && (tryTimes - 1) < client.getRuntimeRetryTimes()) {
+                                && (tryTimes - 1) < client.getRuntimeRetryTimes()) {
                                 logger
-                                        .warn(
-                                                "tablename:{} partition id:{} stream query retry while meet Exception needing refresh, errorCode: {} , retry times {}",
-                                                indexTableName, partIdWithIndex.getLeft(),
-                                                ((ObTableException) e).getErrorCode(), tryTimes, e);
+                                    .warn(
+                                        "tablename:{} partition id:{} stream query retry while meet Exception needing refresh, errorCode: {} , retry times {}",
+                                        indexTableName, partIdWithIndex.getLeft(),
+                                        ((ObTableException) e).getErrorCode(), tryTimes, e);
                             } else {
                                 client.calculateContinuousFailure(indexTableName, e.getMessage());
                                 throw e;
@@ -215,18 +214,18 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     } else if (e instanceof ObTableGlobalIndexRouteException) {
                         if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
                             logger
-                                    .warn(
-                                            "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, retry times {}",
-                                            indexTableName, partIdWithIndex.getLeft(),
-                                            ((ObTableException) e).getErrorCode(), tryTimes, e);
-                            indexTableName = client.getIndexTableName(tableName, tableQuery.getIndexName(),
-                                    tableQuery.getScanRangeColumns(), true);
+                                .warn(
+                                    "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, retry times {}",
+                                    indexTableName, partIdWithIndex.getLeft(),
+                                    ((ObTableException) e).getErrorCode(), tryTimes, e);
+                            indexTableName = client.getIndexTableName(tableName,
+                                tableQuery.getIndexName(), tableQuery.getScanRangeColumns(), true);
                         } else {
                             logger
-                                    .warn(
-                                            "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, reach max retry times {}",
-                                            indexTableName, partIdWithIndex.getLeft(),
-                                            ((ObTableException) e).getErrorCode(), tryTimes, e);
+                                .warn(
+                                    "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, reach max retry times {}",
+                                    indexTableName, partIdWithIndex.getLeft(),
+                                    ((ObTableException) e).getErrorCode(), tryTimes, e);
                             throw e;
                         }
                     } else {
@@ -274,7 +273,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
             for (Map.Entry<Long, ObPair<Long, ObTableParam>> entry : expectant.entrySet()) {
                 // mark the refer partition
                 referPartition.add(entry);
-                ObTableQueryResult tableQueryResult = (ObTableQueryResult) referToNewPartition(entry.getValue());
+                ObTableQueryResult tableQueryResult = (ObTableQueryResult) referToNewPartition(entry
+                    .getValue());
                 if (tableQueryResult.getRowCount() == 0) {
                     continue;
                 }
@@ -366,7 +366,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         partIdWithObTable.getRight().getObTable().execute(streamRequest);
     }
 
-    protected abstract ObPayload referToNewPartition(ObPair<Long, ObTableParam> partIdWithObTable) throws Exception;
+    protected abstract ObPayload referToNewPartition(ObPair<Long, ObTableParam> partIdWithObTable)
+                                                                                                  throws Exception;
 
     protected abstract ObTableQueryResult execute(ObPair<Long, ObTableParam> partIdWithObTable,
                                                   ObPayload streamRequest) throws Exception;
@@ -439,7 +440,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         } else {
             // query not support BatchSize
             throw new ObTableException(
-                "simple query not support BatchSize, use executeAsync() instead, BatchSize:" + tableQuery.getBatchSize());
+                "simple query not support BatchSize, use executeAsync() instead, BatchSize:"
+                        + tableQuery.getBatchSize());
         }
         initialized = true;
     }

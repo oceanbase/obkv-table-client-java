@@ -38,11 +38,11 @@ import java.util.Map;
 
 public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
-    private String        tableName;
-    private final ObTableClient obTableClient;
+    private String                                tableName;
+    private final ObTableClient                   obTableClient;
     private Map<Long, ObPair<Long, ObTableParam>> partitionObTables;
 
-    private Row                 rowKey;       // only used by BatchOperation
+    private Row                                   rowKey;           // only used by BatchOperation
 
     /*
      * Add aggregation.
@@ -130,7 +130,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             throw new IllegalArgumentException("table name is null");
         }
     }
-    
+
     /*
      * Set parameter into request
      */
@@ -148,7 +148,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         abstract T execute() throws Exception;
     }
 
-    private AbstractQueryStreamResult commonExecute(InitQueryResultCallback<AbstractQueryStreamResult> callable) throws Exception {
+    private AbstractQueryStreamResult commonExecute(InitQueryResultCallback<AbstractQueryStreamResult> callable)
+                                                                                                                throws Exception {
         checkArgumentBeforeExec();
 
         final long startTime = System.currentTimeMillis();
@@ -163,12 +164,12 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         if (obTableClient.isOdpMode()) {
             if (tableQuery.getScanRangeColumns().isEmpty()) {
                 if (tableQuery.getIndexName() != null
-                        && !tableQuery.getIndexName().equalsIgnoreCase("primary")) {
+                    && !tableQuery.getIndexName().equalsIgnoreCase("primary")) {
                     throw new ObTableException("key range columns must be specified when use index");
                 }
             }
             partitionObTables.put(0L, new ObPair<Long, ObTableParam>(0L, new ObTableParam(
-                    obTableClient.getOdpTable())));
+                obTableClient.getOdpTable())));
         } else {
             initPartitions();
         }
@@ -176,7 +177,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         StringBuilder stringBuilder = new StringBuilder();
         for (Map.Entry<Long, ObPair<Long, ObTableParam>> entry : partitionObTables.entrySet()) {
             stringBuilder.append("#").append(entry.getValue().getRight().getObTable().getIp())
-                    .append(":").append(entry.getValue().getRight().getObTable().getPort());
+                .append(":").append(entry.getValue().getRight().getObTable().getPort());
         }
         String endpoint = stringBuilder.toString();
         long getTableTime = System.currentTimeMillis();
@@ -185,23 +186,26 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         if (tableQuery.isAggregation()) {
             if (partitionObTables.size() > 1) {
                 throw new ObTableException(
-                        "Not supported aggregate of multiple partitions, the partition size is: "
-                                + partitionObTables.size(), ResultCodes.OB_NOT_SUPPORTED.errorCode);
+                    "Not supported aggregate of multiple partitions, the partition size is: "
+                            + partitionObTables.size(), ResultCodes.OB_NOT_SUPPORTED.errorCode);
             }
         }
 
         // set correct table group name for hbase
-        if (tableQuery.isHbaseQuery() && obTableClient.getTableGroupInverted().containsKey(tableName)
-                && tableName.equalsIgnoreCase(obTableClient.getTableGroupCache().get(obTableClient.getTableGroupInverted().get(tableName)))) {
+        if (tableQuery.isHbaseQuery()
+            && obTableClient.getTableGroupInverted().containsKey(tableName)
+            && tableName.equalsIgnoreCase(obTableClient.getTableGroupCache().get(
+                obTableClient.getTableGroupInverted().get(tableName)))) {
             tableName = obTableClient.getTableGroupInverted().get(tableName);
         }
 
         // init query stream result
         AbstractQueryStreamResult streamResult = callable.execute();
 
-        MonitorUtil.info((ObPayload) streamResult, obTableClient.getDatabase(), tableName,
-                "QUERY", endpoint, tableQuery, (ObTableClientQueryStreamResult) streamResult,
-                getTableTime - startTime, System.currentTimeMillis() - getTableTime,
+        MonitorUtil
+            .info((ObPayload) streamResult, obTableClient.getDatabase(), tableName, "QUERY",
+                endpoint, tableQuery, streamResult, getTableTime - startTime,
+                System.currentTimeMillis() - getTableTime,
                 obTableClient.getslowQueryMonitorThreshold());
 
         return streamResult;
@@ -211,7 +215,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
      * Execute internal.
      */
     public ObTableClientQueryStreamResult executeInternal() throws Exception {
-        return (ObTableClientQueryStreamResult) commonExecute(new InitQueryResultCallback<AbstractQueryStreamResult> () {
+        return (ObTableClientQueryStreamResult) commonExecute(new InitQueryResultCallback<AbstractQueryStreamResult>() {
             @Override
             ObTableClientQueryStreamResult execute() throws Exception {
                 ObTableClientQueryStreamResult obTableClientQueryStreamResult = new ObTableClientQueryStreamResult();
@@ -224,7 +228,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     }
 
     public ObTableClientQueryAsyncStreamResult asyncExecuteInternal() throws Exception {
-        return (ObTableClientQueryAsyncStreamResult) commonExecute(new InitQueryResultCallback<AbstractQueryStreamResult> () {
+        return (ObTableClientQueryAsyncStreamResult) commonExecute(new InitQueryResultCallback<AbstractQueryStreamResult>() {
             @Override
             ObTableClientQueryAsyncStreamResult execute() throws Exception {
                 ObTableClientQueryAsyncStreamResult obTableClientQueryAsyncStreamResult = new ObTableClientQueryAsyncStreamResult();
@@ -243,7 +247,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         String indexName = tableQuery.getIndexName();
         if (!this.obTableClient.isOdpMode()) {
             indexTableName = obTableClient.getIndexTableName(tableName, indexName,
-                    tableQuery.getScanRangeColumns(), false);
+                tableQuery.getScanRangeColumns(), false);
         }
 
         this.partitionObTables = new HashMap<Long, ObPair<Long, ObTableParam>>();
@@ -264,8 +268,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             ObBorderFlag borderFlag = rang.getBorderFlag();
             // pairs -> List<Pair<logicId, param>>
             List<ObPair<Long, ObTableParam>> pairs = this.obTableClient.getTables(indexTableName,
-                    start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false,
-                    false);
+                start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false,
+                false);
             for (ObPair<Long, ObTableParam> pair : pairs) {
                 this.partitionObTables.put(pair.getLeft(), pair);
             }

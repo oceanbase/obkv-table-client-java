@@ -52,18 +52,18 @@ public class ObTableQueryAsyncResult extends AbstractPayload {
         System.arraycopy(header, 0, bytes, idx, len);
         idx += len;
 
-        // 3. encode affectedEntity
+        // 1. encode affectedEntity
         len = (int) affectedEntity.getPayloadSize();
         System.arraycopy(affectedEntity.encode(), 0, bytes, idx, len);
-
-        // 1. encode sessionId
-        len = Serialization.getNeedBytes(sessionId);
-        System.arraycopy(Serialization.encodeVi64(sessionId), 0, bytes, idx, len);
-        idx += len;
 
         // 2. encode isEnd
         System.arraycopy(Serialization.encodeI8(isEnd ? (byte) 1 : (byte) 0), 0, bytes, idx, 1);
         idx++;
+
+        // 3. encode sessionId
+        len = Serialization.getNeedBytes(sessionId);
+        System.arraycopy(Serialization.encodeVi64(sessionId), 0, bytes, idx, len);
+        idx += len;
 
         return bytes;
     }

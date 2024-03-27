@@ -173,9 +173,9 @@ public class LocationUtil {
     private static final String home                             = System.getProperty("user.home",
                                                                      "/home/admin");
 
-    private static final String TABLE_GROUP_GET_TABLE_NAME_V4    = "SELECT /*+READ_CONSISTENCY(WEAK)*/ table_name " +
-                                                                    "FROM oceanbase.CDB_OB_TABLEGROUP_TABLES " +
-                                                                    "WHERE tablegroup_name = ? and tenant_id = ? limit 1;";
+    private static final String TABLE_GROUP_GET_TABLE_NAME_V4    = "SELECT /*+READ_CONSISTENCY(WEAK)*/ table_name "
+                                                                   + "FROM oceanbase.CDB_OB_TABLEGROUP_TABLES "
+                                                                   + "WHERE tablegroup_name = ? and tenant_id = ? limit 1;";
 
     private static final int    TEMPLATE_PART_ID                 = -1;
 
@@ -445,13 +445,13 @@ public class LocationUtil {
      * load Table Name With table Group
      */
     public static String loadTableNameWithGroupName(final ServerRoster serverRoster,
-                                                   final TableEntryKey key,
-                                                   final long connectTimeout,
-                                                   final long socketTimeout,
-                                                   final long priorityTimeout,
-                                                   final long cachingTimeout,
-                                                   final ObUserAuth sysUA)
-            throws ObTableNotExistException {
+                                                    final TableEntryKey key,
+                                                    final long connectTimeout,
+                                                    final long socketTimeout,
+                                                    final long priorityTimeout,
+                                                    final long cachingTimeout,
+                                                    final ObUserAuth sysUA)
+                                                                           throws ObTableNotExistException {
         Connection connection = null;
         String realTableName = "";
         String url = "";
@@ -467,7 +467,7 @@ public class LocationUtil {
             throw e;
         } catch (Exception e) {
             throw new ObTableNotExistException(format(
-                    "fail to get table name from remote url=%s, key=%s", url, key), e);
+                "fail to get table name from remote url=%s, key=%s", url, key), e);
         } catch (Throwable t) {
             RUNTIME.error("callTableEntryNameWithPriority meet exception", t);
             throw t;
@@ -483,16 +483,17 @@ public class LocationUtil {
         if (realTableName != null && !realTableName.isEmpty()) {
             return realTableName;
         } else {
-            throw new ObTableNotExistException("table name is invalid, addr = " + addr + " key =" + key + " tableName =" + realTableName);
+            throw new ObTableNotExistException("table name is invalid, addr = " + addr + " key ="
+                                               + key + " tableName =" + realTableName);
         }
-        
+
     }
 
     /*
      * get TableName From Remote with Group
      */
     private static String getTableNameByGroupNameFromRemote(Connection connection, TableEntryKey key)
-            throws ObTableNotExistException {
+                                                                                                     throws ObTableNotExistException {
         PreparedStatement ps = null;
         ResultSet rs = null;
         String realTableName = "";
@@ -508,7 +509,7 @@ public class LocationUtil {
                 ps.setString(2, String.valueOf(tenantId));
             } else {
                 throw new ObTableNotExistException(format(
-                        "fail to get table name from remote in low version than 4, key=%s", key));
+                    "fail to get table name from remote in low version than 4, key=%s", key));
             }
             rs = ps.executeQuery();
             while (rs.next()) {
@@ -520,8 +521,8 @@ public class LocationUtil {
             throw e;
         } catch (Exception e) {
             RUNTIME.error("getTableNameByGroupNameFromRemote meet exception", e);
-            throw new ObTableNotExistException(format(
-                    "fail to get table name from remote, key=%s", key), e);
+            throw new ObTableNotExistException(format("fail to get table name from remote, key=%s",
+                key), e);
         } finally {
             try {
                 if (null != rs) {

@@ -35,11 +35,11 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResult {
-    private static final Logger logger = LoggerFactory
-                                           .getLogger(ObTableClientQueryStreamResult.class);
-    protected ObTableClient     client;
-    private boolean             isEnd  = true;
-    private long                sessionId = Constants.OB_INVALID_ID;
+    private static final Logger      logger       = LoggerFactory
+                                                      .getLogger(ObTableClientQueryStreamResult.class);
+    protected ObTableClient          client;
+    private boolean                  isEnd        = true;
+    private long                     sessionId    = Constants.OB_INVALID_ID;
     private ObTableQueryAsyncRequest asyncRequest = new ObTableQueryAsyncRequest();
 
     @Override
@@ -61,8 +61,12 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
 
         // send to first tablet
         if (!expectant.isEmpty()) {
-            Map.Entry<Long, ObPair<Long, ObTableParam>> firstEntry = expectant.entrySet().iterator().next();
+            Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
+                .iterator();
+            Map.Entry<Long, ObPair<Long, ObTableParam>> firstEntry = it.next();
             referToNewPartition(firstEntry.getValue());
+            if (isEnd())
+                it.remove();
         }
         initialized = true;
     }
@@ -74,7 +78,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
     }
 
     protected ObTableQueryAsyncResult referToNewPartition(ObPair<Long, ObTableParam> partIdWithObTable)
-            throws Exception {
+                                                                                                       throws Exception {
         ObTableParam obTableParam = partIdWithObTable.getRight();
         ObTableQueryRequest queryRequest = asyncRequest.getObTableQueryRequest();
 
@@ -95,16 +99,11 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         // async execute
         ObTableQueryAsyncResult ret = executeAsync(partIdWithObTable, asyncRequest);
 
-        // remove useless expectant if it is end
-        if (isEnd()) {
-            expectant.remove(partIdWithObTable.getLeft());
-        }
-
         return ret;
     }
 
     protected ObTableQueryAsyncResult referToLastStreamResult(ObPair<Long, ObTableParam> partIdWithObTable)
-            throws Exception {
+                                                                                                           throws Exception {
         ObTableParam obTableParam = partIdWithObTable.getRight();
         ObTableQueryRequest queryRequest = asyncRequest.getObTableQueryRequest();
 
@@ -118,11 +117,6 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
 
         // async execute
         ObTableQueryAsyncResult ret = executeAsync(partIdWithObTable, asyncRequest);
-
-        // remove useless expectant if it is end
-        if (isEnd()) {
-            expectant.remove(partIdWithObTable.getLeft());
-        }
 
         return ret;
     }
@@ -140,8 +134,16 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
 
             // secondly, refer to the last stream result
             if (!isEnd() && !expectant.isEmpty()) {
-                Map.Entry<Long, ObPair<Long, ObTableParam>> lastEntry = expectant.entrySet().iterator().next();
+                Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
+                    .iterator();
+                Map.Entry<Long, ObPair<Long, ObTableParam>> lastEntry = it.next();
+                // try access new partition, async will not remove useless expectant
                 referToLastStreamResult(lastEntry.getValue());
+
+                // remove useless expectant if it is end
+                if (isEnd())
+                    it.remove();
+
                 if (!cacheRows.isEmpty()) {
                     nextRow();
                     return true;
@@ -150,9 +152,17 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
 
             // lastly, refer to the new partition
             boolean hasNext = false;
-            for (Map.Entry<Long, ObPair<Long, ObTableParam>> entry : expectant.entrySet()) {
-                // try access new partition, async will remove useless expectant
+            Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
+                .iterator();
+            while (it.hasNext()) {
+                Map.Entry<Long, ObPair<Long, ObTableParam>> entry = it.next();
+                // try access new partition, async will not remove useless expectant
                 referToNewPartition(entry.getValue());
+
+                // remove useless expectant if it is end
+                if (isEnd())
+                    it.remove();
+
                 if (!cacheRows.isEmpty()) {
                     hasNext = true;
                     nextRow();
@@ -179,7 +189,8 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
     protected ObTableQueryAsyncResult executeAsync(ObPair<Long, ObTableParam> partIdWithObTable,
                                                    ObPayload streamRequest) throws Exception {
         // execute request
-        ObTableQueryAsyncResult result = (ObTableQueryAsyncResult) commonExecute(this.client, logger, partIdWithObTable, streamRequest);
+        ObTableQueryAsyncResult result = (ObTableQueryAsyncResult) commonExecute(this.client,
+            logger, partIdWithObTable, streamRequest);
 
         // cache result
         cacheResultRows(result);

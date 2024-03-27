@@ -460,7 +460,7 @@ public class ObTableGlobalIndexTest {
     }
 
     @Test
-    public void test_query_sync() throws Exception {
+    public void test_query_async() throws Exception {
         String tableName = "test_global_hash_range";
         test_query_async(tableName);
     }
@@ -493,8 +493,7 @@ public class ObTableGlobalIndexTest {
             query.limit(5);
             query.setBatchSize(2);
             query.setMaxResultSize(10000);
-            // 异步query start, 获取第一个batch的结果集
-            QueryResultSet result = query.execute();
+            QueryResultSet result = query.asyncExecute();
             for (int i = 0; i < 5; i++) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();

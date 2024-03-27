@@ -50,6 +50,10 @@ public abstract class ObTableClientTestBase {
         this.client = client;
     }
 
+    public boolean skipObTableTest() {
+        return this instanceof ObTableTest;
+    }
+
     @After
     public void close() throws Exception {
         if (null != this.client && this.client instanceof ObTableClient) {
@@ -558,13 +562,12 @@ public abstract class ObTableClientTestBase {
         assertEquals("baz", new String((byte[]) values.get("c2")));
     }
 
-    /**
-     * 单 key 的方式，例如
-     * scan[{"123"}, {"567"})
-     * @throws Exception
-     */
     @Test
-    public void test_limit_query_1() throws Exception {
+    public void test_limit_query() throws Exception {
+        if (skipObTableTest()) {
+            return;
+        }
+
         Object[] c1 = new Object[] { "123", "124", "234", "456", "567" };
         Object[] c2 = new Object[] { "123c2", "124c2", "234c2", "456c2", "567c2" };
         if ((client instanceof ObTableClient) && ((ObTableClient) client).isOdpMode()) {
@@ -575,10 +578,19 @@ public abstract class ObTableClientTestBase {
                     client.insert("test_varchar_table", c1[i], new String[] { "c2" },
                         new Object[] { c2[i] });
                 }
+                try {
+                    TableQuery tableQuery = client.query("test_varchar_table");
+                    QueryResultSet result = tableQuery.select("c2").setBatchSize(1)
+                        .addScanRange("123", true, "567", true).execute();
+                    fail();
+                } catch (ObTableException e) {
+                    assertTrue(true);
+                }
+
                 // 123 <= xxx <= 567
                 TableQuery tableQuery = client.query("test_varchar_table");
-                QueryResultSet result = tableQuery.setKeys("c1").select("c2").setBatchSize(1)
-                    .addScanRange("123", true, "567", true).execute();
+                QueryResultSet result = tableQuery.select("c1", "c2").setBatchSize(1)
+                    .addScanRange("123", true, "567", true).asyncExecute();
                 for (int i = 0; i < 5; i++) {
                     Assert.assertTrue(result.next());
                     Map<String, Object> value = result.getRow();
@@ -588,8 +600,8 @@ public abstract class ObTableClientTestBase {
 
                 // 123 <= xxx < 567
                 tableQuery = client.query("test_varchar_table");
-                result = tableQuery.setKeys("c1").select("c1", "c2").setBatchSize(1)
-                    .addScanRange("123", true, "567", false).execute();
+                result = tableQuery.select("c1", "c2").setBatchSize(1)
+                    .addScanRange("123", true, "567", false).asyncExecute();
                 for (int i = 0; i < 4; i++) {
                     Assert.assertTrue(result.next());
                     assertEquals(0, result.cacheSize());
@@ -607,141 +619,335 @@ public abstract class ObTableClientTestBase {
     }
 
     @Test
-    public void test_limit_query_2() throws Exception {
-        TableQuery tableQuery = client.query("test_varchar_table");
-        TableQuery tableQuery2 = client.query("test_varchar_table");
-        tableQuery.setOperationTimeout(100000);
-        assertNotNull(tableQuery.getObTableQuery());
-        tableQuery.setEntityType(new ObTableQueryRequest().getEntityType());
-        assertNotNull(tableQuery.getEntityType());
-        assertEquals("test_varchar_table", tableQuery.getTableName());
-        tableQuery.addScanRange("1", "2");
-        tableQuery2.addScanRangeStartsWith("1");
-        tableQuery2.addScanRangeEndsWith("2");
-        assertEquals(1, tableQuery.getObTableQuery().getKeyRanges().size());
-        assertEquals(2, tableQuery2.getObTableQuery().getKeyRanges().size());
-
-        try {
-            tableQuery.scanOrder(true);
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-
-        try {
-            tableQuery.indexName("test");
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-
-        try {
-            tableQuery.primaryIndex();
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-
-        try {
-            tableQuery.filterString("111");
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-
-        try {
-            tableQuery.setHTableFilter(new ObHTableFilter());
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-
-        try {
-            tableQuery.limit(10);
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-
-        try {
-            tableQuery.limit(10, 10);
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-
-        try {
-            tableQuery.addScanRange(new Object[] { "1" }, new Object[] { "3" }).setKeys("c1", "c1");
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-
-        try {
-            tableQuery.setKeys("c1", "c3").select("c2", "c1");
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-
-        try {
-            tableQuery.setMaxResultSize(100000);
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-
-        tableQuery.clear();
-    }
-
-    @Test
     public void test_async_query() throws Exception {
         /*
         * CREATE TABLE `test_varchar_table` (
-             `c1` varchar(20) NOT NULL,
-             `c2` varchar(20) DEFAULT NULL,
-            PRIMARY KEY (`c1`)); partition by KEY(`c1`) partitions 3;
-            )*/
-
-        // TODO: stream query is not supported in ODP mode
-        if ((client instanceof ObTableClient) && ((ObTableClient) client).isOdpMode()) {
+         `c1` varchar(20) NOT NULL,
+         `c2` varchar(20) DEFAULT NULL,
+        PRIMARY KEY (`c1`)
+        )*/
+        if (skipObTableTest()) {
             return;
         }
-        Object[] c1 = new Object[] { "123", "124", "234", "456", "567" };
-        Object[] c2 = new Object[] { "123c2", "124c2", "234c2", "456c2", "567c2" };
         try {
-
-            for (int i = 0; i < 5; i++) {
-                client.insert("test_varchar_table", c1[i], new String[] { "c2" },
-                    new Object[] { c2[i] });
-            }
-            //非阻塞query
+            client.delete("test_varchar_table", "125");
+            client.insert("test_varchar_table", "125", new String[] { "c2" },
+                new Object[] { "123c1" });
             TableQuery tableQuery = client.query("test_varchar_table");
-            // 查询结果集
-            tableQuery.select("c2");
-            tableQuery.limit(5);
-            tableQuery.primaryIndex();
-            tableQuery.addScanRange("123", "567");
-            tableQuery.setBatchSize(2);
-            tableQuery.setMaxResultSize(10000);
-            // 异步query start, 获取第一个batch的结果集
-            QueryResultSet result = tableQuery.execute();
+            QueryResultSet resultSet = tableQuery.select("c2").primaryIndex()
+                .addScanRange("123", "567").asyncExecute();
+            assertEquals(1, resultSet.cacheSize());
+            client.delete("test_varchar_table", "125");
 
+            client.insert("test_varchar_table", "123", new String[] { "c2" },
+                new Object[] { "123c2" });
+            client.insert("test_varchar_table", "124", new String[] { "c2" },
+                new Object[] { "124c2" });
+            client.insert("test_varchar_table", "234", new String[] { "c2" },
+                new Object[] { "234c2" });
+            client.insert("test_varchar_table", "456", new String[] { "c2" },
+                new Object[] { "456c2" });
+            client.insert("test_varchar_table", "567", new String[] { "c2" },
+                new Object[] { "567c2" });
+
+            tableQuery = client.query("test_varchar_table");
+            tableQuery.setMaxResultSize(100000);
+            tableQuery.clear();
+
+            // >= 123 && <= 567
+            resultSet = tableQuery.select("c2").primaryIndex().addScanRange("123", "567")
+                .asyncExecute();
+            assertEquals(5, resultSet.cacheSize());
             for (int i = 0; i < 5; i++) {
-                Assert.assertTrue(result.next());
-                Map<String, Object> value = result.getRow();
-                assertEquals(value.get("c2"), c2[i]);
-                System.out.println("c2:" + value.get("c2"));
+                Assert.assertTrue(resultSet.next());
+                Map<String, Object> value = resultSet.getRow();
+                switch (i) {
+                    case 0:
+                        assertEquals("123c2", value.get("c2"));
+                        break;
+                    case 1:
+                        assertEquals("124c2", value.get("c2"));
+                        break;
+                    case 2:
+                        assertEquals("234c2", value.get("c2"));
+                        break;
+                    case 3:
+                        assertEquals("456c2", value.get("c2"));
+                        break;
+                    case 4:
+                        assertEquals("567c2", value.get("c2"));
+                        break;
+                }
             }
-            Assert.assertFalse(result.next());
 
-        } catch (Exception e) {
-            e.printStackTrace();
+            // >= 123 && <= 123
+            tableQuery.clear();
+            resultSet = tableQuery.select("c2").primaryIndex().addScanRange("123", "123")
+                .asyncExecute();
+            assertEquals(1, resultSet.cacheSize());
+            Assert.assertTrue(resultSet.next());
+            Map<String, Object> v = resultSet.getRow();
+            assertEquals("123c2", v.get("c2"));
+
+            // >= 124 && <= 456
+            tableQuery.clear();
+            resultSet = tableQuery.select("c2").primaryIndex().addScanRange("124", "456")
+                .asyncExecute();
+            for (int i = 0; i < 3; i++) {
+                Assert.assertTrue(resultSet.next());
+                Map<String, Object> value = resultSet.getRow();
+                switch (i) {
+                    case 0:
+                        assertEquals("124c2", value.get("c2"));
+                        break;
+                    case 1:
+                        assertEquals("234c2", value.get("c2"));
+                        break;
+                    case 2:
+                        assertEquals("456c2", value.get("c2"));
+                        break;
+                }
+            }
+
+            // > 123 && < 567
+            tableQuery.clear();
+            resultSet = tableQuery.select("c2").primaryIndex()
+                .addScanRange(new Object[] { "123" }, false, new Object[] { "567" }, false)
+                .setBatchSize(1).asyncExecute();
+            for (int i = 0; i < 3; i++) {
+                Assert.assertTrue(resultSet.next());
+                Map<String, Object> value = resultSet.getRow();
+                switch (i) {
+                    case 0:
+                        assertEquals("124c2", value.get("c2"));
+                        break;
+                    case 1:
+                        assertEquals("234c2", value.get("c2"));
+                        break;
+                    case 2:
+                        assertEquals("456c2", value.get("c2"));
+                        break;
+                }
+            }
+
+            // > 123 && <= 567
+            tableQuery.clear();
+            resultSet = tableQuery.select("c2").primaryIndex()
+                .addScanRange(new Object[] { "123" }, false, new Object[] { "567" }, true)
+                .setBatchSize(2).asyncExecute();
+            for (int i = 0; i < 4; i++) {
+                Assert.assertTrue(resultSet.next());
+                Map<String, Object> value = resultSet.getRow();
+                switch (i) {
+                    case 0:
+                        assertEquals("124c2", value.get("c2"));
+                        break;
+                    case 1:
+                        assertEquals("234c2", value.get("c2"));
+                        break;
+                    case 2:
+                        assertEquals("456c2", value.get("c2"));
+                        break;
+                    case 3:
+                        assertEquals("567c2", value.get("c2"));
+                        break;
+                }
+            }
+
+            // >= 123 && < 567
+            tableQuery.clear();
+            resultSet = tableQuery.select("c2").primaryIndex()
+                .addScanRange(new Object[] { "123" }, true, new Object[] { "567" }, false)
+                .setBatchSize(2).asyncExecute();
+            for (int i = 0; i < 4; i++) {
+                Assert.assertTrue(resultSet.next());
+                Map<String, Object> value = resultSet.getRow();
+                switch (i) {
+                    case 0:
+                        assertEquals("123c2", value.get("c2"));
+                        break;
+                    case 1:
+                        assertEquals("124c2", value.get("c2"));
+                        break;
+                    case 2:
+                        assertEquals("234c2", value.get("c2"));
+                        break;
+                    case 3:
+                        assertEquals("456c2", value.get("c2"));
+                        break;
+                }
+            }
+
+            // >= 12 && <= 126
+            tableQuery.clear();
+            resultSet = tableQuery.select("c2").primaryIndex().addScanRange("12", "126")
+                .setBatchSize(10).asyncExecute();
+            assertEquals(2, resultSet.cacheSize());
+            for (int i = 0; i < 2; i++) {
+                Assert.assertTrue(resultSet.next());
+                Map<String, Object> value = resultSet.getRow();
+                switch (i) {
+                    case 0:
+                        assertEquals("123c2", value.get("c2"));
+                        break;
+                    case 1:
+                        assertEquals("124c2", value.get("c2"));
+                        break;
+                }
+            }
+
+            // (>=12 && <=126) || (>="456" && <="567")
+            tableQuery.clear();
+            resultSet = tableQuery.select("c2").primaryIndex().addScanRange("12", "126")
+                .addScanRange("456", "567").asyncExecute();
+            assertEquals(4, resultSet.cacheSize());
+            for (int i = 0; i < 4; i++) {
+                Assert.assertTrue(resultSet.next());
+                Map<String, Object> value = resultSet.getRow();
+                switch (i) {
+                    case 0:
+                        assertEquals("123c2", value.get("c2"));
+                        break;
+                    case 1:
+                        assertEquals("124c2", value.get("c2"));
+                        break;
+                    case 2:
+                        assertEquals("456c2", value.get("c2"));
+                        break;
+                    case 3:
+                        assertEquals("567c2", value.get("c2"));
+                        break;
+                }
+            }
+
+            // (>=124 && <=124)
+            tableQuery.clear();
+            resultSet = tableQuery.select("c2").primaryIndex().addScanRange("124", "124")
+                .setBatchSize(1).asyncExecute();
+            for (int i = 0; i < 1; i++) {
+                Assert.assertTrue(resultSet.next());
+                Map<String, Object> value = resultSet.getRow();
+                switch (i) {
+                    case 0:
+                        assertEquals("124c2", value.get("c2"));
+                        break;
+                }
+            }
+
+            // (>=124 && <=123)
+            tableQuery.clear();
+            resultSet = tableQuery.select("c2").primaryIndex().addScanRange("124", "123")
+                .setBatchSize(10).asyncExecute();
+            assertEquals(0, resultSet.cacheSize());
+
+            resultSet = tableQuery.select("c2").primaryIndex().addScanRange("12", "126")
+                .addScanRange("456", "567").setBatchSize(1).asyncExecute();
+            for (int i = 0; i < 1; i++) {
+                Assert.assertTrue(resultSet.next());
+                Map<String, Object> value = resultSet.getRow();
+                switch (i) {
+                    case 0:
+                        assertEquals("123c2", value.get("c2"));
+                        break;
+                }
+            }
+            resultSet.close();
+
+            try {
+                resultSet.next();
+                fail();
+            } catch (IllegalStateException e) {
+                Assert.assertTrue(e.getMessage().contains("closed"));
+            }
+
+            // TODO: add test to check query timeout
+
+            tableQuery.clear();
+            resultSet = tableQuery.select("c2").primaryIndex().addScanRange("12", "126")
+                .addScanRange("456", "567").setOperationTimeout(3000).execute();
+            assertEquals(4, resultSet.cacheSize());
+            Assert.assertTrue(resultSet.next());
+            Thread.sleep(2000);
+            resultSet.next();
+            resultSet.close();
+
+            tableQuery.clear();
+            resultSet = tableQuery.select("c2").primaryIndex().scanOrder(true)
+                .addScanRangeStartsWith(new Object[] { "12" }).setOperationTimeout(3000).execute();
+            assertEquals(5, resultSet.cacheSize());
+            Assert.assertTrue(resultSet.next());
+            Thread.sleep(2000);
+            resultSet.next();
+            resultSet.close();
+
+            tableQuery.clear();
+            resultSet = tableQuery.select("c2").primaryIndex().scanOrder(true)
+                .addScanRangeEndsWith(new Object[] { "126" }).setOperationTimeout(3000).execute();
+            assertEquals(2, resultSet.cacheSize());
+            Assert.assertTrue(resultSet.next());
+            Thread.sleep(2000);
+            resultSet.next();
+            resultSet.close();
+
+            tableQuery.clear();
+            try {
+                tableQuery.select("c2").addScanRange("12", "126").addScanRange("456", "567")
+                    .setBatchSize(1).execute();
+            } catch (Exception e) {
+                if (e instanceof ObTableException) {
+                    assertTrue(true);
+                } else {
+                    System.out.println("Wrong Exception: " + e);
+                    fail();
+                }
+            }
         } finally {
-            for (int i = 0; i < 5; i++) {
-                client.delete("test_varchar_table", c1[i]);
-            }
+            client.delete("test_varchar_table", "123");
+            client.delete("test_varchar_table", "124");
+            client.delete("test_varchar_table", "125");
+            client.delete("test_varchar_table", "234");
+            client.delete("test_varchar_table", "456");
+            client.delete("test_varchar_table", "567");
+        }
+    }
 
+    @Test
+    public void test_async_query_timeout() throws Exception {
+        /*
+        * CREATE TABLE `test_varchar_table` (
+         `c1` varchar(20) NOT NULL,
+         `c2` varchar(20) DEFAULT NULL,
+        PRIMARY KEY (`c1`)
+        )*/
+        if (skipObTableTest()) {
+            return;
+        }
+        try {
+            client.insert("test_varchar_table", "123", new String[] { "c2" },
+                new Object[] { "123c2" });
+            client.insert("test_varchar_table", "124", new String[] { "c2" },
+                new Object[] { "124c2" });
+            client.insert("test_varchar_table", "234", new String[] { "c2" },
+                new Object[] { "234c2" });
+            client.insert("test_varchar_table", "456", new String[] { "c2" },
+                new Object[] { "456c2" });
+            client.insert("test_varchar_table", "567", new String[] { "c2" },
+                new Object[] { "567c2" });
+
+            TableQuery tableQuery = client.query("test_varchar_table");
+            tableQuery.setMaxResultSize(100000);
+            tableQuery.clear();
+
+            // Query session will be delete after couple minutes, if everything goes well, server will survive :D
+            QueryResultSet resultSet = tableQuery.select("c2").primaryIndex().setBatchSize(1)
+                .addScanRange("123", "567").asyncExecute();
+        } finally {
+            client.delete("test_varchar_table", "123");
+            client.delete("test_varchar_table", "124");
+            client.delete("test_varchar_table", "125");
+            client.delete("test_varchar_table", "234");
+            client.delete("test_varchar_table", "456");
+            client.delete("test_varchar_table", "567");
         }
     }
 
@@ -749,10 +955,13 @@ public abstract class ObTableClientTestBase {
     public void test_query() throws Exception {
         /*
         * CREATE TABLE `test_varchar_table` (
-            `c1` varchar(20) NOT NULL,
-             `c2` varchar(20) DEFAULT NULL,
-            PRIMARY KEY (`c1`)
-            )*/
+         `c1` varchar(20) NOT NULL,
+         `c2` varchar(20) DEFAULT NULL,
+        PRIMARY KEY (`c1`)
+        )*/
+        if (skipObTableTest()) {
+            return;
+        }
         try {
             client.delete("test_varchar_table", "125");
             client.insert("test_varchar_table", "125", new String[] { "c2" },

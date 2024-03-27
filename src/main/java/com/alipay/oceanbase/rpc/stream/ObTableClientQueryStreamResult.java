@@ -45,7 +45,7 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
     protected ObTableClient     client;
 
     protected ObTableQueryResult referToNewPartition(ObPair<Long, ObTableParam> partIdWithObTable)
-            throws Exception {
+                                                                                                  throws Exception {
         ObTableQueryRequest request = new ObTableQueryRequest();
         request.setTableName(tableName);
         request.setTableQuery(tableQuery);
@@ -56,7 +56,7 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
             request.setTimeout(operationTimeout);
         } else {
             request.setTimeout(partIdWithObTable.getRight().getObTable()
-                    .getObTableOperationTimeout());
+                .getObTableOperationTimeout());
         }
         request.setConsistencyLevel(getReadConsistency().toObTableConsistencyLevel());
         return execute(partIdWithObTable, request);
@@ -66,7 +66,8 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
     protected ObTableQueryResult execute(ObPair<Long, ObTableParam> partIdWithIndex,
                                          ObPayload request) throws Exception {
         // execute request
-        ObTableQueryResult result = (ObTableQueryResult) commonExecute(this.client, logger, partIdWithIndex, request);
+        ObTableQueryResult result = (ObTableQueryResult) commonExecute(this.client, logger,
+            partIdWithIndex, request);
 
         cacheStreamNext(partIdWithIndex, checkObTableQueryResult(result));
 
