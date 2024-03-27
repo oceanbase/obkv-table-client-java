@@ -126,19 +126,37 @@ public class ObTableTabletOp extends AbstractPayload {
      */
     public void setSingleOperations(List<ObTableSingleOp> singleOperations) {
         setIsSameType(true);
+        setIsSamePropertiesNames(true);
         ObTableOperationType prevType = null;
+        List<String> prevPropertiesNames = null;
         for (ObTableSingleOp o : singleOperations) {
             // get union column names
             rowKeyNamesSet.addAll(o.getQuery().getScanRangeColumns());
             for (ObTableSingleOpEntity e: o.getEntities()) {
                 rowKeyNamesSet.addAll(e.getRowKeyNames());
                 propertiesNamesSet.addAll(e.getPropertiesNames());
+
+                if (!isSamePropertiesNames()) {
+                    // do nothing
+                } else if (prevPropertiesNames != null && isSamePropertiesNames() &&
+                        !prevPropertiesNames.equals(e.getPropertiesNames())) {
+                    setIsSamePropertiesNames(false);
+                } else {
+                    prevPropertiesNames = e.getPropertiesNames();
+                }
             }
-            if (prevType != null && prevType != o.getSingleOpType()) {
+
+            if (!isSameType()) {
+                // do nothing
+            } else if (prevType != null && prevType != o.getSingleOpType()) {
                 setIsSameType(false);
             } else {
                 prevType = o.getSingleOpType();
             }
+        }
+
+        if (isSameType() && singleOperations.get(0).getSingleOpType() == ObTableOperationType.GET) {
+            setIsReadOnly(true);
         }
         this.singleOperations = singleOperations;
     }
@@ -153,7 +171,17 @@ public class ObTableTabletOp extends AbstractPayload {
 
     public boolean isSameType() { return optionFlag.getFlagIsSameType(); }
 
+    public boolean isSamePropertiesNames() {
+        return optionFlag.getFlagIsSamePropertiesNames();
+    }
+
     public void setIsSameType(boolean isSameType) { optionFlag.setFlagIsSameType(isSameType);}
+
+    public void setIsReadOnly(boolean isReadOnly) { optionFlag.setFlagIsReadOnly(isReadOnly);}
+
+    public void setIsSamePropertiesNames(boolean isSamePropertiesNames) {
+        optionFlag.setFlagIsSamePropertiesNames(isSamePropertiesNames);
+    }
 
     public Set<String> getRowKeyNamesSet() {
         return rowKeyNamesSet;

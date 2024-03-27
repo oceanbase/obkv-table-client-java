@@ -25,6 +25,7 @@ public abstract class AbstractTableBatchOps implements TableBatchOps {
     protected String            tableName;
 
     protected boolean           atomicOperation;
+    protected boolean           returnOneResult;
 
     protected ObTableEntityType entityType = ObTableEntityType.DYNAMIC;
 
@@ -93,6 +94,14 @@ public abstract class AbstractTableBatchOps implements TableBatchOps {
     }
 
     /**
+     * Put.
+     */
+    @Override
+    public void put(Object rowkey, String[] columns, Object[] values) {
+        put(new Object[] { rowkey }, columns, values);
+    }
+
+    /**
      * Get table name.
      */
     @Override
@@ -121,6 +130,19 @@ public abstract class AbstractTableBatchOps implements TableBatchOps {
     @Override
     public boolean isAtomicOperation() {
         return atomicOperation;
+    }
+
+    @Override
+    public void setReturnOneResult(boolean returnOneResult) {
+        this.returnOneResult = returnOneResult;
+    }
+
+    /*
+     * Is Return One Result.
+     */
+    @Override
+    public boolean isReturnOneResult() {
+        return returnOneResult;
     }
 
     /*

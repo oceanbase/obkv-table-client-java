@@ -75,6 +75,7 @@ public class ObPacketFactory implements CommandFactory {
         // us
         rpcHeaderPacket.setTimeout(payload.getTimeout() * 1000);
         rpcHeaderPacket.setTenantId(payload.getTenantId());
+        rpcHeaderPacket.setPrvTenantId(payload.getTenantId());
         // trace
         rpcHeaderPacket.setTraceId0(payload.getUniqueId());
         rpcHeaderPacket.setTraceId1(payload.getSequence());
