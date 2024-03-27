@@ -180,7 +180,7 @@ public class ObHTableOperationRequest {
 
                 obNewRange = new ObNewRange();
                 obNewRange
-                        .setStartKey(ObRowKey.getInstance(rowKey, ObObj.getMin(), ObObj.getMin()));
+                    .setStartKey(ObRowKey.getInstance(rowKey, ObObj.getMin(), ObObj.getMin()));
                 obNewRange.setEndKey(ObRowKey.getInstance(rowKey, ObObj.getMax(), ObObj.getMax()));
                 obTableQuery.addKeyRange(obNewRange);
                 obTableQuery.addSelectColumn("K");
@@ -202,7 +202,7 @@ public class ObHTableOperationRequest {
 
                 obNewRange = new ObNewRange();
                 obNewRange
-                        .setStartKey(ObRowKey.getInstance(rowKey, ObObj.getMin(), ObObj.getMin()));
+                    .setStartKey(ObRowKey.getInstance(rowKey, ObObj.getMin(), ObObj.getMin()));
                 obNewRange.setEndKey(ObRowKey.getInstance(rowKey, ObObj.getMax(), ObObj.getMax()));
                 obTableQuery.addKeyRange(obNewRange);
                 obTableQuery.addSelectColumn("K");

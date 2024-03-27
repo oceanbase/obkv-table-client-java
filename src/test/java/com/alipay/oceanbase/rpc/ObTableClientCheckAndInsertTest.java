@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.bolt.ObTableClientTestBase;
+import com.alipay.oceanbase.rpc.bolt.ObTableTest;
 import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.filter.ObCompareOp;
 import com.alipay.oceanbase.rpc.filter.ObTableValueFilter;
@@ -26,12 +27,10 @@ import com.alipay.oceanbase.rpc.location.model.ServerRoster;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
+import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.lang.reflect.Field;
 
@@ -39,7 +38,21 @@ import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.compareVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
 
-public class ObTableClientCheckAndInsertTest extends ObTableClientTestBase {
+public class ObTableClientCheckAndInsertTest {
+
+    public Table client;
+
+    public void setClient(Table client) {
+        this.client = client;
+    }
+
+    @After
+    public void close() throws Exception {
+        if (null != this.client && this.client instanceof ObTableClient) {
+            ((ObTableClient) this.client).close();
+        }
+    }
+
     @Before
     public void setup() throws Exception {
         System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
@@ -56,7 +69,6 @@ public class ObTableClientCheckAndInsertTest extends ObTableClientTestBase {
         obTableClient.init();
 
         this.client = obTableClient;
-        syncRefreshMetaHelper(obTableClient);
     }
 
     @Test

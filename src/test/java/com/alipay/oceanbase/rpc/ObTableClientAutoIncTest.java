@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.bolt.ObTableClientTestBase;
+import com.alipay.oceanbase.rpc.bolt.ObTableTest;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.filter.ObCompareOp;
 import com.alipay.oceanbase.rpc.filter.ObTableValueFilter;
@@ -25,12 +26,10 @@ import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
+import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -43,7 +42,20 @@ import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class ObTableClientAutoIncTest extends ObTableClientTestBase {
+public class ObTableClientAutoIncTest {
+    public Table client;
+
+    public void setClient(Table client) {
+        this.client = client;
+    }
+
+    @After
+    public void close() throws Exception {
+        if (null != this.client && this.client instanceof ObTableClient) {
+            ((ObTableClient) this.client).close();
+        }
+    }
+
     @Before
     public void setup() throws Exception {
         System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
@@ -62,7 +74,6 @@ public class ObTableClientAutoIncTest extends ObTableClientTestBase {
         obTableClient.addRowKeyElement("test_auto_increment_not_rowkey", new String[] { "c1" });
 
         this.client = obTableClient;
-        syncRefreshMetaHelper(obTableClient);
     }
 
     private void executeSQL(String createSQL) throws SQLException {

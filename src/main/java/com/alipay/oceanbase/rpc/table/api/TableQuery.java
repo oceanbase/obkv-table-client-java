@@ -48,9 +48,7 @@ public interface TableQuery {
 
     QueryResultSet execute() throws Exception;
 
-    QueryResultSet executeInit(ObPair<Long, ObTableParam> entry) throws Exception;
-
-    QueryResultSet executeNext(ObPair<Long, ObTableParam> entry) throws Exception;
+    QueryResultSet asyncExecute() throws Exception;
 
     TableQuery select(String... columns);
 
@@ -64,13 +62,14 @@ public interface TableQuery {
      */
     TableQuery limit(int limit);
 
-    /* can not use offset without valid limit value. limit lessThan 0 && offset bigThan 0 */
     /**
      * Row count offset, default: 0
      * 
      * @param offset limit offset
      * @param limit limit count
      * @return this TableQuery
+     * can not use offset without valid limit value.
+     * limit lessThan 0 and offset bigThan 0 is not allowed.
      */
     TableQuery limit(int offset, int limit);
 

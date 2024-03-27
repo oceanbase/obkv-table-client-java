@@ -17,53 +17,22 @@
 
 package com.alipay.oceanbase.rpc;
 
-import com.alipay.oceanbase.rpc.bolt.ObTableClientTestBase;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
-import com.alipay.oceanbase.rpc.exception.ObTablePartitionConsistentException;
-import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.filter.*;
-import com.alipay.oceanbase.rpc.location.model.ObServerAddr;
-import com.alipay.oceanbase.rpc.location.model.ServerRoster;
-import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
-import com.alipay.oceanbase.rpc.mutation.*;
-import com.alipay.oceanbase.rpc.mutation.result.*;
 import com.alipay.oceanbase.rpc.property.Property;
-import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregation;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationResult;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateRequest;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateResult;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObQueryOperationType;
-import com.alipay.oceanbase.rpc.stream.QueryResultSet;
-import com.alipay.oceanbase.rpc.stream.async.ObTableQueryAsyncStreamResult;
-import com.alipay.oceanbase.rpc.table.ObTable;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
-import com.alipay.oceanbase.rpc.table.ObTableClientQueryAsyncImpl;
-import com.alipay.oceanbase.rpc.table.ObTableClientQueryImpl;
-import com.alipay.oceanbase.rpc.table.ObTableParam;
-import com.alipay.oceanbase.rpc.table.api.Table;
-import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
-import com.alipay.oceanbase.rpc.table.api.TableQuery;
-import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
-import com.alipay.oceanbase.rpc.util.ObTableHotkeyThrottleUtil;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.lang.reflect.Field;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.*;
-import static com.alipay.oceanbase.rpc.mutation.MutationFactory.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class ObTableAggregationTest {

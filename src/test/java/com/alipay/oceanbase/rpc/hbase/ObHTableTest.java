@@ -34,7 +34,7 @@ import java.util.List;
 import static org.junit.Assert.assertFalse;
 
 public class ObHTableTest {
-    private ObTable client;
+    private ObTable       client;
     private ObTableClient obTableClient;
 
     @BeforeClass
@@ -49,14 +49,14 @@ public class ObHTableTest {
     @Before
     public void setup() throws Exception {
         ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
-                obTableClient.init();
+        obTableClient.init();
         if (obTableClient.isOdpMode()) {
             obTableClient.close();
             throw new ObTableException("ODP Mode does not support this test");
         } else {
             client = obTableClient
-            .getTable("test_varchar_table", new Object[] { "abc" }, true, true).getRight()
-            .getObTable();
+                .getTable("test_varchar_table", new Object[] { "abc" }, true, true).getRight()
+                .getObTable();
             this.obTableClient = obTableClient;
         }
     }
@@ -98,12 +98,12 @@ public class ObHTableTest {
                 "qualifierName1".getBytes(), 12323121L });
     }
 
-    public byte[][] extractFamilyFromQualifier(byte[] qualifier) throws Exception{
+    public byte[][] extractFamilyFromQualifier(byte[] qualifier) throws Exception {
         int total_length = qualifier.length;
         int familyLen = -1;
         byte[][] familyAndQualifier = new byte[2][];
 
-        for (int i = 0; i < total_length; i ++) {
+        for (int i = 0; i < total_length; i++) {
             if (qualifier[i] == '\0') {
                 familyLen = i;
                 break;
@@ -112,7 +112,7 @@ public class ObHTableTest {
 
         byte[] family = new byte[familyLen];
         if (familyLen != -1) {
-            for (int i = 0; i < familyLen; i ++) {
+            for (int i = 0; i < familyLen; i++) {
                 family[i] = qualifier[i];
             }
         } else {
@@ -122,13 +122,13 @@ public class ObHTableTest {
         int qualifierLen = total_length - familyLen - 1;
         byte[] newQualifier = new byte[qualifierLen];
         if (qualifierLen > 0) {
-            for (int i = 0; i < qualifierLen; i ++) {
+            for (int i = 0; i < qualifierLen; i++) {
                 newQualifier[i] = qualifier[i + familyLen + 1];
             }
         } else {
             throw new RuntimeException("can not get qualifier name");
         }
-        for (int i = 0; i < qualifierLen; i ++) {
+        for (int i = 0; i < qualifierLen; i++) {
             newQualifier[i] = qualifier[i + familyLen + 1];
         }
         familyAndQualifier[1] = newQualifier;
@@ -137,12 +137,14 @@ public class ObHTableTest {
         return familyAndQualifier;
     }
 
-    public void getKeyValueFromResult(ObTableClientQueryStreamResult clientQueryStreamResult, boolean isTableGroup, byte[] family) throws Exception {
+    public void getKeyValueFromResult(ObTableClientQueryStreamResult clientQueryStreamResult,
+                                      boolean isTableGroup, byte[] family) throws Exception {
         for (List<ObObj> row : clientQueryStreamResult.getCacheRows()) {
             System.out.println(new String((byte[]) row.get(0).getValue())); //K
             // System.out.println(family); //family
             if (isTableGroup) {
-                byte[][] familyAndQualifier = extractFamilyFromQualifier((byte[]) row.get(1).getValue());
+                byte[][] familyAndQualifier = extractFamilyFromQualifier((byte[]) row.get(1)
+                    .getValue());
                 System.out.println(new String(familyAndQualifier[0])); //family
                 System.out.println(new String(familyAndQualifier[1])); //qualifier
             } else {
@@ -167,15 +169,16 @@ public class ObHTableTest {
                       PRIMARY KEY (`K`, `Q`, `T`)
                 ) TABLEGROUP = test;
          */
-        byte[] family = new byte[]{};
+        byte[] family = new byte[] {};
         ObHTableOperationRequest hTableOperationRequestGet = new ObHTableOperationRequest();
         hTableOperationRequestGet.setOperationType(ObTableOperationType.GET);
         hTableOperationRequestGet.setTableName("test");
         hTableOperationRequestGet.setRowKey("putKey".getBytes());
 
-        ObTableQueryRequest requestGet = (ObTableQueryRequest)hTableOperationRequestGet.obTableGroupOperationRequest();
+        ObTableQueryRequest requestGet = (ObTableQueryRequest) hTableOperationRequestGet
+            .obTableGroupOperationRequest();
         ObTableClientQueryStreamResult clientQueryStreamResultGet = (ObTableClientQueryStreamResult) obTableClient
-                .execute(requestGet);
+            .execute(requestGet);
 
         // Thread.currentThread().sleep(30000);
         ObHTableOperationRequest hTableOperationRequestScan = new ObHTableOperationRequest();
@@ -183,9 +186,10 @@ public class ObHTableTest {
         hTableOperationRequestScan.setTableName("test");
         hTableOperationRequestScan.setRowKey("putKey".getBytes());
 
-        ObTableQueryRequest requestScan = (ObTableQueryRequest)hTableOperationRequestScan.obTableGroupOperationRequest();
+        ObTableQueryRequest requestScan = (ObTableQueryRequest) hTableOperationRequestScan
+            .obTableGroupOperationRequest();
         ObTableClientQueryStreamResult clientQueryStreamResultScan = (ObTableClientQueryStreamResult) obTableClient
-                .execute(requestScan);
+            .execute(requestScan);
 
     }
 

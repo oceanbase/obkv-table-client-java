@@ -24,9 +24,11 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateResult;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.AbstractQueryStreamResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.stream.ObTableClientQueryStreamResult;
+import com.alipay.oceanbase.rpc.table.AbstractTableQuery;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -247,7 +249,7 @@ public class MonitorUtil {
      */
     private static String logMessage(String traceId, String database, String tableName,
                                      String methodName, String endpoint, List<Object> params,
-                                     ObTableClientQueryStreamResult result, long routeTableTime,
+                                     AbstractQueryStreamResult result, long routeTableTime,
                                      long executeTime) {
         if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
             endpoint = endpoint.replaceAll(",", "#");
@@ -267,7 +269,7 @@ public class MonitorUtil {
 
     public static void info(final ObPayload payload, String database, String tableName,
                             String methodName, String endpoint, ObTableQuery tableQuery,
-                            ObTableClientQueryStreamResult result, long routeTableTime,
+                            AbstractQueryStreamResult result, long routeTableTime,
                             long executeTime, long slowQueryMonitorThreshold) {
         if (routeTableTime + executeTime >= slowQueryMonitorThreshold) {
             List<Object> params = new ArrayList<>();
@@ -286,7 +288,7 @@ public class MonitorUtil {
             }
 
             MONITOR.info(logMessage(formatTraceMessage(payload), database, tableName, methodName, endpoint,
-                params, result, routeTableTime, executeTime));
+                    params, result, routeTableTime, executeTime));
         }
     }
 

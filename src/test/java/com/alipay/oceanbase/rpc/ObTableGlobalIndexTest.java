@@ -460,12 +460,12 @@ public class ObTableGlobalIndexTest {
     }
 
     @Test
-    public void test_query_sync() throws Exception {
+    public void test_query_async() throws Exception {
         String tableName = "test_global_hash_range";
-        test_query_sync(tableName);
+        test_query_async(tableName);
     }
 
-    public void test_query_sync(String tableName) throws Exception {
+    public void test_query_async(String tableName) throws Exception {
         try {
             client.addRowKeyElement(tableName, new String[] { "C1" });
             // prepare data
@@ -486,15 +486,14 @@ public class ObTableGlobalIndexTest {
             }
 
             // query sync by global index
-            TableQuery query = client.queryByBatchV2(tableName).indexName("idx");
+            TableQuery query = client.query(tableName).indexName("idx");
             query.setScanRangeColumns("C2");
             query.addScanRange(new Object[] { 0 }, new Object[] { recordCount + 200 + 1 });
             query.select("C1", "C2", "C3");
             query.limit(5);
             query.setBatchSize(2);
             query.setMaxResultSize(10000);
-            // 异步query start, 获取第一个batch的结果集
-            QueryResultSet result = query.execute();
+            QueryResultSet result = query.asyncExecute();
             for (int i = 0; i < 5; i++) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();

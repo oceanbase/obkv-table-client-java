@@ -27,16 +27,10 @@ import com.alipay.oceanbase.rpc.exception.ExceptionUtil;
 import com.alipay.oceanbase.rpc.exception.ObTableConnectionStatusException;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.exception.ObTableServerConnectException;
-import com.alipay.oceanbase.rpc.batch.QueryByBatch;
 import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.mutation.*;
-import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateResult;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.remoting.ConnectionEventHandler;
@@ -45,8 +39,6 @@ import com.alipay.remoting.connection.ConnectionFactory;
 import com.alipay.remoting.exception.RemotingException;
 
 import java.net.ConnectException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
@@ -176,16 +168,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
      */
     @Override
     public TableQuery query(String tableName) throws Exception {
-        return new ObTableQueryImpl(tableName, this);
-    }
-
-    @Override
-    public TableQuery queryByBatchV2(String tableName) throws Exception {
-        return new ObTableQueryAsyncImpl(tableName, this);
-    }
-
-    public TableQuery queryByBatch(String tableName) throws Exception {
-        return new QueryByBatch(query(tableName));
+        throw new IllegalArgumentException("query using ObTable directly is not supported");
     }
 
     /*
