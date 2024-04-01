@@ -391,6 +391,11 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         } catch (Exception ex) {
             throw new ObTableConnectionStatusException("check status failed", ex);
         }
+        return executeWithReconnect(connection, request);
+    }
+
+    private ObPayload executeWithReconnect(ObTableConnection connection,
+                                           final ObPayload request) throws RemotingException, InterruptedException {
         boolean needReconnect = false;
         int retryTimes = 0;
         ObPayload payload = null;
