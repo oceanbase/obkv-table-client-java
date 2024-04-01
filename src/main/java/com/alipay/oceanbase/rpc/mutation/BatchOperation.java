@@ -21,6 +21,7 @@ import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
 import com.alipay.oceanbase.rpc.table.ObTableClientLSBatchOpsImpl;
@@ -272,6 +273,9 @@ public class BatchOperation {
                     }
                 } else if (operation instanceof Mutation) {
                     Mutation mutation = (Mutation) operation;
+                    if (((ObTableClient) client).getRunningMode() == ObTableClient.RunningMode.HBASE) {
+                        negateHbaseTimestamp(mutation);
+                    }
                     batchOps.addOperation(mutation);
                     if (!hasSetRowkeyElement && mutation.getRowKeyNames() != null) {
                         List<String> rowKeyNames = mutation.getRowKeyNames();
@@ -302,5 +306,15 @@ public class BatchOperation {
         batchOps.setAtomicOperation(isAtomic);
         batchOps.setEntityType(entityType);
         return new BatchOperationResult(batchOps.executeWithResult());
+    }
+
+    private void negateHbaseTimestamp(Mutation mutation) {
+        Object[] rowKey = mutation.getRowKey();
+        if (rowKey == null || rowKey.length != 3) {
+            throw new IllegalArgumentException("hbase rowkey length must be 3");
+        } else {
+            long ts = ((long) ((ObObj) mutation.getRowKey()[2]).getValue());
+            ((ObObj) mutation.getRowKey()[2]).setValue(-ts);
+        }
     }
 }
