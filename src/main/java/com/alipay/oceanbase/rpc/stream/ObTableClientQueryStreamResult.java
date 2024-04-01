@@ -25,7 +25,9 @@ import com.alipay.oceanbase.rpc.exception.ObTableTimeoutExcetion;
 import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.AbstractQueryStreamResult;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
@@ -126,21 +128,32 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                                     indexTableName, partIdWithIndex.getLeft(), e.getMessage(), e);
                             throw e;
                         }
-                    } else if (e instanceof ObTableException
-                               && ((ObTableException) e).isNeedRefreshTableEntry()) {
-                        needRefreshTableEntry = true;
-                        logger
-                            .warn(
-                                "tablename:{} partition id:{} stream query refresh table while meet Exception needing refresh, errorCode: {}",
-                                indexTableName, partIdWithIndex.getLeft(),
-                                ((ObTableException) e).getErrorCode(), e);
-                        if (client.isRetryOnChangeMasterTimes()
-                            && (tryTimes - 1) < client.getRuntimeRetryTimes()) {
+                    } else if (e instanceof ObTableException) {
+                        if ((((ObTableException) e).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode
+                                    || ((ObTableException) e).getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode)
+                                && ((ObTableQueryRequest) request).getTableQuery().isHbaseQuery()
+                                && client.getTableGroupInverted().get(indexTableName) != null) {
+                            // table not exists && hbase mode && table group exists , three condition both
+                            client.eraseTableGroupFromCache(tableName);
+                        }
+                        if (((ObTableException) e).isNeedRefreshTableEntry()) {
+                            needRefreshTableEntry = true;
                             logger
-                                .warn(
-                                    "tablename:{} partition id:{} stream query retry while meet Exception needing refresh, errorCode: {} , retry times {}",
-                                    indexTableName, partIdWithIndex.getLeft(),
-                                    ((ObTableException) e).getErrorCode(), tryTimes, e);
+                                    .warn(
+                                            "tablename:{} partition id:{} stream query refresh table while meet Exception needing refresh, errorCode: {}",
+                                            indexTableName, partIdWithIndex.getLeft(),
+                                            ((ObTableException) e).getErrorCode(), e);
+                            if (client.isRetryOnChangeMasterTimes()
+                                    && (tryTimes - 1) < client.getRuntimeRetryTimes()) {
+                                logger
+                                        .warn(
+                                                "tablename:{} partition id:{} stream query retry while meet Exception needing refresh, errorCode: {} , retry times {}",
+                                                indexTableName, partIdWithIndex.getLeft(),
+                                                ((ObTableException) e).getErrorCode(), tryTimes, e);
+                            } else {
+                                client.calculateContinuousFailure(indexTableName, e.getMessage());
+                                throw e;
+                            }
                         } else {
                             client.calculateContinuousFailure(indexTableName, e.getMessage());
                             throw e;
@@ -152,8 +165,8 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                                     "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, retry times {}",
                                     indexTableName, partIdWithIndex.getLeft(),
                                     ((ObTableException) e).getErrorCode(), tryTimes, e);
-                            indexTableName = client.getIndexTableName(tableName, tableQuery.getIndexName(),
-                                    tableQuery.getScanRangeColumns(), true);
+                            indexTableName = client.getIndexTableName(tableName,
+                                tableQuery.getIndexName(), tableQuery.getScanRangeColumns(), true);
                         } else {
                             logger
                                 .warn(

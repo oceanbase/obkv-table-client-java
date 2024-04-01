@@ -18,12 +18,15 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class ObTableSingleOp extends AbstractPayload {
     private ObTableOperationType   singleOpType;
@@ -151,5 +154,17 @@ public class ObTableSingleOp extends AbstractPayload {
 
     public void addEntity(ObTableSingleOpEntity entity) {
        this.entities.add(entity);
+    }
+
+    public List<ObObj> getRowkeyObjs() {
+        List<ObObj> rowkeyObjs;
+        if (singleOpType == ObTableOperationType.SCAN) {
+            throw new IllegalArgumentException("can not get rowkey from scan operation");
+        } else if (singleOpType == ObTableOperationType.CHECK_AND_INSERT_UP) {
+            rowkeyObjs = getScanRange().get(0).getStartKey().getObjs();
+        } else {
+            rowkeyObjs = entities.get(0).getRowkey();
+        }
+        return rowkeyObjs;
     }
 }
