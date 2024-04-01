@@ -211,6 +211,12 @@ public class ObTableConnection {
 
     public void reConnectAndLogin(String msg) throws ObTableException {
         try {
+            // 1. check the connection is available, force to close it
+            if (checkAvailable()) {
+                LOGGER.warn("The connection would be closed and reconnected if: " + connection.getUrl());
+                close();
+            }
+            // 2. reconnect
             reconnect(msg);
         } catch (ConnectException ex) {
             // cannot connect to ob server, need refresh table location
