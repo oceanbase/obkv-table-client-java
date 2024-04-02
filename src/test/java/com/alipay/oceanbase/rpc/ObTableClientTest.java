@@ -2480,41 +2480,35 @@ public class ObTableClientTest extends ObTableClientTestBase {
     @Test
     public void testQueryWithScanOrder() throws Exception {
         String tableName = "test_query_scan_order";
-        ((ObTableClient) client).addRowKeyElement(tableName, new String[]{"c1"});
+        ((ObTableClient) client).addRowKeyElement(tableName, new String[] { "c1" });
         try {
             client.insert(tableName, new Object[] { 0, 1 }, new String[] { "c3" },
-                    new Object[] { 2 });
+                new Object[] { 2 });
             client.insert(tableName, new Object[] { 0, 2 }, new String[] { "c3" },
-                    new Object[] { 1 });
+                new Object[] { 1 });
             // Forward
-            Object[] start = {0, ObObj.getMin()};
-            Object[] end = {1, ObObj.getMax()};
+            Object[] start = { 0, ObObj.getMin() };
+            Object[] end = { 1, ObObj.getMax() };
             QueryResultSet resultSet = client.query(tableName).indexName("idx")
-                    .setScanRangeColumns("c1", "c3")
-                    .addScanRange(start, end)
-                    .scanOrder(true)
-                    .select("c1", "c2", "c3")
-                    .execute();
+                .setScanRangeColumns("c1", "c3").addScanRange(start, end).scanOrder(true)
+                .select("c1", "c2", "c3").execute();
             Assert.assertEquals(2, resultSet.cacheSize());
             int pre_value = 0;
-            while(resultSet.next()) {
+            while (resultSet.next()) {
                 Map<String, Object> valueMap = resultSet.getRow();
-                Assert.assertTrue(pre_value < (int)valueMap.get("c3") );
-                pre_value = (int)valueMap.get("c3");
+                Assert.assertTrue(pre_value < (int) valueMap.get("c3"));
+                pre_value = (int) valueMap.get("c3");
             }
             // Reverse
             QueryResultSet resultSet2 = client.query(tableName).indexName("idx")
-                    .setScanRangeColumns("c1", "c3")
-                    .addScanRange(start, end)
-                    .scanOrder(false)
-                    .select("c1", "c2", "c3")
-                    .execute();
+                .setScanRangeColumns("c1", "c3").addScanRange(start, end).scanOrder(false)
+                .select("c1", "c2", "c3").execute();
             Assert.assertEquals(2, resultSet2.cacheSize());
             pre_value = 3;
-            while(resultSet2.next()) {
+            while (resultSet2.next()) {
                 Map<String, Object> valueMap = resultSet2.getRow();
-                Assert.assertTrue(pre_value > (int)valueMap.get("c3") );
-                pre_value = (int)valueMap.get("c3");
+                Assert.assertTrue(pre_value > (int) valueMap.get("c3"));
+                pre_value = (int) valueMap.get("c3");
             }
         } catch (Exception e) {
             e.printStackTrace();

@@ -71,13 +71,16 @@ public class ExceptionUtil {
         }
 
         if (resultCodes.errorCode == OB_ERR_KV_GLOBAL_INDEX_ROUTE.errorCode) {
-            return new ObTableGlobalIndexRouteException("[" + String.valueOf(resultCodes.errorCode) + "]" + "["
-                    + resultCodes.name() + "]" + "[" + errMsg + "]" + "[" + server
-                    + "]" + "[" + trace + "]", resultCodes.errorCode);
+            return new ObTableGlobalIndexRouteException("[" + String.valueOf(resultCodes.errorCode)
+                                                        + "]" + "[" + resultCodes.name() + "]"
+                                                        + "[" + errMsg + "]" + "[" + server + "]"
+                                                        + "[" + trace + "]", resultCodes.errorCode);
         } else if (resultCodes.errorCode == OB_TENANT_NOT_IN_SERVER.errorCode) {
-            return new ObTableTenantNotInServerException("[" + String.valueOf(resultCodes.errorCode) + "]" + "["
-                    + resultCodes.name() + "]" + "[" + errMsg + "]" + "[" + server
-                    + "]" + "[" + trace + "]", resultCodes.errorCode);
+            return new ObTableTenantNotInServerException("["
+                                                         + String.valueOf(resultCodes.errorCode)
+                                                         + "]" + "[" + resultCodes.name() + "]"
+                                                         + "[" + errMsg + "]" + "[" + server + "]"
+                                                         + "[" + trace + "]", resultCodes.errorCode);
         } else {
             // [errCode][errCodeName][errMsg][server][trace]
             return new ObTableException("[" + String.valueOf(resultCodes.errorCode) + "]" + "["

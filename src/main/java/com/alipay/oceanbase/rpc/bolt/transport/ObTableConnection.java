@@ -213,7 +213,8 @@ public class ObTableConnection {
         try {
             // 1. check the connection is available, force to close it
             if (checkAvailable()) {
-                LOGGER.warn("The connection would be closed and reconnected if: " + connection.getUrl());
+                LOGGER.warn("The connection would be closed and reconnected if: "
+                            + connection.getUrl());
                 close();
             }
             // 2. reconnect

@@ -377,8 +377,9 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         return executeWithReconnect(connection, request);
     }
 
-    private ObPayload executeWithReconnect(ObTableConnection connection,
-                                           final ObPayload request) throws RemotingException, InterruptedException {
+    private ObPayload executeWithReconnect(ObTableConnection connection, final ObPayload request)
+                                                                                                 throws RemotingException,
+                                                                                                 InterruptedException {
         boolean needReconnect = false;
         int retryTimes = 0;
         ObPayload payload = null;
@@ -386,8 +387,11 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             retryTimes++;
             try {
                 if (needReconnect) {
-                    String msg = String.format("Receive error: tenant not in server and reconnect it, ip:{}, port:{}, tenant id:{}, retryTimes: {}",
-                            connection.getObTable().getIp(), connection.getObTable().getPort(), connection.getTenantId(), retryTimes);
+                    String msg = String
+                        .format(
+                            "Receive error: tenant not in server and reconnect it, ip:{}, port:{}, tenant id:{}, retryTimes: {}",
+                            connection.getObTable().getIp(), connection.getObTable().getPort(),
+                            connection.getTenantId(), retryTimes);
                     connection.reConnectAndLogin(msg);
                     needReconnect = false;
                 }
