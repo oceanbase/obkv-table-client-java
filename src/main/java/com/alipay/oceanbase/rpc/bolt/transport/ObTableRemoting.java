@@ -25,6 +25,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Credentialable;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.ObRpcResultCode;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.login.ObTableLoginRequest;
 import com.alipay.oceanbase.rpc.util.ObPureCrc32C;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
 import com.alipay.oceanbase.rpc.util.TraceUtil;
@@ -66,8 +67,10 @@ public class ObTableRemoting extends BaseRemoting {
             }
             ((Credentialable) request).setCredential(conn.getCredential());
         }
-
-        if (request instanceof AbstractPayload) {
+        if (request instanceof ObTableLoginRequest) {
+            // setting sys tenant in rpc header when login
+            ((ObTableLoginRequest) request).setTenantId(1);
+        } else if (request instanceof AbstractPayload) {
             ((AbstractPayload) request).setTenantId(conn.getTenantId());
         }
 
