@@ -34,25 +34,25 @@ import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
 
 public class ObTableIndexWithCalcColumn {
 
-    String CreateTableStatement = "CREATE TABLE `index_has_current_timestamp` (\n" +
-            "  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n" +
-            "  `adiu` varchar(512) NOT NULL DEFAULT '',\n" +
-            "  `mode` varchar(512) NOT NULL DEFAULT '',\n" +
-            "  `time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n" +
-            "  `tag` varchar(512) DEFAULT '',\n" +
-            "  `content` varchar(412) DEFAULT '',\n" +
-            "  PRIMARY KEY (`id`, `adiu`),\n" +
-            "  KEY `idx_adiu_time_mode_tag` (`id`, `adiu`, `time`, `mode`) BLOCK_SIZE 16384 LOCAL,\n" +
-            "  KEY `g_idx_time_tag_mode` (`time`, `tag`, `mode`) BLOCK_SIZE 16384 GLOBAL\n" +
-            " ) TTL(time + INTERVAL 300 second) partition by key(adiu) partitions 8;";
+    String        CreateTableStatement = "CREATE TABLE `index_has_current_timestamp` (\n"
+                                         + "  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n"
+                                         + "  `adiu` varchar(512) NOT NULL DEFAULT '',\n"
+                                         + "  `mode` varchar(512) NOT NULL DEFAULT '',\n"
+                                         + "  `time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n"
+                                         + "  `tag` varchar(512) DEFAULT '',\n"
+                                         + "  `content` varchar(412) DEFAULT '',\n"
+                                         + "  PRIMARY KEY (`id`, `adiu`),\n"
+                                         + "  KEY `idx_adiu_time_mode_tag` (`id`, `adiu`, `time`, `mode`) BLOCK_SIZE 16384 LOCAL,\n"
+                                         + "  KEY `g_idx_time_tag_mode` (`time`, `tag`, `mode`) BLOCK_SIZE 16384 GLOBAL\n"
+                                         + " ) TTL(time + INTERVAL 300 second) partition by key(adiu) partitions 8;";
 
-    String TableName = "index_has_current_timestamp";
-    Long TableId;
-    String LocalIndexTableName;
-    String GlobalIndexTableName;
-    String StringFormat = "%s_%d";
-    String[] AllColumns = {"id", "adiu", "mode", "time", "tag", "content"};
-    int recordCount = 10;
+    String        TableName            = "index_has_current_timestamp";
+    Long          TableId;
+    String        LocalIndexTableName;
+    String        GlobalIndexTableName;
+    String        StringFormat         = "%s_%d";
+    String[]      AllColumns           = { "id", "adiu", "mode", "time", "tag", "content" };
+    int           recordCount          = 10;
     ObTableClient client;
 
     @Before
@@ -62,14 +62,13 @@ public class ObTableIndexWithCalcColumn {
         final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
         obTableClient.init();
         this.client = obTableClient;
-        this.client.addRowKeyElement(TableName, new String[]{"id", "adiu"});
+        this.client.addRowKeyElement(TableName, new String[] { "id", "adiu" });
     }
 
     @After
     public void teardown() throws Exception {
         dropTable();
     }
-
 
     public void setEnableIndexDirectSelect() throws Exception {
         Connection connection = ObTableClientTestUtil.getConnection();
@@ -81,7 +80,9 @@ public class ObTableIndexWithCalcColumn {
         Connection connection = ObTableClientTestUtil.getConnection();
         Statement statement = connection.createStatement();
         statement.execute(CreateTableStatement);
-        ResultSet rs = statement.executeQuery("select table_id from oceanbase.__all_table where table_name = '" + TableName + "'");
+        ResultSet rs = statement
+            .executeQuery("select table_id from oceanbase.__all_table where table_name = '"
+                          + TableName + "'");
         if (rs.next()) {
             TableId = rs.getLong(1);
             LocalIndexTableName = "__idx_" + TableId + "_idx_adiu_time_mode_tag";
@@ -111,7 +112,8 @@ public class ObTableIndexWithCalcColumn {
     public void addTTLAttribute(int expire_secord) throws Exception {
         Connection connection = ObTableClientTestUtil.getConnection();
         Statement statement = connection.createStatement();
-        statement.execute("alter table " + TableName + " TTL (time + INTERVAL " + expire_secord + " SECOND)");
+        statement.execute("alter table " + TableName + " TTL (time + INTERVAL " + expire_secord
+                          + " SECOND)");
     }
 
     private void checkIndexData(long count) throws Exception {
@@ -148,7 +150,6 @@ public class ObTableIndexWithCalcColumn {
         test_query();
     }
 
-
     @Test
     public void test_with_ttl_attribute() throws Exception {
         recordCount = 10;
@@ -179,7 +180,6 @@ public class ObTableIndexWithCalcColumn {
         }
     }
 
-
     public void insert(String op_type, int count, boolean fill_autoinc) throws Exception {
         for (int i = 1; i <= count; i++) {
             String adiu = String.format(StringFormat, "adiu", i);
@@ -208,7 +208,8 @@ public class ObTableIndexWithCalcColumn {
         for (int i = 1; i <= count; i++) {
             Long id = Long.valueOf(i);
             String adiu = String.format(StringFormat, "adiu", i);
-            Map<String, Object> valueMap = client.get(TableName, new Object[]{id, adiu}, AllColumns);
+            Map<String, Object> valueMap = client.get(TableName, new Object[] { id, adiu },
+                AllColumns);
             Timestamp time1 = new Timestamp(System.currentTimeMillis() + 100000);
             if (is_expired) {
                 Assert.assertTrue(valueMap.isEmpty());
@@ -237,7 +238,8 @@ public class ObTableIndexWithCalcColumn {
                 client.replace(TableName).setRowKey(rowKey).addMutateRow(row).execute();
             }
             // get again
-            Map<String, Object> valueMap_2 = client.get(TableName, new Object[]{id, adiu}, AllColumns);
+            Map<String, Object> valueMap_2 = client.get(TableName, new Object[] { id, adiu },
+                AllColumns);
             Assert.assertEquals(id, valueMap_2.get("id"));
             Assert.assertEquals(String.format(StringFormat, "adiu", id), valueMap_2.get("adiu"));
             Assert.assertEquals(update_mode, valueMap_2.get("mode"));
@@ -257,7 +259,8 @@ public class ObTableIndexWithCalcColumn {
             for (int i = 1; i <= recordCount; i++) {
                 Long id = Long.valueOf(i);
                 String adiu = String.format(StringFormat, "adiu", i);
-                Map<String, Object> valueMap = client.get(TableName, new Object[]{id, adiu}, AllColumns);
+                Map<String, Object> valueMap = client.get(TableName, new Object[] { id, adiu },
+                    AllColumns);
                 Assert.assertEquals(id, valueMap.get("id"));
                 Assert.assertEquals(String.format(StringFormat, "adiu", id), valueMap.get("adiu"));
             }
@@ -316,7 +319,8 @@ public class ObTableIndexWithCalcColumn {
             for (int i = 1; i <= recordCount; i++) {
                 Long id = Long.valueOf(i);
                 String adiu = String.format(StringFormat, "adiu", i);
-                Map<String, Object> valueMap = client.get(TableName, new Object[]{id, adiu}, AllColumns);
+                Map<String, Object> valueMap = client.get(TableName, new Object[] { id, adiu },
+                    AllColumns);
                 Assert.assertEquals(id, valueMap.get("id"));
                 Assert.assertEquals(String.format(StringFormat, "adiu", id), valueMap.get("adiu"));
                 Row rowKey = row(colVal("id", id), colVal("adiu", adiu));
@@ -356,11 +360,10 @@ public class ObTableIndexWithCalcColumn {
     public void test_query(boolean is_expire) throws Exception {
         // query with primary index
         String start_adiu = String.format(StringFormat, "adiu", 1);
-        Object[] start = {0L, start_adiu};
+        Object[] start = { 0L, start_adiu };
         String end_adiu = String.format(StringFormat, "adiu", recordCount);
-        Object[] end = {Long.valueOf(recordCount), end_adiu};
-        QueryResultSet resultSet = client.query(TableName).addScanRange(start, end)
-                .execute();
+        Object[] end = { Long.valueOf(recordCount), end_adiu };
+        QueryResultSet resultSet = client.query(TableName).addScanRange(start, end).execute();
         if (is_expire) {
             Assert.assertEquals(resultSet.cacheSize(), 0);
         } else {
@@ -372,16 +375,14 @@ public class ObTableIndexWithCalcColumn {
         start_time1.setNanos(0);
         String start_adiu1 = String.format(StringFormat, "adiu", 1);
         String start_mode1 = String.format(StringFormat, "mode", 1);
-        Object[] start1 = {0L, start_adiu1, start_time1, start_mode1};
+        Object[] start1 = { 0L, start_adiu1, start_time1, start_mode1 };
         Timestamp end_time1 = new Timestamp(System.currentTimeMillis() + 100000);
         end_time1.setNanos(0);
         String end_adiu1 = String.format(StringFormat, "adiu", recordCount);
         String end_mode1 = String.format(StringFormat, "mode", recordCount);
-        Object[] end1 = {Long.valueOf(recordCount), end_adiu1, end_time1, end_mode1};
+        Object[] end1 = { Long.valueOf(recordCount), end_adiu1, end_time1, end_mode1 };
         QueryResultSet resultSet1 = client.query(TableName).indexName("idx_adiu_time_mode_tag")
-                .setScanRangeColumns("id", "time", "tag", "mode")
-                .addScanRange(start1, end1)
-                .execute();
+            .setScanRangeColumns("id", "time", "tag", "mode").addScanRange(start1, end1).execute();
         if (is_expire) {
             Assert.assertEquals(resultSet1.cacheSize(), 0);
         } else {
@@ -392,16 +393,14 @@ public class ObTableIndexWithCalcColumn {
         startTime2.setNanos(0);
         String start_tag = String.format(StringFormat, "tag", 1);
         String start_mode = String.format(StringFormat, "mode", 1);
-        Object[] start2 = {startTime2, start_tag, start_mode};
+        Object[] start2 = { startTime2, start_tag, start_mode };
         Timestamp endTime2 = new Timestamp(System.currentTimeMillis() + 100000);
         endTime2.setNanos(0);
         String end_tag = String.format(StringFormat, "tag", recordCount);
         String end_mode = String.format(StringFormat, "mode", recordCount);
-        Object[] end2 = {endTime2, end_tag, end_mode};
+        Object[] end2 = { endTime2, end_tag, end_mode };
         QueryResultSet resultSet2 = client.query(TableName).indexName("g_idx_time_tag_mode")
-                .setScanRangeColumns("time", "tag", "mode")
-                .addScanRange(start2, end2)
-                .execute();
+            .setScanRangeColumns("time", "tag", "mode").addScanRange(start2, end2).execute();
         if (is_expire) {
             Assert.assertEquals(resultSet2.cacheSize(), 0);
         } else {

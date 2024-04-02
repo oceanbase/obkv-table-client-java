@@ -242,6 +242,99 @@ public class ObTableClientPartitionHashTest {
     }
 
     @Test
+    public void testAsyncQuery() throws Exception {
+        long timeStamp = System.currentTimeMillis();
+        try {
+            obTableClient.insert("testHash", new Object[] { timeStamp, "partition".getBytes(),
+                    timeStamp }, new String[] { "V" }, new Object[] { "value0".getBytes() });
+            obTableClient.insert("testHash", new Object[] { timeStamp + 1, "partition".getBytes(),
+                    timeStamp + 1 }, new String[] { "V" }, new Object[] { "value1".getBytes() });
+            obTableClient.insert("testHash", new Object[] { timeStamp + 2, "partition".getBytes(),
+                    timeStamp + 2 }, new String[] { "V" }, new Object[] { "value2".getBytes() });
+            obTableClient.insert("testHash", new Object[] { timeStamp + 3, "partition".getBytes(),
+                    timeStamp + 3 }, new String[] { "V" }, new Object[] { "value3".getBytes() });
+            obTableClient.insert("testHash", new Object[] { timeStamp + 4, "partition".getBytes(),
+                    timeStamp + 4 }, new String[] { "V" }, new Object[] { "value4".getBytes() });
+
+            // query with one partition
+            TableQuery tableQuery = obTableClient.query("testHash");
+            tableQuery.addScanRange(new Object[] { timeStamp, "partition".getBytes(), timeStamp },
+                new Object[] { timeStamp, "partition".getBytes(), timeStamp });
+            tableQuery.select("Q", "T", "K", "V");
+            tableQuery.setBatchSize(1);
+            QueryResultSet result = tableQuery.asyncExecute();
+            Assert.assertEquals(1L, result.cacheSize());
+
+            Assert.assertTrue(result.next());
+            Map<String, Object> row = result.getRow();
+            Assert.assertEquals(4, row.size());
+            Assert.assertEquals(timeStamp, row.get("K"));
+            Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
+            Assert.assertEquals(timeStamp, row.get("T"));
+            Assert.assertEquals("value0", new String((byte[]) row.get("V")));
+            Assert.assertFalse(result.next());
+
+            if (obTableClient.isOdpMode()) {
+                // query with one partition using prefix
+                tableQuery = obTableClient.query("testHash");
+                tableQuery.addScanRange(new Object[] { timeStamp }, new Object[] { timeStamp });
+                tableQuery.setScanRangeColumns("K");
+                tableQuery.select("K", "Q", "T", "V");
+                tableQuery.setBatchSize(1);
+                result = tableQuery.asyncExecute();
+                Assert.assertEquals(1L, result.cacheSize());
+
+                Assert.assertTrue(result.next());
+                row = result.getRow();
+                Assert.assertEquals(4, row.size());
+                Assert.assertEquals(timeStamp, row.get("K"));
+                Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
+                Assert.assertEquals(timeStamp, row.get("T"));
+                Assert.assertEquals("value0", new String((byte[]) row.get("V")));
+                Assert.assertFalse(result.next());
+
+                // query with multiply partitions
+                tableQuery = obTableClient.query("testHash");
+                tableQuery.addScanRange(
+                    new Object[] { timeStamp, "partition".getBytes(), timeStamp }, new Object[] {
+                            timeStamp + 10, "partition".getBytes(), timeStamp });
+                tableQuery.select("K", "Q", "T");
+                tableQuery.setBatchSize(2);
+                result = tableQuery.asyncExecute();
+
+                // query with multiply partitions using prefix K
+                tableQuery = obTableClient.query("testHash");
+                tableQuery.setScanRangeColumns("K");
+                tableQuery
+                    .addScanRange(new Object[] { timeStamp }, new Object[] { timeStamp + 10 });
+                tableQuery.select("Q", "V");
+                tableQuery.setBatchSize(1);
+                result = tableQuery.asyncExecute();
+
+                // query with empty scan range
+                tableQuery = obTableClient.query("testHash");
+                result = tableQuery.execute();
+                // TODO: too many rows of testHash is not deleted
+                Assert.assertTrue(result.cacheSize() > 0);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        } finally {
+            obTableClient.delete("testHash", new Object[] { timeStamp, "partition".getBytes(),
+                    timeStamp });
+            obTableClient.delete("testHash", new Object[] { timeStamp + 1, "partition".getBytes(),
+                    timeStamp + 1 });
+            obTableClient.delete("testHash", new Object[] { timeStamp + 2, "partition".getBytes(),
+                    timeStamp + 2 });
+            obTableClient.delete("testHash", new Object[] { timeStamp + 3, "partition".getBytes(),
+                    timeStamp + 3 });
+            obTableClient.delete("testHash", new Object[] { timeStamp + 4, "partition".getBytes(),
+                    timeStamp + 4 });
+        }
+    }
+
+    @Test
     public void testQueryLocalIndex() throws Exception {
         // TODO: client route is wrong when execute query on hash partitioned table using index
         if (!obTableClient.isOdpMode()) {
@@ -310,6 +403,124 @@ public class ObTableClientPartitionHashTest {
             tableQuery.setScanRangeColumns("K", "V");
             tableQuery.indexName("i1");
             result = tableQuery.execute();
+            Assert.assertEquals(4, result.cacheSize());
+
+            // sort result by K, T
+            List<Map<String, Object>> resultList = new ArrayList<>();
+            for (int i = 0; i < 4; i++) {
+                Assert.assertTrue(result.next());
+                Assert.assertEquals(4, result.getRow().size());
+                resultList.add(result.getRow());
+            }
+            Assert.assertFalse(result.next());
+            Collections.sort(resultList, new Comparator<Map<String, Object>>() {
+                @Override
+                public int compare(Map<String, Object> o1, Map<String, Object> o2) {
+                    int firstCmp = (int)(((long)o1.get("K") - (long)o2.get("K")));
+                    if (firstCmp == 0) {
+                        return (int)(((long)o1.get("T")) - ((long)o2.get("T")));
+                    }
+                    return firstCmp;
+                }
+            });
+            int[] orderedDeltaKeys = {1, 1, 2, 2};
+            int[] orderedDeltaTs = {1, 2, 1, 2};
+            String[] orderedValues = {"value2", "value1", "value1", "value2"};
+            for (int i = 0; i < 4; i++) {
+                Assert.assertEquals(timeStamp + orderedDeltaKeys[i], resultList.get(i).get("K"));
+                Assert.assertEquals("partition", new String((byte[]) resultList.get(i).get("Q")));
+                Assert.assertEquals(timeStamp + orderedDeltaTs[i], resultList.get(i).get("T"));
+                Assert.assertEquals(orderedValues[i], new String((byte[]) resultList.get(i).get("V")));
+            }
+            Assert.assertFalse(result.next());
+
+        } catch (Exception e){
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        } finally {
+            obTableClient.delete("testHash",
+                    new Object[] { timeStamp + 1, "partition".getBytes(), timeStamp + 1 });
+            obTableClient.delete("testHash",
+                    new Object[] { timeStamp + 1, "partition".getBytes(), timeStamp + 2 });
+            obTableClient.delete("testHash",
+                    new Object[] { timeStamp + 2, "partition".getBytes(), timeStamp + 1 });
+            obTableClient.delete("testHash",
+                    new Object[] { timeStamp + 2, "partition".getBytes(), timeStamp + 2 });
+        }
+    }
+
+    @Test
+    public void testAsyncQueryLocalIndex() throws Exception {
+        // TODO: client route is wrong when execute query on hash partitioned table using index
+        if (!obTableClient.isOdpMode()) {
+            return;
+        }
+        long timeStamp = System.currentTimeMillis();
+        String tableName = "testHash";
+        try {
+            obTableClient.insert("testHash",
+                    new Object[] { timeStamp + 1, "partition".getBytes(), timeStamp + 1 },
+                    new String[] { "V" }, new Object[] { "value2".getBytes() });
+            obTableClient.insert("testHash",
+                    new Object[] { timeStamp + 1, "partition".getBytes(), timeStamp + 2 },
+                    new String[] { "V" }, new Object[] { "value1".getBytes() });
+            obTableClient.insert("testHash",
+                    new Object[] { timeStamp + 2, "partition".getBytes(), timeStamp + 1 },
+                    new String[] { "V" }, new Object[] { "value1".getBytes() });
+            obTableClient.insert("testHash",
+                    new Object[] { timeStamp + 2, "partition".getBytes(), timeStamp + 2 },
+                    new String[] { "V" }, new Object[] { "value2".getBytes() });
+
+            // query timestamp + 1
+            TableQuery tableQuery = obTableClient.query(tableName);
+            tableQuery.addScanRange(new Object[] { timeStamp + 1, "value0".getBytes() },
+                    new Object[] { timeStamp + 1, "value9".getBytes() });
+            tableQuery.scanOrder(false);
+            tableQuery.setScanRangeColumns("K", "V");
+            tableQuery.indexName("i1");
+            tableQuery.setBatchSize(1);
+            QueryResultSet result = tableQuery.asyncExecute();
+            Assert.assertEquals(2, result.cacheSize());
+            for (int i = 1; i <= 2; i++) {
+                Assert.assertTrue(result.next());
+                Map<String, Object> row = result.getRow();
+                Assert.assertEquals(4, row.size());
+                Assert.assertEquals(timeStamp + 1, row.get("K"));
+                Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
+                Assert.assertEquals(timeStamp + i, row.get("T"));
+                Assert.assertEquals("value" + ( 3 - i), new String((byte[]) row.get("V")));
+            }
+            Assert.assertFalse(result.next());
+
+            // query timestamp + 1 using prefix
+            tableQuery = obTableClient.query(tableName);
+            tableQuery.addScanRange(new Object[] { timeStamp + 1 },
+                    new Object[] { timeStamp + 1 });
+            tableQuery.select("K", "T", "V");
+            tableQuery.setScanRangeColumns("K");
+            tableQuery.scanOrder(false);
+            tableQuery.indexName("i1");
+            tableQuery.setBatchSize(1);
+            result = tableQuery.asyncExecute();
+            Assert.assertEquals(2, result.cacheSize());
+            for (int i = 1; i <= 2; i++) {
+                Assert.assertTrue(result.next());
+                Map<String, Object> row = result.getRow();
+                Assert.assertEquals(3, row.size());
+                Assert.assertEquals(timeStamp + 1, row.get("K"));
+                Assert.assertEquals(timeStamp + i, row.get("T"));
+                Assert.assertEquals("value" + ( 3 - i), new String((byte[]) row.get("V")));
+            }
+            Assert.assertFalse(result.next());
+
+            // query with mutliply partition
+            tableQuery = obTableClient.query(tableName);
+            tableQuery.addScanRange(new Object[] { timeStamp + 1, "value0".getBytes() },
+                    new Object[] { timeStamp + 3, "value9".getBytes() });
+            tableQuery.setScanRangeColumns("K", "V");
+            tableQuery.indexName("i1");
+            tableQuery.setBatchSize(2);
+            result = tableQuery.asyncExecute();
             Assert.assertEquals(4, result.cacheSize());
 
             // sort result by K, T

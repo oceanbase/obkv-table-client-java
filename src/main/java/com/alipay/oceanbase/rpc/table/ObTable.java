@@ -24,16 +24,10 @@ import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableRemoting;
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.exception.*;
-import com.alipay.oceanbase.rpc.batch.QueryByBatch;
 import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.mutation.*;
-import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateResult;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.remoting.ConnectionEventHandler;
@@ -42,8 +36,6 @@ import com.alipay.remoting.connection.ConnectionFactory;
 import com.alipay.remoting.exception.RemotingException;
 
 import java.net.ConnectException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
@@ -173,16 +165,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
      */
     @Override
     public TableQuery query(String tableName) throws Exception {
-        return new ObTableQueryImpl(tableName, this);
-    }
-
-    @Override
-    public TableQuery queryByBatchV2(String tableName) throws Exception {
-        return new ObTableQueryAsyncImpl(tableName, this);
-    }
-
-    public TableQuery queryByBatch(String tableName) throws Exception {
-        return new QueryByBatch(query(tableName));
+        throw new IllegalArgumentException("query using ObTable directly is not supported");
     }
 
     /*
@@ -394,8 +377,9 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         return executeWithReconnect(connection, request);
     }
 
-    private ObPayload executeWithReconnect(ObTableConnection connection,
-                                           final ObPayload request) throws RemotingException, InterruptedException {
+    private ObPayload executeWithReconnect(ObTableConnection connection, final ObPayload request)
+                                                                                                 throws RemotingException,
+                                                                                                 InterruptedException {
         boolean needReconnect = false;
         int retryTimes = 0;
         ObPayload payload = null;
@@ -403,8 +387,11 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             retryTimes++;
             try {
                 if (needReconnect) {
-                    String msg = String.format("Receive error: tenant not in server and reconnect it, ip:{}, port:{}, tenant id:{}, retryTimes: {}",
-                            connection.getObTable().getIp(), connection.getObTable().getPort(), connection.getTenantId(), retryTimes);
+                    String msg = String
+                        .format(
+                            "Receive error: tenant not in server and reconnect it, ip:{}, port:{}, tenant id:{}, retryTimes: {}",
+                            connection.getObTable().getIp(), connection.getObTable().getPort(),
+                            connection.getTenantId(), retryTimes);
                     connection.reConnectAndLogin(msg);
                     needReconnect = false;
                 }

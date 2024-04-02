@@ -24,24 +24,15 @@ import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.filter.*;
 import com.alipay.oceanbase.rpc.location.model.ObServerAddr;
 import com.alipay.oceanbase.rpc.location.model.ServerRoster;
-import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.mutation.result.*;
 import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregation;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateResult;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObQueryOperationType;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
-import com.alipay.oceanbase.rpc.stream.async.ObTableQueryAsyncStreamResult;
-import com.alipay.oceanbase.rpc.table.ObTable;
-import com.alipay.oceanbase.rpc.table.ObTableClientQueryAsyncImpl;
-import com.alipay.oceanbase.rpc.table.ObTableClientQueryImpl;
-import com.alipay.oceanbase.rpc.table.ObTableParam;
 import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
@@ -508,212 +499,6 @@ public class ObTableClientTest extends ObTableClientTestBase {
     }
 
     @Test
-    public void test_batch_query() throws Exception {
-        /*
-        * CREATE TABLE `test_batch_query` (
-             `c1` bigint NOT NULL,
-             `c2` varchar(20) DEFAULT NULL,
-            PRIMARY KEY (`c1`))partition by range(`c1`)(partition p0 values less than(200), partition p1 values less than(500), partition p2 values less than(900));
-            * alter table test_varchar_table add key `idx_test` (`c1`,`c3`);
-            )*/
-        Object[] c1 = new Object[] { 123L, 124L, 136L, 138L, 145L, 567L, 666L, 777L };
-        Object[] c2 = new Object[] { "123c2", "124c2", "136c2", "138c2", "145c2", "567c2", "666c2",
-                "777c2" };
-
-        ObTableClient client1 = new ObTableClient();
-        try {
-            client1.setMetadataRefreshInterval(100);
-            client1 = ObTableClientTestUtil.newTestClient();
-            client1.setServerAddressCachingTimeout(10000000);
-            client1.init();
-            client1.addRowKeyElement("test_batch_query", new String[] { "c1" }); //同索引列的值一样
-            for (int i = 0; i < 8; i++) {
-                client1.insert("test_batch_query", new Object[] { c1[i] }, new String[] { "c2" },
-                    new Object[] { c2[i] });
-            }
-
-            // 非阻塞query
-            TableQuery tableQuery = client1.queryByBatchV2("test_batch_query");
-
-            // 测试 filter string 生成函数
-            ObTableValueFilter filter_0 = new ObTableValueFilter(ObCompareOp.EQ, "c3", "value");
-            assertEquals("TableCompareFilter(=, 'c3:value')", filter_0.toString());
-            ObTableFilterList filterList = new ObTableFilterList(ObTableFilterList.operator.AND);
-            ObTableValueFilter filter_1 = new ObTableValueFilter(ObCompareOp.LE, "c2", 5);
-            filterList.addFilter(filter_0);
-            filterList.addFilter(filter_1);
-            assertEquals("TableCompareFilter(=, 'c3:value') && TableCompareFilter(<=, 'c2:5')",
-                filterList.toString());
-            // test param null
-            try {
-                ObTableValueFilter filter = new ObTableValueFilter(ObCompareOp.NE, null, null);
-            } catch (Exception e) {
-                assertTrue(true);
-            }
-            // test null
-            try {
-                tableQuery.setFilter(null);
-            } catch (Exception e) {
-                assertTrue(true);
-            }
-            try {
-                ObTableFilterList filterListNull = new ObTableFilterList(null);
-            } catch (Exception e) {
-                assertTrue(true);
-            }
-            try {
-                ObTableFilterList filterListNull = andList(filter_0, null);
-            } catch (Exception e) {
-                assertTrue(true);
-            }
-            try {
-                ObTableFilterList filterListNull = new ObTableFilterList(
-                    ObTableFilterList.operator.AND, filter_0, null);
-            } catch (Exception e) {
-                assertTrue(true);
-            }
-            try {
-                ObTableFilterList filterListNull = new ObTableFilterList();
-                filterListNull.addFilter(filter_0, null);
-            } catch (Exception e) {
-                assertTrue(true);
-            }
-            // test nested
-            ObTableFilterList filterListNested_0 = new ObTableFilterList(
-                ObTableFilterList.operator.OR);
-            ObTableFilterList filterListNested_1 = new ObTableFilterList(
-                ObTableFilterList.operator.AND);
-            filterListNested_0.addFilter(filter_0);
-            filterListNested_0.addFilter(filter_1);
-            filterListNested_1.addFilter(filterListNested_0);
-            filterListNested_1.addFilter(filter_0);
-            filterListNested_1.addFilter(filterListNested_0);
-            assertEquals(
-                "(TableCompareFilter(=, 'c3:value') || TableCompareFilter(<=, 'c2:5')) && TableCompareFilter(=, 'c3:value') && (TableCompareFilter(=, 'c3:value') || TableCompareFilter(<=, 'c2:5'))",
-                filterListNested_1.toString());
-            ObTableFilterList filterListNested_2 = new ObTableFilterList(
-                ObTableFilterList.operator.OR, filter_0);
-            filterListNested_2.addFilter(filterListNested_1);
-            assertEquals(
-                "TableCompareFilter(=, 'c3:value') || ((TableCompareFilter(=, 'c3:value') || TableCompareFilter(<=, 'c2:5')) && TableCompareFilter(=, 'c3:value') && (TableCompareFilter(=, 'c3:value') || TableCompareFilter(<=, 'c2:5')))",
-                filterListNested_2.toString());
-
-            // test query with filter = null
-            try {
-                TableQuery tableQuery_error = client1.query("test_batch_query");
-                tableQuery_error.addScanRange(new Object[] { 0L }, new Object[] { 250L });
-                tableQuery_error.select("c1", "c2", "c3");
-                tableQuery_error.setFilter(null);
-                tableQuery_error.setBatchSize(3);
-            } catch (Exception e) {
-                System.out.println(e);
-                assertTrue(e instanceof IllegalArgumentException);
-            }
-
-            // test query with batchsize
-            try {
-                TableQuery tableQuery_error = client1.query("test_batch_query");
-                tableQuery_error.addScanRange(new Object[] { 0L }, new Object[] { 250L });
-                tableQuery_error.select("c1", "c2", "c3");
-                tableQuery_error.setBatchSize(3);
-            } catch (Exception e) {
-                System.out.println(e);
-                assertTrue(e instanceof ObTableException);
-            }
-
-            // 查询结果集
-            QueryResultSet result = tableQuery.select("c2").primaryIndex().setBatchSize(2)
-                .addScanRange(new Object[] { 123L }, new Object[] { 777L }).execute();
-
-            for (int i = 0; i < 4; i++) {
-                Assert.assertTrue(result.next());
-                Map<String, Object> value = result.getRow();
-                assertEquals(value.get("c2"), c2[i]);
-                System.out.println("c2:" + value.get("c2"));
-            }
-            for (int i = 4; i < 8; i++) {
-                Assert.assertTrue(result.next());
-                Row value = result.getResultRow();
-                assertEquals(value.get("c2"), c2[i]);
-                System.out.println("c2:" + value.get("c2"));
-            }
-            Assert.assertFalse(result.next());
-
-        } catch (Exception e) {
-            assertTrue(true);
-        } finally {
-            for (int i = 0; i < 8; i++) {
-                client1.delete("test_batch_query", new Object[] { c1[i] });
-            }
-            client1.close();
-        }
-    }
-
-    @Test
-    public void test_batch_query_coverage() {
-        ObTableClient client1 = new ObTableClient();
-
-        TableQuery tableQuery = client1.query("test_batch_query");
-        ObTable obTable = new ObTable();
-        try {
-            tableQuery.executeInit(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-
-        try {
-            tableQuery.executeNext(new ObPair<Long, ObTableParam>(0L, new ObTableParam(obTable)));
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-        try {
-            tableQuery.setMaxResultSize(100000);
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-        tableQuery.clear();
-
-        ObTableClientQueryImpl obTableClientQuery = new ObTableClientQueryImpl("test_batch_query",
-            client1);
-        try {
-            obTableClientQuery.executeInit(new ObPair<Long, ObTableParam>(0L, new ObTableParam(
-                obTable)));
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-        try {
-            obTableClientQuery.executeNext(new ObPair<Long, ObTableParam>(0L, new ObTableParam(
-                obTable)));
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-
-        ObTableClientQueryAsyncImpl obTableClientQueryAsync = new ObTableClientQueryAsyncImpl(
-            "test_batch_query", tableQuery.getObTableQuery(), client1);
-        obTableClientQueryAsync.getSessionId();
-        try {
-            obTableClientQueryAsync.setKeys("c1", "c3");
-            fail();
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-        try {
-            obTableClientQueryAsync.executeInternal(ObQueryOperationType.QUERY_START);
-        } catch (Exception e) {
-            assertTrue(true);
-        }
-
-        ObTableQueryAsyncStreamResult obTableQueryAsyncStreamResult = new ObTableQueryAsyncStreamResult();
-        obTableQueryAsyncStreamResult.setSessionId(100000);
-        obTableQueryAsyncStreamResult.getSessionId();
-        obTableQueryAsyncStreamResult.setEnd(true);
-    }
-
-    @Test
     public void testQueryWithFilter() throws Exception {
 
         /*
@@ -754,6 +539,66 @@ public class ObTableClientTest extends ObTableClientTestBase {
             tableQuery.setFilter(filter_2);
             result = tableQuery.execute();
             Assert.assertEquals(1, result.cacheSize());
+        } finally {
+            client.delete("test_query_filter_mutate", new Object[] { 0L });
+            client.delete("test_query_filter_mutate", new Object[] { 1L });
+            client.delete("test_query_filter_mutate", new Object[] { 2L });
+        }
+    }
+
+    @Test
+    public void testAsyncQueryWithFilter() throws Exception {
+        /*
+         * CREATE TABLE `test_query_filter_mutate` (`c1` bigint NOT NULL, `c2` varbinary(1024) DEFAULT NULL,
+         *                                          `c3` varchar(20) DEFAULT NULL,`c4` bigint DEFAULT NULL, PRIMARY KEY(`c1`))
+         *                                          partition by range columns (`c1`) ( PARTITION p0 VALUES LESS THAN (300),
+         *                                          PARTITION p1 VALUES LESS THAN (1000), PARTITION p2 VALUES LESS THAN MAXVALUE);
+         */
+        System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
+
+        ((ObTableClient) client)
+            .addRowKeyElement("test_query_filter_mutate", new String[] { "c1" }); //同索引列的值一样
+
+        try {
+            client.insert("test_query_filter_mutate", new Object[] { 0L }, new String[] { "c2",
+                    "c3" }, new Object[] { new byte[] { 1 }, "row1" });
+            client.insert("test_query_filter_mutate", new Object[] { 1L }, new String[] { "c2",
+                    "c3" }, new Object[] { new byte[] { 1 }, "row2" });
+            client.insert("test_query_filter_mutate", new Object[] { 2L }, new String[] { "c2",
+                    "c3" }, new Object[] { new byte[] { 1 }, "row3" });
+
+            TableQuery tableQuery = client.query("test_query_filter_mutate");
+            tableQuery.addScanRange(new Object[] { 0L }, new Object[] { 250L });
+            tableQuery.select("c1", "c2", "c3");
+            tableQuery.setBatchSize(1);
+
+            ObTableValueFilter filter_0 = new ObTableValueFilter(ObCompareOp.GT, "c1", 0);
+            ObTableValueFilter filter_1 = new ObTableValueFilter(ObCompareOp.LE, "c1", 2);
+            ObTableValueFilter filter_2 = new ObTableValueFilter(ObCompareOp.GT, "c1", 1);
+
+            tableQuery.setFilter(filter_0);
+            QueryResultSet result = tableQuery.asyncExecute();
+            int expected_ret = 2;
+            while (result.next()) {
+                expected_ret -= 1;
+            }
+            Assert.assertEquals(0, expected_ret);
+
+            tableQuery.setFilter(filter_1);
+            result = tableQuery.asyncExecute();
+            expected_ret = 3;
+            while (result.next()) {
+                expected_ret -= 1;
+            }
+            Assert.assertEquals(0, expected_ret);
+
+            tableQuery.setFilter(filter_2);
+            result = tableQuery.asyncExecute();
+            expected_ret = 1;
+            while (result.next()) {
+                expected_ret -= 1;
+            }
+            Assert.assertEquals(0, expected_ret);
         } finally {
             client.delete("test_query_filter_mutate", new Object[] { 0L });
             client.delete("test_query_filter_mutate", new Object[] { 1L });
@@ -2415,6 +2260,58 @@ public class ObTableClientTest extends ObTableClientTestBase {
     }
 
     @Test
+    // Test Query with filter and limit
+    public void testAsyncQueryOffsetWithoutLimit() throws Exception {
+
+        /*
+         CREATE TABLE `test_query_filter_mutate` (`c1` bigint NOT NULL, `c2` varbinary(1024) DEFAULT NULL,
+                                                  `c3` varchar(20) DEFAULT NULL,`c4` bigint DEFAULT NULL, PRIMARY KEY(`c1`))
+                                                  partition by range columns (`c1`) ( PARTITION p0 VALUES LESS THAN (300),
+                                                  PARTITION p1 VALUES LESS THAN (1000), PARTITION p2 VALUES LESS THAN MAXVALUE);
+         */
+        final ObTableClient client = (ObTableClient) this.client;
+        client.addRowKeyElement("test_query_filter_mutate", new String[] { "c1" }); //同索引列的值一样
+        String[] allColumnNames = new String[] { "c1", "c2", "c3", "c4" };
+        String[] columnNames = new String[] { "c2", "c3", "c4" };
+        String tableName = "test_query_filter_mutate";
+        Object[] c1 = new Object[] { 11L, 12L, 13L, 14L, 15L };
+        Object[] c2 = new Object[] { null, null, new byte[] { 3 }, new byte[] { 4 },
+                new byte[] { 5 } };
+        Object[] c3 = new Object[] { "row11", "row12", "row13", "row14", "row15" };
+        Object[] c4 = new Object[] { 10L, null, null, null, null };
+        try {
+            for (int i = 0; i < c1.length; i++) {
+                client.insert(tableName, c1[i], columnNames, new Object[] { c2[i], c3[i], c4[i] });
+            }
+
+            // query with c4 is null ,limit is 2 and offset 1
+            TableQuery tableQuery = client.query(tableName).select(allColumnNames).setBatchSize(1)
+                .addScanRange(new Object[] { 0L }, new Object[] { 200L }).limit(2, -1);
+            QueryResultSet result = tableQuery.asyncExecute();
+            int expRowIdx[] = { 2, 3 };
+            Assert.assertEquals(result.cacheSize(), expRowIdx.length);
+            for (int i = 0; i < expRowIdx.length; i++) {
+                Assert.assertTrue(result.next());
+                Map<String, Object> value = result.getRow();
+                assertEquals(value.get(allColumnNames[0]), c1[expRowIdx[i]]);
+                assertTrue(Arrays.equals((byte[]) value.get(allColumnNames[1]),
+                    (byte[]) c2[expRowIdx[i]]));
+                assertEquals(value.get(allColumnNames[2]), c3[expRowIdx[i]]);
+                assertEquals(value.get(allColumnNames[3]), c4[expRowIdx[i]]);
+            }
+            Assert.assertFalse(result.next());
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertEquals("offset can not be use without limit",
+                ((ObTableException) e).getMessage());
+        } finally {
+            for (int i = 0; i < c1.length; i++) {
+                client.delete("test_query_filter_mutate", new Object[] { c1[i] });
+            }
+        }
+    }
+
+    @Test
     public void testQueryWithFilterColumn() throws Exception {
         // test filter column not in select columns,
         /*
@@ -2445,6 +2342,49 @@ public class ObTableClientTest extends ObTableClientTestBase {
             tableQuery.setFilter(filter_0);
             QueryResultSet result = tableQuery.execute();
             Assert.assertEquals(2, result.cacheSize());
+        } finally {
+            client.delete("test_query_filter_mutate", new Object[] { 0L });
+            client.delete("test_query_filter_mutate", new Object[] { 1L });
+            client.delete("test_query_filter_mutate", new Object[] { 2L });
+        }
+    }
+
+    @Test
+    public void testAsyncQueryWithFilterColumn() throws Exception {
+        // test filter column not in select columns,
+        /*
+         CREATE TABLE `test_query_filter_mutate` (`c1` bigint NOT NULL, `c2` varbinary(1024) DEFAULT NULL,
+                                                  `c3` varchar(20) DEFAULT NULL,`c4` bigint DEFAULT NULL, PRIMARY KEY(`c1`))
+                                                  partition by range columns (`c1`) ( PARTITION p0 VALUES LESS THAN (300),
+                                                  PARTITION p1 VALUES LESS THAN (1000), PARTITION p2 VALUES LESS THAN MAXVALUE);
+         */
+        final String TABLE_NAME = "test_query_filter_mutate";
+        System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
+
+        ((ObTableClient) client).addRowKeyElement(TABLE_NAME, new String[] { "c1" }); //同索引列的值一样
+
+        try {
+            client.insert(TABLE_NAME, new Object[] { 0L }, new String[] { "c2", "c3" },
+                new Object[] { new byte[] { 1 }, "row1" });
+            client.insert(TABLE_NAME, new Object[] { 1L }, new String[] { "c2", "c3" },
+                new Object[] { new byte[] { 1 }, "row2" });
+            client.insert(TABLE_NAME, new Object[] { 2L }, new String[] { "c2", "c3" },
+                new Object[] { new byte[] { 1 }, "row3" });
+
+            TableQuery tableQuery = client.query(TABLE_NAME);
+            tableQuery.addScanRange(new Object[] { 0L }, new Object[] { 250L });
+            tableQuery.select("c1", "c2");
+            tableQuery.setBatchSize(1);
+
+            ObTableValueFilter filter_0 = new ObTableValueFilter(ObCompareOp.GT, "c3", "row1");
+
+            tableQuery.setFilter(filter_0);
+            QueryResultSet result = tableQuery.asyncExecute();
+            int expected_ret = 2;
+            while (result.next()) {
+                expected_ret -= 1;
+            }
+            Assert.assertEquals(0, expected_ret);
         } finally {
             client.delete("test_query_filter_mutate", new Object[] { 0L });
             client.delete("test_query_filter_mutate", new Object[] { 1L });
@@ -2525,46 +2465,50 @@ public class ObTableClientTest extends ObTableClientTestBase {
         } catch (IllegalArgumentException e) {
             Assert.assertEquals("table name is null", ((IllegalArgumentException) e).getMessage());
         }
+        // test async query
+        try {
+            TableQuery tableQuery = client.query("");
+            tableQuery.addScanRange(new Object[] { 0L }, new Object[] { 250L });
+            tableQuery.select("c1", "c2");
+            tableQuery.setBatchSize(1);
+            QueryResultSet result = tableQuery.asyncExecute();
+        } catch (IllegalArgumentException e) {
+            Assert.assertEquals("table name is null", ((IllegalArgumentException) e).getMessage());
+        }
     }
 
     @Test
     public void testQueryWithScanOrder() throws Exception {
         String tableName = "test_query_scan_order";
-        ((ObTableClient) client).addRowKeyElement(tableName, new String[]{"c1"});
+        ((ObTableClient) client).addRowKeyElement(tableName, new String[] { "c1" });
         try {
             client.insert(tableName, new Object[] { 0, 1 }, new String[] { "c3" },
-                    new Object[] { 2 });
+                new Object[] { 2 });
             client.insert(tableName, new Object[] { 0, 2 }, new String[] { "c3" },
-                    new Object[] { 1 });
+                new Object[] { 1 });
             // Forward
-            Object[] start = {0, ObObj.getMin()};
-            Object[] end = {1, ObObj.getMax()};
+            Object[] start = { 0, ObObj.getMin() };
+            Object[] end = { 1, ObObj.getMax() };
             QueryResultSet resultSet = client.query(tableName).indexName("idx")
-                    .setScanRangeColumns("c1", "c3")
-                    .addScanRange(start, end)
-                    .scanOrder(true)
-                    .select("c1", "c2", "c3")
-                    .execute();
+                .setScanRangeColumns("c1", "c3").addScanRange(start, end).scanOrder(true)
+                .select("c1", "c2", "c3").execute();
             Assert.assertEquals(2, resultSet.cacheSize());
             int pre_value = 0;
-            while(resultSet.next()) {
+            while (resultSet.next()) {
                 Map<String, Object> valueMap = resultSet.getRow();
-                Assert.assertTrue(pre_value < (int)valueMap.get("c3") );
-                pre_value = (int)valueMap.get("c3");
+                Assert.assertTrue(pre_value < (int) valueMap.get("c3"));
+                pre_value = (int) valueMap.get("c3");
             }
             // Reverse
             QueryResultSet resultSet2 = client.query(tableName).indexName("idx")
-                    .setScanRangeColumns("c1", "c3")
-                    .addScanRange(start, end)
-                    .scanOrder(false)
-                    .select("c1", "c2", "c3")
-                    .execute();
+                .setScanRangeColumns("c1", "c3").addScanRange(start, end).scanOrder(false)
+                .select("c1", "c2", "c3").execute();
             Assert.assertEquals(2, resultSet2.cacheSize());
             pre_value = 3;
-            while(resultSet2.next()) {
+            while (resultSet2.next()) {
                 Map<String, Object> valueMap = resultSet2.getRow();
-                Assert.assertTrue(pre_value > (int)valueMap.get("c3") );
-                pre_value = (int)valueMap.get("c3");
+                Assert.assertTrue(pre_value > (int) valueMap.get("c3"));
+                pre_value = (int) valueMap.get("c3");
             }
         } catch (Exception e) {
             e.printStackTrace();

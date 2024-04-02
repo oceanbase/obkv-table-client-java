@@ -17,17 +17,16 @@
 
 package com.alipay.oceanbase.rpc;
 
-import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilter;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
+import com.alipay.oceanbase.rpc.stream.ObTableClientQueryAsyncStreamResult;
 import com.alipay.oceanbase.rpc.stream.ObTableClientQueryStreamResult;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.AbstractTableQuery;
 import com.alipay.oceanbase.rpc.table.ObTableClientQueryImpl;
-import com.alipay.oceanbase.rpc.table.ObTableParam;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
 import java.util.List;
@@ -85,14 +84,12 @@ public class ObClusterTableQuery extends AbstractTableQuery {
         return tableClientQuery.execute();
     }
 
+    /*
+     * Execute.
+     */
     @Override
-    public QueryResultSet executeInit(ObPair<Long, ObTableParam> entry) throws Exception {
-        throw new IllegalArgumentException("not support executeInit");
-    }
-
-    @Override
-    public QueryResultSet executeNext(ObPair<Long, ObTableParam> entry) throws Exception {
-        throw new IllegalArgumentException("not support executeNext");
+    public QueryResultSet asyncExecute() throws Exception {
+        return tableClientQuery.asyncExecute();
     }
 
     /*
@@ -100,6 +97,13 @@ public class ObClusterTableQuery extends AbstractTableQuery {
      */
     public ObTableClientQueryStreamResult executeInternal() throws Exception {
         return tableClientQuery.executeInternal();
+    }
+
+    /*
+     * Async execute internal.
+     */
+    public ObTableClientQueryAsyncStreamResult asyncExecuteInternal() throws Exception {
+        return tableClientQuery.asyncExecuteInternal();
     }
 
     /*

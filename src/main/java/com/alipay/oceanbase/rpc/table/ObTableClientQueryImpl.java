@@ -19,13 +19,14 @@ package com.alipay.oceanbase.rpc.table;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
-import com.alipay.oceanbase.rpc.location.model.ObIndexInfo;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.Row;
+import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.*;
+import com.alipay.oceanbase.rpc.stream.ObTableClientQueryAsyncStreamResult;
 import com.alipay.oceanbase.rpc.stream.ObTableClientQueryStreamResult;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
@@ -37,10 +38,11 @@ import java.util.Map;
 
 public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
-    private String        tableName;
-    private final ObTableClient obTableClient;
+    private String                                tableName;
+    private final ObTableClient                   obTableClient;
+    private Map<Long, ObPair<Long, ObTableParam>> partitionObTables;
 
-    private Row                 rowKey;       // only used by BatchOperation
+    private Row                                   rowKey;           // only used by BatchOperation
 
     /*
      * Add aggregation.
@@ -90,14 +92,12 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         return new QueryResultSet(executeInternal());
     }
 
+    /*
+     * Execute.
+     */
     @Override
-    public QueryResultSet executeInit(ObPair<Long, ObTableParam> entry) throws Exception {
-        throw new IllegalArgumentException("not support executeInit");
-    }
-
-    @Override
-    public QueryResultSet executeNext(ObPair<Long, ObTableParam> entry) throws Exception {
-        throw new IllegalArgumentException("not support executeInit");
+    public QueryResultSet asyncExecute() throws Exception {
+        return new QueryResultSet(asyncExecuteInternal());
     }
 
     /**
@@ -119,9 +119,9 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     }
 
     /*
-     * Execute internal.
+     * check argument before execution
      */
-    public ObTableClientQueryStreamResult executeInternal() throws Exception {
+    public void checkArgumentBeforeExec() throws Exception {
         if (null == obTableClient) {
             throw new ObTableException("table client is null");
         } else if (tableQuery.getLimit() < 0 && tableQuery.getOffset() > 0) {
@@ -129,13 +129,38 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         } else if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
         }
+    }
+
+    /*
+     * Set parameter into request
+     */
+    private void setCommonParams2Result(AbstractQueryStreamResult result) throws Exception {
+        result.setTableQuery(tableQuery);
+        result.setEntityType(entityType);
+        result.setTableName(tableName);
+        result.setIndexTableName(indexTableName);
+        result.setExpectant(partitionObTables);
+        result.setOperationTimeout(operationTimeout);
+        result.setReadConsistency(obTableClient.getReadConsistency());
+    }
+
+    private abstract static class InitQueryResultCallback<T> {
+        abstract T execute() throws Exception;
+    }
+
+    private AbstractQueryStreamResult commonExecute(InitQueryResultCallback<AbstractQueryStreamResult> callable)
+                                                                                                                throws Exception {
+        checkArgumentBeforeExec();
+
         final long startTime = System.currentTimeMillis();
-        // partitionObTables -> Map<logicId, Pair<logicId, param>>
-        Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new HashMap<Long, ObPair<Long, ObTableParam>>();
+        Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new HashMap<Long, ObPair<Long, ObTableParam>>(); // partitionObTables -> Map<logicId, Pair<logicId, param>>
+
         // fill a whole range if no range is added explicitly.
         if (tableQuery.getKeyRanges().isEmpty()) {
             tableQuery.addKeyRange(ObNewRange.getWholeRange());
         }
+
+        // init partitionObTables
         if (obTableClient.isOdpMode()) {
             if (tableQuery.getScanRangeColumns().isEmpty()) {
                 if (tableQuery.getIndexName() != null
@@ -146,35 +171,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             partitionObTables.put(0L, new ObPair<Long, ObTableParam>(0L, new ObTableParam(
                 obTableClient.getOdpTable())));
         } else {
-            String indexName = tableQuery.getIndexName();
-            if (!this.obTableClient.isOdpMode()) {
-                indexTableName = obTableClient.getIndexTableName(tableName, indexName,
-                    tableQuery.getScanRangeColumns(), false);
-            }
-
-            for (ObNewRange rang : tableQuery.getKeyRanges()) {
-                ObRowKey startKey = rang.getStartKey();
-                int startKeySize = startKey.getObjs().size();
-                ObRowKey endKey = rang.getEndKey();
-                int endKeySize = endKey.getObjs().size();
-                Object[] start = new Object[startKeySize];
-                Object[] end = new Object[endKeySize];
-                for (int i = 0; i < startKeySize; i++) {
-                    start[i] = startKey.getObj(i).getValue();
-                }
-
-                for (int i = 0; i < endKeySize; i++) {
-                    end[i] = endKey.getObj(i).getValue();
-                }
-                ObBorderFlag borderFlag = rang.getBorderFlag();
-                // pairs -> List<Pair<logicId, param>>
-                List<ObPair<Long, ObTableParam>> pairs = obTableClient.getTables(indexTableName,
-                    start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false,
-                    false, obTableClient.getReadRoute());
-                for (ObPair<Long, ObTableParam> pair : pairs) {
-                    partitionObTables.put(pair.getLeft(), pair);
-                }
-            }
+            initPartitions();
         }
 
         StringBuilder stringBuilder = new StringBuilder();
@@ -185,7 +182,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         String endpoint = stringBuilder.toString();
         long getTableTime = System.currentTimeMillis();
 
-        // Defend aggregation of multiple partitions.
+        // defend aggregation of multiple partitions.
         if (tableQuery.isAggregation()) {
             if (partitionObTables.size() > 1) {
                 throw new ObTableException(
@@ -194,28 +191,89 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             }
         }
 
-        if (tableQuery.isHbaseQuery() && obTableClient.getTableGroupInverted().containsKey(tableName)
-            && tableName.equalsIgnoreCase(obTableClient.getTableGroupCache().get(obTableClient.getTableGroupInverted().get(tableName)))) {
+        // set correct table group name for hbase
+        if (tableQuery.isHbaseQuery()
+            && obTableClient.getTableGroupInverted().containsKey(tableName)
+            && tableName.equalsIgnoreCase(obTableClient.getTableGroupCache().get(
+                obTableClient.getTableGroupInverted().get(tableName)))) {
             tableName = obTableClient.getTableGroupInverted().get(tableName);
         }
 
-        ObTableClientQueryStreamResult obTableClientQueryStreamResult = new ObTableClientQueryStreamResult();
-        obTableClientQueryStreamResult.setTableQuery(tableQuery);
-        obTableClientQueryStreamResult.setEntityType(entityType);
-        obTableClientQueryStreamResult.setTableName(tableName);
-        obTableClientQueryStreamResult.setIndexTableName(indexTableName);
-        obTableClientQueryStreamResult.setExpectant(partitionObTables);
-        obTableClientQueryStreamResult.setClient(obTableClient);
-        obTableClientQueryStreamResult.setOperationTimeout(operationTimeout);
-        obTableClientQueryStreamResult.setReadConsistency(obTableClient.getReadConsistency());
-        obTableClientQueryStreamResult.init();
+        // init query stream result
+        AbstractQueryStreamResult streamResult = callable.execute();
 
-        MonitorUtil.info(obTableClientQueryStreamResult, obTableClient.getDatabase(), tableName,
-            "QUERY", endpoint, tableQuery, obTableClientQueryStreamResult,
-            getTableTime - startTime, System.currentTimeMillis() - getTableTime,
-            obTableClient.getslowQueryMonitorThreshold());
+        MonitorUtil
+            .info((ObPayload) streamResult, obTableClient.getDatabase(), tableName, "QUERY",
+                endpoint, tableQuery, streamResult, getTableTime - startTime,
+                System.currentTimeMillis() - getTableTime,
+                obTableClient.getslowQueryMonitorThreshold());
 
-        return obTableClientQueryStreamResult;
+        return streamResult;
+    }
+
+    /*
+     * Execute internal.
+     */
+    public ObTableClientQueryStreamResult executeInternal() throws Exception {
+        return (ObTableClientQueryStreamResult) commonExecute(new InitQueryResultCallback<AbstractQueryStreamResult>() {
+            @Override
+            ObTableClientQueryStreamResult execute() throws Exception {
+                ObTableClientQueryStreamResult obTableClientQueryStreamResult = new ObTableClientQueryStreamResult();
+                setCommonParams2Result(obTableClientQueryStreamResult);
+                obTableClientQueryStreamResult.setClient(obTableClient);
+                obTableClientQueryStreamResult.init();
+                return obTableClientQueryStreamResult;
+            }
+        });
+    }
+
+    public ObTableClientQueryAsyncStreamResult asyncExecuteInternal() throws Exception {
+        return (ObTableClientQueryAsyncStreamResult) commonExecute(new InitQueryResultCallback<AbstractQueryStreamResult>() {
+            @Override
+            ObTableClientQueryAsyncStreamResult execute() throws Exception {
+                ObTableClientQueryAsyncStreamResult obTableClientQueryAsyncStreamResult = new ObTableClientQueryAsyncStreamResult();
+                setCommonParams2Result(obTableClientQueryAsyncStreamResult);
+                obTableClientQueryAsyncStreamResult.setClient(obTableClient);
+                obTableClientQueryAsyncStreamResult.init();
+                return obTableClientQueryAsyncStreamResult;
+            }
+        });
+    }
+
+    /*
+     * Init partition tables involved in this query
+     */
+    public void initPartitions() throws Exception {
+        String indexName = tableQuery.getIndexName();
+        if (!this.obTableClient.isOdpMode()) {
+            indexTableName = obTableClient.getIndexTableName(tableName, indexName,
+                tableQuery.getScanRangeColumns(), false);
+        }
+
+        this.partitionObTables = new HashMap<Long, ObPair<Long, ObTableParam>>();
+        for (ObNewRange rang : this.tableQuery.getKeyRanges()) {
+            ObRowKey startKey = rang.getStartKey();
+            int startKeySize = startKey.getObjs().size();
+            ObRowKey endKey = rang.getEndKey();
+            int endKeySize = endKey.getObjs().size();
+            Object[] start = new Object[startKeySize];
+            Object[] end = new Object[endKeySize];
+            for (int i = 0; i < startKeySize; i++) {
+                start[i] = startKey.getObj(i).getValue();
+            }
+
+            for (int i = 0; i < endKeySize; i++) {
+                end[i] = endKey.getObj(i).getValue();
+            }
+            ObBorderFlag borderFlag = rang.getBorderFlag();
+            // pairs -> List<Pair<logicId, param>>
+            List<ObPair<Long, ObTableParam>> pairs = this.obTableClient.getTables(indexTableName,
+                start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false,
+                false);
+            for (ObPair<Long, ObTableParam> pair : pairs) {
+                this.partitionObTables.put(pair.getLeft(), pair);
+            }
+        }
     }
 
     /*

@@ -333,7 +333,7 @@ CREATE TABLE IF NOT EXISTS `test_global_hash_hash` (
   `c2` int(11) DEFAULT NULL,
   `c3` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`c1`),
-  KEY `idx` (`c2`) GLOBAL partition by hash(`c2`) partitions 5) partition by hash(`c1`) partitions 7;;
+  KEY `idx` (`c2`) GLOBAL partition by hash(`c2`) partitions 5) partition by hash(`c1`) partitions 7;
 
 CREATE TABLE IF NOT EXISTS `test_global_key_key` (
   `c1` int(11) NOT NULL,
@@ -488,5 +488,14 @@ CREATE TABLE IF NOT EXISTS `test_put_with_global_index` (
     index idx1(`c1`) global,
     `expired_ts` timestamp(6) NOT NULL,
     PRIMARY KEY(`id`)) TTL(expired_ts + INTERVAL 1 SECOND) PARTITION BY KEY(`id`) PARTITIONS 32;
+
+CREATE TABLEGROUP test SHARDING = 'ADAPTIVE';
+CREATE TABLE `test$family_group` (
+    `K` varbinary(1024) NOT NULL,
+    `Q` varbinary(256) NOT NULL,
+    `T` bigint(20) NOT NULL,
+    `V` varbinary(1024) DEFAULT NULL,
+    PRIMARY KEY (`K`, `Q`, `T`)
+) TABLEGROUP = test;
 
 alter system set kv_hotkey_throttle_threshold = 50;
