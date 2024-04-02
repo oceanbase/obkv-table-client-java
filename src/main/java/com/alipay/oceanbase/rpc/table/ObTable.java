@@ -23,10 +23,7 @@ import com.alipay.oceanbase.rpc.bolt.transport.ObPacketFactory;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableRemoting;
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
-import com.alipay.oceanbase.rpc.exception.ExceptionUtil;
-import com.alipay.oceanbase.rpc.exception.ObTableConnectionStatusException;
-import com.alipay.oceanbase.rpc.exception.ObTableException;
-import com.alipay.oceanbase.rpc.exception.ObTableServerConnectException;
+import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.batch.QueryByBatch;
 import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.mutation.*;
@@ -394,8 +391,33 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         } catch (Exception ex) {
             throw new ObTableConnectionStatusException("check status failed", ex);
         }
+        return executeWithReconnect(connection, request);
+    }
 
-        return realClient.invokeSync(connection, request, obTableExecuteTimeout);
+    private ObPayload executeWithReconnect(ObTableConnection connection,
+                                           final ObPayload request) throws RemotingException, InterruptedException {
+        boolean needReconnect = false;
+        int retryTimes = 0;
+        ObPayload payload = null;
+        do {
+            retryTimes++;
+            try {
+                if (needReconnect) {
+                    String msg = String.format("Receive error: tenant not in server and reconnect it, ip:{}, port:{}, tenant id:{}, retryTimes: {}",
+                            connection.getObTable().getIp(), connection.getObTable().getPort(), connection.getTenantId(), retryTimes);
+                    connection.reConnectAndLogin(msg);
+                    needReconnect = false;
+                }
+                payload = realClient.invokeSync(connection, request, obTableExecuteTimeout);
+            } catch (ObTableException ex) {
+                if (ex instanceof ObTableTenantNotInServerException && retryTimes < 2) {
+                    needReconnect = true;
+                } else {
+                    throw ex;
+                }
+            }
+        } while (needReconnect && retryTimes < 2);
+        return payload;
     }
 
     private void checkObTableOperationResult(String ip, int port, Object result) {
