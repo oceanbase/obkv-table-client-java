@@ -153,7 +153,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         checkArgumentBeforeExec();
 
         final long startTime = System.currentTimeMillis();
-        Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new HashMap<Long, ObPair<Long, ObTableParam>>(); // partitionObTables -> Map<logicId, Pair<logicId, param>>
+        this.partitionObTables = new HashMap<Long, ObPair<Long, ObTableParam>>(); // partitionObTables -> Map<logicId, Pair<logicId, param>>
 
         // fill a whole range if no range is added explicitly.
         if (tableQuery.getKeyRanges().isEmpty()) {
@@ -168,14 +168,14 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                     throw new ObTableException("key range columns must be specified when use index");
                 }
             }
-            partitionObTables.put(0L, new ObPair<Long, ObTableParam>(0L, new ObTableParam(
+            this.partitionObTables.put(0L, new ObPair<Long, ObTableParam>(0L, new ObTableParam(
                 obTableClient.getOdpTable())));
         } else {
             initPartitions();
         }
 
         StringBuilder stringBuilder = new StringBuilder();
-        for (Map.Entry<Long, ObPair<Long, ObTableParam>> entry : partitionObTables.entrySet()) {
+        for (Map.Entry<Long, ObPair<Long, ObTableParam>> entry : this.partitionObTables.entrySet()) {
             stringBuilder.append("#").append(entry.getValue().getRight().getObTable().getIp())
                 .append(":").append(entry.getValue().getRight().getObTable().getPort());
         }
@@ -184,10 +184,10 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
         // defend aggregation of multiple partitions.
         if (tableQuery.isAggregation()) {
-            if (partitionObTables.size() > 1) {
+            if (this.partitionObTables.size() > 1) {
                 throw new ObTableException(
                     "Not supported aggregate of multiple partitions, the partition size is: "
-                            + partitionObTables.size(), ResultCodes.OB_NOT_SUPPORTED.errorCode);
+                            + this.partitionObTables.size(), ResultCodes.OB_NOT_SUPPORTED.errorCode);
             }
         }
 
@@ -250,7 +250,6 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                 tableQuery.getScanRangeColumns(), false);
         }
 
-        this.partitionObTables = new HashMap<Long, ObPair<Long, ObTableParam>>();
         for (ObNewRange rang : this.tableQuery.getKeyRanges()) {
             ObRowKey startKey = rang.getStartKey();
             int startKeySize = startKey.getObjs().size();
