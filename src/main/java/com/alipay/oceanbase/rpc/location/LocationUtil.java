@@ -715,7 +715,7 @@ public class LocationUtil {
         long endOffset = -1;
         long allPartNum = tableEntry.getPartitionNum();
         if (offset < 0 || offset >= allPartNum || size < 0) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("Illegal arguement: offset: "+offset+", size: "+size);
         } else {
             endOffset = Math.min(offset + size, allPartNum);
         }
@@ -786,11 +786,8 @@ public class LocationUtil {
                 ps.setString(1, key.getTenantName());
                 ps.setString(2, key.getDatabaseName());
                 ps.setString(3, key.getTableName());
-
                 rs = ps.executeQuery();
                 partitionEntry = getPartitionLocationFromResultSet(tableEntry, rs, partitionEntry);
-                tableEntry.setPartitionEntry(partitionEntry);
-                tableEntry.setRefreshTimeMills(System.currentTimeMillis());
             } catch (Exception e) {
                 RUNTIME.error(LCD.convert("01-00010"), key, partitionNum, tableEntry, e);
                 throw new ObTablePartitionLocationRefreshException(
@@ -810,7 +807,9 @@ public class LocationUtil {
                     // ignore
                 }
             }
-        }
+        } // end for
+        tableEntry.setPartitionEntry(partitionEntry);
+        tableEntry.setRefreshTimeMills(System.currentTimeMillis());
         return tableEntry;
     }
 
