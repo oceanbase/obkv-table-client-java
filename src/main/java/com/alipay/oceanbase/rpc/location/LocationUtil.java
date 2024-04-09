@@ -183,7 +183,7 @@ public class LocationUtil {
     private static final int    TEMPLATE_PART_ID                 = -1;
 
     // limit the size of get tableEntry location from remote each time
-    private static final int MAX_TABLET_NUMS_EPOCH = 300;
+    private static final int    MAX_TABLET_NUMS_EPOCH            = 300;
 
     private abstract static class TableEntryRefreshWithPriorityCallback<T> {
         abstract T execute(ObServerAddr obServerAddr) throws ObTableEntryRefreshException;
@@ -715,7 +715,8 @@ public class LocationUtil {
         long endOffset = -1;
         long allPartNum = tableEntry.getPartitionNum();
         if (offset < 0 || offset >= allPartNum || size < 0) {
-            throw new IllegalArgumentException("Illegal arguement: offset: "+offset+", size: "+size);
+            throw new IllegalArgumentException("Illegal arguement: offset: " + offset + ", size: "
+                                               + size);
         } else {
             endOffset = Math.min(offset + size, allPartNum);
         }
@@ -723,7 +724,7 @@ public class LocationUtil {
         if (ObGlobal.obVsnMajor() >= 4) {
             if (tableEntry.isPartitionTable()) {
                 Map<Long, Long> partTabletIdMap = tableEntry.getPartitionInfo()
-                        .getPartTabletIdMap();
+                    .getPartTabletIdMap();
                 Long[] tabletIds = partTabletIdMap.values().toArray(new Long[0]);
                 for (int i = offset; i < endOffset; i++) {
                     if (i > offset) {
@@ -742,7 +743,7 @@ public class LocationUtil {
             sql = MessageFormat.format(PROXY_LOCATION_SQL_PARTITION_V4, sb.toString());
         } else {
             if (tableEntry.isPartitionTable()
-                        && null != tableEntry.getPartitionInfo().getSubPartDesc()) {
+                && null != tableEntry.getPartitionInfo().getSubPartDesc()) {
                 long subPartNum = tableEntry.getPartitionInfo().getSubPartDesc().getPartNum();
                 for (long i = offset; i < endOffset; ++i) {
                     if (i > offset) {
@@ -790,11 +791,9 @@ public class LocationUtil {
                 partitionEntry = getPartitionLocationFromResultSet(tableEntry, rs, partitionEntry);
             } catch (Exception e) {
                 RUNTIME.error(LCD.convert("01-00010"), key, partitionNum, tableEntry, e);
-                throw new ObTablePartitionLocationRefreshException(
-                        format(
-                                "fail to get partition location entry from remote entryKey = %s partNum = %d tableEntry =%s " +
-                                        "offset =%d epoch =%d",
-                                key, partitionNum, tableEntry, i, epoch), e);
+                throw new ObTablePartitionLocationRefreshException(format(
+                    "fail to get partition location entry from remote entryKey = %s partNum = %d tableEntry =%s "
+                            + "offset =%d epoch =%d", key, partitionNum, tableEntry, i, epoch), e);
             } finally {
                 try {
                     if (null != rs) {
@@ -1069,10 +1068,11 @@ public class LocationUtil {
     private static ObPartitionEntry getPartitionLocationFromResultSet(TableEntry tableEntry,
                                                                       ResultSet rs,
                                                                       ObPartitionEntry partitionEntry)
-                                                                                   throws SQLException,
-                                                                                   ObTablePartitionLocationRefreshException {
+                                                                                                      throws SQLException,
+                                                                                                      ObTablePartitionLocationRefreshException {
         if (partitionEntry == null || tableEntry == null) {
-            throw new IllegalArgumentException("partitionEntry: " + partitionEntry + " tableEntry: "+tableEntry);
+            throw new IllegalArgumentException("partitionEntry: " + partitionEntry
+                                               + " tableEntry: " + tableEntry);
         }
         Map<Long, ObPartitionLocation> partitionLocation = partitionEntry.getPartitionLocation();
         Map<Long, Long> tabletLsIdMap = partitionEntry.getTabletLsIdMap();
