@@ -193,4 +193,47 @@ public class ObHTableTest {
 
     }
 
+    @Test
+    public void hbaseDiffTableGroupTest() throws Exception {
+        /*
+        CREATE TABLEGROUP test SHARDING = 'ADAPTIVE';
+        CREATE TABLE `test$family1` (
+                      `K` varbinary(1024) NOT NULL,
+                      `Q` varbinary(256) NOT NULL,
+                      `T` bigint(20) NOT NULL,
+                      `V` varbinary(1024) DEFAULT NULL,
+                      PRIMARY KEY (`K`, `Q`, `T`)
+                ) TABLEGROUP = test;
+        CREATE TABLEGROUP test2 SHARDING = 'ADAPTIVE';
+        CREATE TABLE `test2$family1` (
+                      `K` varbinary(1024) NOT NULL,
+                      `Q` varbinary(256) NOT NULL,
+                      `T` bigint(20) NOT NULL,
+                      `V` varbinary(1024) DEFAULT NULL,
+                      PRIMARY KEY (`K`, `Q`, `T`)
+                ) TABLEGROUP = test2;
+         */
+        byte[] family = new byte[] {};
+        ObHTableOperationRequest hTableOperationRequestGet = new ObHTableOperationRequest();
+        hTableOperationRequestGet.setOperationType(ObTableOperationType.GET);
+        hTableOperationRequestGet.setTableName("test");
+        hTableOperationRequestGet.setRowKey("putKey".getBytes());
+
+        ObTableQueryRequest requestGet = (ObTableQueryRequest) hTableOperationRequestGet
+            .obTableGroupOperationRequest();
+        ObTableClientQueryStreamResult clientQueryStreamResultGet = (ObTableClientQueryStreamResult) obTableClient
+            .execute(requestGet);
+
+        // Thread.currentThread().sleep(30000);
+        ObHTableOperationRequest hTableOperationRequestScan = new ObHTableOperationRequest();
+        hTableOperationRequestScan.setOperationType(ObTableOperationType.SCAN);
+        hTableOperationRequestScan.setTableName("test2");
+        hTableOperationRequestScan.setRowKey("putKey".getBytes());
+
+        ObTableQueryRequest requestScan = (ObTableQueryRequest) hTableOperationRequestScan
+            .obTableGroupOperationRequest();
+        ObTableClientQueryStreamResult clientQueryStreamResultScan = (ObTableClientQueryStreamResult) obTableClient
+            .execute(requestScan);
+    }
+
 }

@@ -1324,7 +1324,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 "failed to get table name key=%s original tableName=%s ", tableEntryKey,
                 physicalTableName), e);
         }
-        if (!TableGroupInverted.isEmpty() && TableGroupInverted.containsKey(oldTableName)) {
+        if (!TableGroupInverted.isEmpty() && oldTableName != null
+            && TableGroupInverted.containsKey(oldTableName)) {
             TableGroupInverted.remove(oldTableName, tableGroupName);
         }
         TableGroupCache.put(tableGroupName, physicalTableName);
@@ -2731,10 +2732,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         } else if (request instanceof ObTableQueryRequest) {
             // TableGroup -> TableName
             String tableName = request.getTableName();
-            if (((ObTableQueryRequest) request).getTableQuery().isHbaseQuery()
-                && isTableGroupName(tableName)) {
-                tableName = tryGetTableNameFromTableGroupCache(tableName, false);
-            }
+            tableName = getPhyTableNameFromTableGroup(((ObTableQueryRequest) request), tableName);
             ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(tableName,
                 ((ObTableQueryRequest) request).getTableQuery(), this);
             tableQuery.setEntityType(request.getEntityType());
@@ -2742,11 +2740,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         } else if (request instanceof ObTableQueryAsyncRequest) {
             // TableGroup -> TableName
             String tableName = request.getTableName();
-            if (((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery()
-                .isHbaseQuery()
-                && isTableGroupName(tableName)) {
-                tableName = tryGetTableNameFromTableGroupCache(tableName, false);
-            }
+            tableName = getPhyTableNameFromTableGroup(
+                ((ObTableQueryAsyncRequest) request).getObTableQueryRequest(), tableName);
             ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(tableName,
                 ((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery(), this);
             tableQuery.setEntityType(request.getEntityType());
@@ -3280,6 +3275,20 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     */
     public boolean isTableGroupName(String tabName) {
         return !tabName.contains("$");
+    }
+
+    /*
+    * get phy table name form table group
+    * if odp mode then do nothing
+    */
+    public String getPhyTableNameFromTableGroup(ObTableQueryRequest request, String tableName)
+                                                                                              throws Exception {
+        if (odpMode) {
+            // do nothing
+        } else if (request.getTableQuery().isHbaseQuery() && isTableGroupName(tableName)) {
+            tableName = tryGetTableNameFromTableGroupCache(tableName, false);
+        }
+        return tableName;
     }
 
 }
