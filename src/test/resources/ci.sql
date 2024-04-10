@@ -498,4 +498,13 @@ CREATE TABLE `test$family_group` (
     PRIMARY KEY (`K`, `Q`, `T`)
 ) TABLEGROUP = test;
 
+CREATE TABLEGROUP test2 SHARDING = 'ADAPTIVE';
+CREATE TABLE `test2$family1` (
+    `K` varbinary(1024) NOT NULL,
+    `Q` varbinary(256) NOT NULL,
+    `T` bigint(20) NOT NULL,
+    `V` varbinary(1024) DEFAULT NULL,
+    PRIMARY KEY (`K`, `Q`, `T`)
+) TABLEGROUP = test2;
+
 alter system set kv_hotkey_throttle_threshold = 50;
