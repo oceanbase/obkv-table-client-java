@@ -1200,6 +1200,14 @@ public enum ObObjType {
             return parseTextToComparable(this, o, ct);
         }
 
+        /*
+         * Parse to bytes
+         */
+        @Override
+        public byte[] parseToBytes(Object o, ObCollationType ct) throws IllegalArgumentException, FeatureNotSupportedException {
+            return parseTextToBytes(this, o, ct);
+        }
+
     }, // charset: utf8mb4 or binary
     ObCharType(23) { // TODO not support
 
@@ -1244,6 +1252,14 @@ public enum ObObjType {
                                                                          throws IllegalArgumentException,
                                                                          FeatureNotSupportedException {
             return parseTextToComparable(this, o, ct);
+        }
+
+        /*
+         * Parse to bytes
+         */
+        @Override
+        public byte[] parseToBytes(Object o, ObCollationType ct) throws IllegalArgumentException, FeatureNotSupportedException {
+            return parseTextToBytes(this, o, ct);
         }
 
     }, // charset: utf8mb4 or binary
@@ -1433,6 +1449,14 @@ public enum ObObjType {
             return parseTextToComparable(this, o, ct);
         }
 
+       /*
+        * Parse to bytes
+        */
+       @Override
+       public byte[] parseToBytes(Object o, ObCollationType ct) throws IllegalArgumentException, FeatureNotSupportedException {
+           return parseTextToBytes(this, o, ct);
+       }
+
     },
     ObTextType(28) {
         /*
@@ -1479,6 +1503,14 @@ public enum ObObjType {
             return parseTextToComparable(this, o, ct);
         }
 
+        /*
+         * Parse to bytes
+         */
+        @Override
+        public byte[] parseToBytes(Object o, ObCollationType ct) throws IllegalArgumentException, FeatureNotSupportedException {
+            return parseTextToBytes(this, o, ct);
+        }
+
     },
     ObMediumTextType(29) {
         /*
@@ -1521,6 +1553,14 @@ public enum ObObjType {
         @Override
         public Comparable parseToComparable(Object o, ObCollationType ct) {
             return parseTextToComparable(this, o, ct);
+        }
+
+        /*
+         * Parse to bytes
+         */
+        @Override
+        public byte[] parseToBytes(Object o, ObCollationType ct) throws IllegalArgumentException, FeatureNotSupportedException {
+            return parseTextToBytes(this, o, ct);
         }
 
     },
@@ -1566,6 +1606,15 @@ public enum ObObjType {
         public Comparable parseToComparable(Object o, ObCollationType ct) {
             return parseTextToComparable(this, o, ct);
         }
+
+        /*
+         * Parse to bytes
+         */
+        @Override
+        public byte[] parseToBytes(Object o, ObCollationType ct) throws IllegalArgumentException, FeatureNotSupportedException {
+            return parseTextToBytes(this, o, ct);
+        }
+
     },
     ObBitType(31) { // TODO not support
 
@@ -1711,6 +1760,11 @@ public enum ObObjType {
     public abstract Comparable parseToComparable(Object o, ObCollationType ct)
                                                                               throws IllegalArgumentException,
                                                                               FeatureNotSupportedException;
+    public byte[] parseToBytes(Object o, ObCollationType ct) throws IllegalArgumentException, FeatureNotSupportedException {
+        // do nothing now
+        // We have implemented some parseToBytes() for varchar and varbinary type
+        return null;
+    }
 
     /*
      * Parse to long or null.
@@ -1758,6 +1812,56 @@ public enum ObObjType {
         } else {
             return Serialization.getNeedBytes((String) obj);
         }
+    }
+
+    /*
+     * Parse text to comparable.
+     */
+    public static byte[] parseTextToBytes(ObObjType obObjType, Object object,
+                                          ObCollationType collationType) {
+        if (collationType == ObCollationType.CS_TYPE_BINARY) {
+            if (object instanceof ObBytesString) {
+                return ((ObBytesString) object).bytes;
+            }
+
+            if (object instanceof byte[]) {
+                return (new ObBytesString((byte[]) object)).bytes;
+            }
+
+            if (object instanceof String) {
+                return (new ObBytesString((String) object)).bytes;
+            }
+
+            if (object instanceof ObVString) {
+                return (new ObBytesString(((ObVString) object).getBytesVal())).bytes;
+            }
+        } else {
+
+            if (object instanceof String) {
+                return ((String) object).getBytes();
+            }
+            if (object instanceof ObBytesString) {
+                return (Serialization.decodeVString(((ObBytesString) object).bytes)).getBytes();
+            }
+
+            if (object instanceof byte[]) {
+                try {
+                    return (Serialization.decodeVString((byte[]) object)).getBytes();
+                } catch (IllegalArgumentException e) {
+                    throw new IllegalArgumentException(
+                            obObjType.name()
+                                    + "can not parseToComparable byte array to string with utf-8 charset",
+                            e);
+                }
+            }
+
+            if (object instanceof ObVString) {
+                return (((ObVString) object).getStringVal()).getBytes();
+            }
+        }
+
+        throw new IllegalArgumentException(obObjType.name() + "can not parseToComparable argument:"
+                + object);
     }
 
     /*

@@ -49,6 +49,12 @@ public class ObRangePartDesc extends ObPartDesc {
     private List<ObColumn>                             orderedCompareColumns     = null;
     private List<ObObjType>                            orderedCompareColumnTypes = null;
     private List<ObComparableKV<ObPartitionKey, Long>> bounds                    = null;
+    // save the upper bound of the partition key
+    // demo:
+    // PARTITION P0 VALUES LESS THAN (500, 't', 't'),
+    // PARTITION P0 VALUES LESS THAN (1000, 'T', 'T'),
+    // -> [[500, t, t], [1000, T, T]]
+    private List<List<byte[]>>                         highBoundValues           = null;
 
     /*
      * Get ordered compare column types.
@@ -88,6 +94,17 @@ public class ObRangePartDesc extends ObPartDesc {
 
     public List<ObComparableKV<ObPartitionKey, Long>> getBounds() {
         return bounds;
+    }
+
+    /*
+     * Set highBoundValues
+     */
+    public void setHighBoundValues(List<List<byte[]>> highBoundValues) {
+        this.highBoundValues = highBoundValues;
+    }
+
+    public List<List<byte[]>> getHighBoundValues() {
+        return highBoundValues;
     }
 
     /*

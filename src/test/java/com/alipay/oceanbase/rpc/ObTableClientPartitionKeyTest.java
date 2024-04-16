@@ -17,7 +17,6 @@
 
 package com.alipay.oceanbase.rpc;
 
-import com.alipay.oceanbase.rpc.exception.ObTablePartitionConsistentException;
 import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.filter.ObCompareOp;
 import com.alipay.oceanbase.rpc.mutation.BatchOperation;
@@ -47,6 +46,7 @@ import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.compareVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.*;
 import static com.alipay.oceanbase.rpc.util.ObTableClientTestUtil.cleanTable;
 import static com.alipay.oceanbase.rpc.util.ObTableClientTestUtil.generateRandomStringByUUID;
+import static org.junit.Assert.fail;
 
 public class ObTableClientPartitionKeyTest {
 
@@ -1244,5 +1244,40 @@ public class ObTableClientPartitionKeyTest {
         } finally {
             cleanTable(tableName);
         }
+    }
+
+    @Test
+    public void testFirstPartStartEndKeys() throws Exception {
+        // Get start/end keys of key part
+        // CREATE TABLE `test$family_key` (
+        //     `K` varbinary(1024) NOT NULL,
+        //     `Q` varbinary(256) NOT NULL,
+        //     `T` bigint(20) NOT NULL,
+        //     `V` varbinary(1024) DEFAULT NULL,
+        //         PRIMARY KEY (`K`, `Q`, `T`)
+        // ) partition by key(K) partitions 17;
+        try {
+            byte[][][] keyFirstPartStartKeys = obTableClient.getFirstPartStartKeys("test$family_key");
+            byte[][][] keyFirstPartEndKeys = obTableClient.getFirstPartEndKeys("test$family_key");
+            Assert.assertArrayEquals(keyFirstPartStartKeys, keyFirstPartEndKeys);
+            Assert.assertEquals(1, keyFirstPartStartKeys.length);
+            Assert.assertEquals(1, keyFirstPartStartKeys[0].length);
+            Assert.assertEquals(0, keyFirstPartStartKeys[0][0].length);
+        } catch (Exception e) {
+            fail();
+        }
+
+        // Get start/end keys of range part
+        // CREATE TABLE `test$family_range` (
+        //     `K` varbinary(1024) NOT NULL,
+        //     `Q` varbinary(256) NOT NULL,
+        //     `T` bigint(20) NOT NULL,
+        //     `V` varbinary(1024) DEFAULT NULL,
+        // PRIMARY KEY (`K`, `Q`, `T`)
+        // ) partition by range columns (`K`) (
+        //     PARTITION p0 VALUES LESS THAN ('a'),
+        //     PARTITION p1 VALUES LESS THAN ('w'),
+        //     PARTITION p2 VALUES LESS THAN MAXVALUE
+        // );
     }
 }

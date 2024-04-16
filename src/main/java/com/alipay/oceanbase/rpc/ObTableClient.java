@@ -21,13 +21,9 @@ import com.alibaba.fastjson.JSON;
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.constant.Constants;
 import com.alipay.oceanbase.rpc.exception.*;
-import com.alipay.oceanbase.rpc.location.LocationUtil;
 import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.location.model.*;
-import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
-import com.alipay.oceanbase.rpc.location.model.partition.ObPartIdCalculator;
-import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionInfo;
-import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionLevel;
+import com.alipay.oceanbase.rpc.location.model.partition.*;
 import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
@@ -68,8 +64,7 @@ import static com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOper
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
 
 public class ObTableClient extends AbstractObTableClient implements Lifecycle {
-    private static final Logger                               logger                                  = TableClientLoggerFactory
-                                                                                                          .getLogger(ObTableClient.class);
+    private static final Logger                               logger                                  = getLogger(ObTableClient.class);
 
     private static final String                               usernameSeparators                      = ":;-;.";
 
@@ -974,9 +969,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (entry == null) {
                 ObServerAddr addr = serverRoster.getServer(serverAddressPriorityTimeout,
                     serverAddressCachingTimeout);
-                dataTableId = LocationUtil.getTableIdFromRemote(addr, sysUA,
-                    tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout, tenantName,
-                    database, dataTableName);
+                dataTableId = getTableIdFromRemote(addr, sysUA, tableEntryAcquireConnectTimeout,
+                    tableEntryAcquireSocketTimeout, tenantName, database, dataTableName);
             } else {
                 dataTableId = entry.getTableId();
             }
@@ -2610,8 +2604,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (null == columns || null == values || 0 == columns.length || 0 == values.length) {
             throw new ObTableException("client get unexpected empty columns or values");
         }
-        ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.UPDATE,
-            new Object[] {}, columns, values);
+        ObTableOperation operation = ObTableOperation.getInstance(UPDATE, new Object[] {}, columns,
+            values);
         return obTableQueryAndMutate(operation, tableQuery, false);
     }
 
@@ -2624,8 +2618,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     public ObTableQueryAndMutateRequest obTableQueryAndDelete(final TableQuery tableQuery)
                                                                                           throws Exception {
-        ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.DEL,
-            new Object[] {}, null, null);
+        ObTableOperation operation = ObTableOperation.getInstance(DEL, new Object[] {}, null, null);
         return obTableQueryAndMutate(operation, tableQuery, false);
     }
 
@@ -2646,8 +2639,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (null == columns || null == values || 0 == columns.length || 0 == values.length) {
             throw new ObTableException("client get unexpected empty columns or values");
         }
-        ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.INCREMENT,
-            new Object[] {}, columns, values);
+        ObTableOperation operation = ObTableOperation.getInstance(INCREMENT, new Object[] {},
+            columns, values);
         return obTableQueryAndMutate(operation, tableQuery, withResult);
     }
 
@@ -2668,8 +2661,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (null == columns || null == values || 0 == columns.length || 0 == values.length) {
             throw new ObTableException("client get unexpected empty columns or values");
         }
-        ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.APPEND,
-            new Object[] {}, columns, values);
+        ObTableOperation operation = ObTableOperation.getInstance(APPEND, new Object[] {}, columns,
+            values);
         return obTableQueryAndMutate(operation, tableQuery, withResult);
     }
 
@@ -3291,4 +3284,123 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return tableName;
     }
 
+    /*
+     * Get the start keys of different tablets, byte[0] = [] = Empty_Start_Row = Empty_End_Row
+     * Example:
+     *   For Non   Partition: return [[[]]]
+     *   For Key   Partition: return [[[]]]
+     *   For Hash  Partition: return [[[]]]
+     *   For Range Partition: return [[[], [], []], ['a', [], []], ['z', 'b', 'c']]
+     */
+    public byte[][][] getFirstPartStartKeys(String tableName) throws Exception {
+        // Check client running mode
+        if (this.runningMode != RunningMode.HBASE) {
+            throw new IllegalArgumentException("getFirstPartStartKeys only support HBase mode now");
+        }
+
+        // Get the latest table entry
+        TableEntry tableEntry = getOrRefreshTableEntry(tableName, true, false);
+
+        // Define start keys
+        byte[][][] firstPartStartKeys = new byte[0][][];
+
+        if (tableEntry.isPartitionTable()) {
+            if (null != tableEntry.getPartitionInfo()) {
+                if (null != tableEntry.getPartitionInfo().getFirstPartDesc()) {
+                    ObPartFuncType obPartFuncType = tableEntry.getPartitionInfo()
+                        .getFirstPartDesc().getPartFuncType();
+                    if (obPartFuncType.isRangePart()) {
+                        // Range Part
+                        ObRangePartDesc rangePartDesc = (ObRangePartDesc) tableEntry
+                            .getPartitionInfo().getFirstPartDesc();
+                        List<List<byte[]>> highBoundVals = rangePartDesc.getHighBoundValues();
+                        int startKeysLen = highBoundVals.size();
+                        int partKeyLen = highBoundVals.get(0).size();
+                        firstPartStartKeys = new byte[startKeysLen][][];
+
+                        // Init start keys
+                        firstPartStartKeys[0] = new byte[partKeyLen][];
+                        for (int i = 0; i < partKeyLen; i++) {
+                            firstPartStartKeys[0][i] = new byte[0];
+                        }
+
+                        // Fulfill other start keys
+                        for (int i = 0; i < startKeysLen - 1; i++) {
+                            List<byte[]> innerList = highBoundVals.get(i);
+                            firstPartStartKeys[i + 1] = new byte[innerList.size()][];
+                            for (int j = 0; j < innerList.size(); j++) {
+                                firstPartStartKeys[i + 1][j] = innerList.get(j);
+                            }
+                        }
+                    } else {
+                        // Key / Hash Part
+                        ObPartDesc partDesc = tableEntry.getPartitionInfo().getFirstPartDesc();
+                        int partKeyLen = partDesc.getPartColumns().size();
+
+                        // Init start keys
+                        firstPartStartKeys = new byte[1][partKeyLen][];
+                        Arrays.fill(firstPartStartKeys[0], new byte[0]);
+                    }
+                }
+            }
+        }
+
+        return firstPartStartKeys;
+    }
+
+    /*
+     * Get the start keys of different tablets, byte[0] = [] = Empty_Start_Row = Empty_End_Row
+     * Example:
+     *   For Key   Partition: return [[[]]]
+     *   For Hash  Partition: return [[[]]]
+     *   For Range Partition: return [['a', [], []], ['z', 'b', 'c'], [[], [], []]]
+     */
+    public byte[][][] getFirstPartEndKeys(String tableName) throws Exception {
+        // Check client running mode
+        if (this.runningMode != RunningMode.HBASE) {
+            throw new IllegalArgumentException("getFirstPartEndKeys only support HBase mode now");
+        }
+
+        // Get the latest table entry
+        TableEntry tableEntry = getOrRefreshTableEntry(tableName, true, false);
+
+        // Define end keys
+        byte[][][] firstPartEndKeys = new byte[0][][];
+
+        if (tableEntry.isPartitionTable()) {
+            if (null != tableEntry.getPartitionInfo()) {
+                if (null != tableEntry.getPartitionInfo().getFirstPartDesc()) {
+                    ObPartFuncType obPartFuncType = tableEntry.getPartitionInfo()
+                        .getFirstPartDesc().getPartFuncType();
+                    if (obPartFuncType.isRangePart()) {
+                        // Range Part
+                        ObRangePartDesc rangePartDesc = (ObRangePartDesc) tableEntry
+                            .getPartitionInfo().getFirstPartDesc();
+                        List<List<byte[]>> highBoundVals = rangePartDesc.getHighBoundValues();
+                        int endKeysLen = highBoundVals.size();
+                        firstPartEndKeys = new byte[endKeysLen][][];
+
+                        // Fulfill end keys
+                        for (int i = 0; i < endKeysLen; i++) {
+                            List<byte[]> innerList = highBoundVals.get(i);
+                            firstPartEndKeys[i] = new byte[innerList.size()][];
+                            for (int j = 0; j < innerList.size(); j++) {
+                                firstPartEndKeys[i][j] = innerList.get(j);
+                            }
+                        }
+                    } else {
+                        // Key / Hash Part
+                        ObPartDesc partDesc = tableEntry.getPartitionInfo().getFirstPartDesc();
+                        int partKeyLen = partDesc.getPartColumns().size();
+
+                        // Init end keys
+                        firstPartEndKeys = new byte[1][partKeyLen][];
+                        Arrays.fill(firstPartEndKeys[0], new byte[0]);
+                    }
+                }
+            }
+        }
+
+        return firstPartEndKeys;
+    }
 }

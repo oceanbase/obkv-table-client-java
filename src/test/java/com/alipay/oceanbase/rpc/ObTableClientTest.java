@@ -2517,4 +2517,56 @@ public class ObTableClientTest extends ObTableClientTestBase {
             client.delete(tableName, new Object[] { 0, 2 });
         }
     }
+
+    @Test
+    public void testFirstPartStartEndKeys() throws Exception {
+        ObTableClient tableClient = (ObTableClient) client;
+
+        // Get start/end keys of key part
+        // CREATE TABLE IF NOT EXISTS `testPartitionKeyComplex` (
+        //     `c0` tinyint NOT NULL,
+        //     `c1` int NOT NULL,
+        //     `c2` bigint NOT NULL,
+        //     `c3` varbinary(1024) NOT NULL,
+        //     `c4` varchar(1024) NOT NULL,
+        //     `c5` varchar(1024) NOT NULL,
+        //     `c6` varchar(20) default NULL,
+        // PRIMARY KEY (`c0`, `c1`, `c2`, `c3`, `c4`, `c5`)
+        // ) DEFAULT CHARSET = utf8mb4 ROW_FORMAT = DYNAMIC COMPRESSION = 'lz4_1.0' REPLICA_NUM = 3 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 10
+        // partition by key(`c0`, `c1`, `c2`, `c3`, `c4`) subpartition by key(`c5`) subpartitions 4 partitions 16;
+        try {
+            byte[][][] keyFirstPartStartKeys = tableClient.getFirstPartStartKeys("testPartitionKeyComplex");
+            byte[][][] keyFirstPartEndKeys = tableClient.getFirstPartEndKeys("testPartitionKeyComplex");
+            Assert.assertArrayEquals(keyFirstPartStartKeys, keyFirstPartEndKeys);
+            Assert.assertEquals(1, keyFirstPartStartKeys.length);
+            Assert.assertEquals(1, keyFirstPartStartKeys[0].length);
+            Assert.assertEquals(0, keyFirstPartStartKeys[0][0].length);
+            fail();
+        } catch (IllegalArgumentException e) {
+            assertTrue(true);
+        } catch (Exception e) {
+            fail();
+        }
+
+        // Get start/end keys of hash part
+        // CREATE TABLE IF NOT EXISTS `testPartitionHashComplex` (
+        //     `c1` int NOT NULL,
+        //     `c2` bigint NOT NULL,
+        //     `c3` varchar(20) default NULL,
+        // PRIMARY KEY (`c1`, `c2`)
+        // ) DEFAULT CHARSET = utf8mb4 COLLATE utf8mb4_bin ROW_FORMAT = DYNAMIC COMPRESSION = 'lz4_1.0' REPLICA_NUM = 3 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 10
+        // partition by hash(`c1`) subpartition by hash(`c2`) subpartitions 4 partitions 16;
+        try {
+            byte[][][] hashFirstPartStartKeys = tableClient.getFirstPartStartKeys("testPartitionKeyComplex");
+            byte[][][] hashFirstPartEndKeys = tableClient.getFirstPartEndKeys("testPartitionKeyComplex");
+            Assert.assertArrayEquals(hashFirstPartStartKeys, hashFirstPartEndKeys);
+            Assert.assertEquals(1, hashFirstPartStartKeys.length);
+            Assert.assertEquals(1, hashFirstPartStartKeys[0].length);
+            Assert.assertEquals(0, hashFirstPartStartKeys[0][0].length);
+        } catch (IllegalArgumentException e) {
+            assertTrue(true);
+        } catch (Exception e) {
+            fail();
+        }
+    }
 }
