@@ -941,13 +941,17 @@ public class ObTableClientPartitionRangeTest {
         //     PARTITION p1 VALUES LESS THAN ('w'),
         //     PARTITION p2 VALUES LESS THAN MAXVALUE
         // );
+
         try {
-            byte[][][] rangeFirstPartStartKeys = obTableClient.getFirstPartStartKeys("test$family_range");
-            byte[][][] rangeFirstPartEndKeys = obTableClient.getFirstPartEndKeys("test$family_range");
+            byte[][][] rangeFirstPartStartKeys = obTableClient
+                .getFirstPartStartKeys("test$family_range");
+            byte[][][] rangeFirstPartEndKeys = obTableClient
+                .getFirstPartEndKeys("test$family_range");
             int keySize = rangeFirstPartStartKeys.length;
-            Assert.assertArrayEquals(rangeFirstPartStartKeys[0], rangeFirstPartEndKeys[keySize-1]);
+            Assert
+                .assertArrayEquals(rangeFirstPartStartKeys[0], rangeFirstPartEndKeys[keySize - 1]);
             for (int i = 1; i < keySize; ++i) {
-                Assert.assertArrayEquals(rangeFirstPartStartKeys[i], rangeFirstPartEndKeys[i-1]);
+                Assert.assertArrayEquals(rangeFirstPartStartKeys[i], rangeFirstPartEndKeys[i - 1]);
             }
         } catch (Exception e) {
             fail();

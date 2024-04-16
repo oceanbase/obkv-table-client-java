@@ -1256,8 +1256,10 @@ public class ObTableClientPartitionKeyTest {
         //     `V` varbinary(1024) DEFAULT NULL,
         //         PRIMARY KEY (`K`, `Q`, `T`)
         // ) partition by key(K) partitions 17;
+
         try {
-            byte[][][] keyFirstPartStartKeys = obTableClient.getFirstPartStartKeys("test$family_key");
+            byte[][][] keyFirstPartStartKeys = obTableClient
+                .getFirstPartStartKeys("test$family_key");
             byte[][][] keyFirstPartEndKeys = obTableClient.getFirstPartEndKeys("test$family_key");
             Assert.assertArrayEquals(keyFirstPartStartKeys, keyFirstPartEndKeys);
             Assert.assertEquals(1, keyFirstPartStartKeys.length);
@@ -1266,18 +1268,5 @@ public class ObTableClientPartitionKeyTest {
         } catch (Exception e) {
             fail();
         }
-
-        // Get start/end keys of range part
-        // CREATE TABLE `test$family_range` (
-        //     `K` varbinary(1024) NOT NULL,
-        //     `Q` varbinary(256) NOT NULL,
-        //     `T` bigint(20) NOT NULL,
-        //     `V` varbinary(1024) DEFAULT NULL,
-        // PRIMARY KEY (`K`, `Q`, `T`)
-        // ) partition by range columns (`K`) (
-        //     PARTITION p0 VALUES LESS THAN ('a'),
-        //     PARTITION p1 VALUES LESS THAN ('w'),
-        //     PARTITION p2 VALUES LESS THAN MAXVALUE
-        // );
     }
 }
