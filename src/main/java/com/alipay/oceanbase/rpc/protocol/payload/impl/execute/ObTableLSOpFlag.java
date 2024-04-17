@@ -21,6 +21,7 @@ public class ObTableLSOpFlag {
     private static final int FLAG_IS_SAME_TYPE             = 1 << 0;
     private static final int FLAG_IS_SAME_PROPERTIES_NAMES = 1 << 1;
     private static final int FLAG_RETURN_ONE_RESULT        = 1 << 2;
+    private static final int FLAG_NEED_ALL_PROP            = 1 << 3;
     private long             flags                         = 0;
 
     public void setFlagIsSameType(boolean isSameType) {
@@ -47,6 +48,14 @@ public class ObTableLSOpFlag {
         }
     }
 
+    public void setFlagNeedAllProp(boolean needAllProp) {
+        if (needAllProp) {
+            flags |= FLAG_NEED_ALL_PROP;
+        } else {
+            flags &= ~FLAG_NEED_ALL_PROP;
+        }
+    }
+
     public long getValue() {
         return flags;
     }
@@ -62,4 +71,6 @@ public class ObTableLSOpFlag {
     public boolean getFlagIsSamePropertiesNames() {
         return (flags & FLAG_IS_SAME_PROPERTIES_NAMES) != 0;
     }
+
+    public boolean getFlagNeedAllProp() { return (flags & FLAG_NEED_ALL_PROP) != 0;}
 }

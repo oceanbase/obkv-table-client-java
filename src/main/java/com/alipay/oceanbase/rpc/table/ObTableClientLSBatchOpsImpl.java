@@ -50,6 +50,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     private final ObTableClient   obTableClient;
     private ExecutorService       executorService;
     private boolean               returningAffectedEntity = false;
+    private boolean               needAllProp = false;
     private List<ObTableSingleOp> batchOperation;
 
     /*
@@ -187,7 +188,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         String[] propertiesNames = query.getSelectColumns().toArray(new String[0]);
         ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKey,
             propertiesNames, null);
-
+//        if (propertiesNames.length == 0) {
+            needAllProp = true;
+//        }
         ObTableSingleOp singleOp = new ObTableSingleOp();
         singleOp.setSingleOpType(ObTableOperationType.GET);
         singleOp.addEntity(entity);
@@ -379,6 +382,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         ObTableLSOperation tableLsOp = new ObTableLSOperation();
         tableLsOp.setLsId(lsId);
         tableLsOp.setReturnOneResult(returnOneResult);
+        tableLsOp.setNeedAllProp(needAllProp);
         tableLsOp.setTableName(tableName);
         // fetch the following parameters in first entry for routing
         long tableId = 0;
@@ -412,7 +416,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 isFirstEntry = false;
             }
         }
-
         // Since we only have one tablet operation
         // We do the LS operation prepare here
        tableLsOp.prepare();
