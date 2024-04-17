@@ -188,9 +188,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         String[] propertiesNames = query.getSelectColumns().toArray(new String[0]);
         ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKey,
             propertiesNames, null);
-//        if (propertiesNames.length == 0) {
+        if (propertiesNames.length == 0) {
             needAllProp = true;
-//        }
+        }
         ObTableSingleOp singleOp = new ObTableSingleOp();
         singleOp.setSingleOpType(ObTableOperationType.GET);
         singleOp.addEntity(entity);
@@ -416,6 +416,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 isFirstEntry = false;
             }
         }
+
         // Since we only have one tablet operation
         // We do the LS operation prepare here
        tableLsOp.prepare();
