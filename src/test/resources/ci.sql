@@ -527,4 +527,12 @@ CREATE TABLE `test$family_range` (
     PARTITION p2 VALUES LESS THAN MAXVALUE
 );
 
+CREATE TABLE `test_batch_get` (
+  `c1` int(11) NOT NULL,
+  `c2` int(11) NOT NULL,
+  `c3` int(11) DEFAULT NULL,
+  `c4` int(11) DEFAULT NULL,
+  PRIMARY KEY (`c1`, `c2`)
+) partition by key(`c2`) partitions 3;
+
 alter system set kv_hotkey_throttle_threshold = 50;

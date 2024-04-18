@@ -2550,4 +2550,53 @@ public class ObTableClientTest extends ObTableClientTestBase {
             fail();
         }
     }
+
+    @Test
+    public void testBatchQuery() throws Exception {
+        String tableName = "test_batch_get";
+        final int COUNT_SIZE = 20;
+        try {
+            int count = COUNT_SIZE;
+            // prepare data
+            for (int i = 0; i < count; i++) {
+                client.insertOrUpdate(tableName).setRowKey(row(colVal("c1", 1), colVal("c2", i)))
+                        .addMutateRow(row(colVal("c3", i + 1), colVal("c4", i + 2))).execute();
+            }
+
+            BatchOperation batchOperation = client.batchOperation(tableName);
+            while (count-- > 0) {
+                Row rowKey = row(colVal("c1", 1), colVal("c2", count));
+                TableQuery query = null;
+                if (count % 2 == 0) {
+                    query = query().setRowKey(rowKey);
+                } else {
+                    query = query().setRowKey(rowKey).select("c2", "c3");
+                }
+                batchOperation.addOperation(query);
+            }
+
+            BatchOperationResult result = batchOperation.execute();
+            int index = COUNT_SIZE;
+            while (index-- > 0) {
+                Row row = result.get(index).getOperationRow();
+                int c2Val = (int) row.get("c2");
+                if (c2Val % 2 == 0) {
+                    assertEquals(4, row.size());
+                    assertEquals(1, row.get("c1"));
+                    assertEquals(c2Val + 1, row.get("c3"));
+                    assertEquals(c2Val + 2, row.get("c4"));
+
+                } else {
+                    assertEquals(2, row.size());
+                    assertEquals(c2Val + 1, row.get("c3"));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            for (int i=0; i < COUNT_SIZE; i++) {
+                client.delete(tableName).setRowKey(row(colVal("c1", 1), colVal("c2", i))).execute();
+            }
+        }
+    }
 }

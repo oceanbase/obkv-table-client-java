@@ -245,6 +245,10 @@ public class ObTableLSOperation extends AbstractPayload {
         optionFlag.setFlagIsSamePropertiesNames(isSamePropertiesNames);
     }
 
+    public void setNeedAllProp(boolean needAllProp) { optionFlag.setFlagNeedAllProp(needAllProp);}
+
+    public boolean isNeedAllProp() { return optionFlag.getFlagNeedAllProp(); }
+
     public long getTableId() {
         return tableId;
     }
