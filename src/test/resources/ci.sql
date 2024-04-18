@@ -507,6 +507,26 @@ CREATE TABLE `test2$family1` (
     PRIMARY KEY (`K`, `Q`, `T`)
 ) TABLEGROUP = test2;
 
+CREATE TABLE `test$family_key` (
+    `K` varbinary(1024) NOT NULL,
+    `Q` varbinary(256) NOT NULL,
+    `T` bigint(20) NOT NULL,
+    `V` varbinary(1024) DEFAULT NULL,
+    PRIMARY KEY (`K`, `Q`, `T`)
+) partition by key(K) partitions 17;
+
+CREATE TABLE `test$family_range` (
+    `K` varbinary(1024) NOT NULL,
+    `Q` varbinary(256) NOT NULL,
+    `T` bigint(20) NOT NULL,
+    `V` varbinary(1024) DEFAULT NULL,
+    PRIMARY KEY (`K`, `Q`, `T`)
+) partition by range columns (`K`) (
+    PARTITION p0 VALUES LESS THAN ('a'),
+    PARTITION p1 VALUES LESS THAN ('w'),
+    PARTITION p2 VALUES LESS THAN MAXVALUE
+);
+
 CREATE TABLE `test_batch_get` (
   `c1` int(11) NOT NULL,
   `c2` int(11) NOT NULL,

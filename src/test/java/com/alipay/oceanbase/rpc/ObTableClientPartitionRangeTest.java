@@ -36,6 +36,7 @@ import java.util.concurrent.Executors;
 import static com.alipay.oceanbase.rpc.util.ObTableClientTestUtil.cleanTable;
 import static com.alipay.oceanbase.rpc.util.ObTableClientTestUtil.generateRandomStringByUUID;
 import static java.lang.StrictMath.abs;
+import static org.junit.Assert.fail;
 
 public class ObTableClientPartitionRangeTest {
     private ObTableClient obTableClient;
@@ -923,6 +924,37 @@ public class ObTableClientPartitionRangeTest {
             Assert.assertTrue("Unexpected exception has occurred", false);
         } finally {
             cleanTable(testTable);
+        }
+    }
+
+    @Test
+    public void testFirstPartStartEndKeys() throws Exception {
+        // Get start/end keys of range part
+        // CREATE TABLE `test$family_range` (
+        //     `K` varbinary(1024) NOT NULL,
+        //     `Q` varbinary(256) NOT NULL,
+        //     `T` bigint(20) NOT NULL,
+        //     `V` varbinary(1024) DEFAULT NULL,
+        // PRIMARY KEY (`K`, `Q`, `T`)
+        // ) partition by range columns (`K`) (
+        //     PARTITION p0 VALUES LESS THAN ('a'),
+        //     PARTITION p1 VALUES LESS THAN ('w'),
+        //     PARTITION p2 VALUES LESS THAN MAXVALUE
+        // );
+
+        try {
+            byte[][][] rangeFirstPartStartKeys = obTableClient
+                .getFirstPartStartKeys("test$family_range");
+            byte[][][] rangeFirstPartEndKeys = obTableClient
+                .getFirstPartEndKeys("test$family_range");
+            int keySize = rangeFirstPartStartKeys.length;
+            Assert
+                .assertArrayEquals(rangeFirstPartStartKeys[0], rangeFirstPartEndKeys[keySize - 1]);
+            for (int i = 1; i < keySize; ++i) {
+                Assert.assertArrayEquals(rangeFirstPartStartKeys[i], rangeFirstPartEndKeys[i - 1]);
+            }
+        } catch (Exception e) {
+            fail();
         }
     }
 }

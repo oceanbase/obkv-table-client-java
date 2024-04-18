@@ -918,10 +918,13 @@ public class LocationUtil {
             }
             rs = ps.executeQuery();
             if (obPartFuncType.isRangePart()) {
+                List<List<byte[]>> highBoundVals = new ArrayList<>();
                 List<ObComparableKV<ObPartitionKey, Long>> bounds = parseFirstPartRange(rs,
-                    tableEntry);
+                    tableEntry, highBoundVals);
                 ((ObRangePartDesc) tableEntry.getPartitionInfo().getFirstPartDesc())
                     .setBounds(bounds);
+                ((ObRangePartDesc) tableEntry.getPartitionInfo().getFirstPartDesc())
+                        .setHighBoundValues(highBoundVals);
 
                 if (logger.isInfoEnabled()) {
                     logger.info(format("uuid:%s, get first ranges from remote for %s, bounds=%s",
@@ -986,10 +989,13 @@ public class LocationUtil {
 
             rs = pstmt.executeQuery();
             if (subPartFuncType.isRangePart()) {
+                List<List<byte[]>> highBoundVals = new ArrayList<>();
                 List<ObComparableKV<ObPartitionKey, Long>> bounds = parseSubPartRange(rs,
-                    tableEntry);
+                    tableEntry, highBoundVals);
                 ((ObRangePartDesc) tableEntry.getPartitionInfo().getSubPartDesc())
                     .setBounds(bounds);
+                ((ObRangePartDesc) tableEntry.getPartitionInfo().getSubPartDesc())
+                        .setHighBoundValues(highBoundVals);
                 if (logger.isInfoEnabled()) {
                     logger.info(format("uuid:%s, get sub ranges from remote for %s, bounds=%s",
                         uuid, tableName, JSON.toJSON(bounds)));
@@ -1429,11 +1435,12 @@ public class LocationUtil {
     }
 
     private static List<ObComparableKV<ObPartitionKey, Long>> parseFirstPartRange(ResultSet rs,
-                                                                                  TableEntry tableEntry)
-                                                                                                        throws SQLException,
-                                                                                                        IllegalArgumentException,
-                                                                                                        FeatureNotSupportedException {
-        return parseRangePart(rs, tableEntry, false);
+                                                                                  TableEntry tableEntry,
+                                                                                  List<List<byte[]>> highBoundVals)
+                                                                                                                   throws SQLException,
+                                                                                                                   IllegalArgumentException,
+                                                                                                                   FeatureNotSupportedException {
+        return parseRangePart(rs, tableEntry, highBoundVals, false);
     }
 
     private static Map<ObPartitionKey, Long> parseFirstPartSets(ResultSet rs, TableEntry tableEntry)
@@ -1444,11 +1451,12 @@ public class LocationUtil {
     }
 
     private static List<ObComparableKV<ObPartitionKey, Long>> parseSubPartRange(ResultSet rs,
-                                                                                TableEntry tableEntry)
-                                                                                                      throws SQLException,
-                                                                                                      IllegalArgumentException,
-                                                                                                      FeatureNotSupportedException {
-        return parseRangePart(rs, tableEntry, true);
+                                                                                TableEntry tableEntry,
+                                                                                List<List<byte[]>> highBoundVals)
+                                                                                                                 throws SQLException,
+                                                                                                                 IllegalArgumentException,
+                                                                                                                 FeatureNotSupportedException {
+        return parseRangePart(rs, tableEntry, highBoundVals, true);
     }
 
     private static Map<ObPartitionKey, Long> parseSubPartSets(ResultSet rs, TableEntry tableEntry)
@@ -1500,6 +1508,7 @@ public class LocationUtil {
 
     private static List<ObComparableKV<ObPartitionKey, Long>> parseRangePart(ResultSet rs,
                                                                              TableEntry tableEntry,
+                                                                             List<List<byte[]>> highBoundVals,
                                                                              boolean isSubPart)
                                                                                                throws SQLException,
                                                                                                IllegalArgumentException,
@@ -1528,32 +1537,36 @@ public class LocationUtil {
             String highBoundVal = rs.getString("high_bound_val");
             String[] splits = highBoundVal.split(",");
             List<Comparable> partElements = new ArrayList<Comparable>();
+            List<byte[]> singleHighBoundVal = new ArrayList<byte[]>();
 
             for (int i = 0; i < splits.length; i++) {
                 String elementStr = getPlainString(splits[i]);
                 if (elementStr.equalsIgnoreCase("MAXVALUE")) {
+                    singleHighBoundVal.add(new byte[0]); // like EMPTY_BYTE_ARRAY
                     partElements.add(MAX_PARTITION_ELEMENT);
                 } else if (elementStr.equalsIgnoreCase("MINVALUE")) {
+                    singleHighBoundVal.add(new byte[0]); // like EMPTY_BYTE_ARRAY
                     partElements.add(MIN_PARTITION_ELEMENT);
                 } else {
-                    partElements
-                        .add(orderPartColumns
-                            .get(i)
-                            .getObObjType()
-                            .parseToComparable(elementStr,
-                                orderPartColumns.get(i).getObCollationType()));
+                    ObObjType type = orderPartColumns.get(i).getObObjType();
+                    partElements.add(type.parseToComparable(elementStr, orderPartColumns.get(i)
+                        .getObCollationType()));
+                    singleHighBoundVal.add(type.parseToBytes(elementStr, orderPartColumns.get(i)
+                        .getObCollationType()));
                 }
             }
             ObPartitionKey partitionKey = new ObPartitionKey(orderPartColumns, partElements);
             if (ObGlobal.obVsnMajor() >= 4) {
                 long tabletId = rs.getLong("tablet_id");
                 bounds.add(new ObComparableKV<ObPartitionKey, Long>(partitionKey, idx));
+                highBoundVals.add(singleHighBoundVal);
                 partTabletIdMap.put(idx, tabletId);
                 idx++;
             } else {
                 long partId = rs.getLong(partIdColumnName);
                 String partName = rs.getString("part_name");
                 bounds.add(new ObComparableKV<ObPartitionKey, Long>(partitionKey, partId));
+                highBoundVals.add(singleHighBoundVal);
                 partNameIdMap.put(partName.toLowerCase(), partId);
             }
         }
