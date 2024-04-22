@@ -929,29 +929,59 @@ public class ObTableClientPartitionRangeTest {
 
     @Test
     public void testFirstPartStartEndKeys() throws Exception {
-        // Get start/end keys of range part
-        // CREATE TABLE `test$family_range` (
+        // CREATE TABLEGROUP test_start_end_keys_range SHARDING = 'ADAPTIVE';
+        // CREATE TABLE `test_start_end_keys_range$family_range` (
         //     `K` varbinary(1024) NOT NULL,
         //     `Q` varbinary(256) NOT NULL,
         //     `T` bigint(20) NOT NULL,
         //     `V` varbinary(1024) DEFAULT NULL,
-        // PRIMARY KEY (`K`, `Q`, `T`)
+        //     PRIMARY KEY (`K`, `Q`, `T`)
         // ) partition by range columns (`K`) (
         //     PARTITION p0 VALUES LESS THAN ('a'),
         //     PARTITION p1 VALUES LESS THAN ('w'),
         //     PARTITION p2 VALUES LESS THAN MAXVALUE
-        // );
+        // ) TABLEGROUP = test_start_end_keys_range;
 
         try {
             byte[][][] rangeFirstPartStartKeys = obTableClient
-                .getFirstPartStartKeys("test$family_range");
+                .getFirstPartStartKeys("test_start_end_keys_range$family_range");
             byte[][][] rangeFirstPartEndKeys = obTableClient
-                .getFirstPartEndKeys("test$family_range");
+                .getFirstPartEndKeys("test_start_end_keys_range$family_range");
             int keySize = rangeFirstPartStartKeys.length;
             Assert
                 .assertArrayEquals(rangeFirstPartStartKeys[0], rangeFirstPartEndKeys[keySize - 1]);
             for (int i = 1; i < keySize; ++i) {
                 Assert.assertArrayEquals(rangeFirstPartStartKeys[i], rangeFirstPartEndKeys[i - 1]);
+            }
+        } catch (Exception e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void testHBaseStartEndKeys() throws Exception {
+        // CREATE TABLEGROUP test_start_end_keys_range SHARDING = 'ADAPTIVE';
+        // CREATE TABLE `test_start_end_keys_range$family_range` (
+        //     `K` varbinary(1024) NOT NULL,
+        //     `Q` varbinary(256) NOT NULL,
+        //     `T` bigint(20) NOT NULL,
+        //     `V` varbinary(1024) DEFAULT NULL,
+        //     PRIMARY KEY (`K`, `Q`, `T`)
+        // ) partition by range columns (`K`) (
+        //     PARTITION p0 VALUES LESS THAN ('a'),
+        //     PARTITION p1 VALUES LESS THAN ('w'),
+        //     PARTITION p2 VALUES LESS THAN MAXVALUE
+        // ) TABLEGROUP = test_start_end_keys_range;
+
+        try {
+            byte[][] rangeHBaseStartKeys = obTableClient
+                .getHBaseTableStartKeys("test_start_end_keys_range");
+            byte[][] rangeHBaseEndKeys = obTableClient
+                .getHBaseTableEndKeys("test_start_end_keys_range");
+            int keySize = rangeHBaseStartKeys.length;
+            Assert.assertArrayEquals(rangeHBaseStartKeys[0], rangeHBaseEndKeys[keySize - 1]);
+            for (int i = 1; i < keySize; ++i) {
+                Assert.assertArrayEquals(rangeHBaseStartKeys[i], rangeHBaseEndKeys[i - 1]);
             }
         } catch (Exception e) {
             fail();

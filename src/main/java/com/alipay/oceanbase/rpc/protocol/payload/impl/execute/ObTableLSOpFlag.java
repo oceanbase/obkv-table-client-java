@@ -72,5 +72,7 @@ public class ObTableLSOpFlag {
         return (flags & FLAG_IS_SAME_PROPERTIES_NAMES) != 0;
     }
 
-    public boolean getFlagNeedAllProp() { return (flags & FLAG_NEED_ALL_PROP) != 0;}
+    public boolean getFlagNeedAllProp() {
+        return (flags & FLAG_NEED_ALL_PROP) != 0;
+    }
 }
