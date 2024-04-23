@@ -2560,7 +2560,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
             // prepare data
             for (int i = 0; i < count; i++) {
                 client.insertOrUpdate(tableName).setRowKey(row(colVal("c1", 1), colVal("c2", i)))
-                        .addMutateRow(row(colVal("c3", i + 1), colVal("c4", i + 2))).execute();
+                    .addMutateRow(row(colVal("c3", i + 1), colVal("c4", i + 2))).execute();
             }
 
             BatchOperation batchOperation = client.batchOperation(tableName);
@@ -2594,7 +2594,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            for (int i=0; i < COUNT_SIZE; i++) {
+            for (int i = 0; i < COUNT_SIZE; i++) {
                 client.delete(tableName).setRowKey(row(colVal("c1", 1), colVal("c2", i))).execute();
             }
         }
