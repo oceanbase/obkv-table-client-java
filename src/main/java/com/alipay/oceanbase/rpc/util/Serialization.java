@@ -519,8 +519,25 @@ public class Serialization {
     public static int getNeedBytes(String str) {
         if (str == null)
             str = "";
-        int len = strToBytes(str).length;
-        return getNeedBytes(len) + len + 1;
+        int utf8Length = 0;
+        for (int i = 0; i < str.length();) {
+            int codePoint = str.codePointAt(i);
+            utf8Length += getUtf8Length(codePoint);
+            i += Character.charCount(codePoint);
+        }
+        return getNeedBytes(utf8Length) + utf8Length + 1;
+    }
+
+    private static int getUtf8Length(int codePoint) {
+        if (codePoint <= 0x7F) {
+            return 1;
+        } else if (codePoint <= 0x7FF) {
+            return 2;
+        } else if (codePoint <= 0xFFFF) {
+            return 3;
+        } else {
+            return 4;
+        }
     }
 
     /**

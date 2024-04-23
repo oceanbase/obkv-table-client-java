@@ -539,4 +539,34 @@ CREATE TABLE `test_batch_get` (
   PRIMARY KEY (`c1`, `c2`)
 ) partition by key(`c2`) partitions 3;
 
+CREATE TABLE `test_local_index_with_vgen_col` (
+  `name` varchar(512) NOT NULL DEFAULT '',
+  `pk` varchar(512) NOT NULL,
+  `adiu` varchar(512) NOT NULL DEFAULT '',
+  `id` bigint(20) NOT NULL DEFAULT 0,
+  `name_v` varchar(20) GENERATED ALWAYS AS (substr(`name`,1,5)) VIRTUAL,
+  `gmt_create` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`adiu`, `pk`, `gmt_create`),
+  KEY `idx_adiu_v_name` (`adiu`, `name_v`) BLOCK_SIZE 16384 LOCAL
+) TTL (gmt_create + INTERVAL 300 SECOND) partition by key(adiu) partitions 8;
+
+CREATE TABLE `test_global_index_with_vgen_col` (
+  `name` varchar(512) NOT NULL DEFAULT '',
+  `pk` varchar(512) NOT NULL,
+  `adiu` varchar(512) NOT NULL DEFAULT '',
+  `id` bigint(20) NOT NULL DEFAULT 0,
+  `name_v` varchar(20) GENERATED ALWAYS AS (substr(`name`,1,5)) VIRTUAL,
+  `gmt_create` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`adiu`, `pk`, `gmt_create`),
+  KEY `idx_adiu_v_name` (`adiu`) global
+) TTL (gmt_create + INTERVAL 300 SECOND) partition by key(adiu) partitions 8;
+
+CREATE TABLE `test_current_timestamp` (
+  `c1` int not null,
+  `c2` varchar(255),
+  `c3` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   PRIMARY KEY (`c1`),
+   KEY `idx_adiu_v_name` (`c2`, `c3`) global partition by key(`c2`) partitions 5
+) partition by key(`c1`) partitions 8;
+
 alter system set kv_hotkey_throttle_threshold = 50;

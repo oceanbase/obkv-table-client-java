@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.mutation.Row;
+import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
 import org.junit.After;
@@ -31,6 +32,7 @@ import java.util.Map;
 
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
+import static org.junit.Assert.*;
 
 public class ObTableIndexWithCalcColumn {
 
@@ -405,6 +407,219 @@ public class ObTableIndexWithCalcColumn {
             Assert.assertEquals(resultSet2.cacheSize(), 0);
         } else {
             Assert.assertEquals(resultSet2.cacheSize(), recordCount);
+        }
+    }
+
+
+    @Test
+    public void testLocalIndexHasGenerateColumn() throws Exception {
+        /*
+          CREATE TABLE `test_local_index_with_vgen_col` (
+              `name` varchar(512) NOT NULL DEFAULT '',
+              `pk` varchar(512) NOT NULL,
+              `adiu` varchar(512) NOT NULL DEFAULT '',
+              `id` bigint(20) NOT NULL DEFAULT 0,
+              `name_v` varchar(20) GENERATED ALWAYS AS (substr(`name`,1,5)) VIRTUAL,
+              `gmt_create` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`adiu`, `pk`, `gmt_create`),
+              KEY `idx_adiu_v_name` (`adiu`, `name_v`) BLOCK_SIZE 16384 LOCAL
+          ) TTL (gmt_create + INTERVAL 300 SECOND) partition by key(adiu) partitions 8;
+        */
+        String TABLE_NAME = "test_local_index_with_vgen_col";
+
+    }
+
+    @Test
+    public void testGlobalIndexHasGenerateColumn() throws Exception {
+        /*
+            CREATE TABLE `test_global_index_with_vgen_col` (
+              `name` varchar(512) NOT NULL DEFAULT '',
+              `pk` varchar(512) NOT NULL,
+              `adiu` varchar(512) NOT NULL DEFAULT '',
+              `id` bigint(20) NOT NULL DEFAULT 0,
+              `name_v` varchar(20) GENERATED ALWAYS AS (substr(`name`,1,5)) VIRTUAL,
+              `gmt_create` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`adiu`, `pk`, `gmt_create`),
+              KEY `idx_adiu_v_name` (`adiu`) global
+            ) TTL (gmt_create + INTERVAL 300 SECOND) partition by key(adiu) partitions 8;
+        */
+        String tableName = "test_global_index_with_vgen_col";
+        testIndexHasGenerateColumn(tableName);
+    }
+
+    public void testIndexHasGenerateColumn(String tableName) throws SQLException {
+        long cur_ts = System.currentTimeMillis();
+        Timestamp cur_time = new Timestamp(cur_ts);
+        cur_time.setNanos(0);
+        Timestamp expire_time = new Timestamp(cur_ts - 301000);
+        expire_time.setNanos(0);
+        try {
+            Row rowKey1 = row(colVal("adiu", "adiu111"), colVal("pk", "pk1"),
+                    colVal("gmt_create", cur_time));
+            Row rowKey2 = row(colVal("adiu", "adiu222"), colVal("pk", "pk2"),
+                    colVal("gmt_create", expire_time));
+            Row mutateRow1 = row(colVal("id", 1L), colVal("name", "name1111111"));
+            Row mutateRow2 = row(colVal("id", 2L), colVal("name", "name2222222"));
+
+            // prepare data
+            MutationResult res = client.insert(tableName).setRowKey(rowKey1).addMutateRow(mutateRow1).execute();
+            assertEquals(1, res.getAffectedRows());
+            res = client.insert(tableName).setRowKey(rowKey2).addMutateRow(mutateRow2).execute();
+            assertEquals(1, res.getAffectedRows());
+            // get
+            // not expired row
+            Map<String, Object> getRes = client.get(tableName, rowKey1.getValues(),null);
+            assertTrue(!getRes.isEmpty());
+            assertEquals("adiu111",getRes.get("adiu"));
+            assertEquals("pk1", getRes.get("pk"));
+            assertEquals(cur_time, getRes.get("gmt_create"));
+            assertEquals(1L, getRes.get("id"));
+            assertEquals("name1111111", getRes.get("name"));
+            assertEquals("name1", getRes.get("name_v"));
+            // expired row
+            getRes = client.get(tableName, rowKey2.getValues(),null);
+            assertTrue(getRes.isEmpty());
+
+            // insertup
+            // not expired: update
+            res = client.insertOrUpdate(tableName).setRowKey(rowKey1).addMutateRow(mutateRow2).execute();
+            assertEquals(1, res.getAffectedRows());
+            // expired: delete + insert
+            res = client.insertOrUpdate(tableName).setRowKey(rowKey2).addMutateRow(mutateRow1).execute();
+            assertEquals(1, res.getAffectedRows());
+            // get
+            getRes = client.get(tableName, rowKey1.getValues(),null);
+            assertTrue(!getRes.isEmpty());
+            assertEquals("adiu111",getRes.get("adiu"));
+            assertEquals("pk1", getRes.get("pk"));
+            assertEquals(cur_time, getRes.get("gmt_create"));
+            assertEquals(2L, getRes.get("id"));
+            assertEquals("name2222222", getRes.get("name"));
+            assertEquals("name2", getRes.get("name_v"));
+            // expired row
+            getRes = client.get(tableName, rowKey2.getValues(),null);
+            assertTrue(getRes.isEmpty());
+
+            // update
+            res = client.update(tableName).setRowKey(rowKey1).addMutateRow(mutateRow1).execute();
+            assertEquals(1, res.getAffectedRows());
+            getRes = client.get(tableName, rowKey1.getValues(),null);
+            assertTrue(!getRes.isEmpty());
+            assertEquals("adiu111",getRes.get("adiu"));
+            assertEquals("pk1", getRes.get("pk"));
+            assertEquals(cur_time, getRes.get("gmt_create"));
+            assertEquals(1L, getRes.get("id"));
+            assertEquals("name1111111", getRes.get("name"));
+            assertEquals("name1", getRes.get("name_v"));
+
+            // replace
+            res = client.replace(tableName).setRowKey(rowKey1).addMutateRow(mutateRow2).execute();
+            assertEquals(2, res.getAffectedRows());
+            getRes = client.get(tableName, rowKey1.getValues(),null);
+            assertTrue(!getRes.isEmpty());
+            assertEquals("adiu111",getRes.get("adiu"));
+            assertEquals("pk1", getRes.get("pk"));
+            assertEquals(cur_time, getRes.get("gmt_create"));
+            assertEquals(2L, getRes.get("id"));
+            assertEquals("name2222222", getRes.get("name"));
+            assertEquals("name2", getRes.get("name_v"));
+
+            // increment
+            Row incrMutateRow = row(colVal("id", 100L));
+            res = client.increment(tableName).setRowKey(rowKey1).addMutateRow(incrMutateRow).execute();
+            assertEquals(1, res.getAffectedRows());
+            getRes = client.get(tableName, rowKey1.getValues(),null);
+            assertTrue(!getRes.isEmpty());
+            assertEquals("adiu111",getRes.get("adiu"));
+            assertEquals("pk1", getRes.get("pk"));
+            assertEquals(cur_time, getRes.get("gmt_create"));
+            assertEquals(102L, getRes.get("id"));
+            assertEquals("name2222222", getRes.get("name"));
+            assertEquals("name2", getRes.get("name_v"));
+
+            // append
+            Row appendMutateRow = row(colVal("name", "ssssss"));
+            res = client.append(tableName).setRowKey(rowKey1).addMutateRow(appendMutateRow).execute();
+            assertEquals(1, res.getAffectedRows());
+            getRes = client.get(tableName, rowKey1.getValues(),null);
+            assertTrue(!getRes.isEmpty());
+            assertEquals("adiu111",getRes.get("adiu"));
+            assertEquals("pk1", getRes.get("pk"));
+            assertEquals(cur_time, getRes.get("gmt_create"));
+            assertEquals(102L, getRes.get("id"));
+            assertEquals("name2222222ssssss", getRes.get("name"));
+            assertEquals("name2", getRes.get("name_v"));
+
+            // delete
+            res = client.delete(tableName).setRowKey(rowKey1).execute();
+            assertEquals(1, res.getAffectedRows());
+            client.delete(tableName).setRowKey(rowKey2).execute();
+            assertEquals(1, res.getAffectedRows());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            assertFalse(true);
+        } finally {
+            ObTableClientTestUtil.getConnection().createStatement().execute("truncate table "+ tableName);
+        }
+    }
+
+    @Test
+    public void test_current_ts() throws Exception {
+        String tableName = "test_current_timestamp";
+        try {
+            long cur_ts = System.currentTimeMillis();
+            Timestamp ts_1 = new Timestamp(cur_ts + 1000000);
+            ts_1.setNanos(0);
+            Timestamp ts_2 = new Timestamp(cur_ts - 1000000);
+            ts_2.setNanos(0);
+            Row rowKey1 = row(colVal("c1", 1));
+            Row mutateRow1 = row(colVal("c2", "c2_val"), colVal("c3", ts_1));
+            Row mutateRow2 = row(colVal("c2", "c2_val_1"), colVal("c3", ts_2));
+
+            // insert
+            MutationResult res = client.insert(tableName).setRowKey(rowKey1).addMutateRow(mutateRow1).execute();
+            assertEquals(1, res.getAffectedRows());
+            // get
+            Map<String, Object> getRes = client.get(tableName, rowKey1.getValues(), null);
+            assertTrue(!getRes.isEmpty());
+            assertEquals(1, getRes.get("c1"));
+            assertEquals("c2_val", getRes.get("c2"));
+            assertEquals(ts_1, getRes.get("c3"));
+
+            // insertup: update
+            res = client.insertOrUpdate(tableName).setRowKey(rowKey1).addMutateRow(mutateRow2).execute();
+            assertEquals(1, res.getAffectedRows());
+            // get
+            getRes = client.get(tableName, rowKey1.getValues(), null);
+            assertTrue(!getRes.isEmpty());
+            assertEquals(1, getRes.get("c1"));
+            assertEquals("c2_val_1", getRes.get("c2"));
+            assertEquals(ts_2, getRes.get("c3"));
+
+            // replace: update
+            res = client.replace(tableName).setRowKey(rowKey1).addMutateRow(mutateRow1).execute();
+            assertEquals(2, res.getAffectedRows());
+            // get
+            getRes = client.get(tableName, rowKey1.getValues(), null);
+            assertTrue(!getRes.isEmpty());
+            assertEquals(1, getRes.get("c1"));
+            assertEquals("c2_val", getRes.get("c2"));
+            assertEquals(ts_1, getRes.get("c3"));
+
+            // update
+            res = client.update(tableName).setRowKey(rowKey1).addMutateRow(mutateRow2).execute();
+            assertEquals(1, res.getAffectedRows());
+            // get
+            getRes = client.get(tableName, rowKey1.getValues(), null);
+            assertTrue(!getRes.isEmpty());
+            assertEquals(1, getRes.get("c1"));
+            assertEquals("c2_val_1", getRes.get("c2"));
+            assertEquals(ts_2, getRes.get("c3"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            assertTrue(false);
+        } finally {
+            ObTableClientTestUtil.getConnection().createStatement().execute("truncate table "+ tableName);
         }
     }
 }
