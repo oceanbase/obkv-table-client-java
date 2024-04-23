@@ -50,7 +50,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     private final ObTableClient   obTableClient;
     private ExecutorService       executorService;
     private boolean               returningAffectedEntity = false;
-    private boolean               needAllProp = false;
+    private boolean               needAllProp             = false;
     private List<ObTableSingleOp> batchOperation;
 
     /*
