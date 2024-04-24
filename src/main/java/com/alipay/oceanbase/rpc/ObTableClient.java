@@ -3345,6 +3345,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     }
                 }
             }
+        } else {
+            // Non partition table
+            firstPartStartKeys = new byte[1][1][];
+            Arrays.fill(firstPartStartKeys[0], new byte[0]);
         }
 
         return firstPartStartKeys;
@@ -3402,6 +3406,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     }
                 }
             }
+        } else {
+            // Non partition table
+            firstPartEndKeys = new byte[1][1][];
+            Arrays.fill(firstPartEndKeys[0], new byte[0]);
         }
 
         return firstPartEndKeys;
