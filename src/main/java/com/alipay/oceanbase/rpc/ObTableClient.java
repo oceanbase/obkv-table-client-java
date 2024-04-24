@@ -45,6 +45,7 @@ import com.alipay.oceanbase.rpc.util.*;
 import com.alipay.remoting.util.StringUtils;
 import org.slf4j.Logger;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -3285,7 +3286,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /*
-     * Get the start keys of different tablets, byte[0] = [] = Empty_Start_Row = Empty_End_Row
+     * Get the start keys of different tablets, byte[0] = [] = EMPTY_START_ROW = EMPTY_END_ROW
      * Example:
      *   For Non   Partition: return [[[]]]
      *   For Key   Partition: return [[[]]]
@@ -3293,9 +3294,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      *   For Range Partition: return [[[], [], []], ['a', [], []], ['z', 'b', 'c']]
      */
     public byte[][][] getFirstPartStartKeys(String tableName) throws Exception {
-        // Check client running mode
-        if (this.runningMode != RunningMode.HBASE) {
-            throw new IllegalArgumentException("getFirstPartStartKeys only support HBase mode now");
+        // Check row key element
+        // getOrRefreshTableEntry() need row key element, we could remove this after we remove rk element
+        if (this.runningMode != RunningMode.HBASE && this.tableRowKeyElement.containsKey(tableName)) {
+            throw new IllegalArgumentException("Row key element is empty for " + tableName);
         }
 
         // Get the latest table entry
@@ -3343,22 +3345,27 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     }
                 }
             }
+        } else {
+            // Non partition table
+            firstPartStartKeys = new byte[1][1][];
+            Arrays.fill(firstPartStartKeys[0], new byte[0]);
         }
 
         return firstPartStartKeys;
     }
 
     /*
-     * Get the start keys of different tablets, byte[0] = [] = Empty_Start_Row = Empty_End_Row
+     * Get the start keys of different tablets, byte[0] = [] = EMPTY_START_ROW = EMPTY_BYTE_ARRAY
      * Example:
      *   For Key   Partition: return [[[]]]
      *   For Hash  Partition: return [[[]]]
      *   For Range Partition: return [['a', [], []], ['z', 'b', 'c'], [[], [], []]]
      */
     public byte[][][] getFirstPartEndKeys(String tableName) throws Exception {
-        // Check client running mode
-        if (this.runningMode != RunningMode.HBASE) {
-            throw new IllegalArgumentException("getFirstPartEndKeys only support HBase mode now");
+        // Check row key element
+        // getOrRefreshTableEntry() need row key element, we could remove this after we remove rk element
+        if (this.runningMode != RunningMode.HBASE && this.tableRowKeyElement.containsKey(tableName)) {
+            throw new IllegalArgumentException("Row key element is empty for " + tableName);
         }
 
         // Get the latest table entry
@@ -3399,8 +3406,84 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     }
                 }
             }
+        } else {
+            // Non partition table
+            firstPartEndKeys = new byte[1][1][];
+            Arrays.fill(firstPartEndKeys[0], new byte[0]);
         }
 
         return firstPartEndKeys;
+    }
+
+    /*
+     * Get the start keys of HBase table
+     * Example:
+     *   For Non   Partition: return [EMPTY_START_ROW]
+     *   For Key   Partition: return [EMPTY_START_ROW]
+     *   For Hash  Partition: return [EMPTY_START_ROW]
+     *   For Range Partition: return [[EMPTY_START_ROW, EMPTY_START_ROW, EMPTY_START_ROW], ['a', [], []], ['z', 'b', 'c']]
+     */
+    public byte[][] getHBaseTableStartKeys(String hbaseTableName) throws Exception {
+        // Check HBase client
+        if (this.runningMode != RunningMode.HBASE) {
+            throw new IllegalArgumentException("getHBaseTableStartKeys only support in HBase mode");
+        }
+
+        // Get actual table name
+        String tableName = tryGetTableNameFromTableGroupCache(hbaseTableName, false);
+
+        // Get start keys of first partition
+        byte[][][] firstPartStartKeys = getFirstPartStartKeys(tableName);
+
+        // Result start keys
+        byte[][] startKeys = new byte[firstPartStartKeys.length][];
+
+        // Construct result keys
+        for (int i = 0; i < firstPartStartKeys.length; i++) {
+            if (firstPartStartKeys[i] == null || firstPartStartKeys[i].length != 1
+                || firstPartStartKeys[i][0] == null || firstPartStartKeys[i][0].length > 1) {
+                throw new IllegalArgumentException("Invalid start keys structure at index " + i
+                                                   + " for table " + hbaseTableName);
+            }
+            startKeys[i] = firstPartStartKeys[i][0];
+        }
+
+        return startKeys;
+    }
+
+    /*
+     * Get the start keys of HBase table
+     * Example:
+     *   For Non   Partition: return [EMPTY_END_ROW]
+     *   For Key   Partition: return [EMPTY_END_ROW]
+     *   For Hash  Partition: return [EMPTY_END_ROW]
+     *   For Range Partition: return [['a', [], []], ['z', 'b', 'c'], [EMPTY_END_ROW, EMPTY_END_ROW, EMPTY_END_ROW]]
+     */
+    public byte[][] getHBaseTableEndKeys(String hbaseTableName) throws Exception {
+        // Check HBase client
+        if (this.runningMode != RunningMode.HBASE) {
+            throw new IllegalArgumentException("getHBaseTableStartKeys only support in HBase mode");
+        }
+
+        // Get actual table name
+        String tableName = tryGetTableNameFromTableGroupCache(hbaseTableName, false);
+
+        // Get end keys of first partition
+        byte[][][] firstPartEndKeys = getFirstPartEndKeys(tableName);
+
+        // Result end keys
+        byte[][] endKeys = new byte[firstPartEndKeys.length][];
+
+        // Construct result keys
+        for (int i = 0; i < firstPartEndKeys.length; i++) {
+            if (firstPartEndKeys[i] == null || firstPartEndKeys[i].length != 1
+                || firstPartEndKeys[i][0] == null || firstPartEndKeys[i][0].length > 1) {
+                throw new IllegalArgumentException("Invalid end keys structure at index " + i
+                                                   + " for table " + hbaseTableName);
+            }
+            endKeys[i] = firstPartEndKeys[i][0];
+        }
+
+        return endKeys;
     }
 }
