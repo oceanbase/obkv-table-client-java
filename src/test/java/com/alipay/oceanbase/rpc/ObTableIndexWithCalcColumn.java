@@ -426,7 +426,7 @@ public class ObTableIndexWithCalcColumn {
           ) TTL (gmt_create + INTERVAL 300 SECOND) partition by key(adiu) partitions 8;
         */
         String TABLE_NAME = "test_local_index_with_vgen_col";
-
+        testIndexHasGenerateColumn(TABLE_NAME);
     }
 
     @Test
