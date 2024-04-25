@@ -469,12 +469,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 break;
             } catch (Exception ex) {
                 if (obTableClient.isOdpMode()) {
-                    if ((tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
-                        logger.warn("batch ops execute while meet Exception, tablename:{}, errorCode: {} , errorMsg: {}, try times {}",
-                                     tableName, ((ObTableException) ex).getErrorCode(), ex.getMessage(), tryTimes);
-                    } else {
-                        throw ex;
-                    }
+                    logger.warn("meet exception when execute ls batch in odp mode." +
+                            "tablename: {}, errMsg: {}", tableName, ex.getMessage());
+                    throw ex;
                 } else if (ex instanceof ObTableReplicaNotReadableException) {
                     if ((tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
                         logger.warn("tablename:{} ls id:{} retry when replica not readable: {}",
