@@ -258,11 +258,18 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             Object[] start = new Object[startKeySize];
             Object[] end = new Object[endKeySize];
             for (int i = 0; i < startKeySize; i++) {
-                start[i] = startKey.getObj(i).getValue();
+                if (startKey.getObj(i).isMinObj() || startKey.getObj(i).isMaxObj()) {
+                    start[i] = startKey.getObj(i);
+                } else {
+                    start[i] = startKey.getObj(i).getValue();
+                }
             }
-
             for (int i = 0; i < endKeySize; i++) {
-                end[i] = endKey.getObj(i).getValue();
+                if (endKey.getObj(i).isMinObj() || endKey.getObj(i).isMaxObj()) {
+                    end[i] = endKey.getObj(i);
+                } else {
+                    end[i] = endKey.getObj(i).getValue();
+                }
             }
             ObBorderFlag borderFlag = rang.getBorderFlag();
             // pairs -> List<Pair<logicId, param>>
