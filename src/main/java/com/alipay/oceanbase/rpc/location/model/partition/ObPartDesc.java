@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.location.model.partition;
 
 import com.alipay.oceanbase.rpc.exception.ObTablePartitionConsistentException;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObColumn;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.util.StringUtil;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
 import org.slf4j.Logger;
@@ -26,6 +27,8 @@ import org.slf4j.Logger;
 import java.util.*;
 
 import static com.alipay.oceanbase.rpc.constant.Constants.EMPTY_STRING;
+import static com.alipay.oceanbase.rpc.location.model.partition.ObPartitionKey.MAX_PARTITION_ELEMENT;
+import static com.alipay.oceanbase.rpc.location.model.partition.ObPartitionKey.MIN_PARTITION_ELEMENT;
 import static com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObSimpleColumn.DEFAULT_UTF8MB4_GENERAL_CI;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.LCD;
 import static java.util.Collections.*;
@@ -139,8 +142,21 @@ public abstract class ObPartDesc {
         try {
             for (int i = 0; i < objects.size(); i++) {
                 ObColumn obColumn = obColumns.get(i);
-                comparableElement.add(obColumn.getObObjType().parseToComparable(objects.get(i),
-                    obColumn.getObCollationType()));
+                if (objects.get(i) instanceof ObObj) {
+                    // deal with min / max
+                    ObObj obj = (ObObj) objects.get(i);
+                    if (obj.isMinObj()) {
+                        comparableElement.add(MIN_PARTITION_ELEMENT);
+                    } else if (obj.isMaxObj()) {
+                        comparableElement.add(MAX_PARTITION_ELEMENT);
+                    } else {
+                        throw new IllegalArgumentException(String.format(
+                            "failed to cast obj, obj=%s, types=%s", objects, obColumns));
+                    }
+                } else {
+                    comparableElement.add(obColumn.getObObjType().parseToComparable(objects.get(i),
+                        obColumn.getObCollationType()));
+                }
             }
         } catch (Exception e) {
             logger.error(LCD.convert("01-00024"), objects, obColumns, e);
@@ -216,11 +232,24 @@ public abstract class ObPartDesc {
             // row key is consists of multi column
             List<Integer> refIndex = orderedPartRefColumnRowKeyRelation.getRight();
             Object[] evalParams = new Object[refIndex.size()];
+            boolean needEval = true;
             for (int j = 0; j < refIndex.size(); j++) {
-                //TODO where get the type of ref column ?
+                // TODO where get the type of ref column ?
+                if (refIndex.size() == 1 && partKey[refIndex.get(j)] instanceof ObObj) {
+                    // set min max into eval values directly
+                    // need refactor after addRowkeyElement has removed
+                    ObObj obj = (ObObj) partKey[refIndex.get(j)];
+                    if (obj.isMaxObj() || obj.isMinObj()) {
+                        evalValues.add(obj);
+                        needEval = false;
+                        break;
+                    }
+                }
                 evalParams[j] = partKey[refIndex.get(j)];
             }
-            evalValues.add(orderedPartRefColumnRowKeyRelation.getLeft().evalValue(evalParams));
+            if (needEval) {
+                evalValues.add(orderedPartRefColumnRowKeyRelation.getLeft().evalValue(evalParams));
+            }
         }
         return evalValues;
     }

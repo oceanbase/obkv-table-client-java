@@ -18,6 +18,8 @@
 package com.alipay.oceanbase.rpc.location.model.partition;
 
 import com.alipay.oceanbase.rpc.exception.ObTablePartitionConsistentException;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObColumn;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjType;
 import com.alipay.oceanbase.rpc.util.RandomUtil;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
@@ -99,6 +101,32 @@ public class ObHashPartDesc extends ObPartDesc {
                                  boolean endInclusive) {
         // close set
         try {
+            // pre-check start and end
+            // should remove after remove addRowkeyElement
+            if (start.length != end.length) {
+                throw new IllegalArgumentException("length of start key and end key is not equal");
+            }
+
+            // check whether partition key is Min or Max, should refactor after remove addRowkeyElement
+            for (ObPair<ObColumn, List<Integer>> pair : orderedPartRefColumnRowKeyRelations) {
+                for (int refIdx : pair.getRight()) {
+                    if (start.length <= refIdx) {
+                        throw new IllegalArgumentException("rowkey length is " + start.length
+                                                           + ", which is shortest than " + refIdx);
+                    }
+                    if (start[refIdx] instanceof ObObj
+                        && (((ObObj) start[refIdx]).isMinObj() || ((ObObj) start[refIdx])
+                            .isMaxObj())) {
+                        return completeWorks;
+                    }
+                    if (end[refIdx] instanceof ObObj
+                        && (((ObObj) end[refIdx]).isMinObj() || ((ObObj) end[refIdx]).isMaxObj())) {
+                        return completeWorks;
+                    }
+                }
+            }
+
+            // eval partition key
             List<Object> startValues = evalRowKeyValues(start);
             Object startValue = startValues.get(0);
             List<Object> endValues = evalRowKeyValues(end);

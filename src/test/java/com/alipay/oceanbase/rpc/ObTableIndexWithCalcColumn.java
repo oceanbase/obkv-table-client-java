@@ -410,7 +410,6 @@ public class ObTableIndexWithCalcColumn {
         }
     }
 
-
     @Test
     public void testLocalIndexHasGenerateColumn() throws Exception {
         /*
@@ -455,57 +454,60 @@ public class ObTableIndexWithCalcColumn {
         expire_time.setNanos(0);
         try {
             Row rowKey1 = row(colVal("adiu", "adiu111"), colVal("pk", "pk1"),
-                    colVal("gmt_create", cur_time));
+                colVal("gmt_create", cur_time));
             Row rowKey2 = row(colVal("adiu", "adiu222"), colVal("pk", "pk2"),
-                    colVal("gmt_create", expire_time));
+                colVal("gmt_create", expire_time));
             Row mutateRow1 = row(colVal("id", 1L), colVal("name", "name1111111"));
             Row mutateRow2 = row(colVal("id", 2L), colVal("name", "name2222222"));
 
             // prepare data
-            MutationResult res = client.insert(tableName).setRowKey(rowKey1).addMutateRow(mutateRow1).execute();
+            MutationResult res = client.insert(tableName).setRowKey(rowKey1)
+                .addMutateRow(mutateRow1).execute();
             assertEquals(1, res.getAffectedRows());
             res = client.insert(tableName).setRowKey(rowKey2).addMutateRow(mutateRow2).execute();
             assertEquals(1, res.getAffectedRows());
             // get
             // not expired row
-            Map<String, Object> getRes = client.get(tableName, rowKey1.getValues(),null);
+            Map<String, Object> getRes = client.get(tableName, rowKey1.getValues(), null);
             assertTrue(!getRes.isEmpty());
-            assertEquals("adiu111",getRes.get("adiu"));
+            assertEquals("adiu111", getRes.get("adiu"));
             assertEquals("pk1", getRes.get("pk"));
             assertEquals(cur_time, getRes.get("gmt_create"));
             assertEquals(1L, getRes.get("id"));
             assertEquals("name1111111", getRes.get("name"));
             assertEquals("name1", getRes.get("name_v"));
             // expired row
-            getRes = client.get(tableName, rowKey2.getValues(),null);
+            getRes = client.get(tableName, rowKey2.getValues(), null);
             assertTrue(getRes.isEmpty());
 
             // insertup
             // not expired: update
-            res = client.insertOrUpdate(tableName).setRowKey(rowKey1).addMutateRow(mutateRow2).execute();
+            res = client.insertOrUpdate(tableName).setRowKey(rowKey1).addMutateRow(mutateRow2)
+                .execute();
             assertEquals(1, res.getAffectedRows());
             // expired: delete + insert
-            res = client.insertOrUpdate(tableName).setRowKey(rowKey2).addMutateRow(mutateRow1).execute();
+            res = client.insertOrUpdate(tableName).setRowKey(rowKey2).addMutateRow(mutateRow1)
+                .execute();
             assertEquals(1, res.getAffectedRows());
             // get
-            getRes = client.get(tableName, rowKey1.getValues(),null);
+            getRes = client.get(tableName, rowKey1.getValues(), null);
             assertTrue(!getRes.isEmpty());
-            assertEquals("adiu111",getRes.get("adiu"));
+            assertEquals("adiu111", getRes.get("adiu"));
             assertEquals("pk1", getRes.get("pk"));
             assertEquals(cur_time, getRes.get("gmt_create"));
             assertEquals(2L, getRes.get("id"));
             assertEquals("name2222222", getRes.get("name"));
             assertEquals("name2", getRes.get("name_v"));
             // expired row
-            getRes = client.get(tableName, rowKey2.getValues(),null);
+            getRes = client.get(tableName, rowKey2.getValues(), null);
             assertTrue(getRes.isEmpty());
 
             // update
             res = client.update(tableName).setRowKey(rowKey1).addMutateRow(mutateRow1).execute();
             assertEquals(1, res.getAffectedRows());
-            getRes = client.get(tableName, rowKey1.getValues(),null);
+            getRes = client.get(tableName, rowKey1.getValues(), null);
             assertTrue(!getRes.isEmpty());
-            assertEquals("adiu111",getRes.get("adiu"));
+            assertEquals("adiu111", getRes.get("adiu"));
             assertEquals("pk1", getRes.get("pk"));
             assertEquals(cur_time, getRes.get("gmt_create"));
             assertEquals(1L, getRes.get("id"));
@@ -515,9 +517,9 @@ public class ObTableIndexWithCalcColumn {
             // replace
             res = client.replace(tableName).setRowKey(rowKey1).addMutateRow(mutateRow2).execute();
             assertEquals(2, res.getAffectedRows());
-            getRes = client.get(tableName, rowKey1.getValues(),null);
+            getRes = client.get(tableName, rowKey1.getValues(), null);
             assertTrue(!getRes.isEmpty());
-            assertEquals("adiu111",getRes.get("adiu"));
+            assertEquals("adiu111", getRes.get("adiu"));
             assertEquals("pk1", getRes.get("pk"));
             assertEquals(cur_time, getRes.get("gmt_create"));
             assertEquals(2L, getRes.get("id"));
@@ -526,11 +528,12 @@ public class ObTableIndexWithCalcColumn {
 
             // increment
             Row incrMutateRow = row(colVal("id", 100L));
-            res = client.increment(tableName).setRowKey(rowKey1).addMutateRow(incrMutateRow).execute();
+            res = client.increment(tableName).setRowKey(rowKey1).addMutateRow(incrMutateRow)
+                .execute();
             assertEquals(1, res.getAffectedRows());
-            getRes = client.get(tableName, rowKey1.getValues(),null);
+            getRes = client.get(tableName, rowKey1.getValues(), null);
             assertTrue(!getRes.isEmpty());
-            assertEquals("adiu111",getRes.get("adiu"));
+            assertEquals("adiu111", getRes.get("adiu"));
             assertEquals("pk1", getRes.get("pk"));
             assertEquals(cur_time, getRes.get("gmt_create"));
             assertEquals(102L, getRes.get("id"));
@@ -539,11 +542,12 @@ public class ObTableIndexWithCalcColumn {
 
             // append
             Row appendMutateRow = row(colVal("name", "ssssss"));
-            res = client.append(tableName).setRowKey(rowKey1).addMutateRow(appendMutateRow).execute();
+            res = client.append(tableName).setRowKey(rowKey1).addMutateRow(appendMutateRow)
+                .execute();
             assertEquals(1, res.getAffectedRows());
-            getRes = client.get(tableName, rowKey1.getValues(),null);
+            getRes = client.get(tableName, rowKey1.getValues(), null);
             assertTrue(!getRes.isEmpty());
-            assertEquals("adiu111",getRes.get("adiu"));
+            assertEquals("adiu111", getRes.get("adiu"));
             assertEquals("pk1", getRes.get("pk"));
             assertEquals(cur_time, getRes.get("gmt_create"));
             assertEquals(102L, getRes.get("id"));
@@ -559,7 +563,8 @@ public class ObTableIndexWithCalcColumn {
             ex.printStackTrace();
             assertFalse(true);
         } finally {
-            ObTableClientTestUtil.getConnection().createStatement().execute("truncate table "+ tableName);
+            ObTableClientTestUtil.getConnection().createStatement()
+                .execute("truncate table " + tableName);
         }
     }
 
@@ -577,7 +582,8 @@ public class ObTableIndexWithCalcColumn {
             Row mutateRow2 = row(colVal("c2", "c2_val_1"), colVal("c3", ts_2));
 
             // insert
-            MutationResult res = client.insert(tableName).setRowKey(rowKey1).addMutateRow(mutateRow1).execute();
+            MutationResult res = client.insert(tableName).setRowKey(rowKey1)
+                .addMutateRow(mutateRow1).execute();
             assertEquals(1, res.getAffectedRows());
             // get
             Map<String, Object> getRes = client.get(tableName, rowKey1.getValues(), null);
@@ -587,7 +593,8 @@ public class ObTableIndexWithCalcColumn {
             assertEquals(ts_1, getRes.get("c3"));
 
             // insertup: update
-            res = client.insertOrUpdate(tableName).setRowKey(rowKey1).addMutateRow(mutateRow2).execute();
+            res = client.insertOrUpdate(tableName).setRowKey(rowKey1).addMutateRow(mutateRow2)
+                .execute();
             assertEquals(1, res.getAffectedRows());
             // get
             getRes = client.get(tableName, rowKey1.getValues(), null);
@@ -619,7 +626,8 @@ public class ObTableIndexWithCalcColumn {
             ex.printStackTrace();
             assertTrue(false);
         } finally {
-            ObTableClientTestUtil.getConnection().createStatement().execute("truncate table "+ tableName);
+            ObTableClientTestUtil.getConnection().createStatement()
+                .execute("truncate table " + tableName);
         }
     }
 }

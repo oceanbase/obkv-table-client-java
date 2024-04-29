@@ -313,6 +313,9 @@ public class ObTableAggregationTest {
             ObTableAggregation obtableAggregationWithoutFilter = client
                 .aggregate("test_partition_aggregation");
 
+            obtableAggregationWithoutFilter
+                .addScanRange(new Object[] { 0L }, new Object[] { 150L });
+
             // test
             obtableAggregationWithoutFilter.max("c2");
             obtableAggregationWithoutFilter.min("c2");
@@ -334,6 +337,8 @@ public class ObTableAggregationTest {
             // with filter
             ObTableAggregation obtableAggregationWithFilter = client
                 .aggregate("test_partition_aggregation");
+
+            obtableAggregationWithFilter.addScanRange(new Object[] { 0L }, new Object[] { 150L });
 
             // test
             obtableAggregationWithFilter.max("c2");
@@ -364,6 +369,9 @@ public class ObTableAggregationTest {
             // with filter
             ObTableAggregation obtableAggregationWithFilterAndLimit = client
                 .aggregate("test_partition_aggregation");
+
+            obtableAggregationWithFilterAndLimit.addScanRange(new Object[] { 0L },
+                new Object[] { 150L });
 
             // test
             obtableAggregationWithFilterAndLimit.max("c2");
@@ -412,6 +420,8 @@ public class ObTableAggregationTest {
         // aggregate without insert
         ObTableAggregation obtableAggregation = client.aggregate("test_partition_aggregation");
 
+        obtableAggregation.addScanRange(new Object[] { 0L }, new Object[] { 150L });
+
         // test
         obtableAggregation.max("c2");
         obtableAggregation.min("c2");
@@ -448,6 +458,9 @@ public class ObTableAggregationTest {
             // with null
             ObTableAggregation obtableAggregationWithoutFilter = client
                 .aggregate("test_partition_aggregation");
+
+            obtableAggregationWithoutFilter
+                .addScanRange(new Object[] { 0L }, new Object[] { 150L });
 
             // test
             obtableAggregationWithoutFilter.max("c1");
@@ -496,6 +509,8 @@ public class ObTableAggregationTest {
             // with
             ObTableAggregation obtableAggregationWithIllegal = client
                 .aggregate("test_partition_aggregation");
+
+            obtableAggregationWithIllegal.addScanRange(new Object[] { 0L }, new Object[] { 150L });
 
             // test illegal column
             obtableAggregationWithIllegal.max("c3");
@@ -583,6 +598,8 @@ public class ObTableAggregationTest {
             // with filter
             ObTableAggregation obtableAggregationWithFilter = client
                 .aggregate("test_partition_aggregation");
+
+            obtableAggregationWithFilter.addScanRange(new Object[] { 0L }, new Object[] { 150L });
 
             // test
             obtableAggregationWithFilter.max("c2");

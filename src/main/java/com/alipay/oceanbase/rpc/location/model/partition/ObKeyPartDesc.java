@@ -19,15 +19,14 @@ package com.alipay.oceanbase.rpc.location.model.partition;
 
 import com.alipay.oceanbase.rpc.exception.ObTablePartitionConsistentException;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObCollationType;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObColumn;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.util.ObHashUtils;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.alipay.oceanbase.rpc.util.RandomUtil.getRandomNum;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.LCD;
@@ -90,7 +89,32 @@ public class ObKeyPartDesc extends ObPartDesc {
     public List<Long> getPartIds(Object[] start, boolean startInclusive, Object[] end,
                                  boolean endInclusive) {
         try {
-            // eval rowkey
+            // pre-check start and end
+            // should remove after remove addRowkeyElement
+            if (start.length != end.length) {
+                throw new IllegalArgumentException("length of start key and end key is not equal");
+            }
+
+            // check whether partition key is Min or Max, should refactor after remove addRowkeyElement
+            for (ObPair<ObColumn, List<Integer>> pair : orderedPartRefColumnRowKeyRelations) {
+                for (int refIdx : pair.getRight()) {
+                    if (start.length <= refIdx) {
+                        throw new IllegalArgumentException("rowkey length is " + start.length
+                                                           + ", which is shortest than " + refIdx);
+                    }
+                    if (start[refIdx] instanceof ObObj
+                        && (((ObObj) start[refIdx]).isMinObj() || ((ObObj) start[refIdx])
+                            .isMaxObj())) {
+                        return completeWorks;
+                    }
+                    if (end[refIdx] instanceof ObObj
+                        && (((ObObj) end[refIdx]).isMinObj() || ((ObObj) end[refIdx]).isMaxObj())) {
+                        return completeWorks;
+                    }
+                }
+            }
+
+            // eval partition key
             List<Object> startValues = evalRowKeyValues(start);
             List<Object> endValues = evalRowKeyValues(end);
 
