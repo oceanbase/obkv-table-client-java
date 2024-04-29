@@ -234,6 +234,6 @@ public class ObTableErrMsgTest {
         );
 
         System.out.println(thrown.getMessage());
-        assertTrue(thrown.getMessage().contains("[-4007][OB_NOT_SUPPORTED][The specified value for generated column is not allowed]"));
+        assertTrue(thrown.getMessage().contains("[-4007][OB_NOT_SUPPORTED][The specified value for generated column not supported]"));
     }
 }

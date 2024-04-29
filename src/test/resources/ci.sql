@@ -569,4 +569,16 @@ CREATE TABLE `test_current_timestamp` (
    KEY `idx_adiu_v_name` (`c2`, `c3`) global partition by key(`c2`) partitions 5
 ) partition by key(`c1`) partitions 8;
 
+CREATE TABLE `table_ttl_00` (
+  `name` varchar(512) NOT NULL,
+  `pk` varchar(512) NOT NULL,
+  `adiu` varchar(512) NOT NULL DEFAULT '',
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `name_v` varchar(20) GENERATED ALWAYS AS (substr(`name`,1,5)) VIRTUAL,
+  `gmt_create` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`adiu`, `pk`),
+  KEY `idx_adiu` (`adiu`, `pk`, `name`) LOCAL,
+  KEY `idx_pk` (`pk`) GLOBAL
+) TTL (gmt_create + INTERVAL 300 SECOND) partition by key(adiu) partitions 8;
+
 alter system set kv_hotkey_throttle_threshold = 50;
