@@ -18,10 +18,10 @@
 package com.alipay.oceanbase.rpc.stream;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
+import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableStreamRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.AbstractQueryStreamResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryResult;
@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResult {
     private static final Logger      logger       = LoggerFactory
@@ -41,6 +42,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
     private boolean                  isEnd        = true;
     private long                     sessionId    = Constants.OB_INVALID_ID;
     private ObTableQueryAsyncRequest asyncRequest = new ObTableQueryAsyncRequest();
+    private ObTableConnection        prevConnection = null;
 
     @Override
     public void init() throws Exception {
@@ -188,9 +190,15 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
     @Override
     protected ObTableQueryAsyncResult executeAsync(ObPair<Long, ObTableParam> partIdWithObTable,
                                                    ObPayload streamRequest) throws Exception {
+        // Construct connection reference
+        AtomicReference<ObTableConnection> connectionRef = new AtomicReference<>();
+        if (client.isOdpMode() && !isEnd && prevConnection != null) {
+            connectionRef.set(prevConnection);
+        }
+
         // execute request
         ObTableQueryAsyncResult result = (ObTableQueryAsyncResult) commonExecute(this.client,
-            logger, partIdWithObTable, streamRequest);
+            logger, partIdWithObTable, streamRequest, connectionRef);
 
         // cache result
         cacheResultRows(result);
@@ -200,6 +208,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             isEnd = true;
         } else {
             isEnd = false;
+            prevConnection = connectionRef.get();
         }
         sessionId = result.getSessionId();
         return result;

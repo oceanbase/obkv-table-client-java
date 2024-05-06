@@ -18,25 +18,18 @@
 package com.alipay.oceanbase.rpc.stream;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
-import com.alipay.oceanbase.rpc.exception.ObTableException;
-import com.alipay.oceanbase.rpc.exception.ObTableGlobalIndexRouteException;
-import com.alipay.oceanbase.rpc.exception.ObTableReplicaNotReadableException;
-import com.alipay.oceanbase.rpc.exception.ObTableTimeoutExcetion;
-import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
+import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
-import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.AbstractQueryStreamResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
-import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.table.ObTableParam;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
 import org.slf4j.Logger;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
 
@@ -65,9 +58,12 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
     @Override
     protected ObTableQueryResult execute(ObPair<Long, ObTableParam> partIdWithIndex,
                                          ObPayload request) throws Exception {
+        // Construct connection reference (useless in sync query)
+        AtomicReference<ObTableConnection> connectionRef = new AtomicReference<>();
+
         // execute request
         ObTableQueryResult result = (ObTableQueryResult) commonExecute(this.client, logger,
-            partIdWithIndex, request);
+            partIdWithIndex, request, connectionRef);
 
         cacheStreamNext(partIdWithIndex, checkObTableQueryResult(result));
 

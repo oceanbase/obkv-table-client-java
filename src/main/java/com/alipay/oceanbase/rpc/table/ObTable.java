@@ -39,10 +39,10 @@ import java.net.ConnectException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.alipay.oceanbase.rpc.property.Property.*;
-import static com.alipay.oceanbase.rpc.protocol.payload.Constants.*;
 
 public class ObTable extends AbstractObTable implements Lifecycle {
 
@@ -405,6 +405,34 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             }
         } while (needReconnect && retryTimes < 2);
         return payload;
+    }
+
+    /*
+     * Execute with certain connection
+     * If connection is null, this method will replace the connection with random connection
+     * If connection is not null, this method will use that connection to execute
+     */
+    public ObPayload executeWithConnection(final ObPayload request, AtomicReference<ObTableConnection> connectionRef) throws RemotingException,
+            InterruptedException {
+        ObTableConnection connection;
+        try {
+            if (connectionRef.get() == null) {
+                // Set a connection into ref if connection is null
+                connection = getConnection();
+                connectionRef.set(connection);
+            }
+            connection = connectionRef.get();
+            // Check connection is available, if not available, reconnect it
+            connection.checkStatus();
+        } catch (ConnectException ex) {
+            // Cannot connect to ob server, need refresh table location
+            throw new ObTableServerConnectException(ex);
+        } catch (ObTableServerConnectException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new ObTableConnectionStatusException("check status failed", ex);
+        }
+        return executeWithReconnect(connection, request);
     }
 
     private void checkObTableOperationResult(String ip, int port, Object result) {
