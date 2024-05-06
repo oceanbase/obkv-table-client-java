@@ -208,8 +208,8 @@ public class ObRangePartDesc extends ObPartDesc {
                                  boolean endInclusive) {
 
         // can not detail the border effect so that the range is magnified
-        int startIdx = getBoundsIdx(start);
-        int stopIdx = getBoundsIdx(end);
+        int startIdx = getBoundsIdx(true, start);
+        int stopIdx = getBoundsIdx(true, end);
         List<Long> partIds = new ArrayList<Long>();
         for (int i = startIdx; i <= stopIdx; i++) {
             partIds.add(this.bounds.get(i).value);
@@ -223,7 +223,7 @@ public class ObRangePartDesc extends ObPartDesc {
     @Override
     public Long getPartId(Object... rowKey) {
         try {
-            return this.bounds.get(getBoundsIdx(rowKey)).value;
+            return this.bounds.get(getBoundsIdx(false, rowKey)).value;
         } catch (IllegalArgumentException e) {
             RUNTIME.error(LCD.convert("01-00025"), e);
             throw new IllegalArgumentException(
@@ -232,7 +232,7 @@ public class ObRangePartDesc extends ObPartDesc {
 
     }
 
-    public int getBoundsIdx(Object... rowKey) {
+    public int getBoundsIdx(boolean isScan, Object... rowKey) {
         if (rowKey.length != rowKeyElement.size()) {
             throw new IllegalArgumentException("row key is consist of " + rowKeyElement
                                                + "but found" + Arrays.toString(rowKey));
@@ -248,6 +248,11 @@ public class ObRangePartDesc extends ObPartDesc {
             int pos = upperBound(this.bounds, new ObComparableKV<ObPartitionKey, Long>(searchKey,
                 (long) -1));
             if (pos >= this.bounds.size()) {
+                if (isScan) {
+                    // if range is bigger than rangeMax while scanning
+                    // we just scan until last range
+                    return this.bounds.size() - 1;
+                }
                 throw new ArrayIndexOutOfBoundsException("Table has no partition for value in "
                                                          + this.getPartExpr());
             } else {

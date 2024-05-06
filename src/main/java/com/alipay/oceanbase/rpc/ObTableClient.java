@@ -3296,7 +3296,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     public byte[][][] getFirstPartStartKeys(String tableName) throws Exception {
         // Check row key element
         // getOrRefreshTableEntry() need row key element, we could remove this after we remove rk element
-        if (this.runningMode != RunningMode.HBASE && this.tableRowKeyElement.containsKey(tableName)) {
+        if (this.runningMode != RunningMode.HBASE
+            && !this.tableRowKeyElement.containsKey(tableName)) {
             throw new IllegalArgumentException("Row key element is empty for " + tableName);
         }
 

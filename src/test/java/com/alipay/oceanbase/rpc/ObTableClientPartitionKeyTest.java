@@ -391,6 +391,21 @@ public class ObTableClientPartitionKeyTest {
                 e.printStackTrace();
                 Assert.assertTrue(false);
             }
+
+            // Test Min - Max Release after addRowkeyElement is completed
+            tableQuery = obTableClient.query(TEST_TABLE);
+            tableQuery
+                .addScanRange(new Object[] { ObObj.getMin(), "partition".getBytes(), timeStamp },
+                    new Object[] { ObObj.getMax(), "partition".getBytes(), timeStamp });
+            tableQuery.setBatchSize(1);
+            QueryResultSet resultSet = tableQuery.asyncExecute();
+            int resultCount = 0;
+            while (resultSet.next()) {
+                Map<String, Object> value = resultSet.getRow();
+                resultCount += 1;
+            }
+            Assert.assertEquals(2, resultCount);
+
             tableQuery = obTableClient.query(TEST_TABLE);
             tableQuery.addScanRange(new Object[] { "key1_1".getBytes(), "partition".getBytes(),
                     timeStamp }, new Object[] { "key1_3".getBytes(), "partition".getBytes(),
