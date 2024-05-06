@@ -412,8 +412,10 @@ public class ObTable extends AbstractObTable implements Lifecycle {
      * If connection is null, this method will replace the connection with random connection
      * If connection is not null, this method will use that connection to execute
      */
-    public ObPayload executeWithConnection(final ObPayload request, AtomicReference<ObTableConnection> connectionRef) throws RemotingException,
-            InterruptedException {
+    public ObPayload executeWithConnection(final ObPayload request,
+                                           AtomicReference<ObTableConnection> connectionRef)
+                                                                                            throws RemotingException,
+                                                                                            InterruptedException {
         ObTableConnection connection;
         try {
             if (connectionRef.get() == null) {

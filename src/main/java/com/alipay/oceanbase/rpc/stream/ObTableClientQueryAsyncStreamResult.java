@@ -36,12 +36,12 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResult {
-    private static final Logger      logger       = LoggerFactory
-                                                      .getLogger(ObTableClientQueryStreamResult.class);
+    private static final Logger      logger         = LoggerFactory
+                                                        .getLogger(ObTableClientQueryStreamResult.class);
     protected ObTableClient          client;
-    private boolean                  isEnd        = true;
-    private long                     sessionId    = Constants.OB_INVALID_ID;
-    private ObTableQueryAsyncRequest asyncRequest = new ObTableQueryAsyncRequest();
+    private boolean                  isEnd          = true;
+    private long                     sessionId      = Constants.OB_INVALID_ID;
+    private ObTableQueryAsyncRequest asyncRequest   = new ObTableQueryAsyncRequest();
     private ObTableConnection        prevConnection = null;
 
     @Override

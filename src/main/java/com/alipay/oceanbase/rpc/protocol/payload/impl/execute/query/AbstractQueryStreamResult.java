@@ -99,9 +99,10 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
      * Common logic for execute, send the query request to server
      */
     protected ObPayload commonExecute(ObTableClient client, Logger logger,
-                                      ObPair<Long, ObTableParam> partIdWithIndex, ObPayload request,
+                                      ObPair<Long, ObTableParam> partIdWithIndex,
+                                      ObPayload request,
                                       AtomicReference<ObTableConnection> connectionRef)
-                                                                                                    throws Exception {
+                                                                                       throws Exception {
         Object result;
         ObTable subObTable = partIdWithIndex.getRight().getObTable();
         boolean needRefreshTableEntry = false;
@@ -207,26 +208,26 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         }
                     } else if (e instanceof ObTableException) {
                         if ((((ObTableException) e).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode || ((ObTableException) e)
-                                .getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode)
-                                && ((ObTableQueryRequest) request).getTableQuery().isHbaseQuery()
-                                && client.getTableGroupInverted().get(indexTableName) != null) {
+                            .getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode)
+                            && ((ObTableQueryRequest) request).getTableQuery().isHbaseQuery()
+                            && client.getTableGroupInverted().get(indexTableName) != null) {
                             // table not exists && hbase mode && table group exists , three condition both
                             client.eraseTableGroupFromCache(tableName);
                         }
                         if (((ObTableException) e).isNeedRefreshTableEntry()) {
                             needRefreshTableEntry = true;
                             logger
-                                    .warn(
-                                            "tablename:{} partition id:{} stream query refresh table while meet Exception needing refresh, errorCode: {}",
-                                            indexTableName, partIdWithIndex.getLeft(),
-                                            ((ObTableException) e).getErrorCode(), e);
+                                .warn(
+                                    "tablename:{} partition id:{} stream query refresh table while meet Exception needing refresh, errorCode: {}",
+                                    indexTableName, partIdWithIndex.getLeft(),
+                                    ((ObTableException) e).getErrorCode(), e);
                             if (client.isRetryOnChangeMasterTimes()
-                                    && (tryTimes - 1) < client.getRuntimeRetryTimes()) {
+                                && (tryTimes - 1) < client.getRuntimeRetryTimes()) {
                                 logger
-                                        .warn(
-                                                "tablename:{} partition id:{} stream query retry while meet Exception needing refresh, errorCode: {} , retry times {}",
-                                                indexTableName, partIdWithIndex.getLeft(),
-                                                ((ObTableException) e).getErrorCode(), tryTimes, e);
+                                    .warn(
+                                        "tablename:{} partition id:{} stream query retry while meet Exception needing refresh, errorCode: {} , retry times {}",
+                                        indexTableName, partIdWithIndex.getLeft(),
+                                        ((ObTableException) e).getErrorCode(), tryTimes, e);
                             } else {
                                 client.calculateContinuousFailure(indexTableName, e.getMessage());
                                 throw e;
