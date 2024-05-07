@@ -335,19 +335,19 @@ public class ObTableTTLTest {
 
     @Test
     public void test_ttl_table_query() throws SQLException {
-    /*
-        CREATE TABLE `table_ttl_00` (
-          `name` varchar(512) NOT NULL,
-          `pk` varchar(512) NOT NULL,
-          `adiu` varchar(512) NOT NULL DEFAULT '',
-          `id` bigint(20) NOT NULL AUTO_INCREMENT,
-          `name_v` varchar(20) GENERATED ALWAYS AS (substr(`name`,1,5)) VIRTUAL,
-          `gmt_create` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          PRIMARY KEY (`adiu`, `pk`),
-          KEY `idx_adiu` (`adiu`, `pk`, `name`) LOCAL,
-          KEY `idx_pk` (`pk`) GLOBAL
-        ) TTL (gmt_create + INTERVAL 300 SECOND) partition by key(adiu) partitions 8;
-    */
+        /*
+            CREATE TABLE `table_ttl_00` (
+              `name` varchar(512) NOT NULL,
+              `pk` varchar(512) NOT NULL,
+              `adiu` varchar(512) NOT NULL DEFAULT '',
+              `id` bigint(20) NOT NULL AUTO_INCREMENT,
+              `name_v` varchar(20) GENERATED ALWAYS AS (substr(`name`,1,5)) VIRTUAL,
+              `gmt_create` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`adiu`, `pk`),
+              KEY `idx_adiu` (`adiu`, `pk`, `name`) LOCAL,
+              KEY `idx_pk` (`pk`) GLOBAL
+            ) TTL (gmt_create + INTERVAL 300 SECOND) partition by key(adiu) partitions 8;
+        */
         String TABLE_NAME = "table_ttl_00";
         try {
             // prepare data
@@ -364,104 +364,122 @@ public class ObTableTTLTest {
                 } else {
                     ts = expire_time;
                 }
-                client.insert(TABLE_NAME).setRowKey(row(colVal("adiu", "adiu_"+i), colVal("pk", "pk_"+i)))
-                        .addMutateRow(row(colVal("name", i+"_name"), colVal("gmt_create", ts))).execute();
+                client.insert(TABLE_NAME)
+                    .setRowKey(row(colVal("adiu", "adiu_" + i), colVal("pk", "pk_" + i)))
+                    .addMutateRow(row(colVal("name", i + "_name"), colVal("gmt_create", ts)))
+                    .execute();
             }
 
             // primary key: query with select all columns
             int count = 0;
-            QueryResultSet res = client.query(TABLE_NAME).addScanRange(new Object[]{"adiu_0", "pk_0"}, new Object[]{"adiu_9", "pk_9"}).execute();
+            QueryResultSet res = client.query(TABLE_NAME)
+                .addScanRange(new Object[] { "adiu_0", "pk_0" }, new Object[] { "adiu_9", "pk_9" })
+                .execute();
             while (res.next()) {
                 assertEquals(6, res.getRow().size());
                 count++;
             }
-            assertEquals(recordCount/2, count);
+            assertEquals(recordCount / 2, count);
 
             // primary key: query with select partial columns, without ttl column
             count = 0;
-            res = client.query(TABLE_NAME).addScanRange(new Object[]{"adiu_0", "pk_0"}, new Object[]{"adiu_9", "pk_9"})
-                    .select("name", "pk").execute();
+            res = client.query(TABLE_NAME)
+                .addScanRange(new Object[] { "adiu_0", "pk_0" }, new Object[] { "adiu_9", "pk_9" })
+                .select("name", "pk").execute();
             while (res.next()) {
                 assertEquals(2, res.getRow().size());
                 count++;
             }
-            assertEquals(recordCount/2, count);
+            assertEquals(recordCount / 2, count);
 
             // primary key: query with select partial columns, with ttl column
-            res = client.query(TABLE_NAME).addScanRange(new Object[]{"adiu_0", "pk_0"}, new Object[]{"adiu_9", "pk_9"})
-                    .select("name", "pk", "gmt_create").execute();
+            res = client.query(TABLE_NAME)
+                .addScanRange(new Object[] { "adiu_0", "pk_0" }, new Object[] { "adiu_9", "pk_9" })
+                .select("name", "pk", "gmt_create").execute();
             count = 0;
             while (res.next()) {
                 assertEquals(3, res.getRow().size());
                 count++;
             }
-            assertEquals(recordCount/2, count);
+            assertEquals(recordCount / 2, count);
 
             // local index: query with select all columns
-            res = client.query(TABLE_NAME).addScanRange(new Object[]{"adiu_0", "pk_0", "0_name"}, new Object[]{"adiu_9", "pk_9", "9_name"})
-                    .indexName("idx_adiu").execute();
+            res = client
+                .query(TABLE_NAME)
+                .addScanRange(new Object[] { "adiu_0", "pk_0", "0_name" },
+                    new Object[] { "adiu_9", "pk_9", "9_name" }).indexName("idx_adiu").execute();
             count = 0;
             while (res.next()) {
                 assertEquals(6, res.getRow().size());
                 count++;
             }
-            assertEquals(recordCount/2, count);
+            assertEquals(recordCount / 2, count);
 
             // local index: query with select partial columns, without ttl columns
-            res = client.query(TABLE_NAME).addScanRange(new Object[]{"adiu_0", "pk_0", "0_name"}, new Object[]{"adiu_9", "pk_9", "9_name"})
-                    .indexName("idx_adiu").select("adiu", "pk").execute();
+            res = client
+                .query(TABLE_NAME)
+                .addScanRange(new Object[] { "adiu_0", "pk_0", "0_name" },
+                    new Object[] { "adiu_9", "pk_9", "9_name" }).indexName("idx_adiu")
+                .select("adiu", "pk").execute();
             count = 0;
             while (res.next()) {
                 assertEquals(2, res.getRow().size());
                 count++;
             }
-            assertEquals(recordCount/2, count);
+            assertEquals(recordCount / 2, count);
 
             // local index: query with select partial columns, without ttl columns
-            res = client.query(TABLE_NAME).addScanRange(new Object[]{"adiu_0", "pk_0", "0_name"}, new Object[]{"adiu_9", "pk_9", "9_name"})
-                    .indexName("idx_adiu").select("adiu", "gmt_create").execute();
+            res = client
+                .query(TABLE_NAME)
+                .addScanRange(new Object[] { "adiu_0", "pk_0", "0_name" },
+                    new Object[] { "adiu_9", "pk_9", "9_name" }).indexName("idx_adiu")
+                .select("adiu", "gmt_create").execute();
             count = 0;
             while (res.next()) {
                 assertEquals(2, res.getRow().size());
                 count++;
             }
-            assertEquals(recordCount/2, count);
+            assertEquals(recordCount / 2, count);
 
             // global index: query with select all columns
-           res = client.query(TABLE_NAME).setScanRangeColumns("pk").addScanRange(new Object[]{ "pk_0"}, new Object[]{"pk_9"})
-                    .indexName("idx_pk").execute();
+            res = client.query(TABLE_NAME).setScanRangeColumns("pk")
+                .addScanRange(new Object[] { "pk_0" }, new Object[] { "pk_9" }).indexName("idx_pk")
+                .execute();
             count = 0;
             while (res.next()) {
                 assertEquals(6, res.getRow().size());
                 count++;
             }
-            assertEquals(recordCount/2, count);
+            assertEquals(recordCount / 2, count);
 
             // global index: query with select partial columns, without ttl columns
-            res = client.query(TABLE_NAME).setScanRangeColumns("pk").addScanRange(new Object[]{ "pk_0"}, new Object[]{"pk_9"})
-                    .indexName("idx_pk").select("pk").execute();
+            res = client.query(TABLE_NAME).setScanRangeColumns("pk")
+                .addScanRange(new Object[] { "pk_0" }, new Object[] { "pk_9" }).indexName("idx_pk")
+                .select("pk").execute();
             count = 0;
             while (res.next()) {
                 assertEquals(1, res.getRow().size());
                 count++;
             }
-            assertEquals(recordCount/2, count);
+            assertEquals(recordCount / 2, count);
 
             // global index: query with select partial columns, with ttl columns
-            res = client.query(TABLE_NAME).setScanRangeColumns("pk").addScanRange(new Object[]{ "pk_0"}, new Object[]{"pk_9"})
-                    .indexName("idx_pk").select("pk", "gmt_create").execute();
+            res = client.query(TABLE_NAME).setScanRangeColumns("pk")
+                .addScanRange(new Object[] { "pk_0" }, new Object[] { "pk_9" }).indexName("idx_pk")
+                .select("pk", "gmt_create").execute();
             count = 0;
             while (res.next()) {
                 assertEquals(2, res.getRow().size());
                 count++;
             }
-            assertEquals(recordCount/2, count);
+            assertEquals(recordCount / 2, count);
 
         } catch (Exception ex) {
             ex.printStackTrace();
             assertTrue(false);
         } finally {
-            ObTableClientTestUtil.getConnection().createStatement().execute("truncate table "+ TABLE_NAME);
+            ObTableClientTestUtil.getConnection().createStatement()
+                .execute("truncate table " + TABLE_NAME);
         }
     }
 }
