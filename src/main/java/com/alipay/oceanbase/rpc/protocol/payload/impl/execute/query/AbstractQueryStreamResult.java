@@ -46,7 +46,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
 
     protected ReentrantLock                                                    lock                = new ReentrantLock();
     protected volatile boolean                                                 initialized         = false;
-    private volatile boolean                                                   closed              = false;
+    protected volatile boolean                                                 closed              = false;
     protected volatile List<ObObj>                                             row                 = null;
     protected volatile int                                                     rowIndex            = -1;
     protected ObTableQuery                                                     tableQuery;
@@ -314,8 +314,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         }
 
         if (closed) {
-            throw new IllegalStateException("table " + tableName
-                                            + " query stream result is  closed");
+            throw new IllegalStateException("table " + tableName + " query stream result is closed");
         }
     }
 
