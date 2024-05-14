@@ -150,7 +150,7 @@ public class ObHTableOperationRequest {
                 request.setTableName(getTargetTableName());
                 ((ObTableQueryRequest) request).setTableQuery(obTableQuery);
                 ((ObTableQueryRequest) request).setPartitionId(Constants.INVALID_TABLET_ID);
-
+                ((ObTableQueryRequest) request).setTableId(Constants.OB_INVALID_ID);
                 break;
             default:
                 throw new RuntimeException("operationType invalid: " + operationType);
