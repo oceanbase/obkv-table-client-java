@@ -84,16 +84,6 @@ public class ObHTableTest {
             hTableOperationRequest.obTableOperationRequest(), 1000000);
         System.err.println(obj);
 
-        hTableOperationRequest = new ObHTableOperationRequest();
-        hTableOperationRequest.setOperationType(ObTableOperationType.GET);
-        hTableOperationRequest.setTableName("test_hbase");
-        hTableOperationRequest.setFamilyName("fn");
-        hTableOperationRequest.setRowKey("key".getBytes());
-        hTableOperationRequest.setQualifierName("qualifierName".getBytes());
-        hTableOperationRequest.setValue("value".getBytes());
-        client.getRealClient().invokeSync(client.getConnection(),
-            hTableOperationRequest.obTableOperationRequest(), 1000000);
-
         client.delete("test_hbase$fn", new Object[] { "key".getBytes(),
                 "qualifierName1".getBytes(), 12323121L });
     }

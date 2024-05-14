@@ -2136,6 +2136,9 @@ public class ObTableClientTest extends ObTableClientTestBase {
         // 1650524400000 -> 2022-04-21 15:00:00 for c4
         Date date3 = new Date(1650524400000L);
         try {
+            client.delete("test_datetime_table").setRowKey(colVal("c1", "0")).execute();
+            client.delete("test_datetime_table").setRowKey(colVal("c1", "1")).execute();
+
             // client.insert("test_datetime_table", "0", new String[] { "c2" }, new Object[] { date1 });
             Connection connection = ObTableClientTestUtil.getConnection();
             Statement statement = connection.createStatement();
