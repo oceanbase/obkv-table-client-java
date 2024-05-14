@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.stream;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
+import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
@@ -123,6 +124,27 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         return ret;
     }
 
+    protected void closeLastStreamResult(ObPair<Long, ObTableParam> partIdWithObTable)
+                                                                                      throws Exception {
+        ObTableParam obTableParam = partIdWithObTable.getRight();
+        ObTableQueryRequest queryRequest = asyncRequest.getObTableQueryRequest();
+
+        // refresh request info
+        queryRequest.setPartitionId(obTableParam.getPartitionId());
+        queryRequest.setTableId(obTableParam.getTableId());
+
+        // set end async query
+        asyncRequest.setQueryType(ObQueryOperationType.QUERY_END);
+        asyncRequest.setQuerySessionId(sessionId);
+
+        // async execute
+        ObTableQueryAsyncResult ret = executeAsync(partIdWithObTable, asyncRequest);
+
+        if (!isEnd()) {
+            throw new ObTableException("failed to close last stream result");
+        }
+    }
+
     @Override
     public boolean next() throws Exception {
         checkStatus();
@@ -212,6 +234,25 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         }
         sessionId = result.getSessionId();
         return result;
+    }
+
+    @Override
+    public void close() throws Exception {
+        // set status
+        if (closed) {
+            return;
+        }
+        closed = true;
+
+        // send end packet to last tablet
+        if (!isEnd() && !expectant.isEmpty()) {
+            Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
+                .iterator();
+            // get the last tablet
+            Map.Entry<Long, ObPair<Long, ObTableParam>> lastEntry = it.next();
+            // try access new partition, async will not remove useless expectant
+            closeLastStreamResult(lastEntry.getValue());
+        }
     }
 
     public ObTableClient getClient() {

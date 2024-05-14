@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum ObQueryOperationType {
-    QUERY_START(0), QUERY_NEXT(1);
+    QUERY_START(0), QUERY_NEXT(1), QUERY_END(2);
 
     private int                                       value;
     private static Map<Integer, ObQueryOperationType> map = new HashMap<Integer, ObQueryOperationType>();

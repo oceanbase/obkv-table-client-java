@@ -860,6 +860,18 @@ public abstract class ObTableClientTestBase {
                 Assert.assertTrue(e.getMessage().contains("closed"));
             }
 
+            // test async close
+            resultSet = tableQuery.select("c2").primaryIndex().addScanRange("123", "567")
+                .setBatchSize(2).asyncExecute();
+            assertEquals(2, resultSet.cacheSize());
+            resultSet.close();
+            try {
+                resultSet.next();
+                fail();
+            } catch (IllegalStateException e) {
+                Assert.assertTrue(e.getMessage().contains("query stream result is closed"));
+            }
+
             // TODO: add test to check query timeout
 
             tableQuery.clear();
