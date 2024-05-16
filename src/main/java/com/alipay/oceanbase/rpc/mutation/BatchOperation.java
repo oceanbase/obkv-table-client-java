@@ -21,6 +21,8 @@ import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
 import com.alipay.oceanbase.rpc.table.ObTableClientLSBatchOpsImpl;
 import com.alipay.oceanbase.rpc.table.api.Table;
@@ -43,6 +45,7 @@ public class BatchOperation {
     boolean              hasGet           = false;
     ObTableOperationType lastType         = ObTableOperationType.INVALID;
     boolean              isSameType       = true;
+    protected ObTableEntityType entityType       = ObTableEntityType.DYNAMIC;
 
     /*
      * default constructor
@@ -136,6 +139,10 @@ public class BatchOperation {
         this.operations.addAll(Arrays.asList(insUps));
         this.hasCheckAndInsUp = true;
         return this;
+    }
+
+    public void setEntityType(ObTableEntityType entityType) {
+        this.entityType = entityType;
     }
 
     public BatchOperation setIsAtomic(boolean isAtomic) {
@@ -237,6 +244,7 @@ public class BatchOperation {
                 throw new ObTableException("unknown operation " + operation);
             }
         }
+        batchOps.setEntityType(entityType);
         batchOps.setAtomicOperation(isAtomic);
         batchOps.setReturnOneResult(returnOneResult);
         return new BatchOperationResult(batchOps.executeWithResult());
@@ -265,6 +273,9 @@ public class BatchOperation {
                     }
                 } else if (operation instanceof Mutation) {
                     Mutation mutation = (Mutation) operation;
+                    if (((ObTableClient) client).getRunningMode() == ObTableClient.RunningMode.HBASE) {
+                        negateHbaseTimestamp(mutation);
+                    }
                     batchOps.addOperation(mutation);
                     if (!hasSetRowkeyElement && mutation.getRowKeyNames() != null) {
                         List<String> rowKeyNames = mutation.getRowKeyNames();
@@ -293,6 +304,17 @@ public class BatchOperation {
         batchOps.setReturningAffectedEntity(withResult);
         batchOps.setReturnOneResult(returnOneResult);
         batchOps.setAtomicOperation(isAtomic);
+        batchOps.setEntityType(entityType);
         return new BatchOperationResult(batchOps.executeWithResult());
+    }
+
+    private void negateHbaseTimestamp(Mutation mutation) {
+        Object[] rowKey = mutation.getRowKey();
+        if (rowKey == null || rowKey.length != 3) {
+            throw new IllegalArgumentException("hbase rowkey length must be 3");
+        } else {
+            long ts = ((long) ((ObObj) mutation.getRowKey()[2]).getValue());
+            ((ObObj) mutation.getRowKey()[2]).setValue(-ts);
+        }
     }
 }

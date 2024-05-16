@@ -3169,6 +3169,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         this.runningMode = runningMode;
     }
 
+    public RunningMode getRunningMode() {
+        return this.runningMode;
+    }
+
     public enum RunningMode {
         NORMAL, HBASE;
     }

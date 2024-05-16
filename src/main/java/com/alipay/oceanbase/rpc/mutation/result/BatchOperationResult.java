@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.mutation.result;
 
 import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,11 +27,54 @@ public class BatchOperationResult {
 
     private List<Object> results;
 
+    boolean              hasError = false;
+
     /*
      * construct with List of Object
      */
     public BatchOperationResult(List<Object> results) {
         this.results = results;
+    }
+
+    public List<Object> getResults() {
+        return results;
+    }
+
+    public List<Integer> getErrorCodeList() {
+        List<Integer> errorCodeList = new ArrayList<Integer>();
+        for (Object item : results) {
+            int errorCode = ResultCodes.OB_SUCCESS.errorCode;
+            if (item instanceof ObTableException) {
+                errorCode = ((ObTableException) item).getErrorCode();
+                hasError = true;
+            }
+            errorCodeList.add(errorCode);
+        }
+        return errorCodeList;
+    }
+
+    public boolean hasError() {
+        if (!hasError) {
+            for (Object item : results) {
+                if (item instanceof ObTableException) {
+                    hasError = true;
+                    break;
+                }
+            }
+        }
+        return hasError;
+    }
+
+    public ObTableException getFirstException() {
+        ObTableException exception = null;
+        for (Object item : results) {
+            if (item instanceof ObTableException) {
+                exception = (ObTableException) item;
+                hasError = true;
+                break;
+            }
+        }
+        return exception;
     }
 
     /*
@@ -59,6 +103,7 @@ public class BatchOperationResult {
         for (Object item : results) {
             if (item instanceof ObTableException) {
                 ++wrongCount;
+                hasError = true;
             }
         }
         return wrongCount;
@@ -86,6 +131,7 @@ public class BatchOperationResult {
         for (Object item : results) {
             if (item instanceof ObTableException) {
                 wrongIdx.add(i);
+                hasError = true;
             }
             ++i;
         }
