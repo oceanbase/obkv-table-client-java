@@ -29,9 +29,6 @@ import java.util.List;
 import java.util.Map;
 
 public class Update extends Mutation<Update> {
-    private List<String> columns;
-    private List<Object> values;
-
     /*
      * default constructor
      */

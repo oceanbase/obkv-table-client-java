@@ -31,9 +31,6 @@ import java.util.List;
 import java.util.Map;
 
 public class Put extends Mutation<Put> {
-    private List<String> columns = null;
-    private List<Object> values  = null;
-
     /*
      * default constructor
      */
