@@ -20,6 +20,12 @@ package com.alipay.oceanbase.rpc.mutation;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.filter.*;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjMeta;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjType;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObITableEntity;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntity;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperation;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.table.api.Table;
@@ -29,6 +35,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
+import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
+
 public class Mutation<T> {
     private String         tableName;
     private Table          client;
@@ -36,6 +45,8 @@ public class Mutation<T> {
     private TableQuery     query;
     private boolean        hasSetRowKey = false;
     protected List<String> rowKeyNames  = null;
+    protected List<String> columns;
+    protected List<Object> values;
 
     /*
      * default constructor
@@ -47,6 +58,8 @@ public class Mutation<T> {
         rowKey = null;
         query = null;
         rowKeyNames = null;
+        columns = null;
+        values = null;
     }
 
     /*
@@ -63,6 +76,8 @@ public class Mutation<T> {
         this.rowKey = null;
         this.query = null;
         this.rowKeyNames = null;
+        this.columns = null;
+        this.values = null;
     }
 
     /*
@@ -439,5 +454,49 @@ public class Mutation<T> {
                 values.remove(i);
             }
         }
+    }
+
+    public void addColVal(String propName, ObObj propValue) {
+        columns.add(propName);
+        values.add(propValue);
+    }
+
+    public static Mutation getInstance(ObTableOperationType type, String[] rowKeyNames,
+                                       Object[] rowKeys, String[] columns, Object[] properties) {
+        Mutation mutation = null;
+        switch (type) {
+            case INSERT_OR_UPDATE:
+                mutation = new InsertOrUpdate();
+                break;
+            case DEL:
+                mutation = new Delete();
+                break;
+            default:
+                throw new ObTableException("not support operation type " + type);
+        }
+
+        Row rowKeyRow = new Row();
+        if (rowKeys != null) {
+            for (int i = 0; i < rowKeys.length; i++) {
+                Object rowkey = rowKeys[i];
+                ObObj obj = ObObj.getInstance(rowkey);
+                rowKeyRow.add(rowKeyNames[i], obj);
+            }
+        }
+        mutation.setRowKey(rowKeyRow);
+
+        if (columns != null) {
+            for (int i = 0; i < columns.length; i++) {
+                String name = columns[i];
+                Object value = null;
+                if (properties != null) {
+                    value = properties[i];
+                }
+                ObObj c = ObObj.getInstance(value);
+                mutation.addColVal(name, c);
+            }
+        }
+
+        return mutation;
     }
 }

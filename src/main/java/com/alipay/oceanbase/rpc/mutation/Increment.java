@@ -29,9 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 public class Increment extends Mutation<Increment> {
-    private List<String> columns;
-    private List<Object> values;
-    boolean              withResult;
+    boolean withResult;
 
     /*
      * default constructor
