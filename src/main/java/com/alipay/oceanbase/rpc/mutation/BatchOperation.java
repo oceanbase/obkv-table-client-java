@@ -35,16 +35,16 @@ import java.util.Arrays;
 import java.util.List;
 
 public class BatchOperation {
-    private String       tableName;
-    private Table        client;
-    boolean              withResult;
-    private List<Object> operations;
-    boolean              isAtomic         = false;
-    boolean              returnOneResult  = false;
-    boolean              hasCheckAndInsUp = false;
-    boolean              hasGet           = false;
-    ObTableOperationType lastType         = ObTableOperationType.INVALID;
-    boolean              isSameType       = true;
+    private String              tableName;
+    private Table               client;
+    boolean                     withResult;
+    private List<Object>        operations;
+    boolean                     isAtomic         = false;
+    boolean                     returnOneResult  = false;
+    boolean                     hasCheckAndInsUp = false;
+    boolean                     hasGet           = false;
+    ObTableOperationType        lastType         = ObTableOperationType.INVALID;
+    boolean                     isSameType       = true;
     protected ObTableEntityType entityType       = ObTableEntityType.DYNAMIC;
 
     /*
