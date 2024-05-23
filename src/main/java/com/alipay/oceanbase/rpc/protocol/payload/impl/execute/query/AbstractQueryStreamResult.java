@@ -31,6 +31,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableStreamRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.QueryStreamResult;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.table.ObTableParam;
@@ -208,11 +209,17 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         }
                     } else if (e instanceof ObTableException) {
                         if ((((ObTableException) e).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode || ((ObTableException) e)
-                            .getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode)
-                            && ((ObTableQueryRequest) request).getTableQuery().isHbaseQuery()
-                            && client.getTableGroupInverted().get(indexTableName) != null) {
-                            // table not exists && hbase mode && table group exists , three condition both
-                            client.eraseTableGroupFromCache(tableName);
+                            .getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode)) {
+                            boolean isHbaseQuery = false;
+                            if (request instanceof ObTableQueryRequest) {
+                                isHbaseQuery = ((ObTableQueryRequest) request).getTableQuery().isHbaseQuery();
+                            } else if (request instanceof ObTableQueryAsyncRequest) {
+                                isHbaseQuery = ((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery().isHbaseQuery();
+                            }
+                            if (isHbaseQuery && client.getTableGroupInverted().get(indexTableName) != null) {
+                                // table not exists && hbase mode && table group exists , three condition both
+                                client.eraseTableGroupFromCache(tableName);
+                            }
                         }
                         if (((ObTableException) e).isNeedRefreshTableEntry()) {
                             needRefreshTableEntry = true;
