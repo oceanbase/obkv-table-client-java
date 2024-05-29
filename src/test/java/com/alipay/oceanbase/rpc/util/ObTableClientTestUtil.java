@@ -40,7 +40,17 @@ public class ObTableClientTestUtil {
     public static int     ODP_PORT                = 0;
     public static String  ODP_DATABASE            = "database-name";
 
-    public static String  JDBC_URL                = "jdbc-url";
+    public static String  JDBC_IP                 = "";
+    public static int  JDBC_PORT               = 0;
+    public static String  JDBC_DATABASE           = "OCEANBASE";
+    public static String  JDBC_URL                = "jdbc:mysql://" + JDBC_IP + ":" + JDBC_PORT + "/ " + JDBC_DATABASE + "?" +
+            "rewriteBatchedStatements=TRUE&" +
+            "allowMultiQueries=TRUE&" +
+            "useLocalSessionState=TRUE&" +
+            "useUnicode=TRUE&" +
+            "characterEncoding=utf-8&" +
+            "socketTimeout=3000000&" +
+            "connectTimeout=60000";
 
     public static ObTableClient newTestClient() throws Exception {
         ObTableClient obTableClient = new ObTableClient();
@@ -62,9 +72,24 @@ public class ObTableClientTestUtil {
         return obTableClient;
     }
 
+    public static String getTenantName() {
+        String[] parts = FULL_USER_NAME.split("@");
+        if (parts.length > 1) {
+            String[] keywordParts = parts[1].split("#");
+            if (keywordParts.length > 0) {
+                return keywordParts[0];
+            }
+        }
+        return "";
+    }
+
     public static Connection getConnection() throws SQLException {
         String[] userNames = FULL_USER_NAME.split("#");
         return DriverManager.getConnection(JDBC_URL, userNames[0], PASSWORD);
+    }
+
+    public static Connection getSysConnection() throws SQLException {
+        return DriverManager.getConnection(JDBC_URL, "root@sys", PASSWORD);
     }
 
     public static void cleanTable(String tableName) throws Exception {
@@ -98,6 +123,7 @@ public class ObTableClientTestUtil {
     }
 
     public static long obVsn4000 = calcVersion(4, (short) 0, (byte) 0, (byte) 0);
+    public static long obVsn4311 = calcVersion(4, (short)3, (byte) 1, (byte) 1);
 
     static {
         System.setProperty("logging.path", System.getProperty("user.dir") + "/logs");
