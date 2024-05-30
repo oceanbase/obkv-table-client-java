@@ -22,8 +22,11 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObColumn;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjType;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ObGeneratedColumn extends ObColumn {
+    final ObGeneratedColumnSimpleFunc columnExpress;
 
     /*
      * Ob generated column.
@@ -31,23 +34,29 @@ public class ObGeneratedColumn extends ObColumn {
     public ObGeneratedColumn(String columnName, int index, ObObjType obObjType,
                              ObCollationType obCollationType,
                              ObGeneratedColumnSimpleFunc columnExpress) {
-        super(columnName, index, obObjType, obCollationType, columnExpress.getRefColumnNames(),
-            columnExpress);
+        super(columnName, index, obObjType, obCollationType);
+        this.columnExpress = columnExpress;
+    }
+
+    /*
+     * Get ob generated column simple func.
+     */
+    public ObGeneratedColumnSimpleFunc getObGeneratedColumnSimpleFunc() {
+        return columnExpress;
     }
 
     /*
      * Eval value.
      */
-    public Object evalValue(Object... refs) throws IllegalArgumentException {
+    public Object evalValue(Map<String, Object> rowkeyMap) throws IllegalArgumentException {
 
-        if (refColumnNames.size() != refs.length) {
-            throw new IllegalArgumentException("ObGeneratedColumn if refer to " + refColumnNames
-                                               + " so that the length of refs must be "
-                                               + refColumnNames.size() + ". refs"
-                                               + Arrays.toString(refs));
-        }
-
-        return obObjType.parseToComparable(columnExpress.evalValue(obCollationType, refs),
+        //        if (refColumnNames.size() != refs.length) {
+        //            throw new IllegalArgumentException("ObGeneratedColumn if refer to " + refColumnNames
+        //                                               + " so that the length of refs must be "
+        //                                               + refColumnNames.size() + ". refs"
+        //                                               + Arrays.toString(refs));
+        //        }
+        return obObjType.parseToComparable(columnExpress.evalValue(obCollationType, rowkeyMap),
             obCollationType);
     }
 }

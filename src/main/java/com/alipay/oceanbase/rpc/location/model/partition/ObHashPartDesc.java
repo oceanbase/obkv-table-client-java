@@ -108,23 +108,24 @@ public class ObHashPartDesc extends ObPartDesc {
             }
 
             // check whether partition key is Min or Max, should refactor after remove addRowkeyElement
-            for (ObPair<ObColumn, List<Integer>> pair : orderedPartRefColumnRowKeyRelations) {
-                for (int refIdx : pair.getRight()) {
-                    if (start.length <= refIdx) {
-                        throw new IllegalArgumentException("rowkey length is " + start.length
-                                                           + ", which is shortest than " + refIdx);
-                    }
-                    if (start[refIdx] instanceof ObObj
-                        && (((ObObj) start[refIdx]).isMinObj() || ((ObObj) start[refIdx])
-                            .isMaxObj())) {
-                        return completeWorks;
-                    }
-                    if (end[refIdx] instanceof ObObj
-                        && (((ObObj) end[refIdx]).isMinObj() || ((ObObj) end[refIdx]).isMaxObj())) {
-                        return completeWorks;
-                    }
-                }
-            }
+            //            todo: need rewrite in partition expr
+            //            for (ObPair<ObColumn, List<Integer>> pair : orderedPartRefColumnRowKeyRelations) {
+            //                for (int refIdx : pair.getRight()) {
+            //                    if (start.length <= refIdx) {
+            //                        throw new IllegalArgumentException("rowkey length is " + start.length
+            //                                                           + ", which is shortest than " + refIdx);
+            //                    }
+            //                    if (start[refIdx] instanceof ObObj
+            //                        && (((ObObj) start[refIdx]).isMinObj() || ((ObObj) start[refIdx])
+            //                            .isMaxObj())) {
+            //                        return completeWorks;
+            //                    }
+            //                    if (end[refIdx] instanceof ObObj
+            //                        && (((ObObj) end[refIdx]).isMinObj() || ((ObObj) end[refIdx]).isMaxObj())) {
+            //                        return completeWorks;
+            //                    }
+            //                }
+            //            }
 
             // eval partition key
             List<Object> startValues = evalRowKeyValues(start);

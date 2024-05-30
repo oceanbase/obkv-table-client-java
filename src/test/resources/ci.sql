@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS `testHash`(
     `V` varbinary(1024),
     INDEX i1(`K`, `V`) local,
     PRIMARY KEY(`K`, `Q`, `T`)
-) partition by hash(`K`) partitions 16;
+) partition by hash(`K`, `T`) partitions 16;
 
 CREATE TABLE IF NOT EXISTS `testPartition` (
     `K` varbinary(1024),

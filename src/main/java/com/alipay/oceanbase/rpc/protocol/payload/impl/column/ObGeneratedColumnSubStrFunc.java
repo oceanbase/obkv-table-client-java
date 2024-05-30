@@ -26,11 +26,18 @@ import java.util.List;
 
 import static com.google.common.base.Charsets.UTF_8;
 
-public class ObGeneratedColumnSubStrFunc implements ObGeneratedColumnSimpleFunc {
+public class ObGeneratedColumnSubStrFunc /*extends ObGeneratedColumnSimpleFunc*/ {
 
     private List<String> refColumnNames = new ArrayList<String>();
     private int          pos            = 0;
     private int          len            = Integer.MIN_VALUE;
+
+    public ObGeneratedColumnSubStrFunc() {
+    }
+
+//    public ObGeneratedColumnSubStrFunc(List<Object> parameters) throws IllegalArgumentException {
+//        this.setParameters(parameters);
+//    }
 
     /*
      * Get pos.
@@ -63,7 +70,7 @@ public class ObGeneratedColumnSubStrFunc implements ObGeneratedColumnSimpleFunc 
     /*
      * Set parameters.
      */
-    @Override
+//    @Override
     public void setParameters(List<Object> parameters) throws IllegalArgumentException {
         Object parameter1 = parameters.get(0);
 
@@ -111,7 +118,7 @@ public class ObGeneratedColumnSubStrFunc implements ObGeneratedColumnSimpleFunc 
     /*
      * Get min parameters.
      */
-    @Override
+//    @Override
     public int getMinParameters() {
         return 2;
     }
@@ -119,7 +126,7 @@ public class ObGeneratedColumnSubStrFunc implements ObGeneratedColumnSimpleFunc 
     /*
      * Get max parameters.
      */
-    @Override
+//    @Override
     public int getMaxParameters() {
         return 3;
     }
@@ -127,26 +134,41 @@ public class ObGeneratedColumnSubStrFunc implements ObGeneratedColumnSimpleFunc 
     /*
      * Get ref column names.
      */
-    @Override
-    public List<String> getRefColumnNames() {
-        return refColumnNames;
-    }
+    //    @Override
+    //    public List<String> getRefColumnNames() {
+    //        return null;
+    //    }
 
     /*
      * Eval value.
      */
-    @Override
-    public Object evalValue(ObCollationType collationType, Object... refs)
+//    @Override
+    public Object evalValue(ObCollationType collationType, List<Object> refs)
                                                                           throws IllegalArgumentException {
 
-        if (refs.length != refColumnNames.size()) {
+        if (refs.size() != 3) {
             throw new IllegalArgumentException("ObGeneratedColumnSubStrFunc is refer to "
                                                + refColumnNames
                                                + " so that the length of the refs must be equal "
                                                + refColumnNames.size() + ". refs:"
-                                               + Arrays.toString(refs));
+                                               + refs.toString());
         }
-        Object ref = refs[0];
+
+//        setParameters(Arrays.asList(refs));
+        if (!(refs.get(1) instanceof Long || refs.get(1) instanceof Integer)) {
+            throw new IllegalArgumentException("");
+        }
+
+        this.pos = (int) refs.get(1);
+
+        if (refs.size() > 2) {
+            if (!(refs.get(2) instanceof Long || refs.get(2) instanceof Integer)) {
+                throw new IllegalArgumentException("");
+            }
+            this.len = (int) refs.get(2);
+        }
+
+        Object ref = refs.get(0);
 
         if (collationType == ObCollationType.CS_TYPE_BINARY) {
             byte[] evalBytes;

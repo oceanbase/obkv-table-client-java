@@ -151,10 +151,10 @@ public class ObRangePartDesc extends ObPartDesc {
         for (int i = 0; i < orderedCompareColumns.size(); i++) {
             ObColumn obColumn = orderedCompareColumns.get(i);
             ObColumn convert;
-            if (obColumn.getObGeneratedColumnSimpleFunc() != null) {
+            if (obColumn instanceof ObGeneratedColumn) {
                 convert = new ObGeneratedColumn(obColumn.getColumnName(), obColumn.getIndex(),
                     orderedCompareColumnTypes.get(i), obColumn.getObCollationType(),
-                    obColumn.getObGeneratedColumnSimpleFunc());
+                    ((ObGeneratedColumn) obColumn).getObGeneratedColumnSimpleFunc());
             } else {
                 convert = new ObSimpleColumn(obColumn.getColumnName(), obColumn.getIndex(),
                     orderedCompareColumnTypes.get(i), obColumn.getObCollationType());
