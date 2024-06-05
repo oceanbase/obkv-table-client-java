@@ -282,17 +282,16 @@ public class LocationUtil {
             Class.forName("com.mysql.cj.jdbc.Driver");
             return;
         } catch (ClassNotFoundException e) {
-            RUNTIME.info(
-                    "Class 'com.mysql.cj.jdbc.Driver' not found, "
-                            + "try to load legacy driver class 'com.mysql.jdbc.Driver'");
+            RUNTIME.info("Class 'com.mysql.cj.jdbc.Driver' not found, "
+                         + "try to load legacy driver class 'com.mysql.jdbc.Driver'");
         }
 
         try {
             Class.forName("com.mysql.jdbc.Driver");
         } catch (ClassNotFoundException e) {
             RUNTIME.error(LCD.convert("01-00006"), e.getMessage(), e);
-            throw new ObTableEntryRefreshException(
-                    format("fail to find jdbc driver, errMsg=%s", e.getMessage()), e);
+            throw new ObTableEntryRefreshException(format("fail to find jdbc driver, errMsg=%s",
+                e.getMessage()), e);
         }
     }
 
