@@ -267,22 +267,31 @@ public class LocationUtil {
      */
     private static Connection getMetaRefreshConnection(String url, ObUserAuth sysUA)
                                                                                     throws ObTableEntryRefreshException {
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-        } catch (ClassNotFoundException e) {
-            RUNTIME.error(LCD.convert("01-00006"), e.getMessage(), e);
-            throw new ObTableEntryRefreshException(format(
-                "fail to find com.mysql.cj.jdbc.Driver, errMsg=%s", e.getMessage()), e);
-        } catch (Exception e) {
-            RUNTIME.error(LCD.convert("01-00005"), e.getMessage(), e);
-            throw new ObTableEntryRefreshException("fail to decode proxyro password", e);
-        }
+        loadJdbcDriver();
 
         try {
             return DriverManager.getConnection(url, sysUA.getUserName(), sysUA.getPassword());
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00005"), e.getMessage(), e);
             throw new ObTableEntryRefreshException("fail to connect meta server", e);
+        }
+    }
+
+    private static void loadJdbcDriver() {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            return;
+        } catch (ClassNotFoundException e) {
+            RUNTIME.info("Class 'com.mysql.cj.jdbc.Driver' not found, "
+                         + "try to load legacy driver class 'com.mysql.jdbc.Driver'");
+        }
+
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
+            RUNTIME.error(LCD.convert("01-00006"), e.getMessage(), e);
+            throw new ObTableEntryRefreshException(format("fail to find jdbc driver, errMsg=%s",
+                e.getMessage()), e);
         }
     }
 

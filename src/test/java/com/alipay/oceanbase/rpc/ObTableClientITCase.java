@@ -21,15 +21,20 @@ import com.alipay.oceanbase.rpc.containerBase.ContainerTestBase;
 import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
+
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ObTableClientITCase extends ContainerTestBase {
 
-    public Table client;
+    private static final Logger logger = LoggerFactory.getLogger(ObTableClientITCase.class);
+
+    public Table                client;
 
     @Test
     public void testAll() throws Exception {
-        if (!ObTableClientTestUtil.FULL_USER_NAME.equals("root@test#obcluster")) {
+        if (!ObTableClientTestUtil.FULL_USER_NAME.equals(TEST_USERNAME)) {
             return;
         }
         final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
@@ -45,7 +50,7 @@ public class ObTableClientITCase extends ContainerTestBase {
         obTableClient.addProperty(Property.SERVER_ENABLE_REROUTING.getKey(), "False");
         obTableClient.init();
 
-        System.out.println("obTableClient init success");
+        logger.info("obTableClient init success");
 
         // ObTableClientTest
         ObTableClientTest obTableClientTest = new ObTableClientTest();
@@ -56,8 +61,8 @@ public class ObTableClientITCase extends ContainerTestBase {
         obTableClientTest.testCompareWithNull();
         obTableClientTest.testQueryFilterLimit();
         // Todo: add more test
-        System.out.println("ObTableClientTest success");
+        logger.info("ObTableClientTest success");
 
-        System.out.println("testAll success");
+        logger.info("testAll success");
     }
 }
