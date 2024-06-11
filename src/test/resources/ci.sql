@@ -581,4 +581,12 @@ CREATE TABLE `table_ttl_00` (
   KEY `idx_pk` (`pk`) GLOBAL
 ) TTL (gmt_create + INTERVAL 300 SECOND) partition by key(adiu) partitions 8;
 
+CREATE TABLE IF NOT EXISTS  `audit_test` (
+     `c1` bigint(20) not null,
+     `c2` varchar(50) default 'hello',
+     `c3` varchar(50) default 'world',
+     KEY `idx_c2` (`c2`) LOCAL,
+     KEY `idx_c3` (`c3`) LOCAL,
+     primary key (c1));
+
 alter system set kv_hotkey_throttle_threshold = 50;
