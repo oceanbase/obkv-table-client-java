@@ -546,7 +546,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 resetExecuteContinuousFailureCount(tableName);
                 return t;
             } catch (Exception ex) {
-                RUNTIME.error("execute while meet exception", ex);
+                RUNTIME.error("execute while meet exception, try times {}", ex, tryTimes);
                 if (odpMode) {
                     if ((tryTimes - 1) < runtimeRetryTimes) {
                         if (ex instanceof ObTableException) {
@@ -560,6 +560,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                 ex.getMessage(), tryTimes);
                         }
                     } else {
+                        logger.warn("execute while meet Exception and throw it, try times {}",
+                            tryTimes);
                         throw ex;
                     }
                 } else {
@@ -710,7 +712,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 resetExecuteContinuousFailureCount(tableName);
                 return t;
             } catch (Exception ex) {
-                RUNTIME.error("execute while meet exception", ex);
+                RUNTIME.error("execute while meet exception, try times {}", ex, tryTimes);
                 if (odpMode) {
                     if ((tryTimes - 1) < runtimeRetryTimes) {
                         if (ex instanceof ObTableException) {
@@ -720,11 +722,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                     ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                     tryTimes);
                         } else {
-                            logger.warn(
-                                "execute while meet Exception, exception: {}, try times {}", ex,
-                                tryTimes);
+                            logger.warn("execute while meet Exception, errorMsg: {}, try times {}",
+                                ex.getMessage(), tryTimes);
                         }
                     } else {
+                        logger.warn("execute while meet Exception and throw it, try times {}",
+                            tryTimes);
                         throw ex;
                     }
                 } else {
