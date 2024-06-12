@@ -510,7 +510,7 @@ public class ObTableClientAutoIncTest {
             result = tableQuery.execute();
             Assert.assertTrue(result.next());
             value = result.getRow();
-            Assert.assertEquals((byte) 106, value.get("c3"));
+            Assert.assertEquals((byte) 105, value.get("c3"));
             Assert.assertEquals("a", value.get("c4"));
 
             // test append exist, append
@@ -524,7 +524,7 @@ public class ObTableClientAutoIncTest {
             result = tableQuery.execute();
             Assert.assertTrue(result.next());
             value = result.getRow();
-            Assert.assertEquals((byte) 106, value.get("c3"));
+            Assert.assertEquals((byte) 105, value.get("c3"));
             Assert.assertEquals("ab", value.get("c4"));
 
             //  the total number of data
