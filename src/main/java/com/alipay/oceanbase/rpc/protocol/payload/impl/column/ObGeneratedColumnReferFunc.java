@@ -22,7 +22,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObCollationType;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ObGeneratedColumnReferFunc implements ObGeneratedColumnSimpleFunc {
+public class ObGeneratedColumnReferFunc /*extends ObGeneratedColumnSimpleFunc*/ {
     private final List<String> refColumnNames;
 
     /*
@@ -37,7 +37,7 @@ public class ObGeneratedColumnReferFunc implements ObGeneratedColumnSimpleFunc {
     /*
      * Set parameters.
      */
-    @Override
+//    @Override
     public void setParameters(List<Object> parameters) {
         //ignore
     }
@@ -45,7 +45,7 @@ public class ObGeneratedColumnReferFunc implements ObGeneratedColumnSimpleFunc {
     /*
      * Get min parameters.
      */
-    @Override
+//    @Override
     public int getMinParameters() {
         return 0;
     }
@@ -53,7 +53,7 @@ public class ObGeneratedColumnReferFunc implements ObGeneratedColumnSimpleFunc {
     /*
      * Get max parameters.
      */
-    @Override
+//    @Override
     public int getMaxParameters() {
         return 0;
     }
@@ -61,15 +61,15 @@ public class ObGeneratedColumnReferFunc implements ObGeneratedColumnSimpleFunc {
     /*
      * Get ref column names.
      */
-    @Override
-    public List<String> getRefColumnNames() {
-        return refColumnNames;
-    }
+    //    @Override
+    //    public List<String> getRefColumnNames() {
+    //        return refColumnNames;
+    //    }
 
     /*
      * Eval value.
      */
-    @Override
+//    @Override
     public Object evalValue(ObCollationType collationType, Object... refs)
                                                                           throws IllegalArgumentException {
         if (refs.length == 0 || refs.length > 1) {

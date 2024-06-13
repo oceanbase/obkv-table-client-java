@@ -35,24 +35,25 @@ import static java.util.Collections.*;
 
 public abstract class ObPartDesc {
 
-    private static final Logger                     logger                              = TableClientLoggerFactory
-                                                                                            .getLogger(ObPartDesc.class);
-    private ObPartFuncType                          partFuncType                        = ObPartFuncType.UNKNOWN;
-    private String                                  partExpr                            = EMPTY_STRING;
+    private static final Logger        logger                 = TableClientLoggerFactory
+                                                                  .getLogger(ObPartDesc.class);
+    private ObPartFuncType             partFuncType           = ObPartFuncType.UNKNOWN;
+    private String                     partExpr               = EMPTY_STRING;
     @SuppressWarnings("unchecked")
-    protected List<String>                          orderedPartColumnNames              = EMPTY_LIST;
+    protected List<String>             orderedPartColumnNames = EMPTY_LIST;
+    //    orderedPartRefColumnRowKeyRelation: part key column, mapping from part key column to rowkey columns
+    //    @SuppressWarnings("unchecked")
+    //    protected List<ObPair<ObColumn, List<Integer>>> orderedPartRefColumnRowKeyRelations = EMPTY_LIST;
     @SuppressWarnings("unchecked")
-    protected List<ObPair<ObColumn, List<Integer>>> orderedPartRefColumnRowKeyRelations = EMPTY_LIST;
+    protected List<ObColumn>           partColumns            = EMPTY_LIST;
+    private Map<String, Long>          partNameIdMap          = null;
+    public static final ObPartitionKey DEFAULT_PART_KEY       = ObPartitionKey
+                                                                  .getInstance(
+                                                                      Collections
+                                                                          .singletonList(DEFAULT_UTF8MB4_GENERAL_CI),
+                                                                      "default");
     @SuppressWarnings("unchecked")
-    protected List<ObColumn>                        partColumns                         = EMPTY_LIST;
-    private Map<String, Long>                       partNameIdMap                       = null;
-    public static final ObPartitionKey              DEFAULT_PART_KEY                    = ObPartitionKey
-                                                                                            .getInstance(
-                                                                                                Collections
-                                                                                                    .singletonList(DEFAULT_UTF8MB4_GENERAL_CI),
-                                                                                                "default");
-    @SuppressWarnings("unchecked")
-    protected Map<String, Integer>                  rowKeyElement                       = EMPTY_MAP;
+    protected Map<String, Integer>     rowKeyElement          = EMPTY_MAP;
 
     /*
      * Get part func type.
@@ -181,75 +182,50 @@ public abstract class ObPartDesc {
         if (partColumns == null || partColumns.size() == 0) {
             throw new IllegalArgumentException("prepare ObPartDesc failed. partColumns is empty");
         }
-        List<ObPair<ObColumn, List<Integer>>> orderPartRefColumnRowKeyRelations = new ArrayList<ObPair<ObColumn, List<Integer>>>(
-            orderedPartColumnNames.size());
+        //        List<ObPair<ObColumn, List<Integer>>> orderPartRefColumnRowKeyRelations = new ArrayList<ObPair<ObColumn, List<Integer>>>(
+        //            orderedPartColumnNames.size());
         for (String partOrderColumnName : orderedPartColumnNames) {
             for (ObColumn column : partColumns) {
                 if (column.getColumnName().equalsIgnoreCase(partOrderColumnName)) {
-                    List<Integer> partRefColumnRowKeyIndexes = new ArrayList<Integer>(column
-                        .getRefColumnNames().size());
-                    for (String refColumn : column.getRefColumnNames()) {
-                        boolean rowKeyElementRefer = false;
-                        for (String rowKeyElementName : rowKeyElement.keySet()) {
-                            if (rowKeyElementName.equalsIgnoreCase(refColumn)) {
-                                partRefColumnRowKeyIndexes
-                                    .add(rowKeyElement.get(rowKeyElementName));
-                                rowKeyElementRefer = true;
-                            }
-                        }
-                        if (!rowKeyElementRefer) {
-                            throw new IllegalArgumentException("partition order column "
-                                                               + partOrderColumnName
-                                                               + " refer to non-row-key column "
-                                                               + refColumn);
-                        }
-                    }
-                    orderPartRefColumnRowKeyRelations.add(new ObPair<ObColumn, List<Integer>>(
-                        column, partRefColumnRowKeyIndexes));
+                    //                    List<Integer> partRefColumnRowKeyIndexes = new ArrayList<Integer>(column
+                    //                        .getRefColumnNames().size());
+                    //                    for (String refColumn : column.getRefColumnNames()) {
+                    //                        boolean rowKeyElementRefer = false;
+                    //                        for (String rowKeyElementName : rowKeyElement.keySet()) {
+                    //                            if (rowKeyElementName.equalsIgnoreCase(refColumn)) {
+                    //                                partRefColumnRowKeyIndexes
+                    //                                    .add(rowKeyElement.get(rowKeyElementName));
+                    //                                rowKeyElementRefer = true;
+                    //                            }
+                    //                        }
+                    //                        if (!rowKeyElementRefer) {
+                    //                            throw new IllegalArgumentException("partition order column "
+                    //                                                               + partOrderColumnName
+                    //                                                               + " refer to non-row-key column "
+                    //                                                               + refColumn);
+                    //                        }
+                    //                    }
+                    //                    orderPartRefColumnRowKeyRelations.add(new ObPair<ObColumn, List<Integer>>(
+                    //                        column, partRefColumnRowKeyIndexes));
                 }
             }
         }
-        this.orderedPartRefColumnRowKeyRelations = orderPartRefColumnRowKeyRelations;
+        //        this.orderedPartRefColumnRowKeyRelations = orderPartRefColumnRowKeyRelations;
     }
 
     /*
      * Eval row key values.
      */
     public List<Object> evalRowKeyValues(Object... rowKey) throws IllegalArgumentException {
-        int partRefColumnSize = orderedPartRefColumnRowKeyRelations.size();
-        List<Object> evalValues = new ArrayList<Object>(partRefColumnSize);
-        // column or generate column
-        for (int i = 0; i < partRefColumnSize; i++) {
-            ObPair<ObColumn, List<Integer>> orderedPartRefColumnRowKeyRelation = orderedPartRefColumnRowKeyRelations
-                .get(i);
-            Object[] partKey;
-            if (rowKey.length < rowKeyElement.size()) {
-                throw new IllegalArgumentException("row key is consist of " + rowKeyElement
-                                                   + "but found" + Arrays.toString(rowKey));
-            } else {
-                partKey = Arrays.copyOfRange(rowKey, 0, rowKeyElement.size());
-            }
-            // row key is consists of multi column
-            List<Integer> refIndex = orderedPartRefColumnRowKeyRelation.getRight();
-            Object[] evalParams = new Object[refIndex.size()];
-            boolean needEval = true;
-            for (int j = 0; j < refIndex.size(); j++) {
-                // TODO where get the type of ref column ?
-                if (refIndex.size() == 1 && partKey[refIndex.get(j)] instanceof ObObj) {
-                    // set min max into eval values directly
-                    // need refactor after addRowkeyElement has removed
-                    ObObj obj = (ObObj) partKey[refIndex.get(j)];
-                    if (obj.isMaxObj() || obj.isMinObj()) {
-                        evalValues.add(obj);
-                        needEval = false;
-                        break;
-                    }
-                }
-                evalParams[j] = partKey[refIndex.get(j)];
-            }
-            if (needEval) {
-                evalValues.add(orderedPartRefColumnRowKeyRelation.getLeft().evalValue(evalParams));
-            }
+       List<Object> evalValues = new ArrayList<Object>(partColumns.size());
+
+        Map<String, Object> rowkeyElemMap = new HashMap<>(rowKeyElement.size());
+        for (Map.Entry<String, Integer> entry : rowKeyElement.entrySet()) {
+            rowkeyElemMap.put(entry.getKey(), rowKey[entry.getValue()]);
+        }
+
+        for (int i = 0; i < partColumns.size(); i++) {
+            evalValues.add(partColumns.get(i).evalValue(rowkeyElemMap));
         }
         return evalValues;
     }

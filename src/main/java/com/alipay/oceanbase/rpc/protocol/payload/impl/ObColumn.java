@@ -19,29 +19,29 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl;
 
 import com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObGeneratedColumnSimpleFunc;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public abstract class ObColumn {
 
-    protected final String                      columnName;
-    protected final int                         index;
-    protected final ObObjType                   obObjType;
-    protected final ObCollationType             obCollationType;
-    protected final List<String>                refColumnNames;
-    protected final ObGeneratedColumnSimpleFunc columnExpress;
+    protected final String          columnName;
+    protected final int             index;
+    protected final ObObjType       obObjType;
+    protected final ObCollationType obCollationType;
+
+    //    protected final List<String>                refColumnNames;
 
     /*
      * Ob column.
      */
     public ObColumn(String columnName, int index, ObObjType obObjType,
-                    ObCollationType obCollationType, List<String> refColumnNames,
-                    ObGeneratedColumnSimpleFunc columnExpress) {
+                    ObCollationType obCollationType) {
         this.columnName = columnName;
         this.index = index;
         this.obObjType = obObjType;
         this.obCollationType = obCollationType;
-        this.refColumnNames = refColumnNames;
-        this.columnExpress = columnExpress;
+        //        this.refColumnNames = refColumnNames;
     }
 
     /*
@@ -75,18 +75,11 @@ public abstract class ObColumn {
     /*
      * Get ref column names.
      */
-    public List<String> getRefColumnNames() {
-        return refColumnNames;
-    }
+    //    public List<String> getRefColumnNames() {
+    //        return refColumnNames;
+    //    }
 
-    /*
-     * Get ob generated column simple func.
-     */
-    public ObGeneratedColumnSimpleFunc getObGeneratedColumnSimpleFunc() {
-        return columnExpress;
-    }
-
-    public abstract Object evalValue(Object... refs) throws IllegalArgumentException;
+    public abstract Object evalValue(Map<String, Object> rowkeyMap) throws IllegalArgumentException;
 
     /*
      * To string.
@@ -95,6 +88,6 @@ public abstract class ObColumn {
     public String toString() {
         return "ObColumn{" + "columnName='" + columnName + '\'' + ", index=" + index
                + ", obObjType=" + obObjType + ", obCollationType=" + obCollationType
-               + ", refColumnNames=" + refColumnNames + ", columnExpress=" + columnExpress + '}';
+        /*+ ", refColumnNames=" + refColumnNames + ", columnExpress=" + columnExpress + '}'*/;
     }
 }

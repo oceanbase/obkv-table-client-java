@@ -96,23 +96,24 @@ public class ObKeyPartDesc extends ObPartDesc {
             }
 
             // check whether partition key is Min or Max, should refactor after remove addRowkeyElement
-            for (ObPair<ObColumn, List<Integer>> pair : orderedPartRefColumnRowKeyRelations) {
-                for (int refIdx : pair.getRight()) {
-                    if (start.length <= refIdx) {
-                        throw new IllegalArgumentException("rowkey length is " + start.length
-                                                           + ", which is shortest than " + refIdx);
-                    }
-                    if (start[refIdx] instanceof ObObj
-                        && (((ObObj) start[refIdx]).isMinObj() || ((ObObj) start[refIdx])
-                            .isMaxObj())) {
-                        return completeWorks;
-                    }
-                    if (end[refIdx] instanceof ObObj
-                        && (((ObObj) end[refIdx]).isMinObj() || ((ObObj) end[refIdx]).isMaxObj())) {
-                        return completeWorks;
-                    }
-                }
-            }
+            // todo: need send all partition id
+            //            for (ObPair<ObColumn, List<Integer>> pair : orderedPartRefColumnRowKeyRelations) {
+            //                for (int refIdx : pair.getRight()) {
+            //                    if (start.length <= refIdx) {
+            //                        throw new IllegalArgumentException("rowkey length is " + start.length
+            //                                                           + ", which is shortest than " + refIdx);
+            //                    }
+            //                    if (start[refIdx] instanceof ObObj
+            //                        && (((ObObj) start[refIdx]).isMinObj() || ((ObObj) start[refIdx])
+            //                            .isMaxObj())) {
+            //                        return completeWorks;
+            //                    }
+            //                    if (end[refIdx] instanceof ObObj
+            //                        && (((ObObj) end[refIdx]).isMinObj() || ((ObObj) end[refIdx]).isMaxObj())) {
+            //                        return completeWorks;
+            //                    }
+            //                }
+            //            }
 
             // eval partition key
             List<Object> startValues = evalRowKeyValues(start);
@@ -170,7 +171,7 @@ public class ObKeyPartDesc extends ObPartDesc {
         }
 
         try {
-            int partRefColumnSize = orderedPartRefColumnRowKeyRelations.size();
+            int partColumnSize = partColumns.size();
             List<Object> evalValues = null;
 
             for (Object[] rowKey : rowKeys) {
@@ -188,9 +189,8 @@ public class ObKeyPartDesc extends ObPartDesc {
                 }
 
                 for (int i = 0; i < evalValues.size(); i++) {
-                    if (!equalsWithCollationType(orderedPartRefColumnRowKeyRelations.get(i)
-                        .getLeft().getObCollationType(), evalValues.get(i),
-                        currentRowKeyEvalValues.get(i))) {
+                    if (!equalsWithCollationType(partColumns.get(i).getObCollationType(),
+                        evalValues.get(i), currentRowKeyEvalValues.get(i))) {
                         throw new ObTablePartitionConsistentException(
                             "across partition operation may cause consistent problem " + rowKeys);
                     }
@@ -198,10 +198,9 @@ public class ObKeyPartDesc extends ObPartDesc {
             }
 
             long hashValue = 0L;
-            for (int i = 0; i < partRefColumnSize; i++) {
-                hashValue = ObHashUtils.toHashcode(evalValues.get(i),
-                    orderedPartRefColumnRowKeyRelations.get(i).getLeft(), hashValue,
-                    this.getPartFuncType());
+            for (int i = 0; i < partColumnSize; i++) {
+                hashValue = ObHashUtils.toHashcode(evalValues.get(i), partColumns.get(i),
+                    hashValue, this.getPartFuncType());
             }
 
             hashValue = (hashValue > 0 ? hashValue : -hashValue);

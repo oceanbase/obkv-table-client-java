@@ -18,20 +18,36 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl.column;
 
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObCollationType;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.parser.ObExprGrammerVisitorImpl;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.parser.gen.ObExprGrammerParser;
 
 import java.util.List;
+import java.util.Map;
 
-public interface ObGeneratedColumnSimpleFunc {
+public class ObGeneratedColumnSimpleFunc {
 
-    void setParameters(List<Object> parameters);
+    ObExprGrammerParser.ExprContext ctx;
+    public ObGeneratedColumnSimpleFunc(ObExprGrammerParser.ExprContext ctx) {
+        this.ctx = ctx;
+    }
 
-    int getMinParameters();
+    void setParameters(List<Object> parameters) { return; }
 
-    int getMaxParameters();
+    int getMinParameters() { return 0; }
 
-    List<String> getRefColumnNames();
+    int getMaxParameters() { return 0; }
 
-    Object evalValue(ObCollationType collationTypeList, Object... refs)
-                                                                       throws IllegalArgumentException;
+    //    List<String> getRefColumnNames();
+
+//    Object evalValue(ObCollationType collationTypeList, Object... refs)
+//                                                                       throws IllegalArgumentException
+//    {
+//        throw new IllegalArgumentException("not supported");
+//    }
+
+    public Object evalValue(ObCollationType collationType, Map<String, Object> rowMap) {
+        ObExprGrammerVisitorImpl visitor = new ObExprGrammerVisitorImpl(collationType, rowMap);
+        return visitor.visit(ctx);
+    }
 
 }

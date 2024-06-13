@@ -1,0 +1,15 @@
+SUBSTR=1
+SUBSTRING=2
+SUBSTRING_INDEX=3
+LBRAC=4
+RBRAC=5
+COMMA=6
+ID=7
+WS=8
+DECIMAL_LITERAL=9
+'substr'=1
+'substring'=2
+'substring_index'=3
+'('=4
+')'=5
+','=6

@@ -21,8 +21,8 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObCollationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObColumn;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjType;
 
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ObSimpleColumn extends ObColumn {
 
@@ -45,20 +45,19 @@ public class ObSimpleColumn extends ObColumn {
      */
     public ObSimpleColumn(String columnName, int index, ObObjType obObjType,
                           ObCollationType obCollationType) {
-        super(columnName, index, obObjType, obCollationType, Collections.singletonList(columnName),
-            null);
+        super(columnName, index, obObjType, obCollationType /*Collections.singletonList(columnName),*/);
     }
 
     /*
      * Eval value.
      */
     @Override
-    public Object evalValue(Object... refs) throws IllegalArgumentException {
-        if (refs.length == 0 || refs.length > 1) {
+    public Object evalValue(Map<String, Object> rowkeyMap) throws IllegalArgumentException {
+        if (rowkeyMap.size() == 0 || rowkeyMap.get(columnName) == null) {
             throw new IllegalArgumentException(
                 "ObSimpleColumn is refer to itself so that the length of the refs must be 1. refs:"
-                        + Arrays.toString(refs));
+                        + (rowkeyMap.toString()) + "columnName: " + columnName);
         }
-        return obObjType.parseToComparable(refs[0], obCollationType);
+        return obObjType.parseToComparable(rowkeyMap.get(columnName), obCollationType);
     }
 }
