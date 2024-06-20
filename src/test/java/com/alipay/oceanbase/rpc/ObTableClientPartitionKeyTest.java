@@ -267,9 +267,8 @@ public class ObTableClientPartitionKeyTest {
             Assert.assertEquals("value1", new String((byte[]) row.get("V")));
 
             tableQuery = obTableClient.query(TEST_TABLE);
-            tableQuery.addScanRange(
-                new Object[] { "key1_1".getBytes(), ObObj.getMin(), ObObj.getMin() }, new Object[] {
-                        "key1_8".getBytes(), ObObj.getMax(), ObObj.getMax() });
+            tableQuery.addScanRange(new Object[] {"key1_1".getBytes()}, new Object[] {"key1_8".getBytes()});
+            tableQuery.setScanRangeColumns("K");
             tableQuery.select("Q", "T", "K", "V");
             result = tableQuery.execute();
             Assert.assertTrue(result.cacheSize() >= 2);
@@ -422,9 +421,9 @@ public class ObTableClientPartitionKeyTest {
             Assert.assertEquals("value1", new String((byte[]) row.get("V")));
 
             tableQuery = obTableClient.query(TEST_TABLE);
+            tableQuery.setScanRangeColumns("K");
             tableQuery.addScanRange(
-                new Object[] { "key1_1".getBytes(), ObObj.getMin(), ObObj.getMin() }, new Object[] {
-                        "key1_8".getBytes(), ObObj.getMax(), ObObj.getMax() });
+                new Object[] {"key1_1".getBytes()}, new Object[] {"key1_8".getBytes()});
             tableQuery.select("Q", "T", "K", "V");
             result = tableQuery.asyncExecute();
             Assert.assertTrue(result.cacheSize() >= 2);
@@ -520,29 +519,26 @@ public class ObTableClientPartitionKeyTest {
 
     @Test
     public void testQueryLocalIndex() throws Exception {
-        // TODO: client route is wrong when execute query on key partitioned table using index
-        if (!obTableClient.isOdpMode()) {
-            return;
-        }
+        String tableName = "testKey";
         long timeStamp = System.currentTimeMillis();
         try {
-            obTableClient.insert(TEST_TABLE,
+            obTableClient.insert(tableName,
                 new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 1 },
                 new String[] { "V" }, new Object[] { "value1".getBytes() });
-            obTableClient.insert(TEST_TABLE,
+            obTableClient.insert(tableName,
                 new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 2 },
                 new String[] { "V" }, new Object[] { "value2".getBytes() });
-            obTableClient.insert(TEST_TABLE,
+            obTableClient.insert(tableName,
                 new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 1 },
                 new String[] { "V" }, new Object[] { "value2".getBytes() });
-            obTableClient.insert(TEST_TABLE,
+            obTableClient.insert(tableName,
                 new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 2 },
                 new String[] { "V" }, new Object[] { "value1".getBytes() });
 
             // key partitioned table do not support range query
 
             // query key2_1
-            TableQuery tableQuery = obTableClient.query(TEST_TABLE);
+            TableQuery tableQuery = obTableClient.query(tableName);
             tableQuery.addScanRange(new Object[] { "key2_1".getBytes(), "value0".getBytes() },
                 new Object[] { "key2_1".getBytes(), "value9".getBytes() });
             // TODO: do param check, must specify select columns
@@ -574,7 +570,7 @@ public class ObTableClientPartitionKeyTest {
             Assert.assertFalse(result.next());
 
             // query key3_1
-            tableQuery = obTableClient.query(TEST_TABLE);
+            tableQuery = obTableClient.query(tableName);
             tableQuery.addScanRange(new Object[] { "key3_1".getBytes(), "value0".getBytes() },
                 new Object[] { "key3_1".getBytes(), "value9".getBytes() });
             tableQuery.select("K", "Q", "T", "V");
@@ -607,7 +603,7 @@ public class ObTableClientPartitionKeyTest {
             }
 
             // query key2_1 using K prefix
-            tableQuery = obTableClient.query(TEST_TABLE);
+            tableQuery = obTableClient.query(tableName);
             tableQuery.addScanRange(new Object[] { "key2_1".getBytes() },
                 new Object[] { "key2_1".getBytes() });
             tableQuery.setScanRangeColumns("K");
@@ -628,42 +624,39 @@ public class ObTableClientPartitionKeyTest {
             e.printStackTrace();
             Assert.assertTrue(false);
         } finally {
-            obTableClient.delete(TEST_TABLE,
+            obTableClient.delete(tableName,
                 new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 1 });
-            obTableClient.delete(TEST_TABLE,
+            obTableClient.delete(tableName,
                 new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 2 });
-            obTableClient.delete(TEST_TABLE,
+            obTableClient.delete(tableName,
                 new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 1 });
-            obTableClient.delete(TEST_TABLE,
+            obTableClient.delete(tableName,
                 new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 2 });
         }
     }
 
     @Test
     public void testAsyncQueryLocalIndex() throws Exception {
-        // TODO: client route is wrong when execute query on key partitioned table using index
-        if (!obTableClient.isOdpMode()) {
-            return;
-        }
         long timeStamp = System.currentTimeMillis();
+        String tableName = "testKey";
         try {
-            obTableClient.insert(TEST_TABLE,
+            obTableClient.insert(tableName,
                 new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 1 },
                 new String[] { "V" }, new Object[] { "value1".getBytes() });
-            obTableClient.insert(TEST_TABLE,
+            obTableClient.insert(tableName,
                 new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 2 },
                 new String[] { "V" }, new Object[] { "value2".getBytes() });
-            obTableClient.insert(TEST_TABLE,
+            obTableClient.insert(tableName,
                 new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 1 },
                 new String[] { "V" }, new Object[] { "value2".getBytes() });
-            obTableClient.insert(TEST_TABLE,
+            obTableClient.insert(tableName,
                 new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 2 },
                 new String[] { "V" }, new Object[] { "value1".getBytes() });
 
             // key partitioned table do not support range query
 
             // query key2_1
-            TableQuery tableQuery = obTableClient.query(TEST_TABLE);
+            TableQuery tableQuery = obTableClient.query(tableName);
             tableQuery.addScanRange(new Object[] { "key2_1".getBytes(), "value0".getBytes() },
                 new Object[] { "key2_1".getBytes(), "value9".getBytes() });
             // TODO: do param check, must specify select columns
@@ -672,7 +665,7 @@ public class ObTableClientPartitionKeyTest {
             tableQuery.indexName("i1");
             tableQuery.setBatchSize(1);
             QueryResultSet result = tableQuery.asyncExecute();
-            Assert.assertEquals(2, result.cacheSize());
+            Assert.assertEquals(1, result.cacheSize());
             for (int i = 1; i <= 2; i++) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();
@@ -685,7 +678,7 @@ public class ObTableClientPartitionKeyTest {
 
             tableQuery.scanOrder(false);
             result = tableQuery.asyncExecute();
-            Assert.assertEquals(2, result.cacheSize());
+            Assert.assertEquals(1, result.cacheSize());
             for (int i = 2; i >= 1; i--) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();
@@ -696,7 +689,7 @@ public class ObTableClientPartitionKeyTest {
             Assert.assertFalse(result.next());
 
             // query key3_1
-            tableQuery = obTableClient.query(TEST_TABLE);
+            tableQuery = obTableClient.query(tableName);
             tableQuery.addScanRange(new Object[] { "key3_1".getBytes(), "value0".getBytes() },
                 new Object[] { "key3_1".getBytes(), "value9".getBytes() });
             tableQuery.select("K", "Q", "T", "V");
@@ -704,7 +697,7 @@ public class ObTableClientPartitionKeyTest {
             tableQuery.indexName("i1");
             tableQuery.setBatchSize(1);
             result = tableQuery.asyncExecute();
-            Assert.assertEquals(2, result.cacheSize());
+            Assert.assertEquals(1, result.cacheSize());
             for (int i = 1; i <= 2; i++) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();
@@ -718,7 +711,7 @@ public class ObTableClientPartitionKeyTest {
 
             tableQuery.scanOrder(false);
             result = tableQuery.asyncExecute();
-            Assert.assertEquals(2, result.cacheSize());
+            Assert.assertEquals(1, result.cacheSize());
             for (int i = 2; i >= 1; i--) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();
@@ -730,14 +723,14 @@ public class ObTableClientPartitionKeyTest {
             }
 
             // query key2_1 using K prefix
-            tableQuery = obTableClient.query(TEST_TABLE);
+            tableQuery = obTableClient.query(tableName);
             tableQuery.addScanRange(new Object[] { "key2_1".getBytes() },
                 new Object[] { "key2_1".getBytes() });
             tableQuery.setScanRangeColumns("K");
             tableQuery.indexName("i1");
             tableQuery.setBatchSize(1);
             result = tableQuery.asyncExecute();
-            Assert.assertEquals(2, result.cacheSize());
+            Assert.assertEquals(1, result.cacheSize());
             for (int i = 1; i <= 2; i++) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();
@@ -752,13 +745,13 @@ public class ObTableClientPartitionKeyTest {
             e.printStackTrace();
             Assert.assertTrue(false);
         } finally {
-            obTableClient.delete(TEST_TABLE,
+            obTableClient.delete(tableName,
                 new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 1 });
-            obTableClient.delete(TEST_TABLE,
+            obTableClient.delete(tableName,
                 new Object[] { "key2_1".getBytes(), "partition".getBytes(), timeStamp + 2 });
-            obTableClient.delete(TEST_TABLE,
+            obTableClient.delete(tableName,
                 new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 1 });
-            obTableClient.delete(TEST_TABLE,
+            obTableClient.delete(tableName,
                 new Object[] { "key3_1".getBytes(), "partition".getBytes(), timeStamp + 2 });
         }
     }

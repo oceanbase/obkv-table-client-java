@@ -84,7 +84,7 @@ public class ObTableAuditTest {
         List<String> sqlIds = new ArrayList<>();
         String tenantName = ObTableClientTestUtil.getTenantName();
         Connection conn = ObTableClientTestUtil.getSysConnection();
-        PreparedStatement ps = conn.prepareStatement("select sql_id from __all_virtual_sql_audit where query_sql like "
+        PreparedStatement ps = conn.prepareStatement("select sql_id from oceanbase.__all_virtual_sql_audit where query_sql like "
                 + "\"%" + keyWord + "%\"" + "and tenant_name=" + "\"" + tenantName + "\"" + "order by request_time asc" + ";");
         ResultSet rs = ps.executeQuery();
 

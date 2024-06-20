@@ -18,7 +18,9 @@
 package com.alipay.oceanbase.rpc.location.model.partition;
 
 import com.alipay.oceanbase.rpc.exception.ObTablePartitionConsistentException;
+import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObColumn;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObGeneratedColumn;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObSimpleColumn;
@@ -29,6 +31,7 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.LCD;
@@ -62,6 +65,7 @@ public class ObRangePartDesc extends ObPartDesc {
     public List<ObObjType> getOrderedCompareColumnTypes() {
         return orderedCompareColumnTypes;
     }
+    private List<Long>          completeWorks;
 
     /*
      * Set ordered compare column types.
@@ -198,6 +202,11 @@ public class ObRangePartDesc extends ObPartDesc {
      */
     public void setPartNum(int partNum) {
         this.partNum = partNum;
+        List<Long> partIds = new ArrayList<Long>();
+        for (long i = 0; i < partNum; i++) {
+            partIds.add(i);
+        }
+        completeWorks = Collections.unmodifiableList(partIds);
     }
 
     /*
@@ -210,6 +219,40 @@ public class ObRangePartDesc extends ObPartDesc {
         // can not detail the border effect so that the range is magnified
         int startIdx = getBoundsIdx(true, start);
         int stopIdx = getBoundsIdx(true, end);
+        List<Long> partIds = new ArrayList<Long>();
+        for (int i = startIdx; i <= stopIdx; i++) {
+            partIds.add(this.bounds.get(i).value);
+        }
+        return partIds;
+    }
+
+    @Override
+    public List<Long> getPartIds(List<String> scanRangeColumns, Object[] start, boolean startInclusive,
+                                 Object[] end, boolean endInclusive) {
+
+        if (start.length != end.length) {
+            throw new IllegalArgumentException("length of start key and end key is not equal");
+        }
+
+        if (start.length == 1  && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj() &&
+                end.length == 1  && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
+            return completeWorks;
+        }
+
+        if (scanRangeColumns.size() != start.length) {
+            throw new IllegalArgumentException("length of key and scan range columns is not equal");
+        }
+
+        Row startRow = new Row();
+        Row endRow = new Row();
+        for (int i = 0; i < scanRangeColumns.size(); i++) {
+            startRow.add(scanRangeColumns.get(i), start[i]);
+            endRow.add(scanRangeColumns.get(i), end[i]);
+        }
+
+        // can not detail the border effect so that the range is magnified
+        int startIdx = getBoundsIdx(true, startRow);
+        int stopIdx = getBoundsIdx(true, endRow);
         List<Long> partIds = new ArrayList<Long>();
         for (int i = startIdx; i <= stopIdx; i++) {
             partIds.add(this.bounds.get(i).value);
@@ -255,6 +298,34 @@ public class ObRangePartDesc extends ObPartDesc {
                 }
                 throw new ArrayIndexOutOfBoundsException("Table has no partition for value in "
                                                          + this.getPartExpr());
+            } else {
+                return pos;
+            }
+        } catch (IllegalArgumentException e) {
+            RUNTIME.error(LCD.convert("01-00025"), e);
+            throw new IllegalArgumentException("ObRangePartDesc get getBoundsIdx error", e);
+        }
+
+    }
+
+    public int getBoundsIdx(boolean isScan, Row rowKey) {
+        try {
+            List<Object> evalParams = evalRowKeyValues(rowKey);
+            List<Comparable> comparableElement = super.initComparableElementByTypes(evalParams,
+                    this.orderedCompareColumns);
+            ObPartitionKey searchKey = ObPartitionKey.getInstance(orderedCompareColumns,
+                    comparableElement);
+
+            int pos = upperBound(this.bounds, new ObComparableKV<ObPartitionKey, Long>(searchKey,
+                    (long) -1));
+            if (pos >= this.bounds.size()) {
+                if (isScan) {
+                    // if range is bigger than rangeMax while scanning
+                    // we just scan until last range
+                    return this.bounds.size() - 1;
+                }
+                throw new ArrayIndexOutOfBoundsException("Table has no partition for value in "
+                        + this.getPartExpr());
             } else {
                 return pos;
             }
