@@ -589,4 +589,11 @@ CREATE TABLE IF NOT EXISTS  `audit_test` (
      KEY `idx_c3` (`c3`) LOCAL,
      primary key (c1));
 
+ CREATE TABLE IF NOT EXISTS `test_p99` (
+     `c1` bigint(20) NOT NULL,
+     `c2` bigint(20) DEFAULT NULL,
+     `c3` varchar(20) DEFAULT "hello",
+     PRIMARY KEY (`c1`)
+     );
+
 alter system set kv_hotkey_throttle_threshold = 50;
