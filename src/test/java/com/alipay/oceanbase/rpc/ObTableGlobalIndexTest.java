@@ -430,7 +430,6 @@ public class ObTableGlobalIndexTest {
 
             // query by local index, will lookup primary table
             TableQuery query4 = client.query(tableName).indexName("idx2");
-            query4.setScanRangeColumns("C3");
             query4.addScanRange(new Object[] { 0 }, new Object[] { recordCount + 200 + 2 });
             query4.select("C1", "C2", "C3");
             QueryResultSet resultSet4 = query4.execute();
@@ -558,7 +557,7 @@ public class ObTableGlobalIndexTest {
                 .addMutateColVal(colVal(expireCol, curTs)).execute();
 
             // 3. re-query all inserted records, the expired record won't be returned
-            resultSet = client.query(tableName).indexName("idx2").setScanRangeColumns(intCol2)
+            resultSet = client.query(tableName).indexName("idx2").setScanRangeColumns(intCol)
                 .addScanRange(new Object[] { 101L }, new Object[] { 102L }).execute();
             Assert.assertEquals(resultSet.cacheSize(), 1);
             Assert.assertTrue(resultSet.next());

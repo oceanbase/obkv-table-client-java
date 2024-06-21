@@ -207,6 +207,7 @@ CREATE TABLE IF NOT EXISTS `test_hbase$fn` (
     `Q` varbinary(256) NOT NULL,
     `T` bigint(20) NOT NULL,
     `V` varbinary(1024) DEFAULT NULL,
+    KEY `idx_k_v` (`K`, `V`) LOCAL,
     PRIMARY KEY (`K`, `Q`, `T`)
 );
 
