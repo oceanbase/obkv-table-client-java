@@ -36,7 +36,7 @@ OB_SERIALIZE_MEMBER(ObTableLSOpRequest,
  */
 public class ObTableLSOpRequest extends AbstractPayload implements Credentialable {
     protected ObBytesString           credential;
-    protected ObTableEntityType       entityType       = ObTableEntityType.DYNAMIC;
+    protected ObTableEntityType       entityType       = ObTableEntityType.KV;
     protected ObTableConsistencyLevel consistencyLevel = ObTableConsistencyLevel.STRONG;
     private ObTableLSOperation        lsOperation      = null;
 
