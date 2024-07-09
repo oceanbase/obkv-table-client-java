@@ -122,7 +122,7 @@ public class ObTableRemoting extends BaseRemoting {
             ObRpcResultCode resultCode = new ObRpcResultCode();
             resultCode.decode(buf);
             // If response indicates the request is routed to wrong server, we should refresh the routing meta.
-            if (response.getHeader().isRoutingWrong()) {
+            if (!conn.getObTable().getReRouting() &&response.getHeader().isRoutingWrong()) {
                 String errMessage = TraceUtil.formatTraceMessage(conn, request,
                         "routed to the wrong server: " + response.getMessage());
                 logger.warn(errMessage);
@@ -139,7 +139,7 @@ public class ObTableRemoting extends BaseRemoting {
                     throw new ObTableNeedFetchAllException(errMessage);
                 }
             }
-            if (resultCode.getRcode() != 0) {
+            if (resultCode.getRcode() != 0 && response.getHeader().getPcode() != Pcodes.OB_TABLE_API_MOVE) {
                 String errMessage = TraceUtil.formatTraceMessage(conn, request,
                         "routed to the wrong server: " + response.getMessage());
                 logger.warn(errMessage);
@@ -186,7 +186,6 @@ public class ObTableRemoting extends BaseRemoting {
                                               InvokeCallback invokeCallback) {
         return new ObClientFuture(request.getId());
     }
-    
 
     // schema changed
     private boolean needFetchAll(int errorCode, int pcode) {
