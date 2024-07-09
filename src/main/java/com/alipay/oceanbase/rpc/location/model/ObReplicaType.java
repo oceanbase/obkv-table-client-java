@@ -17,6 +17,8 @@
 
 package com.alipay.oceanbase.rpc.location.model;
 
+import java.util.Objects;
+
 /**
  * ObReplicaType(副本类型)
  *
@@ -70,6 +72,10 @@ public enum ObReplicaType {
         } else {
             return REPLICA_TYPE_INVALID;
         }
+    }
+
+    public int getIndex() {
+        return this.index;
     }
 
     /*

@@ -24,6 +24,8 @@ import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
+import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
@@ -464,7 +466,15 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                                             getRight().getObTable();
                     }
                 }
-                subLSOpResult = (ObTableLSOpResult) subObTable.execute(tableLsOpRequest);
+                ObPayload result = subObTable.execute(tableLsOpRequest);
+                if (result != null && result.getPcode() == Pcodes.OB_TABLE_API_MOVE) {
+                    ObTableApiMove moveResponse = (ObTableApiMove) result;
+                    obTableClient.getRouteTableRefresher().addTableIfAbsent(tableName, true);
+                    obTableClient.getRouteTableRefresher().triggerRefreshTable();
+                    subObTable = obTableClient.getTable(moveResponse);
+                    result = subObTable.execute(tableLsOpRequest);
+                }
+                subLSOpResult = (ObTableLSOpResult) result;
                 obTableClient.resetExecuteContinuousFailureCount(tableName);
                 break;
             } catch (Exception ex) {
