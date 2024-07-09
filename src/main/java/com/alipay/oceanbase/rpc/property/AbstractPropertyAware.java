@@ -60,7 +60,10 @@ public abstract class AbstractPropertyAware {
         }
     }
 
-    public boolean parseToBoolean(String key) {
+    public boolean parseToBoolean(String key) throws Exception {
+        if (System.getProperty(OB_TABLE_CLIENT_PREFIX + key) == null && getProperty(key) == null){
+            throw new Exception();
+        }
         return Boolean.parseBoolean(System.getProperty(OB_TABLE_CLIENT_PREFIX + key,
             getProperty(key)));
     }

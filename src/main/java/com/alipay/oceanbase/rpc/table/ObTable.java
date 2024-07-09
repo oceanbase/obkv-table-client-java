@@ -66,7 +66,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
 
     private volatile boolean      initialized = false;
     private volatile boolean      closed      = false;
-    private boolean               reRouting   = false;              // only used for init packet factory
+    private boolean               reRouting   = true;              // only used for init packet factory
 
     private ReentrantLock         statusLock  = new ReentrantLock();
 
@@ -172,6 +172,10 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             Map<String, String> runtimeMap = (Map<String, String>) value;
             runtimeMap.put(RPC_OPERATION_TIMEOUT.getKey(), String.valueOf(obTableOperationTimeout));
         }
+    }
+
+    public boolean getReRouting(){
+        return reRouting;
     }
 
     /*
