@@ -17,12 +17,14 @@
 
 package com.alipay.oceanbase.rpc.location.model.partition;
 
+import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.exception.ObTablePartitionConsistentException;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObColumn;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjType;
 import com.alipay.oceanbase.rpc.util.RandomUtil;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
+import com.alipay.oceanbase.rpc.mutation.*;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.slf4j.Logger;
 
@@ -97,39 +99,46 @@ public class ObHashPartDesc extends ObPartDesc {
      * Get part ids.
      */
     @Override
-    public List<Long> getPartIds(Object[] start, boolean startInclusive, Object[] end,
+    public List<Long> getPartIds(Object startRowObj, boolean startInclusive, Object endRowObj,
                                  boolean endInclusive) {
         // close set
         try {
+            // verify the type of parameters and convert to Row
+            if (!(startRowObj instanceof Row) || !(endRowObj instanceof Row)) {
+                throw new ObTableException("invalid format of rowObj: " + startRowObj + ", " + endRowObj);
+            }
+            Row startRow = (Row) startRowObj, endRow = (Row) endRowObj;
             // pre-check start and end
             // should remove after remove addRowkeyElement
-            if (start.length != end.length) {
+            if (startRow.size() != endRow.size()) {
                 throw new IllegalArgumentException("length of start key and end key is not equal");
             }
 
             // check whether partition key is Min or Max, should refactor after remove addRowkeyElement
-            for (ObPair<ObColumn, List<Integer>> pair : orderedPartRefColumnRowKeyRelations) {
-                for (int refIdx : pair.getRight()) {
-                    if (start.length <= refIdx) {
-                        throw new IllegalArgumentException("rowkey length is " + start.length
+            for (ObColumn curObcolumn : partColumns) {
+                for (int refIdx = 0; refIdx < curObcolumn.getRefColumnNames().size(); ++refIdx) {
+                    String curObRefColumnName = curObcolumn.getRefColumnNames().get(refIdx);
+                    if (startRow.size() <= refIdx) {
+                        throw new IllegalArgumentException("rowkey length is " + startRow.size()
                                                            + ", which is shortest than " + refIdx);
                     }
-                    if (start[refIdx] instanceof ObObj
-                        && (((ObObj) start[refIdx]).isMinObj() || ((ObObj) start[refIdx])
-                            .isMaxObj())) {
+                    if (startRow.get(curObRefColumnName) instanceof ObObj
+                        && (((ObObj) startRow.get(curObRefColumnName)).isMinObj()
+                            || ((ObObj) startRow.get(curObRefColumnName)).isMaxObj())) {
                         return completeWorks;
                     }
-                    if (end[refIdx] instanceof ObObj
-                        && (((ObObj) end[refIdx]).isMinObj() || ((ObObj) end[refIdx]).isMaxObj())) {
+                    if (endRow.get(curObRefColumnName) instanceof ObObj
+                        && (((ObObj) endRow.get(curObRefColumnName)).isMinObj()
+                            || ((ObObj) endRow.get(curObRefColumnName)).isMaxObj())) {
                         return completeWorks;
                     }
                 }
             }
 
             // eval partition key
-            List<Object> startValues = evalRowKeyValues(start);
+            List<Object> startValues = evalRowKeyValues(startRow);
             Object startValue = startValues.get(0);
-            List<Object> endValues = evalRowKeyValues(end);
+            List<Object> endValues = evalRowKeyValues(endRow);
             Object endValue = endValues.get(0);
 
             Long startLongValue = ObObjType.parseToLongOrNull(startValue);
@@ -171,26 +180,30 @@ public class ObHashPartDesc extends ObPartDesc {
      * Get part id.
      */
     @Override
-    public Long getPartId(Object... rowKey) {
-        List<Object[]> rowKeys = new ArrayList<Object[]>();
-        rowKeys.add(rowKey);
-        return this.getPartId(rowKeys, false);
+    public Long getPartId(Object... row) {
+        List<Object> rows = new ArrayList<Object>();
+        rows.add(row);
+        return this.getPartId(rows, false);
     }
 
     /*
      * Get part id.
      */
     @Override
-    public Long getPartId(List<Object[]> rowKeys, boolean consistency) {
+    public Long getPartId(List<Object> rows, boolean consistency) {
 
-        if (rowKeys == null || rowKeys.size() == 0) {
-            throw new IllegalArgumentException("invalid row keys :" + rowKeys);
+        if (rows == null || rows.size() == 0) {
+            throw new IllegalArgumentException("invalid row keys :" + rows);
         }
 
         Long partId = null;
         try {
-            for (Object[] rowKey : rowKeys) {
-                List<Object> evalValues = evalRowKeyValues(rowKey);
+            for (Object rowObj : rows) {
+                if ( !(rowObj instanceof  Row)) {
+                    throw new ObTableException("invalid format of rowObj: " + rowObj);
+                }
+                Row row = (Row) rowObj;
+                List<Object> evalValues = evalRowKeyValues(row);
                 Object value = evalValues.get(0);// the partition type of hash has one param at most
                 Long longValue = ObObjType.parseToLongOrNull(value);
 
@@ -209,7 +222,7 @@ public class ObHashPartDesc extends ObPartDesc {
 
                 if (!partId.equals(currentPartId)) {
                     throw new ObTablePartitionConsistentException(
-                        "across partition operation may cause consistent problem " + rowKeys);
+                        "across partition operation may cause consistent problem " + rows);
                 }
             }
         } catch (IllegalArgumentException e) {

@@ -450,9 +450,18 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     private abstract class TableExecuteCallback<T> {
         private final Object[] rowKey;
+//        private final Row row = new Row();
 
         TableExecuteCallback(Object[] rowKey) {
             this.rowKey = rowKey;
+//            String[] columnNames = getRowKeyElement(tableName).keySet().toArray(new String[0]);
+//            if(columnNames.length != rowKey.length) {
+//                throw new ObTableException("Invalid input rowKey");
+//            }
+//            for(int i = 0; i < columnNames.length; ++i) {
+//                this.row.add(columnNames[i], rowKey[i]);
+//            }
+
         }
 
         void checkObTableOperationResult(String ip, int port, ObPayload request, ObPayload result) {
@@ -503,7 +512,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
          * Get row key.
          */
         public Object[] getRowKey() {
-            return rowKey;
+            return this.rowKey;
         }
     }
 
@@ -1337,10 +1346,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     /**
      * 根据 rowkey 获取分区 id
      * @param tableEntry
-     * @param rowKey
+     * @param row
      * @return
      */
-    private long getPartition(TableEntry tableEntry, Object[] rowKey) {
+    private long getPartition(TableEntry tableEntry, Row row) {
         // non partition
         if (!tableEntry.isPartitionTable()
             || tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ZERO) {
@@ -1348,19 +1357,19 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
 
         if (tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ONE) {
-            return tableEntry.getPartitionInfo().getFirstPartDesc().getPartId(rowKey);
+            return tableEntry.getPartitionInfo().getFirstPartDesc().getPartId(row);
         }
 
-        Long partId1 = tableEntry.getPartitionInfo().getFirstPartDesc().getPartId(rowKey);
-        Long partId2 = tableEntry.getPartitionInfo().getSubPartDesc().getPartId(rowKey);
+        Long partId1 = tableEntry.getPartitionInfo().getFirstPartDesc().getPartId(row);
+        Long partId2 = tableEntry.getPartitionInfo().getSubPartDesc().getPartId(row);
         return generatePartId(partId1, partId2);
     }
 
     /*
      * Get logicId(partition id in 3.x) from giving range
      */
-    private List<Long> getPartitionsForLevelTwo(TableEntry tableEntry, Object[] start,
-                                                boolean startIncluded, Object[] end,
+    private List<Long> getPartitionsForLevelTwo(TableEntry tableEntry, Row startRow,
+                                                boolean startIncluded, Row endRow,
                                                 boolean endIncluded) throws Exception {
         if (tableEntry.getPartitionInfo().getLevel() != ObPartitionLevel.LEVEL_TWO) {
             RUNTIME.error("getPartitionsForLevelTwo need ObPartitionLevel LEVEL_TWO");
@@ -1368,9 +1377,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
 
         List<Long> partIds1 = tableEntry.getPartitionInfo().getFirstPartDesc()
-            .getPartIds(start, startIncluded, end, endIncluded);
+            .getPartIds(startRow, startIncluded, endRow, endIncluded);
         List<Long> partIds2 = tableEntry.getPartitionInfo().getSubPartDesc()
-            .getPartIds(start, startIncluded, end, endIncluded);
+            .getPartIds(startRow, startIncluded, endRow, endIncluded);
 
         List<Long> partIds = new ArrayList<Long>();
         if (partIds1.isEmpty()) {
@@ -1463,7 +1472,17 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                                                            throws Exception {
         TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh);
 
-        long partId = getPartition(tableEntry, rowKey); // partition id in 3.x, origin partId in 4.x, logicId
+        Row row = new Row();
+        String[] columnNames = getRowKeyElement(tableName).keySet().toArray(new String[0]);
+        if(columnNames.length != rowKey.length) {
+            throw new ObTableException("The rowKey Param should include the entire row key but receive "
+                    + Arrays.toString(rowKey));
+        }
+        for(int i = 0; i < columnNames.length; ++i) {
+            row.add(columnNames[i], rowKey[i]);
+        }
+
+        long partId = getPartition(tableEntry, row); // partition id in 3.x, origin partId in 4.x, logicId
 
         return getTable(tableName, tableEntry, partId, waitForRefresh, route);
     }
@@ -1596,18 +1615,18 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     /**
      * 根据 start-end 获取 partition id 和 addr
      * @param tableEntry
-     * @param start
+     * @param startRow
      * @param startIncluded
-     * @param end
+     * @param endRow
      * @param endIncluded
      * @param route
      * @return
      * @throws Exception
      */
     private List<ObPair<Long, ReplicaLocation>> getPartitionReplica(TableEntry tableEntry,
-                                                                    Object[] start,
+                                                                    Row startRow,
                                                                     boolean startIncluded,
-                                                                    Object[] end,
+                                                                    Row endRow,
                                                                     boolean endIncluded,
                                                                     ObServerRoute route)
                                                                                         throws Exception {
@@ -1620,13 +1639,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             return replicas;
         } else if (tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ONE) {
             List<Long> partIds = tableEntry.getPartitionInfo().getFirstPartDesc()
-                .getPartIds(start, startIncluded, end, endIncluded);
+                .getPartIds(startRow, startIncluded, endRow, endIncluded);
             for (Long partId : partIds) {
                 replicas.add(new ObPair<Long, ReplicaLocation>(partId, getPartitionLocation(
                     tableEntry, partId, route)));
             }
         } else if (tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
-            List<Long> partIds = getPartitionsForLevelTwo(tableEntry, start, startIncluded, end,
+            List<Long> partIds = getPartitionsForLevelTwo(tableEntry, startRow, startIncluded, endRow,
                 endIncluded);
             for (Long partId : partIds) {
                 replicas.add(new ObPair<Long, ReplicaLocation>(partId, getPartitionLocation(
@@ -1683,8 +1702,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh);
         // 2. get replica location
         // partIdWithReplicaList -> List<pair<logicId(partition id in 3.x), replica>>
+        String[] rowKeyColumnNames = getRowKeyElement(tableName).keySet().toArray(new String[0]);
+        Row startRow = new Row(), endRow = new Row();
+        for (int i = 0; i < start.length; ++i) {
+            startRow.add(rowKeyColumnNames[i], start[i]);
+        }
+        for (int i = 0; i < end.length; ++i) {
+            endRow.add(rowKeyColumnNames[i], end[i]);
+        }
         List<ObPair<Long, ReplicaLocation>> partIdWithReplicaList = getPartitionReplica(tableEntry,
-            start, startInclusive, end, endInclusive, route);
+            startRow, startInclusive, endRow, endInclusive, route);
 
         // obTableParams -> List<Pair<logicId, obTableParams>>
         List<ObPair<Long, ObTableParam>> obTableParams = new ArrayList<ObPair<Long, ObTableParam>>();
@@ -1847,7 +1874,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             @Override
             public Map<String, Object> execute(ObPair<Long, ObTableParam> obPair) throws Exception {
                 long getTableTime = System.currentTimeMillis();
-                ObTableParam tableParam = obPair.getRight();
+                ObTableParam tableParam = obPair.getRight(); // 无理解如何通过getRight获得对应table参数
                 ObTable obTable = tableParam.getObTable();
                 ObTableOperationRequest request = ObTableOperationRequest.getInstance(tableName,
                     GET, rowKey, columns, null, obTable.getObTableOperationTimeout());

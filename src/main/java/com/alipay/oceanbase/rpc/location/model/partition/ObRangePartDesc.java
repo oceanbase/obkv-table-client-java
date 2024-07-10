@@ -17,8 +17,11 @@
 
 package com.alipay.oceanbase.rpc.location.model.partition;
 
+import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.exception.ObTablePartitionConsistentException;
+import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObColumn;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObGeneratedColumn;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObSimpleColumn;
@@ -204,12 +207,12 @@ public class ObRangePartDesc extends ObPartDesc {
      * Get part ids.
      */
     @Override
-    public List<Long> getPartIds(Object[] start, boolean startInclusive, Object[] end,
+    public List<Long> getPartIds(Object startRowObj, boolean startInclusive, Object endRowObj,
                                  boolean endInclusive) {
 
         // can not detail the border effect so that the range is magnified
-        int startIdx = getBoundsIdx(true, start);
-        int stopIdx = getBoundsIdx(true, end);
+        int startIdx = getBoundsIdx(true, startRowObj);
+        int stopIdx = getBoundsIdx(true, endRowObj);
         List<Long> partIds = new ArrayList<Long>();
         for (int i = startIdx; i <= stopIdx; i++) {
             partIds.add(this.bounds.get(i).value);
@@ -221,9 +224,9 @@ public class ObRangePartDesc extends ObPartDesc {
      * Get part id.
      */
     @Override
-    public Long getPartId(Object... rowKey) {
+    public Long getPartId(Object... row) {
         try {
-            return this.bounds.get(getBoundsIdx(false, rowKey)).value;
+            return this.bounds.get(getBoundsIdx(false, row)).value;
         } catch (IllegalArgumentException e) {
             RUNTIME.error(LCD.convert("01-00025"), e);
             throw new IllegalArgumentException(
@@ -232,14 +235,18 @@ public class ObRangePartDesc extends ObPartDesc {
 
     }
 
-    public int getBoundsIdx(boolean isScan, Object... rowKey) {
-        if (rowKey.length != rowKeyElement.size()) {
+    public int getBoundsIdx(boolean isScan, Object rowObj) {
+        if (!(rowObj instanceof  Row)) {
+            throw new ObTableException("invalid format of rowObj: " + rowObj);
+        }
+        Row row = (Row) rowObj;
+        if (row.size() != rowKeyElement.size()) {
             throw new IllegalArgumentException("row key is consist of " + rowKeyElement
-                                               + "but found" + Arrays.toString(rowKey));
+                                               + "but found" + Arrays.toString(row.getValues()));
         }
 
         try {
-            List<Object> evalParams = evalRowKeyValues(rowKey);
+            List<Object> evalParams = evalRowKeyValues(row);
             List<Comparable> comparableElement = super.initComparableElementByTypes(evalParams,
                 this.orderedCompareColumns);
             ObPartitionKey searchKey = ObPartitionKey.getInstance(orderedCompareColumns,
@@ -269,14 +276,18 @@ public class ObRangePartDesc extends ObPartDesc {
      * Get part id.
      */
     @Override
-    public Long getPartId(List<Object[]> rowKeys, boolean consistency) {
-        if (rowKeys == null || rowKeys.size() == 0) {
-            throw new IllegalArgumentException("invalid row keys :" + rowKeys);
+    public Long getPartId(List<Object> rows, boolean consistency) {
+        if (rows == null || rows.size() == 0) {
+            throw new IllegalArgumentException("invalid row keys :" + rows);
         }
         Long partId = null;
 
-        for (Object[] rowKey : rowKeys) {
-            long currentPartId = getPartId(rowKey);
+        for (Object rowObj : rows) {
+            if ( !(rowObj instanceof Row)) {
+                throw new ObTableException("invalid format of rowObj: " + rowObj);
+            }
+            Row row = (Row) rowObj;
+            long currentPartId = getPartId(row);
             if (partId == null) {
                 partId = currentPartId;
             }
@@ -286,7 +297,7 @@ public class ObRangePartDesc extends ObPartDesc {
 
             if (!partId.equals(currentPartId)) {
                 throw new ObTablePartitionConsistentException(
-                    "across partition operation may cause consistent problem " + rowKeys);
+                    "across partition operation may cause consistent problem " + rows);
             }
         }
 
