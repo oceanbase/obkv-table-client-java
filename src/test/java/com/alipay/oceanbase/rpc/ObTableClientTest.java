@@ -2602,4 +2602,99 @@ public class ObTableClientTest extends ObTableClientTestBase {
             }
         }
     }
+
+    @Test
+    public void test_prefix_scan() throws Exception {
+        long timeStamp = System.currentTimeMillis();
+        String tableName = "test_hbase$fn";
+        cleanTable(tableName);
+        timeStamp = System.currentTimeMillis();
+        try {
+            client.insert(tableName,
+                    new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp },
+                    new String[] { "V" }, new Object[] { "value1".getBytes() });
+            client.insert(tableName,
+                    new Object[] { "key1_1".getBytes(), "partition".getBytes(), timeStamp + 1 },
+                    new String[] { "V" }, new Object[] { "value2".getBytes() });
+            client.insert(tableName,
+                    new Object[] { "key1_2".getBytes(), "partition".getBytes(), timeStamp },
+                    new String[] { "V" }, new Object[] { "value3".getBytes() });
+
+            TableQuery tableQuery = client.query(tableName);
+            QueryResultSet result = tableQuery.execute();
+            Assert.assertEquals(3, result.cacheSize());
+
+            tableQuery = client.query(tableName);
+            tableQuery.addScanRange(new Object[] { "key1_1".getBytes(), "partition".getBytes()},
+                                    new Object[] { "key1_1".getBytes(), "partition".getBytes()});
+            tableQuery.setScanRangeColumns("K", "Q");
+            result = tableQuery.execute();
+            Assert.assertEquals(2, result.cacheSize());
+
+            tableQuery = client.query(tableName);
+            tableQuery.setScanRangeColumns("K");
+            tableQuery.addScanRange(new Object[] { "key1_1".getBytes() }, new Object[] { "key1_2".getBytes() } );
+            result = tableQuery.execute();
+            Assert.assertEquals(3, result.cacheSize());
+
+            tableQuery = client.query(tableName);
+            tableQuery.setScanRangeColumns("K");
+            tableQuery.addScanRange(new Object[] { "key1_1".getBytes() }, true, new Object[] { "key1_2".getBytes() }, false );
+            result = tableQuery.execute();
+            Assert.assertEquals(2, result.cacheSize());
+
+            tableQuery = client.query(tableName);
+            tableQuery.setScanRangeColumns("K");
+            tableQuery.addScanRange(new Object[] { "key1_1".getBytes() }, false, new Object[] { "key1_2".getBytes() }, true );
+            result = tableQuery.execute();
+            Assert.assertEquals(1, result.cacheSize());
+
+            tableQuery = client.query(tableName);
+            tableQuery.setScanRangeColumns("K");
+            tableQuery.addScanRange(new Object[] { "key1_1".getBytes() }, false, new Object[] { "key1_2".getBytes() }, false );
+            result = tableQuery.execute();
+            Assert.assertEquals(0, result.cacheSize());
+
+            tableQuery = client.query(tableName);
+            tableQuery.setScanRangeColumns("K");
+            tableQuery.indexName("idx_k_v");
+            tableQuery.addScanRange(new Object[] { "key1_1".getBytes() }, new Object[] { "key1_2".getBytes() });
+            result = tableQuery.execute();
+            Assert.assertEquals(3, result.cacheSize());
+
+            tableQuery = client.query(tableName);
+            tableQuery.setScanRangeColumns("K");
+            tableQuery.indexName("idx_k_v");
+            tableQuery.addScanRange(new Object[] { "key1_1".getBytes() }, new Object[] { "key1_1".getBytes() });
+            result = tableQuery.execute();
+            Assert.assertEquals(2, result.cacheSize());
+
+            tableQuery = client.query(tableName);
+            tableQuery.setScanRangeColumns("K");
+            tableQuery.indexName("idx_k_v");
+            tableQuery.addScanRange(new Object[] { "key1_1".getBytes() }, false, new Object[] { "key1_2".getBytes() }, true);
+            result = tableQuery.execute();
+            Assert.assertEquals(1, result.cacheSize());
+
+            tableQuery = client.query(tableName);
+            tableQuery.setScanRangeColumns("K");
+            tableQuery.indexName("idx_k_v");
+            tableQuery.addScanRange(new Object[] { "key1_1".getBytes() }, true, new Object[] { "key1_2".getBytes() }, false);
+            result = tableQuery.execute();
+            Assert.assertEquals(2, result.cacheSize());
+
+            tableQuery = client.query(tableName);
+            tableQuery.setScanRangeColumns("K");
+            tableQuery.indexName("idx_k_v");
+            tableQuery.addScanRange(new Object[] { "key1_1".getBytes() }, false, new Object[] { "key1_2".getBytes() }, false);
+            result = tableQuery.execute();
+            Assert.assertEquals(0, result.cacheSize());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        } finally {
+            cleanTable(tableName);
+        }
+    }
 }

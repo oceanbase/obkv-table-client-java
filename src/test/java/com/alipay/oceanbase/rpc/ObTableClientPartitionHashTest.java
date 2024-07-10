@@ -182,48 +182,45 @@ public class ObTableClientPartitionHashTest {
             Assert.assertEquals("value0", new String((byte[]) row.get("V")));
             Assert.assertFalse(result.next());
 
-            if (obTableClient.isOdpMode()) {
-                // query with one partition using prefix
-                tableQuery = obTableClient.query("testHash");
-                tableQuery.addScanRange(new Object[] { timeStamp }, new Object[] { timeStamp });
-                tableQuery.setScanRangeColumns("K");
-                tableQuery.select("K", "Q", "T", "V");
-                result = tableQuery.execute();
-                Assert.assertEquals(1L, result.cacheSize());
+            // query with one partition using prefix
+            tableQuery = obTableClient.query("testHash");
+            tableQuery.addScanRange(new Object[] { timeStamp }, new Object[] { timeStamp });
+            tableQuery.setScanRangeColumns("K");
+            tableQuery.select("K", "Q", "T", "V");
+            result = tableQuery.execute();
+            Assert.assertEquals(1L, result.cacheSize());
 
-                Assert.assertTrue(result.next());
-                row = result.getRow();
-                Assert.assertEquals(4, row.size());
-                Assert.assertEquals(timeStamp, row.get("K"));
-                Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
-                Assert.assertEquals(timeStamp, row.get("T"));
-                Assert.assertEquals("value0", new String((byte[]) row.get("V")));
-                Assert.assertFalse(result.next());
+            Assert.assertTrue(result.next());
+            row = result.getRow();
+            Assert.assertEquals(4, row.size());
+            Assert.assertEquals(timeStamp, row.get("K"));
+            Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
+            Assert.assertEquals(timeStamp, row.get("T"));
+            Assert.assertEquals("value0", new String((byte[]) row.get("V")));
+            Assert.assertFalse(result.next());
 
-                // query with multiply partitions
-                tableQuery = obTableClient.query("testHash");
-                tableQuery.addScanRange(
-                    new Object[] { timeStamp, "partition".getBytes(), timeStamp }, new Object[] {
-                            timeStamp + 10, "partition".getBytes(), timeStamp });
-                tableQuery.select("K", "Q", "T");
-                result = tableQuery.execute();
-                Assert.assertEquals(5, result.cacheSize());
+            // query with multiply partitions
+            tableQuery = obTableClient.query("testHash");
+            tableQuery.addScanRange(
+                new Object[] { timeStamp, "partition".getBytes(), timeStamp }, new Object[] {
+                        timeStamp + 10, "partition".getBytes(), timeStamp });
+            tableQuery.select("K", "Q", "T");
+            result = tableQuery.execute();
+            Assert.assertEquals(5, result.cacheSize());
 
-                // query with multiply partitions using prefix K
-                tableQuery = obTableClient.query("testHash");
-                tableQuery.setScanRangeColumns("K");
-                tableQuery
-                    .addScanRange(new Object[] { timeStamp }, new Object[] { timeStamp + 10 });
-                tableQuery.select("Q", "V");
-                result = tableQuery.execute();
-                Assert.assertEquals(5, result.cacheSize());
+            // query with multiply partitions using prefix K
+            tableQuery = obTableClient.query("testHash");
+            tableQuery.setScanRangeColumns("K");
+            tableQuery
+                .addScanRange(new Object[] { timeStamp }, new Object[] { timeStamp + 10 });
+            tableQuery.select("Q", "V");
+            result = tableQuery.execute();
+            Assert.assertEquals(5, result.cacheSize());
 
-                // query with empty scan range
-                tableQuery = obTableClient.query("testHash");
-                result = tableQuery.execute();
-                // TODO: too many rows of testHash is not deleted
-                Assert.assertTrue(result.cacheSize() > 0);
-            }
+            // query with empty scan range
+            tableQuery = obTableClient.query("testHash");
+            result = tableQuery.execute();
+            Assert.assertEquals(5, result.cacheSize());
         } catch (Exception e) {
             e.printStackTrace();
             Assert.assertTrue(false);
@@ -274,49 +271,46 @@ public class ObTableClientPartitionHashTest {
             Assert.assertEquals("value0", new String((byte[]) row.get("V")));
             Assert.assertFalse(result.next());
 
-            if (obTableClient.isOdpMode()) {
-                // query with one partition using prefix
-                tableQuery = obTableClient.query("testHash");
-                tableQuery.addScanRange(new Object[] { timeStamp }, new Object[] { timeStamp });
-                tableQuery.setScanRangeColumns("K");
-                tableQuery.select("K", "Q", "T", "V");
-                tableQuery.setBatchSize(1);
-                result = tableQuery.asyncExecute();
-                Assert.assertEquals(1L, result.cacheSize());
+            // query with one partition using prefix
+            tableQuery = obTableClient.query("testHash");
+            tableQuery.addScanRange(new Object[] { timeStamp }, new Object[] { timeStamp });
+            tableQuery.setScanRangeColumns("K");
+            tableQuery.select("K", "Q", "T", "V");
+            tableQuery.setBatchSize(1);
+            result = tableQuery.asyncExecute();
+            Assert.assertEquals(1L, result.cacheSize());
 
-                Assert.assertTrue(result.next());
-                row = result.getRow();
-                Assert.assertEquals(4, row.size());
-                Assert.assertEquals(timeStamp, row.get("K"));
-                Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
-                Assert.assertEquals(timeStamp, row.get("T"));
-                Assert.assertEquals("value0", new String((byte[]) row.get("V")));
-                Assert.assertFalse(result.next());
+            Assert.assertTrue(result.next());
+            row = result.getRow();
+            Assert.assertEquals(4, row.size());
+            Assert.assertEquals(timeStamp, row.get("K"));
+            Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
+            Assert.assertEquals(timeStamp, row.get("T"));
+            Assert.assertEquals("value0", new String((byte[]) row.get("V")));
+            Assert.assertFalse(result.next());
 
-                // query with multiply partitions
-                tableQuery = obTableClient.query("testHash");
-                tableQuery.addScanRange(
-                    new Object[] { timeStamp, "partition".getBytes(), timeStamp }, new Object[] {
-                            timeStamp + 10, "partition".getBytes(), timeStamp });
-                tableQuery.select("K", "Q", "T");
-                tableQuery.setBatchSize(2);
-                result = tableQuery.asyncExecute();
+            // query with multiply partitions
+            tableQuery = obTableClient.query("testHash");
+            tableQuery.addScanRange(
+                new Object[] { timeStamp, "partition".getBytes(), timeStamp }, new Object[] {
+                        timeStamp + 10, "partition".getBytes(), timeStamp });
+            tableQuery.select("K", "Q", "T");
+            tableQuery.setBatchSize(2);
+            result = tableQuery.asyncExecute();
 
-                // query with multiply partitions using prefix K
-                tableQuery = obTableClient.query("testHash");
-                tableQuery.setScanRangeColumns("K");
-                tableQuery
-                    .addScanRange(new Object[] { timeStamp }, new Object[] { timeStamp + 10 });
-                tableQuery.select("Q", "V");
-                tableQuery.setBatchSize(1);
-                result = tableQuery.asyncExecute();
+            // query with multiply partitions using prefix K
+            tableQuery = obTableClient.query("testHash");
+            tableQuery.setScanRangeColumns("K");
+            tableQuery
+                .addScanRange(new Object[] { timeStamp }, new Object[] { timeStamp + 10 });
+            tableQuery.select("Q", "V");
+            tableQuery.setBatchSize(1);
+            result = tableQuery.asyncExecute();
 
-                // query with empty scan range
-                tableQuery = obTableClient.query("testHash");
-                result = tableQuery.execute();
-                // TODO: too many rows of testHash is not deleted
-                Assert.assertTrue(result.cacheSize() > 0);
-            }
+            // query with empty scan range
+            tableQuery = obTableClient.query("testHash");
+            result = tableQuery.execute();
+            Assert.assertEquals(5, result.cacheSize());
         } catch (Exception e) {
             e.printStackTrace();
             Assert.assertTrue(false);
@@ -336,10 +330,6 @@ public class ObTableClientPartitionHashTest {
 
     @Test
     public void testQueryLocalIndex() throws Exception {
-        // TODO: client route is wrong when execute query on hash partitioned table using index
-        if (!obTableClient.isOdpMode()) {
-            return;
-        }
         long timeStamp = System.currentTimeMillis();
         String tableName = "testHash";
         try {
@@ -451,10 +441,6 @@ public class ObTableClientPartitionHashTest {
 
     @Test
     public void testAsyncQueryLocalIndex() throws Exception {
-        // TODO: client route is wrong when execute query on hash partitioned table using index
-        if (!obTableClient.isOdpMode()) {
-            return;
-        }
         long timeStamp = System.currentTimeMillis();
         String tableName = "testHash";
         try {
@@ -480,7 +466,7 @@ public class ObTableClientPartitionHashTest {
             tableQuery.indexName("i1");
             tableQuery.setBatchSize(1);
             QueryResultSet result = tableQuery.asyncExecute();
-            Assert.assertEquals(2, result.cacheSize());
+            Assert.assertEquals(1, result.cacheSize());
             for (int i = 1; i <= 2; i++) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();
@@ -502,7 +488,7 @@ public class ObTableClientPartitionHashTest {
             tableQuery.indexName("i1");
             tableQuery.setBatchSize(1);
             result = tableQuery.asyncExecute();
-            Assert.assertEquals(2, result.cacheSize());
+            Assert.assertEquals(1, result.cacheSize());
             for (int i = 1; i <= 2; i++) {
                 Assert.assertTrue(result.next());
                 Map<String, Object> row = result.getRow();
@@ -521,7 +507,7 @@ public class ObTableClientPartitionHashTest {
             tableQuery.indexName("i1");
             tableQuery.setBatchSize(2);
             result = tableQuery.asyncExecute();
-            Assert.assertEquals(4, result.cacheSize());
+            Assert.assertEquals(2, result.cacheSize());
 
             // sort result by K, T
             List<Map<String, Object>> resultList = new ArrayList<>();

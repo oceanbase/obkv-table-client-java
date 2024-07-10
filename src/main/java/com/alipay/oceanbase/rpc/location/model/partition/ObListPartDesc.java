@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.location.model.partition;
 
 import com.alipay.oceanbase.rpc.exception.ObTablePartitionConsistentException;
+import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObColumn;
 import com.alipay.oceanbase.rpc.util.RandomUtil;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
@@ -25,6 +26,7 @@ import org.apache.commons.lang.builder.ToStringBuilder;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -114,6 +116,10 @@ public class ObListPartDesc extends ObPartDesc {
         return partIds;
     }
 
+    @Override
+    public List<Long> getPartIds(List<String> scanRangeColumns, Object[] start, boolean startInclusive, Object[] end, boolean endInclusive) throws IllegalArgumentException {
+        throw new IllegalArgumentException("getPartIds for List partition is not supported");
+    }
     /*
      * Get part id.
      */

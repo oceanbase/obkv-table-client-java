@@ -256,29 +256,26 @@ public class ObTableClientPartitionRangeTest {
             }
             Assert.assertFalse(result.next());
 
-            if (obTableClient.isOdpMode()) {
-                // single partition query using prefix
-                tableQuery = obTableClient.query("testRange");
-                tableQuery.setScanRangeColumns("K");
-                tableQuery.addScanRange(new Object[] { "ah" },
-                        new Object[] { "az" });
-                result = tableQuery.execute();
-                Assert.assertEquals(1, result.cacheSize());
-                Assert.assertTrue(result.next());
-                row = result.getRow();
-                Assert.assertEquals(4, row.size());
-                Assert.assertEquals("ah", new String((byte[]) row.get("K")));
-                Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
-                Assert.assertEquals(timeStamp, row.get("T"));
-                Assert.assertEquals("value1", new String((byte[]) row.get("V")));
+            // single partition query using prefix
+            tableQuery = obTableClient.query("testRange");
+            tableQuery.setScanRangeColumns("K");
+            tableQuery.addScanRange(new Object[] { "ah" }, new Object[] { "az" });
+            result = tableQuery.execute();
+            Assert.assertEquals(1, result.cacheSize());
+            Assert.assertTrue(result.next());
+            row = result.getRow();
+            Assert.assertEquals(4, row.size());
+            Assert.assertEquals("ah", new String((byte[]) row.get("K")));
+            Assert.assertEquals("partition", new String((byte[]) row.get("Q")));
+            Assert.assertEquals(timeStamp, row.get("T"));
+            Assert.assertEquals("value1", new String((byte[]) row.get("V")));
 
-                // query use empty scan range
-                tableQuery = obTableClient.query("testRange");
-                result = tableQuery.execute();
-                Assert.assertEquals(4, result.cacheSize());
-                Assert.assertTrue(result.next());
-                Assert.assertEquals(4, result.getRow().size());
-            }
+            // query use empty scan range
+            tableQuery = obTableClient.query("testRange");
+            result = tableQuery.execute();
+            Assert.assertEquals(4, result.cacheSize());
+            Assert.assertTrue(result.next());
+            Assert.assertEquals(4, result.getRow().size());
         } catch (Exception e) {
            e.printStackTrace();
            Assert.assertTrue(false);
@@ -360,8 +357,8 @@ public class ObTableClientPartitionRangeTest {
                 // single partition query using prefix
                 tableQuery = obTableClient.query("testRange");
                 tableQuery.setScanRangeColumns("K");
-                tableQuery.addScanRange(new Object[] { "ah" },
-                        new Object[] { "az" });
+                tableQuery.addScanRange(new Object[]{"ah"},
+                        new Object[]{"az"});
                 tableQuery.setBatchSize(2);
                 result = tableQuery.asyncExecute();
                 Assert.assertEquals(1, result.cacheSize());
@@ -373,7 +370,6 @@ public class ObTableClientPartitionRangeTest {
                 Assert.assertEquals(timeStamp, row.get("T"));
                 Assert.assertEquals("value1", new String((byte[]) row.get("V")));
 
-                // query use empty scan range
                 tableQuery = obTableClient.query("testRange");
                 tableQuery.setBatchSize(2);
                 result = tableQuery.asyncExecute();
@@ -394,13 +390,8 @@ public class ObTableClientPartitionRangeTest {
 
     @Test
     public void testQueryLocalIndex() throws Exception {
-        // TODO: client's route with index is wrong
-        if (!obTableClient.isOdpMode()) {
-           return;
-        }
         long timeStamp = System.currentTimeMillis();
         try {
-            // the client's route sucks, cannot work in non-odp mode currently
             // p1
             obTableClient.insert("testRange",
                     new Object[] { "a1", "partition".getBytes(), timeStamp + 1 },
