@@ -385,10 +385,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         if (ex instanceof ObTableRoutingWrongException) {
                             System.out.println("need fetchAll refresh");
                             obTableClient.getOrRefreshTableEntry(tableName, true, obTableClient.isTableEntryRefreshIntervalWait(), true);
-                            obTableClient.tableContinuousFailures.computeIfPresent(tableName, (k, v) -> {
-                                v.set(0);
-                                return v;
-                            });
+                            // reset failure count while fetch all route info
+                            obTableClient.resetContinuousFailureByTableName(tableName);
                         }
                     } else {
                         obTableClient.calculateContinuousFailure(tableName, ex.getMessage());

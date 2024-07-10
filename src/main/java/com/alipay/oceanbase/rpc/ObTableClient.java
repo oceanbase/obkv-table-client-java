@@ -128,7 +128,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     /*
      * TableName -> Failures/Lock
      */
-    public ConcurrentHashMap<String, AtomicLong>             tableContinuousFailures                 = new ConcurrentHashMap<String, AtomicLong>();
+    private ConcurrentHashMap<String, AtomicLong>             tableContinuousFailures                 = new ConcurrentHashMap<String, AtomicLong>();
 
     private ConcurrentHashMap<String, Lock>                   refreshTableLocks                       = new ConcurrentHashMap<String, Lock>();
 
@@ -786,6 +786,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         } else {
             logger.warn("error msg: {}, current continues failure count: {}", errorMsg, failures);
         }
+    }
+
+    public void resetContinuousFailureByTableName(String tableName) {
+        tableContinuousFailures.computeIfPresent(tableName, (k, v) -> {
+            v.set(0);
+            return v;
+        });
     }
 
     /**
