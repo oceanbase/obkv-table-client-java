@@ -21,10 +21,7 @@ import com.alipay.oceanbase.rpc.bolt.protocol.ObTablePacket;
 import com.alipay.oceanbase.rpc.bolt.protocol.ObTablePacketCode;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.protocol.packet.ObCompressType;
-import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
-import com.alipay.oceanbase.rpc.protocol.payload.Credentialable;
-import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
-import com.alipay.oceanbase.rpc.protocol.payload.ObRpcResultCode;
+import com.alipay.oceanbase.rpc.protocol.payload.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.login.ObTableLoginRequest;
 import com.alipay.oceanbase.rpc.util.ObPureCrc32C;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
@@ -108,14 +105,6 @@ public class ObTableRemoting extends BaseRemoting {
                 throw new FeatureNotSupportedException(errMessage);
             }
             ByteBuf buf = response.getPacketContentBuf();
-            // If response indicates the request is routed to wrong server, we should refresh the routing meta.
-            if (response.getHeader().isRoutingWrong()) {
-                String errMessage = TraceUtil.formatTraceMessage(conn, request,
-                    "routed to the wrong server: " + response.getMessage());
-                logger.warn(errMessage);
-                throw new ObTableRoutingWrongException(errMessage);
-            }
-
             // verify checksum
             long expected_checksum = response.getHeader().getChecksum();
             byte[] content = new byte[buf.readableBytes()];
@@ -132,7 +121,17 @@ public class ObTableRemoting extends BaseRemoting {
             // decode ResultCode for response packet
             ObRpcResultCode resultCode = new ObRpcResultCode();
             resultCode.decode(buf);
-
+            // If response indicates the request is routed to wrong server, we should refresh the routing meta.
+            if (response.getHeader().isRoutingWrong()) {
+                String errMessage = TraceUtil.formatTraceMessage(conn, request,
+                        "routed to the wrong server: " + response.getMessage());
+                logger.warn(errMessage);
+                if (needFetchAll(resultCode.getRcode())) {
+                    throw new ObTableRoutingWrongException(errMessage);
+                } else {
+                    throw new ObTableMasterChangeException(errMessage);
+                }
+            }
             if (resultCode.getRcode() != 0) {
                 ExceptionUtil.throwObTableException(conn.getObTable().getIp(), conn.getObTable()
                     .getPort(), response.getHeader().getTraceId1(), response.getHeader()
@@ -173,4 +172,11 @@ public class ObTableRemoting extends BaseRemoting {
         return new ObClientFuture(request.getId());
     }
 
+    private boolean needFetchAll(int errorCode) {
+        return errorCode == ResultCodes.OB_PARTITION_NOT_EXIST.errorCode
+                || errorCode == ResultCodes.OB_INVALID_PARTITION.errorCode
+                || errorCode == ResultCodes.OB_UNKNOWN_PARTITION.errorCode
+                || errorCode == ResultCodes.OB_PARTITION_NOT_MATCH.errorCode
+                || errorCode == ResultCodes.OB_TABLET_NOT_EXIST.errorCode;
+    }
 }

@@ -128,7 +128,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     /*
      * TableName -> Failures/Lock
      */
-    private ConcurrentHashMap<String, AtomicLong>             tableContinuousFailures                 = new ConcurrentHashMap<String, AtomicLong>();
+    public ConcurrentHashMap<String, AtomicLong>             tableContinuousFailures                 = new ConcurrentHashMap<String, AtomicLong>();
 
     private ConcurrentHashMap<String, Lock>                   refreshTableLocks                       = new ConcurrentHashMap<String, Lock>();
 

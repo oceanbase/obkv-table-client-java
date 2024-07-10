@@ -332,10 +332,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
-                        subObTable = obTableClient
+                        ObTableParam newParam = obTableClient
                             .getTable(tableName, originPartId, needRefreshTableEntry,
-                                obTableClient.isTableEntryRefreshIntervalWait(), route).getRight()
-                            .getObTable();
+                                        obTableClient.isTableEntryRefreshIntervalWait(), route).getRight();
+
+                        subObTable = newParam.getObTable();
+                        subRequest.setPartitionId(newParam.getPartitionId());
                     }
                 }
                 subObTableBatchOperationResult = (ObTableBatchOperationResult) subObTable
@@ -380,6 +382,14 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                                 "tablename:{} partition id:{} batch ops retry while meet ObTableMasterChangeException, errorCode: {} , retry times {}",
                                 tableName, partId, ((ObTableException) ex).getErrorCode(),
                                 tryTimes, ex);
+                        if (ex instanceof ObTableRoutingWrongException) {
+                            System.out.println("need fetchAll refresh");
+                            obTableClient.getOrRefreshTableEntry(tableName, true, obTableClient.isTableEntryRefreshIntervalWait(), true);
+                            obTableClient.tableContinuousFailures.computeIfPresent(tableName, (k, v) -> {
+                                v.set(0);
+                                return v;
+                            });
+                        }
                     } else {
                         obTableClient.calculateContinuousFailure(tableName, ex.getMessage());
                         throw ex;
