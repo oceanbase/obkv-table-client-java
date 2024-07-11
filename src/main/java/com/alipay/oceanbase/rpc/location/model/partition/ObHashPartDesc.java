@@ -29,6 +29,7 @@ import org.apache.commons.lang.builder.ToStringBuilder;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -182,7 +183,7 @@ public class ObHashPartDesc extends ObPartDesc {
     @Override
     public Long getPartId(Object... row) {
         List<Object> rows = new ArrayList<Object>();
-        rows.add(row);
+        rows.addAll(Arrays.asList(row));
         return this.getPartId(rows, false);
     }
 
@@ -199,7 +200,7 @@ public class ObHashPartDesc extends ObPartDesc {
         Long partId = null;
         try {
             for (Object rowObj : rows) {
-                if ( !(rowObj instanceof  Row)) {
+                if ( !(rowObj instanceof Row)) {
                     throw new ObTableException("invalid format of rowObj: " + rowObj);
                 }
                 Row row = (Row) rowObj;

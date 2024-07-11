@@ -162,7 +162,7 @@ public class ObKeyPartDesc extends ObPartDesc {
     @Override
     public Long getPartId(Object... row) throws IllegalArgumentException {
         List<Object> rows = new ArrayList<Object>();
-        rows.add(row);
+        rows.addAll(Arrays.asList(row));
         return getPartId(rows, false);
     }
 

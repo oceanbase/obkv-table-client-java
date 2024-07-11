@@ -220,6 +220,7 @@ public abstract class ObPartDesc {
         int partColumnSize = partColumns.size();
         List<Object> evalValues = new ArrayList<Object>(partColumnSize);
         Object[] rowValues = row.getValues();
+        String[] rowColumnNames = row.getColumns();
 
         if (rowValues.length < rowKeyElement.size()) {
             throw new IllegalArgumentException("row key is consist of " + rowKeyElement
@@ -236,20 +237,28 @@ public abstract class ObPartDesc {
             for(int j = 0; j < curObRefColumnNames.size(); ++j) {
                 // for simple column calculation
                 if (curObColumn.getObGeneratedColumnSimpleFunc() == null) {
-                    // directly get corresponding rowKey value through name
-                    Object rowValue = row.get(curObRefColumnNames.get(j));
-                    if(rowValue instanceof ObObj) {
-                        ObObj obj = (ObObj) rowValue;
-                        if(obj.isMaxObj() || obj.isMinObj()) {
-                            evalValues.add(obj);
-                            needEval = false;
+                    // get corresponding rowKey value through name
+                    for (int k = 0; k < rowColumnNames.length; ++k) {
+                        if (rowColumnNames[k].equalsIgnoreCase(curObRefColumnNames.get(j))) {
+                            if(rowValues[k] instanceof ObObj) {
+                                ObObj obj = (ObObj) rowValues[k];
+                                if(obj.isMaxObj() || obj.isMinObj()) {
+                                    evalValues.add(obj);
+                                    needEval = false;
+                                    break;
+                                }
+                            }
+                            evalParams[j] = rowValues[k];
                             break;
                         }
                     }
-                    evalParams[j] = rowValue;
                 } else {  // for generated column calculation
-                    Object rowValue = row.get(curObRefColumnNames.get(j));
-                    evalParams[j] = rowValue;
+                    for (int k = 0; k < rowColumnNames.length; ++k) {
+                        if (rowColumnNames[k].equalsIgnoreCase(curObRefColumnNames.get(j))) {
+                            evalParams[j] = rowValues[k];
+                            break;
+                        }
+                    }
                 }
             }
             if (needEval) {

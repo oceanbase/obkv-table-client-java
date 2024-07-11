@@ -1400,7 +1400,7 @@ public class LocationUtil {
             } else if (obPartFuncType.isListPart()) {
                 ((ObListPartDesc) partDesc).setOrderCompareColumns(listPartColumns);
             } else if (obPartFuncType.isRangePart()) {
-                ((ObRangePartDesc) partDesc).setOrderedCompareColumns(); // 怎么少了参数?
+                ((ObRangePartDesc) partDesc).setOrderedCompareColumns(listPartColumns);
             }
         }
     }

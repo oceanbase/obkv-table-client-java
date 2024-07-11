@@ -27,6 +27,7 @@ import org.apache.commons.lang.builder.ToStringBuilder;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -122,7 +123,7 @@ public class ObListPartDesc extends ObPartDesc {
     @Override
     public Long getPartId(Object... row) {
         List<Object> rows = new ArrayList<Object>();
-        rows.add(row);
+        rows.addAll(Arrays.asList(row));
         return getPartId(rows, false);
     }
 
