@@ -32,7 +32,7 @@ import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.util.MonitorUtil;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -153,7 +153,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         checkArgumentBeforeExec();
 
         final long startTime = System.currentTimeMillis();
-        this.partitionObTables = new HashMap<Long, ObPair<Long, ObTableParam>>(); // partitionObTables -> Map<logicId, Pair<logicId, param>>
+        this.partitionObTables = new LinkedHashMap<Long, ObPair<Long, ObTableParam>>(); // partitionObTables -> Map<logicId, Pair<logicId, param>>
 
         // fill a whole range if no range is added explicitly.
         if (tableQuery.getKeyRanges().isEmpty()) {
@@ -276,8 +276,14 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             List<ObPair<Long, ObTableParam>> pairs = this.obTableClient.getTables(indexTableName,
                 tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false,
                 false);
-            for (ObPair<Long, ObTableParam> pair : pairs) {
-                this.partitionObTables.put(pair.getLeft(), pair);
+            if (this.tableQuery.getScanOrder() == ObScanOrder.Reverse) {
+                for (int i = pairs.size() - 1; i >= 0; i--) {
+                    this.partitionObTables.put(pairs.get(i).getLeft(), pairs.get(i));
+                }
+            } else {
+                for (ObPair<Long, ObTableParam> pair : pairs) {
+                    this.partitionObTables.put(pair.getLeft(), pair);
+                }
             }
         }
     }
