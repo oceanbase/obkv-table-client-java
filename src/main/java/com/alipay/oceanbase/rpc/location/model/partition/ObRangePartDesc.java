@@ -211,8 +211,10 @@ public class ObRangePartDesc extends ObPartDesc {
                                  boolean endInclusive) {
 
         // can not detail the border effect so that the range is magnified
-        int startIdx = getBoundsIdx(true, startRowObj);
-        int stopIdx = getBoundsIdx(true, endRowObj);
+        List<Object> startRows = new ArrayList<Object>(), endRows = new ArrayList<Object>();
+        startRows.add(startRowObj); endRows.add(endRowObj);
+        int startIdx = getBoundsIdx(true, startRows );
+        int stopIdx = getBoundsIdx(true, endRows);
         List<Long> partIds = new ArrayList<Long>();
         for (int i = startIdx; i <= stopIdx; i++) {
             partIds.add(this.bounds.get(i).value);
@@ -226,7 +228,9 @@ public class ObRangePartDesc extends ObPartDesc {
     @Override
     public Long getPartId(Object... row) {
         try {
-            return this.bounds.get(getBoundsIdx(false, row)).value;
+            List<Object> rows = new ArrayList<Object>();
+            rows.addAll((Arrays.asList(row)));
+            return this.bounds.get(getBoundsIdx(false, rows)).value;
         } catch (IllegalArgumentException e) {
             RUNTIME.error(LCD.convert("01-00025"), e);
             throw new IllegalArgumentException(
@@ -235,11 +239,11 @@ public class ObRangePartDesc extends ObPartDesc {
 
     }
 
-    public int getBoundsIdx(boolean isScan, Object rowObj) {
-        if (!(rowObj instanceof  Row)) {
+    public int getBoundsIdx(boolean isScan, List<Object> rowObj) {
+        if (!(rowObj.get(0) instanceof Row)) {
             throw new ObTableException("invalid format of rowObj: " + rowObj);
         }
-        Row row = (Row) rowObj;
+        Row row = (Row) rowObj.get(0);
         if (row.size() != rowKeyElement.size()) {
             throw new IllegalArgumentException("row key is consist of " + rowKeyElement
                                                + "but found" + Arrays.toString(row.getValues()));

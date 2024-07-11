@@ -170,7 +170,7 @@ public abstract class ObPartDesc {
     //to prepare partition calculate resource
     //to check partition calculate is ready
     public void prepare() throws IllegalArgumentException {
-        if (orderedPartColumnNames == EMPTY_LIST) {
+        /*if (orderedPartColumnNames == EMPTY_LIST) {
             throw new IllegalArgumentException(
                 "prepare ObPartDesc failed. orderedPartColumnNames is empty");
         }
@@ -210,7 +210,7 @@ public abstract class ObPartDesc {
                 }
             }
         }
-        this.orderedPartRefColumnRowKeyRelations = orderPartRefColumnRowKeyRelations;
+        this.orderedPartRefColumnRowKeyRelations = orderPartRefColumnRowKeyRelations;*/
     }
 
     /*

@@ -58,7 +58,7 @@ public class ObHashPartDescTest {
         partColumns.add(column);
         obHashPartDesc.setPartColumns(partColumns);
         obHashPartDesc.setRowKeyElement(TableEntry.HBASE_ROW_KEY_ELEMENT);
-//        obHashPartDesc.prepare();
+        obHashPartDesc.prepare();
     }
 
     @Test

@@ -24,7 +24,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjType;
 import com.alipay.oceanbase.rpc.util.RandomUtil;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
-import com.alipay.oceanbase.rpc.mutation.*;
+import com.alipay.oceanbase.rpc.mutation.Row;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.slf4j.Logger;
 

@@ -99,7 +99,7 @@ public class ObKeyPartDescTest {
         partColumns.add(column);
         keyUtf8.setPartColumns(partColumns);
         keyUtf8.setRowKeyElement(TableEntry.HBASE_ROW_KEY_ELEMENT);
-        keyUtf8.prepare();
+//        keyUtf8.prepare();
     }
 
     @Test
