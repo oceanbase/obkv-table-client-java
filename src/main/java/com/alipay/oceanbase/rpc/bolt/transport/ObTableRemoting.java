@@ -111,7 +111,7 @@ public class ObTableRemoting extends BaseRemoting {
             // If response indicates the request is routed to wrong server, we should refresh the routing meta.
             if (response.getHeader().isRoutingWrong()) {
                 String errMessage = TraceUtil.formatTraceMessage(conn, request,
-                    "routed to the wrong server: " + response.getMessage());
+                    "routed to the wrong server, require rerouting: " + response.getMessage());
                 logger.warn(errMessage);
                 throw new ObTableRoutingWrongException(errMessage);
             }
