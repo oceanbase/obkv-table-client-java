@@ -174,9 +174,11 @@ public class ObTableRemoting extends BaseRemoting {
 
     private boolean needFetchAll(int errorCode) {
         return errorCode == ResultCodes.OB_PARTITION_NOT_EXIST.errorCode
-                || errorCode == ResultCodes.OB_INVALID_PARTITION.errorCode
-                || errorCode == ResultCodes.OB_UNKNOWN_PARTITION.errorCode
-                || errorCode == ResultCodes.OB_PARTITION_NOT_MATCH.errorCode
-                || errorCode == ResultCodes.OB_TABLET_NOT_EXIST.errorCode;
+               || errorCode == ResultCodes.OB_INVALID_PARTITION.errorCode
+               || errorCode == ResultCodes.OB_UNKNOWN_PARTITION.errorCode
+               || errorCode == ResultCodes.OB_PARTITION_NOT_MATCH.errorCode
+               || errorCode == ResultCodes.OB_TABLET_NOT_EXIST.errorCode
+               || errorCode == ResultCodes.OB_REPLICA_NOT_READABLE.errorCode
+               || errorCode == ResultCodes.OB_SCHEMA_EAGAIN.errorCode;
     }
 }
