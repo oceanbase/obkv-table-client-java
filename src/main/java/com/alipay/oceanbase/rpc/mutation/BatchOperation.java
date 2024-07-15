@@ -45,7 +45,7 @@ public class BatchOperation {
     boolean                     hasGet           = false;
     ObTableOperationType        lastType         = ObTableOperationType.INVALID;
     boolean                     isSameType       = true;
-    protected ObTableEntityType entityType       = ObTableEntityType.DYNAMIC;
+    protected ObTableEntityType entityType       = ObTableEntityType.KV;
 
     /*
      * default constructor
