@@ -790,7 +790,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     public void resetContinuousFailureByTableName(String tableName) {
         AtomicLong res = tableContinuousFailures.get(tableName);
-        res.set(0);
+        if (res != null) {
+            res.set(0);
+        }
     }
 
     /**
