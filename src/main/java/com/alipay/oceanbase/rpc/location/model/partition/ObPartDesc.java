@@ -230,41 +230,46 @@ public abstract class ObPartDesc {
         boolean needEval = true;
 
         // column or generate column
-        for (int i = 0; i < partColumns.size(); ++i) {
-            ObColumn curObColumn = partColumns.get(i);
-            List<String> curObRefColumnNames = curObColumn.getRefColumnNames();
-            Object[] evalParams = new Object[curObRefColumnNames.size()];
-            for(int j = 0; j < curObRefColumnNames.size(); ++j) {
-                // for simple column calculation
-                if (curObColumn.getObGeneratedColumnSimpleFunc() == null) {
-                    // get corresponding rowKey value through name
-                    for (int k = 0; k < rowColumnNames.length; ++k) {
-                        if (rowColumnNames[k].equalsIgnoreCase(curObRefColumnNames.get(j))) {
-                            if(rowValues[k] instanceof ObObj) {
-                                ObObj obj = (ObObj) rowValues[k];
-                                if(obj.isMaxObj() || obj.isMinObj()) {
-                                    evalValues.add(obj);
-                                    needEval = false;
+        for (String orderPartColumnName : orderedPartColumnNames) {
+            for (int i = 0; i < partColumns.size(); ++i) {
+                ObColumn curObColumn = partColumns.get(i);
+                if(curObColumn.getColumnName().equalsIgnoreCase(orderPartColumnName)) {
+                    List<String> curObRefColumnNames = curObColumn.getRefColumnNames();
+                    Object[] evalParams = new Object[curObRefColumnNames.size()];
+                    for (int j = 0; j < curObRefColumnNames.size(); ++j) {
+                        // for simple column calculation
+                        if (curObColumn.getObGeneratedColumnSimpleFunc() == null) {
+                            // get corresponding rowKey value through name
+                            for (int k = 0; k < rowColumnNames.length; ++k) {
+                                if (rowColumnNames[k].equalsIgnoreCase(curObRefColumnNames.get(j))) {
+                                    if (rowValues[k] instanceof ObObj) {
+                                        ObObj obj = (ObObj) rowValues[k];
+                                        if (obj.isMaxObj() || obj.isMinObj()) {
+                                            evalValues.add(obj);
+                                            needEval = false;
+                                            break;
+                                        }
+                                    }
+                                    evalParams[j] = rowValues[k];
                                     break;
                                 }
                             }
-                            evalParams[j] = rowValues[k];
-                            break;
+                        } else { // for generated column calculation
+                            for (int k = 0; k < rowColumnNames.length; ++k) {
+                                if (rowColumnNames[k].equalsIgnoreCase(curObRefColumnNames.get(j))) {
+                                    evalParams[j] = rowValues[k];
+                                    break;
+                                }
+                            }
                         }
                     }
-                } else {  // for generated column calculation
-                    for (int k = 0; k < rowColumnNames.length; ++k) {
-                        if (rowColumnNames[k].equalsIgnoreCase(curObRefColumnNames.get(j))) {
-                            evalParams[j] = rowValues[k];
-                            break;
-                        }
+                    if (needEval) {
+                        evalValues.add(curObColumn.evalValue(evalParams));
                     }
                 }
             }
-            if (needEval) {
-                evalValues.add(curObColumn.evalValue(evalParams));
-            }
         }
+        
         return evalValues;
     }
 
@@ -275,14 +280,15 @@ public abstract class ObPartDesc {
      * @param end   the end row key
      * @param endInclusive the end row key inclusive
      */
-    public abstract List<Long> getPartIds(Object startRowObj, boolean startInclusive, Object endRowObj,
-                                          boolean endInclusive) throws IllegalArgumentException;
+    public abstract List<Long> getPartIds(Object startRowObj, boolean startInclusive,
+                                          Object endRowObj, boolean endInclusive)
+                                                                                 throws IllegalArgumentException;
 
     public abstract Long getPartId(Object... row) throws IllegalArgumentException;
 
     public abstract Long getPartId(List<Object> row, boolean consistency)
-                                                                               throws IllegalArgumentException,
-                                                                               ObTablePartitionConsistentException;
+                                                                         throws IllegalArgumentException,
+                                                                         ObTablePartitionConsistentException;
 
     public abstract Long getRandomPartId();
 

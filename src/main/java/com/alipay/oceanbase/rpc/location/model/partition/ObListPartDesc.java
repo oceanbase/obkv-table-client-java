@@ -139,7 +139,7 @@ public class ObListPartDesc extends ObPartDesc {
         try {
             Long partId = null;
             for (Object rowObj : rows) {
-                if ( !(rowObj instanceof Row)) {
+                if (!(rowObj instanceof Row)) {
                     throw new ObTableException("invalid format of rowObj: " + rowObj);
                 }
                 Row row = (Row) rowObj;

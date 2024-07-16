@@ -43,14 +43,15 @@ public class ObTableClientTestUtil {
     public static String  JDBC_IP                 = "";
     public static String  JDBC_PORT               = "";
     public static String  JDBC_DATABASE           = "OCEANBASE";
-    public static String  JDBC_URL                = "jdbc:mysql://" + JDBC_IP + ":" + JDBC_PORT + "/ " + JDBC_DATABASE + "?" +
-            "rewriteBatchedStatements=TRUE&" +
-            "allowMultiQueries=TRUE&" +
-            "useLocalSessionState=TRUE&" +
-            "useUnicode=TRUE&" +
-            "characterEncoding=utf-8&" +
-            "socketTimeout=3000000&" +
-            "connectTimeout=60000";
+    public static String  JDBC_URL                = "jdbc:mysql://" + JDBC_IP + ":" + JDBC_PORT
+                                                    + "/ " + JDBC_DATABASE + "?"
+                                                    + "rewriteBatchedStatements=TRUE&"
+                                                    + "allowMultiQueries=TRUE&"
+                                                    + "useLocalSessionState=TRUE&"
+                                                    + "useUnicode=TRUE&"
+                                                    + "characterEncoding=utf-8&"
+                                                    + "socketTimeout=3000000&"
+                                                    + "connectTimeout=60000";
 
     public static ObTableClient newTestClient() throws Exception {
         ObTableClient obTableClient = new ObTableClient();

@@ -212,8 +212,9 @@ public class ObRangePartDesc extends ObPartDesc {
 
         // can not detail the border effect so that the range is magnified
         List<Object> startRows = new ArrayList<Object>(), endRows = new ArrayList<Object>();
-        startRows.add(startRowObj); endRows.add(endRowObj);
-        int startIdx = getBoundsIdx(true, startRows );
+        startRows.add(startRowObj);
+        endRows.add(endRowObj);
+        int startIdx = getBoundsIdx(true, startRows);
         int stopIdx = getBoundsIdx(true, endRows);
         List<Long> partIds = new ArrayList<Long>();
         for (int i = startIdx; i <= stopIdx; i++) {
@@ -287,7 +288,7 @@ public class ObRangePartDesc extends ObPartDesc {
         Long partId = null;
 
         for (Object rowObj : rows) {
-            if ( !(rowObj instanceof Row)) {
+            if (!(rowObj instanceof Row)) {
                 throw new ObTableException("invalid format of rowObj: " + rowObj);
             }
             Row row = (Row) rowObj;

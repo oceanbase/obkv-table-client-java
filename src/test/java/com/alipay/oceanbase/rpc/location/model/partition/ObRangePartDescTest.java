@@ -143,92 +143,112 @@ public class ObRangePartDescTest {
 
     @Test
     public void testGetPartId() {
-        Map<String, Object> partition_1 = new HashMap<String, Object>() {{
-            put("K", "partition_1");
-            put("Q", "column_1");
-            put("T", System.currentTimeMillis());
-        }};
-        Map<String, Object> partition_2 = new HashMap<String, Object>() {{
-            put("K", "partition_2");
-            put("Q", "column_1");
-            put("T", System.currentTimeMillis());
-        }};
+        Map<String, Object> partition_1 = new HashMap<String, Object>() {
+            {
+                put("K", "partition_1");
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
+        Map<String, Object> partition_2 = new HashMap<String, Object>() {
+            {
+                put("K", "partition_2");
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
         long partId = rangeBinary.getPartId(new Row(partition_1));
         Assert.assertEquals(1, partId);
 
-        Map<String, Object> test_a = new HashMap<String, Object>() {{
-            put("K", "a");
-            put("Q", "column_1");
-            put("T", System.currentTimeMillis());
-        }};
+        Map<String, Object> test_a = new HashMap<String, Object>() {
+            {
+                put("K", "a");
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
         partId = rangeBinary.getPartId(new Row(test_a));
         Assert.assertEquals(0, partId);
 
-        Map<String, Object> test_x = new HashMap<String, Object>() {{
-            put("K", "x");
-            put("Q", "column_1");
-            put("T", System.currentTimeMillis());
-        }};
+        Map<String, Object> test_x = new HashMap<String, Object>() {
+            {
+                put("K", "x");
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
         partId = rangeBinary.getPartId(new Row(test_x));
         Assert.assertEquals(2, partId);
 
-        Assert.assertEquals(
-                rangeBinary.getPartId(new Row(partition_1)),
-                rangeBinary.getPartId(new Row(partition_2)));
+        Assert.assertEquals(rangeBinary.getPartId(new Row(partition_1)),
+            rangeBinary.getPartId(new Row(partition_2)));
 
-        Map<String, Object> test_1 = new HashMap<String, Object>() {{
-            put("K", "test_1");
-            put("Q", "column_1");
-            put("T", System.currentTimeMillis());
-        }};
-        Map<String, Object> test_1_bytes = new HashMap<String, Object>() {{
-            put("K", "test_1".getBytes());
-            put("Q", "column_1");
-            put("T", System.currentTimeMillis());
-        }};
-        Map<String, Object> test_2 = new HashMap<String, Object>() {{
-            put("K", "test_2");
-            put("Q", "column_1");
-            put("T", System.currentTimeMillis());
-        }};
-        Map<String, Object> test_2_bytes = new HashMap<String, Object>() {{
-            put("K", "test_2".getBytes());
-            put("Q", "column_1");
-            put("T", System.currentTimeMillis());
-        }};
+        Map<String, Object> test_1 = new HashMap<String, Object>() {
+            {
+                put("K", "test_1");
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
+        Map<String, Object> test_1_bytes = new HashMap<String, Object>() {
+            {
+                put("K", "test_1".getBytes());
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
+        Map<String, Object> test_2 = new HashMap<String, Object>() {
+            {
+                put("K", "test_2");
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
+        Map<String, Object> test_2_bytes = new HashMap<String, Object>() {
+            {
+                put("K", "test_2".getBytes());
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
 
-        Assert.assertEquals(
-            rangeBinary.getPartId(new Row(test_1)),
+        Assert.assertEquals(rangeBinary.getPartId(new Row(test_1)),
             rangeBinary.getPartId(new Row(test_2)));
 
-        Assert.assertEquals(
-            rangeBinary.getPartId(new Row(test_1)),
+        Assert.assertEquals(rangeBinary.getPartId(new Row(test_1)),
             rangeBinary.getPartId(new Row(test_2_bytes)));
 
-        Assert.assertEquals(
-            rangeBinary.getPartId(new Row(test_1_bytes)),
+        Assert.assertEquals(rangeBinary.getPartId(new Row(test_1_bytes)),
             rangeBinary.getPartId(new Row(test_2_bytes)));
 
-        Map<String, Object> test_A = new HashMap<String, Object>() {{
-            put("K", "A");
-            put("Q", "column_1");
-            put("T", System.currentTimeMillis());
-        }};
-        Map<String, Object> test_P = new HashMap<String, Object>() {{
-            put("K", "P");
-            put("Q", "column_1");
-            put("T", System.currentTimeMillis());
-        }};
-        Map<String, Object> test_X = new HashMap<String, Object>() {{
-            put("K", "X");
-            put("Q", "column_1");
-            put("T", System.currentTimeMillis());
-        }};
-        Map<String, Object> test_p = new HashMap<String, Object>() {{
-            put("K", "p");
-            put("Q", "column_1");
-            put("T", System.currentTimeMillis());
-        }};
+        Map<String, Object> test_A = new HashMap<String, Object>() {
+            {
+                put("K", "A");
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
+        Map<String, Object> test_P = new HashMap<String, Object>() {
+            {
+                put("K", "P");
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
+        Map<String, Object> test_X = new HashMap<String, Object>() {
+            {
+                put("K", "X");
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
+        Map<String, Object> test_p = new HashMap<String, Object>() {
+            {
+                put("K", "p");
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
 
         partId = rangeBinary.getPartId(new Row(test_A));
         Assert.assertEquals(0, partId);
@@ -285,146 +305,194 @@ public class ObRangePartDescTest {
     @Test
     public void testGetPartIds() {
         long timestamp = System.currentTimeMillis();
-        Map<String, Object> startKey1 = new HashMap<String, Object>() {{
-            put("K", "partition_1");
-            put("Q", "column_1");
-            put("T", timestamp);
-        }};
-        Map<String, Object> endKey1 = new HashMap<String, Object>() {{
-            put("K", "partition_1");
-            put("Q", "column_1");
-            put("T", timestamp);
-        }};
+        Map<String, Object> startKey1 = new HashMap<String, Object>() {
+            {
+                put("K", "partition_1");
+                put("Q", "column_1");
+                put("T", timestamp);
+            }
+        };
+        Map<String, Object> endKey1 = new HashMap<String, Object>() {
+            {
+                put("K", "partition_1");
+                put("Q", "column_1");
+                put("T", timestamp);
+            }
+        };
 
-        Map<String, Object> startKey2 = new HashMap<String, Object>() {{
-            put("K", "partition_1".getBytes());
-            put("Q", "column_1");
-            put("T", timestamp);
-        }};
-        Map<String, Object> endKey2 = new HashMap<String, Object>() {{
-            put("K", "partition_1".getBytes());
-            put("Q", "column_1");
-            put("T", timestamp);
-        }};
+        Map<String, Object> startKey2 = new HashMap<String, Object>() {
+            {
+                put("K", "partition_1".getBytes());
+                put("Q", "column_1");
+                put("T", timestamp);
+            }
+        };
+        Map<String, Object> endKey2 = new HashMap<String, Object>() {
+            {
+                put("K", "partition_1".getBytes());
+                put("Q", "column_1");
+                put("T", timestamp);
+            }
+        };
 
-        Map<String, Object> startKey3 = new HashMap<String, Object>() {{
-            put("K", "yes_1".getBytes());
-            put("Q", "column_1");
-            put("T", timestamp);
-        }};
-        Map<String, Object> endKey3 = new HashMap<String, Object>() {{
-            put("K", "yes_2".getBytes());
-            put("Q", "column_1");
-            put("T", timestamp);
-        }};
+        Map<String, Object> startKey3 = new HashMap<String, Object>() {
+            {
+                put("K", "yes_1".getBytes());
+                put("Q", "column_1");
+                put("T", timestamp);
+            }
+        };
+        Map<String, Object> endKey3 = new HashMap<String, Object>() {
+            {
+                put("K", "yes_2".getBytes());
+                put("Q", "column_1");
+                put("T", timestamp);
+            }
+        };
 
-        Map<String, Object> startKey4 = new HashMap<String, Object>() {{
-            put("K", "PARTITION_1");
-            put("Q", "column_1");
-            put("T", timestamp);
-        }};
-        Map<String, Object> endKey4 = new HashMap<String, Object>() {{
-            put("K", "PARTITION_2");
-            put("Q", "column_1");
-            put("T", timestamp);
-        }};
+        Map<String, Object> startKey4 = new HashMap<String, Object>() {
+            {
+                put("K", "PARTITION_1");
+                put("Q", "column_1");
+                put("T", timestamp);
+            }
+        };
+        Map<String, Object> endKey4 = new HashMap<String, Object>() {
+            {
+                put("K", "PARTITION_2");
+                put("Q", "column_1");
+                put("T", timestamp);
+            }
+        };
 
-        Map<String, Object> startKey5 = new HashMap<String, Object>() {{
-            put("K", "PARTITION_1".getBytes());
-            put("Q", "column_1");
-            put("T", timestamp);
-        }};
-        Map<String, Object> endKey5 = new HashMap<String, Object>() {{
-            put("K", "PARTITION_2".getBytes());
-            put("Q", "column_1");
-            put("T", timestamp);
-        }};
+        Map<String, Object> startKey5 = new HashMap<String, Object>() {
+            {
+                put("K", "PARTITION_1".getBytes());
+                put("Q", "column_1");
+                put("T", timestamp);
+            }
+        };
+        Map<String, Object> endKey5 = new HashMap<String, Object>() {
+            {
+                put("K", "PARTITION_2".getBytes());
+                put("Q", "column_1");
+                put("T", timestamp);
+            }
+        };
 
-        Map<String, Object> startKey6 = new HashMap<String, Object>() {{
-            put("K", "YES_1".getBytes());
-            put("Q", "column_1");
-            put("T", timestamp);
-        }};
-        Map<String, Object> endKey6 = new HashMap<String, Object>() {{
-            put("K", "YES_2".getBytes());
-            put("Q", "column_1");
-            put("T", timestamp);
-        }};
+        Map<String, Object> startKey6 = new HashMap<String, Object>() {
+            {
+                put("K", "YES_1".getBytes());
+                put("Q", "column_1");
+                put("T", timestamp);
+            }
+        };
+        Map<String, Object> endKey6 = new HashMap<String, Object>() {
+            {
+                put("K", "YES_2".getBytes());
+                put("Q", "column_1");
+                put("T", timestamp);
+            }
+        };
 
-
-        Assert.assertEquals(rangeBinary.getPartIds(new Row(startKey1), true, new Row(endKey1), true),
+        Assert.assertEquals(
+            rangeBinary.getPartIds(new Row(startKey1), true, new Row(endKey1), true),
             rangeBinary.getPartIds(new Row(startKey2), true, new Row(endKey2), true));
 
-        Assert.assertEquals(rangeBinary.getPartIds(new Row(startKey1), true, new Row(endKey2), true),
+        Assert.assertEquals(
+            rangeBinary.getPartIds(new Row(startKey1), true, new Row(endKey2), true),
             rangeBinary.getPartIds(new Row(startKey2), true, new Row(endKey1), true));
 
-        Assert.assertEquals(rangeBinary.getPartIds(new Row(startKey1), false, new Row(endKey2), false),
+        Assert.assertEquals(
+            rangeBinary.getPartIds(new Row(startKey1), false, new Row(endKey2), false),
             rangeBinary.getPartIds(new Row(startKey2), false, new Row(endKey1), false));
 
-        Assert.assertNotEquals(rangeBinary.getPartIds(new Row(startKey1), true, new Row(endKey1), true),
+        Assert.assertNotEquals(
+            rangeBinary.getPartIds(new Row(startKey1), true, new Row(endKey1), true),
             rangeBinary.getPartIds(new Row(startKey4), true, new Row(endKey4), true));
 
-        Assert.assertNotEquals(rangeBinary.getPartIds(new Row(startKey2), true, new Row(endKey2), true),
+        Assert.assertNotEquals(
+            rangeBinary.getPartIds(new Row(startKey2), true, new Row(endKey2), true),
             rangeBinary.getPartIds(new Row(startKey5), true, new Row(endKey5), true));
 
-        Assert.assertNotEquals(rangeBinary.getPartIds(new Row(startKey3), false, new Row(endKey3), false),
+        Assert.assertNotEquals(
+            rangeBinary.getPartIds(new Row(startKey3), false, new Row(endKey3), false),
             rangeBinary.getPartIds(new Row(startKey6), false, new Row(endKey6), false));
 
-        Assert.assertNotEquals(rangeBinary.getPartIds(new Row(startKey1), true, new Row(endKey1), true),
+        Assert.assertNotEquals(
+            rangeBinary.getPartIds(new Row(startKey1), true, new Row(endKey1), true),
             rangeBinary.getPartIds(new Row(startKey5), true, new Row(endKey5), true));
 
-        Assert.assertNotEquals(rangeBinary.getPartIds(new Row(startKey1), true, new Row(endKey2), true),
+        Assert.assertNotEquals(
+            rangeBinary.getPartIds(new Row(startKey1), true, new Row(endKey2), true),
             rangeBinary.getPartIds(new Row(startKey5), true, new Row(endKey4), true));
 
-        Assert.assertNotEquals(rangeBinary.getPartIds(new Row(startKey1), false, new Row(endKey2), false),
+        Assert.assertNotEquals(
+            rangeBinary.getPartIds(new Row(startKey1), false, new Row(endKey2), false),
             rangeBinary.getPartIds(new Row(startKey5), false, new Row(endKey5), false));
 
         List<Long> partIds = new ArrayList<Long>();
         partIds.add(1L);
         partIds.add(2L);
-        Assert.assertEquals(partIds, rangeBinary.getPartIds(new Row(startKey1), false, new Row(endKey3), false));
+        Assert.assertEquals(partIds,
+            rangeBinary.getPartIds(new Row(startKey1), false, new Row(endKey3), false));
 
         partIds = new ArrayList<Long>();
         partIds.add(0L);
-        Assert.assertEquals(partIds, rangeBinary.getPartIds(new Row(startKey4), false, new Row(endKey4), false));
+        Assert.assertEquals(partIds,
+            rangeBinary.getPartIds(new Row(startKey4), false, new Row(endKey4), false));
 
-        Assert.assertEquals(partIds, rangeBinary.getPartIds(new Row(startKey6), false, new Row(endKey4), true));
+        Assert.assertEquals(partIds,
+            rangeBinary.getPartIds(new Row(startKey6), false, new Row(endKey4), true));
 
-        Assert.assertEquals(0, rangeBinary.getPartIds(new Row(startKey3), false, new Row(endKey1), true).size());
+        Assert.assertEquals(0,
+            rangeBinary.getPartIds(new Row(startKey3), false, new Row(endKey1), true).size());
 
-        Assert.assertEquals(rangeUtf8_CI.getPartIds(new Row(startKey1), true, new Row(endKey1), true),
+        Assert.assertEquals(
+            rangeUtf8_CI.getPartIds(new Row(startKey1), true, new Row(endKey1), true),
             rangeUtf8_CI.getPartIds(new Row(startKey2), true, new Row(endKey2), true));
 
-        Assert.assertEquals(rangeUtf8_CI.getPartIds(new Row(startKey1), true, new Row(endKey2), true),
+        Assert.assertEquals(
+            rangeUtf8_CI.getPartIds(new Row(startKey1), true, new Row(endKey2), true),
             rangeUtf8_CI.getPartIds(new Row(startKey2), true, new Row(endKey1), true));
 
-        Assert.assertEquals(rangeUtf8_CI.getPartIds(new Row(startKey1), false, new Row(endKey2), false),
+        Assert.assertEquals(
+            rangeUtf8_CI.getPartIds(new Row(startKey1), false, new Row(endKey2), false),
             rangeUtf8_CI.getPartIds(new Row(startKey2), false, new Row(endKey1), false));
 
-        Assert.assertEquals(rangeUtf8_CI.getPartIds(new Row(startKey1), true, new Row(endKey1), true),
+        Assert.assertEquals(
+            rangeUtf8_CI.getPartIds(new Row(startKey1), true, new Row(endKey1), true),
             rangeUtf8_CI.getPartIds(new Row(startKey4), true, new Row(endKey4), true));
 
-        Assert.assertEquals(rangeUtf8_CI.getPartIds(new Row(startKey2), true, new Row(endKey2), true),
+        Assert.assertEquals(
+            rangeUtf8_CI.getPartIds(new Row(startKey2), true, new Row(endKey2), true),
             rangeUtf8_CI.getPartIds(new Row(startKey5), true, new Row(endKey5), true));
 
-        Assert.assertEquals(rangeUtf8_CI.getPartIds(new Row(startKey3), false, new Row(endKey3), false),
+        Assert.assertEquals(
+            rangeUtf8_CI.getPartIds(new Row(startKey3), false, new Row(endKey3), false),
             rangeUtf8_CI.getPartIds(new Row(startKey6), false, new Row(endKey6), false));
 
-        Assert.assertEquals(rangeUtf8_CI.getPartIds(new Row(startKey1), true, new Row(endKey1), true),
+        Assert.assertEquals(
+            rangeUtf8_CI.getPartIds(new Row(startKey1), true, new Row(endKey1), true),
             rangeUtf8_CI.getPartIds(new Row(startKey5), true, new Row(endKey5), true));
 
-        Assert.assertEquals(rangeUtf8_CI.getPartIds(new Row(startKey1), true, new Row(endKey2), true),
+        Assert.assertEquals(
+            rangeUtf8_CI.getPartIds(new Row(startKey1), true, new Row(endKey2), true),
             rangeUtf8_CI.getPartIds(new Row(startKey5), true, new Row(endKey4), true));
 
-        Assert.assertEquals(rangeUtf8_CI.getPartIds(new Row(startKey1), false, new Row(endKey2), false),
+        Assert.assertEquals(
+            rangeUtf8_CI.getPartIds(new Row(startKey1), false, new Row(endKey2), false),
             rangeUtf8_CI.getPartIds(new Row(startKey5), false, new Row(endKey4), false));
 
         partIds = new ArrayList<Long>();
         partIds.add(1L);
         partIds.add(2L);
-        Assert.assertEquals(partIds, rangeUtf8_CI.getPartIds(new Row(startKey1), false, new Row(endKey3), false));
-        Assert.assertEquals(partIds, rangeUtf8_CI.getPartIds(new Row(startKey4), false, new Row(endKey6), false));
-        Assert.assertEquals(0, rangeUtf8_CI.getPartIds(new Row(startKey3), false, new Row(endKey1), true).size());
+        Assert.assertEquals(partIds,
+            rangeUtf8_CI.getPartIds(new Row(startKey1), false, new Row(endKey3), false));
+        Assert.assertEquals(partIds,
+            rangeUtf8_CI.getPartIds(new Row(startKey4), false, new Row(endKey6), false));
+        Assert.assertEquals(0,
+            rangeUtf8_CI.getPartIds(new Row(startKey3), false, new Row(endKey1), true).size());
 
         Assert.assertEquals(rangeUtf8.getPartIds(new Row(startKey1), true, new Row(endKey1), true),
             rangeUtf8.getPartIds(new Row(startKey2), true, new Row(endKey2), true));
@@ -432,39 +500,50 @@ public class ObRangePartDescTest {
         Assert.assertEquals(rangeUtf8.getPartIds(new Row(startKey1), true, new Row(endKey2), true),
             rangeUtf8.getPartIds(new Row(startKey2), true, new Row(endKey1), true));
 
-        Assert.assertEquals(rangeUtf8.getPartIds(new Row(startKey1), false, new Row(endKey2), false),
+        Assert.assertEquals(
+            rangeUtf8.getPartIds(new Row(startKey1), false, new Row(endKey2), false),
             rangeUtf8.getPartIds(new Row(startKey2), false, new Row(endKey1), false));
 
-        Assert.assertNotEquals(rangeUtf8.getPartIds(new Row(startKey1), true, new Row(endKey1), true),
+        Assert.assertNotEquals(
+            rangeUtf8.getPartIds(new Row(startKey1), true, new Row(endKey1), true),
             rangeUtf8.getPartIds(new Row(startKey4), true, new Row(endKey4), true));
 
-        Assert.assertNotEquals(rangeUtf8.getPartIds(new Row(startKey2), true, new Row(endKey2), true),
+        Assert.assertNotEquals(
+            rangeUtf8.getPartIds(new Row(startKey2), true, new Row(endKey2), true),
             rangeUtf8.getPartIds(new Row(startKey5), true, new Row(endKey5), true));
 
-        Assert.assertNotEquals(rangeUtf8.getPartIds(new Row(startKey3), false, new Row(endKey3), false),
+        Assert.assertNotEquals(
+            rangeUtf8.getPartIds(new Row(startKey3), false, new Row(endKey3), false),
             rangeUtf8.getPartIds(new Row(startKey6), false, new Row(endKey6), false));
 
-        Assert.assertNotEquals(rangeUtf8.getPartIds(new Row(startKey1), true, new Row(endKey1), true),
+        Assert.assertNotEquals(
+            rangeUtf8.getPartIds(new Row(startKey1), true, new Row(endKey1), true),
             rangeUtf8.getPartIds(new Row(startKey5), true, new Row(endKey5), true));
 
-        Assert.assertNotEquals(rangeUtf8.getPartIds(new Row(startKey1), true, new Row(endKey2), true),
+        Assert.assertNotEquals(
+            rangeUtf8.getPartIds(new Row(startKey1), true, new Row(endKey2), true),
             rangeUtf8.getPartIds(new Row(startKey5), true, new Row(endKey4), true));
 
-        Assert.assertNotEquals(rangeUtf8.getPartIds(new Row(startKey1), false, new Row(endKey2), false),
+        Assert.assertNotEquals(
+            rangeUtf8.getPartIds(new Row(startKey1), false, new Row(endKey2), false),
             rangeUtf8.getPartIds(new Row(startKey5), false, new Row(endKey5), false));
 
         partIds = new ArrayList<Long>();
         partIds.add(1L);
         partIds.add(2L);
-        Assert.assertEquals(partIds, rangeUtf8.getPartIds(new Row(startKey1), false, new Row(endKey3), false));
+        Assert.assertEquals(partIds,
+            rangeUtf8.getPartIds(new Row(startKey1), false, new Row(endKey3), false));
 
         partIds = new ArrayList<Long>();
         partIds.add(0L);
-        Assert.assertEquals(partIds, rangeUtf8.getPartIds(new Row(startKey4), false, new Row(endKey4), false));
+        Assert.assertEquals(partIds,
+            rangeUtf8.getPartIds(new Row(startKey4), false, new Row(endKey4), false));
 
-        Assert.assertEquals(partIds, rangeUtf8.getPartIds(new Row(startKey6), false, new Row(endKey4), true));
+        Assert.assertEquals(partIds,
+            rangeUtf8.getPartIds(new Row(startKey6), false, new Row(endKey4), true));
 
-        Assert.assertEquals(0, rangeUtf8.getPartIds(new Row(startKey3), false, new Row(endKey1), true).size());
+        Assert.assertEquals(0,
+            rangeUtf8.getPartIds(new Row(startKey3), false, new Row(endKey1), true).size());
 
     }
 

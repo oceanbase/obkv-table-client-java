@@ -450,17 +450,18 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     private abstract class TableExecuteCallback<T> {
         private final Object[] rowKey;
-//        private final Row row = new Row();
+
+        //        private final Row row = new Row();
 
         TableExecuteCallback(Object[] rowKey) {
             this.rowKey = rowKey;
-//            String[] columnNames = getRowKeyElement(tableName).keySet().toArray(new String[0]);
-//            if(columnNames.length != rowKey.length) {
-//                throw new ObTableException("Invalid input rowKey");
-//            }
-//            for(int i = 0; i < columnNames.length; ++i) {
-//                this.row.add(columnNames[i], rowKey[i]);
-//            }
+            //            String[] columnNames = getRowKeyElement(tableName).keySet().toArray(new String[0]);
+            //            if(columnNames.length != rowKey.length) {
+            //                throw new ObTableException("Invalid input rowKey");
+            //            }
+            //            for(int i = 0; i < columnNames.length; ++i) {
+            //                this.row.add(columnNames[i], rowKey[i]);
+            //            }
 
         }
 
@@ -1474,11 +1475,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         Row row = new Row();
         String[] columnNames = getRowKeyElement(tableName).keySet().toArray(new String[0]);
-        if(columnNames.length != rowKey.length) {
-            throw new ObTableException("The rowKey Param should include the entire row key but receive "
-                    + Arrays.toString(rowKey));
+        if (columnNames.length != rowKey.length) {
+            throw new ObTableException(
+                "The rowKey Param should include the entire row key but receive "
+                        + Arrays.toString(rowKey));
         }
-        for(int i = 0; i < columnNames.length; ++i) {
+        for (int i = 0; i < columnNames.length; ++i) {
             row.add(columnNames[i], rowKey[i]);
         }
 
@@ -1645,8 +1647,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     tableEntry, partId, route)));
             }
         } else if (tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
-            List<Long> partIds = getPartitionsForLevelTwo(tableEntry, startRow, startIncluded, endRow,
-                endIncluded);
+            List<Long> partIds = getPartitionsForLevelTwo(tableEntry, startRow, startIncluded,
+                endRow, endIncluded);
             for (Long partId : partIds) {
                 replicas.add(new ObPair<Long, ReplicaLocation>(partId, getPartitionLocation(
                     tableEntry, partId, route)));
@@ -3177,7 +3179,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (tableName == null || tableName.length() == 0) {
             throw new IllegalArgumentException("table name is null");
         }
-        Map<String, Integer> rowKeyElement = new HashMap<String, Integer>();
+        Map<String, Integer> rowKeyElement = new LinkedHashMap<String, Integer>();
         for (int i = 0; i < columns.length; i++) {
             rowKeyElement.put(columns[i], i);
         }

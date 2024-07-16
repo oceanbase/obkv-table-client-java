@@ -59,6 +59,7 @@ public class ObSimpleColumn extends ObColumn {
                 "ObSimpleColumn is refer to itself so that the length of the refs must be 1. refs:"
                         + Arrays.toString(refs));
         }
+        System.out.println(refs[0] + " for the mistake\n");
         return obObjType.parseToComparable(refs[0], obCollationType);
     }
 }

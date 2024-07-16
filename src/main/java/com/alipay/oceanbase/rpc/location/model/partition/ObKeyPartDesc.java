@@ -93,7 +93,8 @@ public class ObKeyPartDesc extends ObPartDesc {
         try {
             // verify the type of parameters and convert to Row
             if (!(startRowObj instanceof Row) || !(endRowObj instanceof Row)) {
-                throw new ObTableException("invalid format of rowObj: " + startRowObj + ", " + endRowObj);
+                throw new ObTableException("invalid format of rowObj: " + startRowObj + ", "
+                                           + endRowObj);
             }
             Row startRow = (Row) startRowObj, endRow = (Row) endRowObj;
             // pre-check start and end
@@ -108,16 +109,16 @@ public class ObKeyPartDesc extends ObPartDesc {
                     String curObRefColumnName = curObcolumn.getRefColumnNames().get(refIdx);
                     if (startRow.size() <= refIdx) {
                         throw new IllegalArgumentException("rowkey length is " + startRow.size()
-                                + ", which is shortest than " + refIdx);
+                                                           + ", which is shortest than " + refIdx);
                     }
                     if (startRow.get(curObRefColumnName) instanceof ObObj
-                            && (((ObObj) startRow.get(curObRefColumnName)).isMinObj()
-                            || ((ObObj) startRow.get(curObRefColumnName)).isMaxObj())) {
+                        && (((ObObj) startRow.get(curObRefColumnName)).isMinObj() || ((ObObj) startRow
+                            .get(curObRefColumnName)).isMaxObj())) {
                         return completeWorks;
                     }
                     if (endRow.get(curObRefColumnName) instanceof ObObj
-                            && (((ObObj) endRow.get(curObRefColumnName)).isMinObj()
-                            || ((ObObj) endRow.get(curObRefColumnName)).isMaxObj())) {
+                        && (((ObObj) endRow.get(curObRefColumnName)).isMinObj() || ((ObObj) endRow
+                            .get(curObRefColumnName)).isMaxObj())) {
                         return completeWorks;
                     }
                 }
@@ -180,8 +181,8 @@ public class ObKeyPartDesc extends ObPartDesc {
             int partRefColumnSize = partColumns.size();
             List<Object> evalValues = null;
 
-             for (Object rowObj : rows){
-                if ( !(rowObj instanceof Row)) {
+            for (Object rowObj : rows) {
+                if (!(rowObj instanceof Row)) {
                     throw new ObTableException("invalid format of rowObj: " + rowObj);
                 }
                 Row row = (Row) rowObj;
@@ -199,8 +200,8 @@ public class ObKeyPartDesc extends ObPartDesc {
                 }
 
                 for (int i = 0; i < evalValues.size(); i++) {
-                    if (!equalsWithCollationType(partColumns.get(i).getObCollationType(), evalValues.get(i),
-                        currentRowKeyEvalValues.get(i))) {
+                    if (!equalsWithCollationType(partColumns.get(i).getObCollationType(),
+                        evalValues.get(i), currentRowKeyEvalValues.get(i))) {
                         throw new ObTablePartitionConsistentException(
                             "across partition operation may cause consistent problem " + rows);
                     }
@@ -209,9 +210,8 @@ public class ObKeyPartDesc extends ObPartDesc {
 
             long hashValue = 0L;
             for (int i = 0; i < partRefColumnSize; i++) {
-                hashValue = ObHashUtils.toHashcode(evalValues.get(i),
-                    partColumns.get(i), hashValue,
-                    this.getPartFuncType());
+                hashValue = ObHashUtils.toHashcode(evalValues.get(i), partColumns.get(i),
+                    hashValue, this.getPartFuncType());
             }
 
             hashValue = (hashValue > 0 ? hashValue : -hashValue);

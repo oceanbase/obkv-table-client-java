@@ -106,7 +106,8 @@ public class ObHashPartDesc extends ObPartDesc {
         try {
             // verify the type of parameters and convert to Row
             if (!(startRowObj instanceof Row) || !(endRowObj instanceof Row)) {
-                throw new ObTableException("invalid format of rowObj: " + startRowObj + ", " + endRowObj);
+                throw new ObTableException("invalid format of rowObj: " + startRowObj + ", "
+                                           + endRowObj);
             }
             Row startRow = (Row) startRowObj, endRow = (Row) endRowObj;
             // pre-check start and end
@@ -124,13 +125,13 @@ public class ObHashPartDesc extends ObPartDesc {
                                                            + ", which is shortest than " + refIdx);
                     }
                     if (startRow.get(curObRefColumnName) instanceof ObObj
-                        && (((ObObj) startRow.get(curObRefColumnName)).isMinObj()
-                            || ((ObObj) startRow.get(curObRefColumnName)).isMaxObj())) {
+                        && (((ObObj) startRow.get(curObRefColumnName)).isMinObj() || ((ObObj) startRow
+                            .get(curObRefColumnName)).isMaxObj())) {
                         return completeWorks;
                     }
                     if (endRow.get(curObRefColumnName) instanceof ObObj
-                        && (((ObObj) endRow.get(curObRefColumnName)).isMinObj()
-                            || ((ObObj) endRow.get(curObRefColumnName)).isMaxObj())) {
+                        && (((ObObj) endRow.get(curObRefColumnName)).isMinObj() || ((ObObj) endRow
+                            .get(curObRefColumnName)).isMaxObj())) {
                         return completeWorks;
                     }
                 }
@@ -200,7 +201,7 @@ public class ObHashPartDesc extends ObPartDesc {
         Long partId = null;
         try {
             for (Object rowObj : rows) {
-                if ( !(rowObj instanceof Row)) {
+                if (!(rowObj instanceof Row)) {
                     throw new ObTableException("invalid format of rowObj: " + rowObj);
                 }
                 Row row = (Row) rowObj;
@@ -209,6 +210,7 @@ public class ObHashPartDesc extends ObPartDesc {
                 Long longValue = ObObjType.parseToLongOrNull(value);
 
                 if (longValue == null) {
+                    System.out.println("YES!");
                     throw new IllegalArgumentException("can not parseToComparable value [" + value
                                                        + "] to long");
                 }
