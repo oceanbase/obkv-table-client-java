@@ -21,6 +21,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.ParserConfig;
+import com.alipay.oceanbase.rpc.ObClusterTableBatchOps;
 import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.constant.Constants;
 import com.alipay.oceanbase.rpc.exception.*;
@@ -1312,8 +1313,29 @@ public class LocationUtil {
         }
 
         // set the property of first part and sub part
-        setPartDescProperty(info.getFirstPartDesc(), info.getPartColumns(), orderedPartedColumns1);
-        setPartDescProperty(info.getSubPartDesc(), info.getPartColumns(), orderedPartedColumns2);
+        List<ObColumn> firstPartColumns = new ArrayList<ObColumn>(), subPartColumns = new ArrayList<ObColumn>();
+        if (null != info.getFirstPartDesc()) {
+            for (String partColumnNames : info.getFirstPartDesc().getOrderedPartColumnNames()) {
+                for (ObColumn curColumn : info.getPartColumns()) {
+                    if (curColumn.getColumnName().equalsIgnoreCase(partColumnNames)) {
+                        firstPartColumns.add(curColumn);
+                        break;
+                    }
+                }
+            }
+        }
+        if (null != info.getSubPartDesc()) {
+            for (String partColumnNames : info.getSubPartDesc().getOrderedPartColumnNames()) {
+                for (ObColumn curColumn : info.getPartColumns()) {
+                    if (curColumn.getColumnName().equalsIgnoreCase(partColumnNames)) {
+                        subPartColumns.add(curColumn);
+                        break;
+                    }
+                }
+            }
+        }
+        setPartDescProperty(info.getFirstPartDesc(), firstPartColumns, orderedPartedColumns1);
+        setPartDescProperty(info.getSubPartDesc(), subPartColumns, orderedPartedColumns2);
 
         return info;
     }

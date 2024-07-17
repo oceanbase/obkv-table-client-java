@@ -222,54 +222,54 @@ public abstract class ObPartDesc {
         Object[] rowValues = row.getValues();
         String[] rowColumnNames = row.getColumns();
 
-        if (rowValues.length < rowKeyElement.size()) {
+        if (rowValues.length < partColumnSize) {
             throw new IllegalArgumentException("row key is consist of " + rowKeyElement
                                                + "but found" + Arrays.toString(rowValues));
+        } else {
+            rowValues = Arrays.copyOfRange(rowValues, 0, partColumnSize);
+            rowColumnNames = Arrays.copyOfRange(rowColumnNames, 0, partColumnSize);
         }
+
 
         boolean needEval = true;
 
         // column or generate column
-        for (String orderPartColumnName : orderedPartColumnNames) {
-            for (int i = 0; i < partColumns.size(); ++i) {
-                ObColumn curObColumn = partColumns.get(i);
-                if(curObColumn.getColumnName().equalsIgnoreCase(orderPartColumnName)) {
-                    List<String> curObRefColumnNames = curObColumn.getRefColumnNames();
-                    Object[] evalParams = new Object[curObRefColumnNames.size()];
-                    for (int j = 0; j < curObRefColumnNames.size(); ++j) {
-                        // for simple column calculation
-                        if (curObColumn.getObGeneratedColumnSimpleFunc() == null) {
-                            // get corresponding rowKey value through name
-                            for (int k = 0; k < rowColumnNames.length; ++k) {
-                                if (rowColumnNames[k].equalsIgnoreCase(curObRefColumnNames.get(j))) {
-                                    if (rowValues[k] instanceof ObObj) {
-                                        ObObj obj = (ObObj) rowValues[k];
-                                        if (obj.isMaxObj() || obj.isMinObj()) {
-                                            evalValues.add(obj);
-                                            needEval = false;
-                                            break;
-                                        }
+        for (int i = 0; i < partColumns.size(); ++i) {
+            ObColumn curObColumn = partColumns.get(i);
+                List<String> curObRefColumnNames = curObColumn.getRefColumnNames();
+                Object[] evalParams = new Object[curObRefColumnNames.size()];
+                for (int j = 0; j < curObRefColumnNames.size(); ++j) {
+                    // for simple column calculation
+                    if (curObColumn.getObGeneratedColumnSimpleFunc() == null) {
+                        // get corresponding rowKey value through name
+                        for (int k = 0; k < rowColumnNames.length; ++k) {
+                            if (rowColumnNames[k].equalsIgnoreCase(curObRefColumnNames.get(j))) {
+                                if (rowValues[k] instanceof ObObj) {
+                                    ObObj obj = (ObObj) rowValues[k];
+                                    if (obj.isMaxObj() || obj.isMinObj()) {
+                                        evalValues.add(obj);
+                                        needEval = false;
+                                        break;
                                     }
-                                    evalParams[j] = rowValues[k];
-                                    break;
                                 }
+                                evalParams[j] = rowValues[k];
+                                break;
                             }
-                        } else { // for generated column calculation
-                            for (int k = 0; k < rowColumnNames.length; ++k) {
-                                if (rowColumnNames[k].equalsIgnoreCase(curObRefColumnNames.get(j))) {
-                                    evalParams[j] = rowValues[k];
-                                    break;
-                                }
+                        }
+                    } else { // for generated column calculation
+                        for (int k = 0; k < rowColumnNames.length; ++k) {
+                            if (rowColumnNames[k].equalsIgnoreCase(curObRefColumnNames.get(j))) {
+                                evalParams[j] = rowValues[k];
+                                break;
                             }
                         }
                     }
-                    if (needEval) {
-                        evalValues.add(curObColumn.evalValue(evalParams));
-                    }
+                }
+                if (needEval) {
+                    evalValues.add(curObColumn.evalValue(evalParams));
                 }
             }
-        }
-        
+
         return evalValues;
     }
 

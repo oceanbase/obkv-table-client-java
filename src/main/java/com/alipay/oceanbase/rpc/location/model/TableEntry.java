@@ -24,13 +24,14 @@ import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionLevel;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class TableEntry {
 
-    public static final Map<String, Integer> HBASE_ROW_KEY_ELEMENT = new HashMap<String, Integer>() {
+    public static final Map<String, Integer> HBASE_ROW_KEY_ELEMENT = new LinkedHashMap<String, Integer>() {
                                                                        {
                                                                            put("K", 0);
                                                                            put("Q", 1);

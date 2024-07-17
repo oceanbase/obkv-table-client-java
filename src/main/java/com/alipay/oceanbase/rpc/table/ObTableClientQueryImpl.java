@@ -274,8 +274,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             ObBorderFlag borderFlag = rang.getBorderFlag();
             // pairs -> List<Pair<logicId, param>>
             List<ObPair<Long, ObTableParam>> pairs = this.obTableClient.getTables(indexTableName,
-                start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false,
-                false);
+                    tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(),
+                    false, false);
             for (ObPair<Long, ObTableParam> pair : pairs) {
                 this.partitionObTables.put(pair.getLeft(), pair);
             }

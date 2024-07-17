@@ -694,9 +694,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             long costMillis = currentExecute - startExecute;
             if (costMillis > runtimeMaxWait) {
                 throw new ObTableTimeoutExcetion("it has tried " + tryTimes
-                                                 + " times and it has waited " + costMillis
-                                                 + "/ms which exceeds response timeout "
-                                                 + runtimeMaxWait + "/ms");
+                        + " times and it has waited " + costMillis
+                        + "/ms which exceeds response timeout "
+                        + runtimeMaxWait + "/ms");
             }
             tryTimes++;
             ObPair<Long, ObTableParam> obPair = null;
@@ -707,11 +707,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     if (null != callback.getRowKey()) {
                         // using row key
                         obPair = getTable(tableName, callback.getRowKey(), needRefreshTableEntry,
-                            tableEntryRefreshIntervalWait, route);
+                                tableEntryRefreshIntervalWait, route);
                     } else if (null != callback.getKeyRanges()) {
                         // using scan range
-                        obPair = getTable(tableName, callback.getKeyRanges(),
-                            needRefreshTableEntry, tableEntryRefreshIntervalWait, route);
+                        obPair = getTable(tableName, new ObTableQuery(), callback.getKeyRanges(),
+                                needRefreshTableEntry, tableEntryRefreshIntervalWait, route);
                     } else {
                         throw new ObTableException("rowkey and scan range are null in mutation");
                     }
@@ -725,14 +725,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     if ((tryTimes - 1) < runtimeRetryTimes) {
                         if (ex instanceof ObTableException) {
                             logger
-                                .warn(
-                                    "execute while meet Exception, errorCode: {} , errorMsg: {}, try times {}",
-                                    ((ObTableException) ex).getErrorCode(), ex.getMessage(),
-                                    tryTimes);
+                                    .warn(
+                                            "execute while meet Exception, errorCode: {} , errorMsg: {}, try times {}",
+                                            ((ObTableException) ex).getErrorCode(), ex.getMessage(),
+                                            tryTimes);
                         } else {
                             logger.warn(
-                                "execute while meet Exception, exception: {}, try times {}", ex,
-                                tryTimes);
+                                    "execute while meet Exception, exception: {}, try times {}", ex,
+                                    tryTimes);
                         }
                     } else {
                         throw ex;
@@ -746,24 +746,24 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             }
                         } else {
                             logger.warn("exhaust retry when replica not readable: {}",
-                                ex.getMessage());
+                                    ex.getMessage());
                             RUNTIME.error("replica not readable", ex);
                             throw ex;
                         }
                     } else if (ex instanceof ObTableException
-                               && ((ObTableException) ex).isNeedRefreshTableEntry()) {
+                            && ((ObTableException) ex).isNeedRefreshTableEntry()) {
                         needRefreshTableEntry = true;
 
                         logger
-                            .warn(
-                                "refresh table while meet Exception needing refresh, errorCode: {}, errorMsg: {}",
-                                ((ObTableException) ex).getErrorCode(), ex.getMessage());
+                                .warn(
+                                        "refresh table while meet Exception needing refresh, errorCode: {}, errorMsg: {}",
+                                        ((ObTableException) ex).getErrorCode(), ex.getMessage());
                         if (retryOnChangeMasterTimes && (tryTimes - 1) < runtimeRetryTimes) {
                             logger
-                                .warn(
-                                    "retry while meet Exception needing refresh, errorCode: {} , errorMsg: {},retry times {}",
-                                    ((ObTableException) ex).getErrorCode(), ex.getMessage(),
-                                    tryTimes);
+                                    .warn(
+                                            "retry while meet Exception needing refresh, errorCode: {} , errorMsg: {},retry times {}",
+                                            ((ObTableException) ex).getErrorCode(), ex.getMessage(),
+                                            tryTimes);
                         } else {
                             calculateContinuousFailure(tableName, ex.getMessage());
                             throw ex;
@@ -1351,11 +1351,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return
      */
     private long getPartition(TableEntry tableEntry, Row row) {
-        // non partition
-        if (!tableEntry.isPartitionTable()
-            || tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ZERO) {
-            return 0L;
-        }
+        // change up to getTable to judge
+//        if (!tableEntry.isPartitionTable()
+//            || tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ZERO) {
+//            return 0L;
+//        }
 
         if (tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ONE) {
             return tableEntry.getPartitionInfo().getFirstPartDesc().getPartId(row);
@@ -1472,19 +1472,37 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                boolean waitForRefresh, ObServerRoute route)
                                                                                            throws Exception {
         TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh);
-
-        Row row = new Row();
-        String[] columnNames = getRowKeyElement(tableName).keySet().toArray(new String[0]);
-        if (columnNames.length != rowKey.length) {
-            throw new ObTableException(
-                "The rowKey Param should include the entire row key but receive "
-                        + Arrays.toString(rowKey));
+        long partId;
+        if (!tableEntry.isPartitionTable()
+                || tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ZERO) {
+            partId = 0L;
         }
-        for (int i = 0; i < columnNames.length; ++i) {
-            row.add(columnNames[i], rowKey[i]);
+        else {
+            Row row = new Row();
+            List<String> curTableRowKeyNames = new ArrayList<>(tableEntry.getRowKeyElement().keySet());
+            List<String> inputRowKeyNames = new ArrayList<>();
+            if (!tableRowKeyElement.isEmpty()) {
+                inputRowKeyNames = new ArrayList<>(getRowKeyElement(tableName).keySet());
+            }
+//            if (curTableRowKeyNames.size() != rowKey.length) {
+//                throw new ObTableException(
+//                        "The rowKey Param should include the entire row key but receive "
+//                                + Arrays.toString(rowKey));
+//            }
+            // match the correct key to its row key
+            for (int i = 0; i < rowKey.length; ++i) {
+                if (i < curTableRowKeyNames.size()) {
+                    row.add(curTableRowKeyNames.get(i), rowKey[i]);
+                }
+                else if (!inputRowKeyNames.isEmpty() && i < inputRowKeyNames.size()) {  // add the rest redundant row key element
+                    row.add(inputRowKeyNames.get(i), rowKey[i]);
+                }
+                else { // the rowKey Element in the table only contain partition key(s)
+                    break;
+                }
+            }
+            partId = getPartition(tableEntry, row); // partition id in 3.x, origin partId in 4.x, logicId
         }
-
-        long partId = getPartition(tableEntry, row); // partition id in 3.x, origin partId in 4.x, logicId
 
         return getTable(tableName, tableEntry, partId, waitForRefresh, route);
     }
@@ -1499,8 +1517,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return ObPair of partId and table
      * @throws Exception exception
      */
-    public ObPair<Long, ObTableParam> getTable(String tableName, List<ObNewRange> keyRanges, boolean refresh,
-                                          boolean waitForRefresh, ObServerRoute route)
+    public ObPair<Long, ObTableParam> getTable(String tableName, ObTableQuery query, List<ObNewRange> keyRanges, boolean refresh,
+                                               boolean waitForRefresh, ObServerRoute route)
             throws Exception {
         Map<Long, ObTableParam> partIdMapObTable = new HashMap<Long, ObTableParam>();
         for (ObNewRange rang : keyRanges) {
@@ -1518,7 +1536,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 end[i] = endKey.getObj(i).getValue();
             }
             ObBorderFlag borderFlag = rang.getBorderFlag();
-            List<ObPair<Long, ObTableParam>> pairList = getTables(tableName, start,
+            List<ObPair<Long, ObTableParam>> pairList = getTables(tableName, query, start,
                     borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false,
                     false);
             for (ObPair<Long, ObTableParam> pair : pairList) {
@@ -1673,12 +1691,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return list of ObPair of partId(logicId) and table obTableParams
      * @throws Exception exception
      */
-    public List<ObPair<Long, ObTableParam>> getTables(String tableName, Object[] start,
-                                                      boolean startInclusive, Object[] end,
-                                                      boolean endInclusive, boolean refresh,
-                                                      boolean waitForRefresh) throws Exception {
-        return getTables(tableName, start, startInclusive, end, endInclusive, refresh,
-            waitForRefresh, getRoute(false));
+    public List<ObPair<Long, ObTableParam>> getTables(String tableName, ObTableQuery query,
+                                                      Object[] start, boolean startInclusive,
+                                                      Object[] end, boolean endInclusive,
+                                                      boolean refresh, boolean waitForRefresh)
+            throws Exception {
+        return getTables(tableName, query, start, startInclusive, end, endInclusive, refresh,
+                waitForRefresh, getRoute(false));
     }
 
     /**
@@ -1694,23 +1713,39 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return list of ObPair of partId(logicId) and tableParam
      * @throws Exception exception
      */
-    public List<ObPair<Long, ObTableParam>> getTables(String tableName, Object[] start,
+    public List<ObPair<Long, ObTableParam>> getTables(String tableName, ObTableQuery query, Object[] start,
                                                       boolean startInclusive, Object[] end,
                                                       boolean endInclusive, boolean refresh,
                                                       boolean waitForRefresh, ObServerRoute route)
-                                                                                                  throws Exception {
+                                                                                                        throws Exception {
 
         // 1. get TableEntry information
         TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh);
+
+        List<String> scanRangeColumns = query.getScanRangeColumns();
+        if (scanRangeColumns == null || scanRangeColumns.isEmpty()) {
+            Map<String, Integer> tableEntryRowKeyElement = tableEntry.getRowKeyElement();
+            if (tableEntryRowKeyElement != null) {
+                scanRangeColumns = new ArrayList<String>(tableEntryRowKeyElement.keySet());
+            }
+        }
         // 2. get replica location
         // partIdWithReplicaList -> List<pair<logicId(partition id in 3.x), replica>>
-        String[] rowKeyColumnNames = getRowKeyElement(tableName).keySet().toArray(new String[0]);
-        Row startRow = new Row(), endRow = new Row();
-        for (int i = 0; i < start.length; ++i) {
-            startRow.add(rowKeyColumnNames[i], start[i]);
+        if (start.length != end.length) {
+            throw new IllegalArgumentException("length of start key and end key is not equal");
         }
-        for (int i = 0; i < end.length; ++i) {
-            endRow.add(rowKeyColumnNames[i], end[i]);
+
+        // ensure the format of column names and values if the current table is a table with partition
+        if ((tableEntry.isPartitionTable() && !(tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ZERO))
+                && scanRangeColumns.size() != start.length) {
+            throw new IllegalArgumentException(
+                    "length of key and scan range columns is not equal");
+        }
+        Row startRow = new Row();
+        Row endRow = new Row();
+        for (int i = 0; i < scanRangeColumns.size(); i++) {
+            startRow.add(scanRangeColumns.get(i), start[i]);
+            endRow.add(scanRangeColumns.get(i), end[i]);
         }
         List<ObPair<Long, ReplicaLocation>> partIdWithReplicaList = getPartitionReplica(tableEntry,
             startRow, startInclusive, endRow, endInclusive, route);
@@ -2804,8 +2839,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     }
                     ObBorderFlag borderFlag = rang.getBorderFlag();
                     List<ObPair<Long, ObTableParam>> pairList = getTables(request.getTableName(),
-                        start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(),
-                        false, false);
+                            tableQuery, start, borderFlag.isInclusiveStart(), end,
+                            borderFlag.isInclusiveEnd(), false, false);
                     for (ObPair<Long, ObTableParam> pair : pairList) {
                         partIdMapObTable.put(pair.getLeft(), pair.getRight());
                     }

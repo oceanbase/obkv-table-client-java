@@ -208,15 +208,7 @@ public class ObKeyPartDesc extends ObPartDesc {
                 }
             }
 
-            long hashValue = 0L;
-            for (int i = 0; i < partRefColumnSize; i++) {
-                hashValue = ObHashUtils.toHashcode(evalValues.get(i), partColumns.get(i),
-                    hashValue, this.getPartFuncType());
-            }
-
-            hashValue = (hashValue > 0 ? hashValue : -hashValue);
-            return ((long) partSpace << ObPartConstants.OB_PART_IDS_BITNUM)
-                   | (hashValue % this.partNum);
+            return calcPartId(evalValues);
         } catch (IllegalArgumentException e) {
             logger.error(LCD.convert("01-00023"), e);
             throw new IllegalArgumentException(
@@ -256,5 +248,23 @@ public class ObKeyPartDesc extends ObPartDesc {
         return new ToStringBuilder(this).append("partSpace", partSpace).append("partNum", partNum)
             .append("partFuncType", this.getPartFuncType()).append("partExpr", this.getPartExpr())
             .toString();
+    }
+
+    // calc partition id from eval values
+    private Long calcPartId(List<Object> evalValues) {
+        if (evalValues == null || evalValues.size() != partColumns.size()) {
+            throw new IllegalArgumentException("invalid eval values :" + evalValues);
+        }
+
+        long hashValue = 0L;
+        for (int i = 0; i < partColumns.size(); i++) {
+            hashValue = ObHashUtils.toHashcode(evalValues.get(i),
+                    partColumns.get(i), hashValue,
+                    this.getPartFuncType());
+        }
+
+        hashValue = (hashValue > 0 ? hashValue : -hashValue);
+        return ((long) partSpace << ObPartConstants.OB_PART_IDS_BITNUM)
+                | (hashValue % this.partNum);
     }
 }
