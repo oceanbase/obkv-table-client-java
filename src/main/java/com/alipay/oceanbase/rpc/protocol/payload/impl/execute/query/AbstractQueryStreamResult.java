@@ -137,7 +137,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                             route.setBlackList(failedServerList);
                         }
                         subObTable = client
-                            .getTable(indexTableName, partIdWithIndex.getLeft(),
+                            .getTableWithPartId(indexTableName, partIdWithIndex.getLeft(),
                                 needRefreshTableEntry, client.isTableEntryRefreshIntervalWait(),
                                 route).getRight().getObTable();
                     }

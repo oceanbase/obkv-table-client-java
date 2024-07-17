@@ -339,7 +339,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             for (int j = 0; j < rowKeySize; j++) {
                 rowKey[j] = rowkeyObjs.get(j).getValue();
             }
-            ObPair<Long, ObTableParam>  tableObPair= obTableClient.getTable(tableName, rowKey,
+            ObPair<Long, ObTableParam>  tableObPair= obTableClient.getTableBySingleRowKeyWithRoute(tableName, rowKey,
                     false, false, obTableClient.getRoute(false));
             long lsId = tableObPair.getRight().getLsId();
 
@@ -459,7 +459,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
-                        subObTable = obTableClient.getTable(tableName, originPartId, needRefreshTableEntry,
+                        subObTable = obTableClient.getTableWithPartId(tableName, originPartId, needRefreshTableEntry,
                                         obTableClient.isTableEntryRefreshIntervalWait(), route).
                                             getRight().getObTable();
                     }

@@ -127,9 +127,9 @@ public class ObTableRemoting extends BaseRemoting {
                         "routed to the wrong server: " + response.getMessage());
                 logger.warn(errMessage);
                 if (needFetchAll(resultCode.getRcode())) {
-                    throw new ObTableRoutingWrongException(errMessage);
+                    throw new ObTableNeedFetchAllException(errMessage);
                 } else {
-                    throw new ObTableMasterChangeException(errMessage);
+                    throw new ObTableRoutingWrongException(errMessage);
                 }
             }
             if (resultCode.getRcode() != 0) {
@@ -178,7 +178,6 @@ public class ObTableRemoting extends BaseRemoting {
                || errorCode == ResultCodes.OB_UNKNOWN_PARTITION.errorCode
                || errorCode == ResultCodes.OB_PARTITION_NOT_MATCH.errorCode
                || errorCode == ResultCodes.OB_TABLET_NOT_EXIST.errorCode
-               || errorCode == ResultCodes.OB_REPLICA_NOT_READABLE.errorCode
-               || errorCode == ResultCodes.OB_SCHEMA_EAGAIN.errorCode;
+               || errorCode == ResultCodes.OB_REPLICA_NOT_READABLE.errorCode;
     }
 }
