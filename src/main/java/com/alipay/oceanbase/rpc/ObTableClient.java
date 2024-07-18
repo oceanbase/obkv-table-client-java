@@ -788,12 +788,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
     }
 
-    public void resetContinuousFailureByTableName(String tableName) {
-        AtomicLong res = tableContinuousFailures.get(tableName);
-        if (res != null) {
-            res.set(0);
-        }
-    }
 
     /**
      * Reset execute continuous failure count.
@@ -1530,9 +1524,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws Exception exception
      */
     public ObPair<Long, ObTableParam> getTableWithPartId(String tableName, long partId,
-                                                         boolean refresh, boolean waitForRefresh,
+                                                         boolean refresh, boolean waitForRefresh, boolean needFetchAll,
                                                          ObServerRoute route) throws Exception {
-        TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh, false);
+        TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh, needFetchAll);
         return getTableInternal(tableName, tableEntry, partId, waitForRefresh, route);
     }
 

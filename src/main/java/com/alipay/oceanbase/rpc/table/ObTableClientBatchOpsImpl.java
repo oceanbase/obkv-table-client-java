@@ -298,6 +298,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         ObTableBatchOperationResult subObTableBatchOperationResult;
 
         boolean needRefreshTableEntry = false;
+        boolean needFetchAllRouteInfo = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
         Set<String> failedServerList = null;
@@ -334,7 +335,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         }
                         ObTableParam newParam = obTableClient.getTableWithPartId(tableName,
                             originPartId, needRefreshTableEntry,
-                            obTableClient.isTableEntryRefreshIntervalWait(), route).getRight();
+                            obTableClient.isTableEntryRefreshIntervalWait(), needFetchAllRouteInfo, route).getRight();
 
                         subObTable = newParam.getObTable();
                         subRequest.setPartitionId(newParam.getPartitionId());
@@ -383,10 +384,9 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                                 tableName, partId, ((ObTableException) ex).getErrorCode(),
                                 tryTimes, ex);
                         if (ex instanceof ObTableNeedFetchAllException) {
-                            obTableClient.getOrRefreshTableEntry(tableName, true,
-                                obTableClient.isTableEntryRefreshIntervalWait(), true);
+                            needFetchAllRouteInfo = true;
                             // reset failure count while fetch all route info
-                            obTableClient.resetContinuousFailureByTableName(tableName);
+                            obTableClient.resetExecuteContinuousFailureCount(tableName);
                         }
                     } else {
                         obTableClient.calculateContinuousFailure(tableName, ex.getMessage());
