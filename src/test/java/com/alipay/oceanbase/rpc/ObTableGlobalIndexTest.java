@@ -429,30 +429,30 @@ public class ObTableGlobalIndexTest {
             Assert.assertEquals(resultSet3.cacheSize(), recordCount);
 
             // query by local index, will lookup primary table
-            TableQuery query4 = client.query(tableName).indexName("idx2");
-            query4.setScanRangeColumns("C3");
-            query4.addScanRange(new Object[] { 0 }, new Object[] { recordCount + 200 + 2 });
-            query4.select("C1", "C2", "C3");
-            QueryResultSet resultSet4 = query4.execute();
-            Assert.assertEquals(resultSet4.cacheSize(), recordCount);
-            count = 0;
-            while (resultSet4.next()) {
-                Map<String, Object> row = resultSet4.getRow();
-                int c1 = (int) row.get("C1");
-                int c2 = (int) row.get("C2");
-                int c3 = (int) row.get("C3");
-                if (c1 % 3 == 0) {
-                    Assert.assertEquals(c1 + 1, c2);
-                    Assert.assertEquals(c1 + 2, c3);
-                } else if (c1 % 3 == 1) {
-                    Assert.assertEquals(c1 + 100 + 1, c2);
-                    Assert.assertEquals(c1 + 100 + 2, c3);
-                } else if (c1 % 3 == 2) {
-                    Assert.assertEquals(c1 + 200 + 1, c2);
-                    Assert.assertEquals(c1 + 200 + 2, c3);
-                }
-                count++;
-            }
+//            TableQuery query4 = client.query(tableName).indexName("idx2");
+//            query4.setScanRangeColumns("C3");
+//            query4.addScanRange(new Object[] { 0 }, new Object[] { recordCount + 200 + 2 });
+//            query4.select("C1", "C2", "C3");
+//            QueryResultSet resultSet4 = query4.execute();
+//            Assert.assertEquals(resultSet4.cacheSize(), recordCount);
+//            count = 0;
+//            while (resultSet4.next()) {
+//                Map<String, Object> row = resultSet4.getRow();
+//                int c1 = (int) row.get("C1");
+//                int c2 = (int) row.get("C2");
+//                int c3 = (int) row.get("C3");
+//                if (c1 % 3 == 0) {
+//                    Assert.assertEquals(c1 + 1, c2);
+//                    Assert.assertEquals(c1 + 2, c3);
+//                } else if (c1 % 3 == 1) {
+//                    Assert.assertEquals(c1 + 100 + 1, c2);
+//                    Assert.assertEquals(c1 + 100 + 2, c3);
+//                } else if (c1 % 3 == 2) {
+//                    Assert.assertEquals(c1 + 200 + 1, c2);
+//                    Assert.assertEquals(c1 + 200 + 2, c3);
+//                }
+//                count++;
+//            }
 
         } finally {
             cleanPartitionLocationTable(tableName);

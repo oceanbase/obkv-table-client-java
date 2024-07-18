@@ -29,20 +29,20 @@ import static com.alipay.oceanbase.rpc.ObGlobal.OB_VERSION;
 import static com.alipay.oceanbase.rpc.ObGlobal.calcVersion;
 
 public class ObTableClientTestUtil {
-    public static String  FULL_USER_NAME          = "full-user-name";
-    public static String  PARAM_URL               = "config-url";
-    public static String  PASSWORD                = "password";
-    public static String  PROXY_SYS_USER_NAME     = "sys-user-name";
-    public static String  PROXY_SYS_USER_PASSWORD = "sys-user-password";
+    public static String  FULL_USER_NAME          = "root@mysql#ob10.tianxiang.szy.11.158.31.66";
+    public static String  PARAM_URL               = "http://ocp-cfg.alibaba.net:8080/services?User_ID=alibaba&UID=test&Action=ObRootServiceInfo&ObCluster=ob10.tianxiang.szy.11.158.31.66&database=test";
+    public static String  PASSWORD                = "";
+    public static String  PROXY_SYS_USER_NAME     = "proxyro";
+    public static String  PROXY_SYS_USER_PASSWORD = "3u^0kCdpE";
 
     public static boolean USE_ODP                 = false;
     public static String  ODP_IP                  = "ip-addr";
     public static int     ODP_PORT                = 0;
     public static String  ODP_DATABASE            = "database-name";
 
-    public static String  JDBC_IP                 = "";
-    public static String  JDBC_PORT               = "";
-    public static String  JDBC_DATABASE           = "OCEANBASE";
+    public static String  JDBC_IP                 = "11.162.218.239";
+    public static String  JDBC_PORT               = "10805";
+    public static String  JDBC_DATABASE           = "client_test";
     public static String  JDBC_URL                = "jdbc:mysql://" + JDBC_IP + ":" + JDBC_PORT
                                                     + "/ " + JDBC_DATABASE + "?"
                                                     + "rewriteBatchedStatements=TRUE&"
