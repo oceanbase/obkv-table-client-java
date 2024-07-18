@@ -189,7 +189,7 @@ public class ObTableRemoting extends BaseRemoting {
                 || errorCode == ResultCodes.OB_TABLET_NOT_EXIST.errorCode
                 || errorCode == ResultCodes.OB_LS_NOT_EXIST.errorCode
                 || (pcode == Pcodes.OB_TABLE_API_LS_EXECUTE && errorCode == ResultCodes.OB_NOT_MASTER.errorCode)
-                // Theoretically, this code should not be executed since there is no corresponding handling within the DOP.  
+                // Theoretically, this code should not be executed since there is no corresponding handling within the ODP.  
                 // However, the observer has flagged the following three error codes.  
                 // Adding this handling as a precautionary measure.
                 || errorCode == ResultCodes.OB_NO_READABLE_REPLICA.errorCode
