@@ -210,7 +210,6 @@ public class ObHashPartDesc extends ObPartDesc {
                 Long longValue = ObObjType.parseToLongOrNull(value);
 
                 if (longValue == null) {
-                    System.out.println("YES!");
                     throw new IllegalArgumentException("can not parseToComparable value [" + value
                                                        + "] to long");
                 }
