@@ -1484,11 +1484,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (!tableRowKeyElement.isEmpty()) {
                 inputRowKeyNames = new ArrayList<>(getRowKeyElement(tableName).keySet());
             }
-//            if (curTableRowKeyNames.size() != rowKey.length) {
-//                throw new ObTableException(
-//                        "The rowKey Param should include the entire row key but receive "
-//                                + Arrays.toString(rowKey));
-//            }
+
             // match the correct key to its row key
             for (int i = 0; i < rowKey.length; ++i) {
                 if (i < curTableRowKeyNames.size()) {
@@ -1911,7 +1907,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             @Override
             public Map<String, Object> execute(ObPair<Long, ObTableParam> obPair) throws Exception {
                 long getTableTime = System.currentTimeMillis();
-                ObTableParam tableParam = obPair.getRight(); // 无理解如何通过getRight获得对应table参数
+                ObTableParam tableParam = obPair.getRight();
                 ObTable obTable = tableParam.getObTable();
                 ObTableOperationRequest request = ObTableOperationRequest.getInstance(tableName,
                     GET, rowKey, columns, null, obTable.getObTableOperationTimeout());
