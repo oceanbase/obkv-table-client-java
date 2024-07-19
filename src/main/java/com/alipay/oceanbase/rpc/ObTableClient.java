@@ -451,18 +451,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private abstract class TableExecuteCallback<T> {
         private final Object[] rowKey;
 
-        //        private final Row row = new Row();
-
         TableExecuteCallback(Object[] rowKey) {
             this.rowKey = rowKey;
-            //            String[] columnNames = getRowKeyElement(tableName).keySet().toArray(new String[0]);
-            //            if(columnNames.length != rowKey.length) {
-            //                throw new ObTableException("Invalid input rowKey");
-            //            }
-            //            for(int i = 0; i < columnNames.length; ++i) {
-            //                this.row.add(columnNames[i], rowKey[i]);
-            //            }
-
         }
 
         void checkObTableOperationResult(String ip, int port, ObPayload request, ObPayload result) {
@@ -1351,12 +1341,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return
      */
     private long getPartition(TableEntry tableEntry, Row row) {
-        // change up to getTable to judge
-//        if (!tableEntry.isPartitionTable()
-//            || tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ZERO) {
-//            return 0L;
-//        }
-
         if (tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ONE) {
             return tableEntry.getPartitionInfo().getFirstPartDesc().getPartId(row);
         }
@@ -1479,8 +1463,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
         else {
             Row row = new Row();
-            List<String> curTableRowKeyNames = new ArrayList<>(tableEntry.getRowKeyElement().keySet());
-            List<String> inputRowKeyNames = new ArrayList<>();
+            List<String> curTableRowKeyNames = new ArrayList<String>(tableEntry.getRowKeyElement().keySet());
+            List<String> inputRowKeyNames = new ArrayList<String>();
             if (!tableRowKeyElement.isEmpty()) {
                 inputRowKeyNames = new ArrayList<>(getRowKeyElement(tableName).keySet());
             }
@@ -1493,7 +1477,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 else if (!inputRowKeyNames.isEmpty() && i < inputRowKeyNames.size()) {  // add the rest redundant row key element
                     row.add(inputRowKeyNames.get(i), rowKey[i]);
                 }
-                else { // the rowKey Element in the table only contain partition key(s)
+                else { // the rowKey element in the table only contain partition key(s)
                     break;
                 }
             }
