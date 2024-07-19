@@ -27,7 +27,7 @@ public abstract class AbstractTableBatchOps implements TableBatchOps {
     protected boolean           atomicOperation;
     protected boolean           returnOneResult;
 
-    protected ObTableEntityType entityType = ObTableEntityType.DYNAMIC;
+    protected ObTableEntityType entityType = ObTableEntityType.KV;
 
     /**
      * Get.

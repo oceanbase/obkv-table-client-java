@@ -207,6 +207,7 @@ CREATE TABLE IF NOT EXISTS `test_hbase$fn` (
     `Q` varbinary(256) NOT NULL,
     `T` bigint(20) NOT NULL,
     `V` varbinary(1024) DEFAULT NULL,
+    KEY `idx_k_v` (`K`, `V`) LOCAL,
     PRIMARY KEY (`K`, `Q`, `T`)
 );
 
@@ -588,5 +589,12 @@ CREATE TABLE IF NOT EXISTS  `audit_test` (
      KEY `idx_c2` (`c2`) LOCAL,
      KEY `idx_c3` (`c3`) LOCAL,
      primary key (c1));
+
+ CREATE TABLE IF NOT EXISTS `test_p99` (
+     `c1` bigint(20) NOT NULL,
+     `c2` bigint(20) DEFAULT NULL,
+     `c3` varchar(20) DEFAULT "hello",
+     PRIMARY KEY (`c1`)
+     );
 
 alter system set kv_hotkey_throttle_threshold = 50;

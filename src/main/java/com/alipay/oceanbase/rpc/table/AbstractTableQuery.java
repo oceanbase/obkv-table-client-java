@@ -28,7 +28,7 @@ import java.util.List;
 public abstract class AbstractTableQuery implements TableQuery {
     private static final String PRIMARY_INDEX_NAME = "PRIMARY";
 
-    protected ObTableEntityType entityType         = ObTableEntityType.DYNAMIC;
+    protected ObTableEntityType entityType         = ObTableEntityType.KV;
 
     protected long              operationTimeout   = -1;
 

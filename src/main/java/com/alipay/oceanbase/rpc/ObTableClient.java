@@ -1498,8 +1498,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws Exception exception
      */
     public ObPair<Long, ObTableParam> getTable(String tableName, ObTableQuery query, List<ObNewRange> keyRanges, boolean refresh,
-                                               boolean waitForRefresh, ObServerRoute route)
-            throws Exception {
+                                          boolean waitForRefresh, ObServerRoute route)
+                                                                                      throws Exception {
         Map<Long, ObTableParam> partIdMapObTable = new HashMap<Long, ObTableParam>();
         for (ObNewRange rang : keyRanges) {
             ObRowKey startKey = rang.getStartKey();
@@ -1671,13 +1671,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return list of ObPair of partId(logicId) and table obTableParams
      * @throws Exception exception
      */
-    public List<ObPair<Long, ObTableParam>> getTables(String tableName, ObTableQuery query,
-                                                      Object[] start, boolean startInclusive,
-                                                      Object[] end, boolean endInclusive,
-                                                      boolean refresh, boolean waitForRefresh)
-            throws Exception {
+
+    public List<ObPair<Long, ObTableParam>> getTables(String tableName, ObTableQuery query, Object[] start,
+                                                      boolean startInclusive, Object[] end,
+                                                      boolean endInclusive, boolean refresh,
+                                                      boolean waitForRefresh) throws Exception {
         return getTables(tableName, query, start, startInclusive, end, endInclusive, refresh,
-                waitForRefresh, getRoute(false));
+            waitForRefresh, getRoute(false));
     }
 
     /**

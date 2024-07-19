@@ -65,6 +65,7 @@ public class ObRangePartDesc extends ObPartDesc {
     public List<ObObjType> getOrderedCompareColumnTypes() {
         return orderedCompareColumnTypes;
     }
+    private List<Long>          completeWorks;
 
     /*
      * Set ordered compare column types.
