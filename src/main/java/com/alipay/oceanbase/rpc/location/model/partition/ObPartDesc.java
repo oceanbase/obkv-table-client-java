@@ -223,8 +223,8 @@ public abstract class ObPartDesc {
         String[] rowColumnNames = row.getColumns();
 
         if (rowValues.length < partColumnSize) {
-            throw new IllegalArgumentException("row key is consist of " + rowKeyElement
-                                               + "but found" + Arrays.toString(rowValues));
+            throw new IllegalArgumentException("Input row key should at least include " + partColumns
+                    + "but found" + Arrays.toString(rowValues));
         }
 
 
