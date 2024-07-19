@@ -225,10 +225,7 @@ public abstract class ObPartDesc {
         if (rowValues.length < partColumnSize) {
             throw new IllegalArgumentException("row key is consist of " + rowKeyElement
                                                + "but found" + Arrays.toString(rowValues));
-        } /*else {
-            rowValues = Arrays.copyOfRange(rowValues, 0, partColumnSize);
-            rowColumnNames = Arrays.copyOfRange(rowColumnNames, 0, partColumnSize);
-        }*/
+        }
 
 
         boolean needEval = true;

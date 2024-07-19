@@ -42,7 +42,7 @@ public class ObTableClientTestUtil {
 
     public static String  JDBC_IP                 = "11.162.218.239";
     public static String  JDBC_PORT               = "10805";
-    public static String  JDBC_DATABASE           = "client_test";
+    public static String  JDBC_DATABASE           = "test";
     public static String  JDBC_URL                = "jdbc:mysql://" + JDBC_IP + ":" + JDBC_PORT
                                                     + "/ " + JDBC_DATABASE + "?"
                                                     + "rewriteBatchedStatements=TRUE&"

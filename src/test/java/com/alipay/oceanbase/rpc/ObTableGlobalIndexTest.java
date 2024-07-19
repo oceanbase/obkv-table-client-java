@@ -558,7 +558,7 @@ public class ObTableGlobalIndexTest {
                 .addMutateColVal(colVal(expireCol, curTs)).execute();
 
             // 3. re-query all inserted records, the expired record won't be returned
-            resultSet = client.query(tableName).indexName("idx2").setScanRangeColumns(intCol2)
+            resultSet = client.query(tableName).indexName("idx2").setScanRangeColumns(intCol)
                 .addScanRange(new Object[] { 101L }, new Object[] { 102L }).execute();
             Assert.assertEquals(resultSet.cacheSize(), 1);
             Assert.assertTrue(resultSet.next());
