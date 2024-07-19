@@ -136,7 +136,7 @@ public class ObKeyPartDesc extends ObPartDesc {
 
             if (startValues.equals(endValues)) {
                 List<Long> partIds = new ArrayList<Long>();
-                partIds.add(getPartId(startRow, false));
+                partIds.add(calcPartId(startValues));
                 return partIds;
             } else {
                 // partition key is different in key partition

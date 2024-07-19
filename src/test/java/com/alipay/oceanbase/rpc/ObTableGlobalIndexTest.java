@@ -345,8 +345,14 @@ public class ObTableGlobalIndexTest {
     }
 
     @Test
+    public void test_query_in_local_index_not_use_rowkey() throws Exception {
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            test_query_in_global_index_table("test_global_index_no_part");
+        });
+    }
+
+    @Test
     public void test_non_partition_index_table() throws Exception {
-        test_query_in_global_index_table("test_global_index_no_part");
         test_query_in_global_index_table("test_global_all_no_part");
         test_query_in_global_index_table("test_global_primary_no_part");
     }
@@ -430,7 +436,7 @@ public class ObTableGlobalIndexTest {
 
             // query by local index, will lookup primary table
             TableQuery query4 = client.query(tableName).indexName("idx2");
-            query4.setScanRangeColumns("C1"); // local index scanning must refer its partition column(s)
+            query4.setScanRangeColumns("C3");
             query4.addScanRange(new Object[] { 0 }, new Object[] { recordCount + 200 + 2 });
             query4.select("C1", "C2", "C3");
             QueryResultSet resultSet4 = query4.execute();
