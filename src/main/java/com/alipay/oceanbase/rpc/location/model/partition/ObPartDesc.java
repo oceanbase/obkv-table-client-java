@@ -22,7 +22,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObColumn;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.util.StringUtil;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
-import com.alipay.oceanbase.rpc.mutation.*;
+import com.alipay.oceanbase.rpc.mutation.Row;
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -92,7 +92,7 @@ public abstract class ObPartDesc {
      */
     public int getPartNum() {
         return -1;
-    };
+    }
 
     /*
      * Get ordered part column names.
