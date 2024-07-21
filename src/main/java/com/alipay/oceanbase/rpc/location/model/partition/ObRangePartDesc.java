@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.LCD;
@@ -202,6 +203,11 @@ public class ObRangePartDesc extends ObPartDesc {
      */
     public void setPartNum(int partNum) {
         this.partNum = partNum;
+        List<Long> partIds = new ArrayList<Long>();
+        for (long i = 0; i < partNum; i++) {
+            partIds.add(i);
+        }
+        completeWorks = Collections.unmodifiableList(partIds);
     }
 
     /*
