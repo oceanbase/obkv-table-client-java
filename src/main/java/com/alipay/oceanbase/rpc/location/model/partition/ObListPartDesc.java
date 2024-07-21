@@ -27,7 +27,7 @@ import org.apache.commons.lang.builder.ToStringBuilder;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -117,6 +117,10 @@ public class ObListPartDesc extends ObPartDesc {
         return partIds;
     }
 
+    @Override
+    public List<Long> getPartIds(List<String> scanRangeColumns, Object[] start, boolean startInclusive, Object[] end, boolean endInclusive) throws IllegalArgumentException {
+        throw new IllegalArgumentException("getPartIds for List partition is not supported");
+    }
     /*
      * Get part id.
      */

@@ -1671,7 +1671,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return list of ObPair of partId(logicId) and table obTableParams
      * @throws Exception exception
      */
-
     public List<ObPair<Long, ObTableParam>> getTables(String tableName, ObTableQuery query, Object[] start,
                                                       boolean startInclusive, Object[] end,
                                                       boolean endInclusive, boolean refresh,

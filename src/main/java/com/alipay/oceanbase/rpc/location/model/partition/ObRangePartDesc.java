@@ -230,6 +230,40 @@ public class ObRangePartDesc extends ObPartDesc {
         return partIds;
     }
 
+    @Override
+    public List<Long> getPartIds(List<String> scanRangeColumns, Object[] start, boolean startInclusive,
+                                 Object[] end, boolean endInclusive) {
+
+        if (start.length != end.length) {
+            throw new IllegalArgumentException("length of start key and end key is not equal");
+        }
+
+        if (start.length == 1  && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj() &&
+                end.length == 1  && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
+            return completeWorks;
+        }
+
+        if (scanRangeColumns.size() != start.length) {
+            throw new IllegalArgumentException("length of key and scan range columns is not equal");
+        }
+
+        Row startRow = new Row();
+        Row endRow = new Row();
+        for (int i = 0; i < scanRangeColumns.size(); i++) {
+            startRow.add(scanRangeColumns.get(i), start[i]);
+            endRow.add(scanRangeColumns.get(i), end[i]);
+        }
+
+        // can not detail the border effect so that the range is magnified
+        int startIdx = getBoundsIdx(true, startRow);
+        int stopIdx = getBoundsIdx(true, endRow);
+        List<Long> partIds = new ArrayList<Long>();
+        for (int i = startIdx; i <= stopIdx; i++) {
+            partIds.add(this.bounds.get(i).value);
+        }
+        return partIds;
+    }
+
     /*
      * Get part id.
      */
@@ -274,6 +308,34 @@ public class ObRangePartDesc extends ObPartDesc {
                 }
                 throw new ArrayIndexOutOfBoundsException("Table has no partition for value in "
                                                          + this.getPartExpr());
+            } else {
+                return pos;
+            }
+        } catch (IllegalArgumentException e) {
+            RUNTIME.error(LCD.convert("01-00025"), e);
+            throw new IllegalArgumentException("ObRangePartDesc get getBoundsIdx error", e);
+        }
+
+    }
+
+    public int getBoundsIdx(boolean isScan, Row rowKey) {
+        try {
+            List<Object> evalParams = evalRowKeyValues(rowKey);
+            List<Comparable> comparableElement = super.initComparableElementByTypes(evalParams,
+                    this.orderedCompareColumns);
+            ObPartitionKey searchKey = ObPartitionKey.getInstance(orderedCompareColumns,
+                    comparableElement);
+
+            int pos = upperBound(this.bounds, new ObComparableKV<ObPartitionKey, Long>(searchKey,
+                    (long) -1));
+            if (pos >= this.bounds.size()) {
+                if (isScan) {
+                    // if range is bigger than rangeMax while scanning
+                    // we just scan until last range
+                    return this.bounds.size() - 1;
+                }
+                throw new ArrayIndexOutOfBoundsException("Table has no partition for value in "
+                        + this.getPartExpr());
             } else {
                 return pos;
             }
