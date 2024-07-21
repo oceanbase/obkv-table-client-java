@@ -218,46 +218,6 @@ public abstract class ObPartDesc {
         return evalValues;
     }
 
-    public List<Object> evalRowKeyValues(Row rowKey) throws IllegalArgumentException {
-        // column or generate column
-        String[] rowkeyNames = rowKey.getColumns();
-        List<Object> evalValues = new ArrayList<Object>(orderedPartRefColumnRowKeyRelations.size());
-
-        for (int i = 0; i < orderedPartRefColumnRowKeyRelations.size(); i++) {
-            ObColumn partCol = orderedPartRefColumnRowKeyRelations.get(i).getLeft();
-            List<String> refCols = partCol.getRefColumnNames();
-            if (rowKey.size() < refCols.size()) {
-                throw new IllegalArgumentException("part column ref columns is " + refCols
-                            + "but found " + rowkeyNames);
-            }
-
-            Object[] evalParams = new Object[refCols.size()];
-            boolean needEval = true;
-            for (int j = 0; j < refCols.size(); j++) {
-                Object refObj = rowKey.get(refCols.get(j));
-                if (refObj == null) {
-                    throw new IllegalArgumentException("cannot find part column: " + refCols.get(j) +
-                            " in rowKey columns: " + rowkeyNames);
-                }
-
-                if (refCols.size() == 1 && refObj instanceof ObObj) {
-                    ObObj obj = (ObObj) refObj;
-                    if (obj.isMaxObj() || obj.isMinObj()) {
-                        evalValues.add(obj);
-                        needEval = false;
-                        break;
-                    }
-                }
-                evalParams[j] = refObj;
-            }
-
-            if (needEval) {
-                evalValues.add(partCol.evalValue(evalParams));
-            }
-        }
-        return evalValues;
-    }
-
     /*
      *
      * @param start the start row key
