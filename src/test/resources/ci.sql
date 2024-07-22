@@ -327,7 +327,7 @@ CREATE TABLE IF NOT EXISTS `test_global_hash_range` (
         partition p0 values less than (100),
         partition p1 values less than (200),
         partition p2 values less than (300)
-        ) partition by hash(c1) partitions 5;
+        KEY `idx2` (`C3`)  LOCAL) partition by hash(c1) partitions 5;
 
 CREATE TABLE IF NOT EXISTS `test_global_hash_hash` (
   `c1` int(11) NOT NULL,
