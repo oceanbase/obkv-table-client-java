@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.bolt.transport;
 
+import com.alibaba.fastjson.JSONObject;
 import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.LocationUtil;
@@ -25,6 +26,8 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.login.ObTableLoginResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.util.*;
 import com.alipay.remoting.Connection;
+import com.mysql.cj.xdevapi.JsonString;
+import jdk.nashorn.internal.ir.debug.JSONWriter;
 import org.slf4j.Logger;
 
 import java.net.ConnectException;
@@ -127,6 +130,8 @@ public class ObTableConnection {
         request.setTenantName(obTable.getTenantName());
         request.setUserName(obTable.getUserName());
         request.setDatabaseName(obTable.getDatabase());
+        JSONObject json = new JSONObject(obTable.getConfigs());
+        request.setConfigsStr(json.toJSONString());
         generatePassSecret(request);
         ObTableLoginResult result;
 

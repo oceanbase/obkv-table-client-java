@@ -36,6 +36,7 @@ import com.alipay.remoting.connection.ConnectionFactory;
 import com.alipay.remoting.exception.RemotingException;
 
 import java.net.ConnectException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
@@ -56,6 +57,8 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     private ConnectionFactory     connectionFactory;
     private ObTableRemoting       realClient;
     private ObTableConnectionPool connectionPool;
+    
+    private Map<String, Object> configs;
 
     private volatile boolean      initialized = false;
     private volatile boolean      closed      = false;
@@ -539,6 +542,14 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         this.database = database;
     }
 
+    public void setConfigs(Map<String, Object> configs) {
+        this.configs = configs; 
+    }
+    
+    public Map<String, Object> getConfigs() {
+        return this.configs;
+    }
+    
     /*
      * Get connection factory.
      */
@@ -596,6 +607,8 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         private String     database;
 
         private Properties properties = new Properties();
+        
+        private Map<String, Object> tableConfigs = new HashMap<>();
 
         /*
          * Builder.
@@ -632,6 +645,11 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             this.properties = properties;
             return this;
         }
+        
+        public Builder setConfigs(Map<String, Object> tableConfigs) {
+            this.tableConfigs = tableConfigs;
+            return this;
+        }
 
         /*
          * Build.
@@ -645,6 +663,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             obTable.setPassword(password);
             obTable.setDatabase(database);
             obTable.setProperties(properties);
+            obTable.setConfigs(tableConfigs);
 
             obTable.init();
 
