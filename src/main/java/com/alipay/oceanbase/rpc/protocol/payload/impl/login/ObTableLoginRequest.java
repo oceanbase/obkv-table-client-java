@@ -374,9 +374,10 @@ public class ObTableLoginRequest extends AbstractPayload {
         this.ttlUs = ttlUs;
     }
     
-    public String getConfigsStr() {      return configsStr;
+    public String getConfigsStr() {
+        return configsStr;
     }
-    
+
     public void setConfigsStr(String configsStr) {
         this.configsStr = configsStr;
     }

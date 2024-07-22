@@ -26,11 +26,10 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.login.ObTableLoginResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.util.*;
 import com.alipay.remoting.Connection;
-import com.mysql.cj.xdevapi.JsonString;
-import jdk.nashorn.internal.ir.debug.JSONWriter;
 import org.slf4j.Logger;
 
 import java.net.ConnectException;
+import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -48,11 +47,25 @@ public class ObTableConnection {
     private long                uniqueId;                                              // as trace0 in rpc header
     private AtomicLong          sequence;                                              // as trace1 in rpc header
     private AtomicBoolean       isReConnecting = new AtomicBoolean(false);             // indicate is re-connecting or not
+    private AtomicBoolean       isExpired      = new AtomicBoolean(false);
+    private LocalDateTime       lastConnectionTime;
 
     public static long ipToLong(String strIp) {
         String[] ip = strIp.split("\\.");
         return (Long.parseLong(ip[0]) << 24) + (Long.parseLong(ip[1]) << 16)
                + (Long.parseLong(ip[2]) << 8) + (Long.parseLong(ip[3]));
+    }
+
+    public boolean checkExpired() {
+        return lastConnectionTime.isBefore(LocalDateTime.now().minusSeconds(30));
+    }
+
+    public boolean isExpired() {
+        return isExpired.get();
+    }
+
+    public void setExpired(boolean expired) {
+        isExpired.set(expired);
     }
 
     /*
@@ -117,6 +130,7 @@ public class ObTableConnection {
         // login the server. If login failed, close the raw connection to make the connection creation atomic.
         try {
             login();
+            lastConnectionTime = LocalDateTime.now();
         } catch (Exception e) {
             close();
             throw e;

@@ -157,7 +157,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private ConcurrentHashMap<String, String>                 TableGroupCache                         = new ConcurrentHashMap<String, String>();              // tableGroup -> Table
     private ConcurrentHashMap<String, String>                 TableGroupInverted                      = new ConcurrentHashMap<String, String>();              // Table -> tableGroup
 
-    private Map<String, Object>              TableConfigs                            = new HashMap<>();
+    private String                                            clientId;
+    private Map<String, Object>                               TableConfigs                            = new HashMap<>();
     /*
      * Init.
      */
@@ -170,10 +171,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (initialized) {
                 return;
             }
+            // 1. init clientId
+            clientId = Long.toString(UUID.randomUUID().getLeastSignificantBits());
+            // 2. init table configs map
             initTableConfigs();
-            // 1.init properties
+            // 3. init properties
             initProperties();
-            // 2. init metadata
+            // 4. init metadata
             initMetadata();
             initialized = true;
         } catch (Throwable t) {
@@ -252,7 +256,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
     
     private void initTableConfigs() {
-        String clientId = "";
         TableConfigs.put("client_id", clientId);
         TableConfigs.put("run_time", new HashMap<String, String>());
         TableConfigs.put("log", new HashMap<String, String>());
