@@ -167,7 +167,8 @@ public class ObTableLoginRequest extends AbstractPayload {
                + Serialization.getNeedBytes(reversed3) + Serialization.getNeedBytes(tenantName)
                + Serialization.getNeedBytes(userName) + Serialization.getNeedBytes(passSecret)
                + Serialization.getNeedBytes(passScramble)
-               + Serialization.getNeedBytes(databaseName) + Serialization.getNeedBytes(ttlUs);
+               + Serialization.getNeedBytes(databaseName) + Serialization.getNeedBytes(ttlUs)
+               + Serialization.getNeedBytes(configsStr);
     }
 
     /*
