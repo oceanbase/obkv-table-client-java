@@ -23,7 +23,6 @@ import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.result.*;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
@@ -244,8 +243,9 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             for (int j = 0; j < rowKeySize; j++) {
                 rowKey[j] = rowKeyObject.getObj(j).getValue();
             }
-            ObPair<Long, ObTableParam> tableObPair = obTableClient.getTable(tableName, rowKey,
-                false, false, obTableClient.getRoute(batchOperation.isReadOnly()));
+            ObPair<Long, ObTableParam> tableObPair = obTableClient.getTableBySingleRowKeyWithRoute(
+                tableName, rowKey, false, false,
+                obTableClient.getRoute(batchOperation.isReadOnly()));
             ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>> obTableOperations = partitionOperationsMap
                 .get(tableObPair.getLeft());
             if (obTableOperations == null) {
@@ -298,6 +298,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         ObTableBatchOperationResult subObTableBatchOperationResult;
 
         boolean needRefreshTableEntry = false;
+        boolean needFetchAllRouteInfo = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
         Set<String> failedServerList = null;
@@ -332,10 +333,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
-                        subObTable = obTableClient
-                            .getTable(tableName, originPartId, needRefreshTableEntry,
-                                obTableClient.isTableEntryRefreshIntervalWait(), route).getRight()
-                            .getObTable();
+                        ObTableParam newParam = obTableClient.getTableWithPartId(tableName,
+                            originPartId, needRefreshTableEntry,
+                            obTableClient.isTableEntryRefreshIntervalWait(), needFetchAllRouteInfo, route).getRight();
+
+                        subObTable = newParam.getObTable();
+                        subRequest.setPartitionId(newParam.getPartitionId());
                     }
                 }
                 subObTableBatchOperationResult = (ObTableBatchOperationResult) subObTable
@@ -380,6 +383,11 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                                 "tablename:{} partition id:{} batch ops retry while meet ObTableMasterChangeException, errorCode: {} , retry times {}",
                                 tableName, partId, ((ObTableException) ex).getErrorCode(),
                                 tryTimes, ex);
+                        if (ex instanceof ObTableNeedFetchAllException) {
+                            needFetchAllRouteInfo = true;
+                            // reset failure count while fetch all route info
+                            obTableClient.resetExecuteContinuousFailureCount(tableName);
+                        }
                     } else {
                         obTableClient.calculateContinuousFailure(tableName, ex.getMessage());
                         throw ex;
