@@ -38,7 +38,6 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncRequest;
 import com.alipay.oceanbase.rpc.table.*;
-import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
