@@ -125,6 +125,7 @@ public class ObHashPartDesc extends ObPartDesc {
                         throw new IllegalArgumentException("rowkey length is " + startRow.size()
                                                            + ", which is shortest than " + refIdx);
                     }
+                    // TODO: what if the curObRefColumnName does not exist in the startRow
                     if (startRow.get(curObRefColumnName) instanceof ObObj
                         && (((ObObj) startRow.get(curObRefColumnName)).isMinObj() || ((ObObj) startRow
                             .get(curObRefColumnName)).isMaxObj())) {

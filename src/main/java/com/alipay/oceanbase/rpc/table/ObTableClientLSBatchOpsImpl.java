@@ -163,10 +163,10 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         query.setFilterString(checkAndInsUp.getFilter().toString());
 
         String[] rowKeyNames = checkAndInsUp.getInsUp().getRowKeyNames().toArray(new String[0]);
-        Object[] rowKey = checkAndInsUp.getInsUp().getRowKey();
+        Row rowKey = checkAndInsUp.getInsUp().getRowKey();
         String[] propertiesNames = checkAndInsUp.getInsUp().getColumns();
         Object[] propertiesValues = checkAndInsUp.getInsUp().getValues();
-        ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKey,
+        ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKey.getValues(),
             propertiesNames, propertiesValues);
 
         ObTableSingleOp singleOp = new ObTableSingleOp();
@@ -200,7 +200,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     public void addOperation(Mutation mutation) throws Exception {
         // entity
         String[] rowKeyNames = null;
-        Object[] rowKey = null;
+        Object[] rowKeyValues = null;
         String[] propertiesNames = null;
         Object[] propertiesValues = null;
 
@@ -211,53 +211,53 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             case INSERT:
                 ((Insert) mutation).removeRowkeyFromMutateColval();
                 rowKeyNames = ((Insert) mutation).getRowKeyNames().toArray(new String[0]);
-                rowKey = mutation.getRowKey();
+                rowKeyValues = mutation.getRowKeyValues().toArray();
                 propertiesNames = ((Insert) mutation).getColumns();
                 propertiesValues = ((Insert) mutation).getValues();
                 break;
             case DEL:
                 rowKeyNames = ((Delete) mutation).getRowKeyNames().toArray(new String[0]);
-                rowKey = mutation.getRowKey();
+                rowKeyValues = mutation.getRowKeyValues().toArray();;
                 break;
             case UPDATE:
                 ((Update) mutation).removeRowkeyFromMutateColval();
                 rowKeyNames = ((Update) mutation).getRowKeyNames().toArray(new String[0]);
-                rowKey = mutation.getRowKey();
+                rowKeyValues = mutation.getRowKeyValues().toArray();;
                 propertiesNames = ((Update) mutation).getColumns();
                 propertiesValues = ((Update) mutation).getValues();
                 break;
             case INSERT_OR_UPDATE:
                 ((InsertOrUpdate) mutation).removeRowkeyFromMutateColval();
                 rowKeyNames = ((InsertOrUpdate) mutation).getRowKeyNames().toArray(new String[0]);
-                rowKey = mutation.getRowKey();
+                rowKeyValues = mutation.getRowKeyValues().toArray();;
                 propertiesNames = ((InsertOrUpdate) mutation).getColumns();
                 propertiesValues = ((InsertOrUpdate) mutation).getValues();
                 break;
             case REPLACE:
                 ((Replace) mutation).removeRowkeyFromMutateColval();
                 rowKeyNames = ((Replace) mutation).getRowKeyNames().toArray(new String[0]);
-                rowKey = mutation.getRowKey();
+                rowKeyValues = mutation.getRowKeyValues().toArray();;
                 propertiesNames = ((Replace) mutation).getColumns();
                 propertiesValues = ((Replace) mutation).getValues();
                 break;
             case INCREMENT:
                 ((Increment) mutation).removeRowkeyFromMutateColval();
                 rowKeyNames = ((Increment) mutation).getRowKeyNames().toArray(new String[0]);
-                rowKey = mutation.getRowKey();
+                rowKeyValues = mutation.getRowKeyValues().toArray();;
                 propertiesNames = ((Increment) mutation).getColumns();
                 propertiesValues = ((Increment) mutation).getValues();
                 break;
             case APPEND:
                 ((Append) mutation).removeRowkeyFromMutateColval();
                 rowKeyNames = ((Append) mutation).getRowKeyNames().toArray(new String[0]);
-                rowKey = mutation.getRowKey();
+                rowKeyValues = mutation.getRowKeyValues().toArray();;
                 propertiesNames = ((Append) mutation).getColumns();
                 propertiesValues = ((Append) mutation).getValues();
                 break;
             case PUT:
                 ((Put) mutation).removeRowkeyFromMutateColval();
                 rowKeyNames = ((Put) mutation).getRowKeyNames().toArray(new String[0]);
-                rowKey = mutation.getRowKey();
+                rowKeyValues = mutation.getRowKeyValues().toArray();;
                 propertiesNames = ((Put) mutation).getColumns();
                 propertiesValues = ((Put) mutation).getValues();
                 break;
@@ -265,7 +265,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 throw new ObTableException("unknown operation type " + type);
         }
 
-        ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKey,
+        ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKeyValues,
             propertiesNames, propertiesValues);
         ObTableSingleOp singleOp = new ObTableSingleOp();
         singleOp.setSingleOpType(type);

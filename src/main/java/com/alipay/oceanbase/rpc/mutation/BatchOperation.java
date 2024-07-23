@@ -309,12 +309,12 @@ public class BatchOperation {
     }
 
     private void negateHbaseTimestamp(Mutation mutation) {
-        Object[] rowKey = mutation.getRowKey();
-        if (rowKey == null || rowKey.length != 3) {
+        Row rowKey = mutation.getRowKey();
+        if (rowKey == null || rowKey.size() != 3) {
             throw new IllegalArgumentException("hbase rowkey length must be 3");
         } else {
-            long ts = ((long) ((ObObj) mutation.getRowKey()[2]).getValue());
-            ((ObObj) mutation.getRowKey()[2]).setValue(-ts);
+            long ts = ((long) ((ObObj) mutation.getRowKeyValues().get(2)).getValue());
+            ((ObObj) mutation.getRowKeyValues().get(2)).setValue(-ts);
         }
     }
 }
