@@ -538,7 +538,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 if (odpMode) {
                     obPair = new ObPair<Long, ObTableParam>(0L, new ObTableParam(odpTable));
                 } else {
-                    obPair = getTableBySingleRowKeyWithRoute(tableName, callback.getRowKey(),
+                    obPair = getTable(tableName, callback.getRowKey(),
                         needRefreshTableEntry, tableEntryRefreshIntervalWait, route);
                 }
                 T t = callback.execute(obPair);
@@ -1429,11 +1429,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return ObPair of partId and table
      * @throws Exception exception
      */
-    public ObPair<Long, ObTableParam> getTableBySingleRowKey(String tableName, Object[] rowKey,
+    public ObPair<Long, ObTableParam> getTable(String tableName, Object[] rowKey,
                                                              boolean refresh, boolean waitForRefresh)
                                                                                                      throws Exception {
         ObServerRoute route = getRoute(false);
-        return getTableBySingleRowKeyWithRoute(tableName, rowKey, refresh, waitForRefresh, route);
+        return getTable(tableName, rowKey, refresh, waitForRefresh, route);
     }
 
     /**
@@ -1553,7 +1553,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         long partId;
         partId = getPartition(tableEntry, rowKey); // partition id in 3.x, origin partId in 4.x, logicId
 
-        return getTable(tableName, tableEntry, partId, waitForRefresh, route);
+        return getTableInternal(tableName, tableEntry, partId, waitForRefresh, route);
     }
 
     /**
