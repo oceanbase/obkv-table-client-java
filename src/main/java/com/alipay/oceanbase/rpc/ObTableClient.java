@@ -256,7 +256,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     
     private void initTableConfigs() {
         TableConfigs.put("client_id", clientId);
-        TableConfigs.put("run_time", new HashMap<String, String>());
+        TableConfigs.put("runtime", new HashMap<String, String>());
         TableConfigs.put("log", new HashMap<String, String>());
         TableConfigs.put("route", new HashMap<String, String>());
         TableConfigs.put("thread_pool", new HashMap<String, Boolean>());
