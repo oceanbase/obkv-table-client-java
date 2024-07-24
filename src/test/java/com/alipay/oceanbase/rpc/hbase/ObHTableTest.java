@@ -55,7 +55,7 @@ public class ObHTableTest {
             throw new ObTableException("ODP Mode does not support this test");
         } else {
             client = obTableClient
-                .getTableBySingleRowKey("test_varchar_table", new Object[] { "abc" }, true, true).getRight()
+                .getTableBySingleRowKey("test_varchar_table", new Object[] { "abc" }, true, true, false).getRight()
                 .getObTable();
             this.obTableClient = obTableClient;
         }
