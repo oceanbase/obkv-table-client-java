@@ -718,7 +718,11 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         public void init() throws Exception {
             for (int i = 0; i < obTableConnectionPoolSize; i++) {
                 connectionPool[i] = new ObTableConnection(obTable);
+                if (i == 0) {
+                    connectionPool[i].enableLoginWithConfigs();
+                }
                 connectionPool[i].init();
+                
             }
             this.cleanerExecutor.scheduleAtFixedRate(this::checkAndReconnect, 0, 1, TimeUnit.MINUTES);
         }
@@ -792,6 +796,9 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                 int idx = expiredConnIds.get(i);
                 locks[idx].lock();
                 try {
+                    if (i == 0) {
+                        connectionPool[idx].enableLoginWithConfigs();
+                    }
                     connectionPool[idx].reConnectAndLogin("expired");
                 } catch (Exception e) {
                     log.warn("ObTableConnectionPool::checkAndReconnect reconnect fail {}. {}", connectionPool[idx].getConnection().getUrl(), e.getMessage());
