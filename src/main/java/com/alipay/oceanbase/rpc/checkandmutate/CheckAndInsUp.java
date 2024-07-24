@@ -89,8 +89,8 @@ public class CheckAndInsUp {
         Row rowKey = getRowKey();
         List<ObNewRange> ranges = new ArrayList<>();
         ObNewRange range = new ObNewRange();
-        range.setStartKey(ObRowKey.getInstance(insUp.getRowKey()));
-        range.setEndKey(ObRowKey.getInstance(insUp.getRowKey()));
+        range.setStartKey(ObRowKey.getInstance(insUp.getRowKey().getValues()));
+        range.setEndKey(ObRowKey.getInstance(insUp.getRowKey().getValues()));
         ranges.add(range);
         query.getObTableQuery().setKeyRanges(ranges);
         ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.INSERT_OR_UPDATE,

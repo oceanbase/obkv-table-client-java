@@ -53,8 +53,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.alipay.oceanbase.rpc.constant.Constants.ALL_DUMMY_TABLE;
-import static com.alipay.oceanbase.rpc.constant.Constants.OCEANBASE_DATABASE;
+import static com.alipay.oceanbase.rpc.constant.Constants.*;
 import static com.alipay.oceanbase.rpc.location.LocationUtil.*;
 import static com.alipay.oceanbase.rpc.location.model.ObServerRoute.STRONG_READ;
 import static com.alipay.oceanbase.rpc.location.model.TableEntry.HBASE_ROW_KEY_ELEMENT;
@@ -1451,21 +1450,32 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                                                            throws Exception {
         TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh, false);
         Row row = new Row();
-        List<String> curTableRowKeyNames = new ArrayList<String>();
-        Map<String, Integer> tableEntryRowKeyElement = getRowKeyElement(tableName);
-        if (tableEntryRowKeyElement != null) {
-            curTableRowKeyNames = new ArrayList<String>(tableEntryRowKeyElement.keySet());
+        if (tableEntry.isPartitionTable()
+                && tableEntry.getPartitionInfo().getLevel() != ObPartitionLevel.LEVEL_ZERO) {
+            List<String> curTableRowKeyNames = new ArrayList<String>();
+            Map<String, Integer> tableRowKeyEle = getRowKeyElement(tableName);
+            if (tableRowKeyEle != null) {
+                curTableRowKeyNames = new ArrayList<String>(tableRowKeyEle.keySet());
+            }
+            Map<String, Integer> tableEntryRowKeyElement = tableEntry.getRowKeyElement();
+            if (curTableRowKeyNames.isEmpty() && tableEntryRowKeyElement != null) {
+                curTableRowKeyNames = new ArrayList<String>(tableEntryRowKeyElement.keySet());
+            }
+            if (curTableRowKeyNames.isEmpty()) {
+                throw new IllegalArgumentException("Please make sure add row key elements");
+            }
+
+            // match the correct key to its row key
+            for (int i = 0; i < rowKey.length; ++i) {
+                if (i < curTableRowKeyNames.size()) {
+                    row.add(curTableRowKeyNames.get(i), rowKey[i]);
+                }
+                else { // the rowKey element in the table only contain partition key(s) or the input row key has redundant elements
+                    break;
+                }
+            }
         }
 
-        // match the correct key to its row key
-        for (int i = 0; i < rowKey.length; ++i) {
-            if (i < curTableRowKeyNames.size()) {
-                row.add(curTableRowKeyNames.get(i), rowKey[i]);
-            }
-            else { // the rowKey element in the table only contain partition key(s) or the input row key has redundant elements
-                break;
-            }
-        }
         long partId = getPartition(tableEntry, row); // partition id in 3.x, origin partId in 4.x, logicId
 
         return getTableInternal(tableName, tableEntry, partId, waitForRefresh, route);
@@ -1722,7 +1732,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         List<String> scanRangeColumns = query.getScanRangeColumns();
         if (scanRangeColumns == null || scanRangeColumns.isEmpty()) {
-            Map<String, Integer> tableEntryRowKeyElement = getRowKeyElement(tableName);
+            Map<String, Integer> tableEntryRowKeyElement = tableEntry.getRowKeyElement();
             if (tableEntryRowKeyElement != null) {
                 scanRangeColumns = new ArrayList<String>(tableEntryRowKeyElement.keySet());
             }

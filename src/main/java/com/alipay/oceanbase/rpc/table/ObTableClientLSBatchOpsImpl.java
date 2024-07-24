@@ -156,8 +156,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
         ObTableSingleOpQuery query = new ObTableSingleOpQuery();
         ObNewRange range = new ObNewRange();
-        range.setStartKey(ObRowKey.getInstance(insUp.getRowKey()));
-        range.setEndKey(ObRowKey.getInstance(insUp.getRowKey()));
+        range.setStartKey(ObRowKey.getInstance(insUp.getRowKey().getValues()));
+        range.setEndKey(ObRowKey.getInstance(insUp.getRowKey().getValues()));
         query.addScanRangeColumns(insUp.getRowKeyNames());
         query.addScanRange(range);
         query.setFilterString(checkAndInsUp.getFilter().toString());
@@ -339,7 +339,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             for (int j = 0; j < rowKeySize; j++) {
                 rowKey[j] = rowkeyObjs.get(j).getValue();
             }
-            ObPair<Long, ObTableParam>  tableObPair= obTableClient.getTableBySingleRowKeyWithRoute(tableName, rowKey,
+            ObPair<Long, ObTableParam>  tableObPair= obTableClient.getTable(tableName, rowKey,
                     false, false, obTableClient.getRoute(false));
             long lsId = tableObPair.getRight().getLsId();
 
