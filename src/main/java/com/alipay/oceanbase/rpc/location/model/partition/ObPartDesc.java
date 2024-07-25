@@ -23,6 +23,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObColumn;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.util.StringUtil;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
+import com.alipay.oceanbase.rpc.mutation.Row;
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -92,7 +93,7 @@ public abstract class ObPartDesc {
      */
     public int getPartNum() {
         return -1;
-    };
+    }
 
     /*
      * Get ordered part column names.
@@ -169,129 +170,51 @@ public abstract class ObPartDesc {
 
     //to prepare partition calculate resource
     //to check partition calculate is ready
-    public void prepare() throws IllegalArgumentException {
-        if (orderedPartColumnNames == EMPTY_LIST) {
-            throw new IllegalArgumentException(
-                "prepare ObPartDesc failed. orderedPartColumnNames is empty");
-        }
-
-        if (rowKeyElement == null || rowKeyElement.size() == 0) {
-            throw new IllegalArgumentException("prepare ObPartDesc failed. rowKeyElement is empty");
-        }
-
-        if (partColumns == null || partColumns.size() == 0) {
-            throw new IllegalArgumentException("prepare ObPartDesc failed. partColumns is empty");
-        }
-        List<ObPair<ObColumn, List<Integer>>> orderPartRefColumnRowKeyRelations = new ArrayList<ObPair<ObColumn, List<Integer>>>(
-            orderedPartColumnNames.size());
-        for (String partOrderColumnName : orderedPartColumnNames) {
-            for (ObColumn column : partColumns) {
-                if (column.getColumnName().equalsIgnoreCase(partOrderColumnName)) {
-                    List<Integer> partRefColumnRowKeyIndexes = new ArrayList<Integer>(column
-                        .getRefColumnNames().size());
-                    for (String refColumn : column.getRefColumnNames()) {
-                        boolean rowKeyElementRefer = false;
-                        for (String rowKeyElementName : rowKeyElement.keySet()) {
-                            if (rowKeyElementName.equalsIgnoreCase(refColumn)) {
-                                partRefColumnRowKeyIndexes
-                                    .add(rowKeyElement.get(rowKeyElementName));
-                                rowKeyElementRefer = true;
-                            }
-                        }
-                        if (!rowKeyElementRefer) {
-                            throw new IllegalArgumentException("partition order column "
-                                                               + partOrderColumnName
-                                                               + " refer to non-row-key column "
-                                                               + refColumn);
-                        }
-                    }
-                    orderPartRefColumnRowKeyRelations.add(new ObPair<ObColumn, List<Integer>>(
-                        column, partRefColumnRowKeyIndexes));
-                }
-            }
-        }
-        this.orderedPartRefColumnRowKeyRelations = orderPartRefColumnRowKeyRelations;
-    }
+    public void prepare() throws IllegalArgumentException { /* do nothing now */ }
 
     /*
      * Eval row key values.
      */
-    public List<Object> evalRowKeyValues(Object... rowKey) throws IllegalArgumentException {
-        int partRefColumnSize = orderedPartRefColumnRowKeyRelations.size();
-        List<Object> evalValues = new ArrayList<Object>(partRefColumnSize);
+    public List<Object> evalRowKeyValues(Row row) throws IllegalArgumentException {
+        int partColumnSize = partColumns.size();
+        List<Object> evalValues = new ArrayList<Object>(partColumnSize);
+        Object[] rowValues = row.getValues();
+        String[] rowColumnNames = row.getColumns();
+
+        if (rowValues.length < partColumnSize) {
+            throw new IllegalArgumentException("Input row key should at least include " + partColumns
+                    + "but found" + Arrays.toString(rowValues));
+        }
+
+
+        boolean needEval = true;
+
         // column or generate column
-        for (int i = 0; i < partRefColumnSize; i++) {
-            ObPair<ObColumn, List<Integer>> orderedPartRefColumnRowKeyRelation = orderedPartRefColumnRowKeyRelations
-                .get(i);
-            Object[] partKey;
-            if (rowKey.length < rowKeyElement.size()) {
-                throw new IllegalArgumentException("row key is consist of " + rowKeyElement
-                                                   + "but found" + Arrays.toString(rowKey));
-            } else {
-                partKey = Arrays.copyOfRange(rowKey, 0, rowKeyElement.size());
-            }
-            // row key is consists of multi column
-            List<Integer> refIndex = orderedPartRefColumnRowKeyRelation.getRight();
-            Object[] evalParams = new Object[refIndex.size()];
-            boolean needEval = true;
-            for (int j = 0; j < refIndex.size(); j++) {
-                // TODO where get the type of ref column ?
-                if (refIndex.size() == 1 && partKey[refIndex.get(j)] instanceof ObObj) {
-                    // set min max into eval values directly
-                    // need refactor after addRowkeyElement has removed
-                    ObObj obj = (ObObj) partKey[refIndex.get(j)];
-                    if (obj.isMaxObj() || obj.isMinObj()) {
-                        evalValues.add(obj);
-                        needEval = false;
-                        break;
+        for (int i = 0; i < partColumns.size(); ++i) {
+            ObColumn curObColumn = partColumns.get(i);
+                List<String> curObRefColumnNames = curObColumn.getRefColumnNames();
+                Object[] evalParams = new Object[curObRefColumnNames.size()];
+                for (int j = 0; j < curObRefColumnNames.size(); ++j) {
+                    for (int k = 0; k < rowColumnNames.length; ++k) {
+                        if (rowColumnNames[k].equalsIgnoreCase(curObRefColumnNames.get(j))) {
+                            if (curObRefColumnNames.size() == 1 && rowValues[k] instanceof ObObj) {
+                                ObObj obj = (ObObj) rowValues[k];
+                                if (obj.isMaxObj() || obj.isMinObj()) {
+                                    evalValues.add(obj);
+                                    needEval = false;
+                                    break;
+                                }
+                            }
+                            evalParams[j] = rowValues[k];
+                            break;
+                        }
                     }
                 }
-                evalParams[j] = partKey[refIndex.get(j)];
-            }
-            if (needEval) {
-                evalValues.add(orderedPartRefColumnRowKeyRelation.getLeft().evalValue(evalParams));
-            }
-        }
-        return evalValues;
-    }
-
-    public List<Object> evalRowKeyValues(Row rowKey) throws IllegalArgumentException {
-        // column or generate column
-        String[] rowkeyNames = rowKey.getColumns();
-        List<Object> evalValues = new ArrayList<Object>(orderedPartRefColumnRowKeyRelations.size());
-
-        for (int i = 0; i < orderedPartRefColumnRowKeyRelations.size(); i++) {
-            ObColumn partCol = orderedPartRefColumnRowKeyRelations.get(i).getLeft();
-            List<String> refCols = partCol.getRefColumnNames();
-            if (rowKey.size() < refCols.size()) {
-                throw new IllegalArgumentException("part column ref columns is " + refCols
-                            + "but found " + rowkeyNames);
-            }
-
-            Object[] evalParams = new Object[refCols.size()];
-            boolean needEval = true;
-            for (int j = 0; j < refCols.size(); j++) {
-                Object refObj = rowKey.get(refCols.get(j));
-                if (refObj == null) {
-                    throw new IllegalArgumentException("cannot find part column: " + refCols.get(j) +
-                            " in rowKey columns: " + rowkeyNames);
+                if (needEval) {
+                    evalValues.add(curObColumn.evalValue(evalParams));
                 }
-
-                if (refCols.size() == 1 && refObj instanceof ObObj) {
-                    ObObj obj = (ObObj) refObj;
-                    if (obj.isMaxObj() || obj.isMinObj()) {
-                        evalValues.add(obj);
-                        needEval = false;
-                        break;
-                    }
-                }
-                evalParams[j] = refObj;
             }
 
-            if (needEval) {
-                evalValues.add(partCol.evalValue(evalParams));
-            }
-        }
         return evalValues;
     }
 
@@ -302,16 +225,15 @@ public abstract class ObPartDesc {
      * @param end   the end row key
      * @param endInclusive the end row key inclusive
      */
-    public abstract List<Long> getPartIds(Object[] start, boolean startInclusive, Object[] end,
-                                          boolean endInclusive) throws IllegalArgumentException;
-    public abstract List<Long> getPartIds(List<String> scanRangeColumns, Object[] start, boolean startInclusive,
-                                          Object[] end, boolean endInclusive) throws IllegalArgumentException;
+    public abstract List<Long> getPartIds(Object startRowObj, boolean startInclusive,
+                                          Object endRowObj, boolean endInclusive)
+                                                                                 throws IllegalArgumentException;
 
-    public abstract Long getPartId(Object... rowKey) throws IllegalArgumentException;
+    public abstract Long getPartId(Object... row) throws IllegalArgumentException;
 
-    public abstract Long getPartId(List<Object[]> rowKeys, boolean consistency)
-                                                                               throws IllegalArgumentException,
-                                                                               ObTablePartitionConsistentException;
+    public abstract Long getPartId(List<Object> row, boolean consistency)
+                                                                         throws IllegalArgumentException,
+                                                                         ObTablePartitionConsistentException;
 
     public abstract Long getRandomPartId();
 

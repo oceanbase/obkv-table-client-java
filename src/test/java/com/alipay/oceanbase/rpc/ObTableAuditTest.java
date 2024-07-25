@@ -113,19 +113,15 @@ public class ObTableAuditTest {
     public void testSingleOperation() throws Exception {
         try {
             String prefix = generateRandomString(10);
-            client.insertOrUpdate(tableName)
-                    .setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", prefix))
-                    .execute();
+            client.insertOrUpdate(tableName).setRowKey(colVal("c1", 1L))
+                .addMutateColVal(colVal("c2", prefix)).execute();
             List<String> sqlIds = get_sql_id(prefix);
             Assert.assertEquals(1, sqlIds.size());
 
             // same operation and columns generate same sql_id
             sqlIds.clear();
-            client.insertOrUpdate(tableName)
-                    .setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", prefix))
-                    .execute();
+            client.insertOrUpdate(tableName).setRowKey(colVal("c1", 1L))
+                .addMutateColVal(colVal("c2", prefix)).execute();
             sqlIds = get_sql_id(prefix);
             Assert.assertEquals(2, sqlIds.size());
             for (String sqlId : sqlIds) {
@@ -134,10 +130,8 @@ public class ObTableAuditTest {
 
             // different operation generate different sql_id
             sqlIds.clear();
-            client.update(tableName)
-                    .setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", prefix))
-                    .execute();
+            client.update(tableName).setRowKey(colVal("c1", 1L))
+                .addMutateColVal(colVal("c2", prefix)).execute();
             sqlIds = get_sql_id(prefix);
             Assert.assertEquals(3, sqlIds.size());
             Assert.assertEquals(sqlIds.get(0), sqlIds.get(1));
@@ -146,10 +140,8 @@ public class ObTableAuditTest {
             // different columns generate different sql_id
             // write c3
             sqlIds.clear();
-            client.update(tableName)
-                    .setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c3", prefix))
-                    .execute();
+            client.update(tableName).setRowKey(colVal("c1", 1L))
+                .addMutateColVal(colVal("c3", prefix)).execute();
             sqlIds = get_sql_id(prefix);
             Assert.assertEquals(4, sqlIds.size());
             Assert.assertEquals(sqlIds.get(0), sqlIds.get(1));
@@ -175,9 +167,9 @@ public class ObTableAuditTest {
             String prefix = generateRandomString(10);
             BatchOperation batchOps = client.batchOperation(tableName);
             Insert ins1 = client.insert(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", prefix));
+                .addMutateColVal(colVal("c2", prefix));
             Insert ins2 = client.insert(tableName).setRowKey(colVal("c1", 2L))
-                    .addMutateColVal(colVal("c2", prefix));
+                .addMutateColVal(colVal("c2", prefix));
             batchOps.addOperation(ins1, ins2).execute();
             List<String> sqlIds = get_sql_id(prefix);
             Assert.assertEquals(1, sqlIds.size());
@@ -186,9 +178,9 @@ public class ObTableAuditTest {
             sqlIds.clear();
             batchOps = client.batchOperation(tableName);
             ins1 = client.insert(tableName).setRowKey(colVal("c1", 3L))
-                    .addMutateColVal(colVal("c2", prefix));
+                .addMutateColVal(colVal("c2", prefix));
             ins2 = client.insert(tableName).setRowKey(colVal("c1", 4L))
-                    .addMutateColVal(colVal("c2", prefix));
+                .addMutateColVal(colVal("c2", prefix));
             batchOps.addOperation(ins1, ins2).execute();
             sqlIds = get_sql_id(prefix);
             Assert.assertEquals(2, sqlIds.size());
@@ -217,9 +209,9 @@ public class ObTableAuditTest {
             // mixed op has multi sql_id
             BatchOperation batchOps = client.batchOperation(tableName);
             Insert ins = client.insert(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", prefix));
+                .addMutateColVal(colVal("c2", prefix));
             InsertOrUpdate insUp = client.insertOrUpdate(tableName).setRowKey(colVal("c1", 2L))
-                    .addMutateColVal(colVal("c2", prefix));
+                .addMutateColVal(colVal("c2", prefix));
             batchOps.addOperation(ins, insUp).execute();
             List<String> sqlIds = get_sql_id(prefix);
             Assert.assertEquals(2, sqlIds.size());
@@ -245,11 +237,11 @@ public class ObTableAuditTest {
             // mixed op has multi sql_id
             BatchOperation batchOps = client.batchOperation(tableName);
             Insert ins = client.insert(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", prefix));
+                .addMutateColVal(colVal("c2", prefix));
             InsertOrUpdate insUp = client.insertOrUpdate(tableName).setRowKey(colVal("c1", 2L))
-                    .addMutateColVal(colVal("c2", prefix));
+                .addMutateColVal(colVal("c2", prefix));
             Append appn = client.append(tableName).setRowKey(colVal("c1", 2L))
-                    .addMutateColVal(colVal("c2", prefix));
+                .addMutateColVal(colVal("c2", prefix));
             batchOps.addOperation(ins, insUp, appn).execute();
             List<String> sqlIds = get_sql_id(prefix);
             Assert.assertEquals(3, sqlIds.size());
@@ -273,10 +265,8 @@ public class ObTableAuditTest {
         // query $table_name $column_0, $column_1, ..., $column_n range:$column_0, $column_1, ..., $column_n index:$index_name $filter
         try {
             // insert
-            client.insertOrUpdate(tableName)
-                    .setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", "c2_val"))
-                    .execute();
+            client.insertOrUpdate(tableName).setRowKey(colVal("c1", 1L))
+                .addMutateColVal(colVal("c2", "c2_val")).execute();
 
             // query
             int limit = generateRandomNumber();
@@ -382,7 +372,7 @@ public class ObTableAuditTest {
             List<String> sqlIds = get_sql_id("limit:" + limit);
             Assert.assertEquals(2, sqlIds.size());
             Assert.assertNotEquals(sqlIds.get(0), sqlIds.get(1));
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -410,7 +400,7 @@ public class ObTableAuditTest {
             List<String> sqlIds = get_sql_id("limit:" + limit);
             Assert.assertEquals(2, sqlIds.size());
             Assert.assertNotEquals(sqlIds.get(0), sqlIds.get(1));
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -429,10 +419,8 @@ public class ObTableAuditTest {
         // query $table_name $column_0, $column_1, ..., $column_n range:$column_0, $column_1, ..., $column_n index:$index_name $filter
         try {
             // insert
-            client.insertOrUpdate(tableName)
-                    .setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", "c2_val"))
-                    .execute();
+            client.insertOrUpdate(tableName).setRowKey(colVal("c1", 1L))
+                .addMutateColVal(colVal("c2", "c2_val")).execute();
 
             // query
             int limit = generateRandomNumber();
@@ -477,10 +465,8 @@ public class ObTableAuditTest {
         // query $table_name $column_0, $column_1, ..., $column_n range:$column_0, $column_1, ..., $column_n index:$index_name $filter
         try {
             // insert
-            client.insertOrUpdate(tableName)
-                    .setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", "c2_val"))
-                    .execute();
+            client.insertOrUpdate(tableName).setRowKey(colVal("c1", 1L))
+                .addMutateColVal(colVal("c2", "c2_val")).execute();
 
             // query
             int limit = generateRandomNumber();
@@ -554,10 +540,8 @@ public class ObTableAuditTest {
         // query $table_name $column_0, $column_1, ..., $column_n range:$column_0, $column_1, ..., $column_n index:$index_name $filter
         try {
             // insert
-            client.insertOrUpdate(tableName)
-                    .setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", "c2_val"))
-                    .execute();
+            client.insertOrUpdate(tableName).setRowKey(colVal("c1", 1L))
+                .addMutateColVal(colVal("c2", "c2_val")).execute();
 
             // query
             int limit = generateRandomNumber();
@@ -601,10 +585,8 @@ public class ObTableAuditTest {
     public void testQueryAndMutate() throws Exception {
         try {
             // insert
-            client.insertOrUpdate(tableName)
-                    .setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", "c2_val"))
-                    .execute();
+            client.insertOrUpdate(tableName).setRowKey(colVal("c1", 1L))
+                .addMutateColVal(colVal("c2", "c2_val")).execute();
 
             int limit = generateRandomNumber();
             TableQuery tableQuery = client.query(tableName);
@@ -613,7 +595,7 @@ public class ObTableAuditTest {
             tableQuery.select("c1");
             tableQuery.limit(limit);
             ObTableQueryAndMutateRequest req = client.obTableQueryAndAppend(tableQuery,
-                    new String[] { "c2"}, new Object[] {"_append0" }, false);
+                new String[] { "c2" }, new Object[] { "_append0" }, false);
             client.execute(req);
             List<String> sqlIds = get_sql_id("limit:" + String.valueOf(limit));
             Assert.assertEquals(3, sqlIds.size()); // query twice
