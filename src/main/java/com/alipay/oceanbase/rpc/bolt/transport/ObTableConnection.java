@@ -84,18 +84,6 @@ public class ObTableConnection {
         // sequence is a monotone increasing long value inside each connection
         sequence = new AtomicLong();
         connect();
-        /* layout of uniqueId(64 bytes)
-         * ip_: 32
-         * port_: 16;
-         * is_user_request_: 1;
-         * is_ipv6_:1;
-         * reserved_: 14;
-         */
-        long ip = ipToLong(connection.getLocalIP());
-        long port = (long) connection.getLocalPort() << 32;
-        long isUserRequest = (1l << (32 + 16));
-        long reserved = 0;
-        uniqueId = ip | port | isUserRequest | reserved;
     }
 
     private boolean connect() throws Exception {
@@ -130,6 +118,19 @@ public class ObTableConnection {
 
         // login the server. If login failed, close the raw connection to make the connection creation atomic.
         try {
+            /* layout of uniqueId(64 bytes)
+             * ip_: 32
+             * port_: 16;
+             * is_user_request_: 1;
+             * is_ipv6_:1;
+             * reserved_: 14;
+             */
+            long ip = ipToLong(connection.getLocalIP());
+            long port = (long) connection.getLocalPort() << 32;
+            long isUserRequest = (1l << (32 + 16));
+            long reserved = 0;
+            uniqueId = ip | port | isUserRequest | reserved;
+            System.out.println("ip:" + connection.getLocalIP() + ", port:"+ connection.getLocalPort());
             login();
             lastConnectionTime = LocalDateTime.now();
         } catch (Exception e) {
