@@ -1732,7 +1732,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         List<String> scanRangeColumns = query.getScanRangeColumns();
         if (scanRangeColumns == null || scanRangeColumns.isEmpty()) {
-            Map<String, Integer> tableEntryRowKeyElement = tableEntry.getRowKeyElement();
+            Map<String, Integer> tableEntryRowKeyElement = getRowKeyElement(tableName);
             if (tableEntryRowKeyElement != null) {
                 scanRangeColumns = new ArrayList<String>(tableEntryRowKeyElement.keySet());
             }
@@ -1747,9 +1747,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         Row endRow = new Row();
         // ensure the format of column names and values if the current table is a table with partition
         if (tableEntry.isPartitionTable() && tableEntry.getPartitionInfo().getLevel() != ObPartitionLevel.LEVEL_ZERO) {
-            if (scanRangeColumns.size() != start.length) {
+            if (scanRangeColumns == null || scanRangeColumns.size() != start.length) {
                 throw new IllegalArgumentException(
-                        "length of key and scan range columns is not equal");
+                        "length of key and scan range columns is not equal, please use addRowKeyElement or set scan range columns");
             }
             for (int i = 0; i < scanRangeColumns.size(); i++) {
                 startRow.add(scanRangeColumns.get(i), start[i]);
