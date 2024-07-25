@@ -1228,6 +1228,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 if (tableEntry.isPartitionTable()) {
                     switch (runningMode) {
                         case HBASE:
+                            tableRowKeyElement.put(tableName, HBASE_ROW_KEY_ELEMENT);
                             tableEntry.setRowKeyElement(HBASE_ROW_KEY_ELEMENT);
                             break;
                         case NORMAL:
@@ -1456,10 +1457,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             Map<String, Integer> tableRowKeyEle = getRowKeyElement(tableName);
             if (tableRowKeyEle != null) {
                 curTableRowKeyNames = new ArrayList<String>(tableRowKeyEle.keySet());
-            }
-            Map<String, Integer> tableEntryRowKeyElement = tableEntry.getRowKeyElement();
-            if (curTableRowKeyNames.isEmpty() && tableEntryRowKeyElement != null) {
-                curTableRowKeyNames = new ArrayList<String>(tableEntryRowKeyElement.keySet());
             }
             if (curTableRowKeyNames.isEmpty()) {
                 throw new IllegalArgumentException("Please make sure add row key elements");
@@ -1747,11 +1744,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         Row endRow = new Row();
         // ensure the format of column names and values if the current table is a table with partition
         if (tableEntry.isPartitionTable() && tableEntry.getPartitionInfo().getLevel() != ObPartitionLevel.LEVEL_ZERO) {
-            if (scanRangeColumns == null || scanRangeColumns.size() != start.length) {
+            // scanRangeColumn may be longer than start/end in prefix scanning situation
+            if (scanRangeColumns == null || scanRangeColumns.size() < start.length) {
                 throw new IllegalArgumentException(
-                        "length of key and scan range columns is not equal, please use addRowKeyElement or set scan range columns");
+                        "length of key and scan range columns do not match, please use addRowKeyElement or set scan range columns");
             }
-            for (int i = 0; i < scanRangeColumns.size(); i++) {
+            for (int i = 0; i < start.length; i++) {
                 startRow.add(scanRangeColumns.get(i), start[i]);
                 endRow.add(scanRangeColumns.get(i), end[i]);
             }
