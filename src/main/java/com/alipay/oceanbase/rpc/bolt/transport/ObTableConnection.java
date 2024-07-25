@@ -49,6 +49,7 @@ public class ObTableConnection {
     private AtomicBoolean       isReConnecting = new AtomicBoolean(false);             // indicate is re-connecting or not
     private AtomicBoolean       isExpired      = new AtomicBoolean(false);
     private LocalDateTime       lastConnectionTime;
+    private boolean             loginWithConfigs = false;
     public static long ipToLong(String strIp) {
         String[] ip = strIp.split("\\.");
         return (Long.parseLong(ip[0]) << 24) + (Long.parseLong(ip[1]) << 16)
@@ -68,6 +69,10 @@ public class ObTableConnection {
         isExpired.set(expired);
     }
 
+    
+    public void enableLoginWithConfigs() {
+        loginWithConfigs = true;
+    }
     /*
      * Ob table connection.
      */
@@ -144,8 +149,11 @@ public class ObTableConnection {
         request.setTenantName(obTable.getTenantName());
         request.setUserName(obTable.getUserName());
         request.setDatabaseName(obTable.getDatabase());
-        JSONObject json = new JSONObject(obTable.getConfigs());
-        request.setConfigsStr(json.toJSONString());
+        if (loginWithConfigs) {
+            JSONObject json = new JSONObject(obTable.getConfigs());
+            request.setConfigsStr(json.toJSONString());
+            loginWithConfigs = false;
+        }
         generatePassSecret(request);
         ObTableLoginResult result;
 
