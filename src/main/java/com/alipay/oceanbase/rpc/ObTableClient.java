@@ -343,8 +343,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         slowQueryMonitorThreshold = parseToLong(SLOW_QUERY_MONITOR_THRESHOLD.getKey(),
             slowQueryMonitorThreshold);
-        
-        
+        maxConnExpiredTime = parseToLong(MAX_CONN_EXPIRED_TIME.getKey(), maxConnExpiredTime);
+
+
         // add configs value to TableConfigs
         
         // runtime
@@ -356,6 +357,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             runtimeMap.put(RUNTIME_MAX_WAIT.getKey(), String.valueOf(runtimeMaxWait));
             runtimeMap.put(RUNTIME_RETRY_INTERVAL.getKey(), String.valueOf(runtimeRetryInterval));
             runtimeMap.put(RUNTIME_RETRY_TIMES.getKey(), String.valueOf(runtimeRetryTimes));
+            runtimeMap.put(MAX_CONN_EXPIRED_TIME.getKey(), String.valueOf(maxConnExpiredTime));
         }
         // log
         value = TableConfigs.get("log");

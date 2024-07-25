@@ -165,6 +165,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         nettyBlockingWaitInterval = parseToInt(NETTY_BLOCKING_WAIT_INTERVAL.getKey(),
             nettyBlockingWaitInterval);
         reRouting = parseToBoolean(SERVER_ENABLE_REROUTING.getKey(), reRouting);
+        maxConnExpiredTime = parseToLong(MAX_CONN_EXPIRED_TIME.getKey(), maxConnExpiredTime);
     }
 
     /*

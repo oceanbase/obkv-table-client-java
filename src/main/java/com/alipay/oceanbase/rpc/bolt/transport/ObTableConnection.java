@@ -49,7 +49,6 @@ public class ObTableConnection {
     private AtomicBoolean       isReConnecting = new AtomicBoolean(false);             // indicate is re-connecting or not
     private AtomicBoolean       isExpired      = new AtomicBoolean(false);
     private LocalDateTime       lastConnectionTime;
-
     public static long ipToLong(String strIp) {
         String[] ip = strIp.split("\\.");
         return (Long.parseLong(ip[0]) << 24) + (Long.parseLong(ip[1]) << 16)
@@ -57,8 +56,8 @@ public class ObTableConnection {
     }
 
     public boolean checkExpired() {
-        long maxConnectionAgeMinutes = 8;
-        return lastConnectionTime.isBefore(LocalDateTime.now().minusMinutes(maxConnectionAgeMinutes));
+        long maxConnectionTimes = obTable.getConnMaxExpiredTime();
+        return lastConnectionTime.isBefore(LocalDateTime.now().minusSeconds(maxConnectionTimes));
     }
 
     public boolean isExpired() {
@@ -130,7 +129,6 @@ public class ObTableConnection {
             long isUserRequest = (1l << (32 + 16));
             long reserved = 0;
             uniqueId = ip | port | isUserRequest | reserved;
-            System.out.println("ip:" + connection.getLocalIP() + ", port:"+ connection.getLocalPort());
             login();
             lastConnectionTime = LocalDateTime.now();
         } catch (Exception e) {
