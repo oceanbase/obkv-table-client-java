@@ -253,6 +253,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                             + fullUserName + " is closed");
         }
     }
+
+    public Long getClientId() {
+        return clientId;
+    }
+
+    public Map<String, Object> getTableConfigs() {
+        return TableConfigs;
+    }
     
     private void initTableConfigs() {
         TableConfigs.put("client_id", clientId);

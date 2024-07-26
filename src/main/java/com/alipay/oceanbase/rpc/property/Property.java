@@ -141,7 +141,7 @@ public enum Property {
      */
     RUNTIME_BATCH_EXECUTOR("runtime.batch.executor", null, "批量请求时并发执行的线程池"),
 
-    MAX_CONN_EXPIRED_TIME("connection.max.expired.time", 8 * 60L, "客户端连接最大过期时间(s)");
+    MAX_CONN_EXPIRED_TIME("connection.max.expired.time", 1L, "客户端连接最大过期时间(min)");
 
     private final String key;
     private final Object defaultV;
