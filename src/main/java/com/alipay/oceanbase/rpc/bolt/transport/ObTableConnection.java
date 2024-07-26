@@ -50,7 +50,6 @@ public class ObTableConnection {
     private AtomicBoolean       isExpired      = new AtomicBoolean(false);
     private LocalDateTime       lastConnectionTime;
     private boolean             loginWithConfigs = false;
-
     public static long ipToLong(String strIp) {
         String[] ip = strIp.split("\\.");
         return (Long.parseLong(ip[0]) << 24) + (Long.parseLong(ip[1]) << 16)
@@ -58,8 +57,8 @@ public class ObTableConnection {
     }
 
     public boolean checkExpired() {
-        long maxConnectionAgeMinutes = 8;
-        return lastConnectionTime.isBefore(LocalDateTime.now().minusMinutes(maxConnectionAgeMinutes));
+        long maxConnectionTimes = obTable.getConnMaxExpiredTime();
+        return lastConnectionTime.isBefore(LocalDateTime.now().minusSeconds(maxConnectionTimes));
     }
 
     public boolean isExpired() {
@@ -89,18 +88,6 @@ public class ObTableConnection {
         // sequence is a monotone increasing long value inside each connection
         sequence = new AtomicLong();
         connect();
-        /* layout of uniqueId(64 bytes)
-         * ip_: 32
-         * port_: 16;
-         * is_user_request_: 1;
-         * is_ipv6_:1;
-         * reserved_: 14;
-         */
-        long ip = ipToLong(connection.getLocalIP());
-        long port = (long) connection.getLocalPort() << 32;
-        long isUserRequest = (1l << (32 + 16));
-        long reserved = 0;
-        uniqueId = ip | port | isUserRequest | reserved;
     }
 
     private boolean connect() throws Exception {
@@ -135,6 +122,18 @@ public class ObTableConnection {
 
         // login the server. If login failed, close the raw connection to make the connection creation atomic.
         try {
+            /* layout of uniqueId(64 bytes)
+             * ip_: 32
+             * port_: 16;
+             * is_user_request_: 1;
+             * is_ipv6_:1;
+             * reserved_: 14;
+             */
+            long ip = ipToLong(connection.getLocalIP());
+            long port = (long) connection.getLocalPort() << 32;
+            long isUserRequest = (1l << (32 + 16));
+            long reserved = 0;
+            uniqueId = ip | port | isUserRequest | reserved;
             login();
             lastConnectionTime = LocalDateTime.now();
         } catch (Exception e) {

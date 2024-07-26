@@ -156,7 +156,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private ConcurrentHashMap<String, String>                 TableGroupCache                         = new ConcurrentHashMap<String, String>();              // tableGroup -> Table
     private ConcurrentHashMap<String, String>                 TableGroupInverted                      = new ConcurrentHashMap<String, String>();              // Table -> tableGroup
 
-    private String                                            clientId;
+    private Long                                              clientId;
     private Map<String, Object>                               TableConfigs                            = new HashMap<>();
     /*
      * Init.
@@ -171,7 +171,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 return;
             }
             // 1. init clientId
-            clientId = Long.toString(UUID.randomUUID().getLeastSignificantBits());
+            clientId = Math.abs(UUID.randomUUID().getLeastSignificantBits());
             // 2. init table configs map
             initTableConfigs();
             // 3. init properties
@@ -252,6 +252,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             throw new IllegalStateException("param url " + paramURL + " fullUserName "
                                             + fullUserName + " is closed");
         }
+    }
+
+    public Long getClientId() {
+        return clientId;
+    }
+
+    public Map<String, Object> getTableConfigs() {
+        return TableConfigs;
     }
     
     private void initTableConfigs() {
@@ -343,8 +351,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         slowQueryMonitorThreshold = parseToLong(SLOW_QUERY_MONITOR_THRESHOLD.getKey(),
             slowQueryMonitorThreshold);
-        
-        
+        maxConnExpiredTime = parseToLong(MAX_CONN_EXPIRED_TIME.getKey(), maxConnExpiredTime);
+
+
         // add configs value to TableConfigs
         
         // runtime
@@ -356,6 +365,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             runtimeMap.put(RUNTIME_MAX_WAIT.getKey(), String.valueOf(runtimeMaxWait));
             runtimeMap.put(RUNTIME_RETRY_INTERVAL.getKey(), String.valueOf(runtimeRetryInterval));
             runtimeMap.put(RUNTIME_RETRY_TIMES.getKey(), String.valueOf(runtimeRetryTimes));
+            runtimeMap.put(MAX_CONN_EXPIRED_TIME.getKey(), String.valueOf(maxConnExpiredTime));
         }
         // log
         value = TableConfigs.get("log");
