@@ -520,6 +520,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             throw new IllegalArgumentException("table name is null");
         }
         boolean needRefreshTableEntry = false;
+        boolean needFetchAllRouteInfo = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
         while (true) {
@@ -539,7 +540,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     obPair = new ObPair<Long, ObTableParam>(0L, new ObTableParam(odpTable));
                 } else {
                     obPair = getTableBySingleRowKeyWithRoute(tableName, callback.getRowKey(),
-                        needRefreshTableEntry, tableEntryRefreshIntervalWait, route);
+                        needRefreshTableEntry, tableEntryRefreshIntervalWait, needFetchAllRouteInfo, route);
                 }
                 T t = callback.execute(obPair);
                 resetExecuteContinuousFailureCount(tableName);
@@ -588,6 +589,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                     "retry while meet Exception needing refresh, errorCode: {} , errorMsg: {},retry times {}",
                                     ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                     tryTimes);
+                            if (ex instanceof ObTableNeedFetchAllException) {
+                                needFetchAllRouteInfo = true;
+                                // reset failure count while fetch all route info
+                                this.resetExecuteContinuousFailureCount(tableName);
+                            }
                         } else {
                             calculateContinuousFailure(tableName, ex.getMessage());
                             throw ex;
@@ -675,6 +681,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             throw new IllegalArgumentException("table name is null");
         }
         boolean needRefreshTableEntry = false;
+        boolean needFetchAllRouteInfo = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
         while (true) {
@@ -696,12 +703,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     if (null != callback.getRowKey()) {
                         // using row key
                         obPair = getTableBySingleRowKeyWithRoute(tableName, callback.getRowKey(),
-                            needRefreshTableEntry, tableEntryRefreshIntervalWait, route);
+                            needRefreshTableEntry, tableEntryRefreshIntervalWait, needFetchAllRouteInfo, route);
                     } else if (null != callback.getKeyRanges()) {
                         // using scan range
-                        obPair = getTableByRowKeyRange(tableName, new ObTableQuery(),
-                            callback.getKeyRanges(), needRefreshTableEntry,
-                            tableEntryRefreshIntervalWait, route);
+                        obPair = getTableByRowKeyRange(tableName, new ObTableQuery(), callback.getKeyRanges());
                     } else {
                         throw new ObTableException("rowkey and scan range are null in mutation");
                     }
@@ -754,6 +759,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                     "retry while meet Exception needing refresh, errorCode: {} , errorMsg: {},retry times {}",
                                     ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                     tryTimes);
+                            if (ex instanceof ObTableNeedFetchAllException) {
+                                needFetchAllRouteInfo = true;
+                                // reset failure count while fetch all route info
+                                this.resetExecuteContinuousFailureCount(tableName);
+                            }
                         } else {
                             calculateContinuousFailure(tableName, ex.getMessage());
                             throw ex;
@@ -1429,14 +1439,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @param rowKey row key
      * @param refresh whether to refresh
      * @param waitForRefresh whether wait for refresh
+     * @param needFetchAll whether need fetch all
      * @return ObPair of partId and table
      * @throws Exception exception
      */
     public ObPair<Long, ObTableParam> getTableBySingleRowKey(String tableName, Object[] rowKey,
-                                                             boolean refresh, boolean waitForRefresh)
+                                                             boolean refresh, boolean waitForRefresh, boolean needFetchAll)
                                                                                                      throws Exception {
         ObServerRoute route = getRoute(false);
-        return getTableBySingleRowKeyWithRoute(tableName, rowKey, refresh, waitForRefresh, route);
+        return getTableBySingleRowKeyWithRoute(tableName, rowKey, refresh, waitForRefresh, needFetchAll, route);
     }
 
     /**
@@ -1453,9 +1464,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                                       Object[] rowKey,
                                                                       boolean refresh,
                                                                       boolean waitForRefresh,
+                                                                      boolean needFetchAll,
                                                                       ObServerRoute route)
                                                                                           throws Exception {
-        TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh, false);
+        TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh, needFetchAll);
 
         long partId = getPartition(tableEntry, rowKey); // partition id in 3.x, origin partId in 4.x, logicId
 
@@ -1466,14 +1478,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * For mutation (queryWithFilter)
      * @param tableName table want to get
      * @param keyRanges key
-     * @param refresh whether to refresh
-     * @param waitForRefresh whether wait for refresh
-     * @param route ObServer route
      * @return ObPair of partId and table
      * @throws Exception exception
      */
-    public ObPair<Long, ObTableParam> getTableByRowKeyRange(String tableName, ObTableQuery query, List<ObNewRange> keyRanges, boolean refresh,
-                                                            boolean waitForRefresh, ObServerRoute route)
+    public ObPair<Long, ObTableParam> getTableByRowKeyRange(String tableName, ObTableQuery query, List<ObNewRange> keyRanges)
             throws Exception {
         Map<Long, ObTableParam> partIdMapObTable = new HashMap<Long, ObTableParam>();
         for (ObNewRange rang : keyRanges) {
