@@ -596,4 +596,33 @@ CREATE TABLE IF NOT EXISTS  `audit_test` (
      PRIMARY KEY (`c1`)
      );
 
+ CREATE TABLE IF NOT EXISTS `test_auto_increment_rk_batch` (
+     `c1` bigint(20) NOT NULL AUTO_INCREMENT,
+     `c2` bigint(20) NOT NULL,
+     `c3` varchar(20) DEFAULT "hello",
+     PRIMARY KEY (`c1`)
+     );
+
+ CREATE TABLE IF NOT EXISTS `test_auto_increment_rk_batch_ttl` (
+     `c1` bigint(20) NOT NULL AUTO_INCREMENT,
+     `c2` bigint(20) NOT NULL,
+     `c3` varchar(20) DEFAULT "hello",
+     `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+     PRIMARY KEY (`c1`)
+     ) TTL(update_time + INTERVAL 300 SECOND);
+
+ CREATE TABLE IF NOT EXISTS `test_auto_increment_batch` (
+     `c1` bigint(20) NOT NULL,
+     `c2` bigint(20) NOT NULL AUTO_INCREMENT,
+     `c3` varchar(20) DEFAULT "hello",
+     PRIMARY KEY (`c1`)
+     );
+
+ CREATE TABLE IF NOT EXISTS `test_auto_increment_batch_ttl` (
+     `c1` bigint(20) NOT NULL,
+     `c2` bigint(20) NOT NULL AUTO_INCREMENT,
+     `c3` varchar(20) DEFAULT "hello",
+     `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+     PRIMARY KEY (`c1`)
+     ) TTL(update_time + INTERVAL 300 SECOND);
 alter system set kv_hotkey_throttle_threshold = 50;
