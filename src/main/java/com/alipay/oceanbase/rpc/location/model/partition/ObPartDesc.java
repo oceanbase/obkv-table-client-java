@@ -265,7 +265,7 @@ public abstract class ObPartDesc {
             List<String> refCols = partCol.getRefColumnNames();
             if (rowKey.size() < refCols.size()) {
                 throw new IllegalArgumentException("part column ref columns is " + refCols
-                            + "but found " + rowkeyNames);
+                                                   + "but found " + rowkeyNames);
             }
 
             Object[] evalParams = new Object[refCols.size()];
@@ -273,8 +273,8 @@ public abstract class ObPartDesc {
             for (int j = 0; j < refCols.size(); j++) {
                 Object refObj = rowKey.get(refCols.get(j));
                 if (refObj == null) {
-                    throw new IllegalArgumentException("cannot find part column: " + refCols.get(j) +
-                            " in rowKey columns: " + rowkeyNames);
+                    throw new IllegalArgumentException("cannot find part column: " + refCols.get(j)
+                                                       + " in rowKey columns: " + rowkeyNames);
                 }
 
                 if (refCols.size() == 1 && refObj instanceof ObObj) {
@@ -304,8 +304,10 @@ public abstract class ObPartDesc {
      */
     public abstract List<Long> getPartIds(Object[] start, boolean startInclusive, Object[] end,
                                           boolean endInclusive) throws IllegalArgumentException;
-    public abstract List<Long> getPartIds(List<String> scanRangeColumns, Object[] start, boolean startInclusive,
-                                          Object[] end, boolean endInclusive) throws IllegalArgumentException;
+
+    public abstract List<Long> getPartIds(List<String> scanRangeColumns, Object[] start,
+                                          boolean startInclusive, Object[] end, boolean endInclusive)
+                                                                                                     throws IllegalArgumentException;
 
     public abstract Long getPartId(Object... rowKey) throws IllegalArgumentException;
 
