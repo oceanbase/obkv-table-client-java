@@ -274,8 +274,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             ObBorderFlag borderFlag = rang.getBorderFlag();
             // pairs -> List<Pair<logicId, param>>
             List<ObPair<Long, ObTableParam>> pairs = this.obTableClient.getTables(indexTableName,
-                    tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(),
-                    false, false);
+                tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(),
+                false, false);
             if (this.tableQuery.getScanOrder() == ObScanOrder.Reverse) {
                 for (int i = pairs.size() - 1; i >= 0; i--) {
                     this.partitionObTables.put(pairs.get(i).getLeft(), pairs.get(i));
