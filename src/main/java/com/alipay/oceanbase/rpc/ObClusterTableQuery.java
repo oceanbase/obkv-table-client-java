@@ -218,6 +218,12 @@ public class ObClusterTableQuery extends AbstractTableQuery {
         return tableClientQuery.setMaxResultSize(maxResultSize);
     }
 
+    @Override
+    public TableQuery setOperationTimeout(long operationTimeout) {
+        tableClientQuery.setOperationTimeout(operationTimeout);
+        return this;
+    }
+
     /**
      * Clear.
      */

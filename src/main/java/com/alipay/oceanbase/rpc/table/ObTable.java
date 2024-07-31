@@ -59,7 +59,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
 
     private volatile boolean      initialized = false;
     private volatile boolean      closed      = false;
-    private boolean               reRouting   = false;              // only used for init packet factory
+    private boolean               reRouting   = true;              // only used for init packet factory
 
     private ReentrantLock         statusLock  = new ReentrantLock();
 
@@ -158,6 +158,10 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         nettyBlockingWaitInterval = parseToInt(NETTY_BLOCKING_WAIT_INTERVAL.getKey(),
             nettyBlockingWaitInterval);
         reRouting = parseToBoolean(SERVER_ENABLE_REROUTING.getKey(), reRouting);
+    }
+
+    public boolean getReRouting(){
+        return reRouting;
     }
 
     /*
