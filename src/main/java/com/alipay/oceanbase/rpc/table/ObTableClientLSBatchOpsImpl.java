@@ -321,7 +321,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         return rowKey;
     }
 
-
     private List<ObTableSingleOp> extractOperations(List<ObPair<Integer, ObTableSingleOp>> operationsPairs) throws Exception {
         List<ObTableSingleOp> operations = new ArrayList<>(operationsPairs.size());
         for (ObPair<Integer, ObTableSingleOp> pair : operationsPairs) {
@@ -329,8 +328,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         }
         return operations;
     }
-    
-     public Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> prepareOperations(List<ObTableSingleOp> operations) throws Exception {
+
+    public Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> prepareOperations(List<ObTableSingleOp> operations) throws Exception {
          Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> lsOperationsMap = new HashMap<>();
 
         if (obTableClient.isOdpMode()) {
@@ -373,11 +372,11 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
          return lsOperationsMap;
     }
 
-    public Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> partitionPrepare() throws Exception {
+    public Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> partitionPrepare()
+                                                                                                                throws Exception {
         List<ObTableSingleOp> operations = getSingleOperations();
         return prepareOperations(operations);
     }
-    
 
     /*
      * Partition execute.
@@ -615,7 +614,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     private boolean shouldRetry(Throwable throwable) {
         return throwable instanceof ObTableNeedFetchAllException;
     }
-    
+
     /*
      * Execute internal.
      */
@@ -649,7 +648,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     public void doTask() {
                         try {
                             ThreadLocalMap.transmitContextMap(context);
-                            executeWithRetries(finalObTableOperationResults, entry, maxRetries);
+                            partitionExecute(finalObTableOperationResults, entry);
                         } catch (Exception e) {
                             logger.error(LCD.convert("01-00026"), e);
                             executor.collectExceptions(e);
