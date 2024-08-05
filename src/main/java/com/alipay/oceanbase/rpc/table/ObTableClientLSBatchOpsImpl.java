@@ -279,7 +279,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
      * Execute.
      */
     public List<Object> execute() throws Exception {
-        List<Object> results = new ArrayList(batchOperation.size());
+        List<Object> results = new ArrayList<>(batchOperation.size());
         for (ObTableSingleOpResult result : executeInternal()) {
             int errCode = result.getHeader().getErrno();
             if (errCode == ResultCodes.OB_SUCCESS.errorCode) {
@@ -321,10 +321,12 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         return rowKey;
     }
 
-    private List<ObTableSingleOp> extractOperations(List<ObPair<Integer, ObTableSingleOp>> operationsPairs) throws Exception {
-        List<ObTableSingleOp> operations = new ArrayList<>(operationsPairs.size());
-        for (ObPair<Integer, ObTableSingleOp> pair : operationsPairs) {
-            operations.add(pair.getRight());
+    private List<ObTableSingleOp> extractOperations(Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperationsMap) {
+        List<ObTableSingleOp> operations = new ArrayList<>();
+        for (ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>> pair : tabletOperationsMap.values()) {
+            for (ObPair<Integer, ObTableSingleOp> operationWithIndex : pair.getRight()) {
+                operations.add(operationWithIndex.getRight());
+            }
         }
         return operations;
     }
@@ -541,7 +543,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         long endExecute = System.currentTimeMillis();
 
         if (subLSOpResult == null) {
-            RUNTIME.error("tablename:{} ls id:{} check batch operation result error: client get unexpected NULL result",
+            RUNTIME.error("table name:{} ls id:{} check batch operation result error: client get unexpected NULL result",
                            tableName, lsId);
             throw new ObTableUnexpectedException("check batch operation result error: client get unexpected NULL result");
         }
@@ -615,11 +617,51 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         return throwable instanceof ObTableNeedFetchAllException;
     }
 
+    private void executeWithRetries(
+            ObTableSingleOpResult[] results,
+            Map.Entry<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> entry,
+            int maxRetries) throws Exception {
+
+        int retryCount = 0;
+        boolean success = false;
+
+        // 初始分区  
+        Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> currentPartitions = new HashMap<>();
+        currentPartitions.put(entry.getKey(), entry.getValue());
+
+        while (retryCount < maxRetries && !success) {
+            boolean allPartitionsSuccess = true;
+
+            for (Map.Entry<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> currentEntry : currentPartitions.entrySet()) {
+                try {
+                    partitionExecute(results, currentEntry);
+                } catch (Exception e) {
+                    if (shouldRetry(e)) {
+                        retryCount++;
+                        List<ObTableSingleOp> failedOperations = extractOperations(currentEntry.getValue());
+                        currentPartitions = prepareOperations(failedOperations);
+                        allPartitionsSuccess = false;
+                        break;
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+
+            if (allPartitionsSuccess) {
+                success = true;
+            }
+        }
+
+        if (!success) {
+            throw new ObTableUnexpectedException("Failed to execute operation after retrying " + maxRetries + " times.");
+        }
+    }
+
     /*
      * Execute internal.
      */
     public ObTableSingleOpResult[] executeInternal() throws Exception {
-        final int maxRetries = obTableClient.getRuntimeRetryTimes();
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
         }
@@ -633,6 +675,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> lsOperations = partitionPrepare();
         long getTableTime = System.currentTimeMillis();
         final Map<Object, Object> context = ThreadLocalMap.getContextMap();
+        final int maxRetries = obTableClient.getRuntimeRetryTimes();
+        
         if (executorService != null && !executorService.isShutdown() && lsOperations.size() > 1) {
             // execute sub-batch operation in parallel
             final ConcurrentTaskExecutor executor = new ConcurrentTaskExecutor(executorService,
@@ -648,7 +692,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     public void doTask() {
                         try {
                             ThreadLocalMap.transmitContextMap(context);
-                            partitionExecute(finalObTableOperationResults, entry);
+                            executeWithRetries(finalObTableOperationResults, entry, maxRetries);
                         } catch (Exception e) {
                             logger.error(LCD.convert("01-00026"), e);
                             executor.collectExceptions(e);
@@ -669,7 +713,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                             "Batch Concurrent Execute interrupted", e);
                     }
 
-                    if (executor.getThrowableList().size() > 0) {
+                    if (!executor.getThrowableList().isEmpty()) {
                         throw new ObTableUnexpectedException("Batch Concurrent Execute Error",
                             executor.getThrowableList().get(0));
                     }
@@ -682,7 +726,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 executor.stop();
             }
 
-            if (executor.getThrowableList().size() > 0) {
+            if (!executor.getThrowableList().isEmpty()) {
                 throw new ObTableUnexpectedException("Batch Concurrent Execute Error", executor
                     .getThrowableList().get(0));
             }
