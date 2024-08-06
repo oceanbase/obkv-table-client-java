@@ -166,6 +166,12 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             nettyBlockingWaitInterval);
         reRouting = parseToBoolean(SERVER_ENABLE_REROUTING.getKey(), reRouting);
         maxConnExpiredTime = parseToLong(MAX_CONN_EXPIRED_TIME.getKey(), maxConnExpiredTime);
+
+        Object value = this.configs.get("runtime");
+        if (value instanceof Map) {
+            Map<String, String> runtimeMap = (Map<String, String>) value;
+            runtimeMap.put(RPC_OPERATION_TIMEOUT.getKey(), String.valueOf(obTableOperationTimeout));
+        }
     }
 
     /*
