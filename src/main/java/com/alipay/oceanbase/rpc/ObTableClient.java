@@ -361,6 +361,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (value instanceof Map) {
             Map<String, String> runtimeMap = (Map<String, String>) value;
             runtimeMap.put(RUNTIME_RETRY_TIMES.getKey(), String.valueOf(runtimeRetryTimes));
+            runtimeMap.put(RPC_EXECUTE_TIMEOUT.getKey(), String.valueOf(rpcExecuteTimeout));
             runtimeMap.put(RPC_OPERATION_TIMEOUT.getKey(), String.valueOf(rpcExecuteTimeout));
             runtimeMap.put(RUNTIME_MAX_WAIT.getKey(), String.valueOf(runtimeMaxWait));
             runtimeMap.put(RUNTIME_RETRY_INTERVAL.getKey(), String.valueOf(runtimeRetryInterval));
