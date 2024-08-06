@@ -83,6 +83,14 @@ public class ObTableClientTestUtil {
         return "";
     }
 
+    public static String getUserName() {
+        String[] parts = FULL_USER_NAME.split("@");
+        if (parts.length > 1) {
+            return parts[0];
+        }
+        return "";
+    }
+
     public static Connection getConnection() throws SQLException {
         String[] userNames = FULL_USER_NAME.split("#");
         return DriverManager.getConnection(JDBC_URL, userNames[0], PASSWORD);

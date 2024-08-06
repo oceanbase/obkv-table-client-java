@@ -155,6 +155,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private ConcurrentHashMap<String, String>                 TableGroupCache                         = new ConcurrentHashMap<String, String>();              // tableGroup -> Table
     private ConcurrentHashMap<String, String>                 TableGroupInverted                      = new ConcurrentHashMap<String, String>();              // Table -> tableGroup
 
+    private Long                                              clientId;
+    private Map<String, Object>                               TableConfigs                            = new HashMap<>();
     /*
      * Init.
      */
@@ -167,9 +169,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (initialized) {
                 return;
             }
-            // 1.init properties
+            // 1. init clientId
+            clientId = Math.abs(UUID.randomUUID().getLeastSignificantBits());
+            // 2. init table configs map
+            initTableConfigs();
+            // 3. init properties
             initProperties();
-            // 2. init metadata
+            // 4. init metadata
             initMetadata();
             initialized = true;
         } catch (Throwable t) {
@@ -245,6 +251,22 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             throw new IllegalStateException("param url " + paramURL + " fullUserName "
                                             + fullUserName + " is closed");
         }
+    }
+
+    public Long getClientId() {
+        return clientId;
+    }
+
+    public Map<String, Object> getTableConfigs() {
+        return TableConfigs;
+    }
+    
+    private void initTableConfigs() {
+        TableConfigs.put("client_id", clientId);
+        TableConfigs.put("runtime", new HashMap<String, String>());
+        TableConfigs.put("log", new HashMap<String, String>());
+        TableConfigs.put("route", new HashMap<String, String>());
+        TableConfigs.put("thread_pool", new HashMap<String, Boolean>());
     }
 
     private void initProperties() {
@@ -328,6 +350,52 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         slowQueryMonitorThreshold = parseToLong(SLOW_QUERY_MONITOR_THRESHOLD.getKey(),
             slowQueryMonitorThreshold);
+        maxConnExpiredTime = parseToLong(MAX_CONN_EXPIRED_TIME.getKey(), maxConnExpiredTime);
+
+
+        // add configs value to TableConfigs
+        
+        // runtime
+        Object value = TableConfigs.get("runtime");
+        if (value instanceof Map) {
+            Map<String, String> runtimeMap = (Map<String, String>) value;
+            runtimeMap.put(RUNTIME_RETRY_TIMES.getKey(), String.valueOf(runtimeRetryTimes));
+            runtimeMap.put(RPC_EXECUTE_TIMEOUT.getKey(), String.valueOf(rpcExecuteTimeout));
+            runtimeMap.put(RUNTIME_MAX_WAIT.getKey(), String.valueOf(runtimeMaxWait));
+            runtimeMap.put(RUNTIME_RETRY_INTERVAL.getKey(), String.valueOf(runtimeRetryInterval));
+            runtimeMap.put(RUNTIME_RETRY_TIMES.getKey(), String.valueOf(runtimeRetryTimes));
+            runtimeMap.put(MAX_CONN_EXPIRED_TIME.getKey(), String.valueOf(maxConnExpiredTime));
+        }
+        // log
+        value = TableConfigs.get("log");
+        if (value instanceof Map) {
+            Map<String, String> logMap = (Map<String, String>) value;
+            logMap.put(SLOW_QUERY_MONITOR_THRESHOLD.getKey(), String.valueOf(slowQueryMonitorThreshold));
+        }
+        
+        value = TableConfigs.get("route");
+        if (value instanceof Map) {
+            Map<String, String> routeMap = (Map<String, String>) value;
+            routeMap.put(METADATA_REFRESH_INTERVAL.getKey(), String.valueOf(metadataRefreshInterval));
+            routeMap.put(RUNTIME_CONTINUOUS_FAILURE_CEILING.getKey(), String.valueOf(runtimeContinuousFailureCeiling));
+            routeMap.put(SERVER_ADDRESS_CACHING_TIMEOUT.getKey(), String.valueOf(serverAddressCachingTimeout));
+            routeMap.put(SERVER_ADDRESS_PRIORITY_TIMEOUT.getKey(), String.valueOf(serverAddressPriorityTimeout));
+            routeMap.put(TABLE_ENTRY_ACQUIRE_CONNECT_TIMEOUT.getKey(), String.valueOf(tableEntryAcquireConnectTimeout));
+            routeMap.put(TABLE_ENTRY_ACQUIRE_SOCKET_TIMEOUT.getKey(), String.valueOf(tableEntryAcquireSocketTimeout));
+            routeMap.put(TABLE_ENTRY_REFRESH_INTERVAL_BASE.getKey(), String.valueOf(tableEntryRefreshIntervalBase));
+            routeMap.put(TABLE_ENTRY_REFRESH_INTERVAL_CEILING.getKey(), String.valueOf(tableEntryRefreshIntervalCeiling));
+            routeMap.put(TABLE_ENTRY_REFRESH_TRY_TIMES.getKey(), String.valueOf(tableEntryRefreshTryTimes));
+        }
+        Boolean useExecutor = false;
+        if (runtimeBatchExecutor != null) {
+           useExecutor = true;
+        }
+        
+        value = TableConfigs.get("thread_pool");
+        if (value instanceof Map) {
+            Map<String, Boolean> threadPoolMap = (Map<String, Boolean>) value;
+            threadPoolMap.put(RUNTIME_BATCH_EXECUTOR.getKey(), useExecutor);
+        }
     }
 
     private void initMetadata() throws Exception {
@@ -337,7 +405,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             try {
                 odpTable = new ObTable.Builder(odpAddr, odpPort) //
                     .setLoginInfo(tenantName, fullUserName, password, database) //
-                    .setProperties(getProperties()).build();
+                    .setProperties(getProperties()).setConfigs(TableConfigs).build();
             } catch (Exception e) {
                 logger
                     .warn(
@@ -390,7 +458,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             try {
                 ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort()) //
                     .setLoginInfo(tenantName, userName, password, database) //
-                    .setProperties(getProperties()).build();
+                    .setProperties(getProperties()).setConfigs(TableConfigs).build();
                 tableRoster.put(addr, obTable);
                 servers.add(addr);
             } catch (Exception e) {
