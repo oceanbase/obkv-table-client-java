@@ -127,16 +127,16 @@ public class ObTableRemoting extends BaseRemoting {
                     "routed to the wrong server: " + response.getMessage());
                 logger.warn(errMessage);
                 if (needFetchAll(resultCode.getRcode(), resultCode.getPcode())) {
-                    throw new ObTableNeedFetchAllException(errMessage);
+                    throw new ObTableNeedFetchAllException(errMessage, resultCode.getRcode());
                 } else if (needFetchPartial(resultCode.getRcode())) {
-                    throw new ObTableRoutingWrongException(errMessage);
+                    throw new ObTableRoutingWrongException(errMessage, resultCode.getRcode());
                 } else {
                     // Encountered an unexpected RoutingWrong error code, 
                     // possibly due to the client error code version being behind the observer's version.  
                     // Attempting a full refresh here
                     // and delegating to the upper-level call to determine whether to throw the exception to the user based on the retry result.
                     logger.warn("get unexpected error code: {}", response.getMessage());
-                    throw new ObTableNeedFetchAllException(errMessage);
+                    throw new ObTableNeedFetchAllException(errMessage, resultCode.getRcode());
                 }
             }
             if (resultCode.getRcode() != 0 && response.getHeader().getPcode() != Pcodes.OB_TABLE_API_MOVE) {
@@ -144,9 +144,9 @@ public class ObTableRemoting extends BaseRemoting {
                     "routed to the wrong server: " + response.getMessage());
                 logger.warn(errMessage);
                 if (needFetchAll(resultCode.getRcode(), resultCode.getPcode())) {
-                    throw new ObTableNeedFetchAllException(errMessage);
+                    throw new ObTableNeedFetchAllException(errMessage, resultCode.getRcode());
                 } else if (needFetchPartial(resultCode.getRcode())) {
-                    throw new ObTableRoutingWrongException(errMessage);
+                    throw new ObTableRoutingWrongException(errMessage, resultCode.getRcode());
                 } else {
                     ExceptionUtil.throwObTableException(conn.getObTable().getIp(), conn
                         .getObTable().getPort(), response.getHeader().getTraceId1(), response
