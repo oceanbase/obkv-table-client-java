@@ -489,8 +489,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
     private void executeWithRetries(ObTableOperationResult[] results, Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> entry, int maxRetries) throws Exception {
         int retryCount = 0;
         boolean success = false;
-
-        // 初始分区  
+        
         Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> currentPartitions = new HashMap<>();
         currentPartitions.put(entry.getKey(), entry.getValue());
 

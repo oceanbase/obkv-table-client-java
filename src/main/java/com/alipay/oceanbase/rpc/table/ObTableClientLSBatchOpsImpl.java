@@ -603,8 +603,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
         int retryCount = 0;
         boolean success = false;
-
-        // 初始分区  
+        
         Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> currentPartitions = new HashMap<>();
         currentPartitions.put(entry.getKey(), entry.getValue());
 
