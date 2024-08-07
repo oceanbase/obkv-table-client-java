@@ -161,22 +161,26 @@ public class ObHashPartDesc extends ObPartDesc {
     }
 
     @Override
-    public List<Long> getPartIds(List<String> scanRangeColumns, Object[] start, boolean startInclusive,
-                                 Object[] end, boolean endInclusive) throws IllegalArgumentException {
+    public List<Long> getPartIds(List<String> scanRangeColumns, Object[] start,
+                                 boolean startInclusive, Object[] end, boolean endInclusive)
+                                                                                            throws IllegalArgumentException {
         try {
             if (start.length != end.length) {
-                throw new IllegalArgumentException("length of start key and end key in range is not equal, " +
-                        "the start key: " + start + ", the end key: " + end);
+                throw new IllegalArgumentException(
+                    "length of start key and end key in range is not equal, " + "the start key: "
+                            + start + ", the end key: " + end);
             }
 
-            if (start.length == 1  && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj() &&
-                    end.length == 1  && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
+            if (start.length == 1 && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj()
+                && end.length == 1 && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
                 return completeWorks;
             }
 
             if (scanRangeColumns.size() != start.length) {
-                throw new IllegalArgumentException("length of start key in range and scan range columns is not equal," +
-                        "the start key: " + start + ", the scan range columns: " + scanRangeColumns);
+                throw new IllegalArgumentException(
+                    "length of start key in range and scan range columns is not equal,"
+                            + "the start key: " + start + ", the scan range columns: "
+                            + scanRangeColumns);
             }
 
             Row startRow = new Row();
@@ -191,12 +195,13 @@ public class ObHashPartDesc extends ObPartDesc {
                 List<String> refColumns = partColumn.getRefColumnNames();
                 for (String column : refColumns) {
                     if (startRow.get(column) instanceof ObObj
-                            && (((ObObj) startRow.get(column)).isMinObj() || ((ObObj) startRow.get(column))
-                            .isMaxObj())) {
+                        && (((ObObj) startRow.get(column)).isMinObj() || ((ObObj) startRow
+                            .get(column)).isMaxObj())) {
                         return completeWorks;
                     }
                     if (endRow.get(column) instanceof ObObj
-                            && (((ObObj) endRow.get(column)).isMinObj() || ((ObObj) endRow.get(column)).isMaxObj())) {
+                        && (((ObObj) endRow.get(column)).isMinObj() || ((ObObj) endRow.get(column))
+                            .isMaxObj())) {
                         return completeWorks;
                     }
                 }
@@ -213,8 +218,8 @@ public class ObHashPartDesc extends ObPartDesc {
 
             if (startLongValue == null || endLongValue == null) {
                 throw new NumberFormatException("can not parseToComparable start value ["
-                        + startValue + "] or end value [" + endValue
-                        + "] to long");
+                                                + startValue + "] or end value [" + endValue
+                                                + "] to long");
             }
             long startHashValue = startLongValue - (startInclusive ? 0 : -1);
             long endHashValue = endLongValue - (endInclusive ? 0 : 1);
@@ -231,7 +236,7 @@ public class ObHashPartDesc extends ObPartDesc {
         } catch (IllegalArgumentException e) {
             logger.error(LCD.convert("01-00002"), e);
             throw new IllegalArgumentException(
-                    "ObHashPartDesc get part id come across illegal params", e);
+                "ObHashPartDesc get part id come across illegal params", e);
         }
     }
 

@@ -138,8 +138,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         }
                         subObTable = client
                             .getTableWithPartId(indexTableName, partIdWithIndex.getLeft(),
-                                needRefreshTableEntry, client.isTableEntryRefreshIntervalWait(), false,
-                                route).getRight().getObTable();
+                                needRefreshTableEntry, client.isTableEntryRefreshIntervalWait(),
+                                false, route).getRight().getObTable();
                     }
                 }
                 if (client.isOdpMode()) {

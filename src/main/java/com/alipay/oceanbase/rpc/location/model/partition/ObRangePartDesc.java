@@ -65,7 +65,8 @@ public class ObRangePartDesc extends ObPartDesc {
     public List<ObObjType> getOrderedCompareColumnTypes() {
         return orderedCompareColumnTypes;
     }
-    private List<Long>          completeWorks;
+
+    private List<Long> completeWorks;
 
     /*
      * Set ordered compare column types.
@@ -227,15 +228,15 @@ public class ObRangePartDesc extends ObPartDesc {
     }
 
     @Override
-    public List<Long> getPartIds(List<String> scanRangeColumns, Object[] start, boolean startInclusive,
-                                 Object[] end, boolean endInclusive) {
+    public List<Long> getPartIds(List<String> scanRangeColumns, Object[] start,
+                                 boolean startInclusive, Object[] end, boolean endInclusive) {
 
         if (start.length != end.length) {
             throw new IllegalArgumentException("length of start key and end key is not equal");
         }
 
-        if (start.length == 1  && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj() &&
-                end.length == 1  && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
+        if (start.length == 1 && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj()
+            && end.length == 1 && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
             return completeWorks;
         }
 
@@ -312,12 +313,12 @@ public class ObRangePartDesc extends ObPartDesc {
         try {
             List<Object> evalParams = evalRowKeyValues(rowKey);
             List<Comparable> comparableElement = super.initComparableElementByTypes(evalParams,
-                    this.orderedCompareColumns);
+                this.orderedCompareColumns);
             ObPartitionKey searchKey = ObPartitionKey.getInstance(orderedCompareColumns,
-                    comparableElement);
+                comparableElement);
 
             int pos = upperBound(this.bounds, new ObComparableKV<ObPartitionKey, Long>(searchKey,
-                    (long) -1));
+                (long) -1));
             if (pos >= this.bounds.size()) {
                 if (isScan) {
                     // if range is bigger than rangeMax while scanning
@@ -325,7 +326,7 @@ public class ObRangePartDesc extends ObPartDesc {
                     return this.bounds.size() - 1;
                 }
                 throw new ArrayIndexOutOfBoundsException("Table has no partition for value in "
-                        + this.getPartExpr());
+                                                         + this.getPartExpr());
             } else {
                 return pos;
             }

@@ -141,21 +141,22 @@ public class ObKeyPartDesc extends ObPartDesc {
     }
 
     // get partition ids for query
-    public List<Long> getPartIds(List<String> scanRangeColumns, Object[] start, boolean startInclusive,
-                                          Object[] end, boolean endInclusive) {
+    public List<Long> getPartIds(List<String> scanRangeColumns, Object[] start,
+                                 boolean startInclusive, Object[] end, boolean endInclusive) {
 
         try {
             if (start.length != end.length) {
                 throw new IllegalArgumentException("length of start key and end key is not equal");
             }
 
-            if (start.length == 1  && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj() &&
-                    end.length == 1  && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
+            if (start.length == 1 && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj()
+                && end.length == 1 && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
                 return completeWorks;
             }
 
             if (scanRangeColumns.size() != start.length) {
-                throw new IllegalArgumentException("length of key and scan range columns is not equal");
+                throw new IllegalArgumentException(
+                    "length of key and scan range columns is not equal");
             }
 
             Row startRow = new Row();
@@ -170,12 +171,13 @@ public class ObKeyPartDesc extends ObPartDesc {
                 List<String> refColumns = partColumn.getRefColumnNames();
                 for (String column : refColumns) {
                     if (startRow.get(column) instanceof ObObj
-                            && (((ObObj) startRow.get(column)).isMinObj() || ((ObObj) startRow.get(column))
-                            .isMaxObj())) {
+                        && (((ObObj) startRow.get(column)).isMinObj() || ((ObObj) startRow
+                            .get(column)).isMaxObj())) {
                         return completeWorks;
                     }
                     if (endRow.get(column) instanceof ObObj
-                            && (((ObObj) endRow.get(column)).isMinObj() || ((ObObj) endRow.get(column)).isMaxObj())) {
+                        && (((ObObj) endRow.get(column)).isMinObj() || ((ObObj) endRow.get(column))
+                            .isMaxObj())) {
                         return completeWorks;
                     }
                 }
@@ -187,8 +189,8 @@ public class ObKeyPartDesc extends ObPartDesc {
 
             if (startValues == null || endValues == null) {
                 throw new NumberFormatException("can not parseToComparable start value ["
-                        + startValues + "] or end value [" + endValues
-                        + "] to long");
+                                                + startValues + "] or end value [" + endValues
+                                                + "] to long");
             }
 
             if (startValues.equals(endValues)) {
@@ -202,7 +204,7 @@ public class ObKeyPartDesc extends ObPartDesc {
         } catch (IllegalArgumentException e) {
             logger.error(LCD.convert("01-00002"), e);
             throw new IllegalArgumentException(
-                    "ObKeyPartDesc get part id come across illegal params", e);
+                "ObKeyPartDesc get part id come across illegal params", e);
         }
     }
 
@@ -279,13 +281,13 @@ public class ObKeyPartDesc extends ObPartDesc {
         long hashValue = 0L;
         for (int i = 0; i < orderedPartRefColumnRowKeyRelations.size(); i++) {
             hashValue = ObHashUtils.toHashcode(evalValues.get(i),
-                    orderedPartRefColumnRowKeyRelations.get(i).getLeft(), hashValue,
-                    this.getPartFuncType());
+                orderedPartRefColumnRowKeyRelations.get(i).getLeft(), hashValue,
+                this.getPartFuncType());
         }
 
         hashValue = (hashValue > 0 ? hashValue : -hashValue);
         return ((long) partSpace << ObPartConstants.OB_PART_IDS_BITNUM)
-                | (hashValue % this.partNum);
+               | (hashValue % this.partNum);
     }
 
     private boolean equalsWithCollationType(ObCollationType collationType, Object s, Object t)
