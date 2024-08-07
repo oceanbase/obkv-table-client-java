@@ -504,7 +504,6 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         retryCount++;
                         List<ObTableOperation> failedOperations = extractOperations(currentEntry.getValue().getRight());
                         currentPartitions = prepareOperations(failedOperations);
-                        System.out.println("refresh partitions:  currentPartitions: " + currentPartitions);
                         allPartitionsSuccess = false;
                         break;
                     } else {
