@@ -20,12 +20,11 @@ package com.alipay.oceanbase.rpc.stream;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.exception.ObTableNeedFetchAllException;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.AbstractQueryStreamResult;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryRequest;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryResult;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObQueryOperationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
@@ -146,6 +145,11 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
     }
 
     @Override
+    protected Map<Long, ObPair<Long, ObTableParam>> refreshPartition(ObTableQuery tableQuery, String tableName) throws Exception {
+        return buildPartitions(client, tableQuery, tableName);
+    }
+    
+    @Override
     public boolean next() throws Exception {
         checkStatus();
         lock.lock();
@@ -180,8 +184,18 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                 .iterator();
             while (it.hasNext()) {
                 Map.Entry<Long, ObPair<Long, ObTableParam>> entry = it.next();
-                // try access new partition, async will not remove useless expectant
-                referToNewPartition(entry.getValue());
+                try {
+                    // try access new partition, async will not remove useless expectant
+                    referToNewPartition(entry.getValue());
+                } catch (Exception e) {
+                    if (e instanceof ObTableNeedFetchAllException) {
+                        this.tableQuery.adjustStartKey(currentStartKey);
+                        setExpectant(refreshPartition(tableQuery, tableName));
+                        it = expectant.entrySet().iterator();
+                    } else {
+                        throw e;
+                    }
+                }
 
                 // remove useless expectant if it is end
                 if (isEnd())
