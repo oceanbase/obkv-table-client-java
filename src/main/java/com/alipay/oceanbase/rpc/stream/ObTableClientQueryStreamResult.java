@@ -22,6 +22,7 @@ import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.AbstractQueryStreamResult;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
@@ -29,6 +30,7 @@ import com.alipay.oceanbase.rpc.table.ObTableParam;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
 import org.slf4j.Logger;
 
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
@@ -76,6 +78,11 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
         throw new IllegalArgumentException("not support this execute");
     }
 
+    @Override
+    protected Map<Long, ObPair<Long, ObTableParam>> refreshPartition(ObTableQuery tableQuery, String tableName) throws Exception {
+        return buildPartitions(client, tableQuery, tableName);
+    }
+    
     /**
      * Get client.
      * @return client
