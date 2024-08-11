@@ -18,6 +18,8 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationSingle;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
 import com.alipay.oceanbase.rpc.util.Serialization;
@@ -63,6 +65,86 @@ public class ObTableQuery extends AbstractPayload {
     private List<String>        scanRangeColumns          = new LinkedList<String>();
 
     private List<ObTableAggregationSingle>    aggregations       = new LinkedList<>();
+
+    public void adjustStartKey(ObRowKey key) throws IllegalArgumentException {
+        List<ObNewRange> keyRanges = getKeyRanges();
+        for (ObNewRange range : keyRanges) {
+            if (isKeyInRange(range, key)) {
+                byte[] bytes = parseStartKeyToBytes(key);
+                ObRowKey newStartKey = ObRowKey.getInstance(new Object[]{incrementByteArray(bytes), ObObj.getMin(), ObObj.getMin()});
+                range.setStartKey(newStartKey);
+                return;
+            }
+        }
+        throw new IllegalArgumentException("Key not found in any KeyRange.");
+    }
+
+    private byte[] parseStartKeyToBytes(ObRowKey key) {
+        if (key == null || key.getObjs() == null || key.getObjs().isEmpty()) {
+            return new byte[0];
+        }
+
+        ObObj obObjKey = key.getObjs().get(0);
+        if (obObjKey.getValue() instanceof byte[]) {
+            return (byte[]) obObjKey.getValue();
+        }
+
+        throw new IllegalArgumentException("The start key does not contain a byte[] value.");
+    }
+
+    private boolean isKeyInRange(ObNewRange range, ObRowKey key) {
+        byte[] startKeyBytes = parseStartKeyToBytes(range.getStartKey());
+        byte[] endKeyBytes = parseStartKeyToBytes(range.getEndKey());
+        byte[] keyBytes = parseStartKeyToBytes(key);
+
+        int startComparison = compareByteArrays(startKeyBytes, keyBytes);
+        int endComparison = compareByteArrays(endKeyBytes, keyBytes);
+
+        // 假设范围是 [start, end)，那么需要：  
+        boolean withinStart = startComparison <= 0;  // key >= start  
+        boolean withinEnd = endComparison > 0;       // key < end  
+
+        return withinStart && withinEnd;
+    }
+
+    private int compareByteArrays(byte[] array1, byte[] array2) {
+        for (int i = 0; i < Math.min(array1.length, array2.length); i++) {
+            int a = (array1[i] & 0xFF);
+            int b = (array2[i] & 0xFF);
+            if (a != b) {
+                return a - b;
+            }
+        }
+        return array1.length - array2.length;
+    }
+
+    private byte[] incrementByteArray(byte[] input) {
+        if (input == null || input.length == 0) {
+            return new byte[]{1};  // 仅处理空输入情况  
+        }
+
+        byte[] result = input.clone();  // 复制数组以保持原数据不变  
+
+        for (int i = result.length - 1; i >= 0; i--) {
+            // 增加该字节1  
+            result[i] += 1;
+
+            // 检查是否出现溢出  
+            if ((result[i] & 0xFF) != 0) {
+                // 没有溢出，直接返回结果，不必再加了  
+                return result;
+            }
+
+            // 若溢出，需要下一个字节处理进位（当前字节已0）  
+            result[i] = 0;
+        }
+
+        // 如果循环结束还没有返回，说明最高位有进位  
+        byte[] extendedResult = new byte[result.length + 1];
+        extendedResult[0] = 1;  // 设置第一个字节，代表进位  
+
+        return extendedResult;
+    }
 
     /*
      * Check filter.
