@@ -704,10 +704,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     if (null != callback.getRowKey()) {
                         // using row key
                         obPair = getTableBySingleRowKeyWithRoute(tableName, callback.getRowKey(),
-                            needRefreshTableEntry, tableEntryRefreshIntervalWait, needFetchAllRouteInfo, route);
+                            needRefreshTableEntry, tableEntryRefreshIntervalWait,
+                            needFetchAllRouteInfo, route);
                     } else if (null != callback.getKeyRanges()) {
                         // using scan range
-                        obPair = getTableByRowKeyRange(tableName, new ObTableQuery(), callback.getKeyRanges());
+                        obPair = getTableByRowKeyRange(tableName, new ObTableQuery(),
+                            callback.getKeyRanges());
                     } else {
                         throw new ObTableException("rowkey and scan range are null in mutation");
                     }
