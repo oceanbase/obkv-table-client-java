@@ -145,10 +145,12 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
     }
 
     @Override
-    protected Map<Long, ObPair<Long, ObTableParam>> refreshPartition(ObTableQuery tableQuery, String tableName) throws Exception {
+    protected Map<Long, ObPair<Long, ObTableParam>> refreshPartition(ObTableQuery tableQuery,
+                                                                     String tableName)
+                                                                                      throws Exception {
         return buildPartitions(client, tableQuery, tableName);
     }
-    
+
     @Override
     public boolean next() throws Exception {
         checkStatus();
@@ -192,6 +194,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                         this.tableQuery.adjustStartKey(currentStartKey);
                         setExpectant(refreshPartition(tableQuery, tableName));
                         it = expectant.entrySet().iterator();
+                        continue;
                     } else {
                         throw e;
                     }

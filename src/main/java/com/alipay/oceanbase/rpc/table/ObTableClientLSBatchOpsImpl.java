@@ -675,7 +675,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         long getTableTime = System.currentTimeMillis();
         final Map<Object, Object> context = ThreadLocalMap.getContextMap();
         final int maxRetries = obTableClient.getRuntimeRetryTimes();
-        
+
         if (executorService != null && !executorService.isShutdown() && lsOperations.size() > 1) {
             // execute sub-batch operation in parallel
             final ConcurrentTaskExecutor executor = new ConcurrentTaskExecutor(executorService,
