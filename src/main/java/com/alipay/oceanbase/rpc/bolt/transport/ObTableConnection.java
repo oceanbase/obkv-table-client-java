@@ -58,7 +58,7 @@ public class ObTableConnection {
 
     public boolean checkExpired() {
         long maxConnectionTimes = obTable.getConnMaxExpiredTime();
-        return lastConnectionTime.isBefore(LocalDateTime.now().minusSeconds(maxConnectionTimes));
+        return lastConnectionTime.isBefore(LocalDateTime.now().minusMinutes(maxConnectionTimes));
     }
 
     public boolean isExpired() {
