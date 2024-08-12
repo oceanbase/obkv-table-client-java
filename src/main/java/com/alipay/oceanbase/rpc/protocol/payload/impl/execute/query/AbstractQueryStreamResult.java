@@ -128,7 +128,6 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
             }
             tryTimes++;
             try {
-                // 重试时重新 getTable
                 if (tryTimes > 1) {
                     if (client.isOdpMode()) {
                         subObTable = client.getOdpTable();
@@ -258,7 +257,6 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     /*
      * Next.
      */
-    // 这个函数中，任何的计算结果都会填充到cacheRows
     public boolean next() throws Exception {
         checkStatus();
         lock.lock();
@@ -310,7 +308,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
 
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchAllException) {
-                        // Adjust the start key and refresh the expectant  
+                        // Adjust the start key and refresh the expectant
                         this.tableQuery.adjustStartKey(currentStartKey);
                         setExpectant(refreshPartition(tableQuery, tableName));
 
@@ -393,7 +391,6 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         return partitionObTables;
     }
 
-    // 上层会不断的调getRow， 也就是不断的取出缓存，所以可以在这里给row赋值的时候顺便把这个row记录下来，用来作为最后拿到的key
     protected void nextRow() {
         rowIndex = rowIndex + 1;
         row = cacheRows.poll();

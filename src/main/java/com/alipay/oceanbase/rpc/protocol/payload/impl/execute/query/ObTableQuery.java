@@ -71,24 +71,27 @@ public class ObTableQuery extends AbstractPayload {
     public void adjustStartKey(List<ObObj> key) throws IllegalArgumentException {
         List<ObNewRange> keyRanges = getKeyRanges();
         for (ObNewRange range : keyRanges) {
-            if (isKeyInRange(range, key)) {
+            if (key != null && isKeyInRange(range, key)) {
                 byte[] bytes = parseStartKeyToBytes(key);
+                ObRowKey newStartKey;
                 if (getScanOrder() == ObScanOrder.Forward) {
-                    ObRowKey newStartKey = ObRowKey.getInstance(new Object[]{incrementByteArray(bytes), ObObj.getMin(), ObObj.getMin()});
-                    range.setStartKey(newStartKey);
+                    newStartKey = ObRowKey.getInstance(new Object[]{incrementByteArray(bytes), ObObj.getMin(), ObObj.getMin()});
                 } else {
-                    ObRowKey newStartKey = ObRowKey.getInstance(new Object[]{decrementByteArray(bytes), ObObj.getMax(), ObObj.getMax()});
-                    range.setEndKey(newStartKey);
+                    newStartKey = ObRowKey.getInstance(new Object[]{decrementByteArray(bytes), ObObj.getMax(), ObObj.getMax()});
                 }
+                range.setStartKey(newStartKey);
                 return;
             }
         }
-        throw new IllegalArgumentException("Key not found in any KeyRange.");
+        /* keyRanges not changed */
     }
 
     private byte[] parseStartKeyToBytes(List<ObObj> key) {
-        ObObj obObjKey = key.get(0);
-        return obObjKey.encode();
+        if (key != null) {
+            ObObj obObjKey = key.get(0);
+            return obObjKey.encode();
+        }
+        return new byte[0];
     }
 
     private boolean isKeyInRange(ObNewRange range, List<ObObj> key) {
