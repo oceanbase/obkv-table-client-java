@@ -79,10 +79,12 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
     }
 
     @Override
-    protected Map<Long, ObPair<Long, ObTableParam>> refreshPartition(ObTableQuery tableQuery, String tableName) throws Exception {
+    protected Map<Long, ObPair<Long, ObTableParam>> refreshPartition(ObTableQuery tableQuery,
+                                                                     String tableName)
+                                                                                      throws Exception {
         return buildPartitions(client, tableQuery, tableName);
     }
-    
+
     /**
      * Get client.
      * @return client

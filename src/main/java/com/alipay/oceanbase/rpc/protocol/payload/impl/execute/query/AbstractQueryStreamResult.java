@@ -65,7 +65,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     protected LinkedList<List<ObObj>>                                          cacheRows           = new LinkedList<List<ObObj>>();
     private LinkedList<ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>> partitionLastResult = new LinkedList<ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>>();
     private ObReadConsistency                                                  readConsistency     = ObReadConsistency.STRONG;
-    public ObRowKey                                                        currentStartKey;
+    public List<ObObj>                                                         currentStartKey;
 
     /*
      * Get pcode.
@@ -302,7 +302,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
             // lastly, refer to the new partition
             boolean hasNext = false;
             List<Map.Entry<Long, ObPair<Long, ObTableParam>>> referPartition = new ArrayList<Map.Entry<Long, ObPair<Long, ObTableParam>>>();
-            Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet().iterator();
+            Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
+                .iterator();
             while (it.hasNext()) {
                 Map.Entry<Long, ObPair<Long, ObTableParam>> entry = it.next();
                 referPartition.add(entry);
@@ -311,7 +312,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     referPartition.add(entry);
 
                     // Try accessing the new partition  
-                    ObTableQueryResult tableQueryResult = (ObTableQueryResult) referToNewPartition(entry.getValue());
+                    ObTableQueryResult tableQueryResult = (ObTableQueryResult) referToNewPartition(entry
+                        .getValue());
 
                     if (tableQueryResult.getRowCount() == 0) {
                         continue;
@@ -329,13 +331,13 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
 
                         // Reset the iterator to start over  
                         it = expectant.entrySet().iterator();
-                        referPartition.clear(); // Clear the referPartition if needed  
+                        referPartition.clear(); // Clear the referPartition if needed
                     } else {
                         throw e;
                     }
                 }
             }
-            
+
             for (Map.Entry<Long, ObPair<Long, ObTableParam>> entry : expectant.entrySet()) {
                 // mark the refer partition
                 referPartition.add(entry);
@@ -411,7 +413,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         rowIndex = rowIndex + 1;
         row = cacheRows.poll();
         if (row != null) {
-            currentStartKey = (ObRowKey) row.get(0).getValue();
+            currentStartKey = row;
         }
     }
 
@@ -490,7 +492,10 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     protected abstract ObTableQueryAsyncResult executeAsync(ObPair<Long, ObTableParam> partIdWithObTable,
                                                             ObPayload streamRequest)
                                                                                     throws Exception;
-    protected abstract Map<Long, ObPair<Long, ObTableParam>> refreshPartition(ObTableQuery tableQuery, String tableName) throws Exception;
+
+    protected abstract Map<Long, ObPair<Long, ObTableParam>> refreshPartition(ObTableQuery tableQuery,
+                                                                              String tableName)
+                                                                                               throws Exception;
 
     protected void cacheResultRows(ObTableQueryResult tableQueryResult) {
         cacheRows.addAll(tableQueryResult.getPropertiesRows());
