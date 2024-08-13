@@ -22,6 +22,11 @@ import com.alipay.oceanbase.rpc.bolt.ObTableTest;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.filter.ObCompareOp;
 import com.alipay.oceanbase.rpc.filter.ObTableValueFilter;
+import com.alipay.oceanbase.rpc.mutation.BatchOperation;
+import com.alipay.oceanbase.rpc.mutation.Insert;
+import com.alipay.oceanbase.rpc.mutation.Replace;
+import com.alipay.oceanbase.rpc.mutation.Row;
+import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
@@ -87,6 +92,13 @@ public class ObTableClientAutoIncTest {
         Connection connection = ObTableClientTestUtil.getConnection();
         Statement statement = connection.createStatement();
         statement.execute("drop table " + tableName);
+    }
+
+    private void deleteTable(String tableName) throws SQLException {
+        // use sql to drop table
+        Connection connection = ObTableClientTestUtil.getConnection();
+        Statement statement = connection.createStatement();
+        statement.execute("delete from " + tableName);
     }
 
     @Test
@@ -564,4 +576,69 @@ public class ObTableClientAutoIncTest {
         } finally {
         }
     }
+
+    @Test
+    public void test_autoinc_in_batch() throws Exception {
+        // auto increment is rowKey
+        test_autoinc_in_batch_inner("test_auto_increment_rk_batch", false, false);
+        test_autoinc_in_batch_inner("test_auto_increment_rk_batch_ttl", false, false);
+        test_autoinc_in_batch_inner("test_auto_increment_rk_batch", false, true);
+        test_autoinc_in_batch_inner("test_auto_increment_rk_batch_ttl", false, true);
+        // auto increment is not rowKey
+        test_autoinc_in_batch_inner("test_auto_increment_batch", true, false);
+        test_autoinc_in_batch_inner("test_auto_increment_batch_ttl", true, false);
+        test_autoinc_in_batch_inner("test_auto_increment_batch", true, true);
+        test_autoinc_in_batch_inner("test_auto_increment_batch_ttl", true, true);
+    }
+
+    public void test_autoinc_in_batch_inner(String tableName, boolean useAutoinc, boolean useReplace) throws Exception {
+        try {
+            int batchSize = 10;
+            BatchOperation batchOperation = client.batchOperation(tableName);
+            for (int i = 0; i < batchSize; i++) {
+                Long c1_val = Long.valueOf(i + 100);
+                Long c2_val = useAutoinc ? null : Long.valueOf(i + 1000);
+                String c3_val = String.format("col_%d", i);
+                if (useReplace) {
+                    Replace replace = new Replace();
+                    replace.setRowKey(row(colVal("c1", c1_val)));
+                    replace.addMutateRow(row(colVal("c2", c2_val), colVal("c3", c3_val)));
+                    batchOperation.addOperation(replace);
+                } else {
+                    Insert insert = new Insert();
+                    insert.setRowKey(row(colVal("c1", c1_val)));
+                    insert.addMutateRow(row(colVal("c2", c2_val), colVal("c3", c3_val)));
+                    batchOperation.addOperation(insert);
+                }
+
+            }
+            BatchOperationResult batchOperationResult = batchOperation.execute();
+            for (int i = 0; i < batchSize; i++) {
+                Assert.assertEquals(1, batchOperationResult.get(i).getAffectedRows());
+            }
+            // check result
+            TableQuery tableQuery = client.query(tableName);
+            tableQuery.select("c1", "c2", "c3");
+            tableQuery.addScanRange(new Object[]{100L}, new Object[]{Long.valueOf(100 + batchSize - 1)});
+            QueryResultSet result = tableQuery.execute();
+            int i = 0;
+            Long c2_val = -1L;
+            while (result.next()) {
+                Row row = result.getResultRow();
+                Assert.assertEquals(Long.valueOf(i + 100), row.get("c1"));
+                if (useAutoinc) {
+                    Assert.assertTrue(c2_val < (Long)row.get("c2"));
+                    c2_val = (Long)row.get("c2");
+                } else {
+                    Assert.assertEquals(Long.valueOf(i + 1000), row.get("c2"));
+                }
+                Assert.assertEquals(String.format("col_%d", i), row.get("c3"));
+                i++;
+            }
+            Assert.assertEquals(batchSize, i);
+        } finally {
+            deleteTable(tableName);
+        }
+    }
+
 }
