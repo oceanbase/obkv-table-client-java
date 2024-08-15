@@ -29,6 +29,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObQueryO
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
 import com.alipay.oceanbase.rpc.table.ObTableParam;
+import com.alipay.oceanbase.rpc.util.ByteUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,10 +167,22 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             if (!isEnd() && !expectant.isEmpty()) {
                 Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
                     .iterator();
-                Map.Entry<Long, ObPair<Long, ObTableParam>> lastEntry = it.next();
-                // try access new partition, async will not remove useless expectant
-                referToLastStreamResult(lastEntry.getValue());
 
+                Map.Entry<Long, ObPair<Long, ObTableParam>> lastEntry = it.next();
+                try {
+                    // try access new partition, async will not remove useless expectant
+                    referToLastStreamResult(lastEntry.getValue());
+                } catch (Exception e) {
+                    if (e instanceof ObTableNeedFetchAllException) {
+                        this.asyncRequest.getObTableQueryRequest().getTableQuery()
+                            .adjustStartKey(currentStartKey);
+                        setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
+                            .getTableQuery(), tableName));
+                        setEnd(true);
+                    } else {
+                        throw e;
+                    }
+                }
                 // remove useless expectant if it is end
                 if (isEnd())
                     it.remove();
@@ -191,8 +204,10 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                     referToNewPartition(entry.getValue());
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchAllException) {
-                        this.tableQuery.adjustStartKey(currentStartKey);
-                        setExpectant(refreshPartition(tableQuery, tableName));
+                        this.asyncRequest.getObTableQueryRequest().getTableQuery()
+                            .adjustStartKey(currentStartKey);
+                        setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
+                            .getTableQuery(), tableName));
                         it = expectant.entrySet().iterator();
                         continue;
                     } else {
