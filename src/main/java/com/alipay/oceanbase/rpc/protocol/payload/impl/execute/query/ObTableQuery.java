@@ -72,17 +72,18 @@ public class ObTableQuery extends AbstractPayload {
         List<ObNewRange> keyRanges = getKeyRanges();
         for (ObNewRange range : keyRanges) {
             if (key != null && isKeyInRange(range, key)) {
-                byte[] bytes = parseStartKeyToBytes(key);
                 ObRowKey newStartKey;
                 if (getScanOrder() == ObScanOrder.Forward) {
-                    newStartKey = ObRowKey.getInstance(new Object[]{incrementByteArray(bytes), ObObj.getMin(), ObObj.getMin()});
+                    // get the real rowkey
+                    newStartKey = ObRowKey.getInstance(new Object[]{key.get(0).getValue(), ObObj.getMax(), ObObj.getMax()});
                 } else {
-                    newStartKey = ObRowKey.getInstance(new Object[]{decrementByteArray(bytes), ObObj.getMax(), ObObj.getMax()});
+                    newStartKey = ObRowKey.getInstance(new Object[]{key.get(0).getValue(), ObObj.getMax(), ObObj.getMax()});
                 }
                 range.setStartKey(newStartKey);
                 return;
             }
         }
+        System.out.println("noting changed");
         /* keyRanges not changed */
     }
 
