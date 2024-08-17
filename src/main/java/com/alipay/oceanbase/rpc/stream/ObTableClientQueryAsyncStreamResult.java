@@ -21,6 +21,7 @@ import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.exception.ObTableNeedFetchAllException;
+import com.alipay.oceanbase.rpc.exception.ObTableRetryExhaustedException;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
@@ -36,6 +37,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.RUNTIME;
+
 public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResult {
     private static final Logger      logger         = LoggerFactory
                                                         .getLogger(ObTableClientQueryStreamResult.class);
@@ -50,6 +53,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         if (initialized) {
             return;
         }
+        int maxRetries = client.getTableEntryRefreshTryTimes();
         // init request
         ObTableQueryRequest request = new ObTableQueryRequest();
         request.setTableName(tableName);
@@ -66,8 +70,29 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         if (!expectant.isEmpty()) {
             Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
                 .iterator();
-            Map.Entry<Long, ObPair<Long, ObTableParam>> firstEntry = it.next();
-            referToNewPartition(firstEntry.getValue());
+            int retryTimes = 0;
+            while (it.hasNext()) {
+                Map.Entry<Long, ObPair<Long, ObTableParam>> firstEntry = it.next();
+                try {
+                    // try access new partition, async will not remove useless expectant
+                    referToNewPartition(firstEntry.getValue());
+                    break;
+                } catch (Exception e) {
+                    if (e instanceof ObTableNeedFetchAllException) {
+                        setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
+                            .getTableQuery(), tableName));
+                        it = expectant.entrySet().iterator();
+                        retryTimes++;
+                        if (retryTimes > maxRetries) {
+                            RUNTIME.error("Fail to get refresh table entry response after {}", retryTimes);
+                            throw new ObTableRetryExhaustedException("Fail to get refresh table entry response after " + retryTimes);
+
+                        }
+                    } else {
+                        throw e;
+                    }
+                }
+            }
             if (isEnd())
                 it.remove();
         }
@@ -197,6 +222,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             boolean hasNext = false;
             Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
                 .iterator();
+            int retryTimes = 0;
             while (it.hasNext()) {
                 Map.Entry<Long, ObPair<Long, ObTableParam>> entry = it.next();
                 try {
@@ -209,6 +235,11 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                         setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
                             .getTableQuery(), tableName));
                         it = expectant.entrySet().iterator();
+                        retryTimes++;
+                        if (retryTimes > client.getTableEntryRefreshTryTimes()) {
+                            RUNTIME.error("Fail to get refresh table entry response after {}", retryTimes);
+                            throw new ObTableRetryExhaustedException("Fail to get refresh table entry response after " + retryTimes);
+                        }
                         continue;
                     } else {
                         throw e;
