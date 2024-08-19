@@ -83,7 +83,6 @@ public class ObTableQuery extends AbstractPayload {
                 return;
             }
         }
-        System.out.println("noting changed");
         /* keyRanges not changed */
     }
 
