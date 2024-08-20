@@ -519,6 +519,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             throw new IllegalArgumentException("table name is null");
         }
         boolean needRefreshTableEntry = false;
+        boolean needFetchAllRouteInfo = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
         while (true) {
@@ -587,6 +588,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                     "retry while meet Exception needing refresh, errorCode: {} , errorMsg: {},retry times {}",
                                     ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                     tryTimes);
+                            if (ex instanceof ObTableNeedFetchAllException) {
+                                needFetchAllRouteInfo = true;
+                                // reset failure count while fetch all route info
+                                this.resetExecuteContinuousFailureCount(tableName);
+                            }
                         } else {
                             calculateContinuousFailure(tableName, ex.getMessage());
                             throw ex;
@@ -674,6 +680,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             throw new IllegalArgumentException("table name is null");
         }
         boolean needRefreshTableEntry = false;
+        boolean needFetchAllRouteInfo = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
         while (true) {
@@ -756,6 +763,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                     "retry while meet Exception needing refresh, errorCode: {} , errorMsg: {},retry times {}",
                                     ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                     tryTimes);
+                            if (ex instanceof ObTableNeedFetchAllException) {
+                                needFetchAllRouteInfo = true;
+                                // reset failure count while fetch all route info
+                                this.resetExecuteContinuousFailureCount(tableName);
+                            }
                         } else {
                             calculateContinuousFailure(tableName, ex.getMessage());
                             throw ex;
