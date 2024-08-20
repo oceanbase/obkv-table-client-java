@@ -704,7 +704,6 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         private volatile ObTableConnection[] connectionPool;
         // round-robin scheduling
         private AtomicLong                   turn = new AtomicLong(0);
-        private final ReentrantLock[] locks;
         private final ScheduledExecutorService cleanerExecutor = Executors.newScheduledThreadPool(1);
         /*
          * Ob table connection pool.
@@ -713,10 +712,6 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             this.obTable = obTable;
             this.obTableConnectionPoolSize = connectionPoolSize;
             connectionPool = new ObTableConnection[connectionPoolSize];
-            this.locks = new ReentrantLock[connectionPoolSize];
-            for (int i = 0; i < connectionPoolSize; i++) {
-                locks[i] = new ReentrantLock();
-            }
         }
         
         /*
@@ -741,13 +736,8 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             int round = (int) (turn.getAndIncrement() % obTableConnectionPoolSize);
             for (int i = 0; i < obTableConnectionPoolSize; i++) {
                 int idx = (round + i) % obTableConnectionPoolSize;
-                locks[idx].lock();
-                try {
-                    if (!connectionPool[idx].isExpired()) {
-                        return connectionPool[idx];
-                    }
-                } finally {
-                    locks[idx].unlock();
+                if (!connectionPool[idx].isExpired()) {
+                    return connectionPool[idx];
                 }
             }
             return null;
@@ -769,13 +759,8 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             List<Integer> expiredConnIds = new ArrayList<>();
             for (int i = 1; i <= obTableConnectionPoolSize; ++i) {
                 int idx = (int) ((i + turn.get()) % obTableConnectionPoolSize);
-                locks[idx].lock();
-                try {
-                    if (connectionPool[idx].checkExpired()) {
-                        expiredConnIds.add(idx);
-                    }
-                } finally {
-                    locks[idx].unlock();
+                if (connectionPool[idx].checkExpired()) {
+                    expiredConnIds.add(idx);
                 }
             }
 
@@ -783,12 +768,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             int needReconnectCount = (int) Math.ceil(expiredConnIds.size() / 3.0);
             for (int i = 0; i < needReconnectCount; i++) {
                 int idx = expiredConnIds.get(i);
-                locks[idx].lock();
-                try {
-                    connectionPool[idx].setExpired(true);
-                } finally {
-                    locks[idx].unlock();
-                }
+                connectionPool[idx].setExpired(true);
             }
 
             // Sleep for a predefined timeout period before attempting reconnection
@@ -801,7 +781,6 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             // Attempt to reconnect the marked connections
             for (int i = 0; i < needReconnectCount; i++) {
                 int idx = expiredConnIds.get(i);
-                locks[idx].lock();
                 try {
                     if (i == 0) {
                         connectionPool[idx].enableLoginWithConfigs();
@@ -811,7 +790,6 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                     log.warn("ObTableConnectionPool::checkAndReconnect reconnect fail {}. {}", connectionPool[idx].getConnection().getUrl(), e.getMessage());
                 } finally {
                     connectionPool[idx].setExpired(false);
-                    locks[idx].unlock();
                 }
             }
         }
