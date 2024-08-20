@@ -34,14 +34,14 @@ public class ObGeneratedColumnExpressParser {
 
     private final ObGeneratedColumnLexer lexer;
 
-    /**
+    /*
      * Ob generated column express parser.
      */
     public ObGeneratedColumnExpressParser(String text) {
         this.lexer = new ObGeneratedColumnLexer(text);
     }
 
-    /**
+    /*
      * Parse.
      */
     public ObGeneratedColumnSimpleFunc parse() throws GenerateColumnParseException {
@@ -166,7 +166,7 @@ public class ObGeneratedColumnExpressParser {
         }
     }
 
-    /**
+    /*
      * Accept.
      */
     public void accept(ObGeneratedColumnSimpleToken token) {

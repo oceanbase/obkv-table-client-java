@@ -19,48 +19,48 @@ package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableTransactionRpcTimeout extends ObTableException {
 
-    /**
+    /*
      * Ob table transaction rpc timeout.
      */
     public ObTableTransactionRpcTimeout() {
     }
 
-    /**
+    /*
      * Ob table transaction rpc timeout.
      */
     public ObTableTransactionRpcTimeout(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table transaction rpc timeout.
      */
     public ObTableTransactionRpcTimeout(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table transaction rpc timeout.
      */
     public ObTableTransactionRpcTimeout(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table transaction rpc timeout.
      */
     public ObTableTransactionRpcTimeout(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table transaction rpc timeout.
      */
     public ObTableTransactionRpcTimeout(Throwable cause) {
         super(cause);
     }
 
-    /**
+    /*
      * Is need refresh table entry.
      */
     public boolean isNeedRefreshTableEntry() {

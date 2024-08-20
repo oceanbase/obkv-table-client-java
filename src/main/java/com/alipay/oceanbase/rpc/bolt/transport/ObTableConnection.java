@@ -17,51 +17,75 @@
 
 package com.alipay.oceanbase.rpc.bolt.transport;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.exception.*;
+import com.alipay.oceanbase.rpc.location.LocationUtil;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.login.ObTableLoginRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.login.ObTableLoginResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
-import com.alipay.oceanbase.rpc.util.ObBytesString;
-import com.alipay.oceanbase.rpc.util.Security;
-import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
-import com.alipay.oceanbase.rpc.util.TraceUtil;
+import com.alipay.oceanbase.rpc.util.*;
 import com.alipay.remoting.Connection;
 import org.slf4j.Logger;
 
-import java.util.UUID;
+import java.net.ConnectException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.MONITOR;
+import static com.alipay.oceanbase.rpc.util.TraceUtil.formatTraceMessage;
 
 public class ObTableConnection {
 
-    private static final Logger LOGGER   = TableClientLoggerFactory
-                                             .getLogger(ObTableConnection.class);
+    private static final Logger LOGGER         = TableClientLoggerFactory
+                                                   .getLogger(ObTableConnection.class);
     private ObBytesString       credential;
-    private long                tenantId = 1;                                    //默认值切勿不要随意改动
+    private long                tenantId       = 1;                                    //默认值切勿不要随意改动
     private Connection          connection;
     private final ObTable       obTable;
-    private long                uniqueId;
-    private AtomicLong          sequence;
+    private long                uniqueId;                                              // as trace0 in rpc header
+    private AtomicLong          sequence;                                              // as trace1 in rpc header
+    private AtomicBoolean       isReConnecting = new AtomicBoolean(false);             // indicate is re-connecting or not
 
-    /**
+    public static long ipToLong(String strIp) {
+        String[] ip = strIp.split("\\.");
+        return (Long.parseLong(ip[0]) << 24) + (Long.parseLong(ip[1]) << 16)
+               + (Long.parseLong(ip[2]) << 8) + (Long.parseLong(ip[3]));
+    }
+
+    /*
      * Ob table connection.
      */
     public ObTableConnection(ObTable obTable) {
         this.obTable = obTable;
     }
 
-    /**
+    /*
      * Init.
      */
+
     public void init() throws Exception {
-        uniqueId = UUID.randomUUID().getMostSignificantBits();
+        // sequence is a monotone increasing long value inside each connection
         sequence = new AtomicLong();
         connect();
+        /* layout of uniqueId(64 bytes)
+         * ip_: 32
+         * port_: 16;
+         * is_user_request_: 1;
+         * is_ipv6_:1;
+         * reserved_: 14;
+         */
+        long ip = ipToLong(connection.getLocalIP());
+        long port = (long) connection.getLocalPort() << 32;
+        long isUserRequest = (1l << (32 + 16));
+        long reserved = 0;
+        uniqueId = ip | port | isUserRequest | reserved;
     }
 
-    private synchronized boolean connect() throws Exception {
+    private boolean connect() throws Exception {
         if (checkAvailable()) { // double check status available
             return false;
         }
+        final long start = System.currentTimeMillis();
         Exception cause = null;
         int tries = 0;
         int maxTryTimes = obTable.getObTableConnectTryTimes();
@@ -76,8 +100,12 @@ public class ObTableConnection {
                     "connect failed at " + tries + " try " + TraceUtil.formatIpPort(obTable), e);
             }
         }
+        String endpoint = obTable.getIp() + ":" + obTable.getPort();
+        MONITOR.info(logMessage(null, "CONNECT", endpoint, System.currentTimeMillis() - start));
 
         if (tries >= maxTryTimes) {
+            LOGGER.warn("connect failed after max " + maxTryTimes + " tries "
+                        + TraceUtil.formatIpPort(obTable));
             throw new ObTableServerConnectException("connect failed after max " + maxTryTimes
                                                     + " tries " + TraceUtil.formatIpPort(obTable),
                 cause);
@@ -93,7 +121,8 @@ public class ObTableConnection {
         return true;
     }
 
-    private synchronized void login() throws Exception {
+    private void login() throws Exception {
+        final long start = System.currentTimeMillis();
         ObTableLoginRequest request = new ObTableLoginRequest();
         request.setTenantName(obTable.getTenantName());
         request.setUserName(obTable.getUserName());
@@ -113,6 +142,13 @@ public class ObTableConnection {
                     && result.getCredential().length() > 0) {
                     credential = result.getCredential();
                     tenantId = result.getTenantId();
+                    // Set version if missing
+                    if (ObGlobal.obVsnMajor() == 0 && !result.getServerVersion().isEmpty()) {
+                        // version should be set before login when direct mode
+                        LocationUtil.parseObVerionFromLogin(result.getServerVersion());
+                        LOGGER.info("The OB_VERSION parsed from login result is: {}",
+                            ObGlobal.OB_VERSION);
+                    }
                     break;
                 }
             } catch (Exception e) {
@@ -127,14 +163,19 @@ public class ObTableConnection {
             }
         }
 
+        String endpoint = obTable.getIp() + ":" + obTable.getPort();
+        MONITOR.info(logMessage(formatTraceMessage(request), "LOGIN", endpoint,
+            System.currentTimeMillis() - start));
         if (tries >= maxTryTimes) {
+            LOGGER.warn("login failed after max " + maxTryTimes + " tries "
+                        + TraceUtil.formatIpPort(obTable));
             throw new ObTableServerConnectException("login failed after max " + maxTryTimes
                                                     + " tries " + TraceUtil.formatIpPort(obTable),
                 cause);
         }
     }
 
-    /**
+    /*
      * Close.
      */
     public void close() {
@@ -145,7 +186,7 @@ public class ObTableConnection {
         }
     }
 
-    /**
+    /*
      * Check status.
      */
     public void checkStatus() throws Exception {
@@ -168,50 +209,95 @@ public class ObTableConnection {
         }
     }
 
-    private void reconnect(String msg) throws Exception {
-        if (connect()) {
-            LOGGER.warn("reconnect success. reconnect reason: [{}]", msg);
-        } else {
-            LOGGER.warn("connection maybe reconnect by other thread. reconnect reason: [{}]", msg);
+    public void reConnectAndLogin(String msg) throws ObTableException {
+        try {
+            // 1. check the connection is available, force to close it
+            if (checkAvailable()) {
+                LOGGER.warn("The connection would be closed and reconnected if: "
+                            + connection.getUrl());
+                close();
+            }
+            // 2. reconnect
+            reconnect(msg);
+        } catch (ConnectException ex) {
+            // cannot connect to ob server, need refresh table location
+            throw new ObTableServerConnectException(ex);
+        } catch (ObTableServerConnectException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new ObTableConnectionStatusException("check status failed", ex);
         }
     }
 
     /**
+     * Reconnect current connection and login
+     *
+     * @param msg the reconnect reason
+     * @exception Exception if connect successfully or connection already reconnected by others
+     *                      throw exception if connect failed
+     *
+     */
+    private void reconnect(String msg) throws Exception {
+        if (isReConnecting.compareAndSet(false, true)) {
+            try {
+                if (connect()) {
+                    LOGGER.warn("reconnect success. reconnect reason: [{}]", msg);
+                } else {
+                    LOGGER.info(
+                        "connection maybe reconnect by other thread. reconnect reason: [{}]", msg);
+                }
+            } catch (Exception e) {
+                throw e;
+            } finally {
+                if (!isReConnecting.compareAndSet(true, false)) {
+                    LOGGER
+                        .error(
+                            "failed to set connecting to false after connect finished, reconnect reason: [{}]",
+                            msg);
+                }
+            }
+        } else {
+            LOGGER.warn("There is someone connecting, no need reconnect");
+            throw new ObTableException("This connection is already Connecting");
+        }
+    }
+
+    /*
      * Get credential.
      */
     public ObBytesString getCredential() {
         return credential;
     }
 
-    /**
+    /*
      * Set credential.
      */
     public void setCredential(ObBytesString credential) {
         this.credential = credential;
     }
 
-    /**
+    /*
      * Get tenant id.
      */
     public long getTenantId() {
         return tenantId;
     }
 
-    /**
+    /*
      * Set tenant id.
      */
     public void setTenantId(long tenantId) {
         this.tenantId = tenantId;
     }
 
-    /**
+    /*
      * Get connection.
      */
     public Connection getConnection() {
         return connection;
     }
 
-    /**
+    /*
      * Get ob table.
      */
     public ObTable getObTable() {
@@ -222,9 +308,14 @@ public class ObTableConnection {
         if (connection == null) {
             return false;
         }
-        if (connection.getChannel() == null || !connection.getChannel().isActive()) {
+        if (connection.getChannel() == null) {
             return false;
         }
+
+        if (!connection.getChannel().isActive()) {
+            return false;
+        }
+
         if (credential == null) {
             return false;
         }
@@ -238,17 +329,32 @@ public class ObTableConnection {
         request.setPassScramble(scramble);
     }
 
-    /**
+    /*
      * Get unique id.
      */
     public long getUniqueId() {
         return uniqueId;
     }
 
-    /**
+    /*
      * Get next sequence.
      */
     public long getNextSequence() {
         return sequence.incrementAndGet();
     }
+
+    private String logMessage(String traceId, String methodName, String endpoint, long executeTime) {
+        if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
+            endpoint = endpoint.replaceAll(",", "#");
+        }
+
+        StringBuilder stringBuilder = new StringBuilder();
+        if (traceId != null) {
+            stringBuilder.append(traceId).append(" - ");
+        }
+        stringBuilder.append(methodName).append(",").append(endpoint).append(",")
+            .append(executeTime);
+        return stringBuilder.toString();
+    }
+
 }

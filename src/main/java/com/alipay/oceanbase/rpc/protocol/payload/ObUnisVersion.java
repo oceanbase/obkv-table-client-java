@@ -21,11 +21,4 @@ public interface ObUnisVersion {
 
     long getVersion();
 
-    void setSequence(long sequence);
-
-    long getSequence();
-
-    void setUniqueId(long uniqueId);
-
-    long getUniqueId();
 }

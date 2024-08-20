@@ -25,25 +25,28 @@ import java.util.Map;
 public class ObPartitionEntry {
     private Map<Long, ObPartitionLocation> partitionLocation = new HashMap<Long, ObPartitionLocation>();
 
+    // mapping from tablet id to ls id, and the part id to tablet id mapping is in ObPartitionInfo
+    private Map<Long, Long> tabletLsIdMap = new HashMap<>();
+
     public Map<Long, ObPartitionLocation> getPartitionLocation() {
         return partitionLocation;
     }
 
-    /**
+    /*
      * Set partition location.
      */
     public void setPartitionLocation(Map<Long, ObPartitionLocation> partitionLocation) {
         this.partitionLocation = partitionLocation;
     }
 
-    /**
+    /*
      * Get partition location with part id.
      */
     public ObPartitionLocation getPartitionLocationWithPartId(long partId) {
         return partitionLocation.get(partId);
     }
 
-    /**
+    /*
      * Put partition location with part id.
      */
     public ObPartitionLocation putPartitionLocationWithPartId(long partId,
@@ -51,7 +54,22 @@ public class ObPartitionEntry {
         return partitionLocation.put(partId, ObpartitionLocation);
     }
 
-    /**
+    /*
+     * Get partition location with tablet id.
+     */
+    public ObPartitionLocation getPartitionLocationWithTabletId(long tabletId) {
+        return partitionLocation.get(tabletId);
+    }
+
+    /*
+     * Put partition location with part id.
+     */
+    public ObPartitionLocation putPartitionLocationWithTabletId(long tabletId,
+                                                                ObPartitionLocation ObpartitionLocation) {
+        return partitionLocation.put(tabletId, ObpartitionLocation);
+    }
+
+    /*
      * Prepare for weak read.
      * @param ldcLocation
      */
@@ -61,11 +79,21 @@ public class ObPartitionEntry {
         }
     }
 
-    /**
+    /*
      * To string.
      */
     @Override
     public String toString() {
         return "ObPartitionEntry{" + "partitionLocation=" + partitionLocation + '}';
     }
+
+    public Map<Long, Long> getTabletLsIdMap() {
+        return tabletLsIdMap;
+    }
+
+    public void setTabletLsIdMap(Map<Long, Long> tabletLsIdMap) {
+        this.tabletLsIdMap = tabletLsIdMap;
+    }
+
+    public long getLsId(long tabletId) { return tabletLsIdMap.get(tabletId); }
 }

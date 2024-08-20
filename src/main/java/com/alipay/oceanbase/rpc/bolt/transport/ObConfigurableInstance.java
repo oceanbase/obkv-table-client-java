@@ -21,7 +21,7 @@ import com.alipay.remoting.config.AbstractConfigurableInstance;
 import com.alipay.remoting.config.configs.ConfigType;
 
 public class ObConfigurableInstance extends AbstractConfigurableInstance {
-    /**
+    /*
      * Ob configurable instance.
      */
     public ObConfigurableInstance() {

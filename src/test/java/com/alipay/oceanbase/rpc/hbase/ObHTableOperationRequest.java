@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.hbase;
 
+import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableAbstractOperationRequest;
@@ -123,7 +124,7 @@ public class ObHTableOperationRequest {
                     ObTableOperationType.INSERT, new Object[] { rowKey, qualifierName, timestamp },
                     V_COLUMNS, new Object[] { value }, 10 * 1000);
                 break;
-            case DEL: // TODO 如何 DEL？
+            case DEL:
                 request = ObTableOperationRequest.getInstance(getTargetTableName(),
                     ObTableOperationType.DEL, new Object[] { rowKey, qualifierName, timestamp },
                     null, null, 10 * 1000);
@@ -148,7 +149,70 @@ public class ObHTableOperationRequest {
 
                 request.setTableName(getTargetTableName());
                 ((ObTableQueryRequest) request).setTableQuery(obTableQuery);
-                ((ObTableQueryRequest) request).setPartitionId(0);
+                ((ObTableQueryRequest) request).setPartitionId(Constants.INVALID_TABLET_ID);
+                ((ObTableQueryRequest) request).setTableId(Constants.OB_INVALID_ID);
+                break;
+            default:
+                throw new RuntimeException("operationType invalid: " + operationType);
+        }
+
+        request.setEntityType(ObTableEntityType.HKV);
+
+        return request;
+
+    }
+
+    public ObTableAbstractOperationRequest obTableGroupOperationRequest() {
+        ObTableAbstractOperationRequest request = null;
+        if (timestamp == -1) {
+            timestamp = System.currentTimeMillis();
+        }
+        ObTableQuery obTableQuery = null;
+        ObHTableFilter filter = null;
+        ObNewRange obNewRange = null;
+        switch (operationType) {
+            case GET:
+                request = new ObTableQueryRequest();
+                obTableQuery = new ObTableQuery();
+                obTableQuery.setIndexName("PRIMARY");
+                filter = new ObHTableFilter();
+                obTableQuery.sethTableFilter(filter);
+
+                obNewRange = new ObNewRange();
+                obNewRange
+                    .setStartKey(ObRowKey.getInstance(rowKey, ObObj.getMin(), ObObj.getMin()));
+                obNewRange.setEndKey(ObRowKey.getInstance(rowKey, ObObj.getMax(), ObObj.getMax()));
+                obTableQuery.addKeyRange(obNewRange);
+                obTableQuery.addSelectColumn("K");
+                obTableQuery.addSelectColumn("Q");
+                obTableQuery.addSelectColumn("T");
+                obTableQuery.addSelectColumn("V");
+
+                request.setTableName(getTableName());
+                ((ObTableQueryRequest) request).setTableQuery(obTableQuery);
+                ((ObTableQueryRequest) request).setPartitionId(Constants.INVALID_TABLET_ID);
+
+                break;
+            case SCAN:
+                request = new ObTableQueryRequest();
+                obTableQuery = new ObTableQuery();
+                obTableQuery.setIndexName("PRIMARY");
+                filter = new ObHTableFilter();
+                obTableQuery.sethTableFilter(filter);
+
+                obNewRange = new ObNewRange();
+                obNewRange
+                    .setStartKey(ObRowKey.getInstance(rowKey, ObObj.getMin(), ObObj.getMin()));
+                obNewRange.setEndKey(ObRowKey.getInstance(rowKey, ObObj.getMax(), ObObj.getMax()));
+                obTableQuery.addKeyRange(obNewRange);
+                obTableQuery.addSelectColumn("K");
+                obTableQuery.addSelectColumn("Q");
+                obTableQuery.addSelectColumn("T");
+                obTableQuery.addSelectColumn("V");
+
+                request.setTableName(getTableName());
+                ((ObTableQueryRequest) request).setTableQuery(obTableQuery);
+                ((ObTableQueryRequest) request).setPartitionId(Constants.INVALID_TABLET_ID);
 
                 break;
             default:

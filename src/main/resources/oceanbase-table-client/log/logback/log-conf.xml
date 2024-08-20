@@ -2,21 +2,120 @@
 <configuration>
     <appender name="OCEANBASE-TABLE-CLIENT-APPENDER"
               class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${logging.path.com.alipay.oceanbase-table-client}/oceanbase-table-client/oceanbase-table-client.log</file>
+        <file>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client.log</file>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <Pattern>
-                %d{yyyy-MM-dd HH:mm:ss}-%msg%n
-            </Pattern>
+                <pattern>
+                    %d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] - %msg%n
+                </pattern>
         </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <!-- rollover daily -->
-            <fileNamePattern>${logging.path.oceanbase-table-client}/oceanbase-table-client/oceanbase-table-client.%d{yyyy-MM-dd}.log
-            </fileNamePattern>
+            <fileNamePattern>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client.%d{yyyy-MM-dd}.%i.log </fileNamePattern>
+            <cleanHistoryOnStart>false</cleanHistoryOnStart>
+            <maxHistory>30</maxHistory>
+            <maxFileSize>100MB</maxFileSize>
         </rollingPolicy>
     </appender>
 
-    <logger name="com.alipay.oceanbase.rpc" level="${logging.level.oceanbase-table-client}" additivity="false">
+    <appender name="OCEANBASE-TABLE-CLIENT-BOOT-APPENDER"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client-boot.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{50} - [%C{0}#%L] - %msg%n</pattern>
+            </Pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- rollover daily -->
+            <fileNamePattern>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client-boot.%d{yyyy-MM-dd}.%i.log </fileNamePattern>
+            <cleanHistoryOnStart>false</cleanHistoryOnStart>
+            <maxHistory>30</maxHistory>
+            <maxFileSize>100MB</maxFileSize>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="OCEANBASE-TABLE-CLIENT-MONITOR-APPENDER"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client-monitor.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{50} - %msg%n</pattern>
+            </Pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- rollover daily -->
+            <fileNamePattern>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client-monitor.%d{yyyy-MM-dd}.%i.log </fileNamePattern>
+            <cleanHistoryOnStart>false</cleanHistoryOnStart>
+            <maxHistory>30</maxHistory>
+            <maxFileSize>500MB</maxFileSize>
+            <totalSizeCap>20GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="OCEANBASE-TABLE-CLIENT-RUNTIME-APPENDER"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client-runtime.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{50} - %msg%n</pattern>
+            </Pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- rollover daily -->
+            <fileNamePattern>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client-runtime.%d{yyyy-MM-dd}.%i.log </fileNamePattern>
+            <cleanHistoryOnStart>false</cleanHistoryOnStart>
+            <maxHistory>30</maxHistory>
+            <maxFileSize>100MB</maxFileSize>
+        </rollingPolicy>
+    </appender>
+
+
+    <appender name="OCEANBASE-TABLE-CLIENT-MONITOR-APPENDER-ASYNC"
+              class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>false</neverBlock>
+        <queueSize>10240</queueSize>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="OCEANBASE-TABLE-CLIENT-MONITOR-APPENDER"/>
+    </appender>
+
+    <appender name="OCEANBASE-TABLE-CLIENT-APPENDER-ASYNC"
+              class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>false</neverBlock>
+        <queueSize>1024</queueSize>
+        <includeCallerData>false</includeCallerData>
         <appender-ref ref="OCEANBASE-TABLE-CLIENT-APPENDER"/>
+    </appender>
+
+    <appender name="OCEANBASE-TABLE-CLIENT-RUNTIME-APPENDER-ASYNC"
+              class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>false</neverBlock>
+        <queueSize>1024</queueSize>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="OCEANBASE-TABLE-CLIENT-RUNTIME-APPENDER"/>
+    </appender>
+
+
+    <logger name="com.alipay.oceanbase.rpc" additivity="false">
+        <level value="${logging.level:-INFO}"/>
+        <appender-ref ref="OCEANBASE-TABLE-CLIENT-APPENDER-ASYNC"/>
+    </logger>
+
+    <logger name="OBKV-BOOT" additivity="false">
+        <level value="${logging.level:-INFO}"/>
+        <appender-ref ref="OCEANBASE-TABLE-CLIENT-BOOT-APPENDER"/>
+    </logger>
+
+    <logger name="OBKV-MONITOR" additivity="false">
+        <level value="${logging.level:-INFO}"/>
+        <appender-ref ref="OCEANBASE-TABLE-CLIENT-MONITOR-APPENDER-ASYNC"/>
+    </logger>
+
+    <logger name="OBKV-RUNTIME" additivity="false">
+        <level value="${logging.level:-INFO}"/>
+        <appender-ref ref="OCEANBASE-TABLE-CLIENT-RUNTIME-APPENDER-ASYNC"/>
     </logger>
 
 </configuration>

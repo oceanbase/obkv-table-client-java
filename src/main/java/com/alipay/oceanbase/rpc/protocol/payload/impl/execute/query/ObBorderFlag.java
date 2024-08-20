@@ -26,7 +26,7 @@ public class ObBorderFlag {
 
     private byte             value           = 0;
 
-    /**
+    /*
      * Value of.
      */
     public static ObBorderFlag valueOf(byte value) {
@@ -35,98 +35,98 @@ public class ObBorderFlag {
         return obBorderFlag;
     }
 
-    /**
+    /*
      * Get value.
      */
     public byte getValue() {
         return value;
     }
 
-    /**
+    /*
      * Set inclusive start.
      */
     public void setInclusiveStart() {
         this.value |= INCLUSIVE_START;
     }
 
-    /**
+    /*
      * Unset inclusive start.
      */
     public void unsetInclusiveStart() {
         this.value &= (~INCLUSIVE_START);
     }
 
-    /**
+    /*
      * Is inclusive start.
      */
     public boolean isInclusiveStart() {
         return (this.value & INCLUSIVE_START) == INCLUSIVE_START;
     }
 
-    /**
+    /*
      * Set inclusive end.
      */
     public void setInclusiveEnd() {
         this.value |= INCLUSIVE_END;
     }
 
-    /**
+    /*
      * Unset inclusive end.
      */
     public void unsetInclusiveEnd() {
         this.value &= (~INCLUSIVE_END);
     }
 
-    /**
+    /*
      * Is inclusive end.
      */
     public boolean isInclusiveEnd() {
         return (this.value & INCLUSIVE_END) == INCLUSIVE_END;
     }
 
-    /**
+    /*
      * Set max value.
      */
     public void setMaxValue() {
         this.value |= MAX_VALUE;
     }
 
-    /**
+    /*
      * Unset max value.
      */
     public void unsetMaxValue() {
         this.value &= (~MAX_VALUE);
     }
 
-    /**
+    /*
      * Is max value.
      */
     public boolean isMaxValue() {
         return (this.value & MAX_VALUE) == MAX_VALUE;
     }
 
-    /**
+    /*
      * Set min value.
      */
     public void setMinValue() {
         this.value |= MIN_VALUE;
     }
 
-    /**
+    /*
      * Unset min value.
      */
     public void unsetMinValue() {
         this.value &= (~MIN_VALUE);
     }
 
-    /**
+    /*
      * Is min value.
      */
     public boolean isMinValue() {
         return (this.value & MIN_VALUE) == MIN_VALUE;
     }
 
-    /**
+    /*
      * Equals.
      */
     @Override

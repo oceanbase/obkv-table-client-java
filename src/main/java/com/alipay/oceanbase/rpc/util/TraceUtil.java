@@ -24,30 +24,30 @@ import com.alipay.oceanbase.rpc.table.ObTable;
 
 public class TraceUtil {
 
-    /**
+    /*
      * Trace format from connection and payload.
      */
     public static String formatTraceMessage(final ObTableConnection conn, final ObPayload payload) {
         return formatTraceMessage(conn, payload, "");
     }
 
-    /**
+    /*
      * Trace format from connection and payload.
      */
     public static String formatTraceMessage(final ObTableConnection conn, final ObPayload payload,
                                             final String msg) {
-        return String.format("[Y%X-%016X] server [%s:%d] %s", payload.getSequence(),
-            payload.getUniqueId(), conn.getObTable().getIp(), conn.getObTable().getPort(), msg);
+        return String.format("[Y%X-%016X] server [%s:%d] %s", payload.getUniqueId(),
+            payload.getSequence(), conn.getObTable().getIp(), conn.getObTable().getPort(), msg);
     }
 
-    /**
+    /*
      * Trace format from connection and packet, used when the packet isn't decoded yet.
      */
     public static String formatTraceMessage(final ObTableConnection conn, final ObTablePacket packet) {
         return formatTraceMessage(conn, packet, "");
     }
 
-    /**
+    /*
      * Trace format from connection and packet, used when the packet isn't decoded yet.
      */
     public static String formatTraceMessage(final ObTableConnection conn,
@@ -57,10 +57,14 @@ public class TraceUtil {
                 .getPort(), msg);
     }
 
-    /**
+    /*
      * Format IP:port from ObTable.
      */
     public static String formatIpPort(final ObTable obTable) {
         return String.format("server [%s:%d]", obTable.getIp(), obTable.getPort());
+    }
+
+    public static String formatTraceMessage(final ObPayload payload) {
+        return String.format("[Y%X-%016X]", payload.getUniqueId(), payload.getSequence());
     }
 }

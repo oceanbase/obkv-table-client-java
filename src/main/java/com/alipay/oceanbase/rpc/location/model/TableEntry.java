@@ -17,18 +17,21 @@
 
 package com.alipay.oceanbase.rpc.location.model;
 
+import com.alipay.oceanbase.rpc.location.model.partition.ObPartIdCalculator;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionInfo;
+import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionLevel;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class TableEntry {
 
-    public static final Map<String, Integer> HBASE_ROW_KEY_ELEMENT = new HashMap<String, Integer>() {
+    public static final Map<String, Integer> HBASE_ROW_KEY_ELEMENT = new LinkedHashMap<String, Integer>() {
                                                                        {
                                                                            put("K", 0);
                                                                            put("Q", 1);
@@ -42,6 +45,7 @@ public class TableEntry {
     private Long                             replicaNum            = Constants.OB_INVALID_ID;
     private ObPartitionInfo                  partitionInfo         = null;
     private volatile long                    refreshTimeMills;
+    private volatile long                    refreshAllTimeMills;
     private Map<String, Integer>             rowKeyElement         = null;
 
     // table location
@@ -50,7 +54,7 @@ public class TableEntry {
     private TableEntryKey                    tableEntryKey         = null;
     private volatile ObPartitionEntry        partitionEntry        = null;
 
-    /**
+    /*
      * Is valid.
      */
     public boolean isValid() {
@@ -59,102 +63,116 @@ public class TableEntry {
 
     }
 
-    /**
+    /*
      * Get table id.
      */
     public Long getTableId() {
         return tableId;
     }
 
-    /**
+    /*
      * Set table id.
      */
     public void setTableId(Long tableId) {
         this.tableId = tableId;
     }
 
-    /**
+    /*
      * Get partition num.
      */
     public Long getPartitionNum() {
         return partitionNum;
     }
 
-    /**
+    /*
      * Set partition num.
      */
     public void setPartitionNum(Long partitionNum) {
         this.partitionNum = partitionNum;
     }
 
-    /**
+    /*
      * Get replica num.
      */
     public Long getReplicaNum() {
         return replicaNum;
     }
 
-    /**
+    /*
      * Is partition table.
      */
     public boolean isPartitionTable() {
         return this.partitionNum > 1;
     }
 
-    /**
+    /*
      * Set replica num.
      */
     public void setReplicaNum(Long replicaNum) {
         this.replicaNum = replicaNum;
     }
 
-    /**
+    /*
      * Get table location.
      */
     public TableLocation getTableLocation() {
         return tableLocation;
     }
 
-    /**
+    /*
      * Set table location.
      */
     public void setTableLocation(TableLocation tableLocation) {
         this.tableLocation = tableLocation;
     }
 
-    /**
+    /*
      * Get partition info.
      */
     public ObPartitionInfo getPartitionInfo() {
         return partitionInfo;
     }
 
-    /**
+    /*
      * Set partition info.
      */
     public void setPartitionInfo(ObPartitionInfo partitionInfo) {
         this.partitionInfo = partitionInfo;
     }
 
-    /**
+    /*
      * Get refresh time mills.
      */
     public long getRefreshTimeMills() {
         return refreshTimeMills;
     }
 
-    /**
+    /*
+     * Get refresh time mills.
+     */
+    public long getRefreshAllTimeMills() {
+        return refreshAllTimeMills;
+    }
+
+    /*
      * Set refresh time mills.
      */
     public void setRefreshTimeMills(long refreshTimeMills) {
         this.refreshTimeMills = refreshTimeMills;
     }
 
+    /*
+     * Set refresh all time mills.
+     */
+    public void setRefreshAllTimeMills(long refreshAllTimeMills) {
+        this.refreshAllTimeMills = refreshAllTimeMills;
+    }
+
     public Map<String, Integer> getRowKeyElement() {
         return rowKeyElement;
     }
 
-    /**
+    /*
      * Set row key element.
      */
     public void setRowKeyElement(Map<String, Integer> rowKeyElement) {
@@ -164,35 +182,35 @@ public class TableEntry {
         }
     }
 
-    /**
+    /*
      * Get table entry key.
      */
     public TableEntryKey getTableEntryKey() {
         return tableEntryKey;
     }
 
-    /**
+    /*
      * Set table entry key.
      */
     public void setTableEntryKey(TableEntryKey tableEntryKey) {
         this.tableEntryKey = tableEntryKey;
     }
 
-    /**
+    /*
      * Get partition entry.
      */
     public ObPartitionEntry getPartitionEntry() {
         return partitionEntry;
     }
 
-    /**
+    /*
      * Set partition entry.
      */
     public void setPartitionEntry(ObPartitionEntry partitionEntry) {
         this.partitionEntry = partitionEntry;
     }
 
-    /**
+    /*
      * Prepare.
      */
     public void prepare() throws IllegalArgumentException {
@@ -205,7 +223,20 @@ public class TableEntry {
         }
     }
 
-    /**
+    /*
+     * Get PartIdx from partId(logicId, partition id in 3.x)
+     */
+    public long getPartIdx(long partId) {
+        long partIdx = partId;
+        if (this.getPartitionInfo() != null
+            && this.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
+            partIdx = ObPartIdCalculator.getPartIdx(partId, this.getPartitionInfo()
+                .getSubPartDesc().getPartNum());
+        }
+        return partIdx;
+    }
+
+    /*
      * Prepare for weak read.
      * @param ldcLocation
      */
@@ -215,15 +246,16 @@ public class TableEntry {
         }
     }
 
-    /**
+    /*
      * To string.
      */
     @Override
     public String toString() {
         return "TableEntry{" + "tableId=" + tableId + ", partitionNum=" + partitionNum
                + ", replicaNum=" + replicaNum + ", partitionInfo=" + partitionInfo
-               + ", refreshTimeMills=" + refreshTimeMills + ", rowKeyElement=" + rowKeyElement
-               + ", tableLocation=" + tableLocation + ", tableEntryKey=" + tableEntryKey
-               + ", partitionEntry=" + partitionEntry + '}';
+               + ", refreshTimeMills=" + refreshTimeMills + ", refreshAllTimeMills="
+               + refreshAllTimeMills + ", rowKeyElement=" + rowKeyElement + ", tableLocation="
+               + tableLocation + ", tableEntryKey=" + tableEntryKey + ", partitionEntry="
+               + partitionEntry + '}';
     }
 }

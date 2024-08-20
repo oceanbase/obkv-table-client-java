@@ -23,9 +23,10 @@ import io.netty.buffer.ByteBuf;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.alipay.oceanbase.rpc.property.Property.RPC_OPERATION_TIMEOUT;
+import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
 import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderLength;
 
-/**
+/*
  *
  *  varlong  varlong    plain bytes
  * -----------------------------------
@@ -43,7 +44,7 @@ public abstract class AbstractPayload implements ObPayload {
     private long                       version   = 1;
     protected long                     timeout   = RPC_OPERATION_TIMEOUT.getDefaultLong();
 
-    /**
+    /*
      * Get pcode.
      */
     @Override
@@ -51,7 +52,7 @@ public abstract class AbstractPayload implements ObPayload {
         return Pcodes.OB_ERROR_PACKET;
     }
 
-    /**
+    /*
      * Get timeout.
      */
     @Override
@@ -59,7 +60,7 @@ public abstract class AbstractPayload implements ObPayload {
         return timeout;
     }
 
-    /**
+    /*
      * Get version.
      */
     @Override
@@ -67,21 +68,21 @@ public abstract class AbstractPayload implements ObPayload {
         return version;
     }
 
-    /**
+    /*
      * Set version.
      */
     public void setVersion(long version) {
         this.version = version;
     }
 
-    /**
+    /*
      * Set channel id.
      */
     public void setChannelId(Integer channelId) {
         this.channelId = channelId;
     }
 
-    /**
+    /*
      * Get payload size.
      */
     @Override
@@ -90,7 +91,7 @@ public abstract class AbstractPayload implements ObPayload {
         return getObUniVersionHeaderLength(getVersion(), payloadContentSize) + payloadContentSize;
     }
 
-    /**
+    /*
      * Get channel id.
      */
     @Override
@@ -101,7 +102,7 @@ public abstract class AbstractPayload implements ObPayload {
         return channelId;
     }
 
-    /**
+    /*
      * Get tenant id.
      */
     @Override
@@ -109,14 +110,14 @@ public abstract class AbstractPayload implements ObPayload {
         return tenantId;
     }
 
-    /**
+    /*
      * Set tenant id.
      */
     public void setTenantId(long tenantId) {
         this.tenantId = tenantId;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -127,35 +128,43 @@ public abstract class AbstractPayload implements ObPayload {
         return this;
     }
 
-    /**
+    /*
      * Get unique id.
      */
-    @Override
     public long getUniqueId() {
         return uniqueId;
     }
 
-    /**
+    /*
      * Set unique id.
      */
-    @Override
     public void setUniqueId(long uniqueId) {
         this.uniqueId = uniqueId;
     }
 
-    /**
+    /*
      * Get sequence.
      */
-    @Override
     public long getSequence() {
         return sequence;
     }
 
-    /**
+    /*
      * Set sequence.
      */
-    @Override
     public void setSequence(long sequence) {
         this.sequence = sequence;
     }
+
+    /*
+     * encode unis header
+     */
+    protected int encodeHeader(byte[] bytes, int idx) {
+        int headerLen = (int) getObUniVersionHeaderLength(getVersion(), getPayloadContentSize());
+        System.arraycopy(encodeObUniVersionHeader(getVersion(), getPayloadContentSize()), 0, bytes,
+            idx, headerLen);
+        idx += headerLen;
+        return idx;
+    }
+
 }

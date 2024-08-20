@@ -31,7 +31,6 @@ public class CRC64 implements Checksum {
      *
      * poly=0x42f0e1eba9ea3693 init=0x0 refin=false refout=false xorout=0x0
      *
-     * @url http://en.wikipedia.org/wiki/Cyclic_redundancy_check
      * @url http://reveng.sourceforge.net/crc-catalogue/17plus.htm
      */
     private static final long[] CRC_TABLE = new long[] { 0x0000000000000000L, 0x42F0E1EBA9EA3693L,
@@ -103,13 +102,15 @@ public class CRC64 implements Checksum {
 
     /**
      * Update.
+     * @param b input data
      */
     public void update(final int b) {
         update((byte) (b & 0xFF));
     }
 
     /**
-     * Update.
+     * Update
+     * @param b input data
      */
     public void update(final byte b) {
         final int tab_index = ((int) (crc >> 56) ^ b) & 0xFF;
@@ -117,7 +118,10 @@ public class CRC64 implements Checksum {
     }
 
     /**
-     * Update.
+     * Update
+     * @param buffer input data buffer
+     * @param offset input data offset
+     * @param length input data length
      */
     public void update(final byte[] buffer, final int offset, int length) {
         for (int i = offset; length > 0; length--)
@@ -125,7 +129,8 @@ public class CRC64 implements Checksum {
     }
 
     /**
-     * Update.
+     * Update
+     * @param buffer input data buffer
      */
     public void update(final byte[] buffer) {
         for (int i = 0; i < buffer.length; i++)
@@ -133,14 +138,15 @@ public class CRC64 implements Checksum {
     }
 
     /**
-     * Get value.
+     * Get value
+     * @return CRC64 value
      */
     public long getValue() {
         return crc;
     }
 
     /**
-     * Reset.
+     * reset
      */
     public void reset() {
         crc = 0;

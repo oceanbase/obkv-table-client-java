@@ -17,17 +17,22 @@
 
 package com.alipay.oceanbase.rpc.table;
 
+import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.filter.ObTableFilter;
+import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
+
+import java.util.List;
 
 public abstract class AbstractTableQuery implements TableQuery {
     private static final String PRIMARY_INDEX_NAME = "PRIMARY";
 
-    protected ObTableEntityType entityType         = ObTableEntityType.DYNAMIC;
+    protected ObTableEntityType entityType         = ObTableEntityType.KV;
 
     protected long              operationTimeout   = -1;
 
-    /**
+    /*
      * Limit.
      */
     @Override
@@ -35,7 +40,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         return limit(0, limit);
     }
 
-    /**
+    /*
      * Primary index.
      */
     @Override
@@ -43,7 +48,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         return indexName(PRIMARY_INDEX_NAME);
     }
 
-    /**
+    /*
      * Add scan range.
      */
     @Override
@@ -51,7 +56,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         return addScanRange(new Object[] { start }, true, new Object[] { end }, true);
     }
 
-    /**
+    /*
      * Add scan range.
      */
     @Override
@@ -59,7 +64,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         return addScanRange(start, true, end, true);
     }
 
-    /**
+    /*
      * Add scan range.
      */
     @Override
@@ -67,7 +72,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         return addScanRange(new Object[] { start }, startEquals, new Object[] { end }, endEquals);
     }
 
-    /**
+    /*
      * Add scan range starts with.
      */
     @Override
@@ -75,7 +80,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         return addScanRangeStartsWith(new Object[] { start }, true);
     }
 
-    /**
+    /*
      * Add scan range starts with.
      */
     @Override
@@ -83,7 +88,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         return addScanRangeStartsWith(start, true);
     }
 
-    /**
+    /*
      * Add scan range ends with.
      */
     @Override
@@ -91,7 +96,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         return addScanRangeEndsWith(new Object[] { end }, true);
     }
 
-    /**
+    /*
      * Add scan range ends with.
      */
     @Override
@@ -99,7 +104,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         return addScanRangeEndsWith(end, true);
     }
 
-    /**
+    /*
      * Set entity type.
      */
     @Override
@@ -107,7 +112,7 @@ public abstract class AbstractTableQuery implements TableQuery {
         this.entityType = entityType;
     }
 
-    /**
+    /*
      * Get entity type.
      */
     @Override
@@ -115,12 +120,45 @@ public abstract class AbstractTableQuery implements TableQuery {
         return entityType;
     }
 
-    /**
+    /*
      * Set operation timeout.
      */
     @Override
     public TableQuery setOperationTimeout(long operationTimeout) {
         this.operationTimeout = operationTimeout;
         return this;
+    }
+
+    /*
+     * Set filter
+     */
+    @Override
+    public TableQuery setFilter(ObTableFilter filter) {
+        if (null == filter) {
+            throw new IllegalArgumentException("input filter is null");
+        }
+        this.getObTableQuery().setFilterString(filter.toString());
+        return this;
+    }
+
+    @Override
+    public TableQuery setScanRangeColumns(String... columns) {
+        this.getObTableQuery().setScanRangeColumns(columns);
+        return this;
+    }
+
+    @Override
+    public List<String> getSelectColumns() {
+        throw new ObTableException("only query from BatchOperation support getSelectColumns");
+    }
+
+    @Override
+    public Row getRowKey() throws Exception {
+        throw new ObTableException("only query from BatchOperation support row key");
+    }
+
+    @Override
+    public TableQuery setRowKey(Row row) throws Exception {
+        throw new ObTableException("only query from BatchOperation support row key");
     }
 }

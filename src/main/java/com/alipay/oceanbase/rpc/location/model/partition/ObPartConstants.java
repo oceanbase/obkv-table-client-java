@@ -18,6 +18,6 @@
 package com.alipay.oceanbase.rpc.location.model.partition;
 
 public interface ObPartConstants {
-    int PART_ID_BITNUM = 28;
-    int PART_ID_SHIFT  = 32;
+    int OB_PART_IDS_BITNUM = 28;
+    int OB_PART_ID_SHIFT   = 32;
 }

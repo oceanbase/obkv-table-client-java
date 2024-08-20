@@ -22,49 +22,49 @@ public class OcpResponseDataRs {
     private String role;
     private int    sql_port;
 
-    /**
+    /*
      * Get address.
      */
     public String getAddress() {
         return address;
     }
 
-    /**
+    /*
      * Set address.
      */
     public void setAddress(String address) {
         this.address = address;
     }
 
-    /**
+    /*
      * Get role.
      */
     public String getRole() {
         return role;
     }
 
-    /**
+    /*
      * Set role.
      */
     public void setRole(String role) {
         this.role = role;
     }
 
-    /**
+    /*
      * Get sql_port.
      */
     public int getSql_port() {
         return sql_port;
     }
 
-    /**
+    /*
      * Set sql_port.
      */
     public void setSql_port(int sql_port) {
         this.sql_port = sql_port;
     }
 
-    /**
+    /*
      * To string.
      */
     @Override

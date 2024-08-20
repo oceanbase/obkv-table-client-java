@@ -18,28 +18,27 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
 import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderLength;
 
-/**
- *
- OB_SERIALIZE_MEMBER(ObTableOperation, operation_type_, const_cast<ObITableEntity&>(*entity_));
+/*
+ * OB_SERIALIZE_MEMBER(ObTableOperation, operation_type_, const_cast<ObITableEntity&>(*entity_));
  *
  */
 public class ObTableBatchOperation extends AbstractPayload {
 
-    private List<ObTableOperation> tableOperations = new ArrayList<ObTableOperation>();
-    private boolean                isReadOnly      = true;
-    private boolean                isSameType;
-    private boolean                isSamePropertiesNames;
+    private List<ObTableOperation> tableOperations       = new ArrayList<ObTableOperation>();
+    private boolean                isReadOnly            = true;
+    private boolean                isSameType            = true;
+    private boolean                isSamePropertiesNames = true;
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -76,7 +75,7 @@ public class ObTableBatchOperation extends AbstractPayload {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -101,7 +100,7 @@ public class ObTableBatchOperation extends AbstractPayload {
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -115,73 +114,128 @@ public class ObTableBatchOperation extends AbstractPayload {
         return payloadContentSize + 3;
     }
 
-    /**
+    /*
      * Get table operations.
      */
     public List<ObTableOperation> getTableOperations() {
         return tableOperations;
     }
 
-    /**
+    /*
+     * hash_map keys to TreeSet IgnoringCase
+     */
+    public TreeSet<String> mapKeysToSetIgnoringCase(Set<String> keys) {
+        TreeSet<String> keySetIgnoreCase = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        keySetIgnoreCase.addAll(keys);
+        return keySetIgnoreCase;
+    }
+
+    /*
      * Add table operation.
      */
     public void addTableOperation(ObTableOperation tableOperation) {
         this.tableOperations.add(tableOperation);
+        int length = this.tableOperations.size();
         if (isReadOnly && !tableOperation.isReadonly()) {
             isReadOnly = false;
         }
+        if (isSameType
+            && length > 1
+            && tableOperations.get(length - 1).getOperationType() != tableOperations
+                .get(length - 2).getOperationType()) {
+            isSameType = false;
+        }
+        // 判断是否是 same_properties_name
+        if (isSamePropertiesNames && length > 1) {
+            ObTableOperation prev = tableOperations.get(length - 2);
+            ObTableOperation curr = tableOperations.get(length - 1);
+            if (prev.getEntity() == null || curr.getEntity() == null) {
+                isSamePropertiesNames = false;
+            } else if (prev.getEntity().getPropertiesCount() != curr.getEntity()
+                .getPropertiesCount()) {
+                isSamePropertiesNames = false;
+            } else {
+                isSamePropertiesNames = mapKeysToSetIgnoringCase(
+                    prev.getEntity().getProperties().keySet()).equals(
+                    mapKeysToSetIgnoringCase(curr.getEntity().getProperties().keySet()));
+            }
+        }
     }
 
-    /**
+    /*
      * Set table operations.
      */
     public void setTableOperations(List<ObTableOperation> tableOperations) {
         this.tableOperations = tableOperations;
         this.isReadOnly = true;
+        this.isSameType = true;
+        this.isSamePropertiesNames = true;
+        ObTableOperationType prevType = null;
+        TreeSet<String> firstKeySetIgnoreCase = null;
         for (ObTableOperation o : tableOperations) {
-            if (!o.isReadonly()) {
-                this.isReadOnly = false;
+            if (this.isReadOnly || this.isSameType || this.isSamePropertiesNames) {
+                if (!o.isReadonly()) {
+                    this.isReadOnly = false;
+                }
+                if (prevType != null && prevType != o.getOperationType()) {
+                    this.isSameType = false;
+                } else {
+                    prevType = o.getOperationType();
+                }
+
+                if (this.isSamePropertiesNames) {
+                    if (firstKeySetIgnoreCase == null) {
+                        firstKeySetIgnoreCase = mapKeysToSetIgnoringCase(o.getEntity()
+                            .getProperties().keySet());
+                    } else if (firstKeySetIgnoreCase.size() != o.getEntity().getPropertiesCount()) {
+                        this.isSamePropertiesNames = false;
+                    } else {
+                        this.isSamePropertiesNames = firstKeySetIgnoreCase
+                            .equals(mapKeysToSetIgnoringCase(o.getEntity().getProperties().keySet()));
+                    }
+                }
+            } else {
                 return;
             }
         }
     }
 
-    /**
+    /*
      * Is read only.
      */
     public boolean isReadOnly() {
         return isReadOnly;
     }
 
-    /**
+    /*
      * Set read only.
      */
     public void setReadOnly(boolean readOnly) {
         isReadOnly = readOnly;
     }
 
-    /**
+    /*
      * Is same type.
      */
     public boolean isSameType() {
         return isSameType;
     }
 
-    /**
+    /*
      * Set same type.
      */
     public void setSameType(boolean sameType) {
         isSameType = sameType;
     }
 
-    /**
+    /*
      * Is same properties names.
      */
     public boolean isSamePropertiesNames() {
         return isSamePropertiesNames;
     }
 
-    /**
+    /*
      * Set same properties names.
      */
     public void setSamePropertiesNames(boolean samePropertiesNames) {

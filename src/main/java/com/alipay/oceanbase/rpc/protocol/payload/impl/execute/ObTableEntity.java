@@ -28,7 +28,7 @@ public class ObTableEntity extends AbstractObTableEntity {
     private ObRowKey           rowKey     = new ObRowKey();
     private Map<String, ObObj> properties = new HashMap<String, ObObj>();
 
-    /**
+    /*
      * Set row key value.
      */
     @Override
@@ -36,7 +36,7 @@ public class ObTableEntity extends AbstractObTableEntity {
         rowKey.setObj((int) idx, rowKeyValue);
     }
 
-    /**
+    /*
      * Add row key value.
      */
     @Override
@@ -44,7 +44,7 @@ public class ObTableEntity extends AbstractObTableEntity {
         rowKey.addObj(rowKeyValue);
     }
 
-    /**
+    /*
      * Get row key value.
      */
     @Override
@@ -52,7 +52,7 @@ public class ObTableEntity extends AbstractObTableEntity {
         return rowKey.getObj((int) idx);
     }
 
-    /**
+    /*
      * Get row key size.
      */
     @Override
@@ -60,7 +60,7 @@ public class ObTableEntity extends AbstractObTableEntity {
         return rowKey.getObjCount();
     }
 
-    /**
+    /*
      * Set row key size.
      */
     @Override
@@ -68,7 +68,7 @@ public class ObTableEntity extends AbstractObTableEntity {
         // ignore
     }
 
-    /**
+    /*
      * Get row key.
      */
     @Override
@@ -76,7 +76,7 @@ public class ObTableEntity extends AbstractObTableEntity {
         return rowKey;
     }
 
-    /**
+    /*
      * Set property.
      */
     @Override
@@ -84,7 +84,7 @@ public class ObTableEntity extends AbstractObTableEntity {
         this.properties.put(propName, propValue);
     }
 
-    /**
+    /*
      * Get property.
      */
     @Override
@@ -105,7 +105,7 @@ public class ObTableEntity extends AbstractObTableEntity {
         return values;
     }
 
-    /**
+    /*
      * Get properties count.
      */
     @Override

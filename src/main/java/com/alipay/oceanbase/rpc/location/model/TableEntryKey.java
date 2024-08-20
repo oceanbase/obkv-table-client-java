@@ -27,13 +27,13 @@ public class TableEntryKey {
     private String databaseName = Constants.EMPTY_STRING;
     private String tableName    = Constants.EMPTY_STRING;
 
-    /**
+    /*
      * Table entry key.
      */
     public TableEntryKey() {
     }
 
-    /**
+    /*
      * Table entry key.
      */
     public TableEntryKey(String clusterName, String tenantName, String databaseName,
@@ -45,7 +45,7 @@ public class TableEntryKey {
         this.tableName = tableName;
     }
 
-    /**
+    /*
      * Get dummy entry key.
      */
     public static TableEntryKey getDummyEntryKey(String clusterName, String tenantName) {
@@ -54,21 +54,21 @@ public class TableEntryKey {
         return dummyKey;
     }
 
-    /**
+    /*
      * Get sys dummy entry key.
      */
     public static TableEntryKey getSysDummyEntryKey(String clusterName) {
         return getDummyEntryKey(clusterName, Constants.SYS_TENANT);
     }
 
-    /**
+    /*
      * Is sys all dummy.
      */
     public boolean isSysAllDummy() {
         return this.tenantName.equals(Constants.SYS_TENANT) && this.isAllDummy();
     }
 
-    /**
+    /*
      * Is all dummy.
      */
     public boolean isAllDummy() {
@@ -76,7 +76,7 @@ public class TableEntryKey {
                && this.tableName.equals(Constants.ALL_DUMMY_TABLE);
     }
 
-    /**
+    /*
      * Is valid.
      */
     public boolean isValid() {
@@ -84,7 +84,7 @@ public class TableEntryKey {
                && StringUtil.isNotEmpty(this.databaseName) && StringUtil.isNotEmpty(this.tableName);
     }
 
-    /**
+    /*
      * To string.
      */
     @Override
@@ -93,7 +93,7 @@ public class TableEntryKey {
                + ", databaseName=" + databaseName + ", tableName=" + tableName + "]";
     }
 
-    /**
+    /*
      * Hash code.
      */
     @Override
@@ -107,7 +107,7 @@ public class TableEntryKey {
         return result;
     }
 
-    /**
+    /*
      * Equals.
      */
     @Override
@@ -143,56 +143,56 @@ public class TableEntryKey {
         return true;
     }
 
-    /**
+    /*
      * Get cluster name.
      */
     public String getClusterName() {
         return clusterName;
     }
 
-    /**
+    /*
      * Set cluster name.
      */
     public void setClusterName(String clusterName) {
         this.clusterName = clusterName;
     }
 
-    /**
+    /*
      * Get tenant name.
      */
     public String getTenantName() {
         return tenantName;
     }
 
-    /**
+    /*
      * Set tenant name.
      */
     public void setTenantName(String tenantName) {
         this.tenantName = tenantName;
     }
 
-    /**
+    /*
      * Get database name.
      */
     public String getDatabaseName() {
         return databaseName;
     }
 
-    /**
+    /*
      * Set database name.
      */
     public void setDatabaseName(String databaseName) {
         this.databaseName = databaseName;
     }
 
-    /**
+    /*
      * Get table name.
      */
     public String getTableName() {
         return tableName;
     }
 
-    /**
+    /*
      * Set table name.
      */
     public void setTableName(String tableName) {

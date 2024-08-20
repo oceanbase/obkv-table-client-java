@@ -19,6 +19,8 @@ package com.alipay.oceanbase.rpc.table;
 
 import com.alipay.oceanbase.rpc.exception.ExceptionUtil;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.mutation.*;
+import com.alipay.oceanbase.rpc.mutation.result.*;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.remoting.exception.RemotingException;
@@ -33,7 +35,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
 
     private ObTable                            obTable;
 
-    /**
+    /*
      * Ob table batch ops impl.
      */
     public ObTableBatchOpsImpl(String tableName, ObTable obTable) {
@@ -48,7 +50,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         request.setReturningAffectedRows(true);
     }
 
-    /**
+    /*
      * Get.
      */
     @Override
@@ -56,7 +58,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         addObTableOperation(ObTableOperationType.GET, rowkeys, columns, null);
     }
 
-    /**
+    /*
      * Update.
      */
     @Override
@@ -64,7 +66,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         addObTableOperation(ObTableOperationType.UPDATE, rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Delete.
      */
     @Override
@@ -72,7 +74,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         addObTableOperation(ObTableOperationType.DEL, rowkeys, null, null);
     }
 
-    /**
+    /*
      * Insert.
      */
     @Override
@@ -80,7 +82,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         addObTableOperation(ObTableOperationType.INSERT, rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Replace.
      */
     @Override
@@ -88,7 +90,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         addObTableOperation(ObTableOperationType.REPLACE, rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Insert or update.
      */
     @Override
@@ -96,7 +98,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         addObTableOperation(ObTableOperationType.INSERT_OR_UPDATE, rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Increment.
      */
     @Override
@@ -105,7 +107,7 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         addObTableOperation(ObTableOperationType.INCREMENT, rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Append.
      */
     @Override
@@ -114,7 +116,15 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         addObTableOperation(ObTableOperationType.APPEND, rowkeys, columns, values);
     }
 
-    /**
+    /*
+     * Put.
+     */
+    @Override
+    public void put(Object[] rowkeys, String[] columns, Object[] values) {
+        addObTableOperation(ObTableOperationType.PUT, rowkeys, columns, values);
+    }
+
+    /*
      * Add ob table operation.
      */
     public void addObTableOperation(ObTableOperationType type, Object[] rowkeys, String[] columns,
@@ -124,12 +134,13 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         operations.addTableOperation(instance);
     }
 
-    /**
+    /*
      * Execute.
      */
     public List<Object> execute() throws RemotingException, InterruptedException {
 
         request.setBatchOperationAsAtomic(isAtomicOperation());
+        request.setBatchOpReturnOneResult(isReturnOneResult());
         Object result = obTable.execute(request);
         checkObTableOperationResult(result);
 
@@ -137,8 +148,8 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         List<ObTableOperationResult> realResults = obTableOperationResult.getResults();
         List<Object> results = new ArrayList<Object>(realResults.size());
         for (ObTableOperationResult realResult : realResults) {
-            ResultCodes resultCodes = ResultCodes.valueOf(realResult.getHeader().getErrno());
-            if (resultCodes == ResultCodes.OB_SUCCESS) {
+            int errCode = realResult.getHeader().getErrno();
+            if (errCode == ResultCodes.OB_SUCCESS.errorCode) {
                 switch (realResult.getOperationType()) {
                     case GET:
                     case INCREMENT:
@@ -150,14 +161,55 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
                 }
             } else {
                 results.add(ExceptionUtil.convertToObTableException(obTable.getIp(),
-                    obTable.getPort(), realResult.getSequence(), realResult.getUniqueId(),
-                    resultCodes));
+                    obTable.getPort(), realResult.getSequence(), realResult.getUniqueId(), errCode,
+                    realResult.getHeader().getErrMsg()));
             }
         }
         return results;
     }
 
-    /**
+    /*
+     * Execute with result
+     */
+    public List<Object> executeWithResult() throws Exception {
+
+        request.setBatchOperationAsAtomic(isAtomicOperation());
+        request.setBatchOpReturnOneResult(isReturnOneResult());
+        Object result = obTable.execute(request);
+        checkObTableOperationResult(result);
+
+        ObTableBatchOperationResult obTableOperationResult = (ObTableBatchOperationResult) result;
+        List<ObTableOperationResult> realResults = obTableOperationResult.getResults();
+        List<Object> results = new ArrayList<Object>(realResults.size());
+        for (ObTableOperationResult realResult : realResults) {
+            int errCode = realResult.getHeader().getErrno();
+            if (errCode == ResultCodes.OB_SUCCESS.errorCode) {
+                switch (realResult.getOperationType()) {
+                    case GET:
+                        throw new ObTableException("Get is not a mutation");
+                    case INSERT:
+                    case DEL:
+                    case UPDATE:
+                    case INSERT_OR_UPDATE:
+                    case REPLACE:
+                    case INCREMENT:
+                    case APPEND:
+                        results.add(new MutationResult(realResult));
+                        break;
+                    default:
+                        throw new ObTableException("unknown operation type "
+                                                   + realResult.getOperationType());
+                }
+            } else {
+                results.add(ExceptionUtil.convertToObTableException(obTable.getIp(),
+                    obTable.getPort(), realResult.getSequence(), realResult.getUniqueId(), errCode,
+                    realResult.getHeader().getErrMsg()));
+            }
+        }
+        return results;
+    }
+
+    /*
      * clear batch operations
      */
     public void clear() {
@@ -178,14 +230,14 @@ public class ObTableBatchOpsImpl extends AbstractTableBatchOps {
         // ExceptionUtil.throwObTableException(obTableOperationResult.getHeader().getErrno());
     }
 
-    /**
+    /*
      * Reset ob table.
      */
     public void resetObTable(ObTable obTable) {
         this.obTable = obTable;
     }
 
-    /**
+    /*
      * Get ob table batch operation.
      */
     @Override

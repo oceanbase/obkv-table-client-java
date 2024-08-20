@@ -17,6 +17,10 @@
 
 package com.alipay.oceanbase.rpc.table.api;
 
+import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
+import com.alipay.oceanbase.rpc.filter.ObTableFilter;
+import com.alipay.oceanbase.rpc.mutation.*;
+
 import java.util.Map;
 
 public interface Table {
@@ -25,13 +29,13 @@ public interface Table {
 
     TableQuery query(String tableName) throws Exception;
 
-    TableQuery queryByBatch(String tableName) throws Exception;
-
     TableBatchOps batch(String tableName) throws Exception;
 
     Map<String, Object> get(String tableName, Object rowkey, String[] columns) throws Exception;
 
     Map<String, Object> get(String tableName, Object[] rowkeys, String[] columns) throws Exception;
+
+    Update update(String tableName);
 
     long update(String tableName, Object rowkey, String[] columns, Object[] values)
                                                                                    throws Exception;
@@ -39,9 +43,13 @@ public interface Table {
     long update(String tableName, Object[] rowkeys, String[] columns, Object[] values)
                                                                                       throws Exception;
 
+    Delete delete(String tableName);
+
     long delete(String tableName, Object rowkey) throws Exception;
 
     long delete(String tableName, Object[] rowkeys) throws Exception;
+
+    public Insert insert(String tableName);
 
     long insert(String tableName, Object rowkey, String[] columns, Object[] values)
                                                                                    throws Exception;
@@ -49,11 +57,15 @@ public interface Table {
     long insert(String tableName, Object[] rowkeys, String[] columns, Object[] values)
                                                                                       throws Exception;
 
+    Replace replace(String tableName);
+
     long replace(String tableName, Object rowkey, String[] columns, Object[] values)
                                                                                     throws Exception;
 
     long replace(String tableName, Object[] rowkeys, String[] columns, Object[] values)
                                                                                        throws Exception;
+
+    InsertOrUpdate insertOrUpdate(String tableName);
 
     long insertOrUpdate(String tableName, Object rowkey, String[] columns, Object[] values)
                                                                                            throws Exception;
@@ -61,11 +73,17 @@ public interface Table {
     long insertOrUpdate(String tableName, Object[] rowkeys, String[] columns, Object[] values)
                                                                                               throws Exception;
 
+    Put put(String tableName);
+
+    Increment increment(String tableName);
+
     Map<String, Object> increment(String tableName, Object rowkey, String[] columns,
                                   Object[] values, boolean withResult) throws Exception;
 
     Map<String, Object> increment(String tableName, Object[] rowkeys, String[] columns,
                                   Object[] values, boolean withResult) throws Exception;
+
+    Append append(String tableName);
 
     Map<String, Object> append(String tableName, Object rowkey, String[] columns, Object[] values,
                                boolean withResult) throws Exception;
@@ -73,6 +91,10 @@ public interface Table {
     Map<String, Object> append(String tableName, Object[] rowkeys, String[] columns,
                                Object[] values, boolean withResult) throws Exception;
 
+    BatchOperation batchOperation(String tableName);
+
     void addProperty(String property, String value);
 
+    CheckAndInsUp checkAndInsUp(String tableName, ObTableFilter filter, InsertOrUpdate insUp,
+                                boolean checkExists);
 }

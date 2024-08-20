@@ -22,39 +22,58 @@ import com.alipay.remoting.InvokeCallback;
 import com.alipay.remoting.InvokeContext;
 import com.alipay.remoting.InvokeFuture;
 import com.alipay.remoting.RemotingCommand;
+import com.alipay.oceanbase.rpc.exception.ObTableTimeoutExcetion;
 import io.netty.util.Timeout;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ObClientFuture implements InvokeFuture {
 
-    private CountDownLatch  waiter = new CountDownLatch(1);
+    private CountDownLatch  waiter        = new CountDownLatch(1);
     private RemotingCommand response;
     private int             channelId;
 
-    /**
+    // BY_WORKER indicate response must be release by worker itself.
+    // BY_BACKGROUND indicate response must be release by background decoder thread
+    private static int      INIT          = 0;
+    private static int      BY_WORKER     = 1;
+    private static int      BY_BACKGROUND = 2;
+
+    private AtomicInteger   releaseFlag   = new AtomicInteger(INIT);
+
+    /*
      * Ob client future.
      */
     public ObClientFuture(int channelId) {
         this.channelId = channelId;
     }
 
-    /**
+    /*
      * Wait response.
      */
     @Override
     public RemotingCommand waitResponse(long timeoutMillis) throws InterruptedException {
-        if (waiter.await(timeoutMillis, TimeUnit.MILLISECONDS)) {
-            return response;
-        } else {
-            return ObTablePacket.createTransportErrorPacket(TransportCodes.BOLT_TIMEOUT,
-                "wait timeout: " + timeoutMillis, null);
+        try {
+            if (waiter.await(timeoutMillis, TimeUnit.MILLISECONDS)
+                || !releaseFlag.compareAndSet(INIT, BY_BACKGROUND)) {
+                return response;
+            } else {
+                return null;
+            }
+        } catch (InterruptedException e) {
+            releaseFlag.set(BY_BACKGROUND);
+            if (response instanceof ObTablePacket) {
+                ((ObTablePacket) response).releaseByteBuf();
+            }
+            throw e;
+        } finally {
         }
     }
 
-    /**
+    /*
      * Wait response.
      */
     @Override
@@ -63,16 +82,21 @@ public class ObClientFuture implements InvokeFuture {
         return response;
     }
 
-    /**
+    /*
      * Put response.
      */
     @Override
     public void putResponse(RemotingCommand response) {
         this.response = response;
         waiter.countDown();
+        if (!releaseFlag.compareAndSet(INIT, BY_WORKER)) {
+            if (response instanceof ObTablePacket) {
+                ((ObTablePacket) response).releaseByteBuf();
+            }
+        }
     }
 
-    /**
+    /*
      * Invoke id.
      */
     @Override
@@ -80,7 +104,7 @@ public class ObClientFuture implements InvokeFuture {
         return channelId;
     }
 
-    /**
+    /*
      * Is done.
      */
     @Override
@@ -88,7 +112,7 @@ public class ObClientFuture implements InvokeFuture {
         return this.waiter.getCount() == 0;
     }
 
-    /**
+    /*
      * Create connection closed response.
      */
     @Override
@@ -96,7 +120,7 @@ public class ObClientFuture implements InvokeFuture {
         return null;
     }
 
-    /**
+    /*
      * Execute invoke callback.
      */
     @Override
@@ -104,7 +128,7 @@ public class ObClientFuture implements InvokeFuture {
 
     }
 
-    /**
+    /*
      * Try async execute invoke callback abnormally.
      */
     @Override
@@ -112,7 +136,7 @@ public class ObClientFuture implements InvokeFuture {
 
     }
 
-    /**
+    /*
      * Set cause.
      */
     @Override
@@ -120,7 +144,7 @@ public class ObClientFuture implements InvokeFuture {
 
     }
 
-    /**
+    /*
      * Get cause.
      */
     @Override
@@ -128,7 +152,7 @@ public class ObClientFuture implements InvokeFuture {
         return null;
     }
 
-    /**
+    /*
      * Get invoke callback.
      */
     @Override
@@ -136,7 +160,7 @@ public class ObClientFuture implements InvokeFuture {
         return null;
     }
 
-    /**
+    /*
      * Add timeout.
      */
     @Override
@@ -144,7 +168,7 @@ public class ObClientFuture implements InvokeFuture {
 
     }
 
-    /**
+    /*
      * Cancel timeout.
      */
     @Override
@@ -152,7 +176,7 @@ public class ObClientFuture implements InvokeFuture {
 
     }
 
-    /**
+    /*
      * Get app class loader.
      */
     @Override
@@ -160,7 +184,7 @@ public class ObClientFuture implements InvokeFuture {
         return null;
     }
 
-    /**
+    /*
      * Get protocol code.
      */
     @Override
@@ -168,7 +192,7 @@ public class ObClientFuture implements InvokeFuture {
         return 0;
     }
 
-    /**
+    /*
      * Set invoke context.
      */
     @Override
@@ -176,7 +200,7 @@ public class ObClientFuture implements InvokeFuture {
 
     }
 
-    /**
+    /*
      * Get invoke context.
      */
     @Override

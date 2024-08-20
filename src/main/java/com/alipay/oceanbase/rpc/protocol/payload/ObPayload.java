@@ -21,32 +21,52 @@ import io.netty.buffer.ByteBuf;
 
 public interface ObPayload extends ObUnisVersion {
 
-    /**
+    /*
      * @return channel id
      */
     int getChannelId();
 
-    /**
+    /*
      * @return tenant id
      */
     long getTenantId();
 
-    /**
+    /*
      * @return protocol code
      */
     int getPcode();
 
-    /**
+    /*
      * @return timeout
      */
     long getTimeout();
 
-    /**
+    /*
+     * set sequence
+     */
+    void setSequence(long sequence);
+
+    /*
+     * @return sequence
+     */
+    long getSequence();
+
+    /*
+     * set unique id
+     */
+    void setUniqueId(long uniqueId);
+
+    /*
+     * @return unique id
+     */
+    long getUniqueId();
+
+    /*
      * @return encoded payload content
      */
     byte[] encode();
 
-    /**
+    /*
      * Decode payload from byte buffer
      *
      * @param buf buf from net framework
@@ -54,12 +74,12 @@ public interface ObPayload extends ObUnisVersion {
      */
     Object decode(ByteBuf buf);
 
-    /**
+    /*
      * @return payload size, include header bytes
      */
     long getPayloadSize();
 
-    /**
+    /*
      * @return payload content size, without header bytes
      */
     long getPayloadContentSize();

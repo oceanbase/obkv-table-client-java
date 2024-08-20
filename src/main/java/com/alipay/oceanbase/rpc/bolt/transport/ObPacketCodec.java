@@ -25,7 +25,7 @@ import com.alipay.remoting.rpc.protocol.RpcProtocolDecoder;
 import io.netty.channel.ChannelHandler;
 
 public class ObPacketCodec implements Codec {
-    /**
+    /*
      * New encoder.
      */
     @Override
@@ -34,7 +34,7 @@ public class ObPacketCodec implements Codec {
             ProtocolCode.fromBytes(ObTableProtocol.MAGIC_HEADER_FLAG));
     }
 
-    /**
+    /*
      * New decoder.
      */
     @Override

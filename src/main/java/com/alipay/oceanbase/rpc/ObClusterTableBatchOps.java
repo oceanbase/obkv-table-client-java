@@ -17,9 +17,7 @@
 
 package com.alipay.oceanbase.rpc;
 
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableBatchOperation;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableBatchOperationResult;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.table.AbstractTableBatchOps;
 import com.alipay.oceanbase.rpc.table.ObTableClientBatchOpsImpl;
 
@@ -40,7 +38,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         this.tableBatchOps.setExecutorService(executorService);
     }
 
-    /**
+    /*
      * Get.
      */
     @Override
@@ -48,7 +46,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.get(rowkeys, columns);
     }
 
-    /**
+    /*
      * Update.
      */
     @Override
@@ -56,7 +54,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.update(rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Delete.
      */
     @Override
@@ -64,7 +62,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.delete(rowkeys);
     }
 
-    /**
+    /*
      * Insert.
      */
     @Override
@@ -72,7 +70,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.insert(rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Replace.
      */
     @Override
@@ -80,7 +78,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.replace(rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Insert or update.
      */
     @Override
@@ -88,7 +86,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.insertOrUpdate(rowkeys, columns, values);
     }
 
-    /**
+    /*
      * Increment.
      */
     @Override
@@ -96,7 +94,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.increment(rowkeys, columns, values, withResult);
     }
 
-    /**
+    /*
      * Append.
      */
     @Override
@@ -104,29 +102,48 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.append(rowkeys, columns, values, withResult);
     }
 
-    /**
+    /*
+     * Put.
+     */
+    @Override
+    public void put(Object[] rowkeys, String[] columns, Object[] values) {
+        tableBatchOps.put(rowkeys, columns, values);
+    }
+
+    /*
      * Execute.
      */
     @Override
     public List<Object> execute() throws Exception {
+        preCheck();
         return tableBatchOps.execute();
     }
 
-    /**
+    /*
+     * Execute with result
+     */
+    @Override
+    public List<Object> executeWithResult() throws Exception {
+        preCheck();
+        return tableBatchOps.executeWithResult();
+    }
+
+    /*
      * Execute internal.
      */
     public ObTableBatchOperationResult executeInternal() throws Exception {
+        preCheck();
         return tableBatchOps.executeInternal();
     }
 
-    /**
+    /*
      * clear batch operations
      */
     public void clear() {
         tableBatchOps.clear();
     }
 
-    /**
+    /*
      * Get ob table batch operation.
      */
     @Override
@@ -134,7 +151,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         return tableBatchOps.getObTableBatchOperation();
     }
 
-    /**
+    /*
      * Get table name.
      */
     @Override
@@ -142,7 +159,7 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         return tableBatchOps.getTableName();
     }
 
-    /**
+    /*
      * Set entity type.
      */
     @Override
@@ -151,12 +168,34 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.setEntityType(entityType);
     }
 
-    /**
+    /*
      * Set atomic operation.
      */
     @Override
     public void setAtomicOperation(boolean atomicOperation) {
         super.setAtomicOperation(atomicOperation);
         tableBatchOps.setAtomicOperation(atomicOperation);
+    }
+
+    @Override
+    public void setReturnOneResult(boolean returnOneResult) {
+        super.setReturnOneResult(returnOneResult);
+        tableBatchOps.setReturnOneResult(returnOneResult);
+    }
+
+    void preCheck() {
+        List<ObTableOperation> operations = this.tableBatchOps.getObTableBatchOperation()
+            .getTableOperations();
+        if (operations.isEmpty()) {
+            throw new IllegalArgumentException("operations is empty");
+        }
+        ObTableOperationType lastType = operations.get(0).getOperationType();
+        if (returnOneResult
+            && !(this.tableBatchOps.getObTableBatchOperation().isSameType() && (lastType == ObTableOperationType.INSERT
+                                                                                || lastType == ObTableOperationType.PUT
+                                                                                || lastType == ObTableOperationType.REPLACE || lastType == ObTableOperationType.DEL))) {
+            throw new IllegalArgumentException(
+                "returnOneResult only support multi-insert/put/replace/del");
+        }
     }
 }

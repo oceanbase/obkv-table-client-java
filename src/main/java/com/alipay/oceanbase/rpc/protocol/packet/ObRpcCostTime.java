@@ -33,13 +33,13 @@ public class ObRpcCostTime {
     private long     packetId;
     private long     requestArrivalTime;
 
-    /**
+    /*
      * Ob rpc cost time.
      */
     public ObRpcCostTime() {
     }
 
-    /**
+    /*
      * Encode.
      */
     public byte[] encode() {
@@ -64,7 +64,7 @@ public class ObRpcCostTime {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     public Object decode(ByteBuf buf) {
@@ -80,98 +80,98 @@ public class ObRpcCostTime {
         return this;
     }
 
-    /**
+    /*
      * Get arrival push diff.
      */
     public int getArrivalPushDiff() {
         return arrivalPushDiff;
     }
 
-    /**
+    /*
      * Set arrival push diff.
      */
     public void setArrivalPushDiff(int arrivalPushDiff) {
         this.arrivalPushDiff = arrivalPushDiff;
     }
 
-    /**
+    /*
      * Get push pop diff.
      */
     public int getPushPopDiff() {
         return pushPopDiff;
     }
 
-    /**
+    /*
      * Set push pop diff.
      */
     public void setPushPopDiff(int pushPopDiff) {
         this.pushPopDiff = pushPopDiff;
     }
 
-    /**
+    /*
      * Get pop process start diff.
      */
     public int getPopProcessStartDiff() {
         return popProcessStartDiff;
     }
 
-    /**
+    /*
      * Set pop process start diff.
      */
     public void setPopProcessStartDiff(int popProcessStartDiff) {
         this.popProcessStartDiff = popProcessStartDiff;
     }
 
-    /**
+    /*
      * Get process start end diff.
      */
     public int getProcessStartEndDiff() {
         return processStartEndDiff;
     }
 
-    /**
+    /*
      * Set process start end diff.
      */
     public void setProcessStartEndDiff(int processStartEndDiff) {
         this.processStartEndDiff = processStartEndDiff;
     }
 
-    /**
+    /*
      * Get process end response diff.
      */
     public int getProcessEndResponseDiff() {
         return processEndResponseDiff;
     }
 
-    /**
+    /*
      * Set process end response diff.
      */
     public void setProcessEndResponseDiff(int processEndResponseDiff) {
         this.processEndResponseDiff = processEndResponseDiff;
     }
 
-    /**
+    /*
      * Get packet id.
      */
     public long getPacketId() {
         return packetId;
     }
 
-    /**
+    /*
      * Set packet id.
      */
     public void setPacketId(long packetId) {
         this.packetId = packetId;
     }
 
-    /**
+    /*
      * Get request arrival time.
      */
     public long getRequestArrivalTime() {
         return requestArrivalTime;
     }
 
-    /**
+    /*
      * Set request arrival time.
      */
     public void setRequestArrivalTime(long requestArrivalTime) {

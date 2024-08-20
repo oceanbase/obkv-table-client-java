@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.util;
 
+import com.alipay.oceanbase.rpc.location.model.partition.ObPartFuncType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObCollationType;
 import com.alipay.oceanbase.rpc.util.hash.MurmurHash;
 import com.alipay.oceanbase.rpc.util.hash.ObHashSortUtf8mb4;
@@ -32,17 +33,26 @@ public class ObHashUtilTest {
     public void testHash() {
         try {
             String s1 = new String("蚂蚁金服".getBytes("UTF-8"), "UTF-8");
-            Assert.assertEquals(4331328712007588056L,
-                ObHashUtils.varcharHash(s1, ObCollationType.CS_TYPE_UTF8MB4_GENERAL_CI, 0));
+            Assert.assertEquals(5857140318165389032L, ObHashUtils.varcharHash(s1,
+                ObCollationType.CS_TYPE_UTF8MB4_GENERAL_CI, 0, ObPartFuncType.KEY_V3));
         } catch (UnsupportedEncodingException e) {
             Assert.fail("Don't support utf8 encoding.");
         }
+        Assert.assertEquals(-6632533813747801170L, ObHashUtils.varcharHash("partitionKey",
+            ObCollationType.CS_TYPE_BINARY, 0, ObPartFuncType.KEY_V3));
 
-        Assert.assertEquals(8342516951305938535L,
-            ObHashUtils.varcharHash("abcdef", ObCollationType.CS_TYPE_UTF8MB4_GENERAL_CI, 0));
+        Assert.assertEquals(3972054043075874492L, ObHashUtils.longHash(145, 0));
 
-        Assert.assertEquals(3797055900148298469L, ObHashUtils.varcharHash(new byte[] { 0x01, 0x01,
-                0x02, 0x7a, 0x71, 0x2b, 0x5f, 0x30 }, ObCollationType.CS_TYPE_UTF8MB4_BIN, 47));
+        Assert.assertEquals(5483367784116059036L, ObHashUtils.varcharHash("abcdef",
+            ObCollationType.CS_TYPE_UTF8MB4_GENERAL_CI, 0, ObPartFuncType.KEY_V3));
+
+        Assert.assertEquals(141008085297877540L, ObHashUtils.varcharHash(
+            "Test Partition Key 0 c1 column c1 c1 c1", ObCollationType.CS_TYPE_UTF8MB4_BIN, 0,
+            ObPartFuncType.KEY_V3));
+
+        Assert.assertEquals(-8699342424260018756L, ObHashUtils.varcharHash(new byte[] { 0x01, 0x01,
+                0x02, 0x7a, 0x71, 0x2b, 0x5f, 0x30 }, ObCollationType.CS_TYPE_UTF8MB4_BIN, 47,
+            ObPartFuncType.KEY_V3));
 
         Assert.assertEquals(2452379837092619935L, ObHashUtils.longHash(754623846937L, 53));
 
@@ -84,13 +94,13 @@ public class ObHashUtilTest {
         long seed = 0xc6a4a7935bd1e995L;
         long hashCode = 57;
         long res = ObHashSortUtf8mb4.obHashSortUtf8Mb4(new byte[] { (byte) 0xd3, (byte) 0x84 }, 2,
-            seed, hashCode);
+            seed, hashCode, false);
         Assert.assertEquals(7005345108782627091L, res);
         res = ObHashSortUtf8mb4.obHashSortUtf8Mb4(new byte[] { (byte) 0xe6, (byte) 0x84,
-                (byte) 0x57 }, 3, seed, hashCode);
+                (byte) 0x57 }, 3, seed, hashCode, false);
         Assert.assertEquals(-4132994306676758123L, res);
         res = ObHashSortUtf8mb4.obHashSortUtf8Mb4(new byte[] { (byte) 0xf6, (byte) 0x84,
-                (byte) 0x57, (byte) 0x6a, (byte) 0x43 }, 4, seed, hashCode);
+                (byte) 0x57, (byte) 0x6a, (byte) 0x43 }, 4, seed, hashCode, false);
         Assert.assertEquals(-4132994306676758123L, res);
     }
 

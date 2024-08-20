@@ -26,7 +26,7 @@ import java.util.List;
 public class ObPartitionKey implements Comparable<ObPartitionKey> {
 
     public static final Comparable MAX_PARTITION_ELEMENT = new Comparable() {
-                                                             /**
+                                                             /*
                                                               * Compare to.
                                                               */
                                                              @Override
@@ -39,7 +39,7 @@ public class ObPartitionKey implements Comparable<ObPartitionKey> {
                                                          };
 
     public static final Comparable MIN_PARTITION_ELEMENT = new Comparable() {
-                                                             /**
+                                                             /*
                                                               * Compare to.
                                                               */
                                                              @Override
@@ -54,7 +54,15 @@ public class ObPartitionKey implements Comparable<ObPartitionKey> {
     private final List<Comparable> partitionElements;
     private final List<ObColumn>   orderPartColumns;
 
-    /**
+    public List<Comparable> getPartitionElements() {
+        return partitionElements;
+    }
+
+    public List<ObColumn> getOrderPartColumns() {
+        return orderPartColumns;
+    }
+
+    /*
      * Ob partition key.
      */
     public ObPartitionKey(List<ObColumn> orderPartColumns, List<Comparable> partitionElements)
@@ -73,7 +81,7 @@ public class ObPartitionKey implements Comparable<ObPartitionKey> {
 
     @Override
     @SuppressWarnings("unchecked")
-    /**
+    /*
      * Compare to.
      */
     public int compareTo(ObPartitionKey that) {
@@ -107,6 +115,11 @@ public class ObPartitionKey implements Comparable<ObPartitionKey> {
                 tmpRet = ((String) thisElement).toUpperCase().compareTo(
                     ((String) thatElement).toUpperCase());
             } else {
+                // make number into long value for compare
+                if (thisElement instanceof Number && thatElement instanceof Number) {
+                    thisElement = ((Number) thisElement).longValue();
+                    thatElement = ((Number) thatElement).longValue();
+                }
                 tmpRet = thisElement.compareTo(thatElement);
             }
 
@@ -118,7 +131,7 @@ public class ObPartitionKey implements Comparable<ObPartitionKey> {
         return 0;
     }
 
-    /**
+    /*
      * Get instance.
      */
     public static ObPartitionKey getInstance(List<ObColumn> orderPartColumns,
@@ -126,7 +139,7 @@ public class ObPartitionKey implements Comparable<ObPartitionKey> {
         return new ObPartitionKey(orderPartColumns, Arrays.asList(rowKeyElements));
     }
 
-    /**
+    /*
      * Get instance.
      */
     public static ObPartitionKey getInstance(List<ObColumn> orderPartColumns,
@@ -134,7 +147,7 @@ public class ObPartitionKey implements Comparable<ObPartitionKey> {
         return new ObPartitionKey(orderPartColumns, rowKeyElements);
     }
 
-    /**
+    /*
      * Equals.
      */
     @Override
@@ -181,7 +194,7 @@ public class ObPartitionKey implements Comparable<ObPartitionKey> {
         return true;
     }
 
-    /**
+    /*
      * Hash code.
      */
     @Override

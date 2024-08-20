@@ -24,4 +24,7 @@ public class ObMbContext {
     int    end;
     long   n1;
     long   n2;
+    // for 3.x
+    byte[] hashBuf;
+    int    len;
 }

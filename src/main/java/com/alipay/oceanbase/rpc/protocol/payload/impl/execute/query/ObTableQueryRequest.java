@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableAbstractOperationRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableConsistencyLevel;
@@ -41,7 +42,7 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
 
     private ObTableQuery tableQuery;
 
-    /**
+    /*
      * Get pcode.
      */
     @Override
@@ -49,7 +50,7 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
         return Pcodes.OB_TABLE_API_EXECUTE_QUERY;
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -75,7 +76,7 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -85,7 +86,10 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
         this.credential = Serialization.decodeBytesString(buf);
         this.tableName = Serialization.decodeVString(buf);
         this.tableId = Serialization.decodeVi64(buf);
-        this.partitionId = Serialization.decodeVi64(buf);
+        if (ObGlobal.obVsnMajor() >= 4)
+            this.partitionId = Serialization.decodeI64(buf);
+        else
+            this.partitionId = Serialization.decodeVi64(buf);
         this.entityType = ObTableEntityType.valueOf(buf.readByte());
         this.consistencyLevel = ObTableConsistencyLevel.valueOf(buf.readByte());
 
@@ -95,24 +99,28 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
     public long getPayloadContentSize() {
-        return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
-               + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId) + 2
-               + tableQuery.getPayloadSize();
+        if (ObGlobal.obVsnMajor() >= 4)
+            return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
+                   + Serialization.getNeedBytes(tableId) + 8 + 2 + tableQuery.getPayloadSize();
+        else
+            return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
+                   + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId)
+                   + 2 + tableQuery.getPayloadSize();
     }
 
-    /**
+    /*
      * Get table query.
      */
     public ObTableQuery getTableQuery() {
         return tableQuery;
     }
 
-    /**
+    /*
      * Set table query.
      */
     public void setTableQuery(ObTableQuery tableQuery) {

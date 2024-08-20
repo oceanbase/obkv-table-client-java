@@ -32,7 +32,7 @@ public class ConcurrentTaskExecutor {
     private final List<Throwable> throwableList = Collections
                                                     .synchronizedList(new LinkedList<Throwable>());
 
-    /**
+    /*
      * Concurrent task executor.
      */
     public ConcurrentTaskExecutor(ExecutorService executor, int taskNum) {
@@ -41,7 +41,7 @@ public class ConcurrentTaskExecutor {
         this.executor = executor;
     }
 
-    /**
+    /*
      * Execute.
      */
     public void execute(final ConcurrentTask task) {
@@ -49,35 +49,35 @@ public class ConcurrentTaskExecutor {
         executor.execute(task);
     }
 
-    /**
+    /*
      * Is complete.
      */
     public boolean isComplete() {
         return taskCountDownLatch.getCount() == 0;
     }
 
-    /**
+    /*
      * Wait complete.
      */
     public boolean waitComplete(long timeout, TimeUnit unit) throws InterruptedException {
         return taskCountDownLatch.await(timeout, unit);
     }
 
-    /**
+    /*
      * Stop.
      */
     public void stop() {
         stopped.compareAndSet(false, true);
     }
 
-    /**
+    /*
      * Collect exceptions.
      */
     public void collectExceptions(Throwable e) {
         throwableList.add(e);
     }
 
-    /**
+    /*
      * Get throwable list.
      */
     public List<Throwable> getThrowableList() {

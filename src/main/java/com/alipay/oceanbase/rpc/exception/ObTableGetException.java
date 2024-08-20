@@ -19,41 +19,41 @@ package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableGetException extends ObTableException {
 
-    /**
+    /*
      * Ob table get exception.
      */
     public ObTableGetException() {
     }
 
-    /**
+    /*
      * Ob table get exception.
      */
     public ObTableGetException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table get exception.
      */
     public ObTableGetException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table get exception.
      */
     public ObTableGetException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table get exception.
      */
     public ObTableGetException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table get exception.
      */
     public ObTableGetException(Throwable cause) {

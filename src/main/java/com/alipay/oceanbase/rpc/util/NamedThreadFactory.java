@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Thread factory to name the thread purposely
- *
  */
 public class NamedThreadFactory implements ThreadFactory {
 
@@ -41,6 +40,7 @@ public class NamedThreadFactory implements ThreadFactory {
 
     /**
      * Named thread factory.
+     * @param name thread factory name
      */
     public NamedThreadFactory(String name) {
         this(name, false);
@@ -48,6 +48,8 @@ public class NamedThreadFactory implements ThreadFactory {
 
     /**
      * Named thread factory.
+     * @param preffix thread name prefix
+     * @param daemon is daemon
      */
     public NamedThreadFactory(String preffix, boolean daemon) {
         SecurityManager s = System.getSecurityManager();
@@ -58,8 +60,9 @@ public class NamedThreadFactory implements ThreadFactory {
 
     /**
      * Create a thread.
-     *
      * @see java.util.concurrent.ThreadFactory#newThread(java.lang.Runnable)
+     * @param r runnable task
+     * @return thread handle
      */
     public Thread newThread(Runnable r) {
         Thread t = new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0);

@@ -19,41 +19,41 @@ package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableAuthException extends ObTableException {
 
-    /**
+    /*
      * Ob table auth exception.
      */
     public ObTableAuthException() {
     }
 
-    /**
+    /*
      * Ob table auth exception.
      */
     public ObTableAuthException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table auth exception.
      */
     public ObTableAuthException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table auth exception.
      */
     public ObTableAuthException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table auth exception.
      */
     public ObTableAuthException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table auth exception.
      */
     public ObTableAuthException(Throwable cause) {

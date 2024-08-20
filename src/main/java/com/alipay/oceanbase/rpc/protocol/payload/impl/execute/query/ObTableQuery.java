@@ -18,6 +18,8 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationSingle;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -39,7 +41,8 @@ OB_UNIS_DEF_SERIALIZE(ObTableQuery,
      index_name_,
      batch_size_,
      max_result_size_,
-     htable_filter_));
+     htable_filter_,
+     key_range_columns));
  *
  */
 public class ObTableQuery extends AbstractPayload {
@@ -57,8 +60,35 @@ public class ObTableQuery extends AbstractPayload {
 
     private static final byte[] HTABLE_FILTER_DUMMY_BYTES = new byte[] { 0x01, 0x00 };
     private boolean             isHbaseQuery              = false;
+    private List<String>        scanRangeColumns          = new LinkedList<String>();
 
-    /**
+    private List<ObTableAggregationSingle>    aggregations       = new LinkedList<>();
+
+    /*
+     * Check filter.
+     */
+    public boolean isFilterNull() {
+         return filterString != null;
+    }
+
+    /*
+     * Check aggregation.
+     */
+    public boolean isAggregation() {
+        if (aggregations.isEmpty()) {
+            return false;
+        }
+        return true;
+    }
+
+    /*
+     * Add aggregation.
+     */
+    public void addAggregation(ObTableAggregationType aggType, String aggColumn) {
+        this.aggregations.add(new ObTableAggregationSingle(aggType, aggColumn));
+    }
+
+    /*
      * Encode.
      */
     @Override
@@ -122,11 +152,31 @@ public class ObTableQuery extends AbstractPayload {
             len = HTABLE_FILTER_DUMMY_BYTES.length;
             System.arraycopy(HTABLE_FILTER_DUMMY_BYTES, 0, bytes, idx, len);
         }
+        idx += len;
+
+        len = Serialization.getNeedBytes(scanRangeColumns.size());
+        System.arraycopy(Serialization.encodeVi64(scanRangeColumns.size()), 0, bytes, idx, len);
+        idx += len;
+        for (String keyRangeColumn : scanRangeColumns) {
+            len = Serialization.getNeedBytes(keyRangeColumn);
+            System.arraycopy(Serialization.encodeVString(keyRangeColumn), 0, bytes, idx, len);
+            idx += len;
+        }
+
+        //Aggregation
+        len = Serialization.getNeedBytes(aggregations.size());
+        System.arraycopy(Serialization.encodeVi64(aggregations.size()), 0, bytes, idx, len);
+        idx += len;
+        for (ObTableAggregationSingle obTableAggregationSingle : aggregations) {
+            len = (int) obTableAggregationSingle.getPayloadSize();
+            System.arraycopy(obTableAggregationSingle.encode(), 0, bytes, idx, len);
+            idx += len;
+        }
 
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -169,11 +219,21 @@ public class ObTableQuery extends AbstractPayload {
             buf.readByte();
             buf.readByte();
         }
+        size = Serialization.decodeVi64(buf);
+        for (int i = 0; i < size; i++) {
+            this.scanRangeColumns.add(Serialization.decodeVString(buf));
+        }
 
+        size = Serialization.decodeVi64(buf);
+        for (int i = 0; i < size; i++) {
+            byte agg_type = Serialization.decodeI8(buf);
+            String agg_column = Serialization.decodeVString(buf);
+            this.aggregations.add(new ObTableAggregationSingle(ObTableAggregationType.fromByte(agg_type), agg_column));
+        }
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -201,129 +261,138 @@ public class ObTableQuery extends AbstractPayload {
         } else {
             contentSize += HTABLE_FILTER_DUMMY_BYTES.length;
         }
+        contentSize += Serialization.getNeedBytes(scanRangeColumns.size());
+        for (String scanRangeColumn : scanRangeColumns) {
+            contentSize += Serialization.getNeedBytes(scanRangeColumn);
+        }
+
+        contentSize += Serialization.getNeedBytes(aggregations.size());
+        for (ObTableAggregationSingle obTableAggregationSingle : aggregations) {
+            contentSize += obTableAggregationSingle.getPayloadSize();
+        }
         return contentSize;
     }
 
-    /**
+    /*
      * Get key ranges.
      */
     public List<ObNewRange> getKeyRanges() {
         return keyRanges;
     }
 
-    /**
+    /*
      * Set key ranges.
      */
     public void setKeyRanges(List<ObNewRange> keyRanges) {
         this.keyRanges = keyRanges;
     }
 
-    /**
+    /*
      * Add key range.
      */
     public void addKeyRange(ObNewRange keyRange) {
         this.keyRanges.add(keyRange);
     }
 
-    /**
+    /*
      * Get select columns.
      */
     public List<String> getSelectColumns() {
         return selectColumns;
     }
 
-    /**
+    /*
      * Set select columns.
      */
     public void setSelectColumns(List<String> selectColumns) {
         this.selectColumns = selectColumns;
     }
 
-    /**
+    /*
      * Add select column.
      */
     public void addSelectColumn(String selectColumn) {
         this.selectColumns.add(selectColumn);
     }
 
-    /**
+    /*
      * Get filter string.
      */
     public String getFilterString() {
         return filterString;
     }
 
-    /**
+    /*
      * Set filter string.
      */
     public void setFilterString(String filterString) {
         this.filterString = filterString;
     }
 
-    /**
+    /*
      * Get limit.
      */
     public int getLimit() {
         return limit;
     }
 
-    /**
+    /*
      * Set limit.
      */
     public void setLimit(int limit) {
         this.limit = limit;
     }
 
-    /**
+    /*
      * Get offset.
      */
     public int getOffset() {
         return offset;
     }
 
-    /**
+    /*
      * Set offset.
      */
     public void setOffset(int offset) {
         this.offset = offset;
     }
 
-    /**
+    /*
      * Get scan order.
      */
     public ObScanOrder getScanOrder() {
         return scanOrder;
     }
 
-    /**
+    /*
      * Set scan order.
      */
     public void setScanOrder(ObScanOrder scanOrder) {
         this.scanOrder = scanOrder;
     }
 
-    /**
+    /*
      * Get index name.
      */
     public String getIndexName() {
         return indexName;
     }
 
-    /**
+    /*
      * Set index name.
      */
     public void setIndexName(String indexName) {
         this.indexName = indexName;
     }
 
-    /**
+    /*
      * Get batch size.
      */
     public int getBatchSize() {
         return batchSize;
     }
 
-    /**
+    /*
      * Set batch size.
      */
     public void setBatchSize(int batchSize) {
@@ -332,28 +401,30 @@ public class ObTableQuery extends AbstractPayload {
         }
     }
 
-    /**
+    /*
      * Get max result size.
      */
     public long getMaxResultSize() {
         return maxResultSize;
     }
 
-    /**
+    /*
      * Set max result size.
      */
     public void setMaxResultSize(long maxResultSize) {
-        this.maxResultSize = maxResultSize;
+        if (maxResultSize > 0) {
+            this.maxResultSize = maxResultSize;
+        }
     }
 
-    /**
+    /*
      * Geth table filter.
      */
     public ObHTableFilter gethTableFilter() {
         return hTableFilter;
     }
 
-    /**
+    /*
      * Seth table filter.
      */
     public void sethTableFilter(ObHTableFilter hTableFilter) {
@@ -361,17 +432,38 @@ public class ObTableQuery extends AbstractPayload {
         this.hTableFilter = hTableFilter;
     }
 
-    /**
+    /*
      * Is hbase query.
      */
     public boolean isHbaseQuery() {
         return isHbaseQuery;
     }
 
-    /**
+    /*
      * Set hbase query.
      */
     public void setHbaseQuery(boolean hbaseQuery) {
         isHbaseQuery = hbaseQuery;
+    }
+
+    /*
+     * Get select columns.
+     */
+    public List<String> getScanRangeColumns() {
+        return scanRangeColumns;
+    }
+
+    /*
+     * Set select columns.
+     */
+    public void setScanRangeColumns(String... scanRangeColumns) {
+        this.scanRangeColumns.clear();
+        for (String scanRangeCol : scanRangeColumns) {
+            this.scanRangeColumns.add(scanRangeCol);
+        }
+    }
+
+    public void setScanRangeColumns(List<String> scanRangeColumns) {
+        this.scanRangeColumns = scanRangeColumns;
     }
 }

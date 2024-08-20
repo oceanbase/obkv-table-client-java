@@ -70,6 +70,7 @@ public enum ResultCodes {
     OB_NEED_RETRY(-4036), //
     OB_TOO_MANY_SSTABLE(-4037), //
     OB_NOT_MASTER(-4038), //
+    OB_KILLED_BY_THROTTLING(-4039), //
     OB_DECRYPT_FAILED(-4041), //
     OB_USER_NOT_EXIST(-4042), //
     OB_PASSWORD_WRONG(-4043), //
@@ -357,6 +358,9 @@ public enum ResultCodes {
     OB_CLUSTER_NO_MATCH(-4666), //
     OB_CHECK_ZONE_MERGE_ORDER(-4667), //
     OB_ERR_ZONE_NOT_EMPTY(-4668), //
+    OB_USE_DUP_FOLLOW_AFTER_DML(-4686),
+    OB_LS_NOT_EXIST(-4719), //
+    OB_TABLET_NOT_EXIST(-4725), //
     OB_ERR_PARSER_INIT(-5000), //
     OB_ERR_PARSE_SQL(-5001), //
     OB_ERR_RESOLVE_SQL(-5002), //
@@ -631,6 +635,7 @@ public enum ResultCodes {
     OB_IGNORE_SQL_IN_RESTORE(-5309), //
     OB_ERR_UNEXPECTED_TZ_TRANSITION(-5310), //
     OB_ERR_INVALID_COLUMN_ID(-5311), //
+    OB_SCHEMA_EAGAIN(-5627), //
     OB_TRANSACTION_SET_VIOLATION(-6001), //
     OB_TRANS_ROLLBACKED(-6002), //
     OB_ERR_EXCLUSIVE_LOCK_CONFLICT(-6003), //
@@ -663,6 +668,7 @@ public enum ResultCodes {
     OB_PARTITION_IS_BLOCKED(-6229), //
     OB_TRANS_RPC_TIMEOUT(-6230), //
     OB_REPLICA_NOT_READABLE(-6231), //
+    OB_TRANS_STMT_NEED_RETRY(-6241), //
     OB_LOG_ID_NOT_FOUND(-6301), //
     OB_LSR_THREAD_STOPPED(-6302), //
     OB_NO_LOG(-6303), //
@@ -721,7 +727,17 @@ public enum ResultCodes {
     OB_AGENT_INITING_BACKUP_COUNT_ERROR(-9015), //
     OB_CLUSTER_NAME_NOT_EQUAL(-9016), //
     OB_RS_LIST_INVAILD(-9017), //
-    OB_AGENT_HAS_FAILED_TASK(-9018);
+    OB_AGENT_HAS_FAILED_TASK(-9018), //
+    OB_ERR_KV_GLOBAL_INDEX_ROUTE(-10500), //
+    OB_KV_CREDENTIAL_NOT_MATCH(-10509), //
+    OB_KV_ROWKEY_COUNT_NOT_MATCH(-10510), //
+    OB_KV_COLUMN_TYPE_NOT_MATCH(-10511), //
+    OB_KV_COLLATION_MISMATCH(-10512), //
+    OB_KV_SCAN_RANGE_MISSING(-10513), //
+    OB_KV_FILTER_PARSE_ERROR(-10514), //
+    OB_KV_REDIS_PARSE_ERROR(-10515), //
+    OB_KV_HBASE_INCR_FIELD_IS_NOT_LONG(-10516), //
+    OB_KV_ODP_TIMEOUT(-10650);
 
     public final int errorCode;
 
@@ -737,7 +753,7 @@ public enum ResultCodes {
         }
     }
 
-    /**
+    /*
      * Value of.
      */
     public static ResultCodes valueOf(int errorCode) {

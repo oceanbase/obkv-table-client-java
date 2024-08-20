@@ -22,21 +22,21 @@ import java.util.List;
 public class TableLocation {
     private List<ReplicaLocation> replicaLocations;
 
-    /**
+    /*
      * Get replica locations.
      */
     public List<ReplicaLocation> getReplicaLocations() {
         return replicaLocations;
     }
 
-    /**
+    /*
      * Set replica locations.
      */
     public void setReplicaLocations(List<ReplicaLocation> replicaLocations) {
         this.replicaLocations = replicaLocations;
     }
 
-    /**
+    /*
      * To string.
      */
     @Override

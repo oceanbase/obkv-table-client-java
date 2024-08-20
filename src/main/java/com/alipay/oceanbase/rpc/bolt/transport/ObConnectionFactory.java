@@ -69,7 +69,7 @@ public class ObConnectionFactory implements ConnectionFactory {
         this.handler = handler;
     }
 
-    /**
+    /*
      * Init.
      */
     @Override
@@ -103,7 +103,7 @@ public class ObConnectionFactory implements ConnectionFactory {
         });
     }
 
-    /**
+    /*
      * Create connection.
      */
     @Override
@@ -111,7 +111,7 @@ public class ObConnectionFactory implements ConnectionFactory {
         throw new IllegalArgumentException("not support yet");
     }
 
-    /**
+    /*
      * @see com.alipay.remoting.connection.ConnectionFactory#createConnection(java.lang.String, int, int)
      */
     @Override
@@ -125,7 +125,7 @@ public class ObConnectionFactory implements ConnectionFactory {
         return conn;
     }
 
-    /**
+    /*
      * Create connection.
      */
     @Override
@@ -170,7 +170,7 @@ public class ObConnectionFactory implements ConnectionFactory {
         return future.channel();
     }
 
-    /**
+    /*
      * init netty write buffer water mark
      */
     private void initWriteBufferWaterMark() {
@@ -191,7 +191,7 @@ public class ObConnectionFactory implements ConnectionFactory {
             lowWaterMark, highWaterMark));
     }
 
-    /**
+    /*
      * New builder.
      */
     public static ObConnectionFactoryBuilder newBuilder() {
@@ -206,7 +206,7 @@ public class ObConnectionFactory implements ConnectionFactory {
                                                                                      userProcessors);
         private ConfigurableInstance                        configurableInstance = new ObConfigurableInstance();
 
-        /**
+        /*
          * Register user processor.
          */
         public ObConnectionFactoryBuilder registerUserProcessor(UserProcessor<?> processor) {
@@ -225,7 +225,7 @@ public class ObConnectionFactory implements ConnectionFactory {
             return this;
         }
 
-        /**
+        /*
          * Config write buffer water mark.
          */
         public ObConnectionFactoryBuilder configWriteBufferWaterMark(int low, int high) {
@@ -233,7 +233,7 @@ public class ObConnectionFactory implements ConnectionFactory {
             return this;
         }
 
-        /**
+        /*
          * Build.
          */
         public ObConnectionFactory build() {

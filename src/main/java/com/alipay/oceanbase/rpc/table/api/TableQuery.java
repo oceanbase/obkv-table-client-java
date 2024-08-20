@@ -17,22 +17,38 @@
 
 package com.alipay.oceanbase.rpc.table.api;
 
+import com.alipay.oceanbase.rpc.filter.ObTableFilter;
+import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
+import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilter;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
+import com.alipay.oceanbase.rpc.table.ObTable;
+import com.alipay.oceanbase.rpc.table.ObTableParam;
+
+import java.util.List;
 
 public interface TableQuery {
+    public static final String TABLE_COMPARE_FILTER = "TableCompareFilter";
 
     ObTableQuery getObTableQuery();
 
     String getTableName();
+
+    TableQuery setRowKey(Row row) throws Exception;
+
+    Row getRowKey() throws Exception;
+
+    List<String> getSelectColumns() throws Exception;
 
     void setEntityType(ObTableEntityType entityType);
 
     ObTableEntityType getEntityType();
 
     QueryResultSet execute() throws Exception;
+
+    QueryResultSet asyncExecute() throws Exception;
 
     TableQuery select(String... columns);
 
@@ -48,10 +64,12 @@ public interface TableQuery {
 
     /**
      * Row count offset, default: 0
-     *
+     * 
      * @param offset limit offset
      * @param limit limit count
-     * @return
+     * @return this TableQuery
+     * can not use offset without valid limit value.
+     * limit lessThan 0 and offset bigThan 0 is not allowed.
      */
     TableQuery limit(int offset, int limit);
 
@@ -60,15 +78,15 @@ public interface TableQuery {
     /**
      * Add scan range
      *
-     * @param start >= start
-     * @param end <= end
-     * @return this
+     * @param start start
+     * @param end end
+     * @return this TableQuery
      */
     TableQuery addScanRange(Object start, Object end);
 
     TableQuery addScanRange(Object[] start, Object[] end);
 
-    /**
+    /*
      * Add scan range
      *
      * @param startEquals true: >= start; false: > start
@@ -79,7 +97,7 @@ public interface TableQuery {
 
     TableQuery addScanRange(Object[] start, boolean startEquals, Object[] end, boolean endEquals);
 
-    /**
+    /*
      * Add scan range starts with
      *
      * @param start >= start
@@ -89,16 +107,15 @@ public interface TableQuery {
 
     TableQuery addScanRangeStartsWith(Object[] start);
 
-    /**
+    /*
      * Add scan range starts with
-     *
-     * @param startEquals true: >= start; false: > start
      * @param start >= start
+     * @param startEquals true: >= start; false: > start
      * @return this
      */
     TableQuery addScanRangeStartsWith(Object[] start, boolean startEquals);
 
-    /**
+    /*
      * Add scan range ends with
      *
      * @param end <= end
@@ -108,15 +125,15 @@ public interface TableQuery {
 
     TableQuery addScanRangeEndsWith(Object[] end);
 
-    /**
+    /*
      * Add scan range ends with
-     *
+     * @param end <= end
      * @param endEquals true: <= end; false: < end
      * @return this
      */
     TableQuery addScanRangeEndsWith(Object[] end, boolean endEquals);
 
-    /**
+    /*
      * Scan order, default forward
      *
      * @param forward forward(true) or reverse(false) order
@@ -124,7 +141,7 @@ public interface TableQuery {
      */
     TableQuery scanOrder(boolean forward);
 
-    /**
+    /*
      * Set index name
      *
      * @param indexName Table index name
@@ -142,10 +159,18 @@ public interface TableQuery {
     /**
      * Set filter string: no support yet
      *
-     * @param filterString
+     * @param filterString filter
      * @return this
      */
     TableQuery filterString(String filterString);
+
+    /**
+     * Set filter
+     *
+     * @param filter prepared filter
+     * @return this
+     */
+    TableQuery setFilter(ObTableFilter filter);
 
     TableQuery setHTableFilter(ObHTableFilter obHTableFilter);
 
@@ -154,7 +179,7 @@ public interface TableQuery {
      * default is -1 means one rpc will return all the results
      * zero or negative value is meaningless so will be reset to default
      * when user sets the batch size the stream mode will active
-     * @param batchSize
+     * @param batchSize batch size
      * @return this
      */
     TableQuery setBatchSize(int batchSize);
@@ -164,11 +189,14 @@ public interface TableQuery {
      * the default of timeout is 10 second
      * Be careful about the timeout when you set the batch size ,which should
      * be completed in query time out
-     * @param operationTimeout
+     * @param operationTimeout timeout
      * @return this
      */
     TableQuery setOperationTimeout(long operationTimeout);
 
-    void clear();
+    TableQuery setMaxResultSize(long maxResultSize);
 
+    TableQuery setScanRangeColumns(String... columns);
+
+    void clear();
 }

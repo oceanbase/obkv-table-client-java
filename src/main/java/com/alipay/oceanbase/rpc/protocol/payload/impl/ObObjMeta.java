@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl;
 
 import com.alipay.oceanbase.rpc.protocol.payload.ObSimplePayload;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -62,13 +63,13 @@ public class ObObjMeta implements ObSimplePayload {
     private ObCollationType  csType; // collation type QUESTION: ObCollationType 定义
     private byte             scale;  // scale, 当type_ 为ObBitType时，该字段存储bit的length
 
-    /**
+    /*
      * Ob obj meta.
      */
     public ObObjMeta() {
     }
 
-    /**
+    /*
      * Ob obj meta.
      */
     public ObObjMeta(ObObjType type, ObCollationLevel csLevel, ObCollationType csType, byte scale) {
@@ -78,7 +79,7 @@ public class ObObjMeta implements ObSimplePayload {
         this.scale = scale;
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -97,6 +98,17 @@ public class ObObjMeta implements ObSimplePayload {
     }
 
     /**
+     * Encode.
+     */
+    @Override
+    public void encode(ObByteBuf buf) {
+        Serialization.encodeI8(buf, type.getByteValue());
+        Serialization.encodeI8(buf, csLevel.getByteValue());
+        Serialization.encodeI8(buf, csType.getByteValue());
+        Serialization.encodeI8(buf, scale);
+    }
+
+    /*
      * Decode.
      */
     @Override
@@ -109,7 +121,7 @@ public class ObObjMeta implements ObSimplePayload {
         return this;
     }
 
-    /**
+    /*
      * Get encoded size.
      */
     @Override
@@ -117,63 +129,63 @@ public class ObObjMeta implements ObSimplePayload {
         return 4;
     }
 
-    /**
+    /*
      * Get type.
      */
     public ObObjType getType() {
         return type;
     }
 
-    /**
+    /*
      * Set type.
      */
     public void setType(ObObjType type) {
         this.type = type;
     }
 
-    /**
+    /*
      * Get cs level.
      */
     public ObCollationLevel getCsLevel() {
         return csLevel;
     }
 
-    /**
+    /*
      * Set cs level.
      */
     public void setCsLevel(ObCollationLevel csLevel) {
         this.csLevel = csLevel;
     }
 
-    /**
+    /*
      * Get cs type.
      */
     public ObCollationType getCsType() {
         return csType;
     }
 
-    /**
+    /*
      * Set cs type.
      */
     public void setCsType(ObCollationType csType) {
         this.csType = csType;
     }
 
-    /**
+    /*
      * Get scale.
      */
     public byte getScale() {
         return scale;
     }
 
-    /**
+    /*
      * Set scale.
      */
     public void setScale(byte scale) {
         this.scale = scale;
     }
 
-    /**
+    /*
      * To string.
      */
     @Override

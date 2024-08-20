@@ -19,48 +19,48 @@ package com.alipay.oceanbase.rpc.exception;
 
 public class ObTablePartitionChangeException extends ObTableException {
 
-    /**
+    /*
      * Ob table partition change exception.
      */
     public ObTablePartitionChangeException() {
     }
 
-    /**
+    /*
      * Ob table partition change exception.
      */
     public ObTablePartitionChangeException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table partition change exception.
      */
     public ObTablePartitionChangeException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table partition change exception.
      */
     public ObTablePartitionChangeException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table partition change exception.
      */
     public ObTablePartitionChangeException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table partition change exception.
      */
     public ObTablePartitionChangeException(Throwable cause) {
         super(cause);
     }
 
-    /**
+    /*
      * Is need refresh table entry.
      */
     public boolean isNeedRefreshTableEntry() {

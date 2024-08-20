@@ -42,21 +42,21 @@ public enum ObCollationType {
         }
     }
 
-    /**
+    /*
      * Value of.
      */
     public static ObCollationType valueOf(int value) {
         return map.get(value);
     }
 
-    /**
+    /*
      * Get value.
      */
     public int getValue() {
         return value;
     }
 
-    /**
+    /*
      * Get byte value.
      */
     public byte getByteValue() {

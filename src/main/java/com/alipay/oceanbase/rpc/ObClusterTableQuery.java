@@ -17,24 +17,36 @@
 
 package com.alipay.oceanbase.rpc;
 
+import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilter;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
+import com.alipay.oceanbase.rpc.stream.ObTableClientQueryAsyncStreamResult;
 import com.alipay.oceanbase.rpc.stream.ObTableClientQueryStreamResult;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.AbstractTableQuery;
 import com.alipay.oceanbase.rpc.table.ObTableClientQueryImpl;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
+import java.util.List;
+
 public class ObClusterTableQuery extends AbstractTableQuery {
 
     private final ObTableClientQueryImpl tableClientQuery;
 
-    ObClusterTableQuery(ObTableClientQueryImpl tableQuery) {
+    public ObClusterTableQuery(ObTableClientQueryImpl tableQuery) {
         this.tableClientQuery = tableQuery;
     }
 
-    /**
+    /*
+     * Add aggregation.
+     */
+    public void addAggregation(ObTableAggregationType aggType, String aggColumn) {
+        this.tableClientQuery.addAggregation(aggType, aggColumn);
+    }
+
+    /*
      * Get table name.
      */
     @Override
@@ -42,7 +54,7 @@ public class ObClusterTableQuery extends AbstractTableQuery {
         return tableClientQuery.getTableName();
     }
 
-    /**
+    /*
      * Get ob table query.
      */
     @Override
@@ -50,7 +62,21 @@ public class ObClusterTableQuery extends AbstractTableQuery {
         return tableClientQuery.getObTableQuery();
     }
 
-    /**
+    /*
+     * Get select columns (used by BatchOperation)
+     */
+    public List<String> getSelectColumns() {
+        return tableClientQuery.getSelectColumns();
+    }
+
+    /*
+     * Get row key (used by BatchOperation)
+     */
+    public Row getRowKey() {
+        return tableClientQuery.getRowKey();
+    }
+
+    /*
      * Execute.
      */
     @Override
@@ -58,14 +84,29 @@ public class ObClusterTableQuery extends AbstractTableQuery {
         return tableClientQuery.execute();
     }
 
-    /**
+    /*
+     * Execute.
+     */
+    @Override
+    public QueryResultSet asyncExecute() throws Exception {
+        return tableClientQuery.asyncExecute();
+    }
+
+    /*
      * Execute internal.
      */
     public ObTableClientQueryStreamResult executeInternal() throws Exception {
         return tableClientQuery.executeInternal();
     }
 
-    /**
+    /*
+     * Async execute internal.
+     */
+    public ObTableClientQueryAsyncStreamResult asyncExecuteInternal() throws Exception {
+        return tableClientQuery.asyncExecuteInternal();
+    }
+
+    /*
      * Select.
      */
     @Override
@@ -74,7 +115,7 @@ public class ObClusterTableQuery extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * 只有 limit query 需要，其他不需要
      * @param keys
      * @return
@@ -84,7 +125,15 @@ public class ObClusterTableQuery extends AbstractTableQuery {
         throw new IllegalArgumentException("Not needed");
     }
 
-    /**
+    /*
+     * set row key into query (only used bt BatchOperation)
+     */
+    public TableQuery setRowKey(Row row) throws Exception {
+        tableClientQuery.setRowKey(row);
+        return this;
+    }
+
+    /*
      * Limit.
      */
     @Override
@@ -162,6 +211,11 @@ public class ObClusterTableQuery extends AbstractTableQuery {
     @Override
     public TableQuery setBatchSize(int batchSize) {
         return tableClientQuery.setBatchSize(batchSize);
+    }
+
+    @Override
+    public TableQuery setMaxResultSize(long maxResultSize) {
+        return tableClientQuery.setMaxResultSize(maxResultSize);
     }
 
     /**

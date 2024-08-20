@@ -17,7 +17,7 @@
 
 package com.alipay.oceanbase.rpc.location.model;
 
-/**
+/*
  * Idc->Region mapping defined in OCP.
  *
  */
@@ -26,28 +26,28 @@ public class OcpResponseDataIDC {
     private String idc;
     private String region;
 
-    /**
+    /*
      * Get idc.
      */
     public String getIdc() {
         return idc;
     }
 
-    /**
+    /*
      * Set idc.
      */
     public void setIdc(String idc) {
         this.idc = idc;
     }
 
-    /**
+    /*
      * Get region.
      */
     public String getRegion() {
         return region;
     }
 
-    /**
+    /*
      * Set region.
      */
     public void setRegion(String region) {

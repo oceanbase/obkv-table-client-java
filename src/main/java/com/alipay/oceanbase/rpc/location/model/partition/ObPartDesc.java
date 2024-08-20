@@ -18,14 +18,19 @@
 package com.alipay.oceanbase.rpc.location.model.partition;
 
 import com.alipay.oceanbase.rpc.exception.ObTablePartitionConsistentException;
+import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObColumn;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.util.StringUtil;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
+import com.alipay.oceanbase.rpc.mutation.Row;
 import org.slf4j.Logger;
 
 import java.util.*;
 
 import static com.alipay.oceanbase.rpc.constant.Constants.EMPTY_STRING;
+import static com.alipay.oceanbase.rpc.location.model.partition.ObPartitionKey.MAX_PARTITION_ELEMENT;
+import static com.alipay.oceanbase.rpc.location.model.partition.ObPartitionKey.MIN_PARTITION_ELEMENT;
 import static com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObSimpleColumn.DEFAULT_UTF8MB4_GENERAL_CI;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.LCD;
 import static java.util.Collections.*;
@@ -51,53 +56,60 @@ public abstract class ObPartDesc {
     @SuppressWarnings("unchecked")
     protected Map<String, Integer>                  rowKeyElement                       = EMPTY_MAP;
 
-    /**
+    /*
      * Get part func type.
      */
     public ObPartFuncType getPartFuncType() {
         return partFuncType;
     }
 
-    /**
+    /*
      * Set part func type.
      */
     public void setPartFuncType(ObPartFuncType partFuncType) {
         this.partFuncType = partFuncType;
     }
 
-    /**
+    /*
      * Get part expr.
      */
     public String getPartExpr() {
         return partExpr;
     }
 
-    /**
+    /*
      * Set part expr.
      */
     public void setPartExpr(String partExpr) {
         if (StringUtil.isBlank(partExpr)) {
             throw new IllegalArgumentException("ObKeyPartDesc part express is blank");
         }
-        this.partExpr = partExpr;
-        this.orderedPartColumnNames = unmodifiableList(Arrays.asList(partExpr.split(",")));
+        this.partExpr = partExpr.replace(" ", "");
+        this.orderedPartColumnNames = unmodifiableList(Arrays.asList(this.partExpr.split(",")));
     }
 
-    /**
+    /*
+     * Get part num
+     */
+    public int getPartNum() {
+        return -1;
+    }
+
+    /*
      * Get ordered part column names.
      */
     public List<String> getOrderedPartColumnNames() {
         return orderedPartColumnNames;
     }
 
-    /**
+    /*
      * Get part columns.
      */
     public List<ObColumn> getPartColumns() {
         return partColumns;
     }
 
-    /**
+    /*
      * Set part columns.
      */
     public void setPartColumns(List<ObColumn> partColumns) {
@@ -108,7 +120,7 @@ public abstract class ObPartDesc {
         return this.partNameIdMap;
     }
 
-    /**
+    /*
      * Set part name id map.
      */
     public void setPartNameIdMap(Map<String, Long> partNameIdMap) {
@@ -119,7 +131,7 @@ public abstract class ObPartDesc {
         return rowKeyElement;
     }
 
-    /**
+    /*
      * Set row key element.
      */
     public void setRowKeyElement(Map<String, Integer> rowKeyElement) {
@@ -132,8 +144,21 @@ public abstract class ObPartDesc {
         try {
             for (int i = 0; i < objects.size(); i++) {
                 ObColumn obColumn = obColumns.get(i);
-                comparableElement.add(obColumn.getObObjType().parseToComparable(objects.get(i),
-                    obColumn.getObCollationType()));
+                if (objects.get(i) instanceof ObObj) {
+                    // deal with min / max
+                    ObObj obj = (ObObj) objects.get(i);
+                    if (obj.isMinObj()) {
+                        comparableElement.add(MIN_PARTITION_ELEMENT);
+                    } else if (obj.isMaxObj()) {
+                        comparableElement.add(MAX_PARTITION_ELEMENT);
+                    } else {
+                        throw new IllegalArgumentException(String.format(
+                            "failed to cast obj, obj=%s, types=%s", objects, obColumns));
+                    }
+                } else {
+                    comparableElement.add(obColumn.getObObjType().parseToComparable(objects.get(i),
+                        obColumn.getObCollationType()));
+                }
             }
         } catch (Exception e) {
             logger.error(LCD.convert("01-00024"), objects, obColumns, e);
@@ -145,92 +170,72 @@ public abstract class ObPartDesc {
 
     //to prepare partition calculate resource
     //to check partition calculate is ready
-    public void prepare() throws IllegalArgumentException {
-        if (orderedPartColumnNames == EMPTY_LIST) {
-            throw new IllegalArgumentException(
-                "prepare ObPartDesc failed. orderedPartColumnNames is empty");
-        }
+    public void prepare() throws IllegalArgumentException { /* do nothing now */ }
 
-        if (rowKeyElement == null || rowKeyElement.size() == 0) {
-            throw new IllegalArgumentException("prepare ObPartDesc failed. rowKeyElement is empty");
-        }
-
-        if (partColumns == null || partColumns.size() == 0) {
-            throw new IllegalArgumentException("prepare ObPartDesc failed. partColumns is empty");
-        }
-        List<ObPair<ObColumn, List<Integer>>> orderPartRefColumnRowKeyRelations = new ArrayList<ObPair<ObColumn, List<Integer>>>(
-            orderedPartColumnNames.size());
-        for (String partOrderColumnName : orderedPartColumnNames) {
-            for (ObColumn column : partColumns) {
-                if (column.getColumnName().equalsIgnoreCase(partOrderColumnName)) {
-                    List<Integer> partRefColumnRowKeyIndexes = new ArrayList<Integer>(column
-                        .getRefColumnNames().size());
-                    for (String refColumn : column.getRefColumnNames()) {
-                        boolean rowKeyElementRefer = false;
-                        for (String rowKeyElementName : rowKeyElement.keySet()) {
-                            if (rowKeyElementName.equalsIgnoreCase(refColumn)) {
-                                partRefColumnRowKeyIndexes
-                                    .add(rowKeyElement.get(rowKeyElementName));
-                                rowKeyElementRefer = true;
-                            }
-                        }
-                        if (!rowKeyElementRefer) {
-                            throw new IllegalArgumentException("partition order column "
-                                                               + partOrderColumnName
-                                                               + " refer to non-row-key column "
-                                                               + refColumn);
-                        }
-                    }
-                    orderPartRefColumnRowKeyRelations.add(new ObPair<ObColumn, List<Integer>>(
-                        column, partRefColumnRowKeyIndexes));
-                }
-            }
-        }
-        this.orderedPartRefColumnRowKeyRelations = orderPartRefColumnRowKeyRelations;
-    }
-
-    /**
+    /*
      * Eval row key values.
      */
-    public List<Object> evalRowKeyValues(Object... rowKey) throws IllegalArgumentException {
-        int partRefColumnSize = orderedPartRefColumnRowKeyRelations.size();
-        List<Object> evalValues = new ArrayList<Object>(partRefColumnSize);
-        // column or generate column
-        for (int i = 0; i < partRefColumnSize; i++) {
-            ObPair<ObColumn, List<Integer>> orderedPartRefColumnRowKeyRelation = orderedPartRefColumnRowKeyRelations
-                .get(i);
+    public List<Object> evalRowKeyValues(Row row) throws IllegalArgumentException {
+        int partColumnSize = partColumns.size();
+        List<Object> evalValues = new ArrayList<Object>(partColumnSize);
+        Object[] rowValues = row.getValues();
+        String[] rowColumnNames = row.getColumns();
 
-            if (rowKey.length != rowKeyElement.size()) {
-                throw new IllegalArgumentException("row key is consist of " + rowKeyElement
-                                                   + "but found" + Arrays.toString(rowKey));
-            }
-            // row key is consists of multi column
-            List<Integer> refIndex = orderedPartRefColumnRowKeyRelation.getRight();
-            Object[] evalParams = new Object[refIndex.size()];
-            for (int j = 0; j < refIndex.size(); j++) {
-                //TODO where get the type of ref column ?
-                evalParams[j] = rowKey[refIndex.get(j)];
-            }
-            evalValues.add(orderedPartRefColumnRowKeyRelation.getLeft().evalValue(evalParams));
+        if (rowValues.length < partColumnSize) {
+            throw new IllegalArgumentException("Input row key should at least include " + partColumns
+                    + "but found" + Arrays.toString(rowValues));
         }
+
+
+        boolean needEval = true;
+
+        // column or generate column
+        for (int i = 0; i < partColumns.size(); ++i) {
+            ObColumn curObColumn = partColumns.get(i);
+                List<String> curObRefColumnNames = curObColumn.getRefColumnNames();
+                Object[] evalParams = new Object[curObRefColumnNames.size()];
+                for (int j = 0; j < curObRefColumnNames.size(); ++j) {
+                    for (int k = 0; k < rowColumnNames.length; ++k) {
+                        if (rowColumnNames[k].equalsIgnoreCase(curObRefColumnNames.get(j))) {
+                            if (curObRefColumnNames.size() == 1 && rowValues[k] instanceof ObObj) {
+                                ObObj obj = (ObObj) rowValues[k];
+                                if (obj.isMaxObj() || obj.isMinObj()) {
+                                    evalValues.add(obj);
+                                    needEval = false;
+                                    break;
+                                }
+                            }
+                            evalParams[j] = rowValues[k];
+                            break;
+                        }
+                    }
+                }
+                if (needEval) {
+                    evalValues.add(curObColumn.evalValue(evalParams));
+                }
+            }
+
         return evalValues;
     }
 
-    /**
+    /*
      *
      * @param start the start row key
      * @param startInclusive the start row key inclusive
      * @param end   the end row key
      * @param endInclusive the end row key inclusive
      */
-    public abstract List<Long> getPartIds(Object[] start, boolean startInclusive, Object[] end,
-                                          boolean endInclusive) throws IllegalArgumentException;
+    public abstract List<Long> getPartIds(Object startRowObj, boolean startInclusive,
+                                          Object endRowObj, boolean endInclusive)
+                                                                                 throws IllegalArgumentException;
 
-    public abstract Long getPartId(Object... rowKey) throws IllegalArgumentException;
+    public abstract Long getPartId(Object... row) throws IllegalArgumentException;
 
-    public abstract Long getPartId(List<Object[]> rowKeys, boolean consistency)
-                                                                               throws IllegalArgumentException,
-                                                                               ObTablePartitionConsistentException;
+    public abstract Long getPartId(List<Object> row, boolean consistency)
+                                                                         throws IllegalArgumentException,
+                                                                         ObTablePartitionConsistentException;
 
     public abstract Long getRandomPartId();
+
+    public abstract void setPartNum(int n);
 }

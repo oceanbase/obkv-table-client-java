@@ -26,12 +26,15 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
 import java.util.Arrays;
+import java.util.List;
 
 public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
 
     protected ObTableQuery tableQuery;
+    // TableEntry key
+    protected String       indexTableName;
 
-    /**
+    /*
      * Select.
      */
     @Override
@@ -40,7 +43,14 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
+     * get select columns' name
+     */
+    public List<String> getSelectColumns() {
+        return this.tableQuery.getSelectColumns();
+    }
+
+    /*
      * Limit.
      */
     @Override
@@ -50,7 +60,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * Limit.
      */
     @Override
@@ -60,7 +70,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * Add scan range.
      */
     @Override
@@ -85,7 +95,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * Add scan range starts with.
      */
     @Override
@@ -104,7 +114,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * Add scan range ends with.
      */
     @Override
@@ -123,7 +133,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * Scan order.
      */
     @Override
@@ -132,7 +142,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * Index name.
      */
     @Override
@@ -141,7 +151,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * Filter string.
      */
     @Override
@@ -150,7 +160,7 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * Set h table filter.
      */
     @Override
@@ -159,12 +169,26 @@ public abstract class AbstractTableQueryImpl extends AbstractTableQuery {
         return this;
     }
 
-    /**
+    /*
      * Set batch size.
      */
     @Override
     public TableQuery setBatchSize(int batchSize) {
         this.tableQuery.setBatchSize(batchSize);
         return this;
+    }
+
+    @Override
+    public TableQuery setMaxResultSize(long maxResultSize) {
+        this.tableQuery.setMaxResultSize(maxResultSize);
+        return this;
+    }
+
+    public String getIndexTableName() {
+        return indexTableName;
+    }
+
+    public void setIndexTableName(String indexTableName) {
+        this.indexTableName = indexTableName;
     }
 }

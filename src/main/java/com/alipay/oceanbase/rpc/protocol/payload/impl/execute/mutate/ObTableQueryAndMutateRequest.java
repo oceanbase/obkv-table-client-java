@@ -17,13 +17,14 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableAbstractOperationRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
-/**
+/*
  *
  OB_SERIALIZE_MEMBER(ObTableQueryAndMutateRequest,
      credential_,
@@ -38,7 +39,7 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
 
     private ObTableQueryAndMutate tableQueryAndMutate;
 
-    /**
+    /*
      * Get pcode.
      */
     @Override
@@ -46,7 +47,7 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
         return Pcodes.OB_TABLE_API_QUERY_AND_MUTATE;
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -68,7 +69,7 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -78,7 +79,10 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
         this.credential = Serialization.decodeBytesString(buf);
         this.tableName = Serialization.decodeVString(buf);
         this.tableId = Serialization.decodeVi64(buf);
-        this.partitionId = Serialization.decodeVi64(buf);
+        if (ObGlobal.obVsnMajor() >= 4)
+            this.partitionId = Serialization.decodeI64(buf);
+        else
+            this.partitionId = Serialization.decodeVi64(buf);
         this.entityType = ObTableEntityType.valueOf(buf.readByte());
 
         this.tableQueryAndMutate = new ObTableQueryAndMutate();
@@ -87,28 +91,49 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
     public long getPayloadContentSize() {
-        return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
-               + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId) + 1
-               + tableQueryAndMutate.getPayloadSize();
+        if (ObGlobal.obVsnMajor() >= 4)
+            return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
+                   + Serialization.getNeedBytes(tableId) + 8 + 1
+                   + tableQueryAndMutate.getPayloadSize();
+        else
+            return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
+                   + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId)
+                   + 1 + tableQueryAndMutate.getPayloadSize();
+
     }
 
-    /**
+    /*
      * Get table query and mutate.
      */
     public ObTableQueryAndMutate getTableQueryAndMutate() {
         return tableQueryAndMutate;
     }
 
-    /**
+    /*
      * Set table query and mutate.
      */
     public void setTableQueryAndMutate(ObTableQueryAndMutate tableQueryAndMutate) {
         this.tableQueryAndMutate = tableQueryAndMutate;
     }
 
+    /*
+     * Is returning affected entity.
+     */
+    @Override
+    public boolean isReturningAffectedEntity() {
+        return tableQueryAndMutate.isReturnAffectedEntity();
+    }
+
+    /*
+     * Set returning affected entity.
+     */
+    @Override
+    public void setReturningAffectedEntity(boolean returningAffectedEntity) {
+        tableQueryAndMutate.setReturnAffectedEntity(returningAffectedEntity);
+    }
 }

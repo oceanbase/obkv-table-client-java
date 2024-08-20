@@ -26,7 +26,6 @@ public class Crc64Util {
     /**
      * CRC-64-ECMA-182
      *
-     * @url http://en.wikipedia.org/wiki/Cyclic_redundancy_check
      * @url http://reveng.sourceforge.net/crc-catalogue/17plus.htm
      */
     static final long[] CRC64TABLE = new long[] { 0L, 121597189939003392L, 243194379878006784L,

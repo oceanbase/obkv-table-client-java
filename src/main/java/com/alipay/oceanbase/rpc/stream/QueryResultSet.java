@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.stream;
 
+import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.QueryStreamResult;
 
@@ -27,7 +28,7 @@ import java.util.Map;
 public class QueryResultSet {
     private final QueryStreamResult queryStreamResult;
 
-    /**
+    /*
      * Query result set.
      */
     public QueryResultSet(QueryStreamResult queryStreamResult) {
@@ -38,7 +39,7 @@ public class QueryResultSet {
         return queryStreamResult;
     }
 
-    /**
+    /*
      * Next.
      */
     public boolean next() throws Exception {
@@ -56,18 +57,24 @@ public class QueryResultSet {
         return rowValue;
     }
 
-    /**
+    /*
+     * get Row with Row result
+     */
+    public Row getResultRow() {
+        return new Row(getRow());
+    }
+
+    /*
      * Cache size.
      */
     public int cacheSize() {
         return queryStreamResult.getCacheRows().size();
     }
 
-    /**
+    /*
      * Close.
      */
     public void close() throws Exception {
         queryStreamResult.close();
     }
-
 }

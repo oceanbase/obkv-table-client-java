@@ -24,7 +24,7 @@ public class ReplicaLocation {
     private ObServerRole  role;
     private ObReplicaType replicaType;
 
-    /**
+    /*
      * Is valid.
      */
     public boolean isValid() {
@@ -32,91 +32,91 @@ public class ReplicaLocation {
                && (info.isActive());
     }
 
-    /**
+    /*
      * Get addr.
      */
     public ObServerAddr getAddr() {
         return addr;
     }
 
-    /**
+    /*
      * Set addr.
      */
     public void setAddr(ObServerAddr addr) {
         this.addr = addr;
     }
 
-    /**
+    /*
      * Get role.
      */
     public ObServerRole getRole() {
         return role;
     }
 
-    /**
+    /*
      * Set role.
      */
     public void setRole(ObServerRole role) {
         this.role = role;
     }
 
-    /**
+    /*
      * Is leader.
      */
     public boolean isLeader() {
         return ObServerRole.LEADER.equals(role);
     }
 
-    /**
+    /*
      * Get info.
      */
     public ObServerInfo getInfo() {
         return info;
     }
 
-    /**
+    /*
      * Set info.
      */
     public void setInfo(ObServerInfo info) {
         this.info = info;
     }
 
-    /**
+    /*
      * Get replicaType.
      */
     public ObReplicaType getReplicaType() {
         return replicaType;
     }
 
-    /**
+    /*
      * Set replicaType.
      */
     public void setReplicaType(ObReplicaType replicaType) {
         this.replicaType = replicaType;
     }
 
-    /**
+    /*
      * The replica is readable.
      */
     public boolean isReadable() {
         return replicaType.isReadable();
     }
 
-    /**
+    /*
      * The replica is readonly.
      */
     public boolean isReadonly() {
         return replicaType.isReadonly();
     }
 
-    /**
+    /*
      * Get Ip of the replica.
      */
     public String getIp() {
         return addr.getIp();
     }
 
-    /**
+    /*
      * To string.
      */
     @Override

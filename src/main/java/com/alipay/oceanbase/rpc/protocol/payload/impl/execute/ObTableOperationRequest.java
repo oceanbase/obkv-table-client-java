@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
@@ -41,7 +42,7 @@ public class ObTableOperationRequest extends ObTableAbstractOperationRequest {
 
     private ObTableOperation tableOperation;
 
-    /**
+    /*
      * Get pcode.
      */
     @Override
@@ -49,7 +50,7 @@ public class ObTableOperationRequest extends ObTableAbstractOperationRequest {
         return Pcodes.OB_TABLE_API_EXECUTE;
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -70,8 +71,7 @@ public class ObTableOperationRequest extends ObTableAbstractOperationRequest {
         idx += len;
         System.arraycopy(Serialization.encodeI8(consistencyLevel.getByteValue()), 0, bytes, idx, 1);
         idx++;
-        System.arraycopy(Serialization.encodeI8(returningRowKey ? (byte) 1 : (byte) 0), 0, bytes,
-            idx, 1);
+        System.arraycopy(Serialization.encodeI8(option_flag.getByteValue()), 0, bytes, idx, 1);
         idx++;
         System.arraycopy(Serialization.encodeI8(returningAffectedEntity ? (byte) 1 : (byte) 0), 0,
             bytes, idx, 1);
@@ -82,7 +82,7 @@ public class ObTableOperationRequest extends ObTableAbstractOperationRequest {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -92,7 +92,10 @@ public class ObTableOperationRequest extends ObTableAbstractOperationRequest {
         this.credential = Serialization.decodeBytesString(buf);
         this.tableName = Serialization.decodeVString(buf);
         this.tableId = Serialization.decodeVi64(buf);
-        this.partitionId = Serialization.decodeVi64(buf);
+        if (ObGlobal.obVsnMajor() >= 4)
+            this.partitionId = Serialization.decodeI64(buf);
+        else
+            this.partitionId = Serialization.decodeVi64(buf);
         this.entityType = ObTableEntityType.valueOf(buf.readByte());
         this.tableOperation = new ObTableOperation();
         if (ObTableEntityType.DYNAMIC.equals(this.entityType)) {
@@ -103,14 +106,14 @@ public class ObTableOperationRequest extends ObTableAbstractOperationRequest {
         this.tableOperation.decode(buf);
 
         this.consistencyLevel = ObTableConsistencyLevel.valueOf(buf.readByte());
-        this.returningRowKey = Serialization.decodeI8(buf) != 0;
+        this.option_flag = ObTableOptionFlag.valueOf(buf.readByte());
         this.returningAffectedEntity = Serialization.decodeI8(buf) != 0;
         this.returningAffectedRows = Serialization.decodeI8(buf) != 0;
 
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -118,21 +121,21 @@ public class ObTableOperationRequest extends ObTableAbstractOperationRequest {
         return super.getPayloadContentSize() + tableOperation.getPayloadSize();
     }
 
-    /**
+    /*
      * Get table operation.
      */
     public ObTableOperation getTableOperation() {
         return tableOperation;
     }
 
-    /**
+    /*
      * Set table operation.
      */
     public void setTableOperation(ObTableOperation tableOperation) {
         this.tableOperation = tableOperation;
     }
 
-    /**
+    /*
      * Get instance.
      */
     public static ObTableOperationRequest getInstance(String tableName, //
@@ -144,8 +147,7 @@ public class ObTableOperationRequest extends ObTableAbstractOperationRequest {
 
         ObTableOperationRequest request = new ObTableOperationRequest();
         request.setTableName(tableName);
-        // us
-        request.setTimeout(timeout * 1000);
+        request.setTimeout(timeout);
         request.setReturningAffectedRows(true); // TODO 可以设置参数，如果不用的话提高性能
         ObTableOperation obTableOperation = ObTableOperation.getInstance(type, rowKeys, columns,
             properties);

@@ -18,7 +18,7 @@
 package com.alipay.oceanbase.rpc.util.hash;
 
 public class ObUnicaseInfo {
-    /**
+    /*
      * Ob unicase info.
      */
     public ObUnicaseInfo(int maxchar, ObUnicaseInfoChar[][] page) {

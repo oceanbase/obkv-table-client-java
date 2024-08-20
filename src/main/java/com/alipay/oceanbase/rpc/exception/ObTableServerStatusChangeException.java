@@ -19,48 +19,48 @@ package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableServerStatusChangeException extends ObTableException {
 
-    /**
+    /*
      * Ob table server status change exception.
      */
     public ObTableServerStatusChangeException() {
     }
 
-    /**
+    /*
      * Ob table server status change exception.
      */
     public ObTableServerStatusChangeException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table server status change exception.
      */
     public ObTableServerStatusChangeException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table server status change exception.
      */
     public ObTableServerStatusChangeException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table server status change exception.
      */
     public ObTableServerStatusChangeException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table server status change exception.
      */
     public ObTableServerStatusChangeException(Throwable cause) {
         super(cause);
     }
 
-    /**
+    /*
      * Is need refresh table entry.
      */
     public boolean isNeedRefreshTableEntry() {

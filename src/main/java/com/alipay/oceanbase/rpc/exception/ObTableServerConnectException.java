@@ -19,48 +19,48 @@ package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableServerConnectException extends ObTableException {
 
-    /**
+    /*
      * Ob table server connect exception.
      */
     public ObTableServerConnectException() {
     }
 
-    /**
+    /*
      * Ob table server connect exception.
      */
     public ObTableServerConnectException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table server connect exception.
      */
     public ObTableServerConnectException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table server connect exception.
      */
     public ObTableServerConnectException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table server connect exception.
      */
     public ObTableServerConnectException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table server connect exception.
      */
     public ObTableServerConnectException(Throwable cause) {
         super(cause);
     }
 
-    /**
+    /*
      * Is need refresh table entry.
      */
     public boolean isNeedRefreshTableEntry() {

@@ -30,7 +30,7 @@ public class ObTableStreamRequest extends AbstractPayload {
     private long  sessionId;
     private short flag = 0x7; // let ObServer determine the ob log level.
 
-    /**
+    /*
      * Get pcode.
      */
     @Override
@@ -38,7 +38,7 @@ public class ObTableStreamRequest extends AbstractPayload {
         return Pcodes.OB_TABLE_API_EXECUTE_QUERY;
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -52,7 +52,7 @@ public class ObTableStreamRequest extends AbstractPayload {
         return bytes;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -60,7 +60,7 @@ public class ObTableStreamRequest extends AbstractPayload {
         return 0;
     }
 
-    /**
+    /*
      * Set stream next.
      */
     public void setStreamNext() {
@@ -68,7 +68,7 @@ public class ObTableStreamRequest extends AbstractPayload {
         flag |= STREAM_FLAG;
     }
 
-    /**
+    /*
      * Set stream last.
      */
     public void setStreamLast() {
@@ -76,28 +76,28 @@ public class ObTableStreamRequest extends AbstractPayload {
         flag |= STREAM_FLAG;
     }
 
-    /**
+    /*
      * Set timeout.
      */
     public void setTimeout(long timeout) {
         this.timeout = timeout;
     }
 
-    /**
+    /*
      * Get session id.
      */
     public long getSessionId() {
         return sessionId;
     }
 
-    /**
+    /*
      * Set session id.
      */
     public void setSessionId(long sessionId) {
         this.sessionId = sessionId;
     }
 
-    /**
+    /*
      * Get flag.
      */
     public short getFlag() {

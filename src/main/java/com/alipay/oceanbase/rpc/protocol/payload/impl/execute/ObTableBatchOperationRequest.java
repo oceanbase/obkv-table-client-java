@@ -17,11 +17,12 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
-/**
+/*
  *
 OB_SERIALIZE_MEMBER(ObTableBatchOperationRequest,
         credential_,
@@ -43,7 +44,7 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
     private ObTableBatchOperation batchOperation;
     private boolean               batchOperationAsAtomic = false;
 
-    /**
+    /*
      * Get pcode.
      */
     @Override
@@ -51,7 +52,7 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
         return Pcodes.OB_TABLE_API_BATCH_EXECUTE;
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -75,8 +76,7 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
         idx += len;
         System.arraycopy(Serialization.encodeI8(consistencyLevel.getByteValue()), 0, bytes, idx, 1);
         idx++;
-        System.arraycopy(Serialization.encodeI8(returningRowKey ? (byte) 1 : (byte) 0), 0, bytes,
-            idx, 1);
+        System.arraycopy(Serialization.encodeI8(option_flag.getByteValue()), 0, bytes, idx, 1);
         idx++;
         System.arraycopy(Serialization.encodeI8(returningAffectedEntity ? (byte) 1 : (byte) 0), 0,
             bytes, idx, 1);
@@ -84,17 +84,22 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
         System.arraycopy(Serialization.encodeI8(returningAffectedRows ? (byte) 1 : (byte) 0), 0,
             bytes, idx, 1);
         idx++;
-        len = Serialization.getNeedBytes(partitionId);
-        System.arraycopy(Serialization.encodeVi64(partitionId), 0, bytes, idx, len);
+        if (ObGlobal.obVsnMajor() >= 4) {
+            System.arraycopy(Serialization.encodeI64(partitionId), 0, bytes, idx, 8);
+            idx += 8;
+        } else {
+            len = Serialization.getNeedBytes(partitionId);
+            System.arraycopy(Serialization.encodeVi64(partitionId), 0, bytes, idx, len);
+            idx += len;
+        }
 
-        idx += len;
         System.arraycopy(Serialization.encodeI8(batchOperationAsAtomic ? (byte) 1 : (byte) 0), 0,
             bytes, idx, 1);
 
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -109,16 +114,19 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
         this.batchOperation.decode(buf);
 
         this.consistencyLevel = ObTableConsistencyLevel.valueOf(buf.readByte());
-        this.returningRowKey = Serialization.decodeI8(buf) != 0;
+        this.option_flag = ObTableOptionFlag.valueOf(buf.readByte());
         this.returningAffectedEntity = Serialization.decodeI8(buf) != 0;
         this.returningAffectedRows = Serialization.decodeI8(buf) != 0;
-        this.partitionId = Serialization.decodeVi64(buf);
+        if (ObGlobal.obVsnMajor() >= 4)
+            this.partitionId = Serialization.decodeI64(buf);
+        else
+            this.partitionId = Serialization.decodeVi64(buf);
         this.batchOperationAsAtomic = Serialization.decodeI8(buf) != 0;
 
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -126,31 +134,39 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
         return super.getPayloadContentSize() + batchOperation.getPayloadSize() + 1;
     }
 
-    /**
+    /*
      * Get batch operation.
      */
     public ObTableBatchOperation getBatchOperation() {
         return batchOperation;
     }
 
-    /**
+    /*
      * Set batch operation.
      */
     public void setBatchOperation(ObTableBatchOperation batchOperation) {
         this.batchOperation = batchOperation;
     }
 
-    /**
+    /*
      * Whether BatchOperation As Atomic.
      */
     public boolean isBatchOperationAsAtomic() {
         return batchOperationAsAtomic;
     }
 
-    /**
+    /*
      * Set BatchOperation As Atomic.
      */
     public void setBatchOperationAsAtomic(boolean batchOperationAsAtomic) {
         this.batchOperationAsAtomic = batchOperationAsAtomic;
+    }
+
+    public void setBatchOpReturnOneResult(boolean returnOneResult) {
+        if (returnOneResult == true) {
+            this.option_flag.setReturnOneResult(true);
+        } else {
+            this.option_flag.setReturnOneResult(false);
+        }
     }
 }

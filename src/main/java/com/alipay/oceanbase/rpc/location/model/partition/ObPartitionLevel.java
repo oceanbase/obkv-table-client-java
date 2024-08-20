@@ -31,7 +31,7 @@ public enum ObPartitionLevel {
         this.index = index;
     }
 
-    /**
+    /*
      * Value of.
      */
     public static ObPartitionLevel valueOf(long index) {
@@ -47,14 +47,14 @@ public enum ObPartitionLevel {
         }
     }
 
-    /**
+    /*
      * Get index.
      */
     public long getIndex() {
         return index;
     }
 
-    /**
+    /*
      * Get name.
      */
     public String getName() {

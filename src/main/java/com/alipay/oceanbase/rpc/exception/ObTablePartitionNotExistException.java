@@ -18,41 +18,41 @@
 package com.alipay.oceanbase.rpc.exception;
 
 public class ObTablePartitionNotExistException extends ObTablePartitionLocationRefreshException {
-    /**
+    /*
      * Ob table partition not exist exception.
      */
     public ObTablePartitionNotExistException() {
     }
 
-    /**
+    /*
      * Ob table partition not exist exception.
      */
     public ObTablePartitionNotExistException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table partition not exist exception.
      */
     public ObTablePartitionNotExistException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table partition not exist exception.
      */
     public ObTablePartitionNotExistException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table partition not exist exception.
      */
     public ObTablePartitionNotExistException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table partition not exist exception.
      */
     public ObTablePartitionNotExistException(Throwable cause) {

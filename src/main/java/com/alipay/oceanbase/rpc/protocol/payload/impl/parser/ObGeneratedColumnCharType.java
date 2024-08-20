@@ -34,14 +34,14 @@ public class ObGeneratedColumnCharType {
         }
     }
 
-    /**
+    /*
      * Is hex.
      */
     public static boolean isHex(char c) {
         return c < 256 && hexFlags[c];
     }
 
-    /**
+    /*
      * Is digit.
      */
     public static boolean isDigit(char c) {
@@ -62,7 +62,7 @@ public class ObGeneratedColumnCharType {
         firstIdentifierFlags['$'] = true;
     }
 
-    /**
+    /*
      * Is first identifier char.
      */
     public static boolean isFirstIdentifierChar(char c) {
@@ -89,7 +89,7 @@ public class ObGeneratedColumnCharType {
         identifierFlags['#'] = true;
     }
 
-    /**
+    /*
      * Is identifier char.
      */
     public static boolean isIdentifierChar(char c) {
@@ -113,7 +113,7 @@ public class ObGeneratedColumnCharType {
         whitespaceFlags[160] = true; // 特别处理
     }
 
-    /**
+    /*
      * @return false if {@link LayoutCharacters#EOI}
      */
     public static boolean isWhitespace(char c) {

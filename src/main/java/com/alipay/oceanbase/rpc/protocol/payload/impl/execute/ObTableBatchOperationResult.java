@@ -32,7 +32,7 @@ public class ObTableBatchOperationResult extends AbstractPayload {
 
     private List<ObTableOperationResult> results = new ArrayList<ObTableOperationResult>();
 
-    /**
+    /*
      * Get pcode.
      */
     @Override
@@ -40,7 +40,7 @@ public class ObTableBatchOperationResult extends AbstractPayload {
         return Pcodes.OB_TABLE_API_BATCH_EXECUTE;
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -69,7 +69,7 @@ public class ObTableBatchOperationResult extends AbstractPayload {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -89,7 +89,7 @@ public class ObTableBatchOperationResult extends AbstractPayload {
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -103,32 +103,31 @@ public class ObTableBatchOperationResult extends AbstractPayload {
         return payloadContentSize;
     }
 
-    /**
+    /*
      * Get results.
      */
     public List<ObTableOperationResult> getResults() {
         return results;
     }
 
-    /**
+    /*
      * Set results.
      */
     public void setResults(List<ObTableOperationResult> results) {
         this.results = results;
     }
 
-    /**
+    /*
      * Add result.
      */
     public void addResult(ObTableOperationResult result) {
         this.results.add(result);
     }
 
-    /**
+    /*
      * Add all results.
      */
     public void addAllResults(List<ObTableOperationResult> results) {
         this.results.addAll(results);
     }
-
 }

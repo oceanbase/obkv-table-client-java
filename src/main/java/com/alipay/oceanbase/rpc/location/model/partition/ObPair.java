@@ -21,7 +21,7 @@ public class ObPair<L, R> {
     private final L left;
     private final R right;
 
-    /**
+    /*
      * Ob pair.
      */
     public ObPair(L left, R right) {
@@ -29,14 +29,14 @@ public class ObPair<L, R> {
         this.right = right;
     }
 
-    /**
+    /*
      * Get left.
      */
     public L getLeft() {
         return left;
     }
 
-    /**
+    /*
      * Get right.
      */
     public R getRight() {

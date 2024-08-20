@@ -35,7 +35,7 @@ public class ObGeneratedColumnLexer {
     private int                            bufPos;
     protected String                       stringVal;
 
-    /**
+    /*
      * Ob generated column lexer.
      */
     public ObGeneratedColumnLexer(String text) {
@@ -137,7 +137,7 @@ public class ObGeneratedColumnLexer {
         }
     }
 
-    /**
+    /*
      * Scan identifier.
      */
     public void scanIdentifier() {
@@ -169,7 +169,7 @@ public class ObGeneratedColumnLexer {
         token = IDENTIFIER;
     }
 
-    /**
+    /*
      * Scan hexa decimal.
      */
     public void scanHexaDecimal() {
@@ -192,7 +192,7 @@ public class ObGeneratedColumnLexer {
         token = LITERAL_HEX;
     }
 
-    /**
+    /*
      * Scan number.
      */
     public void scanNumber() {
@@ -276,7 +276,7 @@ public class ObGeneratedColumnLexer {
         }
     }
 
-    /**
+    /*
      * Is e o f.
      */
     public boolean isEOF() {
@@ -302,7 +302,7 @@ public class ObGeneratedColumnLexer {
         }
     }
 
-    /**
+    /*
      * Integer value.
      */
     public Number integerValue() {
@@ -356,21 +356,21 @@ public class ObGeneratedColumnLexer {
         }
     }
 
-    /**
+    /*
      * Token.
      */
     public ObGeneratedColumnSimpleToken token() {
         return token;
     }
 
-    /**
+    /*
      * String val.
      */
     public String stringVal() {
         return stringVal;
     }
 
-    /**
+    /*
      * Pos.
      */
     public int pos() {

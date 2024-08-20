@@ -17,24 +17,19 @@
 
 package com.alipay.oceanbase.rpc.util;
 
+import java.util.ArrayList;
+
 /**
  * binary bytes string without charset
- *
  */
 public class ObBytesString implements Comparable<ObBytesString> {
 
     public byte[] bytes;
 
-    /**
-     * Ob bytes string.
-     */
     public ObBytesString() {
         this.bytes = new byte[0];
     }
 
-    /**
-     * Ob bytes string.
-     */
     public ObBytesString(byte[] bytes) {
         if (bytes == null) {
             throw new IllegalArgumentException("ObBytesString bytes can not be null ");
@@ -42,9 +37,6 @@ public class ObBytesString implements Comparable<ObBytesString> {
         this.bytes = bytes;
     }
 
-    /**
-     * Ob bytes string.
-     */
     public ObBytesString(String str) {
         if (str == null) {
             throw new IllegalArgumentException("ObBytesString str can not be null ");
@@ -53,7 +45,8 @@ public class ObBytesString implements Comparable<ObBytesString> {
     }
 
     /**
-     * Length.
+     * Get length
+     * @return length
      */
     public int length() {
         return bytes.length;
@@ -61,6 +54,8 @@ public class ObBytesString implements Comparable<ObBytesString> {
 
     /**
      * Equals.
+     * @param o object
+     * @return equal or not
      */
     @Override
     public boolean equals(Object o) {
@@ -73,7 +68,9 @@ public class ObBytesString implements Comparable<ObBytesString> {
     }
 
     /**
-     * Compare to.
+     * Compare
+     * @param another byte string
+     * @return integer greater than, equal to, or less than 0
      */
     @Override
     public int compareTo(ObBytesString another) {
@@ -94,5 +91,26 @@ public class ObBytesString implements Comparable<ObBytesString> {
             k++;
         }
         return len1 - len2;
+    }
+
+    public ObBytesString[] split(byte delim) {
+        ArrayList<ObBytesString> list = new ArrayList<>();
+        int start = 0;
+        for (int i = 0; i < bytes.length; ++i) {
+            if (bytes[i] == delim) {
+                byte[] data = new byte[i - start];
+                System.arraycopy(bytes, start, data, 0, data.length);
+                ObBytesString str = new ObBytesString(data);
+                list.add(str);
+                start = i + 1;
+            }
+        }
+        if (start < bytes.length) {
+            byte[] data = new byte[bytes.length - start];
+            System.arraycopy(bytes, start, data, 0, data.length);
+            ObBytesString str = new ObBytesString(data);
+            list.add(str);
+        }
+        return list.toArray(new ObBytesString[0]);
     }
 }

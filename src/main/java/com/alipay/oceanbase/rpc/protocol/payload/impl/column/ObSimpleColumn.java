@@ -40,7 +40,7 @@ public class ObSimpleColumn extends ObColumn {
                                                           ObObjType.ObVarcharType,
                                                           ObCollationType.CS_TYPE_BINARY);
 
-    /**
+    /*
      * Ob simple column.
      */
     public ObSimpleColumn(String columnName, int index, ObObjType obObjType,
@@ -49,7 +49,7 @@ public class ObSimpleColumn extends ObColumn {
             null);
     }
 
-    /**
+    /*
      * Eval value.
      */
     @Override

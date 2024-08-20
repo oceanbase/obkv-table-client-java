@@ -19,41 +19,41 @@ package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableCloseException extends ObTableException {
 
-    /**
+    /*
      * Ob table close exception.
      */
     public ObTableCloseException() {
     }
 
-    /**
+    /*
      * Ob table close exception.
      */
     public ObTableCloseException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table close exception.
      */
     public ObTableCloseException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table close exception.
      */
     public ObTableCloseException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table close exception.
      */
     public ObTableCloseException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table close exception.
      */
     public ObTableCloseException(Throwable cause) {

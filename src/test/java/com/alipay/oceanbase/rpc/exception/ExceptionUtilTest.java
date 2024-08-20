@@ -30,15 +30,15 @@ public class ExceptionUtilTest {
     @Test
     public void testThrowException() {
         try {
-            ExceptionUtil.throwObTableException("0.0.0.0", 0, 0L, 0L, -4001);
+            ExceptionUtil.throwObTableException("0.0.0.0", 0, 0L, 0L, -4001, "");
         } catch (ObTableException e) {
             Assert.assertTrue(e.getMessage().contains("OB_OBJ_TYPE_ERROR"));
         }
 
         try {
-            ExceptionUtil.throwObTableException("0.0.0.0", 0, 0L, 0L, -9013);
+            ExceptionUtil.throwObTableException("0.0.0.0", 0, 0L, 0L, -9013, "");
         } catch (ObTableException e) {
-            Assert.assertTrue(e instanceof ObTableUnexpectedException);
+            Assert.assertTrue(e instanceof ObTableException);
             Assert.assertTrue(e.getMessage().contains("OB_OSS_WRITE_ERROR"));
         }
 
@@ -57,7 +57,8 @@ public class ExceptionUtilTest {
 
         // convertToObTableException
         try {
-            ExceptionUtil.convertToObTableException("0.0.0.0", 0, 0L, 0L, OB_OSS_WRITE_ERROR);
+            ExceptionUtil.convertToObTableException("0.0.0.0", 0, 0L, 0L,
+                OB_OSS_WRITE_ERROR.errorCode, "");
         } catch (ObTableException e) {
             Assert.assertTrue(e instanceof ObTableUnexpectedException);
             Assert.assertTrue(e.getMessage().contains("OB_OSS_WRITE_ERROR"));
@@ -73,7 +74,7 @@ public class ExceptionUtilTest {
         };
         for (ResultCodes c : resultCodes) {
             try {
-                ExceptionUtil.throwObTableException("0.0.0.0", 0, 0L, 0L, c.errorCode);
+                ExceptionUtil.throwObTableException("0.0.0.0", 0, 0L, 0L, c.errorCode, "");
             } catch (ObTableException e) {
                 Assert.assertFalse(e instanceof ObTableUnexpectedException);
                 Assert.assertTrue(e instanceof ObTableException);

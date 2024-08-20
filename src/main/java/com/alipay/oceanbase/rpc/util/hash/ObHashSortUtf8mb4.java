@@ -30,6 +30,7 @@ public final class ObHashSortUtf8mb4 {
     public static final int             OB_CS_STRNXFRM              = 64;                        // if strnxfrm ictx.start used for sort
     public static final int             OB_CS_UNICODE               = 128;                       // ictx.start a charset ictx.start BMP Unicode
     public static final int             OB_CS_UNICODE_SUPPLEMENT    = 16384;                     // Non-BMP Unicode characters
+    public static final int             OB_HASH_BUFFER_LENGTH       = 128;                       // Utf8mb4 hash buffer length
 
     public static ObUnicaseInfoChar[]   plane00                     = {
             new ObUnicaseInfoChar(0x0000, 0x0000, 0x0000),
@@ -2899,22 +2900,21 @@ public final class ObHashSortUtf8mb4 {
                                                                       | OB_CS_UNICODE
                                                                       | OB_CS_UNICODE_SUPPLEMENT;
 
-    /**
+    /*
      * A continuation byte in UTF-8 is any byte where the top two bits are 10.
-     **/
+     */
     private static boolean isContinuationByte(byte c) {
         return ((c & 0xC0) == 0x80);
     }
 
-    /**
+    /*
      * Whether the buffer has enough bytes remaining.
      */
     private static boolean enoughBytesRemaining(ObMbContext ctx, int n) {
         return (ctx.end >= ctx.start + n);
     }
 
-    /**
-     * Please refer to : https://en.wikipedia.org/wiki/UTF-8
+    /*
      * The following table shows how the Unicode code points map to UTF-8 multi-byte byte sequences,
      * and their equivalent binary values.
      * <p>
@@ -2926,8 +2926,8 @@ public final class ObHashSortUtf8mb4 {
      * U+010000-U+10FFFF    000zzzzz yyyyyyyy xxxxxxxx    11110zzz 10zzyyyy 10yyyyxx 10xxxxxx
      * <p>
      * The basic rules are as follows:
-     * （1） If a byte starts with a 0 bit, it's a single byte value less than 128.
-     * （2） If it starts with 11, it's the first byte of a multi-byte sequence
+     * (1) If a byte starts with a 0 bit, it's a single byte value less than 128.
+     * (2) If it starts with 11, it's the first byte of a multi-byte sequence
      * and the number of 1 bits at the start indicates how many bytes there are in total,
      * eg., 110xxxxx has two bytes, 1110xxxx has three and 11110xxx has four.
      * (3) If it starts with 10, it's a continuation byte.
@@ -3021,37 +3021,66 @@ public final class ObHashSortUtf8mb4 {
         ctx.n2 += 3;
     }
 
-    /**
+    /*
      * Ob hash sort utf8 mb4.
      */
-    public static long obHashSortUtf8Mb4(byte[] s, int len, long n1, long n2) {
+    public static long obHashSortUtf8Mb4(byte[] s, int len, long n1, long n2, boolean hash_algo) {
         ObMbContext ctx = new ObMbContext();
         ctx.buf = s;
         ctx.n1 = n1;
         ctx.n2 = n2;
         ctx.start = 0;
         ctx.end = len;
+        ctx.hashBuf = new byte[OB_HASH_BUFFER_LENGTH];
+        ctx.len = 0;
         ObUnicaseInfo uniPlane = obUnicaseDefault;
         while (ctx.end > ctx.start && ctx.buf[ctx.end - 1] == ' ') {
             ctx.end--;
         }
 
-        int res;
-        while ((res = obMbWcUtf8Mb4(ctx)) > 0) {
-            obTosortUnicode(uniPlane, ctx, state);
-            obHashAdd(ctx, (int) (ctx.pwc & 0xFF));
-            obHashAdd(ctx, (int) (ctx.pwc >> 8) & 0xFF);
-            if (ctx.pwc > 0xFFFF) {
-                obHashAdd(ctx, (int) (ctx.pwc >> 16) & 0xFF);
+        if (hash_algo) {
+            int res;
+            while ((res = obMbWcUtf8Mb4(ctx)) > 0) {
+                obTosortUnicode(uniPlane, ctx, state);
+                if (ctx.len > OB_HASH_BUFFER_LENGTH - 2
+                    || (OB_HASH_BUFFER_LENGTH - 2 == ctx.len && ctx.pwc > 0xFFFF)) {
+                    ctx.n1 = MurmurHash.hash64a(ctx.hashBuf, ctx.len, ctx.n1);
+                    ctx.len = 0;
+                }
+
+                ctx.hashBuf[ctx.len] = (byte) (ctx.pwc & 0xFF);
+                ctx.len += 1;
+                ctx.hashBuf[ctx.len] = (byte) ((ctx.pwc >> 8) & 0xFF);
+                ctx.len += 1;
+                if (ctx.pwc > 0xFFFF) {
+                    ctx.hashBuf[ctx.len] = (byte) ((ctx.pwc >> 16) & 0xFF);
+                    ctx.len += 1;
+                }
+
+                ctx.start += res;
             }
-            ctx.start += res;
+            if (ctx.len > 0) {
+                ctx.n1 = MurmurHash.hash64a(ctx.hashBuf, ctx.len, ctx.n1);
+                ctx.len = 0;
+            }
+        } else {
+            int res;
+            while ((res = obMbWcUtf8Mb4(ctx)) > 0) {
+                obTosortUnicode(uniPlane, ctx, state);
+                obHashAdd(ctx, (int) (ctx.pwc & 0xFF));
+                obHashAdd(ctx, (int) (ctx.pwc >> 8) & 0xFF);
+                if (ctx.pwc > 0xFFFF) {
+                    obHashAdd(ctx, (int) (ctx.pwc >> 16) & 0xFF);
+                }
+                ctx.start += res;
+            }
         }
 
         return ctx.n1;
     }
 
-    /**
-     * Ob hash sort mb bin.
+    /*
+     * Ob hash sort mb bin. Used by observer2.x
      */
     public static long obHashSortMbBin(byte[] s, int len, long n1, long n2) {
         // skip_trailing_space

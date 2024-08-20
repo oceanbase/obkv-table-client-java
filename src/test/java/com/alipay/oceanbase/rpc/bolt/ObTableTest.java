@@ -22,21 +22,36 @@ import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class ObTableTest extends ObTableClientTestBase {
     private ObTable obTable;
+
+    @BeforeClass
+    static public void beforeTest() throws Exception {
+        ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
+        obTableClient.init();
+
+        assertFalse(obTableClient.isOdpMode());
+    }
 
     @Before
     public void setup() throws Exception {
         ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
         obTableClient.init();
-        obTable = obTableClient.getTable("test_varchar_table", new Object[] { "abc" }, true, true)
-            .getRight();
-        client = obTable;
+
+        if (obTableClient.isOdpMode()) {
+            obTableClient.close();
+            throw new ObTableException("ODP Mode does not support this test");
+        } else {
+            obTable = obTableClient
+                .getTable("test_varchar_table", new Object[] { "abc" }, true, true).getRight()
+                .getObTable();
+            client = obTable;
+        }
     }
 
     @Test

@@ -31,7 +31,7 @@ public class ObTableOperationResult extends AbstractPayload {
     private String               executeHost;
     private int                  executePort;
 
-    /**
+    /*
      * Get pcode.
      */
     @Override
@@ -39,7 +39,7 @@ public class ObTableOperationResult extends AbstractPayload {
         return Pcodes.OB_TABLE_API_EXECUTE;
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -73,7 +73,7 @@ public class ObTableOperationResult extends AbstractPayload {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -87,7 +87,7 @@ public class ObTableOperationResult extends AbstractPayload {
         // 2. decode itself
         this.operationType = ObTableOperationType.valueOf(Serialization.decodeI8(buf.readByte()));
 
-        // 3. decode Entity TODO 需要check一下errno
+        // 3. decode Entity
         this.entity.decode(buf);
 
         // 4. decode affected rows
@@ -96,93 +96,93 @@ public class ObTableOperationResult extends AbstractPayload {
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
     public long getPayloadContentSize() {
-        return 1 + header.getPayloadSize() + entity.getPayloadSize()
-               + Serialization.getNeedBytes(affectedRows);
+        return header.getPayloadSize() + entity.getPayloadSize()
+               + Serialization.getNeedBytes(affectedRows) + 1; // operation type
     }
 
-    /**
+    /*
      * Get header.
      */
     public ObTableResult getHeader() {
         return header;
     }
 
-    /**
+    /*
      * Set header.
      */
     public void setHeader(ObTableResult header) {
         this.header = header;
     }
 
-    /**
+    /*
      * Get operation type.
      */
     public ObTableOperationType getOperationType() {
         return operationType;
     }
 
-    /**
+    /*
      * Set operation type.
      */
     public void setOperationType(ObTableOperationType operationType) {
         this.operationType = operationType;
     }
 
-    /**
+    /*
      * Get entity.
      */
     public ObITableEntity getEntity() {
         return entity;
     }
 
-    /**
+    /*
      * Set entity.
      */
     public void setEntity(ObITableEntity entity) {
         this.entity = entity;
     }
 
-    /**
+    /*
      * Get affected rows.
      */
     public long getAffectedRows() {
         return affectedRows;
     }
 
-    /**
+    /*
      * Set affected rows.
      */
     public void setAffectedRows(long affectedRows) {
         this.affectedRows = affectedRows;
     }
 
-    /**
+    /*
      * Get execute host.
      */
     public String getExecuteHost() {
         return executeHost;
     }
 
-    /**
+    /*
      * Set execute host.
      */
     public void setExecuteHost(String executeHost) {
         this.executeHost = executeHost;
     }
 
-    /**
+    /*
      * Get execute port.
      */
     public int getExecutePort() {
         return executePort;
     }
 
-    /**
+    /*
      * Set execute port.
      */
     public void setExecutePort(int executePort) {

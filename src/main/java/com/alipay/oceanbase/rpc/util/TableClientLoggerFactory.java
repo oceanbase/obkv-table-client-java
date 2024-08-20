@@ -18,21 +18,44 @@
 package com.alipay.oceanbase.rpc.util;
 
 import com.alipay.sofa.common.code.LogCode2Description;
+import com.alipay.sofa.common.log.MultiAppLoggerSpaceManager;
+import com.alipay.sofa.common.log.adapter.level.AdapterLevel;
 import org.slf4j.Logger;
-import com.alipay.sofa.common.log.LoggerSpaceManager;
+import org.slf4j.helpers.NOPLogger;
+
+import java.util.Map;
 
 public class TableClientLoggerFactory {
 
     public static final String        OCEANBASE_TABLE_CLIENT_LOGGER_SPACE = "oceanbase-table-client";
+    public static final String        OCEANBASE_TABLE_CLIENT_BOOT         = "OBKV-BOOT";
+    public static final String        OCEANBASE_TABLE_CLIENT_MONITOR      = "OBKV-MONITOR";
+    public static final String        OCEANBASE_TABLE_CLIENT_RUNTIME      = "OBKV-RUNTIME";
     public static LogCode2Description LCD                                 = LogCode2Description
                                                                               .create(OCEANBASE_TABLE_CLIENT_LOGGER_SPACE);
+
+    public static Logger              BOOT                                = NOPLogger.NOP_LOGGER;
+    public static Logger              MONITOR                             = NOPLogger.NOP_LOGGER;
+    public static Logger              RUNTIME                             = NOPLogger.NOP_LOGGER;
+
+    static {
+        BOOT = getBootLogger();
+        MONITOR = getMonitorLogger();
+        RUNTIME = getRUNTIMELogger();
+    }
 
     public static Logger getLogger(String name) {
         if (name == null || name.isEmpty()) {
             return null;
         }
 
-        return LoggerSpaceManager.getLoggerBySpace(name, OCEANBASE_TABLE_CLIENT_LOGGER_SPACE);
+        if (!MultiAppLoggerSpaceManager.isSpaceInitialized(OCEANBASE_TABLE_CLIENT_LOGGER_SPACE)) {
+            //initLogger();
+            MultiAppLoggerSpaceManager.init(OCEANBASE_TABLE_CLIENT_LOGGER_SPACE, null);
+        }
+
+        return MultiAppLoggerSpaceManager.getLoggerBySpace(name,
+            OCEANBASE_TABLE_CLIENT_LOGGER_SPACE);
     }
 
     public static Logger getLogger(Class<?> klass) {
@@ -41,5 +64,40 @@ public class TableClientLoggerFactory {
         }
 
         return getLogger(klass.getCanonicalName());
+    }
+
+    public static Logger getBootLogger() {
+        if (BOOT == NOPLogger.NOP_LOGGER) {
+            BOOT = new WrappedLogger(getLogger(OCEANBASE_TABLE_CLIENT_BOOT));
+        }
+
+        return BOOT;
+    }
+
+    public static Logger getMonitorLogger() {
+        if (MONITOR == NOPLogger.NOP_LOGGER) {
+            MONITOR = new WrappedLogger(getLogger(OCEANBASE_TABLE_CLIENT_MONITOR));
+        }
+
+        return MONITOR;
+    }
+
+    public static Logger getRUNTIMELogger() {
+        if (RUNTIME == NOPLogger.NOP_LOGGER) {
+            RUNTIME = new WrappedLogger(getLogger(OCEANBASE_TABLE_CLIENT_RUNTIME));
+        }
+
+        return RUNTIME;
+    }
+
+    public static void changeLevel(Map<String, String> levelMap) {
+        for (Map.Entry<String, String> entry : levelMap.entrySet()) {
+            changeLevel(entry.getKey(), entry.getValue());
+        }
+    }
+
+    public static void changeLevel(String name, String level) {
+        MultiAppLoggerSpaceManager.setLoggerLevel(name, OCEANBASE_TABLE_CLIENT_LOGGER_SPACE,
+            AdapterLevel.getAdapterLevel(level));
     }
 }

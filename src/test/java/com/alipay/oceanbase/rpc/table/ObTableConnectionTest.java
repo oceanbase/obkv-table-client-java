@@ -48,22 +48,50 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
 
     @Test
     public void testVarcharConcurrent() throws Exception {
-        test_varchar_helper_thread("T101", 100);
-        test_varchar_helper_thread("T102", 100);
-        test_varchar_helper_thread("T103", 100);
+        // todo: only support in 3.x currently
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(ObTableClientTestUtil.obVsn4000)) {
+            return;
+        }
+
+        obTableClient = ObTableClientTestUtil.newTestClient();
+        obTableClient.setMetadataRefreshInterval(100);
+        obTableClient.addProperty(Property.SERVER_CONNECTION_POOL_SIZE.getKey(),
+            Integer.toString(TEST_CONNECTION_POOL_SIZE));
+        obTableClient.init();
+        syncRefreshMetaHelper(obTableClient);
+
+        test_varchar_helper_thread(obTableClient, "T101", 100);
+        test_varchar_helper_thread(obTableClient, "T102", 100);
+        test_varchar_helper_thread(obTableClient, "T103", 100);
     }
 
     @Test
     public void testConnectionPoolSize() throws Exception {
-        ObPair<Long, ObTable> obPair = obTableClient.getTable("test_varchar_table",
-            new String[] { "abc" }, false, false);
-        int poolSize = obPair.getRight().getObTableConnectionPoolSize();
-        assertEquals(TEST_CONNECTION_POOL_SIZE, poolSize);
+        // todo: only support in 3.x currently
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(ObTableClientTestUtil.obVsn4000)) {
+            return;
+        }
+
+        if (obTableClient.isOdpMode()) {
+            assertEquals(TEST_CONNECTION_POOL_SIZE, obTableClient.getOdpTable()
+                .getObTableConnectionPoolSize());
+        } else {
+            ObPair<Long, ObTableParam> obPair = obTableClient.getTable("test_varchar_table",
+                new String[] { "abc" }, false, false);
+            int poolSize = obPair.getRight().getObTable().getObTableConnectionPoolSize();
+            assertEquals(TEST_CONNECTION_POOL_SIZE, poolSize);
+        }
     }
 
     @Test
     public void testWatermarkSetting() throws Exception {
+        // todo: only support in 3.x currently
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(ObTableClientTestUtil.obVsn4000)) {
+            return;
+        }
+
         ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
+
         obTableClient.addProperty(Property.NETTY_BUFFER_LOW_WATERMARK.getKey(),
             Integer.toString(TEST_NETTY_LOW_WATERMARK));
         obTableClient.addProperty(Property.NETTY_BUFFER_HIGH_WATERMARK.getKey(),
@@ -72,27 +100,45 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
             Integer.toString(TEST_NETTY_WAIT_INTERVAL));
         obTableClient.init();
 
-        ObPair<Long, ObTable> obPair = obTableClient.getTable("test_varchar_table",
-            new String[] { "abc" }, false, false);
-        int lowWatermark = obPair.getRight().getNettyBufferLowWatermark();
-        int highWatermark = obPair.getRight().getNettyBufferHighWatermark();
-        int waitInterval = obPair.getRight().getNettyBlockingWaitInterval();
+        if (obTableClient.isOdpMode()) {
+            assertEquals(TEST_NETTY_LOW_WATERMARK, obTableClient.getOdpTable()
+                .getNettyBufferLowWatermark());
+            assertEquals(TEST_NETTY_HIGH_WATERMARK, obTableClient.getOdpTable()
+                .getNettyBufferHighWatermark());
+            assertEquals(TEST_NETTY_WAIT_INTERVAL, obTableClient.getOdpTable()
+                .getNettyBlockingWaitInterval());
+        } else {
+            ObPair<Long, ObTableParam> obPair = obTableClient.getTable("test_varchar_table",
+                new String[] { "abc" }, false, false);
+            int lowWatermark = obPair.getRight().getObTable().getNettyBufferLowWatermark();
+            int highWatermark = obPair.getRight().getObTable().getNettyBufferHighWatermark();
+            int waitInterval = obPair.getRight().getObTable().getNettyBlockingWaitInterval();
 
-        assertEquals(TEST_NETTY_LOW_WATERMARK, lowWatermark);
-        assertEquals(TEST_NETTY_HIGH_WATERMARK, highWatermark);
-        assertEquals(TEST_NETTY_WAIT_INTERVAL, waitInterval);
+            assertEquals(TEST_NETTY_LOW_WATERMARK, lowWatermark);
+            assertEquals(TEST_NETTY_HIGH_WATERMARK, highWatermark);
+            assertEquals(TEST_NETTY_WAIT_INTERVAL, waitInterval);
+        }
     }
 
     @Test
     public void testDefaultWatermark() throws Exception {
-        ObPair<Long, ObTable> obPair = obTableClient.getTable("test_varchar_table",
-            new String[] { "abc" }, false, false);
-        int lowWatermark = obPair.getRight().getNettyBufferLowWatermark();
-        int highWatermark = obPair.getRight().getNettyBufferHighWatermark();
-        int waitInterval = obPair.getRight().getNettyBlockingWaitInterval();
+        // todo: only support in 3.x currently
+        if (ObTableClientTestUtil.isOBVersionGreaterEqualThan(ObTableClientTestUtil.obVsn4000)) {
+            return;
+        }
 
-        assertEquals(Property.NETTY_BUFFER_LOW_WATERMARK.getDefaultInt(), lowWatermark);
-        assertEquals(Property.NETTY_BUFFER_HIGH_WATERMARK.getDefaultInt(), highWatermark);
-        assertEquals(Property.NETTY_BLOCKING_WAIT_INTERVAL.getDefaultInt(), waitInterval);
+        if (obTableClient.isOdpMode()) {
+            // do nothing
+        } else {
+            ObPair<Long, ObTableParam> obPair = obTableClient.getTable("test_varchar_table",
+                new String[] { "abc" }, false, false);
+            int lowWatermark = obPair.getRight().getObTable().getNettyBufferLowWatermark();
+            int highWatermark = obPair.getRight().getObTable().getNettyBufferHighWatermark();
+            int waitInterval = obPair.getRight().getObTable().getNettyBlockingWaitInterval();
+
+            assertEquals(Property.NETTY_BUFFER_LOW_WATERMARK.getDefaultInt(), lowWatermark);
+            assertEquals(Property.NETTY_BUFFER_HIGH_WATERMARK.getDefaultInt(), highWatermark);
+            assertEquals(Property.NETTY_BLOCKING_WAIT_INTERVAL.getDefaultInt(), waitInterval);
+        }
     }
 }

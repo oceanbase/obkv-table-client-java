@@ -30,7 +30,7 @@ public class SecureIdentityLoginModule {
 
     private static byte[] ENC_KEY_BYTES_PROD = "gQzLk5tTcGYlQ47GG29xQxfbHIURCheJ".getBytes();
 
-    /**
+    /*
      * Decode.
      */
     public static String decode(String secret) throws NoSuchPaddingException,
@@ -39,7 +39,7 @@ public class SecureIdentityLoginModule {
         return decode(null, secret);
     }
 
-    /**
+    /*
      * Decode.
      */
     public static String decode(String encKey, String secret) throws NoSuchPaddingException,

@@ -43,7 +43,7 @@ public enum ObReplicaType {
     private String name;
     private int    index;
 
-    /**
+    /*
      * Constructor.
      *
      * @param name
@@ -54,7 +54,7 @@ public enum ObReplicaType {
         this.index = index;
     }
 
-    /**
+    /*
      * Get ReplicaType by idx.
      *
      * @param idx
@@ -72,21 +72,21 @@ public enum ObReplicaType {
         }
     }
 
-    /**
+    /*
      * whether the replica is readable.
      */
     public boolean isReadable() {
         return this.index == REPLICA_TYPE_FULL.index || this.index == REPLICA_TYPE_READONLY.index;
     }
 
-    /**
+    /*
      * whether the replica is readonly.
      */
     public boolean isReadonly() {
         return this.index == REPLICA_TYPE_READONLY.index;
     }
 
-    /**
+    /*
      * To string.
      */
     @Override

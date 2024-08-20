@@ -35,7 +35,7 @@ public class ServerRoster {
 
     private AtomicReference<ObServerLdcLocation> serverLdc   = new AtomicReference<ObServerLdcLocation>();
 
-    /**
+    /*
      * Reset.
      */
     public void reset(List<ObServerAddr> members) {
@@ -43,14 +43,14 @@ public class ServerRoster {
         this.roster.set(members);
     }
 
-    /**
+    /*
      * Reset Server LDC.
      */
     public void resetServerLdc(ObServerLdcLocation serverLdc) {
         this.serverLdc.set(serverLdc);
     }
 
-    /**
+    /*
      * Upgrade max priority.
      */
     public void upgradeMaxPriority(long priority) {
@@ -67,7 +67,7 @@ public class ServerRoster {
         resetMaxPriority();
     }
 
-    /**
+    /*
      * Downgrade max priority.
      */
     public void downgradeMaxPriority(long priority) {
@@ -77,7 +77,7 @@ public class ServerRoster {
         resetMaxPriority();
     }
 
-    /**
+    /*
      * Reset max priority.
      */
     public void resetMaxPriority() {
@@ -94,28 +94,32 @@ public class ServerRoster {
 
     }
 
-    /**
+    /*
      * Get max priority.
      */
     public int getMaxPriority() {
         return maxPriority.get();
     }
 
-    /**
+    /*
      * Get members.
      */
     public List<ObServerAddr> getMembers() {
         return roster.get();
     }
 
-    /**
+    public AtomicReference<List<ObServerAddr>> getRoster() {
+        return roster;
+    }
+
+    /*
      * Get ServerLdcLocation.
      */
     public ObServerLdcLocation getServerLdcLocation() {
         return serverLdc.get();
     }
 
-    /**
+    /*
      * Choose a server by random.
      *
      * @param priorityTimeout
@@ -140,7 +144,7 @@ public class ServerRoster {
         return addr;
     }
 
-    /**
+    /*
      * Reset priority and upgrade priority.
      *
      * @param addr
@@ -156,7 +160,7 @@ public class ServerRoster {
         }
     }
 
-    /**
+    /*
      * Down grade priority and reorder the servers.
      *
      * @param addr
@@ -169,7 +173,7 @@ public class ServerRoster {
 
     }
 
-    /**
+    /*
      * To String.
      */
     @Override

@@ -23,9 +23,7 @@ import java.util.regex.Pattern;
 /**
  * NamePattern: patternPrefix_{from1-to1}_{from2-to2}_patternSuffix
  *
- *  <p>
  *  user_{00-15}_suffix, user_{00-15}_{00-11}_suffix
- *  <p>
  *
  */
 public class NamePattern {
@@ -49,9 +47,6 @@ public class NamePattern {
 
     private boolean             hasTwoColumn        = false;
 
-    /**
-     * Name pattern.
-     */
     public NamePattern(String patternString) {
         this.patternString = patternString;
         String regex = "\\{\\d+-\\d+\\}";
@@ -110,6 +105,8 @@ public class NamePattern {
 
     /**
      * Wrap value.
+     * @param value value
+     * @return replace
      */
     public String wrapValue(int value) {
         int firstValue = value;
@@ -119,8 +116,7 @@ public class NamePattern {
             secondValue = value % valueRangeSecond;
         }
 
-        // 技术上没必要控制得如此严格
-        // 但是为了统一 DB 层库表分布的元数据，需要控制一下
+        // 统一 DB 层库表分布的元数据
         if (value < minValue || value > maxValue) {
             throw new IllegalArgumentException("NamePattern value out of bound. value: " + value
                                                + ", minValue: " + minValue + ", maxValue: "
@@ -139,6 +135,7 @@ public class NamePattern {
 
     /**
      * Get min value.
+     * @return min value
      */
     public int getMinValue() {
         return minValue;
@@ -146,6 +143,7 @@ public class NamePattern {
 
     /**
      * Get max value.
+     * @return max value
      */
     public int getMaxValue() {
         return maxValue;
@@ -153,6 +151,7 @@ public class NamePattern {
 
     /**
      * Get size.
+     * @return size
      */
     public int getSize() {
         return maxValue - minValue + 1;

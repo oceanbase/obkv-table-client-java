@@ -37,7 +37,7 @@ public enum ObGeneratedColumnFuncName {
         }
     }
 
-    /**
+    /*
      * Func to token.
      */
     public static ObGeneratedColumnFuncName funcToToken(String func) {

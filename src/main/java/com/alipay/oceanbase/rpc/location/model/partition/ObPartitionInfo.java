@@ -26,63 +26,65 @@ import java.util.Map;
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class ObPartitionInfo {
-    private ObPartitionLevel     level         = ObPartitionLevel.UNKNOWN;
-    private ObPartDesc           firstPartDesc = null;
-    private ObPartDesc           subPartDesc   = null;
-    private List<ObColumn>       partColumns   = new ArrayList<ObColumn>(1);
-    private Map<String, Long>    partNameIdMap = null;
-    private Map<String, Integer> rowKeyElement = null;
+    private ObPartitionLevel     level           = ObPartitionLevel.UNKNOWN;
+    private ObPartDesc           firstPartDesc   = null;
+    private ObPartDesc           subPartDesc     = null;
+    private List<ObColumn>       partColumns     = new ArrayList<ObColumn>(1);
+    // mapping from part id to tablet id, and the tablet id to ls id mapping is in ObPartitionInfo
+    private Map<Long, Long>      partTabletIdMap = null;
+    private Map<String, Long>    partNameIdMap   = null;
+    private Map<String, Integer> rowKeyElement   = null;
 
-    /**
+    /*
      * Get level.
      */
     public ObPartitionLevel getLevel() {
         return level;
     }
 
-    /**
+    /*
      * Set level.
      */
     public void setLevel(ObPartitionLevel level) {
         this.level = level;
     }
 
-    /**
+    /*
      * Get first part desc.
      */
     public ObPartDesc getFirstPartDesc() {
         return firstPartDesc;
     }
 
-    /**
+    /*
      * Set first part desc.
      */
     public void setFirstPartDesc(ObPartDesc firstPartDesc) {
         this.firstPartDesc = firstPartDesc;
     }
 
-    /**
+    /*
      * Get sub part desc.
      */
     public ObPartDesc getSubPartDesc() {
         return subPartDesc;
     }
 
-    /**
+    /*
      * Set sub part desc.
      */
     public void setSubPartDesc(ObPartDesc subPartDesc) {
         this.subPartDesc = subPartDesc;
     }
 
-    /**
+    /*
      * Get part columns.
      */
     public List<ObColumn> getPartColumns() {
         return partColumns;
     }
 
-    /**
+    /*
      * Add column.
      */
     public void addColumn(ObColumn column) {
@@ -93,7 +95,7 @@ public class ObPartitionInfo {
         return rowKeyElement;
     }
 
-    /**
+    /*
      * Set row key element.
      */
     public void setRowKeyElement(Map<String, Integer> rowKeyElement) {
@@ -106,7 +108,7 @@ public class ObPartitionInfo {
         }
     }
 
-    /**
+    /*
      * Prepare.
      */
     public void prepare() throws IllegalArgumentException {
@@ -126,7 +128,7 @@ public class ObPartitionInfo {
         }
     }
 
-    /**
+    /*
      * To string.
      */
     @Override
@@ -144,10 +146,21 @@ public class ObPartitionInfo {
         return this.partNameIdMap;
     }
 
-    /**
+    /*
      * Set part name id map.
      */
     public void setPartNameIdMap(Map<String, Long> partNameIdMap) {
         this.partNameIdMap = partNameIdMap;
+    }
+
+    public Map<Long, Long> getPartTabletIdMap() {
+        return this.partTabletIdMap;
+    }
+
+    /*
+     * Set part tablet id map.
+     */
+    public void setPartTabletIdMap(Map<Long, Long> partTabletIdMap) {
+        this.partTabletIdMap = partTabletIdMap;
     }
 }

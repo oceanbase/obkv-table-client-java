@@ -33,7 +33,14 @@ import java.net.InetSocketAddress;
 
 public class ObPacketFactory implements CommandFactory {
 
-    /**
+    boolean reRouting;
+
+    // construct ObPacketFactory
+    public ObPacketFactory(boolean reRouting) {
+        this.reRouting = reRouting;
+    }
+
+    /*
      * Create request command.
      */
     @Override
@@ -61,12 +68,17 @@ public class ObPacketFactory implements CommandFactory {
         // 2. assemble rpc packet header
         ObRpcPacketHeader rpcHeaderPacket = new ObRpcPacketHeader();
         rpcHeaderPacket.setPcode(payload.getPcode());
+        // flag
+        if (reRouting) {
+            rpcHeaderPacket.enableRerouting();
+        }
         // us
         rpcHeaderPacket.setTimeout(payload.getTimeout() * 1000);
         rpcHeaderPacket.setTenantId(payload.getTenantId());
+        rpcHeaderPacket.setPrvTenantId(payload.getTenantId());
         // trace
-        rpcHeaderPacket.setTraceId0(payload.getSequence());
-        rpcHeaderPacket.setTraceId1(payload.getUniqueId());
+        rpcHeaderPacket.setTraceId0(payload.getUniqueId());
+        rpcHeaderPacket.setTraceId1(payload.getSequence());
 
         if (payload instanceof ObTableStreamRequest) {
             rpcHeaderPacket.setSessionId(((ObTableStreamRequest) payload).getSessionId());
@@ -84,7 +96,7 @@ public class ObPacketFactory implements CommandFactory {
         return rpcPacket.encode();
     }
 
-    /**
+    /*
      * Create timeout response.
      */
     @Override
@@ -93,7 +105,7 @@ public class ObPacketFactory implements CommandFactory {
             "connection {" + address.toString() + "} timeout", null);
     }
 
-    /**
+    /*
      * Create send failed response.
      */
     @Override
@@ -102,7 +114,7 @@ public class ObPacketFactory implements CommandFactory {
             "connection {" + address.toString() + "} send failed", throwable);
     }
 
-    /**
+    /*
      * TODO tell client this connection has been closed
      */
     // TODO for server processor
@@ -111,7 +123,7 @@ public class ObPacketFactory implements CommandFactory {
         return null;
     }
 
-    /**
+    /*
      * Create exception response.
      */
     @Override
@@ -119,7 +131,7 @@ public class ObPacketFactory implements CommandFactory {
         return null;
     }
 
-    /**
+    /*
      * Create exception response.
      */
     @Override
@@ -127,7 +139,7 @@ public class ObPacketFactory implements CommandFactory {
         return null;
     }
 
-    /**
+    /*
      * Create response.
      */
     @Override
@@ -135,7 +147,7 @@ public class ObPacketFactory implements CommandFactory {
         return null;
     }
 
-    /**
+    /*
      * Create exception response.
      */
     @Override
@@ -143,7 +155,7 @@ public class ObPacketFactory implements CommandFactory {
         return null;
     }
 
-    /**
+    /*
      * Create connection closed response.
      */
     @Override

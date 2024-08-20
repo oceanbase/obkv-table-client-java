@@ -17,8 +17,7 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public enum ObTableOperationType {
 
@@ -26,10 +25,29 @@ public enum ObTableOperationType {
     INSERT_OR_UPDATE(4), // INSERT or UPDATE, columns not in arguments will remain unchanged
     REPLACE(5), // DELETE & INSERT, columns not in arguments will change to default value
     INCREMENT(6), // the column must be can be cast to long. if exist increase, else  insert
-    APPEND(7);// append column value
+    APPEND(7), // append column value
+    SCAN(8), // query
+    TTL(9), // observer internal type, not used by client
+    CHECK_AND_INSERT_UP(10), PUT(11), // override row
+    TRIGGER(12), // internal op type
+    INVALID(15);
 
     private int                                       value;
-    private static Map<Integer, ObTableOperationType> map = new HashMap<Integer, ObTableOperationType>();
+    private static Map<Integer, ObTableOperationType> map             = new HashMap<Integer, ObTableOperationType>();
+    private static final List<Boolean>                needEncodeQuery = Arrays.asList(false, // GET
+                                                                          false, // INSERT
+                                                                          false, // DEL
+                                                                          false, // UPDATE
+                                                                          false, // INSERT_OR_UPDATE
+                                                                          false, // REPLACE
+                                                                          false, // INCREMENT
+                                                                          false, // APPEND
+                                                                          false, // SCAN
+                                                                          false, // TTL
+                                                                          true, // CHECK_AND_INSERT_UP
+                                                                          false, // PUT
+                                                                          false // INVALID
+                                                                          );
 
     ObTableOperationType(int value) {
         this.value = value;
@@ -41,31 +59,35 @@ public enum ObTableOperationType {
         }
     }
 
-    /**
+    /*
      * Value of.
      */
     public static ObTableOperationType valueOf(int value) {
         return map.get(value);
     }
 
-    /**
+    /*
      * Get value.
      */
     public int getValue() {
         return value;
     }
 
-    /**
+    /*
      * Get byte value.
      */
     public byte getByteValue() {
         return (byte) value;
     }
 
-    /**
+    /*
      * Is readonly.
      */
     public boolean isReadonly() {
         return this.value == GET.value;
+    }
+
+    public static boolean needEncodeQuery(ObTableOperationType type) {
+        return needEncodeQuery.get(type.value);
     }
 }

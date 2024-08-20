@@ -61,7 +61,7 @@ public class ObTableOperationResultTest {
         assertEquals(123, deResult.getHeader().getErrno());
         assertEquals(new String("HY0001".getBytes()),
             new String(deResult.getHeader().getSqlState()));
-        assertEquals(new String("msg".getBytes()), new String(deResult.getHeader().getMsg()));
+        assertEquals(new String("ms".getBytes()), deResult.getHeader().getErrMsg());
         assertEquals(ObTableOperationType.GET, deResult.getOperationType());
         assertEquals(10000, deResult.getAffectedRows());
         ObITableEntity deEntity = deResult.getEntity();

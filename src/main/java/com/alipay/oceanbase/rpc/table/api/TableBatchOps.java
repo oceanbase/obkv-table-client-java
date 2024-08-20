@@ -32,6 +32,10 @@ public interface TableBatchOps {
 
     boolean isAtomicOperation();
 
+    void setReturnOneResult(boolean returnOneResult);
+
+    boolean isReturnOneResult();
+
     void setEntityType(ObTableEntityType entityType);
 
     ObTableEntityType getEntityType();
@@ -59,6 +63,10 @@ public interface TableBatchOps {
     void insertOrUpdate(Object rowkey, String[] columns, Object[] values);
 
     void insertOrUpdate(Object[] rowkeys, String[] columns, Object[] values);
+
+    void put(Object rowkey, String[] columns, Object[] values);
+
+    void put(Object[] rowkeys, String[] columns, Object[] values);
 
     /**
      * increment the value
@@ -101,6 +109,8 @@ public interface TableBatchOps {
     void append(Object[] rowkeys, String[] columns, Object[] values, boolean withResult);
 
     List<Object> execute() throws Exception;
+
+    List<Object> executeWithResult() throws Exception;
 
     void clear();
 

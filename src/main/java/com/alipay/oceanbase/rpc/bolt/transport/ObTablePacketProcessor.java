@@ -35,7 +35,7 @@ public class ObTablePacketProcessor implements RemotingProcessor<ObTablePacket> 
     private static final Logger logger = TableClientLoggerFactory
                                            .getLogger(ObTablePacketProcessor.class);
 
-    /**
+    /*
      * Process.
      */
     @Override
@@ -62,6 +62,7 @@ public class ObTablePacketProcessor implements RemotingProcessor<ObTablePacket> 
                     .warn("Cannot find InvokeFuture, maybe already timeout, id={}, from={} ",
                         msg.getId(),
                         RemotingUtil.parseRemoteAddress(ctx.getChannelContext().channel()));
+                msg.releaseByteBuf();
             }
         } finally {
             if (null != oldClassLoader) {
@@ -71,7 +72,7 @@ public class ObTablePacketProcessor implements RemotingProcessor<ObTablePacket> 
 
     }
 
-    /**
+    /*
      * Get executor.
      */
     @Override
@@ -79,7 +80,7 @@ public class ObTablePacketProcessor implements RemotingProcessor<ObTablePacket> 
         return null;
     }
 
-    /**
+    /*
      * Set executor.
      */
     @Override

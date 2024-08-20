@@ -17,14 +17,16 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.ObSimplePayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
-/**
+/*
  * int ObNewRange::serialize(char *buf, const int64_t buf_len, int64_t &pos) const
  * {
  * int ret = OB_SUCCESS;
@@ -50,8 +52,9 @@ public class ObNewRange implements ObSimplePayload {
     private ObBorderFlag borderFlag = new ObBorderFlag();
     private ObRowKey     startKey;
     private ObRowKey     endKey;
+    private long         flag       = 0L;
 
-    /**
+    /*
      * Ob new range.
      */
     public ObNewRange() {
@@ -59,7 +62,7 @@ public class ObNewRange implements ObSimplePayload {
         borderFlag.setInclusiveEnd();
     }
 
-    /**
+    /*
      * Encode.
      */
     @Override
@@ -95,10 +98,38 @@ public class ObNewRange implements ObSimplePayload {
             idx += objBytes.length;
         }
 
+        if (ObGlobal.obVsnMajor() >= 4) {
+            len = Serialization.getNeedBytes(flag);
+            System.arraycopy(Serialization.encodeVi64(flag), 0, bytes, idx, len);
+            idx += len;
+        }
+
         return bytes;
     }
 
-    /**
+    /*
+     * Encode.
+     */
+    @Override
+    public void encode(ObByteBuf buf) {
+        Serialization.encodeVi64(buf, tableId);
+        Serialization.encodeI8(buf, borderFlag.getValue());
+        long startKeyObjCount = startKey.getObjCount();
+        Serialization.encodeVi64(buf, startKeyObjCount);
+        for (int i = 0; i < startKeyObjCount; ++i) {
+            startKey.getObj(i).encode(buf);
+        }
+        long endKeyObjCount = endKey.getObjCount();
+        Serialization.encodeVi64(buf, endKeyObjCount);
+        for (int i = 0; i < endKeyObjCount; ++i) {
+            endKey.getObj(i).encode(buf);
+        }
+        if (ObGlobal.obVsnMajor() >= 4) {
+            Serialization.encodeVi64(buf, flag);
+        }
+    }
+
+    /*
      * Decode.
      */
     @Override
@@ -122,10 +153,14 @@ public class ObNewRange implements ObSimplePayload {
             this.endKey.addObj(obObj);
         }
 
+        if (ObGlobal.obVsnMajor() >= 4) {
+            this.flag = Serialization.decodeVi64(buf);
+        }
+
         return this;
     }
 
-    /**
+    /*
      * Get encoded size.
      */
     @Override
@@ -147,63 +182,87 @@ public class ObNewRange implements ObSimplePayload {
             encodedSize += obObj.getEncodedSize();
         }
 
+        if (ObGlobal.obVsnMajor() >= 4) {
+            encodedSize += Serialization.getNeedBytes(flag);
+        }
+
         return encodedSize;
     }
 
-    /**
+    /*
      * Get table id.
      */
     public long getTableId() {
         return tableId;
     }
 
-    /**
+    /*
      * Set table id.
      */
     public void setTableId(long tableId) {
         this.tableId = tableId;
     }
 
-    /**
+    /*
      * Get border flag.
      */
     public ObBorderFlag getBorderFlag() {
         return borderFlag;
     }
 
-    /**
+    /*
      * Set border flag.
      */
     public void setBorderFlag(ObBorderFlag borderFlag) {
         this.borderFlag = borderFlag;
     }
 
-    /**
+    /*
      * Get start key.
      */
     public ObRowKey getStartKey() {
         return startKey;
     }
 
-    /**
+    /*
      * Set start key.
      */
     public void setStartKey(ObRowKey startKey) {
         this.startKey = startKey;
     }
 
-    /**
+    /*
      * Get end key.
      */
     public ObRowKey getEndKey() {
         return endKey;
     }
 
-    /**
+    /*
      * Set end key.
      */
     public void setEndKey(ObRowKey endKey) {
         this.endKey = endKey;
+    }
+
+    /*
+     * get whole range.
+     */
+    public static ObNewRange getWholeRange() {
+        ObNewRange range = new ObNewRange();
+        range.startKey = ObRowKey.getInstance(ObObj.getMin());
+        range.endKey = ObRowKey.getInstance(ObObj.getMax());
+        range.borderFlag.unsetInclusiveStart();
+        range.borderFlag.unsetInclusiveEnd();
+        return range;
+    }
+
+    public long getFlag() {
+        return flag;
+    }
+
+    public void setFlag(long flag) {
+        this.flag = flag;
     }
 
 }

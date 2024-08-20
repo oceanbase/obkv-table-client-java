@@ -32,13 +32,13 @@ public class ObRpcResultCode extends AbstractPayload {
     private byte[]                      msg         = new byte[0];
     private List<ObRpcResultWarningMsg> warningMsgs = new ArrayList<ObRpcResultWarningMsg>();
 
-    /**
+    /*
      * Ob rpc result code.
      */
     public ObRpcResultCode() {
     }
 
-    /**
+    /*
      * Encode.
      */
     public byte[] encode() {
@@ -72,7 +72,7 @@ public class ObRpcResultCode extends AbstractPayload {
         return bytes;
     }
 
-    /**
+    /*
      * Decode.
      */
     @Override
@@ -95,7 +95,7 @@ public class ObRpcResultCode extends AbstractPayload {
         return this;
     }
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
@@ -110,42 +110,52 @@ public class ObRpcResultCode extends AbstractPayload {
         return size;
     }
 
-    /**
+    /*
      * Get rcode.
      */
     public int getRcode() {
         return rcode;
     }
 
-    /**
+    /*
      * Set rcode.
      */
     public void setRcode(int rcode) {
         this.rcode = rcode;
     }
 
-    /**
+    /*
      * Get msg.
      */
     public byte[] getMsg() {
         return msg;
     }
 
-    /**
+    /*
+     * Get error msg.
+     */
+    public String getErrMsg() {
+        if (msg != null && msg.length > 0) {
+            return new String(msg, 0, msg.length - 1);
+        }
+        return new String(msg);
+    }
+
+    /*
      * Set msg.
      */
     public void setMsg(byte[] msg) {
         this.msg = msg;
     }
 
-    /**
+    /*
      * Get warning msgs.
      */
     public List<ObRpcResultWarningMsg> getWarningMsgs() {
         return warningMsgs;
     }
 
-    /**
+    /*
      * Set warning msgs.
      */
     public void setWarningMsgs(List<ObRpcResultWarningMsg> warningMsgs) {

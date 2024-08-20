@@ -36,7 +36,7 @@ public class TimeUtils {
         return System.currentTimeMillis();
     }
 
-    /**
+    /*
      * Get current time us.
      */
     public static long getCurrentTimeUs() {
@@ -49,14 +49,14 @@ public class TimeUtils {
         return System.nanoTime() / 1000;
     }
 
-    /**
+    /*
      * Get nano time ns.
      */
     public static long getNanoTimeNs() {
         return System.nanoTime();
     }
 
-    /**
+    /*
      * Sleep.
      */
     public static void sleep(long timeMs) {
@@ -67,7 +67,7 @@ public class TimeUtils {
         }
     }
 
-    /**
+    /*
      * Format time us to date.
      */
     public static String formatTimeUsToDate(long timeUS) {
@@ -77,7 +77,7 @@ public class TimeUtils {
         return sdf.format(c.getTime());
     }
 
-    /**
+    /*
      * Format time ms to date.
      */
     public static String formatTimeMsToDate(long timeMS) {
@@ -87,7 +87,7 @@ public class TimeUtils {
         return sdf.format(c.getTime());
     }
 
-    /**
+    /*
      * Get time.
      */
     public static String getTime(String format) {
@@ -96,7 +96,7 @@ public class TimeUtils {
         return sdf.format(c.getTime());
     }
 
-    /**
+    /*
      * Str to timestamp.
      */
     public static Timestamp strToTimestamp(String str) {
@@ -117,7 +117,7 @@ public class TimeUtils {
         return ts;
     }
 
-    /**
+    /*
      * Str to date.
      */
     public static Date strToDate(String str) {

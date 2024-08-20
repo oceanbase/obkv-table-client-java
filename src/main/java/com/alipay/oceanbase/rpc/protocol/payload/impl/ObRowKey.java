@@ -31,42 +31,46 @@ public class ObRowKey {
 
     private List<ObObj> objs = new ArrayList<ObObj>();
 
-    /**
+    /*
      * Get obj count.
      */
     public long getObjCount() {
         return objs.size();
     }
 
-    /**
+    /*
      * Get objs.
      */
     public List<ObObj> getObjs() {
         return objs;
     }
 
-    /**
+    public void setObjs(List<ObObj> objs) {
+        this.objs = objs;
+    }
+
+    /*
      * Get obj.
      */
     public ObObj getObj(int idx) {
         return objs.get(idx);
     }
 
-    /**
+    /*
      * Set obj.
      */
     public void setObj(int idx, ObObj obObj) {
         objs.set(idx, obObj);
     }
 
-    /**
+    /*
      * Add obj.
      */
     public void addObj(ObObj obObj) {
         objs.add(obObj);
     }
 
-    /**
+    /*
      * Get instance.
      */
     public static ObRowKey getInstance(ObObj... values) {
@@ -78,7 +82,7 @@ public class ObRowKey {
         return rowKey;
     }
 
-    /**
+    /*
      * Get instance.
      */
     public static ObRowKey getInstance(Object... values) {
@@ -94,7 +98,7 @@ public class ObRowKey {
         return rowKey;
     }
 
-    /**
+    /*
      * Get instance.
      */
     public static ObRowKey getInstance(List<Object> values) {
@@ -110,7 +114,7 @@ public class ObRowKey {
         return rowKey;
     }
 
-    /**
+    /*
      * Equals.
      */
     @Override
@@ -123,11 +127,12 @@ public class ObRowKey {
         return Objects.equal(objs, obRowKey.objs);
     }
 
-    /**
+    /*
      * Hash code.
      */
     @Override
     public int hashCode() {
         return Objects.hashCode(objs);
     }
+
 }

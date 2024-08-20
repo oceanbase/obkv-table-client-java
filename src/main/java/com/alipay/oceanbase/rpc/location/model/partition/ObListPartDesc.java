@@ -17,7 +17,9 @@
 
 package com.alipay.oceanbase.rpc.location.model.partition;
 
+import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.exception.ObTablePartitionConsistentException;
+import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObColumn;
 import com.alipay.oceanbase.rpc.util.RandomUtil;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
@@ -25,6 +27,7 @@ import org.apache.commons.lang.builder.ToStringBuilder;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -37,28 +40,28 @@ public class ObListPartDesc extends ObPartDesc {
     private List<ObColumn>            orderCompareColumns = null;
     private Map<ObPartitionKey, Long> sets                = null;
 
-    /**
+    /*
      * Ob list part desc.
      */
     public ObListPartDesc() {
         this.setPartFuncType(ObPartFuncType.LIST);
     }
 
-    /**
+    /*
      * Get order compare columns.
      */
     public List<ObColumn> getOrderCompareColumns() {
         return this.orderCompareColumns;
     }
 
-    /**
+    /*
      * Set order compare columns.
      */
     public void setOrderCompareColumns(List<ObColumn> columns) {
         this.orderCompareColumns = columns;
     }
 
-    /**
+    /*
      * Set sets.
      */
     public void setSets(Map<ObPartitionKey, Long> sets) {
@@ -69,7 +72,7 @@ public class ObListPartDesc extends ObPartDesc {
         return this.sets;
     }
 
-    /**
+    /*
      * Get random part id.
      */
     @Override
@@ -81,7 +84,7 @@ public class ObListPartDesc extends ObPartDesc {
         return (Long) this.sets.values().toArray()[randomIndex];
     }
 
-    /**
+    /*
      * Prepare.
      */
     @Override
@@ -99,44 +102,41 @@ public class ObListPartDesc extends ObPartDesc {
         super.prepare();
     }
 
-    /**
+    /*
      * Get part ids.
      */
     @Override
-    public List<Long> getPartIds(Object[] start, boolean startInclusive, Object[] end,
+    public List<Long> getPartIds(Object startRowObj, boolean startInclusive, Object endRowObj,
                                  boolean endInclusive) {
-        List<Object[]> rowKeys = new ArrayList<Object[]>();
-        rowKeys.add(start);
-        rowKeys.add(end);
-        Long partId = getPartId(rowKeys, true);
-        List<Long> partIds = new ArrayList<Long>();
-        partIds.add(partId);
-        return partIds;
+        throw new IllegalArgumentException("getPartIds for List partition is not supported");
     }
-
-    /**
+    /*
      * Get part id.
      */
     @Override
-    public Long getPartId(Object... rowKey) {
-        List<Object[]> rowKeys = new ArrayList<Object[]>();
-        rowKeys.add(rowKey);
-        return getPartId(rowKeys, false);
+    public Long getPartId(Object... row) {
+        List<Object> rows = new ArrayList<Object>();
+        rows.addAll(Arrays.asList(row));
+        return getPartId(rows, false);
     }
 
-    /**
+    /*
      * Get part id.
      */
     @Override
-    public Long getPartId(List<Object[]> rowKeys, boolean consistency) {
-        if (rowKeys == null || rowKeys.size() == 0) {
-            throw new IllegalArgumentException("invalid row keys :" + rowKeys);
+    public Long getPartId(List<Object> rows, boolean consistency) {
+        if (rows == null || rows.size() == 0) {
+            throw new IllegalArgumentException("invalid row keys :" + rows);
         }
 
         try {
             Long partId = null;
-            for (Object[] rowKey : rowKeys) {
-                List<Object> currentRowKeyEvalValues = evalRowKeyValues(rowKey);
+            for (Object rowObj : rows) {
+                if (!(rowObj instanceof Row)) {
+                    throw new ObTableException("invalid format of rowObj: " + rowObj);
+                }
+                Row row = (Row) rowObj;
+                List<Object> currentRowKeyEvalValues = evalRowKeyValues(row);
                 List<Comparable> values = super.initComparableElementByTypes(
                     currentRowKeyEvalValues, this.orderCompareColumns);
 
@@ -152,7 +152,7 @@ public class ObListPartDesc extends ObPartDesc {
 
                 if (partId != currentPartId) {
                     throw new ObTablePartitionConsistentException(
-                        "across partition operation may cause consistent problem " + rowKeys);
+                        "across partition operation may cause consistent problem " + rows);
                 }
 
             }
@@ -165,7 +165,7 @@ public class ObListPartDesc extends ObPartDesc {
 
     }
 
-    /**
+    /*
      * To string.
      */
     @Override
@@ -173,5 +173,9 @@ public class ObListPartDesc extends ObPartDesc {
         return new ToStringBuilder(this).append("orderCompareColumns", this.orderCompareColumns)
             .append("sets", this.sets).append("partFuncType", this.getPartFuncType())
             .append("partExpr", this.getPartExpr()).toString();
+    }
+
+    @Override
+    public void setPartNum(int n) {
     }
 }

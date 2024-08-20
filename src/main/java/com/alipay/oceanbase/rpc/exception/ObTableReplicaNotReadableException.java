@@ -19,48 +19,48 @@ package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableReplicaNotReadableException extends ObTableException {
 
-    /**
+    /*
      * Ob replica not readable exception.
      */
     public ObTableReplicaNotReadableException() {
     }
 
-    /**
+    /*
      * Ob replica not readable exception.
      */
     public ObTableReplicaNotReadableException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob replica not readable exception.
      */
     public ObTableReplicaNotReadableException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob replica not readable exception.
      */
     public ObTableReplicaNotReadableException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob replica not readable exception.
      */
     public ObTableReplicaNotReadableException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob replica not readable exception.
      */
     public ObTableReplicaNotReadableException(Throwable cause) {
         super(cause);
     }
 
-    /**
+    /*
      * Is need refresh table entry.
      */
     public boolean isNeedRefreshTableEntry() {

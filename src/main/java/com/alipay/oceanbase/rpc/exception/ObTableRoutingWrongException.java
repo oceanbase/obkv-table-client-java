@@ -18,48 +18,48 @@
 package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableRoutingWrongException extends ObTableException {
-    /**
+    /*
      * Ob table routing wrong exception.
      */
     public ObTableRoutingWrongException() {
     }
 
-    /**
+    /*
      * Ob table routing wrong exception with error code.
      */
     public ObTableRoutingWrongException(int errorCode) {
         super(errorCode);
     }
 
-    /**
+    /*
      * Ob table routing wrong exception with message and error code.
      */
     public ObTableRoutingWrongException(String message, int errorCode) {
         super(message, errorCode);
     }
 
-    /**
+    /*
      * Ob table routing wrong exception with message.
      */
     public ObTableRoutingWrongException(String message) {
         super(message);
     }
 
-    /**
+    /*
      * Ob table routing wrong exception with message and cause.
      */
     public ObTableRoutingWrongException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
+    /*
      * Ob table routing wrong exception with cause.
      */
     public ObTableRoutingWrongException(Throwable cause) {
         super(cause);
     }
 
-    /**
+    /*
      * Is need refresh table entry.
      */
     public boolean isNeedRefreshTableEntry() {

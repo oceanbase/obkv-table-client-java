@@ -17,54 +17,37 @@
 
 package com.alipay.oceanbase.rpc.util;
 
-import java.io.UnsupportedEncodingException;
-
 public class ObVString {
     private String stringVal;
     private byte[] bytesVal;
     private byte[] encodeBytes;
 
-    /**
-     * Ob v string.
-     */
     public ObVString(String stringVal) {
         this.stringVal = stringVal;
         if (stringVal == null) {
             bytesVal = new byte[0];
         } else {
-            try {
-                bytesVal = stringVal.getBytes("UTF-8");
-            } catch (UnsupportedEncodingException e) {
-                throw new IllegalArgumentException("can not encode str to u");
-            }
+            bytesVal = Serialization.strToBytes(stringVal);
         }
-        this.encodeBytes = Serialization.encodeVString(stringVal);
+        this.encodeBytes = Serialization.encodeBytesString(new ObBytesString(bytesVal));
     }
 
     /**
      * Get encode need bytes.
+     * @return return length
      */
     public int getEncodeNeedBytes() {
         return encodeBytes.length;
     }
 
-    /**
-     * Get bytes val.
-     */
     public byte[] getBytesVal() {
         return bytesVal;
     }
 
-    /**
-     * Get encode bytes.
-     */
     public byte[] getEncodeBytes() {
         return encodeBytes;
     }
 
-    /**
-     * Get string val.
-     */
     public String getStringVal() {
         return stringVal;
     }

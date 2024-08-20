@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.Credentialable;
@@ -32,29 +33,25 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
     protected ObBytesString           credential;                                              // the credential returned when login. 登陆时返回的证书
     protected String                  tableName;                                               // table name. 待访问的表名
     protected long                    tableId                 = Constants.OB_INVALID_ID;       // table id. 如果知道表id，可以用于优化，如果不知道，设定为OB_INVALID_ID
-    protected long                    partitionId             = Constants.OB_INVALID_ID;       // Constants.OB_INVALID_ID; // partition id. 如果知道表分区id，可以用于优化，如果不知道，设定为OB_INVALID_ID
-    protected ObTableEntityType       entityType              = ObTableEntityType.DYNAMIC;     // entity type. 如果明确entity类型，可以用于优化，如果不知道，设定为ObTableEntityType::DYNAMIC
+    protected long                    partitionId             = Constants.INVALID_TABLET_ID;   // Constants.OB_INVALID_ID; // partition id / tabletId. 如果知道表分区id，可以用于优化，如果不知道，设定为OB_INVALID_ID
+    protected ObTableEntityType       entityType              = ObTableEntityType.KV     ;     // entity type. 如果明确entity类型，可以用于优化，如果不知道，设定为ObTableEntityType::DYNAMIC
     protected ObTableConsistencyLevel consistencyLevel        = ObTableConsistencyLevel.STRONG; // read consistency level. 读一致性，是否要强一致性等（必须读到刚写入的数据）. 目前只支持STRONG.
-    protected boolean                 returningRowKey         = false;
+    protected ObTableOptionFlag       option_flag             = ObTableOptionFlag.DEFAULT;
     protected boolean                 returningAffectedEntity = false;
     protected boolean                 returningAffectedRows   = false;
 
-    /**
+    /*
      * Get payload content size.
      */
     @Override
     public long getPayloadContentSize() {
-        return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
-               + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId) + 2
-               + 3;
-    }
-
-    protected int encodeHeader(byte[] bytes, int idx) {
-        int headerLen = (int) getObUniVersionHeaderLength(getVersion(), getPayloadContentSize());
-        System.arraycopy(encodeObUniVersionHeader(getVersion(), getPayloadContentSize()), 0, bytes,
-            idx, headerLen);
-        idx += headerLen;
-        return idx;
+        if (ObGlobal.obVsnMajor() >= 4)
+            return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
+                   + Serialization.getNeedBytes(tableId) + 8 + 2 + 3;
+        else
+            return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
+                   + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId)
+                   + 2 + 3;
     }
 
     protected int encodeCredential(byte[] bytes, int idx) {
@@ -64,6 +61,9 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
         return idx;
     }
 
+    /*
+     * tabletId also be treated as patitionId.
+     */
     protected int encodeTableMetaWithPartitionId(byte[] bytes, int idx) {
         byte[] strbytes = Serialization.encodeVString(tableName);
         System.arraycopy(strbytes, 0, bytes, idx, strbytes.length);
@@ -71,9 +71,14 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
         int len = Serialization.getNeedBytes(tableId);
         System.arraycopy(Serialization.encodeVi64(tableId), 0, bytes, idx, len);
         idx += len;
-        len = Serialization.getNeedBytes(partitionId);
-        System.arraycopy(Serialization.encodeVi64(partitionId), 0, bytes, idx, len);
-        idx += len;
+        if (ObGlobal.obVsnMajor() >= 4) {
+            System.arraycopy(Serialization.encodeI64(partitionId), 0, bytes, idx, 8);
+            idx += 8;
+        } else {
+            len = Serialization.getNeedBytes(partitionId);
+            System.arraycopy(Serialization.encodeVi64(partitionId), 0, bytes, idx, len);
+            idx += len;
+        }
         System.arraycopy(Serialization.encodeI8(entityType.getByteValue()), 0, bytes, idx, 1);
         idx += 1;
         return idx;
@@ -97,28 +102,28 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
         return idx;
     }
 
-    /**
+    /*
      * Get credential.
      */
     public ObBytesString getCredential() {
         return credential;
     }
 
-    /**
+    /*
      * Set timeout.
      */
     public void setTimeout(long timeout) {
         this.timeout = timeout;
     }
 
-    /**
+    /*
      * Set tenant id.
      */
     public void setTenantId(long tenantId) {
         this.tenantId = tenantId;
     }
 
-    /**
+    /*
      * Set credential.
      */
     @Override
@@ -126,112 +131,105 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
         this.credential = credential;
     }
 
-    /**
+    /*
      * Get table name.
      */
     public String getTableName() {
         return tableName;
     }
 
-    /**
+    /*
      * Set table name.
      */
     public void setTableName(String tableName) {
         this.tableName = tableName;
     }
 
-    /**
+    /*
      * Get table id.
      */
     public long getTableId() {
         return tableId;
     }
 
-    /**
+    /*
      * Set table id.
      */
     public void setTableId(long tableId) {
         this.tableId = tableId;
     }
 
-    /**
+    /*
      * Get partition id.
      */
     public long getPartitionId() {
         return partitionId;
     }
 
-    /**
+    /*
      * Set partition id.
      */
     public void setPartitionId(long partitionId) {
         this.partitionId = partitionId;
     }
 
-    /**
+    /*
      * Get entity type.
      */
     public ObTableEntityType getEntityType() {
         return entityType;
     }
 
-    /**
+    /*
      * Set entity type.
      */
     public void setEntityType(ObTableEntityType entityType) {
         this.entityType = entityType;
     }
 
-    /**
+    /*
      * Get consistency level.
      */
     public ObTableConsistencyLevel getConsistencyLevel() {
         return consistencyLevel;
     }
 
-    /**
+    /*
      * Set consistency level.
      */
     public void setConsistencyLevel(ObTableConsistencyLevel consistencyLevel) {
         this.consistencyLevel = consistencyLevel;
     }
 
-    /**
-     * Is returning row key.
+    /*
+     * Set option flag.
      */
-    public boolean isReturningRowKey() {
-        return returningRowKey;
+    public void setOptionFlag(ObTableOptionFlag optionFlagflag) {
+        this.option_flag = optionFlagflag;
     }
 
-    /**
-     * Set returning row key.
-     */
-    public void setReturningRowKey(boolean returningRowKey) {
-        this.returningRowKey = returningRowKey;
-    }
-
-    /**
+    /*
      * Is returning affected entity.
      */
     public boolean isReturningAffectedEntity() {
         return returningAffectedEntity;
     }
 
-    /**
+    /*
      * Set returning affected entity.
      */
     public void setReturningAffectedEntity(boolean returningAffectedEntity) {
         this.returningAffectedEntity = returningAffectedEntity;
     }
 
-    /**
+    /*
      * Is returning affected rows.
      */
     public boolean isReturningAffectedRows() {
         return returningAffectedRows;
     }
 
-    /**
+    /*
      * Set returning affected rows.
      */
     public void setReturningAffectedRows(boolean returningAffectedRows) {

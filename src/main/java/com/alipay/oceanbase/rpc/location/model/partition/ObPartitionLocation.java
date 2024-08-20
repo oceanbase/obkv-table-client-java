@@ -33,20 +33,30 @@ public class ObPartitionLocation {
     private List<ReplicaLocation> sameRegion  = new ArrayList<ReplicaLocation>();
     private List<ReplicaLocation> otherRegion = new ArrayList<ReplicaLocation>();
 
-    /**
+    /*
      * Get leader.
      */
     public ReplicaLocation getLeader() {
-        if (leader == null) {
-            // Previously, exception is thrown when get table meta with any no leader partition,
-            // thus might prevent us from updating other partitions.
-            // Now, put off the exception until we need to access the leader server instead.
-            throw new ObTablePartitionNoMasterException("partition has no leader.");
-        }
         return leader;
     }
 
-    /**
+    public List<ReplicaLocation> getReplicas() {
+        return replicas;
+    }
+
+    public List<ReplicaLocation> getSameIdc() {
+        return sameIdc;
+    }
+
+    public List<ReplicaLocation> getSameRegion() {
+        return sameRegion;
+    }
+
+    public List<ReplicaLocation> getOtherRegion() {
+        return otherRegion;
+    }
+
+    /*
      * Add replication
      *
      * @param replica
@@ -58,7 +68,7 @@ public class ObPartitionLocation {
         this.replicas.add(replica);
     }
 
-    /**
+    /*
      * Get replica according to route strategy.
      *
      * @param route
@@ -78,7 +88,7 @@ public class ObPartitionLocation {
         }
     }
 
-    /**
+    /*
      * Get read replica according to LDC route strategy.
      *
      * @param route
@@ -108,7 +118,7 @@ public class ObPartitionLocation {
         return leader;
     }
 
-    /**
+    /*
      * Get read replica according to LDC route strategy.
      *
      * @param route
@@ -124,7 +134,7 @@ public class ObPartitionLocation {
         return leader;
     }
 
-    /**
+    /*
      * Classify Replica for weak read, according to Server LDC location.
      * Synchronized to avoid duplicate initialization.
      *
@@ -145,7 +155,7 @@ public class ObPartitionLocation {
         }
     }
 
-    /**
+    /*
      * To string.
      */
     @Override
