@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
+import com.alipay.oceanbase.rpc.table.ObKVParams;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationSingle;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
@@ -63,6 +64,8 @@ public class ObTableQuery extends AbstractPayload {
     private List<String>        scanRangeColumns          = new LinkedList<String>();
 
     private List<ObTableAggregationSingle>    aggregations       = new LinkedList<>();
+
+    private ObKVParams obKVParams;
 
     /*
      * Check filter.
@@ -173,6 +176,15 @@ public class ObTableQuery extends AbstractPayload {
             idx += len;
         }
 
+        if (isHbaseQuery) {
+            len = (int) obKVParams.getPayloadSize();
+            System.arraycopy(obKVParams.encode(), 0, bytes, idx, len);
+            idx += len;
+        } else {
+            len = HTABLE_FILTER_DUMMY_BYTES.length;
+            System.arraycopy(HTABLE_FILTER_DUMMY_BYTES, 0, bytes, idx, len);
+        }
+
         return bytes;
     }
 
@@ -230,6 +242,10 @@ public class ObTableQuery extends AbstractPayload {
             String agg_column = Serialization.decodeVString(buf);
             this.aggregations.add(new ObTableAggregationSingle(ObTableAggregationType.fromByte(agg_type), agg_column));
         }
+        if (isHbaseQuery) {
+            obKVParams = new ObKVParams();
+            this.obKVParams.decode(buf);
+        }
         return this;
     }
 
@@ -258,6 +274,7 @@ public class ObTableQuery extends AbstractPayload {
 
         if (isHbaseQuery) {
             contentSize += hTableFilter.getPayloadSize();
+            contentSize += obKVParams.getPayloadSize();
         } else {
             contentSize += HTABLE_FILTER_DUMMY_BYTES.length;
         }
@@ -465,5 +482,14 @@ public class ObTableQuery extends AbstractPayload {
 
     public void setScanRangeColumns(List<String> scanRangeColumns) {
         this.scanRangeColumns = scanRangeColumns;
+    }
+
+    public void setObKVParams(ObKVParams obKVParams) {
+        this.isHbaseQuery = true;
+        this.obKVParams = obKVParams;
+    }
+
+    public ObKVParams getObKVParams() {
+        return obKVParams;
     }
 }
