@@ -27,10 +27,7 @@ import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -212,7 +209,9 @@ public class ObAtomicBatchOperationTest {
     }
 
     @Test
+
     public void testReturnOneRes() {
+        Assume.assumeTrue("Skipping returnOneResult when ob version not support", ObGlobal.isReturnOneResultSupport());
         TableBatchOps batchOps = obTableClient.batch("test_varchar_table");
         // no atomic ReturnOneRes batch operation
         try {
@@ -298,6 +297,7 @@ public class ObAtomicBatchOperationTest {
 
     @Test
     public void testReturnOneResPartition() throws Exception {
+        Assume.assumeTrue("Skiping returnOneResult when ob version not support", ObGlobal.isReturnOneResultSupport());
         BatchOperation batchOperation = obTableClient.batchOperation("test_mutation");
         Object values[][] = { { 1L, "c2_val", "c3_val", 100L }, { 200L, "c2_val", "c3_val", 100L },
                 { 401L, "c2_val", "c3_val", 100L }, { 2000L, "c2_val", "c3_val", 100L },
@@ -328,6 +328,7 @@ public class ObAtomicBatchOperationTest {
 
     @Test
     public void testBatchGet() throws Exception {
+        Assume.assumeTrue("Skipping returnOneResult when ob version not support", ObGlobal.isReturnOneResultSupport());
         try {
             {
                 // insert
