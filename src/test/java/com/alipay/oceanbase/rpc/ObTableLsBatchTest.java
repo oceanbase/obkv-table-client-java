@@ -25,6 +25,7 @@ import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
 import com.alipay.oceanbase.rpc.util.TimeUtils;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -309,6 +310,7 @@ public class ObTableLsBatchTest {
 
     @Test
     public void testBatchInsert() throws Exception {
+        Assume.assumeTrue("Skipping returnOneResult when ob version not support", ObGlobal.isReturnOneResultSupport());
         BatchOperation batchOperation = client.batchOperation(TABLE_NAME);
         Object values[][] = { { 1L, "c2_val", "c3_val", 100L }, { 400L, "c2_val", "c3_val", 100L },
                 { 401L, "c2_val", "c3_val", 100L }, { 1000L, "c2_val", "c3_val", 100L },
@@ -396,6 +398,7 @@ public class ObTableLsBatchTest {
 
     @Test
     public void testBatchDel() throws Exception {
+        Assume.assumeTrue("Skipping returnOneResult when ob version not support", ObGlobal.isReturnOneResultSupport());
         Object values[][] = { { 1L, "c2_val", "c3_val", 100L }, { 400L, "c2_val", "c3_val", 100L },
                 { 401L, "c2_val", "c3_val", 100L }, { 1000L, "c2_val", "c3_val", 100L },
                 { 1001L, "c2_val", "c3_val", 100L }, { 1002L, "c2_val", "c3_val", 100L }, };
@@ -496,6 +499,7 @@ public class ObTableLsBatchTest {
 
     @Test
     public void testBatchReplace() throws Exception {
+        Assume.assumeTrue("Skipping returnOneResult when ob version not support", ObGlobal.isReturnOneResultSupport());
         Object values[][] = { { 1L, "c2_val", "c3_val", 100L }, { 400L, "c2_val", "c3_val", 100L },
                 { 401L, "c2_val", "c3_val", 100L }, { 1000L, "c2_val", "c3_val", 100L },
                 { 1001L, "c2_val", "c3_val", 100L }, { 1002L, "c2_val", "c3_val", 100L }, };
@@ -712,6 +716,7 @@ public class ObTableLsBatchTest {
 
     @Test
     public void testPut() throws Exception {
+        Assume.assumeTrue("Skipping returnOneResult when ob version not support", ObGlobal.isReturnOneResultSupport());
         // put operation should set binlog_row_image minimal
         Connection connection = ObTableClientTestUtil.getConnection();
         Statement statement = connection.createStatement();

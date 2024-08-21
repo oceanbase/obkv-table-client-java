@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc;
 
+import com.alipay.oceanbase.rpc.exception.FeatureNotSupportedException;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.table.AbstractTableBatchOps;
 import com.alipay.oceanbase.rpc.table.ObTableClientBatchOpsImpl;
@@ -190,7 +191,10 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
             throw new IllegalArgumentException("operations is empty");
         }
         ObTableOperationType lastType = operations.get(0).getOperationType();
-        if (returnOneResult
+        if (returnOneResult && !ObGlobal.isReturnOneResultSupport()) {
+            throw new FeatureNotSupportedException(
+                    "returnOneResult is not supported in this Observer version [" + ObGlobal.obVsnString() +"]");
+        } else if (returnOneResult
             && !(this.tableBatchOps.getObTableBatchOperation().isSameType() && (lastType == ObTableOperationType.INSERT
                                                                                 || lastType == ObTableOperationType.PUT
                                                                                 || lastType == ObTableOperationType.REPLACE || lastType == ObTableOperationType.DEL))) {
