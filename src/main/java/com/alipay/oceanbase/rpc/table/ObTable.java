@@ -34,10 +34,14 @@ import com.alipay.remoting.ConnectionEventHandler;
 import com.alipay.remoting.config.switches.GlobalSwitch;
 import com.alipay.remoting.connection.ConnectionFactory;
 import com.alipay.remoting.exception.RemotingException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.ConnectException;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
@@ -46,6 +50,7 @@ import static com.alipay.oceanbase.rpc.property.Property.*;
 
 public class ObTable extends AbstractObTable implements Lifecycle {
 
+    private static final Logger log = LoggerFactory.getLogger(ObTable.class);
     private String                ip;
     private int                   port;
 
@@ -56,6 +61,8 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     private ConnectionFactory     connectionFactory;
     private ObTableRemoting       realClient;
     private ObTableConnectionPool connectionPool;
+    
+    private Map<String, Object> configs;
 
     private volatile boolean      initialized = false;
     private volatile boolean      closed      = false;
@@ -158,6 +165,13 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         nettyBlockingWaitInterval = parseToInt(NETTY_BLOCKING_WAIT_INTERVAL.getKey(),
             nettyBlockingWaitInterval);
         reRouting = parseToBoolean(SERVER_ENABLE_REROUTING.getKey(), reRouting);
+        maxConnExpiredTime = parseToLong(MAX_CONN_EXPIRED_TIME.getKey(), maxConnExpiredTime);
+
+        Object value = this.configs.get("runtime");
+        if (value instanceof Map) {
+            Map<String, String> runtimeMap = (Map<String, String>) value;
+            runtimeMap.put(RPC_OPERATION_TIMEOUT.getKey(), String.valueOf(obTableOperationTimeout));
+        }
     }
 
     /*
@@ -539,6 +553,14 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         this.database = database;
     }
 
+    public void setConfigs(Map<String, Object> configs) {
+        this.configs = configs; 
+    }
+    
+    public Map<String, Object> getConfigs() {
+        return this.configs;
+    }
+    
     /*
      * Get connection factory.
      */
@@ -573,14 +595,19 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     public ObTableConnection getConnection() throws Exception {
         ObTableConnection conn = connectionPool.getConnection();
         int count = 0;
-        while (conn.getConnection() != null
-               && (conn.getCredential() == null || conn.getCredential().length() == 0)
-               && count < obTableConnectionPoolSize) {
+        while (conn != null 
+                && (conn.getConnection() != null
+                    && (conn.getCredential() == null || conn.getCredential().length() == 0)
+                    && count < obTableConnectionPoolSize)) {
             conn = connectionPool.getConnection();
             count++;
         }
         if (count == obTableConnectionPoolSize) {
             throw new ObTableException("all connection's credential is null");
+        }
+        // conn is null, maybe all connection has expired and reconnect fail
+        if (conn == null) {
+            throw new ObTableServerConnectException("connection is null");
         }
         return conn;
     }
@@ -596,6 +623,8 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         private String     database;
 
         private Properties properties = new Properties();
+        
+        private Map<String, Object> tableConfigs = new HashMap<>();
 
         /*
          * Builder.
@@ -632,6 +661,11 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             this.properties = properties;
             return this;
         }
+        
+        public Builder setConfigs(Map<String, Object> tableConfigs) {
+            this.tableConfigs = tableConfigs;
+            return this;
+        }
 
         /*
          * Build.
@@ -645,6 +679,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             obTable.setPassword(password);
             obTable.setDatabase(database);
             obTable.setProperties(properties);
+            obTable.setConfigs(tableConfigs);
 
             obTable.init();
 
@@ -669,7 +704,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         private volatile ObTableConnection[] connectionPool;
         // round-robin scheduling
         private AtomicLong                   turn = new AtomicLong(0);
-
+        private final ScheduledExecutorService cleanerExecutor = Executors.newScheduledThreadPool(1);
         /*
          * Ob table connection pool.
          */
@@ -678,15 +713,20 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             this.obTableConnectionPoolSize = connectionPoolSize;
             connectionPool = new ObTableConnection[connectionPoolSize];
         }
-
+        
         /*
          * Init.
          */
         public void init() throws Exception {
             for (int i = 0; i < obTableConnectionPoolSize; i++) {
                 connectionPool[i] = new ObTableConnection(obTable);
+                if (i == 0) {
+                    connectionPool[i].enableLoginWithConfigs();
+                }
                 connectionPool[i].init();
+                
             }
+            this.cleanerExecutor.scheduleAtFixedRate(this::checkAndReconnect, 0, 1, TimeUnit.MINUTES);
         }
 
         /*
@@ -694,13 +734,71 @@ public class ObTable extends AbstractObTable implements Lifecycle {
          */
         public ObTableConnection getConnection() {
             int round = (int) (turn.getAndIncrement() % obTableConnectionPoolSize);
-            return connectionPool[round];
+            for (int i = 0; i < obTableConnectionPoolSize; i++) {
+                int idx = (round + i) % obTableConnectionPoolSize;
+                if (!connectionPool[idx].isExpired()) {
+                    return connectionPool[idx];
+                }
+            }
+            return null;
+        }
+        
+        
+        /**
+         * This method checks all connections in the connection pool for expiration,  
+         * and attempts to reconnect a portion of the expired connections.  
+         *
+         * Procedure:  
+         * 1. Iterate over the connection pool to identify connections that have expired.  
+         * 2. Mark a third of the expired connections for reconnection.  
+         * 3. Pause for a predefined timeout period.  
+         * 4. Attempt to reconnect the marked connections.
+         **/
+        private void checkAndReconnect() {
+            // Iterate over the connection pool to identify connections that have expired
+            List<Integer> expiredConnIds = new ArrayList<>();
+            for (int i = 1; i <= obTableConnectionPoolSize; ++i) {
+                int idx = (int) ((i + turn.get()) % obTableConnectionPoolSize);
+                if (connectionPool[idx].checkExpired()) {
+                    expiredConnIds.add(idx);
+                }
+            }
+
+            // Mark a third of the expired connections for reconnection
+            int needReconnectCount = (int) Math.ceil(expiredConnIds.size() / 3.0);
+            for (int i = 0; i < needReconnectCount; i++) {
+                int idx = expiredConnIds.get(i);
+                connectionPool[idx].setExpired(true);
+            }
+
+            // Sleep for a predefined timeout period before attempting reconnection
+            try {
+                Thread.sleep(RPC_EXECUTE_TIMEOUT.getDefaultInt());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            
+            // Attempt to reconnect the marked connections
+            for (int i = 0; i < needReconnectCount; i++) {
+                int idx = expiredConnIds.get(i);
+                try {
+                    if (i == 0) {
+                        connectionPool[idx].enableLoginWithConfigs();
+                    }
+                    connectionPool[idx].reConnectAndLogin("expired");
+                } catch (Exception e) {
+                    log.warn("ObTableConnectionPool::checkAndReconnect reconnect fail {}. {}", connectionPool[idx].getConnection().getUrl(), e.getMessage());
+                } finally {
+                    connectionPool[idx].setExpired(false);
+                }
+            }
         }
 
         /*
          * Close.
          */
         public void close() {
+            this.cleanerExecutor.shutdown();
             if (connectionPool == null) {
                 return;
             }
