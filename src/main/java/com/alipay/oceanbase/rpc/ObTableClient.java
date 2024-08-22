@@ -1117,6 +1117,19 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @param tableName table name
      * @param refresh is re-fresh
      * @param waitForRefresh wait re-fresh
+     * @return this
+     * @throws Exception if fail
+     */
+    public TableEntry getOrRefreshTableEntry(final String tableName, final boolean refresh,
+                                             final boolean waitForRefresh) throws Exception {
+        return getOrRefreshTableEntry(tableName, refresh, waitForRefresh, false);
+    }
+    
+    /**
+     * Get or refresh table entry.
+     * @param tableName table name
+     * @param refresh is re-fresh
+     * @param waitForRefresh wait re-fresh
      * @param fetchAll fetch all data from server if needed
      * @return this
      * @throws Exception if fail
