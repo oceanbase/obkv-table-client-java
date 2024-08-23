@@ -20,6 +20,7 @@ package com.alipay.oceanbase.rpc;
 import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -55,6 +56,7 @@ public class ObTableGroupCommitTest {
      **/
     @Test
     public void test_group_commit() throws Exception {
+        Assume.assumeTrue("support after ob version 4.2.5", ObGlobal.OB_VERSION >= ObGlobal.calcVersion(4,(short)2,(byte)5,(byte)0));
         String tableName = "test_varchar_table";
         long executeTime = 10000; // 10s
         int threadCnt = 100;
