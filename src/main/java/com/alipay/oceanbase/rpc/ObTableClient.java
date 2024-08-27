@@ -2983,7 +2983,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
     }
 
-    private void checkObFetchPartitionMetaResult(Long lastRefreshMetadataTimestamp, ObFetchPartitionMetaRequest request,
+    private void checkObFetchPartitionMetaResult(Long lastOdpRefreshTimeMills, ObFetchPartitionMetaRequest request,
                                                  ObPayload result) {
         if (result == null) {
             RUNTIME.error("client get unexpected NULL result");
@@ -2996,8 +2996,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                        + result.getClass().getName());
         }
 
-        if (lastRefreshMetadataTimestamp != null) {
-            if (lastRefreshMetadataTimestamp >= ((ObFetchPartitionMetaResult) result).getCreateTime()) {
+        if (lastOdpRefreshTimeMills != null) {
+            if (lastOdpRefreshTimeMills >= ((ObFetchPartitionMetaResult) result).getCreateTime()) {
                 throw new ObTableException("client get outdated result from ODP");
             }
         }

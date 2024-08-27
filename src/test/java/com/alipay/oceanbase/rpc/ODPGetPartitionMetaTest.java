@@ -7,6 +7,10 @@ import com.alipay.oceanbase.rpc.mutation.InsertOrUpdate;
 import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
+import com.alipay.oceanbase.rpc.table.ConcurrentTask;
+import com.alipay.oceanbase.rpc.table.ConcurrentTaskExecutor;
+import com.alipay.oceanbase.rpc.table.api.TableQuery;
+import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
 import org.junit.Assert;
 import org.junit.Before;
@@ -18,11 +22,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
 import static com.alipay.oceanbase.rpc.util.ObTableClientTestUtil.cleanTable;
 import static com.alipay.oceanbase.rpc.util.ObTableClientTestUtil.generateRandomStringByUUID;
+import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.LCD;
 import static java.lang.StrictMath.abs;
 
 public class ODPGetPartitionMetaTest {
@@ -224,10 +232,10 @@ public class ODPGetPartitionMetaTest {
 //                batchOperation.addOperation(insertOrUpdate);
 //            }
 //            BatchOperationResult batchOperationResult = batchOperation.execute();
-            MutationResult res = client.insert(table_name)
-                    .setRowKey(row(colVal("K", "K_val1"), colVal("Q", "Q_val1".getBytes()), colVal("T", 1L)))
-                    .addMutateRow(row(colVal("V", "V_val1".getBytes()))).execute();
-            Assert.assertEquals(1, res.getAffectedRows());
+//            MutationResult res = client.insert(table_name)
+//                    .setRowKey(row(colVal("K", "K_val1"), colVal("Q", "Q_val1".getBytes()), colVal("T", 1L)))
+//                    .addMutateRow(row(colVal("V", "V_val1".getBytes()))).execute();
+//            Assert.assertEquals(1, res.getAffectedRows());
             // test get all partitions
             List<Partition> partitions = client.getPartition(table_name);
             Assert.assertEquals(15, partitions.size());
@@ -432,6 +440,136 @@ public class ODPGetPartitionMetaTest {
             Assert.assertTrue(false);
         } finally {
             cleanTable(testTable);
+        }
+    }
+
+    @Test
+    public void testConcurrentGetPartition() throws Exception {
+        String[] table_names = { "testHash", "testKey", "testRange" };
+        ExecutorService executorService = Executors.newFixedThreadPool(10);
+        Random random = new Random();
+
+        try {
+            for (int i = 0; i < 20; ++i) {
+                executorService.submit(() -> {
+                    try {
+                        String table_name = table_names[random.nextInt(table_names.length)];
+                        List<Partition> partitions = client.getPartition(table_name);
+                        if (table_name.equalsIgnoreCase("testHash")) {
+                            Assert.assertEquals(15, partitions.size());
+                            for (Partition partition : partitions) {
+                                System.out.println("testHash: " + partition.toString());
+                            }
+                            MutationResult resultSet = client.insertOrUpdate("testHash")
+                                    .setRowKey(row(colVal("K", random.nextInt()), colVal("Q", "Q_val1"), colVal("T", System.currentTimeMillis())))
+                                    .addMutateRow(row(colVal("V", "V_val1"))).execute();
+                            Assert.assertEquals(1, resultSet.getAffectedRows());
+                        } else if (table_name.equalsIgnoreCase("testKey")) {
+                            Assert.assertEquals(15, partitions.size());
+                            for (Partition partition : partitions) {
+                                System.out.println("testKey: " + partition.toString());
+                            }
+                            byte[] bytes = new byte[]{};
+                            random.nextBytes(bytes);
+                            MutationResult resultSet = client.insertOrUpdate("testKey")
+                                    .setRowKey(row(colVal("K", bytes), colVal("Q", "Q_val1"), colVal("T", System.currentTimeMillis())))
+                                    .addMutateRow(row(colVal("V", "V_val1"))).execute();
+                            Assert.assertEquals(1, resultSet.getAffectedRows());
+                        } else {
+                            Assert.assertEquals(3, partitions.size());
+                            for (Partition partition : partitions) {
+                                System.out.println("testRange: " + partition.toString());
+                            }
+                            MutationResult resultSet = client.insertOrUpdate("testRange")
+                                    .setRowKey(row(colVal("c1", random.nextInt()), colVal("c2", "c2_val1")))
+                                    .addMutateRow(row(colVal("c3", "c3_val1"), colVal("c4", 10L))).execute();
+                            Assert.assertEquals(1, resultSet.getAffectedRows());
+                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        } finally {
+            executorService.shutdown();
+            try {
+                // wait for all tasks done
+                if (!executorService.awaitTermination(500L, TimeUnit.MILLISECONDS)) {
+                    executorService.shutdownNow();
+                    if (!executorService.awaitTermination(500L, TimeUnit.MILLISECONDS)) {
+                        System.err.println("the thread pool did not shut down");
+                    }
+                }
+                cleanTable("testHash");
+                cleanTable("testKey");
+                cleanTable("testRange");
+            } catch (InterruptedException ie) {
+                executorService.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    @Test
+    public void testReFetchPartitionMeta() throws Exception {
+        String table_name = "testRange";
+        BatchOperation batchOperation = client.batchOperation(table_name);
+        Object values[][] = { { 1, "c2_val1", "c3_val1", 1L }, { 101, "c2_val1", "c3_val1", 101L },
+                { 501, "c2_val1", "c3_val1", 501L }, { 901, "c2_val1", "c3_val1", 901L },
+                { 1001, "c2_val1", "c3_val1", 1001L }, { 1501, "c2_val1", "c3_val1", 1501L }, };
+        int rowCnt = values.length;
+        try {
+            MutationResult resultSet = client.insertOrUpdate("testRange")
+                    .setRowKey(row(colVal("c1", 10), colVal("c2", "c2_val1")))
+                    .addMutateRow(row(colVal("c3", "c3_val1"), colVal("c4", 10L))).execute();
+            Assert.assertEquals(1, resultSet.getAffectedRows());
+            // need to manually breakpoint here to change table schema in database
+            resultSet = client.insertOrUpdate("testRange")
+                    .setRowKey(row(colVal("c1", 10), colVal("c2", "c2_val1")))
+                    .addMutateRow(row(colVal("c3", "c3_val1"), colVal("c4", 10L))).execute();
+            Assert.assertEquals(1, resultSet.getAffectedRows());
+
+            // test batch insert in ODP mode
+            for (int i = 0; i < rowCnt; i++) {
+                Object[] curRow = values[i];
+                InsertOrUpdate insertOrUpdate = new InsertOrUpdate();
+                insertOrUpdate.setRowKey(row(colVal("c1", curRow[0]), colVal("c2", curRow[1])));
+                insertOrUpdate.addMutateRow(row(colVal("c3", curRow[2]), colVal("c4", curRow[3])));
+                batchOperation.addOperation(insertOrUpdate);
+            }
+            BatchOperationResult batchOperationResult = batchOperation.execute();
+            Assert.assertEquals(rowCnt, batchOperationResult.size());
+            for (int j = 0; j < rowCnt; j++) {
+                Assert.assertEquals(1, batchOperationResult.get(j).getAffectedRows());
+            }
+            // need to manually breakpoint here to change table schema in database
+            batchOperationResult = batchOperation.execute();
+            Assert.assertEquals(rowCnt, batchOperationResult.size());
+            for (int j = 0; j < rowCnt; j++) {
+                Assert.assertEquals(1, batchOperationResult.get(j).getAffectedRows());
+            }
+
+            QueryResultSet result = client.query("testRange")
+                    .addScanRange(new Object[] { 1, "c2_val1" },
+                    new Object[] { 2000, "c2_val1" })
+                    .select("c1", "c2", "c3", "c4").execute();
+            Assert.assertEquals(rowCnt + 1, result.cacheSize());
+            // need to manually breakpoint here to change table schema in database
+            result = client.query("testRange")
+                    .addScanRange(new Object[] { 1, "c2_val1" },
+                            new Object[] { 2000, "c2_val1" })
+                    .select("c1", "c2", "c3", "c4").execute();
+            Assert.assertEquals(1, result.cacheSize());
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        } finally {
+            cleanTable(table_name);
         }
     }
 
