@@ -30,7 +30,6 @@ import io.netty.buffer.ByteBuf;
  *   header_,
  *   private String credential_,
  *   private String tableName_,
- *   private long createTime_,
  *   private String clusterName_,
  *   private String tenantName_,
  *   private String databaseName_,
@@ -39,7 +38,7 @@ import io.netty.buffer.ByteBuf;
  *
  */
 public class ObFetchPartitionMetaRequest extends AbstractPayload implements Credentialable {
-    private long          createTime = System.currentTimeMillis();
+    private ObFetchPartitionMetaType obFetchPartitionMetaType;
     private ObBytesString credential;
     private String        tableName;
     private String        clusterName;
@@ -52,8 +51,12 @@ public class ObFetchPartitionMetaRequest extends AbstractPayload implements Cred
         return Pcodes.OB_TABLE_API_PART_META_QUERY;
     }
 
-    public long getCreateTime() {
-        return this.createTime;
+    public void setObFetchPartitionMetaType(ObFetchPartitionMetaType type) {
+        this.obFetchPartitionMetaType = type;
+    }
+
+    public void setObFetchPartitionMetaType(int index) {
+        this.obFetchPartitionMetaType = ObFetchPartitionMetaType.valueOf(index);
     }
 
     public void setClusterName(String clusterName) {
@@ -95,6 +98,11 @@ public class ObFetchPartitionMetaRequest extends AbstractPayload implements Cred
         // ver + plen + payload
         idx = encodeHeader(bytes, idx);
 
+        // encode type
+        int len = Serialization.getNeedBytes(obFetchPartitionMetaType.getIndex());
+        System.arraycopy(Serialization.encodeVi32(obFetchPartitionMetaType.getIndex()), 0, bytes, idx, len);
+        idx += len;
+
         // encode credential
         idx = encodeCredential(bytes, idx);
 
@@ -119,7 +127,7 @@ public class ObFetchPartitionMetaRequest extends AbstractPayload implements Cred
         idx += strbytes.length;
 
         // encode force_renew for ODP route
-        System.arraycopy(Serialization.encodeI8(forceRenew ? (byte) 1 : (byte) 0), 0, bytes, idx, 1);
+        System.arraycopy(Serialization.encodeI8(forceRenew ? ((byte) 1) : ((byte) 0)), 0, bytes, idx, 1);
 
         return bytes;
     }
@@ -140,7 +148,8 @@ public class ObFetchPartitionMetaRequest extends AbstractPayload implements Cred
 
     @Override
     public long getPayloadContentSize() {
-        return Serialization.getNeedBytes(credential)
+        return Serialization.getNeedBytes(obFetchPartitionMetaType.getIndex())
+                    + Serialization.getNeedBytes(credential)
                     + Serialization.getNeedBytes(tableName)
                     + Serialization.getNeedBytes(clusterName)
                     + Serialization.getNeedBytes(tenantName)
@@ -154,10 +163,11 @@ public class ObFetchPartitionMetaRequest extends AbstractPayload implements Cred
         return idx;
     }
 
-    public static ObFetchPartitionMetaRequest getInstance(String tableName, String clusterName,
+    public static ObFetchPartitionMetaRequest getInstance(int typeIdx, String tableName, String clusterName,
                                                           String tenantName, String databaseName,
                                                           boolean forceRenew, long timeout) {
         ObFetchPartitionMetaRequest request = new ObFetchPartitionMetaRequest();
+        request.setObFetchPartitionMetaType(typeIdx);
         request.setTableName(tableName);
         if (clusterName == null) {
             clusterName = "";

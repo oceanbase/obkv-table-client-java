@@ -2955,7 +2955,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             do {
                 try {
                     ObFetchPartitionMetaRequest request = ObFetchPartitionMetaRequest.getInstance(
-                        tableName, clusterName, tenantName, database, forceRenew,
+                            ObFetchPartitionMetaType.GET_PARTITION_META.getIndex(),
+                            tableName, clusterName, tenantName, database, forceRenew,
                         odpTable.getObTableOperationTimeout()); // TODO: timeout setting need to be verified
                     ObPayload result = odpTable.execute(request);
                     checkObFetchPartitionMetaResult(lastOdpRefreshTimeMills, request, result);
