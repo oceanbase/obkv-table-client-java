@@ -156,17 +156,17 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
         ObTableSingleOpQuery query = new ObTableSingleOpQuery();
         ObNewRange range = new ObNewRange();
-        range.setStartKey(ObRowKey.getInstance(insUp.getRowKey()));
-        range.setEndKey(ObRowKey.getInstance(insUp.getRowKey()));
+        range.setStartKey(ObRowKey.getInstance(insUp.getRowKeyValues()));
+        range.setEndKey(ObRowKey.getInstance(insUp.getRowKeyValues()));
         query.addScanRangeColumns(insUp.getRowKeyNames());
         query.addScanRange(range);
         query.setFilterString(checkAndInsUp.getFilter().toString());
 
         String[] rowKeyNames = checkAndInsUp.getInsUp().getRowKeyNames().toArray(new String[0]);
-        Object[] rowKey = checkAndInsUp.getInsUp().getRowKey();
+        Object[] rowKeyValues = checkAndInsUp.getInsUp().getRowKeyValues().toArray(new Object[0]);
         String[] propertiesNames = checkAndInsUp.getInsUp().getColumns();
         Object[] propertiesValues = checkAndInsUp.getInsUp().getValues();
-        ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKey,
+        ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKeyValues,
             propertiesNames, propertiesValues);
 
         ObTableSingleOp singleOp = new ObTableSingleOp();
@@ -200,7 +200,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     public void addOperation(Mutation mutation) throws Exception {
         // entity
         String[] rowKeyNames = null;
-        Object[] rowKey = null;
+        Object[] rowKeyValues = null;
         String[] propertiesNames = null;
         Object[] propertiesValues = null;
 
@@ -211,53 +211,53 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             case INSERT:
                 ((Insert) mutation).removeRowkeyFromMutateColval();
                 rowKeyNames = ((Insert) mutation).getRowKeyNames().toArray(new String[0]);
-                rowKey = mutation.getRowKey();
+                rowKeyValues = ((Insert) mutation).getRowKeyValues().toArray(new Object[0]);
                 propertiesNames = ((Insert) mutation).getColumns();
                 propertiesValues = ((Insert) mutation).getValues();
                 break;
             case DEL:
                 rowKeyNames = ((Delete) mutation).getRowKeyNames().toArray(new String[0]);
-                rowKey = mutation.getRowKey();
+                rowKeyValues = ((Delete) mutation).getRowKeyValues().toArray(new Object[0]);
                 break;
             case UPDATE:
                 ((Update) mutation).removeRowkeyFromMutateColval();
                 rowKeyNames = ((Update) mutation).getRowKeyNames().toArray(new String[0]);
-                rowKey = mutation.getRowKey();
+                rowKeyValues = ((Update) mutation).getRowKeyValues().toArray(new Object[0]);
                 propertiesNames = ((Update) mutation).getColumns();
                 propertiesValues = ((Update) mutation).getValues();
                 break;
             case INSERT_OR_UPDATE:
                 ((InsertOrUpdate) mutation).removeRowkeyFromMutateColval();
                 rowKeyNames = ((InsertOrUpdate) mutation).getRowKeyNames().toArray(new String[0]);
-                rowKey = mutation.getRowKey();
+                rowKeyValues = ((InsertOrUpdate) mutation).getRowKeyValues().toArray(new Object[0]);
                 propertiesNames = ((InsertOrUpdate) mutation).getColumns();
                 propertiesValues = ((InsertOrUpdate) mutation).getValues();
                 break;
             case REPLACE:
                 ((Replace) mutation).removeRowkeyFromMutateColval();
                 rowKeyNames = ((Replace) mutation).getRowKeyNames().toArray(new String[0]);
-                rowKey = mutation.getRowKey();
+                rowKeyValues = ((Replace) mutation).getRowKeyValues().toArray(new Object[0]);
                 propertiesNames = ((Replace) mutation).getColumns();
                 propertiesValues = ((Replace) mutation).getValues();
                 break;
             case INCREMENT:
                 ((Increment) mutation).removeRowkeyFromMutateColval();
                 rowKeyNames = ((Increment) mutation).getRowKeyNames().toArray(new String[0]);
-                rowKey = mutation.getRowKey();
+                rowKeyValues = ((Increment) mutation).getRowKeyValues().toArray(new Object[0]);
                 propertiesNames = ((Increment) mutation).getColumns();
                 propertiesValues = ((Increment) mutation).getValues();
                 break;
             case APPEND:
                 ((Append) mutation).removeRowkeyFromMutateColval();
                 rowKeyNames = ((Append) mutation).getRowKeyNames().toArray(new String[0]);
-                rowKey = mutation.getRowKey();
+                rowKeyValues = ((Append) mutation).getRowKeyValues().toArray(new Object[0]);
                 propertiesNames = ((Append) mutation).getColumns();
                 propertiesValues = ((Append) mutation).getValues();
                 break;
             case PUT:
                 ((Put) mutation).removeRowkeyFromMutateColval();
                 rowKeyNames = ((Put) mutation).getRowKeyNames().toArray(new String[0]);
-                rowKey = mutation.getRowKey();
+                rowKeyValues = ((Put) mutation).getRowKeyValues().toArray(new Object[0]);
                 propertiesNames = ((Put) mutation).getColumns();
                 propertiesValues = ((Put) mutation).getValues();
                 break;
@@ -265,7 +265,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 throw new ObTableException("unknown operation type " + type);
         }
 
-        ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKey,
+        ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKeyValues,
             propertiesNames, propertiesValues);
         ObTableSingleOp singleOp = new ObTableSingleOp();
         singleOp.setSingleOpType(type);
@@ -312,25 +312,11 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     public Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> partitionPrepare()
             throws Exception {
         List<ObTableSingleOp> operations = getSingleOperations();
-        // map: <ls_id, map<tablet_id, <table param, <idx in origin batch, table operation>>>>
+        // map: <ls_id, map<part_id, <table param, <idx in origin batch, table operation>>>>
         Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> lsOperationsMap =
                 new HashMap();
 
-        // In ODP mode, client send the request to ODP directly without route
-        if (obTableClient.isOdpMode()) {
-            Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperationsMap = new HashMap<>();
-            ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>> obTableOperations =
-                    new ObPair(new ObTableParam(obTableClient.getOdpTable()),
-                            new ArrayList<ObPair<Integer, ObTableSingleOp>>());
-            for (int i = 0; i < operations.size(); i++) {
-                ObTableSingleOp operation = operations.get(i);
-                obTableOperations.getRight().add(new ObPair<Integer, ObTableSingleOp>(i, operation));
-            }
-            tabletOperationsMap.put(INVALID_TABLET_ID, obTableOperations);
-            lsOperationsMap.put(INVALID_LS_ID, tabletOperationsMap);
-            return lsOperationsMap;
-        }
-
+        Long firstPartId = null;
         for (int i = 0; i < operations.size(); i++) {
             ObTableSingleOp operation = operations.get(i);
             List<ObObj> rowkeyObjs = operation.getRowkeyObjs();
@@ -339,8 +325,21 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             for (int j = 0; j < rowKeySize; j++) {
                 rowKey[j] = rowkeyObjs.get(j).getValue();
             }
-            ObPair<Long, ObTableParam>  tableObPair= obTableClient.getTableBySingleRowKeyWithRoute(tableName, rowKey,
-                    false, false, obTableClient.getRoute(false));
+            ObPair<Long, ObTableParam>  tableObPair = null;
+            if (!obTableClient.isOdpMode()) {
+                tableObPair = obTableClient.getTable(tableName, rowKey,
+                        false, false, obTableClient.getRoute(false));
+            } else {
+                tableObPair = obTableClient.getODPTableWithRowKeyValue(tableName, rowKey, false);
+            }
+            if(firstPartId == null) {
+                firstPartId = tableObPair.getLeft();
+            }
+            else if(atomicOperation) {
+                if(!firstPartId.equals(tableObPair.getLeft())) {
+                    throw new IllegalStateException("The operations should be atomic but query from different partitions");
+                }
+            }
             long lsId = tableObPair.getRight().getLsId();
 
             Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperations
@@ -353,13 +352,13 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
             ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>> singleOperations =
                     tabletOperations.get(tableObPair.getLeft());
-            // if tablet id not exists
+            // if part_id not exists
             if (singleOperations == null) {
                 singleOperations = new ObPair<>(tableObPair.getRight(), new ArrayList<>());
                 tabletOperations.put(tableObPair.getLeft(), singleOperations);
             }
 
-            singleOperations.getRight().add(new ObPair(i, operation));
+            singleOperations.getRight().add(new ObPair<Integer, ObTableSingleOp>(i, operation));
         }
 
         return lsOperationsMap;
@@ -428,6 +427,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
         ObTableLSOpResult subLSOpResult;
         boolean needRefreshTableEntry = false;
+        boolean odpNeedRenew = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
         Set<String> failedServerList = null;
@@ -450,7 +450,12 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             tryTimes++;
             try {
                 if (obTableClient.isOdpMode()) {
-                    subObTable = obTableClient.getOdpTable();
+                    if (tryTimes > 1) {
+                        ObTableParam param = obTableClient.getODPTableWithPartId(tableName, originPartId, odpNeedRenew).getRight();
+                        subObTable = param.getObTable();
+                        tableLsOpRequest.getLSOperation().setLsId(param.getLsId());
+                        tableLsOpRequest.setTableId(param.getTableId());
+                    }
                 } else {
                     if (tryTimes > 1) {
                         if (route == null) {
@@ -469,9 +474,19 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 break;
             } catch (Exception ex) {
                 if (obTableClient.isOdpMode()) {
-                    logger.warn("meet exception when execute ls batch in odp mode." +
-                            "tablename: {}, errMsg: {}", tableName, ex.getMessage());
-                    throw ex;
+                    if ((tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
+                        logger.warn("meet exception when execute ls batch in odp mode." +
+                                "tablename: {}, errMsg: {}", tableName, ex.getMessage());
+                        if (ex instanceof ObTablePartitionChangeException &&
+                                ((ObTablePartitionChangeException) ex).getErrorCode() == ResultCodes.OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
+                            odpNeedRenew = true;
+                        }
+                        else {
+                            throw ex;
+                        }
+                    } else {
+                        throw ex;
+                    }
                 } else if (ex instanceof ObTableReplicaNotReadableException) {
                     if ((tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
                         logger.warn("tablename:{} ls id:{} retry when replica not readable: {}",

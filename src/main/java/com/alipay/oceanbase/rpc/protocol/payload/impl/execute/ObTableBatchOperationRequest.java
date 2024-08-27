@@ -42,7 +42,7 @@ OB_SERIALIZE_MEMBER(ObTableBatchOperationRequest,
 public class ObTableBatchOperationRequest extends ObTableAbstractOperationRequest {
 
     private ObTableBatchOperation batchOperation;
-    private boolean               batchOperationAsAtomic = false;
+    private boolean               batchOperationAsAtomic = true;
 
     /*
      * Get pcode.
@@ -153,13 +153,6 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
      */
     public boolean isBatchOperationAsAtomic() {
         return batchOperationAsAtomic;
-    }
-
-    /*
-     * Set BatchOperation As Atomic.
-     */
-    public void setBatchOperationAsAtomic(boolean batchOperationAsAtomic) {
-        this.batchOperationAsAtomic = batchOperationAsAtomic;
     }
 
     public void setBatchOpReturnOneResult(boolean returnOneResult) {

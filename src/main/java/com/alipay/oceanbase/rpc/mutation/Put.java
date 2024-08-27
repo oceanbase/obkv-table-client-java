@@ -158,7 +158,7 @@ public class Put extends Mutation<Put> {
             if (checkMutationWithFilter()) {
                 // QueryAndPut
                 ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.PUT,
-                    getRowKey(), columns.toArray(new String[0]), values.toArray());
+                    getRowKeyValues().toArray(), columns.toArray(new String[0]), values.toArray());
                 return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(
                     getQuery(), getRowKey(), getKeyRanges(), operation, true));
             } else {

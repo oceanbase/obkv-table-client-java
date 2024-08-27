@@ -81,6 +81,11 @@ public class ExceptionUtil {
                                                          + "]" + "[" + resultCodes.name() + "]"
                                                          + "[" + errMsg + "]" + "[" + server + "]"
                                                          + "[" + trace + "]", resultCodes.errorCode);
+        } else if (resultCodes.errorCode == OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
+            return new ObTablePartitionChangeException("[" + String.valueOf(resultCodes.errorCode)
+                                                       + "]" + "[" + resultCodes.name() + "]" + "["
+                                                       + errMsg + "]" + "[" + server + "]" + "["
+                                                       + trace + "]", resultCodes.errorCode);
         } else {
             // [errCode][errCodeName][errMsg][server][trace]
             return new ObTableException("[" + String.valueOf(resultCodes.errorCode) + "]" + "["

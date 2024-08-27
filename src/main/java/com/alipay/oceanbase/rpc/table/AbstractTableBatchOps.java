@@ -24,10 +24,10 @@ public abstract class AbstractTableBatchOps implements TableBatchOps {
 
     protected String            tableName;
 
-    protected boolean           atomicOperation;
+    protected boolean           atomicOperation = false;
     protected boolean           returnOneResult;
 
-    protected ObTableEntityType entityType = ObTableEntityType.KV;
+    protected ObTableEntityType entityType      = ObTableEntityType.KV;
 
     /**
      * Get.

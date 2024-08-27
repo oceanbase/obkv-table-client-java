@@ -29,10 +29,7 @@ import com.alipay.oceanbase.rpc.util.TraceUtil;
 import com.alipay.remoting.*;
 import com.alipay.remoting.exception.RemotingException;
 import io.netty.buffer.ByteBuf;
-import io.netty.util.internal.ResourcesUtil;
 import org.slf4j.Logger;
-
-import javax.xml.transform.Result;
 
 import static com.alipay.oceanbase.rpc.protocol.packet.ObCompressType.INVALID_COMPRESSOR;
 import static com.alipay.oceanbase.rpc.protocol.packet.ObCompressType.NONE_COMPRESSOR;
@@ -127,18 +124,18 @@ public class ObTableRemoting extends BaseRemoting {
             // If response indicates the request is routed to wrong server, we should refresh the routing meta.
             if (response.getHeader().isRoutingWrong()) {
                 String errMessage = TraceUtil.formatTraceMessage(conn, request,
-                        "routed to the wrong server: " + response.getMessage());
+                    "routed to the wrong server: " + response.getMessage());
                 logger.warn(errMessage);
                 if (needFetchAll(resultCode.getRcode(), resultCode.getPcode())) {
                     throw new ObTableNeedFetchAllException(errMessage);
-                } else if (needFetchPartical(resultCode.getRcode())) {
+                } else if (needFetchPartial(resultCode.getRcode())) {
                     throw new ObTableRoutingWrongException(errMessage);
                 } else {
                     // Encountered an unexpected RoutingWrong error code, 
                     // possibly due to the client error code version being behind the observer's version.  
                     // Attempting a full refresh here
                     // and delegating to the upper-level call to determine whether to throw the exception to the user based on the retry result.
-                    logger.warn("get unexpected error code: " + response.getMessage());
+                    logger.warn("get unexpected error code: {}", response.getMessage());
                     throw new ObTableNeedFetchAllException(errMessage);
                 }
             }
@@ -185,31 +182,27 @@ public class ObTableRemoting extends BaseRemoting {
     // schema changed
     private boolean needFetchAll(int errorCode, int pcode) {
         return errorCode == ResultCodes.OB_SCHEMA_ERROR.errorCode
-                || errorCode == ResultCodes.OB_TABLE_NOT_EXIST.errorCode
-                || errorCode == ResultCodes.OB_TABLET_NOT_EXIST.errorCode
-                || errorCode == ResultCodes.OB_LS_NOT_EXIST.errorCode
-                || (pcode == Pcodes.OB_TABLE_API_LS_EXECUTE && errorCode == ResultCodes.OB_NOT_MASTER.errorCode)
-                // Theoretically, this code should not be executed since there is no corresponding handling within the ODP.  
-                // However, the observer has flagged the following three error codes.  
-                // Adding this handling as a precautionary measure.
-                || errorCode == ResultCodes.OB_NO_READABLE_REPLICA.errorCode
-                || errorCode == ResultCodes.OB_USE_DUP_FOLLOW_AFTER_DML.errorCode
-                || errorCode == ResultCodes.OB_TRANS_STMT_NEED_RETRY.errorCode;
+               || errorCode == ResultCodes.OB_TABLE_NOT_EXIST.errorCode
+               || errorCode == ResultCodes.OB_TABLET_NOT_EXIST.errorCode
+               || errorCode == ResultCodes.OB_LS_NOT_EXIST.errorCode
+               || (pcode == Pcodes.OB_TABLE_API_LS_EXECUTE && errorCode == ResultCodes.OB_NOT_MASTER.errorCode);
     }
-    private boolean needFetchPartical(int errorCode) {
+
+    private boolean needFetchPartial(int errorCode) {
         return errorCode == ResultCodes.OB_LOCATION_LEADER_NOT_EXIST.errorCode
-                || errorCode == ResultCodes.OB_NOT_MASTER.errorCode
-                || errorCode == ResultCodes.OB_RS_NOT_MASTER.errorCode
-                || errorCode == ResultCodes.OB_RS_SHUTDOWN.errorCode
-                || errorCode == ResultCodes.OB_RPC_SEND_ERROR.errorCode
-                || errorCode == ResultCodes.OB_RPC_POST_ERROR.errorCode
-                || errorCode == ResultCodes.OB_PARTITION_NOT_EXIST.errorCode
-                || errorCode == ResultCodes.OB_LOCATION_NOT_EXIST.errorCode
-                || errorCode == ResultCodes.OB_PARTITION_IS_STOPPED.errorCode
-                || errorCode == ResultCodes.OB_PARTITION_IS_BLOCKED.errorCode
-                || errorCode == ResultCodes.OB_SERVER_IS_INIT.errorCode
-                || errorCode == ResultCodes.OB_SERVER_IS_STOPPING.errorCode
-                || errorCode == ResultCodes.OB_TENANT_NOT_IN_SERVER.errorCode
-                || errorCode == ResultCodes.OB_TRANS_RPC_TIMEOUT.errorCode;
+               || errorCode == ResultCodes.OB_NOT_MASTER.errorCode
+               || errorCode == ResultCodes.OB_RS_NOT_MASTER.errorCode
+               || errorCode == ResultCodes.OB_RS_SHUTDOWN.errorCode
+               || errorCode == ResultCodes.OB_RPC_SEND_ERROR.errorCode
+               || errorCode == ResultCodes.OB_RPC_POST_ERROR.errorCode
+               || errorCode == ResultCodes.OB_PARTITION_NOT_EXIST.errorCode
+               || errorCode == ResultCodes.OB_LOCATION_NOT_EXIST.errorCode
+               || errorCode == ResultCodes.OB_PARTITION_IS_STOPPED.errorCode
+               || errorCode == ResultCodes.OB_PARTITION_IS_BLOCKED.errorCode
+               || errorCode == ResultCodes.OB_SERVER_IS_INIT.errorCode
+               || errorCode == ResultCodes.OB_SERVER_IS_STOPPING.errorCode
+               || errorCode == ResultCodes.OB_TENANT_NOT_IN_SERVER.errorCode
+               || errorCode == ResultCodes.OB_TRANS_RPC_TIMEOUT.errorCode
+               || errorCode == ResultCodes.OB_NO_READABLE_REPLICA.errorCode;
     }
 }

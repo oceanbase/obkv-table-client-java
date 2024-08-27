@@ -345,8 +345,14 @@ public class ObTableGlobalIndexTest {
     }
 
     @Test
+    public void test_query_in_local_index_not_use_rowkey() throws Exception {
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            test_query_in_global_index_table("test_global_index_no_part");
+        });
+    }
+
+    @Test
     public void test_non_partition_index_table() throws Exception {
-        test_query_in_global_index_table("test_global_index_no_part");
         test_query_in_global_index_table("test_global_all_no_part");
         test_query_in_global_index_table("test_global_primary_no_part");
     }
