@@ -316,7 +316,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> lsOperationsMap =
                 new HashMap();
 
-        Long firstPartId = null;
         for (int i = 0; i < operations.size(); i++) {
             ObTableSingleOp operation = operations.get(i);
             List<ObObj> rowkeyObjs = operation.getRowkeyObjs();
@@ -331,14 +330,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         false, false, obTableClient.getRoute(false));
             } else {
                 tableObPair = obTableClient.getODPTableWithRowKeyValue(tableName, rowKey, false);
-            }
-            if(firstPartId == null) {
-                firstPartId = tableObPair.getLeft();
-            }
-            else if(atomicOperation) {
-                if(!firstPartId.equals(tableObPair.getLeft())) {
-                    throw new IllegalStateException("The operations should be atomic but query from different partitions");
-                }
             }
             long lsId = tableObPair.getRight().getLsId();
 

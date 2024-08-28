@@ -222,7 +222,6 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         List<ObTableOperation> operations = batchOperation.getTableOperations();
         Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> partitionOperationsMap = new HashMap<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>>();
 
-        Long firstPartId = null;
         for (int i = 0; i < operations.size(); i++) {
             ObTableOperation operation = operations.get(i);
             ObRowKey rowKeyObject = operation.getEntity().getRowKey();
@@ -237,14 +236,6 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                     obTableClient.getRoute(batchOperation.isReadOnly()));
             } else {
                 tableObPair = obTableClient.getODPTableWithRowKeyValue(tableName, rowKey, false);
-            }
-            if (firstPartId == null) {
-                firstPartId = tableObPair.getLeft();
-            } else if (atomicOperation) {
-                if (!firstPartId.equals(tableObPair.getLeft())) {
-                    throw new IllegalStateException(
-                        "The operations should be atomic but query from different partitions");
-                }
             }
             ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>> obTableOperations = partitionOperationsMap
                 .get(tableObPair.getLeft());
@@ -293,6 +284,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             subRequest.setConsistencyLevel(obTableClient.getReadConsistency()
                 .toObTableConsistencyLevel());
         }
+        subRequest.setBatchOperationAsAtomic(isAtomicOperation());
         subRequest.setBatchOpReturnOneResult(isReturnOneResult());
         ObTableBatchOperationResult subObTableBatchOperationResult;
 
