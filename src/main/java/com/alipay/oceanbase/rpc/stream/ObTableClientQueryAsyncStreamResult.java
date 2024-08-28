@@ -105,6 +105,33 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         return ret;
     }
 
+    public boolean renewPartitionScanner()
+            throws Exception {
+        if (!isEnd() && !expectant.isEmpty()) {
+            Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
+                    .iterator();
+            ObPair<Long, ObTableParam> obParamPair = it.next().getValue();
+            // try access new partition, async will not remove useless expectant
+
+            ObTableParam obTableParam = obParamPair.getRight();
+            ObTableQueryRequest queryRequest = asyncRequest.getObTableQueryRequest();
+
+            // refresh request info
+            queryRequest.setPartitionId(obTableParam.getPartitionId());
+            queryRequest.setTableId(obTableParam.getTableId());
+
+            // renew scan lease
+            asyncRequest.setQueryType(ObQueryOperationType.QUERY_RENEW);
+            asyncRequest.setQuerySessionId(sessionId);
+
+            // async execute
+            executeAsync(obParamPair, asyncRequest);
+
+            return true;
+        }
+        return false;
+    }
+
     protected ObTableQueryAsyncResult referToLastStreamResult(ObPair<Long, ObTableParam> partIdWithObTable)
                                                                                                            throws Exception {
         ObTableParam obTableParam = partIdWithObTable.getRight();
