@@ -51,8 +51,8 @@ import static java.lang.String.format;
  *  private long tableId_,
  *  private long partitionNum_,
  *  private ObPartitionInfo partitionInfo_,
- *  private List<ODPSinglePart> odpFirstSingleParts_,
- *  private List<ODPSinglePart> odpSubSingleParts_,
+ *  private odpFirstSingleParts_,
+ *  private odpSubSingleParts_,
  * );
  */
 

@@ -101,7 +101,8 @@ public class Partition {
 
     public String toString() {
         String msg = "The Partition info: partition_id = " + partitionId + ", part_id = " + partId
-                + ", table_id = " + tableId + ", ls_id = " + lsId + ", ip = " + ip + ", port = " + port;
+                     + ", table_id = " + tableId + ", ls_id = " + lsId + ", ip = " + ip
+                     + ", port = " + port;
         return msg;
     }
 }

@@ -39,12 +39,12 @@ import io.netty.buffer.ByteBuf;
  */
 public class ObFetchPartitionMetaRequest extends AbstractPayload implements Credentialable {
     private ObFetchPartitionMetaType obFetchPartitionMetaType;
-    private ObBytesString credential;
-    private String        tableName;
-    private String        clusterName;
-    private String        tenantName;
-    private String        databaseName;
-    private boolean       forceRenew = false;
+    private ObBytesString            credential;
+    private String                   tableName;
+    private String                   clusterName;
+    private String                   tenantName;
+    private String                   databaseName;
+    private boolean                  forceRenew = false;
 
     @Override
     public int getPcode() {
@@ -75,9 +75,13 @@ public class ObFetchPartitionMetaRequest extends AbstractPayload implements Cred
         this.forceRenew = forceRenew;
     }
 
-    public void setTableName(String tableName) { this.tableName = tableName; }
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
 
-    public void setTimeout(long timeout) { this.timeout = timeout; }
+    public void setTimeout(long timeout) {
+        this.timeout = timeout;
+    }
 
     /*
      * Set credential.
@@ -100,7 +104,8 @@ public class ObFetchPartitionMetaRequest extends AbstractPayload implements Cred
 
         // encode type
         int len = Serialization.getNeedBytes(obFetchPartitionMetaType.getIndex());
-        System.arraycopy(Serialization.encodeVi32(obFetchPartitionMetaType.getIndex()), 0, bytes, idx, len);
+        System.arraycopy(Serialization.encodeVi32(obFetchPartitionMetaType.getIndex()), 0, bytes,
+            idx, len);
         idx += len;
 
         // encode credential
@@ -127,7 +132,8 @@ public class ObFetchPartitionMetaRequest extends AbstractPayload implements Cred
         idx += strbytes.length;
 
         // encode force_renew for ODP route
-        System.arraycopy(Serialization.encodeI8(forceRenew ? ((byte) 1) : ((byte) 0)), 0, bytes, idx, 1);
+        System.arraycopy(Serialization.encodeI8(forceRenew ? ((byte) 1) : ((byte) 0)), 0, bytes,
+            idx, 1);
 
         return bytes;
     }
@@ -149,11 +155,9 @@ public class ObFetchPartitionMetaRequest extends AbstractPayload implements Cred
     @Override
     public long getPayloadContentSize() {
         return Serialization.getNeedBytes(obFetchPartitionMetaType.getIndex())
-                    + Serialization.getNeedBytes(credential)
-                    + Serialization.getNeedBytes(tableName)
-                    + Serialization.getNeedBytes(clusterName)
-                    + Serialization.getNeedBytes(tenantName)
-                    + Serialization.getNeedBytes(databaseName) + 1;
+               + Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
+               + Serialization.getNeedBytes(clusterName) + Serialization.getNeedBytes(tenantName)
+               + Serialization.getNeedBytes(databaseName) + 1;
     }
 
     private int encodeCredential(byte[] bytes, int idx) {
@@ -163,9 +167,10 @@ public class ObFetchPartitionMetaRequest extends AbstractPayload implements Cred
         return idx;
     }
 
-    public static ObFetchPartitionMetaRequest getInstance(int typeIdx, String tableName, String clusterName,
-                                                          String tenantName, String databaseName,
-                                                          boolean forceRenew, long timeout) {
+    public static ObFetchPartitionMetaRequest getInstance(int typeIdx, String tableName,
+                                                          String clusterName, String tenantName,
+                                                          String databaseName, boolean forceRenew,
+                                                          long timeout) {
         ObFetchPartitionMetaRequest request = new ObFetchPartitionMetaRequest();
         request.setObFetchPartitionMetaType(typeIdx);
         request.setTableName(tableName);

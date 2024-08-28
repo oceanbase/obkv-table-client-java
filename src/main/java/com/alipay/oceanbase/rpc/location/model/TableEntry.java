@@ -155,7 +155,9 @@ public class TableEntry {
         return refreshAllTimeMills;
     }
 
-    public long getOdpRefreshTimeMills() { return odpRefreshTimeMills; }
+    public long getOdpRefreshTimeMills() {
+        return odpRefreshTimeMills;
+    }
 
     /*
      * Set refresh time mills.

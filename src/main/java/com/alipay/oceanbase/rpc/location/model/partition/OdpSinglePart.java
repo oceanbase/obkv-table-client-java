@@ -54,7 +54,6 @@ public class OdpSinglePart extends AbstractPayload {
         System.arraycopy(Serialization.encodeVi64(subPartNum), 0, bytes, idx, len);
         idx += len;
 
-
         byte[] strbytes = Serialization.encodeVString(highBoundVal);
         System.arraycopy(strbytes, 0, bytes, idx, strbytes.length);
 
@@ -73,7 +72,6 @@ public class OdpSinglePart extends AbstractPayload {
 
         return this;
     }
-
 
     public long getPartId() {
         return this.partId;
@@ -97,11 +95,9 @@ public class OdpSinglePart extends AbstractPayload {
 
     @Override
     public long getPayloadContentSize() {
-        return Serialization.getNeedBytes(partId)
-                + Serialization.getNeedBytes(tabletId)
-                + Serialization.getNeedBytes(lsId)
-                + Serialization.getNeedBytes(subPartNum)
-                + Serialization.getNeedBytes(highBoundVal);
+        return Serialization.getNeedBytes(partId) + Serialization.getNeedBytes(tabletId)
+               + Serialization.getNeedBytes(lsId) + Serialization.getNeedBytes(subPartNum)
+               + Serialization.getNeedBytes(highBoundVal);
     }
 
 }

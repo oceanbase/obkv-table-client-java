@@ -30,7 +30,8 @@ public class OdpSinglePartKey extends AbstractPayload {
     private String partKeyExtra = "";
     private long   obCollationTypeIdx;
 
-    public OdpSinglePartKey() {}
+    public OdpSinglePartKey() {
+    }
 
     public OdpSinglePartKey(ObColumn column) {
         columnLevel = -1;
@@ -40,9 +41,10 @@ public class OdpSinglePartKey extends AbstractPayload {
         if (column instanceof ObGeneratedColumn) {
             String str = "";
             ObGeneratedColumn genCol = (ObGeneratedColumn) column;
-            ObGeneratedColumnSubStrFunc subStrFunc = (ObGeneratedColumnSubStrFunc) genCol.getObGeneratedColumnSimpleFunc();
-            str += "substr(" + subStrFunc.getRefColumnNames().get(0) + ","
-                    + subStrFunc.getPos() + "," + subStrFunc.getPos() + ")";
+            ObGeneratedColumnSubStrFunc subStrFunc = (ObGeneratedColumnSubStrFunc) genCol
+                .getObGeneratedColumnSimpleFunc();
+            str += "substr(" + subStrFunc.getRefColumnNames().get(0) + "," + subStrFunc.getPos()
+                   + "," + subStrFunc.getPos() + ")";
             partKeyExtra = str;
         }
         obCollationTypeIdx = column.getObCollationType().getValue();
@@ -123,12 +125,10 @@ public class OdpSinglePartKey extends AbstractPayload {
 
     @Override
     public long getPayloadContentSize() {
-        return Serialization.getNeedBytes(columnLevel)
-                + Serialization.getNeedBytes(index)
-                + Serialization.getNeedBytes(obObjTypeIdx)
-                + Serialization.getNeedBytes(columnName)
-                + Serialization.getNeedBytes(partKeyExtra)
-                + Serialization.getNeedBytes(obCollationTypeIdx);
+        return Serialization.getNeedBytes(columnLevel) + Serialization.getNeedBytes(index)
+               + Serialization.getNeedBytes(obObjTypeIdx) + Serialization.getNeedBytes(columnName)
+               + Serialization.getNeedBytes(partKeyExtra)
+               + Serialization.getNeedBytes(obCollationTypeIdx);
     }
 
 }

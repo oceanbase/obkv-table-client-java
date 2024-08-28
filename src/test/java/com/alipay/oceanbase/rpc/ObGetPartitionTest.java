@@ -321,9 +321,12 @@ public class ObGetPartitionTest {
         BatchOperation batchOperation = client.batchOperation(table_name);
         client.setRunningMode(ObTableClient.RunningMode.HBASE);
         long firstTs = System.currentTimeMillis();
-        Object values[][] = { { "K_val1", "Q_val1", firstTs, "V_val1" }, { "K_val2", "Q_val2", System.currentTimeMillis(), "V_val2" },
-                { "K_val3", "Q_val3", System.currentTimeMillis(), "V_val3" }, { "K_val4", "Q_val4", System.currentTimeMillis(), "V_val4" },
-                { "K_val5", "Q_val5", System.currentTimeMillis(), "V_val5" }, { "K_val6", "Q_val6", System.currentTimeMillis(), "V_val6" },
+        Object values[][] = { { "K_val1", "Q_val1", firstTs, "V_val1" },
+                { "K_val2", "Q_val2", System.currentTimeMillis(), "V_val2" },
+                { "K_val3", "Q_val3", System.currentTimeMillis(), "V_val3" },
+                { "K_val4", "Q_val4", System.currentTimeMillis(), "V_val4" },
+                { "K_val5", "Q_val5", System.currentTimeMillis(), "V_val5" },
+                { "K_val6", "Q_val6", System.currentTimeMillis(), "V_val6" },
                 { "K_val1", "Q_val2", firstTs, "V_val1" } };
         int rowCnt = values.length;
 
@@ -332,8 +335,9 @@ public class ObGetPartitionTest {
             for (int i = 0; i < rowCnt; i++) {
                 Object[] curRow = values[i];
                 InsertOrUpdate insertOrUpdate = new InsertOrUpdate();
-                insertOrUpdate.setRowKey(row(colVal("K", curRow[0]), colVal("Q", curRow[1]), colVal("T", curRow[2])));
-                insertOrUpdate.addMutateRow(row( colVal("V", curRow[3])));
+                insertOrUpdate.setRowKey(row(colVal("K", curRow[0]), colVal("Q", curRow[1]),
+                    colVal("T", curRow[2])));
+                insertOrUpdate.addMutateRow(row(colVal("V", curRow[3])));
                 batchOperation.addOperation(insertOrUpdate);
             }
             BatchOperationResult batchOperationResult = batchOperation.execute();
@@ -345,9 +349,11 @@ public class ObGetPartitionTest {
                 System.out.println(partition.toString());
             }
             // test get the first partition
-            Partition partition1 = client.getPartition(table_name, row(colVal("K", "K_val1"), colVal("Q","Q_val1"), colVal("T", firstTs)));
+            Partition partition1 = client.getPartition(table_name,
+                row(colVal("K", "K_val1"), colVal("Q", "Q_val1"), colVal("T", firstTs)));
             // test get the partition with only partition key
-            Partition partition2 = client.getPartition(table_name, row(colVal("K", "K_val1"), colVal("Q","Q_val2"), colVal("T", firstTs)));
+            Partition partition2 = client.getPartition(table_name,
+                row(colVal("K", "K_val1"), colVal("Q", "Q_val2"), colVal("T", firstTs)));
             Assert.assertEquals(partition1.getPartitionId(), partition2.getPartitionId());
         } catch (Exception e) {
             e.printStackTrace();
@@ -355,7 +361,8 @@ public class ObGetPartitionTest {
         } finally {
             for (int j = 0; j < rowCnt; j++) {
                 Delete delete = client.delete(table_name);
-                delete.setRowKey(row(colVal("K", values[j][0]), colVal("Q", values[j][1]), colVal("T", values[j][2])));
+                delete.setRowKey(row(colVal("K", values[j][0]), colVal("Q", values[j][1]),
+                    colVal("T", values[j][2])));
                 MutationResult res = delete.execute();
                 Assert.assertEquals(1, res.getAffectedRows());
             }
@@ -378,34 +385,42 @@ public class ObGetPartitionTest {
         client.setRunningMode(ObTableClient.RunningMode.HBASE);
         client.setRuntimeBatchExecutor(Executors.newFixedThreadPool(3));
         try {
-            client.insert("testHash", new Object[]{timeStamp + 1L, "partition".getBytes(),
-                    timeStamp}, new String[]{"V"}, new Object[]{"value1L".getBytes()});
-            client.insert("testHash", new Object[]{timeStamp + 5L, "partition".getBytes(),
-                    timeStamp}, new String[]{"V"}, new Object[]{"value1L".getBytes()});
-            Partition partition = client.getPartition("testHash", row(colVal("K", timeStamp + 1), colVal("Q", "partition".getBytes()), colVal("T", timeStamp)));
+            client.insert("testHash", new Object[] { timeStamp + 1L, "partition".getBytes(),
+                    timeStamp }, new String[] { "V" }, new Object[] { "value1L".getBytes() });
+            client.insert("testHash", new Object[] { timeStamp + 5L, "partition".getBytes(),
+                    timeStamp }, new String[] { "V" }, new Object[] { "value1L".getBytes() });
+            Partition partition = client.getPartition(
+                "testHash",
+                row(colVal("K", timeStamp + 1), colVal("Q", "partition".getBytes()),
+                    colVal("T", timeStamp)));
             Assert.assertTrue(partition.getPartId() < 16);
             TableBatchOps tableBatchOps = client.batch("testHash");
-            tableBatchOps.delete(new Object[]{timeStamp + 1L, "partition".getBytes(), timeStamp});
-            tableBatchOps.insert(new Object[]{timeStamp + 3L, "partition".getBytes(), timeStamp},
-                    new String[]{"V"}, new Object[]{"value2".getBytes()});
-            tableBatchOps.replace(new Object[]{timeStamp + 5L, "partition".getBytes(), timeStamp},
-                    new String[]{"V"}, new Object[]{"value2".getBytes()});
+            tableBatchOps
+                .delete(new Object[] { timeStamp + 1L, "partition".getBytes(), timeStamp });
+            tableBatchOps.insert(
+                new Object[] { timeStamp + 3L, "partition".getBytes(), timeStamp },
+                new String[] { "V" }, new Object[] { "value2".getBytes() });
+            tableBatchOps.replace(
+                new Object[] { timeStamp + 5L, "partition".getBytes(), timeStamp },
+                new String[] { "V" }, new Object[] { "value2".getBytes() });
             List<Object> batchResult = tableBatchOps.execute();
             Assert.assertEquals(3, batchResult.size());
             Assert.assertEquals(1L, batchResult.get(0));
             Assert.assertEquals(1L, batchResult.get(1));
             Assert.assertEquals(2L, batchResult.get(2));
 
-            Map<String, Object> getResult = client.get("testHash", new Object[]{
-                    timeStamp + 1L, "partition".getBytes(), timeStamp}, new String[]{"K", "Q", "T",
-                    "V"});
+            Map<String, Object> getResult = client.get("testHash", new Object[] { timeStamp + 1L,
+                    "partition".getBytes(), timeStamp }, new String[] { "K", "Q", "T", "V" });
             Assert.assertEquals(0, getResult.size());
-            Partition del_partition = client.getPartition("testHash", row(colVal("K", timeStamp + 1), colVal("Q", "partition".getBytes()), colVal("T", timeStamp)));
+            Partition del_partition = client.getPartition(
+                "testHash",
+                row(colVal("K", timeStamp + 1), colVal("Q", "partition".getBytes()),
+                    colVal("T", timeStamp)));
             Assert.assertTrue(del_partition.getPartId() < 16);
 
             getResult = client.get("testHash",
-                    new Object[]{timeStamp + 3L, "partition".getBytes(), timeStamp}, new String[]{"K",
-                            "Q", "T", "V"});
+                new Object[] { timeStamp + 3L, "partition".getBytes(), timeStamp }, new String[] {
+                        "K", "Q", "T", "V" });
 
             Assert.assertEquals(4, getResult.size());
 
@@ -415,8 +430,8 @@ public class ObGetPartitionTest {
             Assert.assertEquals("value2", new String((byte[]) getResult.get("V")));
 
             getResult = client.get("testHash",
-                    new Object[]{timeStamp + 5L, "partition".getBytes(), timeStamp}, new String[]{"K",
-                            "Q", "T", "V"});
+                new Object[] { timeStamp + 5L, "partition".getBytes(), timeStamp }, new String[] {
+                        "K", "Q", "T", "V" });
 
             Assert.assertEquals(4, getResult.size());
 
@@ -481,7 +496,6 @@ public class ObGetPartitionTest {
             cleanTable(testTable);
         }
     }
-
 
     /*
     *

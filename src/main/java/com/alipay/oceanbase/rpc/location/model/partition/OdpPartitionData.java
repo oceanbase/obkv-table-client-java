@@ -28,7 +28,7 @@ import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
 import java.util.List;
 
-public class OdpPartitionData extends AbstractPayload{
+public class OdpPartitionData extends AbstractPayload {
     private long                   level;
     private long                   partNum;
     private String                 partExr          = Constants.EMPTY_STRING;
@@ -42,7 +42,8 @@ public class OdpPartitionData extends AbstractPayload{
     private String                 subPartRangeType = Constants.EMPTY_STRING;
     private List<OdpSinglePartKey> singlePartKeys   = new ArrayList<OdpSinglePartKey>();
 
-    public OdpPartitionData() {}
+    public OdpPartitionData() {
+    }
 
     public OdpPartitionData(ObPartitionInfo info) {
         level = info.getLevel().getIndex();
@@ -140,7 +141,7 @@ public class OdpPartitionData extends AbstractPayload{
         len = Serialization.getNeedBytes(singlePartKeys.size());
         System.arraycopy(Serialization.encodeVi64(singlePartKeys.size()), 0, bytes, idx, len);
         idx += len;
-        for(OdpSinglePartKey singlePartKey : singlePartKeys) {
+        for (OdpSinglePartKey singlePartKey : singlePartKeys) {
             len = (int) singlePartKey.getPayloadSize();
             System.arraycopy(singlePartKey.encode(), 0, bytes, idx, len);
             idx += len;
@@ -175,17 +176,15 @@ public class OdpPartitionData extends AbstractPayload{
 
     @Override
     public long getPayloadContentSize() {
-        long size = Serialization.getNeedBytes(level)
-                + Serialization.getNeedBytes(partNum)
-                + Serialization.getNeedBytes(partExr)
-                + Serialization.getNeedBytes(partType)
-                + Serialization.getNeedBytes(partSpace)
-                + Serialization.getNeedBytes(partRangeType)
-                + Serialization.getNeedBytes(subPartNum)
-                + Serialization.getNeedBytes(subPartExr)
-                + Serialization.getNeedBytes(subPartType)
-                + Serialization.getNeedBytes(subPartSpace)
-                + Serialization.getNeedBytes(subPartRangeType);
+        long size = Serialization.getNeedBytes(level) + Serialization.getNeedBytes(partNum)
+                    + Serialization.getNeedBytes(partExr) + Serialization.getNeedBytes(partType)
+                    + Serialization.getNeedBytes(partSpace)
+                    + Serialization.getNeedBytes(partRangeType)
+                    + Serialization.getNeedBytes(subPartNum)
+                    + Serialization.getNeedBytes(subPartExr)
+                    + Serialization.getNeedBytes(subPartType)
+                    + Serialization.getNeedBytes(subPartSpace)
+                    + Serialization.getNeedBytes(subPartRangeType);
         size += Serialization.getNeedBytes(singlePartKeys.size());
         for (OdpSinglePartKey singlePartKey : singlePartKeys) {
             size += singlePartKey.getPayloadSize();

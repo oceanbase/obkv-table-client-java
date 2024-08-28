@@ -1509,11 +1509,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      *
      * @param tableName table want to get
      * @param rowKey row key values
+     * @param needRenew flag to re-fetch partition meta information
      * @return ODP ObPair of partId and table
      * @throws Exception exception
      */
-    public ObPair<Long, ObTableParam> getODPTableWithRowKeyValue(String tableName, Object[] rowKey, boolean needRenew)
-                                                                                                   throws Exception {
+    public ObPair<Long, ObTableParam> getODPTableWithRowKeyValue(String tableName, Object[] rowKey,
+                                                                 boolean needRenew)
+                                                                                   throws Exception {
         TableEntry odpTableEntry = getOrFetchODPPartitionMeta(tableName, needRenew);
         Row row = new Row();
         if (odpTableEntry.isPartitionTable()
@@ -1543,6 +1545,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     /**
      * For mutation (queryWithFilter)
      * @param tableName table want to get
+     * @param query query
      * @param keyRanges key
      * @param refresh whether to refresh
      * @param waitForRefresh whether wait for refresh
@@ -1644,6 +1647,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @param partId partId of table (logicId, partition id in 3.x)
      * @param refresh whether to refresh
      * @param waitForRefresh whether wait for refresh
+     * @param needFetchAll flag to fetch all
      * @param route ObServer route
      * @return ObPair of partId and table
      * @throws Exception exception
@@ -1823,6 +1827,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     /**
      * 根据 start-end 获取 partition ids 和 addrs
      * @param tableName table want to get
+     * @param query query
      * @param start start key
      * @param startInclusive whether include start key
      * @param end end key
@@ -1844,6 +1849,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     /**
      * 根据 start-end 获取 partition id 和 addr
      * @param tableName table want to get
+     * @param query query
      * @param start start key
      * @param startInclusive whether include start key
      * @param end end key
@@ -1972,16 +1978,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (odpTableEntry.isPartitionTable()
             && odpTableEntry.getPartitionInfo().getLevel() != ObPartitionLevel.LEVEL_ZERO) {
             if ((scanRangeColumns == null || scanRangeColumns.isEmpty()) && start.length == 1
-                    && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj() && end.length == 1
-                    && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
+                && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj() && end.length == 1
+                && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
                 // for getPartition to query all partitions
                 scanRangeColumns = new ArrayList<String>(Collections.nCopies(start.length,
-                        "partition"));
+                    "partition"));
             }
             // scanRangeColumn may be longer than start/end in prefix scanning situation
             if (scanRangeColumns == null || scanRangeColumns.size() < start.length) {
                 throw new IllegalArgumentException(
-                        "length of key and scan range columns do not match, please use addRowKeyElement or set scan range columns");
+                    "length of key and scan range columns do not match, please use addRowKeyElement or set scan range columns");
             }
             for (int i = 0; i < start.length; i++) {
                 startRow.add(scanRangeColumns.get(i), start[i]);
@@ -1989,23 +1995,23 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
         }
 
-            List<Long> partIds = getOdpPartIds(odpTableEntry, startRow, startInclusive, endRow,
-                endInclusive);
-            for (Long partId : partIds) {
-                ObTable obTable = odpTable;
-                ObTableParam param = new ObTableParam(obTable);
-                Long tabletId = partId;
-                if (ObGlobal.obVsnMajor() >= 4) {
-                    long partIdx = odpTableEntry.getPartIdx(partId);
-                    tabletId = odpTableEntry.isPartitionTable() ? odpTableEntry.getPartitionInfo()
-                        .getPartTabletIdMap().get(partIdx) : partId;
-                    param.setLsId(odpTableEntry.getPartitionEntry().getLsId(tabletId));
-                }
-                param.setTableId(odpTableEntry.getTableId());
-                // real partition(tablet) id
-                param.setPartitionId(tabletId);
-                obTableParams.add(new ObPair<Long, ObTableParam>(partId, param));
+        List<Long> partIds = getOdpPartIds(odpTableEntry, startRow, startInclusive, endRow,
+            endInclusive);
+        for (Long partId : partIds) {
+            ObTable obTable = odpTable;
+            ObTableParam param = new ObTableParam(obTable);
+            Long tabletId = partId;
+            if (ObGlobal.obVsnMajor() >= 4) {
+                long partIdx = odpTableEntry.getPartIdx(partId);
+                tabletId = odpTableEntry.isPartitionTable() ? odpTableEntry.getPartitionInfo()
+                    .getPartTabletIdMap().get(partIdx) : partId;
+                param.setLsId(odpTableEntry.getPartitionEntry().getLsId(tabletId));
             }
+            param.setTableId(odpTableEntry.getTableId());
+            // real partition(tablet) id
+            param.setPartitionId(tabletId);
+            obTableParams.add(new ObPair<Long, ObTableParam>(partId, param));
+        }
 
         return obTableParams;
     }
@@ -2809,8 +2815,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     public Partition getPartition(String tableName, Object[] rowKey) throws Exception {
         if (rowKey == null) {
-            throw new Exception(
-                    "The input row key value can not be empty");
+            throw new Exception("The input row key value can not be empty");
         }
         Map<String, Integer> rowKeyElements = getRowKeyElement(tableName);
         if (rowKeyElements == null) {
@@ -2862,7 +2867,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     /**
      * get all partition information from table
      * @param tableName table name to query
-     * @return List<Partition> partitions
+     * @return partitions
      * @throws Exception Exception
      */
     public List<Partition> getPartition(String tableName) throws Exception {
@@ -2955,8 +2960,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             do {
                 try {
                     ObFetchPartitionMetaRequest request = ObFetchPartitionMetaRequest.getInstance(
-                            ObFetchPartitionMetaType.GET_PARTITION_META.getIndex(),
-                            tableName, clusterName, tenantName, database, forceRenew,
+                        ObFetchPartitionMetaType.GET_PARTITION_META.getIndex(), tableName,
+                        clusterName, tenantName, database, forceRenew,
                         odpTable.getObTableOperationTimeout()); // TODO: timeout setting need to be verified
                     ObPayload result = odpTable.execute(request);
                     checkObFetchPartitionMetaResult(lastOdpRefreshTimeMills, request, result);
@@ -2983,7 +2988,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
     }
 
-    private void checkObFetchPartitionMetaResult(Long lastOdpRefreshTimeMills, ObFetchPartitionMetaRequest request,
+    private void checkObFetchPartitionMetaResult(Long lastOdpRefreshTimeMills,
+                                                 ObFetchPartitionMetaRequest request,
                                                  ObPayload result) {
         if (result == null) {
             RUNTIME.error("client get unexpected NULL result");
@@ -3001,7 +3007,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 throw new ObTableException("client get outdated result from ODP");
             }
         }
-
 
     }
 
