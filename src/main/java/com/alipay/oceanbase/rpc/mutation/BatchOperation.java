@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.mutation;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
+import com.alipay.oceanbase.rpc.exception.FeatureNotSupportedException;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
@@ -45,7 +46,7 @@ public class BatchOperation {
     boolean                     hasGet           = false;
     ObTableOperationType        lastType         = ObTableOperationType.INVALID;
     boolean                     isSameType       = true;
-    protected ObTableEntityType entityType       = ObTableEntityType.DYNAMIC;
+    protected ObTableEntityType entityType       = ObTableEntityType.KV;
 
     /*
      * default constructor
@@ -157,7 +158,10 @@ public class BatchOperation {
 
     @SuppressWarnings("unchecked")
     public BatchOperationResult execute() throws Exception {
-        if (returnOneResult
+        if (returnOneResult && !ObGlobal.isReturnOneResultSupport()) {
+            throw new FeatureNotSupportedException(
+                    "returnOneResult is not supported in this Observer version [" + ObGlobal.obVsnString() +"]");
+        } else if (returnOneResult
             && !(isSameType && (lastType == ObTableOperationType.INSERT
                                 || lastType == ObTableOperationType.PUT
                                 || lastType == ObTableOperationType.REPLACE || lastType == ObTableOperationType.DEL))) {
