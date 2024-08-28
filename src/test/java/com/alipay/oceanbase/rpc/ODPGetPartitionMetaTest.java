@@ -556,7 +556,7 @@ public class ODPGetPartitionMetaTest {
                     .addScanRange(new Object[] { 1, "c2_val1" },
                     new Object[] { 2000, "c2_val1" })
                     .select("c1", "c2", "c3", "c4").execute();
-            Assert.assertEquals(rowCnt + 1, result.cacheSize());
+            Assert.assertEquals(rowCnt, result.cacheSize());
             // need to manually breakpoint here to change table schema in database
             result = client.query("testRange")
                     .addScanRange(new Object[] { 1, "c2_val1" },
