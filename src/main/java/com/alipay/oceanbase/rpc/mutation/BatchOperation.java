@@ -319,9 +319,8 @@ public class BatchOperation {
         if (rowKey == null || rowKey.size() != 3) {
             throw new IllegalArgumentException("hbase rowkey length must be 3");
         } else {
-            long ts = (long) mutation.getRowKeyValues().get(2);
-            ObObj mutationObObj = new ObObj();
-            mutationObObj.setValue(-ts);
+            long ts = ((long) ((ObObj) mutation.getRowKeyValues().get(2)).getValue());
+            ((ObObj) mutation.getRowKeyValues().get(2)).setValue(-ts);
         }
     }
 }
