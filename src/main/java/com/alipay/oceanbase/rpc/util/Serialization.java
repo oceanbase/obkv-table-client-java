@@ -528,6 +528,21 @@ public class Serialization {
         return getNeedBytes(utf8Length) + utf8Length + 1;
     }
 
+    /**
+     * Get need bytes.
+     * @param strs input data
+     * @return bytes need for serialize string[] data
+     */
+    public static int getNeedBytes(String[] strs) {
+        if (strs == null)
+            strs = new String[0];
+        int needBytes = getNeedBytes(strs.length);
+        for (int i = 0; i < strs.length; ++i) {
+            needBytes += getNeedBytes(strs[i]);
+        }
+        return needBytes;
+    }
+
     private static int getUtf8Length(int codePoint) {
         if (codePoint <= 0x7F) {
             return 1;
@@ -692,6 +707,36 @@ public class Serialization {
      */
     public static void encodeVString(ObByteBuf buf, String str) {
         encodeVString(buf, str, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Encode VString Array.
+     * @param buf encoded buf
+     * @param strs input data
+     */
+    public static void encodeVStringArray(ObByteBuf buf, String[] strs) {
+        if (strs == null) {
+            strs = new String[0];
+        }
+        encodeVi32(buf, strs.length);
+        for (int i = 0; i < strs.length; ++i) {
+            encodeVString(buf, strs[i]);
+        }
+    }
+
+    /**
+     * Encode VString Array.
+     * @param strs input data
+     * @return output data buffer
+     */
+    public static byte[] encodeVStringArray(String[] strs) {
+        if (strs == null) {
+            strs = new String[0];
+        }
+        final int needBytes = getNeedBytes(strs);
+        ObByteBuf buf = new ObByteBuf(needBytes);
+        encodeVStringArray(buf, strs);
+        return buf.bytes;
     }
 
     /**
@@ -887,6 +932,38 @@ public class Serialization {
         buffer.readBytes(content);
         buffer.readByte();// skip the end byte '0'
         return decodeVString(content, charset);
+    }
+
+    /**
+     * Decode byte string array
+     * @param buffer input data
+     * @return output data
+     */
+    public static String[] decodeVStringArray(ByteBuf buffer) {
+        final int count = decodeVi32(buffer);
+        String[] strs = new String[count];
+        for (int i = 0; i < count; ++i) {
+            strs[i] = decodeVString(buffer);
+        }
+        return strs;
+    }
+
+    public static String[] decodeVStringArray(ByteBuf buffer, String charset) {
+        final int count = decodeVi32(buffer);
+        String[] strs = new String[count];
+        for (int i = 0; i < count; ++i) {
+            strs[i] = decodeVString(buffer, charset);
+        }
+        return strs;
+    }
+
+    public static String[] decodeVStringArray(ByteBuf buffer, Charset charset) {
+        final int count = decodeVi32(buffer);
+        String[] strs = new String[count];
+        for (int i = 0; i < count; ++i) {
+            strs[i] = decodeVString(buffer, charset);
+        }
+        return strs;
     }
 
     /**
