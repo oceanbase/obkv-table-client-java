@@ -319,7 +319,7 @@ public class ObGetPartitionTest {
     public void testOneLevelSubStrKeyPartitionWithBatch() throws Exception {
         String table_name = "testSubStrKey";
         BatchOperation batchOperation = client.batchOperation(table_name);
-        client.setRunningMode(ObTableClient.RunningMode.HBASE);
+        client.addRowKeyElement("testSubStrKey", new String[] { "K", "Q", "T" });
         long firstTs = System.currentTimeMillis();
         Object values[][] = { { "K_val1", "Q_val1", firstTs, "V_val1" },
                 { "K_val2", "Q_val2", System.currentTimeMillis(), "V_val2" },
