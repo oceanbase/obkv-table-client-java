@@ -2046,9 +2046,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return obTableParams;
     }
 
-    private List<ObPair<Long, ObTableParam>> getODPTables(String tableName, ObTableQuery query,
-                                                          Object[] start, boolean startInclusive,
-                                                          Object[] end, boolean endInclusive)
+    public List<ObPair<Long, ObTableParam>> getOdpTables(String tableName, ObTableQuery query,
+                                                         Object[] start, boolean startInclusive,
+                                                         Object[] end, boolean endInclusive)
                                                                                              throws Exception {
         List<ObPair<Long, ObTableParam>> obTableParams = new ArrayList<ObPair<Long, ObTableParam>>();
         TableEntry odpTableEntry = getOrFetchODPPartitionMeta(tableName, false);
@@ -2977,7 +2977,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private List<Partition> getAllPartitionInternal(String tableName) throws Exception {
         List<Partition> partitions = new ArrayList<>();
         if (odpMode) {
-            List<ObPair<Long, ObTableParam>> allTables = getODPTables(tableName, new ObTableQuery(), new Object[]{ ObObj.getMin() }, true,
+            List<ObPair<Long, ObTableParam>> allTables = getOdpTables(tableName, new ObTableQuery(), new Object[]{ ObObj.getMin() }, true,
                     new Object[]{ ObObj.getMax() }, true);
             for (ObPair<Long, ObTableParam> table : allTables) {
                 ObTableParam tableParam = table.getRight();
@@ -3040,8 +3040,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (ODPTableLocations.get(tableName) != null) {
             odpTableEntry = ODPTableLocations.get(tableName);
             long interval = System.currentTimeMillis() - odpTableEntry.getRefreshTimeMills();
-            // do not fetch partition meta if the refresh interval is less than 5 seconds
-            if (interval < 5000L) {
+            // do not fetch partition meta if the refresh interval is less than 3 seconds
+            if (interval < 3000L) {
                 lock.unlock();
                 return odpTableEntry;
             }

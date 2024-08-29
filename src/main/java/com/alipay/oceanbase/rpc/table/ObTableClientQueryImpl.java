@@ -169,8 +169,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                 }
             }
             if (getPartId() == null) {
-                this.partitionObTables.put(0L, new ObPair<Long, ObTableParam>(0L, new ObTableParam(
-                    obTableClient.getOdpTable())));
+                initPartitions();
             } else {
                 ObPair<Long, ObTableParam> odpTable = obTableClient.getODPTableWithPartId(
                     tableName, getPartId(), false);
@@ -285,9 +284,16 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             }
             ObBorderFlag borderFlag = rang.getBorderFlag();
             // pairs -> List<Pair<logicId, param>>
-            List<ObPair<Long, ObTableParam>> pairs = this.obTableClient.getTables(indexTableName,
-                tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(),
-                false, false);
+            List<ObPair<Long, ObTableParam>> pairs = null;
+            if (!this.obTableClient.isOdpMode()) {
+                pairs = this.obTableClient.getTables(indexTableName,
+                        tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(),
+                        false, false);
+            }
+            else {
+                pairs = this.obTableClient.getOdpTables(tableName,
+                        tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd());
+            }
             if (this.tableQuery.getScanOrder() == ObScanOrder.Reverse) {
                 for (int i = pairs.size() - 1; i >= 0; i--) {
                     this.partitionObTables.put(pairs.get(i).getLeft(), pairs.get(i));
