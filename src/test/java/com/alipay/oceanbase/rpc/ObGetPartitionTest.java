@@ -183,6 +183,18 @@ public class ObGetPartitionTest {
             QueryResultSet result = client.query(TABLE_NAME)
                 .addScanRange(partition.start(), partition.end()).execute();
             Assert.assertEquals(1, result.cacheSize());
+
+            partition = client.getPartition(TABLE_NAME, row(colVal("c1", 400L), colVal("c2", "c2_val")));
+            System.out.println(partition.toString());
+            result = client.query(TABLE_NAME)
+                    .addScanRange(partition.start(), partition.end()).execute();
+            Assert.assertEquals(2, result.cacheSize());
+
+            partition = client.getPartition(TABLE_NAME, row(colVal("c1", 1000L), colVal("c2", "c2_val")));
+            System.out.println(partition.toString());
+            result = client.query(TABLE_NAME)
+                    .addScanRange(partition.start(), partition.end()).execute();
+            Assert.assertEquals(3, result.cacheSize());
         } catch (Exception e) {
             e.printStackTrace();
             Assert.assertTrue(false);
