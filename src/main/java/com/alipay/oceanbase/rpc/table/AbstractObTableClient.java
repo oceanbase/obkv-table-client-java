@@ -97,6 +97,7 @@ public abstract class AbstractObTableClient extends AbstractTable {
                                                                             .getDefaultInt();
     protected long            slowQueryMonitorThreshold                 = SLOW_QUERY_MONITOR_THRESHOLD
                                                                             .getDefaultLong();
+    protected Long              maxConnExpiredTime                        = MAX_CONN_EXPIRED_TIME.getDefaultLong();
 
     @Deprecated
     /*

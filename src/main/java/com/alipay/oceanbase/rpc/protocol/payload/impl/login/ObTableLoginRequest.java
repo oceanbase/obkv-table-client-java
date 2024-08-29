@@ -53,6 +53,7 @@ public class ObTableLoginRequest extends AbstractPayload {
     private ObBytesString passScramble;               // 20 字节随机字符串
     private String        databaseName;
     private long          ttlUs;
+    private String        configsStr;
 
     /*
      * Ob table login request.
@@ -112,7 +113,9 @@ public class ObTableLoginRequest extends AbstractPayload {
 
         len = Serialization.getNeedBytes(ttlUs);
         System.arraycopy(Serialization.encodeVi64(ttlUs), 0, bytes, idx, len);
-
+        idx += len;
+        strbytes = Serialization.encodeVString(configsStr);
+        System.arraycopy(strbytes, 0, bytes, idx, strbytes.length);
         return bytes;
     }
 
@@ -164,7 +167,8 @@ public class ObTableLoginRequest extends AbstractPayload {
                + Serialization.getNeedBytes(reversed3) + Serialization.getNeedBytes(tenantName)
                + Serialization.getNeedBytes(userName) + Serialization.getNeedBytes(passSecret)
                + Serialization.getNeedBytes(passScramble)
-               + Serialization.getNeedBytes(databaseName) + Serialization.getNeedBytes(ttlUs);
+               + Serialization.getNeedBytes(databaseName) + Serialization.getNeedBytes(ttlUs)
+               + Serialization.getNeedBytes(configsStr);
     }
 
     /*
@@ -368,6 +372,14 @@ public class ObTableLoginRequest extends AbstractPayload {
      */
     public void setTtlUs(long ttlUs) {
         this.ttlUs = ttlUs;
+    }
+    
+    public String getConfigsStr() {
+        return configsStr;
+    }
+
+    public void setConfigsStr(String configsStr) {
+        this.configsStr = configsStr;
     }
 
 }

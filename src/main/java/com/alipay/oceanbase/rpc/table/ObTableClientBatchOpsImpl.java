@@ -232,8 +232,9 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             }
             ObPair<Long, ObTableParam> tableObPair = null;
             if (!obTableClient.isOdpMode()) {
-                tableObPair = obTableClient.getTable(tableName, rowKey, false, false,
-                    obTableClient.getRoute(batchOperation.isReadOnly()));
+                tableObPair = obTableClient.getTableBySingleRowKeyWithRoute(
+                tableName, rowKey, false, false, false,
+                obTableClient.getRoute(batchOperation.isReadOnly()));
             } else {
                 tableObPair = obTableClient.getODPTableWithRowKeyValue(tableName, rowKey, false);
             }
