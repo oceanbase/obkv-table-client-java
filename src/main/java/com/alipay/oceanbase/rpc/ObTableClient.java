@@ -328,6 +328,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         tableEntryRefreshLockTimeout = parseToLong(TABLE_ENTRY_REFRESH_LOCK_TIMEOUT.getKey(),
             tableEntryRefreshLockTimeout);
 
+        ODPTableEntryRefreshLockTimeout = parseToLong(ODP_TABLE_ENTRY_REFRESH_LOCK_TIMEOUT.getKey(),
+                ODPTableEntryRefreshLockTimeout);
+
         tableEntryRefreshTryTimes = parseToInt(TABLE_ENTRY_REFRESH_TRY_TIMES.getKey(),
             tableEntryRefreshTryTimes);
 
