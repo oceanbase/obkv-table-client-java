@@ -23,11 +23,15 @@ import io.netty.buffer.ByteBuf;
 import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
 
 public class ObHBaseParams extends ObKVParamsBase {
-    int     caching             = -1;   // 限制scan返回的行的数量
-    int     callTimeout         = -1;   // scannerLeasePeriodTimeout，代表客户端scan的单个rpc超时时间以及服务端的scan的超时时间的一部分
-    boolean allowPartialResults = true; // 是否允许行内部分返回
-    boolean isCacheBlock        = false; // 是否启用缓存
-    boolean checkExistenceOnly  = false; // 查看是否存在不返回数据
+    int                      caching                    = -1;    // limit the number of for each rpc call
+    int                      callTimeout                = -1;    // scannerLeasePeriodTimeout in hbase, client rpc timeout
+    boolean                  allowPartialResults        = true;  // whether allow partial row return or not
+    boolean                  isCacheBlock               = false; // whether enable server block cache and row cache or not
+    boolean                  checkExistenceOnly         = false; // check the existence only
+
+    private static final int FLAG_ALLOW_PARTIAL_RESULTS = 1 << 0;
+    private static final int FLAG_IS_CACHE_BLOCK        = 1 << 1;
+    private static final int FLAG_CHECK_EXISTENCE_ONLY  = 1 << 2;
 
     public ObHBaseParams() {
         pType = paramType.HBase;
@@ -87,11 +91,11 @@ public class ObHBaseParams extends ObKVParamsBase {
         byte[] bytes = new byte[1]; // 1 byte for 4 booleans
 
         if (allowPartialResults)
-            bytes[0] |= 0x01; // 00000010
+            bytes[0] |= FLAG_ALLOW_PARTIAL_RESULTS;
         if (isCacheBlock)
-            bytes[0] |= 0x02; // 00000100
+            bytes[0] |= FLAG_IS_CACHE_BLOCK;
         if (checkExistenceOnly)
-            bytes[0] |= 0x04; // 00001000
+            bytes[0] |= FLAG_CHECK_EXISTENCE_ONLY;
 
         return bytes;
     }
@@ -117,9 +121,9 @@ public class ObHBaseParams extends ObKVParamsBase {
 
     public void byteArrayToBooleans(ByteBuf bytes) {
         byte b = bytes.readByte();
-        allowPartialResults = (b & 0x01) != 0;
-        isCacheBlock = (b & 0x02) != 0;
-        checkExistenceOnly = (b & 0x04) != 0;
+        allowPartialResults = (b & FLAG_ALLOW_PARTIAL_RESULTS) != 0;
+        isCacheBlock = (b & FLAG_IS_CACHE_BLOCK) != 0;
+        checkExistenceOnly = (b & FLAG_CHECK_EXISTENCE_ONLY) != 0;
     }
 
     public Object decode(ByteBuf buf) {
