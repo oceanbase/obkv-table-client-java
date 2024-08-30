@@ -183,6 +183,7 @@ public class ObTableQuery extends AbstractPayload {
         } else {
             len = HTABLE_FILTER_DUMMY_BYTES.length;
             System.arraycopy(HTABLE_FILTER_DUMMY_BYTES, 0, bytes, idx, len);
+            idx += len;
         }
 
         return bytes;
@@ -484,7 +485,8 @@ public class ObTableQuery extends AbstractPayload {
         this.scanRangeColumns = scanRangeColumns;
     }
 
-    public void setObKVParams(ObKVParams obKVParams) {
+    // This interface is just for OBKV-Hbase
+    public void setObHbaseParams(ObKVParams obKVParams) {
         this.isHbaseQuery = true;
         this.obKVParams = obKVParams;
     }
