@@ -382,7 +382,6 @@ public class ODPGetPartitionMetaTest {
     public void testTwoLevelKeyPartition() throws Exception {
         client.setRunningMode(ObTableClient.RunningMode.NORMAL);
         String testTable = "testPartitionKeyComplex";
-        client.addRowKeyElement(testTable, new String[] { "c0", "c1", "c2", "c3", "c4", "c5" });
         try {
             cleanTable(testTable);
             Connection connection = ObTableClientTestUtil.getConnection();
@@ -399,8 +398,8 @@ public class ODPGetPartitionMetaTest {
                 statement.execute("insert into " + testTable
                                   + "(c0, c1, c2, c3, c4, c5, c6) values (" + c0 + "," + c1 + ","
                                   + c2 + ",'" + c3 + "','" + c4 + "','" + c5 + "'," + "'value')");
-                Partition partition = client.getPartition(testTable, new Object[] { c0, c1, c2, c3,
-                        c4, c5 });
+                Partition partition = client.getPartition(testTable, row(colVal("c0", c0), colVal("c1", c1), colVal("c2", c2),
+                        colVal("c3", c3), colVal("c4", c4),  colVal("c5", c5)));
                 Assert.assertNotNull(partition);
                 System.out.println(partition.toString());
                 // test scan range with partition
@@ -466,7 +465,8 @@ public class ODPGetPartitionMetaTest {
                 statement.execute("insert into " + testTable + "(c1, c2, c3, c4, c5) values (" + c1
                                   + "," + c2 + ",'" + c3 + "','" + c4 + "'," + "'value')");
                 Partition partition = client.getPartition(testTable,
-                    new Object[] { c1, c2, c3, c4 });
+                        row(colVal("c1", c1), colVal("c2", c2),
+                                colVal("c3", c3), colVal("c4", c4)));
                 Assert.assertNotNull(partition);
                 System.out.println(partition.toString());
                 // test scan range with partition

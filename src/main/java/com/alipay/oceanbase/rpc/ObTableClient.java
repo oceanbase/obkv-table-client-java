@@ -2904,33 +2904,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /**
-     * get partition information and host information by row key in object list
-     * @param tableName table name
-     * @param rowKey row key values which want to query
-     * @return Partition information
-     * @throws Exception Exception
-     */
-    public Partition getPartition(String tableName, Object[] rowKey) throws Exception {
-        if (rowKey == null) {
-            throw new Exception("The input row key value can not be empty");
-        }
-        Map<String, Integer> rowKeyElements = getRowKeyElement(tableName);
-        if (rowKeyElements == null) {
-            throw new Exception(
-                "Please use addRowKeyElement before just use row key values for table" + tableName);
-        }
-        if (rowKeyElements.size() < rowKey.length) {
-            throw new Exception("The table row keys should not be less than input row keys");
-        }
-        Row row = new Row();
-        String[] rowKeyNames = rowKeyElements.keySet().toArray(new String[0]);
-        for (int i = 0; i < rowKey.length; ++i) {
-            row.add(rowKeyNames[i], rowKey[i]);
-        }
-        return getSinglePartitionInternal(tableName, row);
-    }
-
-    /**
      * get partition information and host information by row key in Row
      * @param tableName table name
      * @param rowKey row key which want to query

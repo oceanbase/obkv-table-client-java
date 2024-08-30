@@ -278,7 +278,6 @@ public class ObGetPartitionTest {
 
     @Test
     public void testGetPartitionWithRowKeyValues() throws Exception {
-        client.addRowKeyElement(TABLE_NAME, new String[] { "c1", "c2" });
         Object values[][] = { { 1L, "c2_val", "c3_val", 100L }, { 400L, "c2_val", "c3_val", 100L },
                 { 1001L, "c2_val", "c3_val", 100L } };
         int rowCnt = values.length;
@@ -298,10 +297,10 @@ public class ObGetPartitionTest {
                 System.out.println(partition.toString());
             }
 
-            Partition partition = client.getPartition(TABLE_NAME, new Object[] { 1L, "c2_val" });
+            Partition partition = client.getPartition(TABLE_NAME, row(colVal("c1", 1L), colVal("c2", "c2_val")));
             Assert.assertNotNull(partition.getPartitionId());
             // test get partition with partition key
-            Partition partition_prefix = client.getPartition(TABLE_NAME, new Object[] { 1L });
+            Partition partition_prefix = client.getPartition(TABLE_NAME, row(colVal("c1", 1L)));
             Assert.assertEquals(partition.getPartitionId(), partition_prefix.getPartitionId());
 
         } catch (Exception e) {
@@ -493,8 +492,8 @@ public class ObGetPartitionTest {
                 statement.execute("insert into " + testTable
                                   + "(c0, c1, c2, c3, c4, c5, c6) values (" + c0 + "," + c1 + ","
                                   + c2 + ",'" + c3 + "','" + c4 + "','" + c5 + "'," + "'value')");
-                Partition partition = client.getPartition(testTable, new Object[] { c0, c1, c2, c3,
-                        c4, c5 });
+                Partition partition = client.getPartition(testTable,  row(colVal("c0", c0), colVal("c1", c1), colVal("c2", c2),
+                        colVal("c3", c3), colVal("c4", c4),  colVal("c5", c5)));
                 System.out.println(partition.toString());
                 QueryResultSet result = client.query(testTable)
                     .addScanRange(partition.start(), partition.end()).execute();
@@ -618,6 +617,67 @@ public class ObGetPartitionTest {
                 Thread.currentThread().interrupt();
                 Assert.assertTrue(false);
             }
+        }
+    }
+
+    /*
+    * CREATE TABLE IF NOT EXISTS `testSubStrKey` (
+                    `K` varbinary(1024),
+                    `Q` varbinary(256),
+                    `T` bigint,
+                    `V` varbinary(1024),
+                    K_PREFIX varbinary(1024) generated always as (substring(`K`, 1, 4)),
+                    PRIMARY KEY(`K`, `Q`, `T`)
+                ) partition by key(K_PREFIX) partitions 15;
+    * */
+    @Test
+    public void testSubstrInOldBatch() throws Exception {
+        String table_name = "testSubStrKey";
+        BatchOperation batchOperation = client.batchOperation(table_name);
+        client.addRowKeyElement("testSubStrKey", new String[] { "K", "Q", "T" });
+        long timeStamp = System.currentTimeMillis();
+        Object values[][] = { { "K_val1", "Q_val1", timeStamp, "V_val1" },
+                { "K_val2", "Q_val2", timeStamp, "V_val2" },
+                { "K_val3", "Q_val3", timeStamp, "V_val3" },
+                { "K_val4", "Q_val4", timeStamp, "V_val4" },
+                { "K_val5", "Q_val5", timeStamp, "V_val5" },
+                { "K_val6", "Q_val6", timeStamp, "V_val6" },
+                { "K_val1", "Q_val2", timeStamp, "V_val1" } };
+        int rowCnt = values.length;
+        try {
+            // batch insert
+            for (int i = 0; i < rowCnt; i++) {
+                Object[] curRow = values[i];
+                InsertOrUpdate insertOrUpdate = new InsertOrUpdate();
+                insertOrUpdate.setRowKey(row(colVal("K", curRow[0]), colVal("Q", curRow[1]),
+                        colVal("T", curRow[2])));
+                insertOrUpdate.addMutateRow(row(colVal("V", curRow[3])));
+                batchOperation.addOperation(insertOrUpdate);
+            }
+            client.insert(table_name, new Object[] { "K_val1", "Q_val1", timeStamp }, new String[] { "V" }, new Object[] { "V_val1".getBytes() });
+            client.insert(table_name, new Object[] { "K_val2", "Q_val2", timeStamp }, new String[] { "V" }, new Object[] { "V_val2".getBytes() });
+
+            TableBatchOps tableBatchOps = client.batch(table_name);
+            tableBatchOps
+                    .delete(new Object[] { "K_val1", "Q_val1", timeStamp });
+            tableBatchOps.insert(
+                    new Object[] { "K_val3", "Q_val3", timeStamp },
+                    new String[] { "V" }, new Object[] { "V_val3".getBytes() });
+            tableBatchOps.replace(
+                    new Object[] { "K_val2", "Q_val2", timeStamp },
+                    new String[] { "V" }, new Object[] { "V_value2".getBytes() });
+            List<Object> batchResult = tableBatchOps.execute();
+            Assert.assertEquals(3, batchResult.size());
+            Assert.assertEquals(1L, batchResult.get(0));
+            Assert.assertEquals(1L, batchResult.get(1));
+            Assert.assertEquals(2L, batchResult.get(2));
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        } finally {
+            cleanTable(table_name);
         }
     }
 }
