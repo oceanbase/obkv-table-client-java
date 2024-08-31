@@ -178,7 +178,7 @@ public class ObTableQuery extends AbstractPayload {
             idx += len;
         }
 
-        if (isHbaseQuery) {
+        if (isHbaseQuery && obKVParams != null) {
             len = (int) obKVParams.getPayloadSize();
             System.arraycopy(obKVParams.encode(), 0, bytes, idx, len);
             idx += len;
@@ -277,9 +277,13 @@ public class ObTableQuery extends AbstractPayload {
 
         if (isHbaseQuery) {
             contentSize += hTableFilter.getPayloadSize();
+        } else {
+            contentSize += HTABLE_DUMMY_BYTES.length;
+        }
+        if (isHbaseQuery && obKVParams != null) {
             contentSize += obKVParams.getPayloadSize();
         } else {
-            contentSize += 2 * HTABLE_DUMMY_BYTES.length;
+            contentSize += HTABLE_DUMMY_BYTES.length;
         }
         contentSize += Serialization.getNeedBytes(scanRangeColumns.size());
         for (String scanRangeColumn : scanRangeColumns) {
