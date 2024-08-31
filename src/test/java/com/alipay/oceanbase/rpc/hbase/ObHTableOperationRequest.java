@@ -28,6 +28,8 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilt
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryRequest;
+import com.alipay.oceanbase.rpc.table.ObHBaseParams;
+import com.alipay.oceanbase.rpc.table.ObKVParams;
 
 public class ObHTableOperationRequest {
 
@@ -112,6 +114,13 @@ public class ObHTableOperationRequest {
         this.operationType = operationType;
     }
 
+    public void setObKVParams(ObTableQuery query) {
+        ObHBaseParams params = new ObHBaseParams();
+        ObKVParams obKVParams = new ObKVParams();
+        obKVParams.setObParamsBase(params);
+        query.setObKVParams(obKVParams);
+    }
+
     public ObTableAbstractOperationRequest obTableOperationRequest() {
         // TODO 这个类仅作为测试用，到时候要移到独立的 JAR 包内
         ObTableAbstractOperationRequest request = null;
@@ -136,6 +145,10 @@ public class ObHTableOperationRequest {
                 ObHTableFilter filter = new ObHTableFilter();
                 filter.addSelectColumnQualifier("qualifierName");
                 obTableQuery.sethTableFilter(filter);
+                ObHBaseParams params = new ObHBaseParams();
+                ObKVParams obKVParams = new ObKVParams();
+                obKVParams.setObParamsBase(params);
+                setObKVParams(obTableQuery);
 
                 ObNewRange obNewRange = new ObNewRange();
                 obNewRange
@@ -187,6 +200,7 @@ public class ObHTableOperationRequest {
                 obTableQuery.addSelectColumn("Q");
                 obTableQuery.addSelectColumn("T");
                 obTableQuery.addSelectColumn("V");
+                setObKVParams(obTableQuery);
 
                 request.setTableName(getTableName());
                 ((ObTableQueryRequest) request).setTableQuery(obTableQuery);
@@ -209,6 +223,7 @@ public class ObHTableOperationRequest {
                 obTableQuery.addSelectColumn("Q");
                 obTableQuery.addSelectColumn("T");
                 obTableQuery.addSelectColumn("V");
+                setObKVParams(obTableQuery);
 
                 request.setTableName(getTableName());
                 ((ObTableQueryRequest) request).setTableQuery(obTableQuery);
