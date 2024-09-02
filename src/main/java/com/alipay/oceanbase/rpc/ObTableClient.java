@@ -960,7 +960,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
                 ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort()) //
                     .setLoginInfo(tenantName, userName, password, database) //
-                    .setProperties(getProperties())//
+                    .setProperties(getProperties()).setConfigs(getTableConfigs())
                     .build();
                 ObTable oldObTable = tableRoster.putIfAbsent(addr, obTable); // not control concurrency
                 logger.warn("add new table addr, {}", addr.toString());
