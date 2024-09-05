@@ -50,7 +50,7 @@ public class ObHTableFilter extends AbstractPayload {
     private int                 maxVersions           = 1;
     private int                 limitPerRowPerCf      = -1;                            // -1 means unlimited
     private int                 offsetPerRowPerCf     = 0;                             // -1 means unlimited
-    private String              filterString;
+    private ObBytesString       filterString          = null;
 
     /*
      * Encode.
@@ -95,7 +95,7 @@ public class ObHTableFilter extends AbstractPayload {
         System.arraycopy(Serialization.encodeVi32(offsetPerRowPerCf), 0, bytes, idx, len);
         idx += len;
         len = Serialization.getNeedBytes(filterString);
-        System.arraycopy(Serialization.encodeVString(filterString), 0, bytes, idx, len);
+        System.arraycopy(Serialization.encodeBytesString(filterString), 0, bytes, idx, len);
         idx += len;
 
         return bytes;
@@ -120,7 +120,7 @@ public class ObHTableFilter extends AbstractPayload {
         this.maxVersions = Serialization.decodeVi32(buf);
         this.limitPerRowPerCf = Serialization.decodeVi32(buf);
         this.offsetPerRowPerCf = Serialization.decodeVi32(buf);
-        this.filterString = Serialization.decodeVString(buf);
+        this.filterString = Serialization.decodeBytesString(buf);
 
         return this;
     }
@@ -262,14 +262,17 @@ public class ObHTableFilter extends AbstractPayload {
     /*
      * Get filter string.
      */
-    public String getFilterString() {
-        return filterString;
+    public byte[] getFilterString() {
+        return filterString.bytes;
     }
 
     /*
      * Set filter string.
      */
-    public void setFilterString(String filterString) {
-        this.filterString = filterString;
+    public void setFilterString(byte[] filterString) {
+        if (this.filterString == null) {
+            this.filterString = new ObBytesString();
+        }
+        this.filterString.bytes = filterString;
     }
 }
