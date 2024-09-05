@@ -33,6 +33,9 @@ public class ObHBaseParams extends ObKVParamsBase {
     private static final int FLAG_IS_CACHE_BLOCK        = 1 << 1;
     private static final int FLAG_CHECK_EXISTENCE_ONLY  = 1 << 2;
 
+    private static final int FLAG_BYTE_LENGTH           = 1;
+    private static final int BOOLEAN_BYTE_LENGTH        = 1;    // all boolean to one byte
+
     public ObHBaseParams() {
         pType = paramType.HBase;
     }
@@ -59,11 +62,6 @@ public class ObHBaseParams extends ObKVParamsBase {
 
     public void setCheckExistenceOnly(boolean checkExistenceOnly) {
         this.checkExistenceOnly = checkExistenceOnly;
-    }
-
-    private int getContentSize() {
-        return 4 + Serialization.getNeedBytes(caching) + Serialization.getNeedBytes(callTimeout)
-               + 1;
     }
 
     public int getCaching() {
@@ -134,8 +132,9 @@ public class ObHBaseParams extends ObKVParamsBase {
     }
 
     public long getPayloadContentSize() {
-        return 1 + Serialization.getNeedBytes(caching) + Serialization.getNeedBytes(callTimeout)
-               + 1; // all boolean to one byte
+        return FLAG_BYTE_LENGTH
+                + Serialization.getNeedBytes(caching) + Serialization.getNeedBytes(callTimeout)
+                + BOOLEAN_BYTE_LENGTH;
     }
 
     public String toString() {

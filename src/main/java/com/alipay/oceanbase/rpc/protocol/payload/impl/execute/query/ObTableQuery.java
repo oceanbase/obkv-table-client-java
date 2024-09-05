@@ -491,13 +491,12 @@ public class ObTableQuery extends AbstractPayload {
         this.scanRangeColumns = scanRangeColumns;
     }
 
-    // This interface is just for OBKV-Hbase
-    public void setObKVParams(ObKVParams obKVParams) {
-        if (!(obKVParams.getObParamsBase() instanceof ObHBaseParams)) {
-            throw new FeatureNotSupportedException("only ObHBaseParams support currently");
+    public void setHBaseParams(ObHBaseParams obHBaseParams) {
+        if (obKVParams == null) {
+            this.obKVParams = new ObKVParams();
         }
+        this.obKVParams.setObParamsBase(obHBaseParams);
         this.isHbaseQuery = true;
-        this.obKVParams = obKVParams;
     }
 
     public ObKVParams getObKVParams() {

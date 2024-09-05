@@ -82,9 +82,7 @@ public class ObTableQueryPayloadTest {
         ObTableQuery obTableQuery = getObTableQuery();
         obTableQuery.sethTableFilter(getObHTableFilter());
         ObHBaseParams hBaseParams = new ObHBaseParams();
-        ObKVParams kv_prams = new ObKVParams();
-        kv_prams.setObParamsBase(hBaseParams);
-        obTableQuery.setObKVParams(kv_prams);
+        obTableQuery.setHBaseParams(hBaseParams);
 
         byte[] bytes = obTableQuery.encode();
         ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer();
