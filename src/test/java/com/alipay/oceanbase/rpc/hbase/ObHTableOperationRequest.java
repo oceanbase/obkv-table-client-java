@@ -116,9 +116,7 @@ public class ObHTableOperationRequest {
 
     public void setObKVParams(ObTableQuery query) {
         ObHBaseParams params = new ObHBaseParams();
-        ObKVParams obKVParams = new ObKVParams();
-        obKVParams.setObParamsBase(params);
-        query.setObKVParams(obKVParams);
+        query.setHBaseParams(params);
     }
 
     public ObTableAbstractOperationRequest obTableOperationRequest() {

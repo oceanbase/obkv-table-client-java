@@ -33,7 +33,6 @@ public abstract class ObKVParamsBase {
         }
     }
 
-    public int       byteSize;
     public paramType pType;
 
     public paramType getType() {
