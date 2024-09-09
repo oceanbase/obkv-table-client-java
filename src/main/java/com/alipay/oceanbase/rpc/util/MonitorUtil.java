@@ -299,7 +299,7 @@ public class MonitorUtil {
                                        String methodName, String endpoint,
                                        ObTableLSOperation lsOperation, int resultSize,
                                        long executeTime, long slowQueryMonitorThreshold) {
-        if (slowQueryMonitorThreshold >= 0 && executeTime < slowQueryMonitorThreshold) {
+        if (slowQueryMonitorThreshold < 0 || executeTime < slowQueryMonitorThreshold) {
             return;
         }
         String traceId = formatTraceMessage(payload);

@@ -473,6 +473,12 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     obTableClient.getRouteTableRefresher().triggerRefreshTable();
                     subObTable = obTableClient.getTable(moveResponse);
                     result = subObTable.execute(tableLsOpRequest);
+                    if (result instanceof ObTableApiMove) {
+                        ObTableApiMove move = (ObTableApiMove) result;
+                        logger.warn("The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. " +
+                                "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move .getReplica().getServer().ipToString());
+                        throw new ObTableRoutingWrongException();
+                    }
                 }
                 subLSOpResult = (ObTableLSOpResult) result;
                 obTableClient.resetExecuteContinuousFailureCount(tableName);

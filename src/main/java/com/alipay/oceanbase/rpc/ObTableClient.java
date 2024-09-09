@@ -46,6 +46,7 @@ import com.alipay.oceanbase.rpc.util.*;
 import com.alipay.remoting.util.StringUtils;
 import org.slf4j.Logger;
 
+import javax.sound.midi.SysexMessage;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -2748,6 +2749,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             getRouteTableRefresher().triggerRefreshTable();
             obTable = getTable(moveResponse);
             result = obTable.execute(request);
+            if (result instanceof ObTableApiMove) {
+                ObTableApiMove move = (ObTableApiMove) result;
+                logger.warn("The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. " +
+                                "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move .getReplica().getServer().ipToString());
+                throw new ObTableRoutingWrongException();
+            }
         }
         return result;
     }
