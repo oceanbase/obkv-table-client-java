@@ -91,14 +91,6 @@ public class Partition {
         return this.lsId;
     }
 
-    public ObObj getStart() {
-        return ObObj.getMin();
-    }
-
-    public ObObj getEnd() {
-        return ObObj.getMax();
-    }
-
     public String toString() {
         String msg = "The Partition info: partition_id = " + partitionId + ", part_id = " + partId
                      + ", table_id = " + tableId + ", ls_id = " + lsId + ", ip = " + ip
