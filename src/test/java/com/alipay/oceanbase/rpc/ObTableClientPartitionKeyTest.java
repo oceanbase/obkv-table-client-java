@@ -267,7 +267,8 @@ public class ObTableClientPartitionKeyTest {
             Assert.assertEquals("value1", new String((byte[]) row.get("V")));
 
             tableQuery = obTableClient.query(TEST_TABLE);
-            tableQuery.addScanRange(new Object[] {"key1_1".getBytes()}, new Object[] {"key1_8".getBytes()});
+            tableQuery.addScanRange(new Object[] { "key1_1".getBytes() },
+                new Object[] { "key1_8".getBytes() });
             tableQuery.setScanRangeColumns("K");
             tableQuery.select("Q", "T", "K", "V");
             result = tableQuery.execute();
@@ -422,8 +423,8 @@ public class ObTableClientPartitionKeyTest {
 
             tableQuery = obTableClient.query(TEST_TABLE);
             tableQuery.setScanRangeColumns("K");
-            tableQuery.addScanRange(
-                new Object[] {"key1_1".getBytes()}, new Object[] {"key1_8".getBytes()});
+            tableQuery.addScanRange(new Object[] { "key1_1".getBytes() },
+                new Object[] { "key1_8".getBytes() });
             tableQuery.select("Q", "T", "K", "V");
             result = tableQuery.asyncExecute();
             Assert.assertTrue(result.cacheSize() >= 2);

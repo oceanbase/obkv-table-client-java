@@ -32,6 +32,7 @@ import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -41,10 +42,11 @@ import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
 public class Mutation<T> {
     private String         tableName;
     private Table          client;
-    protected Object[]     rowKey;
+    protected Row          rowKey;
     private TableQuery     query;
     private boolean        hasSetRowKey = false;
     protected List<String> rowKeyNames  = null;
+    protected List<Object> rowKeyValues = null;
     protected List<String> columns;
     protected List<Object> values;
 
@@ -58,6 +60,7 @@ public class Mutation<T> {
         rowKey = null;
         query = null;
         rowKeyNames = null;
+        rowKeyValues = null;
         columns = null;
         values = null;
     }
@@ -76,6 +79,7 @@ public class Mutation<T> {
         this.rowKey = null;
         this.query = null;
         this.rowKeyNames = null;
+        this.rowKeyValues = null;
         this.columns = null;
         this.values = null;
     }
@@ -104,7 +108,7 @@ public class Mutation<T> {
     /*
      * get row key
      */
-    public Object[] getRowKey() {
+    public Row getRowKey() {
         return rowKey;
     }
 
@@ -130,6 +134,13 @@ public class Mutation<T> {
      */
     public List<String> getRowKeyNames() {
         return rowKeyNames;
+    }
+
+    /*
+     * get rowkey values
+     */
+    public List<Object> getRowKeyValues() {
+        return rowKeyValues;
     }
 
     /*
@@ -184,25 +195,22 @@ public class Mutation<T> {
             throw new IllegalArgumentException("input row key should not be empty");
         }
 
+        // set rowKey
+        this.rowKey = rowKey;
+
         // set row key name into client and set rowKeys
-        List<String> columnNames = new ArrayList<String>();
-        List<Object> Keys = new ArrayList<Object>();
-        for (Map.Entry<String, Object> entry : rowKey.getMap().entrySet()) {
-            columnNames.add(entry.getKey());
-            Keys.add(entry.getValue());
-        }
-        this.rowKey = Keys.toArray();
-        this.rowKeyNames = columnNames;
+        this.rowKeyValues = new ArrayList<>(Arrays.asList(rowKey.getValues()));
+        this.rowKeyNames = new ArrayList<>(Arrays.asList(rowKey.getColumns()));
 
         // set row key in table
         if (null != tableName) {
             ((ObTableClient) client)
-                .addRowKeyElement(tableName, columnNames.toArray(new String[0]));
+                .addRowKeyElement(tableName, this.rowKeyNames.toArray(new String[0]));
         }
 
         // renew scan range of QueryAndMutate
         if (null != query) {
-            query.addScanRange(this.rowKey, this.rowKey);
+            query.addScanRange(rowKeyValues.toArray(), rowKeyValues.toArray());
         }
 
         hasSetRowKey = true;
@@ -222,20 +230,17 @@ public class Mutation<T> {
             throw new IllegalArgumentException("input row key should not be empty");
         }
 
+        // set rowKey
+        this.rowKey = rowKey;
+
         // set row key name into client and set rowKeys
-        List<String> columnNames = new ArrayList<String>();
-        List<Object> Keys = new ArrayList<Object>();
-        for (Map.Entry<String, Object> entry : rowKey.getMap().entrySet()) {
-            columnNames.add(entry.getKey());
-            Keys.add(entry.getValue());
-        }
-        this.rowKey = Keys.toArray();
-        this.rowKeyNames = columnNames;
+        this.rowKeyValues = new ArrayList<>(Arrays.asList(rowKey.getValues()));
+        this.rowKeyNames = new ArrayList<>(Arrays.asList(rowKey.getColumns()));
 
         // set row key in table
         if (null != tableName) {
             ((ObTableClient) client)
-                .addRowKeyElement(tableName, columnNames.toArray(new String[0]));
+                .addRowKeyElement(tableName, this.rowKeyNames.toArray(new String[0]));
         }
 
         hasSetRowKey = true;
@@ -253,28 +258,22 @@ public class Mutation<T> {
             throw new IllegalArgumentException("Invalid null rowKey set into Mutation");
         }
 
+        // set rowKey
+        this.rowKey = new Row(rowKey);
+
         // set row key name into client and set rowKey
-        List<String> columnNames = new ArrayList<String>();
-        List<Object> Keys = new ArrayList<Object>();
-        for (ColumnValue columnValue : rowKey) {
-            if (columnNames.contains(columnValue.getColumnName())) {
-                throw new ObTableException("Duplicate column in Row Key");
-            }
-            columnNames.add(columnValue.getColumnName());
-            Keys.add(columnValue.getValue());
-        }
-        this.rowKey = Keys.toArray();
-        this.rowKeyNames = columnNames;
+        this.rowKeyValues = new ArrayList<>(Arrays.asList(this.rowKey.getValues()));
+        this.rowKeyNames = new ArrayList<>(Arrays.asList(this.rowKey.getColumns()));
 
         // set row key in table
         if (null != tableName) {
             ((ObTableClient) client)
-                .addRowKeyElement(tableName, columnNames.toArray(new String[0]));
+                .addRowKeyElement(tableName, this.rowKeyNames.toArray(new String[0]));
         }
 
         // renew scan range of QueryAndMutate
         if (null != query) {
-            query.addScanRange(this.rowKey, this.rowKey);
+            query.addScanRange(rowKeyValues.toArray(), rowKeyValues.toArray());
         }
 
         hasSetRowKey = true;
@@ -292,23 +291,17 @@ public class Mutation<T> {
             throw new IllegalArgumentException("Invalid null rowKey set into Mutation");
         }
 
+        // set rowKey
+        this.rowKey = new Row(rowKey);
+
         // set row key name into client and set rowKey
-        List<String> columnNames = new ArrayList<String>();
-        List<Object> Keys = new ArrayList<Object>();
-        for (ColumnValue columnValue : rowKey) {
-            if (columnNames.contains(columnValue.getColumnName())) {
-                throw new ObTableException("Duplicate column in Row Key");
-            }
-            columnNames.add(columnValue.getColumnName());
-            Keys.add(columnValue.getValue());
-        }
-        this.rowKey = Keys.toArray();
-        this.rowKeyNames = columnNames;
+        this.rowKeyValues = new ArrayList<>(Arrays.asList(this.rowKey.getValues()));
+        this.rowKeyNames = new ArrayList<>(Arrays.asList(this.rowKey.getColumns()));
 
         // set row key in table
         if (null != tableName) {
             ((ObTableClient) client)
-                .addRowKeyElement(tableName, columnNames.toArray(new String[0]));
+                .addRowKeyElement(tableName, this.rowKeyNames.toArray(new String[0]));
         }
 
         hasSetRowKey = true;
@@ -329,7 +322,7 @@ public class Mutation<T> {
                 query = client.query(tableName);
                 // set scan range if rowKey exist
                 if (null != rowKey) {
-                    query.addScanRange(this.rowKey, this.rowKey);
+                    query.addScanRange(this.rowKeyValues.toArray(), this.rowKeyValues.toArray());
                 }
             }
             // only filter string in query works

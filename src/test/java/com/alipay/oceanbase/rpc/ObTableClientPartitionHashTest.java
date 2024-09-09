@@ -201,9 +201,8 @@ public class ObTableClientPartitionHashTest {
 
             // query with multiply partitions
             tableQuery = obTableClient.query("testHash");
-            tableQuery.addScanRange(
-                new Object[] { timeStamp, "partition".getBytes(), timeStamp }, new Object[] {
-                        timeStamp + 10, "partition".getBytes(), timeStamp });
+            tableQuery.addScanRange(new Object[] { timeStamp, "partition".getBytes(), timeStamp },
+                new Object[] { timeStamp + 10, "partition".getBytes(), timeStamp });
             tableQuery.select("K", "Q", "T");
             result = tableQuery.execute();
             Assert.assertEquals(5, result.cacheSize());
@@ -211,8 +210,7 @@ public class ObTableClientPartitionHashTest {
             // query with multiply partitions using prefix K
             tableQuery = obTableClient.query("testHash");
             tableQuery.setScanRangeColumns("K");
-            tableQuery
-                .addScanRange(new Object[] { timeStamp }, new Object[] { timeStamp + 10 });
+            tableQuery.addScanRange(new Object[] { timeStamp }, new Object[] { timeStamp + 10 });
             tableQuery.select("Q", "V");
             result = tableQuery.execute();
             Assert.assertEquals(5, result.cacheSize());
@@ -291,9 +289,8 @@ public class ObTableClientPartitionHashTest {
 
             // query with multiply partitions
             tableQuery = obTableClient.query("testHash");
-            tableQuery.addScanRange(
-                new Object[] { timeStamp, "partition".getBytes(), timeStamp }, new Object[] {
-                        timeStamp + 10, "partition".getBytes(), timeStamp });
+            tableQuery.addScanRange(new Object[] { timeStamp, "partition".getBytes(), timeStamp },
+                new Object[] { timeStamp + 10, "partition".getBytes(), timeStamp });
             tableQuery.select("K", "Q", "T");
             tableQuery.setBatchSize(2);
             result = tableQuery.asyncExecute();
@@ -301,8 +298,7 @@ public class ObTableClientPartitionHashTest {
             // query with multiply partitions using prefix K
             tableQuery = obTableClient.query("testHash");
             tableQuery.setScanRangeColumns("K");
-            tableQuery
-                .addScanRange(new Object[] { timeStamp }, new Object[] { timeStamp + 10 });
+            tableQuery.addScanRange(new Object[] { timeStamp }, new Object[] { timeStamp + 10 });
             tableQuery.select("Q", "V");
             tableQuery.setBatchSize(1);
             result = tableQuery.asyncExecute();

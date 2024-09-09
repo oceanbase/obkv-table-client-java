@@ -259,7 +259,7 @@ public class ObTableCheckAndInsUpTest {
             Assert.assertTrue(false);
         } finally {
             Delete delete = client.delete(testTable);
-            delete.setRowKey(row(colVal("c1", 5L), colVal("c2", "c2_v0")));
+            delete.setRowKey(row(colVal("c2", 5L), colVal("c1", "c2_v0")));
             MutationResult res = delete.execute();
             Assert.assertEquals(1, res.getAffectedRows());
         }

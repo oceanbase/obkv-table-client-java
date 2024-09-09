@@ -127,4 +127,11 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
         this.tableQuery = tableQuery;
     }
 
+    /*
+    * Set table query part_id
+    * */
+    public void setTableQueryPartId(Long partId) {
+        this.tableQuery.setPartId(partId);
+    }
+
 }

@@ -406,7 +406,7 @@ public class ObTableTTLTest {
             // local index: query with select all columns
             res = client
                 .query(TABLE_NAME)
-                .setScanRangeColumns(new String[] {"adiu", "pk", "name"})
+                .setScanRangeColumns(new String[] { "adiu", "pk", "name" })
                 .addScanRange(new Object[] { "adiu_0", "pk_0", "0_name" },
                     new Object[] { "adiu_9", "pk_9", "9_name" }).indexName("idx_adiu").execute();
             count = 0;
@@ -419,7 +419,7 @@ public class ObTableTTLTest {
             // local index: query with select partial columns, without ttl columns
             res = client
                 .query(TABLE_NAME)
-                .setScanRangeColumns(new String[] {"adiu", "pk", "name"})
+                .setScanRangeColumns(new String[] { "adiu", "pk", "name" })
                 .addScanRange(new Object[] { "adiu_0", "pk_0", "0_name" },
                     new Object[] { "adiu_9", "pk_9", "9_name" }).indexName("idx_adiu")
                 .select("adiu", "pk").execute();
@@ -433,8 +433,8 @@ public class ObTableTTLTest {
             // local index: query with select partial columns, without ttl columns
             res = client
                 .query(TABLE_NAME)
-                    .setScanRangeColumns("adiu", "pk", "name")
-                    .addScanRange(new Object[] { "adiu_0", "pk_0", "0_name" },
+                .setScanRangeColumns("adiu", "pk", "name")
+                .addScanRange(new Object[] { "adiu_0", "pk_0", "0_name" },
                     new Object[] { "adiu_9", "pk_9", "9_name" }).indexName("idx_adiu")
                 .select("adiu", "gmt_create").execute();
             count = 0;
