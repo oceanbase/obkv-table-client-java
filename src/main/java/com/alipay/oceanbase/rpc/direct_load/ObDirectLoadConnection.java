@@ -185,7 +185,7 @@ public class ObDirectLoadConnection {
                 throw new ObDirectLoadException(e);
             }
         }
-        this.protocol = ObDirectLoadProtocolFactory.getProtocol(ObGlobal.OB_VERSION);
+        this.protocol = ObDirectLoadProtocolFactory.getProtocol(traceId, ObGlobal.OB_VERSION);
         this.protocol.init();
         table.close();
     }

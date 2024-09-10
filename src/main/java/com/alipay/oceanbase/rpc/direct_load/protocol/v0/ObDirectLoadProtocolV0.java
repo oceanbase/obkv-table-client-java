@@ -17,6 +17,9 @@
 
 package com.alipay.oceanbase.rpc.direct_load.protocol.v0;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
+import com.alipay.oceanbase.rpc.direct_load.ObDirectLoadLogger;
+import com.alipay.oceanbase.rpc.direct_load.ObDirectLoadStatement;
 import com.alipay.oceanbase.rpc.direct_load.ObDirectLoadTraceId;
 import com.alipay.oceanbase.rpc.direct_load.exception.*;
 import com.alipay.oceanbase.rpc.direct_load.protocol.ObDirectLoadProtocol;
@@ -25,9 +28,16 @@ import com.alipay.oceanbase.rpc.direct_load.protocol.payload.*;
 
 public class ObDirectLoadProtocolV0 implements ObDirectLoadProtocol {
 
-    private static final int PROTOCOL_VERSION = 0;
+    public static final long         OB_VERSION_4_3_2_0 = ObGlobal.calcVersion(4, (short) 3,
+                                                            (byte) 2, (byte) 0);
 
-    public ObDirectLoadProtocolV0() {
+    private static final int         PROTOCOL_VERSION   = 0;
+    private final ObDirectLoadLogger logger;
+    private final long               obVersion;
+
+    public ObDirectLoadProtocolV0(ObDirectLoadTraceId traceId, long obVersion) {
+        this.logger = ObDirectLoadLogger.getLogger(traceId);
+        this.obVersion = obVersion;
     }
 
     @Override
@@ -37,6 +47,29 @@ public class ObDirectLoadProtocolV0 implements ObDirectLoadProtocol {
     @Override
     public int getProtocolVersion() {
         return PROTOCOL_VERSION;
+    }
+
+    @Override
+    public void checkIsSupported(ObDirectLoadStatement statement) throws ObDirectLoadException {
+        if (obVersion < OB_VERSION_4_3_2_0) {
+            // 432以下不支持inc|inc_replace
+            String loadMethod = statement.getLoadMethod();
+            if (!loadMethod.isEmpty() && !loadMethod.equalsIgnoreCase("full")) {
+                logger.warn("load method in ob version " + ObGlobal.getObVsnString(obVersion)
+                            + "is not supported, minimum version required is "
+                            + ObGlobal.getObVsnString(OB_VERSION_4_3_2_0));
+                throw new ObDirectLoadNotSupportedException(
+                    "load method in ob version " + ObGlobal.getObVsnString(obVersion)
+                            + " is not supported, minimum version required is "
+                            + ObGlobal.getObVsnString(OB_VERSION_4_3_2_0));
+            }
+        } else if (statement.getPartitionNames().length > 0) {
+            logger.warn("partition names in ob version " + ObGlobal.getObVsnString(obVersion)
+                        + "is not supported");
+            throw new ObDirectLoadNotSupportedException("partition names in ob version "
+                                                        + ObGlobal.getObVsnString(obVersion)
+                                                        + " is not supported");
+        }
     }
 
     @Override

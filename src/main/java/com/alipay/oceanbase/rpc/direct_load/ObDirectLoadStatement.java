@@ -45,7 +45,7 @@ public class ObDirectLoadStatement {
     private long                               queryTimeout         = 0;
 
     private long                               maxErrorRowCount     = 0;
-    private String                             loadMethod           = "full";
+    private String                             loadMethod           = "";
 
     private boolean                            isInited             = false;
     private boolean                            isClosed             = false;
@@ -83,6 +83,7 @@ public class ObDirectLoadStatement {
         }
         fillParams(builder);
         initCheck();
+        connection.getProtocol().checkIsSupported(this);
         obTablePool = new ObDirectLoadConnection.ObTablePool(connection, logger, queryTimeout);
         obTablePool.init();
         executor = new ObDirectLoadStatementExecutor(this);

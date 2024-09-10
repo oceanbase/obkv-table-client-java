@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.direct_load.protocol;
 
 import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.direct_load.ObDirectLoadLogger;
+import com.alipay.oceanbase.rpc.direct_load.ObDirectLoadTraceId;
 import com.alipay.oceanbase.rpc.direct_load.exception.*;
 import com.alipay.oceanbase.rpc.direct_load.protocol.v0.ObDirectLoadProtocolV0;
 
@@ -67,7 +68,8 @@ public class ObDirectLoadProtocolFactory {
         return (obVersion >= minimumObVersion);
     }
 
-    public static ObDirectLoadProtocol getProtocol(long obVersion) throws ObDirectLoadException {
+    public static ObDirectLoadProtocol getProtocol(ObDirectLoadTraceId traceId, long obVersion)
+                                                                                               throws ObDirectLoadException {
         final long minimumObVersion = getSupportedMinimumObVersion(obVersion);
         if (obVersion < minimumObVersion) {
             logger.warn("direct load in ob version " + ObGlobal.getObVsnString(obVersion)
@@ -78,6 +80,7 @@ public class ObDirectLoadProtocolFactory {
                         + " is not supported, minimum version required is "
                         + ObGlobal.getObVsnString(minimumObVersion));
         }
-        return new ObDirectLoadProtocolV0();
+        return new ObDirectLoadProtocolV0(traceId, obVersion);
     }
+
 }

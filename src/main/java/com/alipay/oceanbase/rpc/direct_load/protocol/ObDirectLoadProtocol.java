@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.direct_load.protocol;
 
+import com.alipay.oceanbase.rpc.direct_load.ObDirectLoadStatement;
 import com.alipay.oceanbase.rpc.direct_load.ObDirectLoadTraceId;
 import com.alipay.oceanbase.rpc.direct_load.protocol.payload.*;
 import com.alipay.oceanbase.rpc.direct_load.exception.ObDirectLoadException;
@@ -26,6 +27,8 @@ public interface ObDirectLoadProtocol {
     void init() throws ObDirectLoadException;
 
     int getProtocolVersion();
+
+    void checkIsSupported(ObDirectLoadStatement statement) throws ObDirectLoadException;
 
     // rpc
     ObDirectLoadBeginRpc getBeginRpc(ObDirectLoadTraceId traceId);
