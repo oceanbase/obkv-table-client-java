@@ -817,7 +817,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             // if the cause is that ODP partition meta have expired, try to fetch new one
                             if (ex instanceof ObTablePartitionChangeException
                                 && ((ObTablePartitionChangeException) ex).getErrorCode() == OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
-                                System.out.println("odp partition changed.");
                                 needRenew = true;
                             } else {
                                 throw ex;
