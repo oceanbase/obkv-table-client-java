@@ -130,15 +130,20 @@ public class ObHashPartDesc extends ObPartDesc {
                         throw new IllegalArgumentException("rowkey length is " + startRow.size()
                                                            + ", which is shortest than " + refIdx);
                     }
-                    // TODO: what if the curObRefColumnName does not exist in the startRow
-                    if (startRow.get(curObRefColumnName) instanceof ObObj
-                        && (((ObObj) startRow.get(curObRefColumnName)).isMinObj() || ((ObObj) startRow
-                            .get(curObRefColumnName)).isMaxObj())) {
+                    Object startValue = startRow.get(curObRefColumnName);
+                    if (startValue == null) {
+                        throw new IllegalArgumentException("Please include all partition key in start range. Currently missing key: { " + curObRefColumnName + " }");
+                    }
+                    if (startValue instanceof ObObj
+                        && (((ObObj) startValue).isMinObj() || ((ObObj) startValue).isMaxObj())) {
                         return completeWorks;
                     }
-                    if (endRow.get(curObRefColumnName) instanceof ObObj
-                        && (((ObObj) endRow.get(curObRefColumnName)).isMinObj() || ((ObObj) endRow
-                            .get(curObRefColumnName)).isMaxObj())) {
+                    Object endValue = endRow.get(curObRefColumnName);
+                    if (endValue == null) {
+                        throw new IllegalArgumentException("Please include all partition key in end range. Currently missing key: { " + curObRefColumnName + " }");
+                    }
+                    if (endValue instanceof ObObj
+                        && (((ObObj) endValue).isMinObj() || ((ObObj) endValue).isMaxObj())) {
                         return completeWorks;
                     }
                 }
