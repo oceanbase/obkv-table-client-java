@@ -103,10 +103,8 @@ public class ObKeyPartDesc extends ObPartDesc {
                 throw new IllegalArgumentException("length of start key and end key is not equal");
             }
 
-            if (startRow.size() == 1 && startRow.getValues()[0] instanceof ObObj
-                && ((ObObj) startRow.getValues()[0]).isMinObj() && endRow.size() == 1
-                && endRow.getValues()[0] instanceof ObObj
-                && ((ObObj) endRow.getValues()[0]).isMaxObj()) {
+            if (startRow.size() == 1  && startRow.getValues()[0] instanceof ObObj && ((ObObj) startRow.getValues()[0]).isMinObj() &&
+                    endRow.size() == 1  && endRow.getValues()[0] instanceof ObObj && ((ObObj) endRow.getValues()[0]).isMaxObj()) {
                 return completeWorks;
             }
 
