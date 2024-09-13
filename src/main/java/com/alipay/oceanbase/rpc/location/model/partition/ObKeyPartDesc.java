@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.location.model.partition;
 
+import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.exception.ObTablePartitionConsistentException;
 import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObCollationType;
@@ -87,37 +88,56 @@ public class ObKeyPartDesc extends ObPartDesc {
      * Get part ids.
      */
     @Override
-    public List<Long> getPartIds(Object[] start, boolean startInclusive, Object[] end,
+    public List<Long> getPartIds(Object startRowObj, boolean startInclusive, Object endRowObj,
                                  boolean endInclusive) {
         try {
+            // verify the type of parameters and convert to Row
+            if (!(startRowObj instanceof Row) || !(endRowObj instanceof Row)) {
+                throw new ObTableException("invalid format of rowObj: " + startRowObj + ", "
+                                           + endRowObj);
+            }
+            Row startRow = (Row) startRowObj, endRow = (Row) endRowObj;
             // pre-check start and end
             // should remove after remove addRowkeyElement
-            if (start.length != end.length) {
+            if (startRow.size() != endRow.size()) {
                 throw new IllegalArgumentException("length of start key and end key is not equal");
             }
 
+            if (startRow.size() == 1  && startRow.getValues()[0] instanceof ObObj && ((ObObj) startRow.getValues()[0]).isMinObj() &&
+                    endRow.size() == 1  && endRow.getValues()[0] instanceof ObObj && ((ObObj) endRow.getValues()[0]).isMaxObj()) {
+                return completeWorks;
+            }
+
             // check whether partition key is Min or Max, should refactor after remove addRowkeyElement
-            for (ObPair<ObColumn, List<Integer>> pair : orderedPartRefColumnRowKeyRelations) {
-                for (int refIdx : pair.getRight()) {
-                    if (start.length <= refIdx) {
-                        throw new IllegalArgumentException("rowkey length is " + start.length
+            for (ObColumn curObcolumn : partColumns) {
+                for (int refIdx = 0; refIdx < curObcolumn.getRefColumnNames().size(); ++refIdx) {
+                    String curObRefColumnName = curObcolumn.getRefColumnNames().get(refIdx);
+                    if (startRow.size() <= refIdx) {
+                        throw new IllegalArgumentException("rowkey length is " + startRow.size()
                                                            + ", which is shortest than " + refIdx);
                     }
-                    if (start[refIdx] instanceof ObObj
-                        && (((ObObj) start[refIdx]).isMinObj() || ((ObObj) start[refIdx])
-                            .isMaxObj())) {
+                    Object startValue = startRow.get(curObRefColumnName);
+                    if (startValue == null) {
+                        throw new IllegalArgumentException("Please include all partition key in start range. Currently missing key: { " + curObRefColumnName + " }");
+                    }
+                    if (startValue instanceof ObObj
+                            && (((ObObj) startValue).isMinObj() || ((ObObj) startValue).isMaxObj())) {
                         return completeWorks;
                     }
-                    if (end[refIdx] instanceof ObObj
-                        && (((ObObj) end[refIdx]).isMinObj() || ((ObObj) end[refIdx]).isMaxObj())) {
+                    Object endValue = endRow.get(curObRefColumnName);
+                    if (endValue == null) {
+                        throw new IllegalArgumentException("Please include all partition key in end range. Currently missing key: { " + curObRefColumnName + " }");
+                    }
+                    if (endValue instanceof ObObj
+                            && (((ObObj) endValue).isMinObj() || ((ObObj) endValue).isMaxObj())) {
                         return completeWorks;
                     }
                 }
             }
 
             // eval partition key
-            List<Object> startValues = evalRowKeyValues(start);
-            List<Object> endValues = evalRowKeyValues(end);
+            List<Object> startValues = evalRowKeyValues(startRow);
+            List<Object> endValues = evalRowKeyValues(endRow);
 
             if (startValues == null || endValues == null) {
                 throw new NumberFormatException("can not parseToComparable start value ["
@@ -140,72 +160,6 @@ public class ObKeyPartDesc extends ObPartDesc {
         }
     }
 
-    // get partition ids for query
-    public List<Long> getPartIds(List<String> scanRangeColumns, Object[] start, boolean startInclusive,
-                                          Object[] end, boolean endInclusive) {
-
-        try {
-            if (start.length != end.length) {
-                throw new IllegalArgumentException("length of start key and end key is not equal");
-            }
-
-            if (start.length == 1  && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj() &&
-                    end.length == 1  && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
-                return completeWorks;
-            }
-
-            if (scanRangeColumns.size() != start.length) {
-                throw new IllegalArgumentException("length of key and scan range columns is not equal");
-            }
-
-            Row startRow = new Row();
-            Row endRow = new Row();
-            for (int i = 0; i < scanRangeColumns.size(); i++) {
-                startRow.add(scanRangeColumns.get(i), start[i]);
-                endRow.add(scanRangeColumns.get(i), end[i]);
-            }
-
-            // check whether partition key is Min or Max, should refactor after remove addRowkeyElement
-            for (ObColumn partColumn : partColumns) {
-                List<String> refColumns = partColumn.getRefColumnNames();
-                for (String column : refColumns) {
-                    if (startRow.get(column) instanceof ObObj
-                            && (((ObObj) startRow.get(column)).isMinObj() || ((ObObj) startRow.get(column))
-                            .isMaxObj())) {
-                        return completeWorks;
-                    }
-                    if (endRow.get(column) instanceof ObObj
-                            && (((ObObj) endRow.get(column)).isMinObj() || ((ObObj) endRow.get(column)).isMaxObj())) {
-                        return completeWorks;
-                    }
-                }
-            }
-
-            // eval partition key
-            List<Object> startValues = evalRowKeyValues(startRow);
-            List<Object> endValues = evalRowKeyValues(endRow);
-
-            if (startValues == null || endValues == null) {
-                throw new NumberFormatException("can not parseToComparable start value ["
-                        + startValues + "] or end value [" + endValues
-                        + "] to long");
-            }
-
-            if (startValues.equals(endValues)) {
-                List<Long> partIds = new ArrayList<Long>();
-                partIds.add(calcPartId(startValues));
-                return partIds;
-            } else {
-                // partition key is different in key partition
-                return completeWorks;
-            }
-        } catch (IllegalArgumentException e) {
-            logger.error(LCD.convert("01-00002"), e);
-            throw new IllegalArgumentException(
-                    "ObKeyPartDesc get part id come across illegal params", e);
-        }
-    }
-
     /*
      * Get random part id.
      */
@@ -218,28 +172,32 @@ public class ObKeyPartDesc extends ObPartDesc {
      * Get part id.
      */
     @Override
-    public Long getPartId(Object... rowKey) throws IllegalArgumentException {
-        List<Object[]> rowKeys = new ArrayList<Object[]>();
-        rowKeys.add(rowKey);
-        return getPartId(rowKeys, false);
+    public Long getPartId(Object... row) throws IllegalArgumentException {
+        List<Object> rows = new ArrayList<Object>();
+        rows.addAll(Arrays.asList(row));
+        return getPartId(rows, false);
     }
 
     /*
      * Get part id.
      */
     @Override
-    public Long getPartId(List<Object[]> rowKeys, boolean consistency) {
+    public Long getPartId(List<Object> rows, boolean consistency) {
 
-        if (rowKeys == null || rowKeys.size() == 0) {
-            throw new IllegalArgumentException("invalid row keys :" + rowKeys);
+        if (rows == null || rows.size() == 0) {
+            throw new IllegalArgumentException("invalid row keys :" + rows);
         }
 
         try {
-            int partRefColumnSize = orderedPartRefColumnRowKeyRelations.size();
+            int partRefColumnSize = partColumns.size();
             List<Object> evalValues = null;
 
-            for (Object[] rowKey : rowKeys) {
-                List<Object> currentRowKeyEvalValues = evalRowKeyValues(rowKey);
+            for (Object rowObj : rows) {
+                if (!(rowObj instanceof Row)) {
+                    throw new ObTableException("invalid format of rowObj: " + rowObj);
+                }
+                Row row = (Row) rowObj;
+                List<Object> currentRowKeyEvalValues = evalRowKeyValues(row);
                 if (evalValues == null) {
                     evalValues = currentRowKeyEvalValues;
                 }
@@ -253,11 +211,10 @@ public class ObKeyPartDesc extends ObPartDesc {
                 }
 
                 for (int i = 0; i < evalValues.size(); i++) {
-                    if (!equalsWithCollationType(orderedPartRefColumnRowKeyRelations.get(i)
-                        .getLeft().getObCollationType(), evalValues.get(i),
-                        currentRowKeyEvalValues.get(i))) {
+                    if (!equalsWithCollationType(partColumns.get(i).getObCollationType(),
+                        evalValues.get(i), currentRowKeyEvalValues.get(i))) {
                         throw new ObTablePartitionConsistentException(
-                            "across partition operation may cause consistent problem " + rowKeys);
+                            "across partition operation may cause consistent problem " + rows);
                     }
                 }
             }
@@ -272,20 +229,19 @@ public class ObKeyPartDesc extends ObPartDesc {
 
     // calc partition id from eval values
     private Long calcPartId(List<Object> evalValues) {
-        if (evalValues == null || evalValues.size() != orderedPartRefColumnRowKeyRelations.size()) {
+        if (evalValues == null || evalValues.size() != partColumns.size()) {
             throw new IllegalArgumentException("invalid eval values :" + evalValues);
         }
 
         long hashValue = 0L;
-        for (int i = 0; i < orderedPartRefColumnRowKeyRelations.size(); i++) {
-            hashValue = ObHashUtils.toHashcode(evalValues.get(i),
-                    orderedPartRefColumnRowKeyRelations.get(i).getLeft(), hashValue,
-                    this.getPartFuncType());
+        for (int i = 0; i < partColumns.size(); i++) {
+            hashValue = ObHashUtils.toHashcode(evalValues.get(i), partColumns.get(i), hashValue,
+                this.getPartFuncType());
         }
 
         hashValue = (hashValue > 0 ? hashValue : -hashValue);
         return ((long) partSpace << ObPartConstants.OB_PART_IDS_BITNUM)
-                | (hashValue % this.partNum);
+               | (hashValue % this.partNum);
     }
 
     private boolean equalsWithCollationType(ObCollationType collationType, Object s, Object t)

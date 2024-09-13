@@ -199,42 +199,42 @@ public class BatchOperation {
                                                            + type);
                     case INSERT:
                         ((Insert) mutation).removeRowkeyFromMutateColval();
-                        batchOps.insert(mutation.getRowKey(), ((Insert) mutation).getColumns(),
+                        batchOps.insert(((Insert) mutation).getRowKeyValues().toArray(new Object[0]), ((Insert) mutation).getColumns(),
                             ((Insert) mutation).getValues());
                         break;
                     case DEL:
-                        batchOps.delete(mutation.getRowKey());
+                        batchOps.delete(((Delete) mutation).getRowKeyValues().toArray(new Object[0]));
                         break;
                     case UPDATE:
                         ((Update) mutation).removeRowkeyFromMutateColval();
-                        batchOps.update(mutation.getRowKey(), ((Update) mutation).getColumns(),
+                        batchOps.update(((Update) mutation).getRowKeyValues().toArray(new Object[0]), ((Update) mutation).getColumns(),
                             ((Update) mutation).getValues());
                         break;
                     case INSERT_OR_UPDATE:
                         ((InsertOrUpdate) mutation).removeRowkeyFromMutateColval();
-                        batchOps.insertOrUpdate(mutation.getRowKey(),
+                        batchOps.insertOrUpdate(((InsertOrUpdate) mutation).getRowKeyValues().toArray(new Object[0]),
                             ((InsertOrUpdate) mutation).getColumns(),
                             ((InsertOrUpdate) mutation).getValues());
                         break;
                     case REPLACE:
                         ((Replace) mutation).removeRowkeyFromMutateColval();
-                        batchOps.replace(mutation.getRowKey(), ((Replace) mutation).getColumns(),
+                        batchOps.replace(((Replace) mutation).getRowKeyValues().toArray(new Object[0]), ((Replace) mutation).getColumns(),
                             ((Replace) mutation).getValues());
                         break;
                     case INCREMENT:
                         ((Increment) mutation).removeRowkeyFromMutateColval();
-                        batchOps.increment(mutation.getRowKey(),
+                        batchOps.increment(((Increment) mutation).getRowKeyValues().toArray(new Object[0]),
                             ((Increment) mutation).getColumns(),
                             ((Increment) mutation).getValues(), withResult);
                         break;
                     case APPEND:
                         ((Append) mutation).removeRowkeyFromMutateColval();
-                        batchOps.append(mutation.getRowKey(), ((Append) mutation).getColumns(),
+                        batchOps.append(((Append) mutation).getRowKeyValues().toArray(new Object[0]), ((Append) mutation).getColumns(),
                             ((Append) mutation).getValues(), withResult);
                         break;
                     case PUT:
                         ((Put) mutation).removeRowkeyFromMutateColval();
-                        batchOps.put(mutation.getRowKey(), ((Put) mutation).getColumns(),
+                        batchOps.put(((Put) mutation).getRowKeyValues().toArray(new Object[0]), ((Put) mutation).getColumns(),
                             ((Put) mutation).getValues());
                         break;
                     default:
@@ -313,12 +313,12 @@ public class BatchOperation {
     }
 
     private void negateHbaseTimestamp(Mutation mutation) {
-        Object[] rowKey = mutation.getRowKey();
-        if (rowKey == null || rowKey.length != 3) {
+        Row rowKey = mutation.getRowKey();
+        if (rowKey == null || rowKey.size() != 3) {
             throw new IllegalArgumentException("hbase rowkey length must be 3");
         } else {
-            long ts = ((long) ((ObObj) mutation.getRowKey()[2]).getValue());
-            ((ObObj) mutation.getRowKey()[2]).setValue(-ts);
+            long ts = ((long) ((ObObj) mutation.getRowKeyValues().get(2)).getValue());
+            ((ObObj) mutation.getRowKeyValues().get(2)).setValue(-ts);
         }
     }
 }

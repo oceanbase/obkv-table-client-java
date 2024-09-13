@@ -21,6 +21,7 @@ import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.mutation.InsertOrUpdate;
+import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperation;
@@ -58,7 +59,7 @@ public class CheckAndInsUp {
         this.checkExists = check_exists;
     }
 
-    public Object[] getRowKey() {
+    public Row getRowKey() {
         return insUp.getRowKey();
     }
 
@@ -85,15 +86,15 @@ public class CheckAndInsUp {
 
         TableQuery query = client.query(tableName);
         query.setFilter(filter);
-        Object[] rowKey = getRowKey();
+        Row rowKey = getRowKey();
         List<ObNewRange> ranges = new ArrayList<>();
         ObNewRange range = new ObNewRange();
-        range.setStartKey(ObRowKey.getInstance(insUp.getRowKey()));
-        range.setEndKey(ObRowKey.getInstance(insUp.getRowKey()));
+        range.setStartKey(ObRowKey.getInstance(insUp.getRowKey().getValues()));
+        range.setEndKey(ObRowKey.getInstance(insUp.getRowKey().getValues()));
         ranges.add(range);
         query.getObTableQuery().setKeyRanges(ranges);
         ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.INSERT_OR_UPDATE,
-                insUp.getRowKey(), insUp.getColumns(), insUp.getValues());
+                insUp.getRowKey().getValues(), insUp.getColumns(), insUp.getValues());
 
         return new MutationResult(((ObTableClient)client).mutationWithFilter(query, rowKey, ranges, operation, false, true, checkExists));
     }

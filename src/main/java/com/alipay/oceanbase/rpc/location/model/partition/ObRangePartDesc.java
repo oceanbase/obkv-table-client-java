@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.location.model.partition;
 
+import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.exception.ObTablePartitionConsistentException;
 import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObColumn;
@@ -213,44 +214,24 @@ public class ObRangePartDesc extends ObPartDesc {
      * Get part ids.
      */
     @Override
-    public List<Long> getPartIds(Object[] start, boolean startInclusive, Object[] end,
+    public List<Long> getPartIds(Object startRowObj, boolean startInclusive, Object endRowObj,
                                  boolean endInclusive) {
 
-        // can not detail the border effect so that the range is magnified
-        int startIdx = getBoundsIdx(true, start);
-        int stopIdx = getBoundsIdx(true, end);
-        List<Long> partIds = new ArrayList<Long>();
-        for (int i = startIdx; i <= stopIdx; i++) {
-            partIds.add(this.bounds.get(i).value);
+        if (!(startRowObj instanceof Row) || !(endRowObj instanceof Row)) {
+            throw new ObTableException("invalid format of rowObj: " + startRowObj + ", "
+                    + endRowObj);
         }
-        return partIds;
-    }
-
-    @Override
-    public List<Long> getPartIds(List<String> scanRangeColumns, Object[] start, boolean startInclusive,
-                                 Object[] end, boolean endInclusive) {
-
-        if (start.length != end.length) {
+        Row startRow = (Row) startRowObj, endRow = (Row) endRowObj;
+        // pre-check start and end
+        // should remove after remove addRowkeyElement
+        if (startRow.size() != endRow.size()) {
             throw new IllegalArgumentException("length of start key and end key is not equal");
         }
-
-        if (start.length == 1  && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj() &&
-                end.length == 1  && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
+        if (startRow.size() == 1  && startRow.getValues()[0] instanceof ObObj && ((ObObj) startRow.getValues()[0]).isMinObj() &&
+                endRow.size() == 1  && endRow.getValues()[0] instanceof ObObj && ((ObObj) endRow.getValues()[0]).isMaxObj()) {
             return completeWorks;
         }
 
-        if (scanRangeColumns.size() != start.length) {
-            throw new IllegalArgumentException("length of key and scan range columns is not equal");
-        }
-
-        Row startRow = new Row();
-        Row endRow = new Row();
-        for (int i = 0; i < scanRangeColumns.size(); i++) {
-            startRow.add(scanRangeColumns.get(i), start[i]);
-            endRow.add(scanRangeColumns.get(i), end[i]);
-        }
-
-        // can not detail the border effect so that the range is magnified
         int startIdx = getBoundsIdx(true, startRow);
         int stopIdx = getBoundsIdx(true, endRow);
         List<Long> partIds = new ArrayList<Long>();
@@ -264,9 +245,11 @@ public class ObRangePartDesc extends ObPartDesc {
      * Get part id.
      */
     @Override
-    public Long getPartId(Object... rowKey) {
+    public Long getPartId(Object... row) {
         try {
-            return this.bounds.get(getBoundsIdx(false, rowKey)).value;
+            List<Object> rows = new ArrayList<Object>();
+            rows.addAll((Arrays.asList(row)));
+            return this.bounds.get(getBoundsIdx(false, rows)).value;
         } catch (IllegalArgumentException e) {
             RUNTIME.error(LCD.convert("01-00025"), e);
             throw new IllegalArgumentException(
@@ -275,14 +258,18 @@ public class ObRangePartDesc extends ObPartDesc {
 
     }
 
-    public int getBoundsIdx(boolean isScan, Object... rowKey) {
-        if (rowKey.length != rowKeyElement.size()) {
-            throw new IllegalArgumentException("row key is consist of " + rowKeyElement
-                                               + "but found" + Arrays.toString(rowKey));
+    public int getBoundsIdx(boolean isScan, List<Object> rowObj) {
+        if (!(rowObj.get(0) instanceof Row)) {
+            throw new ObTableException("invalid format of rowObj: " + rowObj);
+        }
+        Row row = (Row) rowObj.get(0);
+        if (row.size() < partColumns.size()) {
+            throw new IllegalArgumentException("Input row key should at least include " + partColumns
+                                               + "but found" + Arrays.toString(row.getValues()));
         }
 
         try {
-            List<Object> evalParams = evalRowKeyValues(rowKey);
+            List<Object> evalParams = evalRowKeyValues(row);
             List<Comparable> comparableElement = super.initComparableElementByTypes(evalParams,
                 this.orderedCompareColumns);
             ObPartitionKey searchKey = ObPartitionKey.getInstance(orderedCompareColumns,
@@ -340,14 +327,18 @@ public class ObRangePartDesc extends ObPartDesc {
      * Get part id.
      */
     @Override
-    public Long getPartId(List<Object[]> rowKeys, boolean consistency) {
-        if (rowKeys == null || rowKeys.size() == 0) {
-            throw new IllegalArgumentException("invalid row keys :" + rowKeys);
+    public Long getPartId(List<Object> rows, boolean consistency) {
+        if (rows == null || rows.size() == 0) {
+            throw new IllegalArgumentException("invalid row keys :" + rows);
         }
         Long partId = null;
 
-        for (Object[] rowKey : rowKeys) {
-            long currentPartId = getPartId(rowKey);
+        for (Object rowObj : rows) {
+            if (!(rowObj instanceof Row)) {
+                throw new ObTableException("invalid format of rowObj: " + rowObj);
+            }
+            Row row = (Row) rowObj;
+            long currentPartId = getPartId(row);
             if (partId == null) {
                 partId = currentPartId;
             }
@@ -357,7 +348,7 @@ public class ObRangePartDesc extends ObPartDesc {
 
             if (!partId.equals(currentPartId)) {
                 throw new ObTablePartitionConsistentException(
-                    "across partition operation may cause consistent problem " + rowKeys);
+                    "across partition operation may cause consistent problem " + rows);
             }
         }
 
