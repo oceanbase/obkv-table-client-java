@@ -141,16 +141,16 @@ public class ObTableRemoting extends BaseRemoting {
             }
             if (resultCode.getRcode() != 0) {
                 String errMessage = TraceUtil.formatTraceMessage(conn, request,
-                        "routed to the wrong server: " + response.getMessage());
+                    "routed to the wrong server: " + response.getMessage());
                 logger.warn(errMessage);
                 if (needFetchAll(resultCode.getRcode(), resultCode.getPcode())) {
                     throw new ObTableNeedFetchAllException(errMessage);
                 } else if (needFetchPartial(resultCode.getRcode())) {
                     throw new ObTableRoutingWrongException(errMessage);
                 } else {
-                    ExceptionUtil.throwObTableException(conn.getObTable().getIp(), conn.getObTable()
-                            .getPort(), response.getHeader().getTraceId1(), response.getHeader()
-                            .getTraceId0(), resultCode.getRcode(), resultCode.getErrMsg());
+                    ExceptionUtil.throwObTableException(conn.getObTable().getIp(), conn
+                        .getObTable().getPort(), response.getHeader().getTraceId1(), response
+                        .getHeader().getTraceId0(), resultCode.getRcode(), resultCode.getErrMsg());
                 }
             }
 
@@ -186,7 +186,6 @@ public class ObTableRemoting extends BaseRemoting {
                                               InvokeCallback invokeCallback) {
         return new ObClientFuture(request.getId());
     }
-    
 
     // schema changed
     private boolean needFetchAll(int errorCode, int pcode) {

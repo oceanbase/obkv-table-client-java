@@ -470,6 +470,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                                 "tablename: {}, errMsg: {}", tableName, ex.getMessage());
                         if (ex instanceof ObTablePartitionChangeException &&
                                 ((ObTablePartitionChangeException) ex).getErrorCode() == ResultCodes.OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
+                            System.out.println("odp partition changed.");
                             odpNeedRenew = true;
                         }
                         else {

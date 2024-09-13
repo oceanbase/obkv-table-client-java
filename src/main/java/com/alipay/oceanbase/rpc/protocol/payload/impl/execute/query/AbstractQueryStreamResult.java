@@ -163,6 +163,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                     e.getMessage(), tryTimes);
                             if (e instanceof ObTablePartitionChangeException
                                 && ((ObTablePartitionChangeException) e).getErrorCode() == ResultCodes.OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
+                                System.out.println("odp partition changed.");
                                 odpNeedRenew = true;
                             } else {
                                 throw e;

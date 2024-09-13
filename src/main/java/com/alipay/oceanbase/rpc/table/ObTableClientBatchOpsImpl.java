@@ -232,9 +232,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             }
             ObPair<Long, ObTableParam> tableObPair = null;
             if (!obTableClient.isOdpMode()) {
-                tableObPair = obTableClient.getTableBySingleRowKeyWithRoute(
-                tableName, rowKey, false, false, false,
-                obTableClient.getRoute(batchOperation.isReadOnly()));
+                tableObPair = obTableClient.getTableBySingleRowKeyWithRoute(tableName, rowKey,
+                    false, false, false, obTableClient.getRoute(batchOperation.isReadOnly()));
             } else {
                 tableObPair = obTableClient.getODPTableWithRowKeyValue(tableName, rowKey, false);
             }
@@ -353,6 +352,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                                 tryTimes);
                         if (ex instanceof ObTablePartitionChangeException
                             && ((ObTablePartitionChangeException) ex).getErrorCode() == ResultCodes.OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
+                            System.out.println("odp partition changed");
                             odpNeedRenew = true;
                         } else {
                             throw ex;

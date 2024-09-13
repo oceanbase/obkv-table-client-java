@@ -591,7 +591,8 @@ public class ObTableClientAutoIncTest {
         test_autoinc_in_batch_inner("test_auto_increment_batch_ttl", true, true);
     }
 
-    public void test_autoinc_in_batch_inner(String tableName, boolean useAutoinc, boolean useReplace) throws Exception {
+    public void test_autoinc_in_batch_inner(String tableName, boolean useAutoinc, boolean useReplace)
+                                                                                                     throws Exception {
         try {
             int batchSize = 10;
             BatchOperation batchOperation = client.batchOperation(tableName);
@@ -619,7 +620,8 @@ public class ObTableClientAutoIncTest {
             // check result
             TableQuery tableQuery = client.query(tableName);
             tableQuery.select("c1", "c2", "c3");
-            tableQuery.addScanRange(new Object[]{100L}, new Object[]{Long.valueOf(100 + batchSize - 1)});
+            tableQuery.addScanRange(new Object[] { 100L },
+                new Object[] { Long.valueOf(100 + batchSize - 1) });
             QueryResultSet result = tableQuery.execute();
             int i = 0;
             Long c2_val = -1L;
@@ -627,8 +629,8 @@ public class ObTableClientAutoIncTest {
                 Row row = result.getResultRow();
                 Assert.assertEquals(Long.valueOf(i + 100), row.get("c1"));
                 if (useAutoinc) {
-                    Assert.assertTrue(c2_val < (Long)row.get("c2"));
-                    c2_val = (Long)row.get("c2");
+                    Assert.assertTrue(c2_val < (Long) row.get("c2"));
+                    c2_val = (Long) row.get("c2");
                 } else {
                     Assert.assertEquals(Long.valueOf(i + 1000), row.get("c2"));
                 }

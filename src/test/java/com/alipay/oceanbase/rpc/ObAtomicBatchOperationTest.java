@@ -209,9 +209,9 @@ public class ObAtomicBatchOperationTest {
     }
 
     @Test
-
     public void testReturnOneRes() {
-        Assume.assumeTrue("Skipping returnOneResult when ob version not support", ObGlobal.isReturnOneResultSupport());
+        Assume.assumeTrue("Skipping returnOneResult when ob version not support",
+            ObGlobal.isReturnOneResultSupport());
         TableBatchOps batchOps = obTableClient.batch("test_varchar_table");
         // no atomic ReturnOneRes batch operation
         try {
@@ -297,7 +297,8 @@ public class ObAtomicBatchOperationTest {
 
     @Test
     public void testReturnOneResPartition() throws Exception {
-        Assume.assumeTrue("Skiping returnOneResult when ob version not support", ObGlobal.isReturnOneResultSupport());
+        Assume.assumeTrue("Skiping returnOneResult when ob version not support",
+            ObGlobal.isReturnOneResultSupport());
         BatchOperation batchOperation = obTableClient.batchOperation("test_mutation");
         Object values[][] = { { 1L, "c2_val", "c3_val", 100L }, { 200L, "c2_val", "c3_val", 100L },
                 { 401L, "c2_val", "c3_val", 100L }, { 2000L, "c2_val", "c3_val", 100L },
@@ -328,7 +329,8 @@ public class ObAtomicBatchOperationTest {
 
     @Test
     public void testBatchGet() throws Exception {
-        Assume.assumeTrue("Skipping returnOneResult when ob version not support", ObGlobal.isReturnOneResultSupport());
+        Assume.assumeTrue("Skipping returnOneResult when ob version not support",
+            ObGlobal.isReturnOneResultSupport());
         try {
             {
                 // insert

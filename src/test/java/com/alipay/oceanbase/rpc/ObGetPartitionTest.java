@@ -179,21 +179,23 @@ public class ObGetPartitionTest {
 
             Partition partition = client.getPartition(TABLE_NAME,
                 row(colVal("c1", 1L), colVal("c2", "c2_val")));
-            System.out.println(partition.toString());
+            System.out.println("Row Key: {1L, c2_val:" + partition.toString());
             QueryResultSet result = client.query(TABLE_NAME)
                 .addScanRange(partition.start(), partition.end()).execute();
             Assert.assertEquals(1, result.cacheSize());
 
-            partition = client.getPartition(TABLE_NAME, row(colVal("c1", 400L), colVal("c2", "c2_val")));
-            System.out.println(partition.toString());
-            result = client.query(TABLE_NAME)
-                    .addScanRange(partition.start(), partition.end()).execute();
+            partition = client.getPartition(TABLE_NAME,
+                row(colVal("c1", 400L), colVal("c2", "c2_val")));
+            System.out.println("Row Key: {400L, c2_val:" + partition.toString());
+            result = client.query(TABLE_NAME).addScanRange(partition.start(), partition.end())
+                .execute();
             Assert.assertEquals(2, result.cacheSize());
 
-            partition = client.getPartition(TABLE_NAME, row(colVal("c1", 1000L), colVal("c2", "c2_val")));
-            System.out.println(partition.toString());
-            result = client.query(TABLE_NAME)
-                    .addScanRange(partition.start(), partition.end()).execute();
+            partition = client.getPartition(TABLE_NAME,
+                row(colVal("c1", 1000L), colVal("c2", "c2_val")));
+            System.out.println("Row Key: {1001L, c2_val:" + partition.toString());
+            result = client.query(TABLE_NAME).addScanRange(partition.start(), partition.end())
+                .execute();
             Assert.assertEquals(3, result.cacheSize());
         } catch (Exception e) {
             e.printStackTrace();
@@ -297,7 +299,8 @@ public class ObGetPartitionTest {
                 System.out.println(partition.toString());
             }
 
-            Partition partition = client.getPartition(TABLE_NAME, row(colVal("c1", 1L), colVal("c2", "c2_val")));
+            Partition partition = client.getPartition(TABLE_NAME,
+                row(colVal("c1", 1L), colVal("c2", "c2_val")));
             Assert.assertNotNull(partition.getPartitionId());
             // test get partition with partition key
             Partition partition_prefix = client.getPartition(TABLE_NAME, row(colVal("c1", 1L)));
@@ -492,8 +495,10 @@ public class ObGetPartitionTest {
                 statement.execute("insert into " + testTable
                                   + "(c0, c1, c2, c3, c4, c5, c6) values (" + c0 + "," + c1 + ","
                                   + c2 + ",'" + c3 + "','" + c4 + "','" + c5 + "'," + "'value')");
-                Partition partition = client.getPartition(testTable,  row(colVal("c0", c0), colVal("c1", c1), colVal("c2", c2),
-                        colVal("c3", c3), colVal("c4", c4),  colVal("c5", c5)));
+                Partition partition = client.getPartition(
+                    testTable,
+                    row(colVal("c0", c0), colVal("c1", c1), colVal("c2", c2), colVal("c3", c3),
+                        colVal("c4", c4), colVal("c5", c5)));
                 System.out.println(partition.toString());
                 QueryResultSet result = client.query(testTable)
                     .addScanRange(partition.start(), partition.end()).execute();
@@ -650,28 +655,26 @@ public class ObGetPartitionTest {
                 Object[] curRow = values[i];
                 InsertOrUpdate insertOrUpdate = new InsertOrUpdate();
                 insertOrUpdate.setRowKey(row(colVal("K", curRow[0]), colVal("Q", curRow[1]),
-                        colVal("T", curRow[2])));
+                    colVal("T", curRow[2])));
                 insertOrUpdate.addMutateRow(row(colVal("V", curRow[3])));
                 batchOperation.addOperation(insertOrUpdate);
             }
-            client.insert(table_name, new Object[] { "K_val1", "Q_val1", timeStamp }, new String[] { "V" }, new Object[] { "V_val1".getBytes() });
-            client.insert(table_name, new Object[] { "K_val2", "Q_val2", timeStamp }, new String[] { "V" }, new Object[] { "V_val2".getBytes() });
+            client.insert(table_name, new Object[] { "K_val1", "Q_val1", timeStamp },
+                new String[] { "V" }, new Object[] { "V_val1".getBytes() });
+            client.insert(table_name, new Object[] { "K_val2", "Q_val2", timeStamp },
+                new String[] { "V" }, new Object[] { "V_val2".getBytes() });
 
             TableBatchOps tableBatchOps = client.batch(table_name);
-            tableBatchOps
-                    .delete(new Object[] { "K_val1", "Q_val1", timeStamp });
-            tableBatchOps.insert(
-                    new Object[] { "K_val3", "Q_val3", timeStamp },
-                    new String[] { "V" }, new Object[] { "V_val3".getBytes() });
-            tableBatchOps.replace(
-                    new Object[] { "K_val2", "Q_val2", timeStamp },
-                    new String[] { "V" }, new Object[] { "V_value2".getBytes() });
+            tableBatchOps.delete(new Object[] { "K_val1", "Q_val1", timeStamp });
+            tableBatchOps.insert(new Object[] { "K_val3", "Q_val3", timeStamp },
+                new String[] { "V" }, new Object[] { "V_val3".getBytes() });
+            tableBatchOps.replace(new Object[] { "K_val2", "Q_val2", timeStamp },
+                new String[] { "V" }, new Object[] { "V_value2".getBytes() });
             List<Object> batchResult = tableBatchOps.execute();
             Assert.assertEquals(3, batchResult.size());
             Assert.assertEquals(1L, batchResult.get(0));
             Assert.assertEquals(1L, batchResult.get(1));
             Assert.assertEquals(2L, batchResult.get(2));
-
 
         } catch (Exception e) {
             e.printStackTrace();
