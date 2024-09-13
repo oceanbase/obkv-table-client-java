@@ -89,6 +89,9 @@ public class ObPacketFactory implements CommandFactory {
         // compute checksum
         rpcHeaderPacket.setChecksum(ObPureCrc32C.calculate(payloadContent));
 
+        // group id
+        rpcHeaderPacket.setGroupId(payload.getGroupId());
+
         // 3. assemble and encode rpc packet
         ObRpcPacket rpcPacket = new ObRpcPacket();
         rpcPacket.setRpcPacketHeader(rpcHeaderPacket);

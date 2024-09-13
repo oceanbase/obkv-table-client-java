@@ -125,6 +125,21 @@ public class ObTableDirectLoadRequest extends AbstractPayload implements Credent
                + Serialization.getNeedBytes(argContent);
     }
 
+    @Override
+    public void setUniqueId(long uniqueId) {
+        // do nothing
+    }
+
+    @Override
+    public void setSequence(long sequence) {
+        // do nothing
+    }
+
+    public void setTraceId(long uniqueId, long sequence) {
+        super.setUniqueId(uniqueId);
+        super.setSequence(sequence);
+    }
+
     public static class Header implements ObSimplePayload {
         private ObAddr                         addr          = new ObAddr();
         private ObTableDirectLoadOperationType operationType = ObTableDirectLoadOperationType.MAX_TYPE;
