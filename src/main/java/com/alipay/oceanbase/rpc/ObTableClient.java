@@ -3040,6 +3040,25 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     TableEntryKey key = new TableEntryKey(clusterName, tenantName, database,
                         tableName);
                     odpTableEntry.setTableEntryKey(key);
+                    if (odpTableEntry.isPartitionTable()) {
+                        switch (runningMode) {
+                            case HBASE:
+                                tableRowKeyElement.put(tableName, HBASE_ROW_KEY_ELEMENT);
+                                odpTableEntry.setRowKeyElement(HBASE_ROW_KEY_ELEMENT);
+                                break;
+                            case NORMAL:
+                                Map<String, Integer> rowKeyElement = tableRowKeyElement.get(tableName);
+                                if (rowKeyElement != null) {
+                                    odpTableEntry.setRowKeyElement(rowKeyElement);
+                                } else {
+                                    RUNTIME.error("partition table must has row key element key ="
+                                            + key);
+                                    throw new ObTableEntryRefreshException(
+                                            "partition table must has row key element key ="
+                                                    + key);
+                                }
+                        }
+                    }
                     ODPTableLocations.put(tableName, odpTableEntry);
                     done = true;
                 } catch (Exception ex) {
