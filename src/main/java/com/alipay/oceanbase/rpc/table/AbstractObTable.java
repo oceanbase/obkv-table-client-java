@@ -41,7 +41,7 @@ public abstract class AbstractObTable extends AbstractTable {
 
     protected int  nettyBlockingWaitInterval = NETTY_BLOCKING_WAIT_INTERVAL.getDefaultInt();
 
-    protected long maxConnExpiredTime = MAX_CONN_EXPIRED_TIME.getDefaultLong();
+    protected long maxConnExpiredTime        = MAX_CONN_EXPIRED_TIME.getDefaultLong();
 
     /*
      * Get ob table connect try times.
@@ -165,5 +165,7 @@ public abstract class AbstractObTable extends AbstractTable {
     /*
      * Get connection max expired time
      */
-    public long getConnMaxExpiredTime() { return maxConnExpiredTime; }
+    public long getConnMaxExpiredTime() {
+        return maxConnExpiredTime;
+    }
 }

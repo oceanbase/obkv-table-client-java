@@ -2839,7 +2839,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 request.getTableName(),
                 ((ObTableBatchOperationRequest) request).getBatchOperation(), this);
             batchOps.setEntityType(request.getEntityType());
-            return new ObClusterTableBatchOps(batchOps).executeInternal();
+            return new ObClusterTableBatchOps(runtimeBatchExecutor, batchOps).executeInternal();
         } else if (request instanceof ObTableQueryAndMutateRequest) {
             ObTableQueryAndMutate tableQueryAndMutate = ((ObTableQueryAndMutateRequest) request)
                 .getTableQueryAndMutate();

@@ -117,9 +117,12 @@ public class ObListPartDesc extends ObPartDesc {
     }
 
     @Override
-    public List<Long> getPartIds(List<String> scanRangeColumns, Object[] start, boolean startInclusive, Object[] end, boolean endInclusive) throws IllegalArgumentException {
+    public List<Long> getPartIds(List<String> scanRangeColumns, Object[] start,
+                                 boolean startInclusive, Object[] end, boolean endInclusive)
+                                                                                            throws IllegalArgumentException {
         throw new IllegalArgumentException("getPartIds for List partition is not supported");
     }
+
     /*
      * Get part id.
      */

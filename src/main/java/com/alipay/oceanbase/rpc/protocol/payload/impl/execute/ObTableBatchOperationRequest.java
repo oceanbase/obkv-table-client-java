@@ -22,6 +22,8 @@ import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
+import java.util.concurrent.ExecutorService;
+
 /*
  *
 OB_SERIALIZE_MEMBER(ObTableBatchOperationRequest,
