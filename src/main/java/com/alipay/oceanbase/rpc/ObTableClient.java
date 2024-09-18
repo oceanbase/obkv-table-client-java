@@ -3063,6 +3063,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     done = true;
                 } catch (Exception ex) {
                     RUNTIME.error("Fetching ODP partition meta meet exception", ex);
+                    if (tableRowKeyElement.get(tableName) == null) {
+                        // if the error is missing row key element, directly throw
+                        throw ex;
+                    }
                     if (ex instanceof ObTableException) {
                         forceRenew = true; // force ODP to fetch the latest partition meta
                         retryTime++;
