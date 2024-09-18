@@ -340,14 +340,11 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 rowKey[j] = rowkeyObjs.get(j).getValue();
             }
 
-            // set correct table group name for hbase
-            if (this.entityType == ObTableEntityType.HKV
-                && obTableClient.getTableGroupInverted().containsKey(tableName)
-                && tableName.equalsIgnoreCase(obTableClient.getTableGroupCache().get(
-                obTableClient.getTableGroupInverted().get(tableName)))) {
-                tableName = obTableClient.getTableGroupInverted().get(tableName);
+            String real_tableName = tableName;
+            if (this.entityType == ObTableEntityType.HKV && obTableClient.isTableGroupName(tableName)) {
+                real_tableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
             }
-            ObPair<Long, ObTableParam>  tableObPair= obTableClient.getTableBySingleRowKeyWithRoute(tableName, rowKey,
+            ObPair<Long, ObTableParam>  tableObPair= obTableClient.getTableBySingleRowKeyWithRoute(real_tableName, rowKey,
                     false, false, false, obTableClient.getRoute(false));
             long lsId = tableObPair.getRight().getLsId();
 
