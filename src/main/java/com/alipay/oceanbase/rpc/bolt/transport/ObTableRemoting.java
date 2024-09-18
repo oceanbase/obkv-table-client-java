@@ -124,7 +124,7 @@ public class ObTableRemoting extends BaseRemoting {
             // If response indicates the request is routed to wrong server, we should refresh the routing meta.
             if (response.getHeader().isRoutingWrong()) {
                 String errMessage = TraceUtil.formatTraceMessage(conn, request,
-                        "routed to the wrong server: " + response.getMessage());
+                    "routed to the wrong server: " + response.getMessage());
                 logger.warn(errMessage);
                 if (needFetchAll(resultCode.getRcode(), resultCode.getPcode())) {
                     throw new ObTableNeedFetchAllException(errMessage);
@@ -141,16 +141,16 @@ public class ObTableRemoting extends BaseRemoting {
             }
             if (resultCode.getRcode() != 0) {
                 String errMessage = TraceUtil.formatTraceMessage(conn, request,
-                        "routed to the wrong server: " + response.getMessage());
+                    "routed to the wrong server: " + response.getMessage());
                 logger.warn(errMessage);
                 if (needFetchAll(resultCode.getRcode(), resultCode.getPcode())) {
                     throw new ObTableNeedFetchAllException(errMessage);
                 } else if (needFetchPartial(resultCode.getRcode())) {
                     throw new ObTableRoutingWrongException(errMessage);
                 } else {
-                    ExceptionUtil.throwObTableException(conn.getObTable().getIp(), conn.getObTable()
-                            .getPort(), response.getHeader().getTraceId1(), response.getHeader()
-                            .getTraceId0(), resultCode.getRcode(), resultCode.getErrMsg());
+                    ExceptionUtil.throwObTableException(conn.getObTable().getIp(), conn
+                        .getObTable().getPort(), response.getHeader().getTraceId1(), response
+                        .getHeader().getTraceId0(), resultCode.getRcode(), resultCode.getErrMsg());
                 }
             }
 
@@ -186,30 +186,30 @@ public class ObTableRemoting extends BaseRemoting {
                                               InvokeCallback invokeCallback) {
         return new ObClientFuture(request.getId());
     }
-    
 
     // schema changed
     private boolean needFetchAll(int errorCode, int pcode) {
         return errorCode == ResultCodes.OB_SCHEMA_ERROR.errorCode
-                || errorCode == ResultCodes.OB_TABLE_NOT_EXIST.errorCode
-                || errorCode == ResultCodes.OB_TABLET_NOT_EXIST.errorCode
-                || errorCode == ResultCodes.OB_LS_NOT_EXIST.errorCode
-                || (pcode == Pcodes.OB_TABLE_API_LS_EXECUTE && errorCode == ResultCodes.OB_NOT_MASTER.errorCode);
+               || errorCode == ResultCodes.OB_TABLE_NOT_EXIST.errorCode
+               || errorCode == ResultCodes.OB_TABLET_NOT_EXIST.errorCode
+               || errorCode == ResultCodes.OB_LS_NOT_EXIST.errorCode
+               || (pcode == Pcodes.OB_TABLE_API_LS_EXECUTE && errorCode == ResultCodes.OB_NOT_MASTER.errorCode);
     }
+
     private boolean needFetchPartial(int errorCode) {
         return errorCode == ResultCodes.OB_LOCATION_LEADER_NOT_EXIST.errorCode
-                || errorCode == ResultCodes.OB_NOT_MASTER.errorCode
-                || errorCode == ResultCodes.OB_RS_NOT_MASTER.errorCode
-                || errorCode == ResultCodes.OB_RS_SHUTDOWN.errorCode
-                || errorCode == ResultCodes.OB_RPC_SEND_ERROR.errorCode
-                || errorCode == ResultCodes.OB_RPC_POST_ERROR.errorCode
-                || errorCode == ResultCodes.OB_PARTITION_NOT_EXIST.errorCode
-                || errorCode == ResultCodes.OB_LOCATION_NOT_EXIST.errorCode
-                || errorCode == ResultCodes.OB_PARTITION_IS_STOPPED.errorCode
-                || errorCode == ResultCodes.OB_PARTITION_IS_BLOCKED.errorCode
-                || errorCode == ResultCodes.OB_SERVER_IS_INIT.errorCode
-                || errorCode == ResultCodes.OB_SERVER_IS_STOPPING.errorCode
-                || errorCode == ResultCodes.OB_TRANS_RPC_TIMEOUT.errorCode
-                || errorCode == ResultCodes.OB_NO_READABLE_REPLICA.errorCode;
+               || errorCode == ResultCodes.OB_NOT_MASTER.errorCode
+               || errorCode == ResultCodes.OB_RS_NOT_MASTER.errorCode
+               || errorCode == ResultCodes.OB_RS_SHUTDOWN.errorCode
+               || errorCode == ResultCodes.OB_RPC_SEND_ERROR.errorCode
+               || errorCode == ResultCodes.OB_RPC_POST_ERROR.errorCode
+               || errorCode == ResultCodes.OB_PARTITION_NOT_EXIST.errorCode
+               || errorCode == ResultCodes.OB_LOCATION_NOT_EXIST.errorCode
+               || errorCode == ResultCodes.OB_PARTITION_IS_STOPPED.errorCode
+               || errorCode == ResultCodes.OB_PARTITION_IS_BLOCKED.errorCode
+               || errorCode == ResultCodes.OB_SERVER_IS_INIT.errorCode
+               || errorCode == ResultCodes.OB_SERVER_IS_STOPPING.errorCode
+               || errorCode == ResultCodes.OB_TRANS_RPC_TIMEOUT.errorCode
+               || errorCode == ResultCodes.OB_NO_READABLE_REPLICA.errorCode;
     }
 }

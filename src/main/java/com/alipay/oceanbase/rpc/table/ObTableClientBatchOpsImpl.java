@@ -335,7 +335,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         }
                         ObTableParam newParam = obTableClient.getTableWithPartId(tableName,
                             originPartId, needRefreshTableEntry,
-                            obTableClient.isTableEntryRefreshIntervalWait(), needFetchAllRouteInfo, route).getRight();
+                            obTableClient.isTableEntryRefreshIntervalWait(), needFetchAllRouteInfo,
+                            route).getRight();
 
                         subObTable = newParam.getObTable();
                         subRequest.setPartitionId(newParam.getPartitionId());

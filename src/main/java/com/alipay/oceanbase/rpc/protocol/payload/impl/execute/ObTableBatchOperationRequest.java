@@ -45,7 +45,6 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
 
     private ObTableBatchOperation batchOperation;
     private boolean               batchOperationAsAtomic = false;
-    private ExecutorService       pool                   = null;
 
     /*
      * Get pcode.
@@ -171,13 +170,5 @@ public class ObTableBatchOperationRequest extends ObTableAbstractOperationReques
         } else {
             this.option_flag.setReturnOneResult(false);
         }
-    }
-
-    public void setPool(ExecutorService pool) {
-        this.pool = pool;
-    }
-
-    public ExecutorService getPool() {
-        return this.pool;
     }
 }
