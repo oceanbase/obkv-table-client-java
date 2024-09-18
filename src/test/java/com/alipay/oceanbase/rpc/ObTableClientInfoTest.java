@@ -37,10 +37,10 @@ import static org.junit.Assert.assertEquals;
 
 public class ObTableClientInfoTest {
     public ObTableClient[] clients;
-    private int          connCnt   = 10;
-    private int          clientCnt = 10;
-    private Long         connMaxExpiredTime = 1L;
-    String               tableName = "test_varchar_table";
+    private int            connCnt            = 10;
+    private int            clientCnt          = 10;
+    private Long           connMaxExpiredTime = 1L;
+    String                 tableName          = "test_varchar_table";
 
     /**
      CREATE TABLE `test_varchar_table` (
@@ -57,14 +57,13 @@ public class ObTableClientInfoTest {
         for (int i = 0; i < clientCnt; i++) {
             clients[i] = ObTableClientTestUtil.newTestClient();
             clients[i].addProperty(Property.SERVER_CONNECTION_POOL_SIZE.getKey(),
-                    Integer.toString(connCnt));
-            clients[i].addProperty(Property.RUNTIME_RETRY_TIMES.getKey(),
-                    Integer.toString(i + 3));
-            clients[i].addProperty(Property.MAX_CONN_EXPIRED_TIME.getKey(), Long.toString(connMaxExpiredTime));
+                Integer.toString(connCnt));
+            clients[i].addProperty(Property.RUNTIME_RETRY_TIMES.getKey(), Integer.toString(i + 3));
+            clients[i].addProperty(Property.MAX_CONN_EXPIRED_TIME.getKey(),
+                Long.toString(connMaxExpiredTime));
             clients[i].init();
         }
     }
-
 
     @Test
     public void test_conncetion() throws Exception {
@@ -98,21 +97,22 @@ public class ObTableClientInfoTest {
         return sb.toString();
     }
 
-    private void checkGvClientInfo(Connection conn, String tenantName, String userName, boolean is_update) throws Exception {
+    private void checkGvClientInfo(Connection conn, String tenantName, String userName,
+                                   boolean is_update) throws Exception {
         if (conn == null) {
             throw new NullPointerException();
         }
         Statement statement = conn.createStatement();
-        String SQL = "select a.client_id AS CLIENT_ID, b.tenant_name as TENANT_NAME, a.user_name AS USER_NAME, a.client_info AS CLIENT_INFO, " +
-                "a.first_login_ts AS FIRST_LOGIN_TS, a.last_login_ts AS LAST_LOGIN_TS " +
-                "from oceanbase.GV$OB_KV_CLIENT_INFO a inner join oceanbase.DBA_OB_TENANTS b on a.tenant_id = b.tenant_id " +
-                "where a.client_id in "+ genClientIdStr();
+        String SQL = "select a.client_id AS CLIENT_ID, b.tenant_name as TENANT_NAME, a.user_name AS USER_NAME, a.client_info AS CLIENT_INFO, "
+                     + "a.first_login_ts AS FIRST_LOGIN_TS, a.last_login_ts AS LAST_LOGIN_TS "
+                     + "from oceanbase.GV$OB_KV_CLIENT_INFO a inner join oceanbase.DBA_OB_TENANTS b on a.tenant_id = b.tenant_id "
+                     + "where a.client_id in " + genClientIdStr();
         statement.execute(SQL);
         ResultSet resultSet = statement.getResultSet();
 
         int resCount = 0;
         Map<Long, String> resultMap = new HashMap<Long, String>();
-        while(resultSet.next()) {
+        while (resultSet.next()) {
             resCount++;
             resultMap.put(resultSet.getLong("CLIENT_ID"), resultSet.getString("CLIENT_INFO"));
             Assert.assertEquals(userName, resultSet.getString("USER_NAME"));
@@ -132,14 +132,16 @@ public class ObTableClientInfoTest {
             String json_config_str = resultMap.get(clients[i].getClientId());
             Assert.assertTrue(json_config_str != null);
             Map<String, Object> config_map = JSON.parseObject(json_config_str);
-            Long srcClientId = (Long)clients[i].getTableConfigs().get("client_id");
-            Long dstClientId = (Long)config_map.get("client_id");
+            Long srcClientId = (Long) clients[i].getTableConfigs().get("client_id");
+            Long dstClientId = (Long) config_map.get("client_id");
             Assert.assertEquals(srcClientId, dstClientId);
 
             // sample check another object result : RUNTIME_RETRY_TIMES
-            Map<String, String> srcRouteMap = (Map<String, String>)clients[i].getTableConfigs().get("runtime");
-            Map<String, String> dstRouteMap = (Map<String, String>)config_map.get("runtime");
-            Assert.assertEquals(srcRouteMap.get(RUNTIME_RETRY_TIMES.getKey()), dstRouteMap.get(RUNTIME_RETRY_TIMES.getKey()));
+            Map<String, String> srcRouteMap = (Map<String, String>) clients[i].getTableConfigs()
+                .get("runtime");
+            Map<String, String> dstRouteMap = (Map<String, String>) config_map.get("runtime");
+            Assert.assertEquals(srcRouteMap.get(RUNTIME_RETRY_TIMES.getKey()),
+                dstRouteMap.get(RUNTIME_RETRY_TIMES.getKey()));
         }
     }
 
@@ -147,7 +149,7 @@ public class ObTableClientInfoTest {
         try {
             client.get(tableName, new String[] { "k1" }, new String[] { "c1" });
         } catch (Exception e) {
-            Assert.assertTrue(true);  //  table is not exist
+            Assert.assertTrue(true); //  table is not exist
         }
     }
 
