@@ -341,18 +341,13 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             for (int j = 0; j < rowKeySize; j++) {
                 rowKey[j] = rowkeyObjs.get(j).getValue();
             }
-<<<<<<< HEAD
-            ObPair<Long, ObTableParam>  tableObPair= obTableClient.getTable(tableName, rowKey,
-                    false, false, obTableClient.getRoute(false));
-=======
 
             String real_tableName = tableName;
             if (this.entityType == ObTableEntityType.HKV && obTableClient.isTableGroupName(tableName)) {
                 real_tableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
             }
-            ObPair<Long, ObTableParam>  tableObPair= obTableClient.getTableBySingleRowKeyWithRoute(real_tableName, rowKey,
-                    false, false, false, obTableClient.getRoute(false));
->>>>>>> 10c56c8 (lsop support tablegroup (#188))
+            ObPair<Long, ObTableParam>  tableObPair= obTableClient.getTable(real_tableName, rowKey,
+                    false, false, obTableClient.getRoute(false));
             long lsId = tableObPair.getRight().getLsId();
 
             Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperations
