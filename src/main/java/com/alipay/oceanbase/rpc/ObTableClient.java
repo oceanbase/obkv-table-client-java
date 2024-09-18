@@ -158,7 +158,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     private RouteTableRefresher routeTableRefresher;
 
-    private Thread                                            backgroundRefreshTableTask;
     private Long                                              clientId;
     private Map<String, Object>                               TableConfigs                            = new HashMap<>();
     /*
@@ -183,8 +182,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             initMetadata();
             // 5. run fresh table task
             routeTableRefresher = new RouteTableRefresher(this);
-            backgroundRefreshTableTask = new Thread(routeTableRefresher);
-            backgroundRefreshTableTask.start();
+            routeTableRefresher.start();
             initialized = true;
         } catch (Throwable t) {
             BOOT.warn("failed to init ObTableClient", t);
@@ -210,7 +208,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 return;
             }
             closed = true;
-            routeTableRefresher.finish();
+            if (routeTableRefresher != null) {
+                routeTableRefresher.finish();
+            }
             if (tableRoster != null) {
                 Exception throwException = null;
                 List<ObServerAddr> exceptionObServers = new ArrayList<ObServerAddr>();
