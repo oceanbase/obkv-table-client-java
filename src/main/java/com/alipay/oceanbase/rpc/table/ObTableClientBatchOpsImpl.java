@@ -244,8 +244,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 rowKey[j] = rowKeyObject.getObj(j).getValue();
             }
             ObPair<Long, ObTableParam> tableObPair = obTableClient.getTable(
-                tableName, rowKey, false, false, false,
-                obTableClient.getRoute(batchOperation.isReadOnly()));
+                tableName, rowKey, false, false, obTableClient.getRoute(batchOperation.isReadOnly()));
             ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>> obTableOperations = partitionOperationsMap
                 .get(tableObPair.getLeft());
             if (obTableOperations == null) {
