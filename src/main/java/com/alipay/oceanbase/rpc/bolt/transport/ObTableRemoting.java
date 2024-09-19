@@ -122,7 +122,7 @@ public class ObTableRemoting extends BaseRemoting {
             ObRpcResultCode resultCode = new ObRpcResultCode();
             resultCode.decode(buf);
             // If response indicates the request is routed to wrong server, we should refresh the routing meta.
-            if (response.getHeader().isRoutingWrong()) {
+            if (!conn.getObTable().getReRouting() &&response.getHeader().isRoutingWrong()) {
                 String errMessage = TraceUtil.formatTraceMessage(conn, request,
                         "routed to the wrong server: " + response.getMessage());
                 logger.warn(errMessage);
@@ -139,7 +139,7 @@ public class ObTableRemoting extends BaseRemoting {
                     throw new ObTableNeedFetchAllException(errMessage);
                 }
             }
-            if (resultCode.getRcode() != 0) {
+            if (resultCode.getRcode() != 0 && response.getHeader().getPcode() != Pcodes.OB_TABLE_API_MOVE) {
                 String errMessage = TraceUtil.formatTraceMessage(conn, request,
                         "routed to the wrong server: " + response.getMessage());
                 logger.warn(errMessage);
@@ -208,7 +208,6 @@ public class ObTableRemoting extends BaseRemoting {
                 || errorCode == ResultCodes.OB_PARTITION_IS_BLOCKED.errorCode
                 || errorCode == ResultCodes.OB_SERVER_IS_INIT.errorCode
                 || errorCode == ResultCodes.OB_SERVER_IS_STOPPING.errorCode
-                || errorCode == ResultCodes.OB_TENANT_NOT_IN_SERVER.errorCode
                 || errorCode == ResultCodes.OB_TRANS_RPC_TIMEOUT.errorCode
                 || errorCode == ResultCodes.OB_NO_READABLE_REPLICA.errorCode;
     }

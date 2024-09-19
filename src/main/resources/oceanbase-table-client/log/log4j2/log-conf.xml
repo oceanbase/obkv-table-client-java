@@ -60,6 +60,19 @@
                 <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
             </Policies>
         </RollingFile>
+
+        <RollingFile name="OCEANBASE-TABLE-CLIENT-DIRECT-APPENDER"
+                     fileName="${LOG_PATH}/oceanbase-table-client/oceanbase-table-client-direct.log" append="true"
+                     filePattern="${LOG_PATH}/oceanbase-table-client/oceanbase-table-client-direct.log.%d{yyyy-MM-dd}">
+            <ThresholdFilter level="${LOG_LEVEL}" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout charset="${FILE_ENCODING}">
+                <pattern>%d-%m%n</pattern>
+            </PatternLayout>
+            <Policies>
+                <!-- 按天分日志文件:重要的是 filePattern 配置到按照天 -->
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingFile>
     </Appenders>
 
     <Loggers>
@@ -77,6 +90,10 @@
 
         <AsyncLogger name="OBKV-RUNTIME" level="${LOG_LEVEL}" additivity="false">
             <AppenderRef ref="OCEANBASE-TABLE-CLIENT-RUNTIME-APPENDER"/>
+        </AsyncLogger>
+
+        <AsyncLogger name="OBKV-DIRECT" level="${LOG_LEVEL}" additivity="false">
+            <AppenderRef ref="OCEANBASE-TABLE-CLIENT-DIRECT-APPENDER"/>
         </AsyncLogger>
     </Loggers>
 

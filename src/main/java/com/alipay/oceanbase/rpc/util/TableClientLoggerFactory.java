@@ -31,17 +31,20 @@ public class TableClientLoggerFactory {
     public static final String        OCEANBASE_TABLE_CLIENT_BOOT         = "OBKV-BOOT";
     public static final String        OCEANBASE_TABLE_CLIENT_MONITOR      = "OBKV-MONITOR";
     public static final String        OCEANBASE_TABLE_CLIENT_RUNTIME      = "OBKV-RUNTIME";
+    public static final String        OCEANBASE_TABLE_CLIENT_DIRECT       = "OBKV-DIRECT";
     public static LogCode2Description LCD                                 = LogCode2Description
                                                                               .create(OCEANBASE_TABLE_CLIENT_LOGGER_SPACE);
 
     public static Logger              BOOT                                = NOPLogger.NOP_LOGGER;
     public static Logger              MONITOR                             = NOPLogger.NOP_LOGGER;
     public static Logger              RUNTIME                             = NOPLogger.NOP_LOGGER;
+    public static Logger              DIRECT                              = NOPLogger.NOP_LOGGER;
 
     static {
         BOOT = getBootLogger();
         MONITOR = getMonitorLogger();
         RUNTIME = getRUNTIMELogger();
+        DIRECT = getDIRECTLogger();
     }
 
     public static Logger getLogger(String name) {
@@ -88,6 +91,14 @@ public class TableClientLoggerFactory {
         }
 
         return RUNTIME;
+    }
+
+    public static Logger getDIRECTLogger() {
+        if (DIRECT == NOPLogger.NOP_LOGGER) {
+            DIRECT = new WrappedLogger(getLogger(OCEANBASE_TABLE_CLIENT_DIRECT));
+        }
+
+        return DIRECT;
     }
 
     public static void changeLevel(Map<String, String> levelMap) {

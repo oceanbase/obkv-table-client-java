@@ -48,6 +48,31 @@ public class ObByteBuf {
     }
 
     /**
+     * Returns the number of readable bytes.
+     */
+    public int readableBytes() {
+        return pos;
+    }
+
+    /**
+     * Returns the number of writable bytes.
+     */
+    public int writableBytes() {
+        return bytes.length - pos;
+    }
+
+    /*
+     * Reserve bytes.
+     */
+    public void reserve(int size) {
+        if (pos + size > bytes.length) {
+            throw new IllegalArgumentException(String.format(
+                "size overflow, capacity(%d), pos(%d), reserve_size(%d)", bytes.length, pos, size));
+        }
+        pos += size;
+    }
+
+    /**
      * Write byte
      * @param b byte
      */

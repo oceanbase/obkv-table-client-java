@@ -62,6 +62,11 @@ public interface ObPayload extends ObUnisVersion {
     long getUniqueId();
 
     /*
+     * @return group id
+     */
+    int getGroupId();
+
+    /*
      * @return encoded payload content
      */
     byte[] encode();

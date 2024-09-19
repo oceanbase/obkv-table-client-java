@@ -102,7 +102,7 @@ public enum Property {
     RUNTIME_BATCH_MAX_WAIT("runtime.batch.max.wait", 3000L, "批量执行请求的超时时间"),
 
     // [ObTableClient][LOG]
-    SLOW_QUERY_MONITOR_THRESHOLD("slow.query.monitor.threshold", 10L, "记录到 MONITOR 日志中的慢操作的运行时间阈值"),
+    SLOW_QUERY_MONITOR_THRESHOLD("slow.query.monitor.threshold", -1L, "记录到 MONITOR 日志中的慢操作的运行时间阈值"),
 
     /*
      * property in [`ObTable`]
@@ -134,12 +134,14 @@ public enum Property {
     NETTY_BLOCKING_WAIT_INTERVAL("bolt.netty.blocking.wait.interval", 1, "netty写缓存满后等待时间"),
 
     // [ObTable][OTHERS]
-    SERVER_ENABLE_REROUTING("server.enable.rerouting", "false", "开启server端的重定向回复功能"),
+    SERVER_ENABLE_REROUTING("server.enable.rerouting", true, "开启server端的重定向回复功能"),
 
     /*
      * other config
      */
-    RUNTIME_BATCH_EXECUTOR("runtime.batch.executor", null, "批量请求时并发执行的线程池");
+    RUNTIME_BATCH_EXECUTOR("runtime.batch.executor", null, "批量请求时并发执行的线程池"),
+
+    MAX_CONN_EXPIRED_TIME("connection.max.expired.time", 8L, "客户端连接最大过期时间(min)");
 
     private final String key;
     private final Object defaultV;

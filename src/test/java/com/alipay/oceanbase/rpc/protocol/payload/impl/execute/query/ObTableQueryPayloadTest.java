@@ -28,6 +28,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 public class ObTableQueryPayloadTest {
@@ -185,7 +186,7 @@ public class ObTableQueryPayloadTest {
         assertEquals(obHTableFilter.getLimitPerRowPerCf(), newObHTableFilter.getLimitPerRowPerCf());
         assertEquals(obHTableFilter.getOffsetPerRowPerCf(),
             newObHTableFilter.getOffsetPerRowPerCf());
-        assertEquals(obHTableFilter.getFilterString(), newObHTableFilter.getFilterString());
+        assertArrayEquals(obHTableFilter.getFilterString(), newObHTableFilter.getFilterString());
         assertEquals(obHTableFilter.getSelectColumnQualifier().size(), newObHTableFilter
             .getSelectColumnQualifier().size());
         assertEquals(new String(obHTableFilter.getSelectColumnQualifier().get(0).bytes),
@@ -204,7 +205,7 @@ public class ObTableQueryPayloadTest {
         obHTableFilter.setMaxVersions(300);
         obHTableFilter.setLimitPerRowPerCf(400);
         obHTableFilter.setOffsetPerRowPerCf(500);
-        obHTableFilter.setFilterString("123");
+        obHTableFilter.setFilterString("123".getBytes());
 
         List<ObBytesString> qs = new ArrayList<ObBytesString>();
         qs.add(new ObBytesString("q1".getBytes()));

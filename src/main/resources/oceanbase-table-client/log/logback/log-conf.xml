@@ -69,6 +69,23 @@
         </rollingPolicy>
     </appender>
 
+    <appender name="OCEANBASE-TABLE-CLIENT-DIRECT-APPENDER"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client-direct.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{50} - %msg%n</pattern>
+            </Pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- rollover daily -->
+            <fileNamePattern>${logging.path:-.}/oceanbase-table-client/oceanbase-table-client-direct.%d{yyyy-MM-dd}.%i.log </fileNamePattern>
+            <cleanHistoryOnStart>false</cleanHistoryOnStart>
+            <maxHistory>30</maxHistory>
+            <maxFileSize>100MB</maxFileSize>
+        </rollingPolicy>
+    </appender>
+
 
     <appender name="OCEANBASE-TABLE-CLIENT-MONITOR-APPENDER-ASYNC"
               class="ch.qos.logback.classic.AsyncAppender">
@@ -97,6 +114,15 @@
         <appender-ref ref="OCEANBASE-TABLE-CLIENT-RUNTIME-APPENDER"/>
     </appender>
 
+    <appender name="OCEANBASE-TABLE-CLIENT-DIRECT-APPENDER-ASYNC"
+              class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>false</neverBlock>
+        <queueSize>1024</queueSize>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="OCEANBASE-TABLE-CLIENT-DIRECT-APPENDER"/>
+    </appender>
+
 
     <logger name="com.alipay.oceanbase.rpc" additivity="false">
         <level value="${logging.level:-INFO}"/>
@@ -116,6 +142,11 @@
     <logger name="OBKV-RUNTIME" additivity="false">
         <level value="${logging.level:-INFO}"/>
         <appender-ref ref="OCEANBASE-TABLE-CLIENT-RUNTIME-APPENDER-ASYNC"/>
+    </logger>
+
+    <logger name="OBKV-DIRECT" additivity="false">
+        <level value="${logging.level:-INFO}"/>
+        <appender-ref ref="OCEANBASE-TABLE-CLIENT-DIRECT-APPENDER-ASYNC"/>
     </logger>
 
 </configuration>

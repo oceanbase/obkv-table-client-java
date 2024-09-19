@@ -82,7 +82,13 @@ public class ObGlobal {
     }
 
     public static boolean isLsOpSupport() {
-        return OB_VERSION >= OB_VERSION_4_2_3_0 && OB_VERSION < OB_VERSION_4_3_0_0;
+        return OB_VERSION >= OB_VERSION_4_2_3_0 && OB_VERSION < OB_VERSION_4_3_0_0
+                || OB_VERSION >= OB_VERSION_4_3_4_0;
+    }
+
+    public static boolean isReturnOneResultSupport() {
+        return OB_VERSION >= OB_VERSION_4_2_3_0 && OB_VERSION < OB_VERSION_4_3_0_0
+                || OB_VERSION >= OB_VERSION_4_3_4_0;
     }
 
     public static final long OB_VERSION_4_2_1_0 = calcVersion(4, (short) 2, (byte) 1, (byte) 0);
@@ -90,6 +96,8 @@ public class ObGlobal {
     public static final long OB_VERSION_4_2_3_0 = calcVersion(4, (short) 2, (byte) 3, (byte) 0);
 
     public static final long OB_VERSION_4_3_0_0 = calcVersion(4, (short) 3, (byte) 0, (byte) 0);
+
+    public static final long OB_VERSION_4_3_4_0 = calcVersion(4, (short) 3, (byte) 4, (byte) 0);
 
     public static long       OB_VERSION         = calcVersion(0, (short) 0, (byte) 0, (byte) 0);
 }

@@ -91,7 +91,7 @@ public class MonitorUtil {
                             String methodName, String type, String endpoint,
                             ObTableQueryAndMutateResult result, ObTableQuery tableQuery,
                             long routeTableTime, long executeTime, long slowQueryMonitorThreshold) {
-        if (routeTableTime + executeTime >= slowQueryMonitorThreshold) {
+        if (slowQueryMonitorThreshold >= 0 && routeTableTime + executeTime >= slowQueryMonitorThreshold) {
             List<Object> params = new ArrayList<>();
             for (ObNewRange rang : tableQuery.getKeyRanges()) {
                 ObRowKey startKey = rang.getStartKey();
@@ -156,7 +156,7 @@ public class MonitorUtil {
                             String methodName, String endpoint, Object[] rowKeys,
                             ObTableOperationResult result, long routeTableTime, long executeTime,
                             long slowQueryMonitorThreshold) {
-        if (routeTableTime + executeTime >= slowQueryMonitorThreshold) {
+        if ( slowQueryMonitorThreshold > 0 && (routeTableTime + executeTime >= slowQueryMonitorThreshold)) {
             MONITOR.info(logMessage(formatTraceMessage(payload), database, tableName, methodName,
                 endpoint, rowKeys, result, routeTableTime, executeTime));
         }
@@ -186,7 +186,7 @@ public class MonitorUtil {
     // for each sub batch opreation
     private static void logMessage0(final ObPayload payload, String database, String tableName, String methodName, String endpoint, ObTableBatchOperation subOperations,
                              long partId, int resultSize, long executeTime, long slowQueryMonitorThreshold) {
-        if (executeTime < slowQueryMonitorThreshold) {
+        if (slowQueryMonitorThreshold >= 0 && executeTime < slowQueryMonitorThreshold) {
             return;
         }
         String traceId = formatTraceMessage(payload);
@@ -238,7 +238,7 @@ public class MonitorUtil {
     public static void info(final ObPayload payload, String database, String tableName,
                             String methodName, String endpoint, int resultSize,
                             long routeTableTime, long executeTime, long slowQueryMonitorThreshold) {
-        if (routeTableTime + executeTime >= slowQueryMonitorThreshold) {
+        if (slowQueryMonitorThreshold >= 0 && routeTableTime + executeTime >= slowQueryMonitorThreshold) {
             MONITOR.info(logMessage(formatTraceMessage(payload), database, tableName, methodName,
                 endpoint, resultSize, routeTableTime, executeTime));
         }
@@ -271,7 +271,7 @@ public class MonitorUtil {
                             String methodName, String endpoint, ObTableQuery tableQuery,
                             AbstractQueryStreamResult result, long routeTableTime,
                             long executeTime, long slowQueryMonitorThreshold) {
-        if (routeTableTime + executeTime >= slowQueryMonitorThreshold) {
+        if (slowQueryMonitorThreshold >= 0 && routeTableTime + executeTime >= slowQueryMonitorThreshold) {
             List<Object> params = new ArrayList<>();
             for (ObNewRange rang : tableQuery.getKeyRanges()) {
                 ObRowKey startKey = rang.getStartKey();
@@ -299,7 +299,7 @@ public class MonitorUtil {
                                        String methodName, String endpoint,
                                        ObTableLSOperation lsOperation, int resultSize,
                                        long executeTime, long slowQueryMonitorThreshold) {
-        if (executeTime < slowQueryMonitorThreshold) {
+        if (slowQueryMonitorThreshold < 0 || executeTime < slowQueryMonitorThreshold) {
             return;
         }
         String traceId = formatTraceMessage(payload);
