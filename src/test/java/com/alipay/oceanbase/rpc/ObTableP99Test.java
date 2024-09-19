@@ -44,16 +44,16 @@ import static org.junit.Assert.*;
  );
  **/
 public class ObTableP99Test {
-    ObTableClient        client;
-    private static Connection conn = null;
-    public static String tableName = "test_p99";
-    public static String insertSqlType = "TABLEAPI INSERT";
-    public static String selectSqlType = "TABLEAPI SELECT";
-    public static String deleteSqlType = "TABLEAPI DELETE";
-    public static String updateSqlType = "TABLEAPI UPDATE";
-    public static String replaceSqlType = "TABLEAPI REPLACE";
-    public static String queryAndMutateSqlType = "TABLEAPI QUERY AND MUTATE";
-    public static String otherSqlType = "TABLEAPI OTHER";
+    ObTableClient             client;
+    private static Connection conn                  = null;
+    public static String      tableName             = "test_p99";
+    public static String      insertSqlType         = "TABLEAPI INSERT";
+    public static String      selectSqlType         = "TABLEAPI SELECT";
+    public static String      deleteSqlType         = "TABLEAPI DELETE";
+    public static String      updateSqlType         = "TABLEAPI UPDATE";
+    public static String      replaceSqlType        = "TABLEAPI REPLACE";
+    public static String      queryAndMutateSqlType = "TABLEAPI QUERY AND MUTATE";
+    public static String      otherSqlType          = "TABLEAPI OTHER";
 
     @Before
     public void setup() throws Exception {
@@ -65,8 +65,9 @@ public class ObTableP99Test {
     }
 
     private static long getResultCount(String sqlType) throws Exception {
-        PreparedStatement ps = conn.prepareStatement("select * from oceanbase.gv$ob_query_response_time_histogram " +
-                "where sql_type=" + "\"" +sqlType +"\"");
+        PreparedStatement ps = conn
+            .prepareStatement("select * from oceanbase.gv$ob_query_response_time_histogram "
+                              + "where sql_type=" + "\"" + sqlType + "\"");
         ResultSet rs = ps.executeQuery();
         long totalCnt = 0L;
         while (rs.next()) {
@@ -85,25 +86,21 @@ public class ObTableP99Test {
     public void testInsert() throws Exception {
         try {
             // single insert
-            client.insert(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", 1L))
-                    .execute();
+            client.insert(tableName).setRowKey(colVal("c1", 1L)).addMutateColVal(colVal("c2", 1L))
+                .execute();
             assertEquals(1, getResultCount(insertSqlType));
-            client.insert(tableName).setRowKey(colVal("c1", 2L))
-                    .addMutateColVal(colVal("c2", 1L))
-                    .execute();
+            client.insert(tableName).setRowKey(colVal("c1", 2L)).addMutateColVal(colVal("c2", 1L))
+                .execute();
             assertEquals(2, getResultCount(insertSqlType));
 
             // single insertOrUpdate
             flushHistogram();
             Thread.sleep(100);
             client.insertOrUpdate(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", 1L))
-                    .execute();
+                .addMutateColVal(colVal("c2", 1L)).execute();
             assertEquals(1, getResultCount(insertSqlType));
             client.insertOrUpdate(tableName).setRowKey(colVal("c1", 2L))
-                    .addMutateColVal(colVal("c2", 1L))
-                    .execute();
+                .addMutateColVal(colVal("c2", 1L)).execute();
             assertEquals(2, getResultCount(insertSqlType));
 
             // multi insert
@@ -111,7 +108,7 @@ public class ObTableP99Test {
             Thread.sleep(100);
             BatchOperation batch1 = client.batchOperation(tableName);
             Insert ins_0 = client.insert(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", 1L));
+                .addMutateColVal(colVal("c2", 1L));
             batch1.addOperation(ins_0).execute();
             assertEquals(1, getResultCount(insertSqlType));
             batch1.addOperation(ins_0).execute();
@@ -122,7 +119,7 @@ public class ObTableP99Test {
             Thread.sleep(100);
             BatchOperation batch2 = client.batchOperation(tableName);
             InsertOrUpdate insUp_0 = client.insertOrUpdate(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", 1L));
+                .addMutateColVal(colVal("c2", 1L));
             batch2.addOperation(insUp_0).execute();
             assertEquals(1, getResultCount(insertSqlType));
             batch2.addOperation(insUp_0).execute();
@@ -138,24 +135,23 @@ public class ObTableP99Test {
     @Test
     public void testSelect() throws Exception {
         try {
-            client.insert(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", 1L))
-                    .execute();
+            client.insert(tableName).setRowKey(colVal("c1", 1L)).addMutateColVal(colVal("c2", 1L))
+                .execute();
             assertEquals(1, getResultCount(insertSqlType));
 
             // single get
             flushHistogram();
             Thread.sleep(100);
-            client.get(tableName, 1L, new String[]{"c1"});
+            client.get(tableName, 1L, new String[] { "c1" });
             assertEquals(1, getResultCount(selectSqlType));
-            client.get(tableName, 1L, new String[]{"c1"});
+            client.get(tableName, 1L, new String[] { "c1" });
             assertEquals(2, getResultCount(selectSqlType));
 
             // multi get
             flushHistogram();
             Thread.sleep(100);
             TableBatchOps batchOps = client.batch(tableName);
-            batchOps.get(1L, new String[]{"c1"});
+            batchOps.get(1L, new String[] { "c1" });
             batchOps.execute();
             assertEquals(1, getResultCount(selectSqlType));
             batchOps.execute();
@@ -165,7 +161,7 @@ public class ObTableP99Test {
             flushHistogram();
             Thread.sleep(100);
             TableQuery tableQuery = client.query(tableName);
-            tableQuery.addScanRange(new Object[] { 0L,}, new Object[] { 1L,});
+            tableQuery.addScanRange(new Object[] { 0L, }, new Object[] { 1L, });
             tableQuery.select("c1");
             tableQuery.execute();
             assertEquals(1, getResultCount(selectSqlType));
@@ -188,12 +184,10 @@ public class ObTableP99Test {
     @Test
     public void testDelete() throws Exception {
         try {
-            client.insert(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", 1L))
-                    .execute();
-            client.insert(tableName).setRowKey(colVal("c1", 2L))
-                    .addMutateColVal(colVal("c2", 1L))
-                    .execute();
+            client.insert(tableName).setRowKey(colVal("c1", 1L)).addMutateColVal(colVal("c2", 1L))
+                .execute();
+            client.insert(tableName).setRowKey(colVal("c1", 2L)).addMutateColVal(colVal("c2", 1L))
+                .execute();
             assertEquals(2, getResultCount(insertSqlType));
 
             // single delete
@@ -223,48 +217,40 @@ public class ObTableP99Test {
     @Test
     public void testUpdate() throws Exception {
         try {
-            client.insert(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", 1L))
-                    .execute();
-            client.insert(tableName).setRowKey(colVal("c1", 2L))
-                    .addMutateColVal(colVal("c2", 1L))
-                    .execute();
+            client.insert(tableName).setRowKey(colVal("c1", 1L)).addMutateColVal(colVal("c2", 1L))
+                .execute();
+            client.insert(tableName).setRowKey(colVal("c1", 2L)).addMutateColVal(colVal("c2", 1L))
+                .execute();
             assertEquals(2, getResultCount(insertSqlType));
 
             // single update
             flushHistogram();
             Thread.sleep(100);
-            client.update(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", 2L))
-                    .execute();
+            client.update(tableName).setRowKey(colVal("c1", 1L)).addMutateColVal(colVal("c2", 2L))
+                .execute();
             assertEquals(1, getResultCount(updateSqlType));
-            client.update(tableName).setRowKey(colVal("c1", 2L))
-                    .addMutateColVal(colVal("c2", 2L))
-                    .execute();
+            client.update(tableName).setRowKey(colVal("c1", 2L)).addMutateColVal(colVal("c2", 2L))
+                .execute();
             assertEquals(2, getResultCount(updateSqlType));
 
             // single increment
             flushHistogram();
             Thread.sleep(100);
             client.increment(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", 2L))
-                    .execute();
+                .addMutateColVal(colVal("c2", 2L)).execute();
             assertEquals(1, getResultCount(updateSqlType));
             client.increment(tableName).setRowKey(colVal("c1", 2L))
-                    .addMutateColVal(colVal("c2", 2L))
-                    .execute();
+                .addMutateColVal(colVal("c2", 2L)).execute();
             assertEquals(2, getResultCount(updateSqlType));
 
             // single append
             flushHistogram();
             Thread.sleep(100);
             client.append(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c3", "world"))
-                    .execute();
+                .addMutateColVal(colVal("c3", "world")).execute();
             assertEquals(1, getResultCount(updateSqlType));
             client.append(tableName).setRowKey(colVal("c1", 2L))
-                    .addMutateColVal(colVal("c3", "world"))
-                    .execute();
+                .addMutateColVal(colVal("c3", "world")).execute();
             assertEquals(2, getResultCount(updateSqlType));
 
             // multi update
@@ -272,7 +258,7 @@ public class ObTableP99Test {
             Thread.sleep(100);
             BatchOperation batch1 = client.batchOperation(tableName);
             Update ins_0 = client.update(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", 1L));
+                .addMutateColVal(colVal("c2", 1L));
             batch1.addOperation(ins_0).execute();
             assertEquals(1, getResultCount(updateSqlType));
             batch1.addOperation(ins_0).execute();
@@ -283,7 +269,7 @@ public class ObTableP99Test {
             Thread.sleep(100);
             BatchOperation batch2 = client.batchOperation(tableName);
             Increment inc_0 = client.increment(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", 1L));
+                .addMutateColVal(colVal("c2", 1L));
             batch2.addOperation(inc_0).execute();
             assertEquals(1, getResultCount(updateSqlType));
             batch2.addOperation(inc_0).execute();
@@ -294,7 +280,7 @@ public class ObTableP99Test {
             Thread.sleep(100);
             BatchOperation batch3 = client.batchOperation(tableName);
             Append app_0 = client.append(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c3", "llo"));
+                .addMutateColVal(colVal("c3", "llo"));
             batch3.addOperation(app_0).execute();
             assertEquals(1, getResultCount(updateSqlType));
             batch3.addOperation(app_0).execute();
@@ -309,22 +295,18 @@ public class ObTableP99Test {
     @Test
     public void testReplace() throws Exception {
         try {
-            client.insert(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", 1L))
-                    .execute();
-            client.insert(tableName).setRowKey(colVal("c1", 2L))
-                    .addMutateColVal(colVal("c2", 1L))
-                    .execute();
+            client.insert(tableName).setRowKey(colVal("c1", 1L)).addMutateColVal(colVal("c2", 1L))
+                .execute();
+            client.insert(tableName).setRowKey(colVal("c1", 2L)).addMutateColVal(colVal("c2", 1L))
+                .execute();
             assertEquals(2, getResultCount(insertSqlType));
             flushHistogram();
             Thread.sleep(100);
-            client.replace(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", 2L))
-                    .execute();
+            client.replace(tableName).setRowKey(colVal("c1", 1L)).addMutateColVal(colVal("c2", 2L))
+                .execute();
             assertEquals(1, getResultCount(replaceSqlType));
-            client.replace(tableName).setRowKey(colVal("c1", 2L))
-                    .addMutateColVal(colVal("c2", 2L))
-                    .execute();
+            client.replace(tableName).setRowKey(colVal("c1", 2L)).addMutateColVal(colVal("c2", 2L))
+                .execute();
             assertEquals(2, getResultCount(replaceSqlType));
 
             // multi replace
@@ -332,7 +314,7 @@ public class ObTableP99Test {
             Thread.sleep(100);
             BatchOperation batch = client.batchOperation(tableName);
             Replace rep_0 = client.replace(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", 1L));
+                .addMutateColVal(colVal("c2", 1L));
             batch.addOperation(rep_0).execute();
             assertEquals(1, getResultCount(replaceSqlType));
             batch.addOperation(rep_0).execute();
@@ -350,10 +332,10 @@ public class ObTableP99Test {
             flushHistogram();
             Thread.sleep(100);
             TableQuery tableQuery = client.query(tableName);
-            tableQuery.addScanRange(new Object[] { 0L,}, new Object[] { 1L,});
+            tableQuery.addScanRange(new Object[] { 0L, }, new Object[] { 1L, });
             tableQuery.select("c1");
             ObTableQueryAndMutateRequest request_0 = client.obTableQueryAndAppend(tableQuery,
-                    new String[] { "c3" }, new Object[] {"_append0" }, true);
+                new String[] { "c3" }, new Object[] { "_append0" }, true);
             client.execute(request_0);
             assertEquals(1, getResultCount(queryAndMutateSqlType));
         } finally {
@@ -369,9 +351,9 @@ public class ObTableP99Test {
             Thread.sleep(100);
             BatchOperation batch = client.batchOperation(tableName);
             Insert ins_0 = client.insert(tableName).setRowKey(colVal("c1", 1L))
-                    .addMutateColVal(colVal("c2", 1L));
+                .addMutateColVal(colVal("c2", 1L));
             Replace rep_0 = client.replace(tableName).setRowKey(colVal("c1", 2L))
-                    .addMutateColVal(colVal("c2", 1L));
+                .addMutateColVal(colVal("c2", 1L));
             batch.addOperation(ins_0, rep_0).execute();
             assertEquals(1, getResultCount(otherSqlType));
             batch.addOperation(ins_0, rep_0).execute();

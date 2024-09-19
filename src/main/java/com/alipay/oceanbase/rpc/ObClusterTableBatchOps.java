@@ -193,11 +193,12 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         ObTableOperationType lastType = operations.get(0).getOperationType();
         if (returnOneResult && !ObGlobal.isReturnOneResultSupport()) {
             throw new FeatureNotSupportedException(
-                    "returnOneResult is not supported in this Observer version [" + ObGlobal.obVsnString() +"]");
+                "returnOneResult is not supported in this Observer version ["
+                        + ObGlobal.obVsnString() + "]");
         } else if (returnOneResult
-            && !(this.tableBatchOps.getObTableBatchOperation().isSameType() && (lastType == ObTableOperationType.INSERT
-                                                                                || lastType == ObTableOperationType.PUT
-                                                                                || lastType == ObTableOperationType.REPLACE || lastType == ObTableOperationType.DEL))) {
+                   && !(this.tableBatchOps.getObTableBatchOperation().isSameType() && (lastType == ObTableOperationType.INSERT
+                                                                                       || lastType == ObTableOperationType.PUT
+                                                                                       || lastType == ObTableOperationType.REPLACE || lastType == ObTableOperationType.DEL))) {
             throw new IllegalArgumentException(
                 "returnOneResult only support multi-insert/put/replace/del");
         }
