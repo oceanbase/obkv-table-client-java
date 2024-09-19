@@ -1612,9 +1612,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * For mutation (queryWithFilter)
      * @param tableName table want to get
      * @param keyRanges key
-     * @param refresh whether to refresh
-     * @param waitForRefresh whether wait for refresh
-     * @param route ObServer route
      * @return ObPair of partId and table
      * @throws Exception exception
      */
