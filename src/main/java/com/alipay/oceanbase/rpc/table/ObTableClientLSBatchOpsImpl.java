@@ -340,7 +340,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 rowKey[j] = rowkeyObjs.get(j).getValue();
             }
             ObPair<Long, ObTableParam>  tableObPair= obTableClient.getTable(tableName, rowKey,
-                    false, false, obTableClient.getRoute(false));
+                    false, false, false, obTableClient.getRoute(false));
             long lsId = tableObPair.getRight().getLsId();
 
             Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperations
