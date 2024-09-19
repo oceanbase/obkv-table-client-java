@@ -539,7 +539,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     obPair = new ObPair<Long, ObTableParam>(0L, new ObTableParam(odpTable));
                 } else {
                     obPair = getTableByRowKeyWithRoute(tableName, callback.getRowKey(),
-                            needRefreshTableEntry, tableEntryRefreshIntervalWait, needFetchAllRouteInfo, route);
+                        needRefreshTableEntry, tableEntryRefreshIntervalWait,
+                        needFetchAllRouteInfo, route);
                 }
                 T t = callback.execute(obPair);
                 resetExecuteContinuousFailureCount(tableName);
@@ -701,11 +702,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 } else {
                     if (null != callback.getRowKey()) {
                         // using row key
-                        obPair = getTableByRowKeyWithNameInternal(tableName, callback.getRowKey(), needRefreshTableEntry,
-                            tableEntryRefreshIntervalWait, needFetchAllRouteInfo, route);
+                        obPair = getTableByRowKeyWithNameInternal(tableName, callback.getRowKey(),
+                            needRefreshTableEntry, tableEntryRefreshIntervalWait,
+                            needFetchAllRouteInfo, route);
                     } else if (null != callback.getKeyRanges()) {
                         // using scan range
-                        obPair = getTableByKeyRanges(tableName, new ObTableQuery(), callback.getKeyRanges());
+                        obPair = getTableByKeyRanges(tableName, new ObTableQuery(),
+                            callback.getKeyRanges());
                     } else {
                         throw new ObTableException("rowkey and scan range are null in mutation");
                     }
@@ -1448,8 +1451,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return ObPair of partId and table
      * @throws Exception exception
      */
-     public ObPair<Long, ObTableParam> getTableByRowKey(String tableName, Object[] rowKey, boolean refresh,
-                                               boolean waitForRefresh) throws Exception {
+    public ObPair<Long, ObTableParam> getTableByRowKey(String tableName, Object[] rowKey,
+                                                       boolean refresh, boolean waitForRefresh)
+                                                                                               throws Exception {
         ObServerRoute route = getRoute(false);
         return getTable(tableName, rowKey, refresh, waitForRefresh, route);
     }
@@ -1466,15 +1470,18 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     public ObPair<Long, ObTableParam> getTable(String tableName, Object[] rowKey, boolean refresh,
                                                boolean waitForRefresh, ObServerRoute route)
-            throws Exception {
+                                                                                           throws Exception {
         return getTableByRowKeyWithRoute(tableName, rowKey, refresh, waitForRefresh, false, route);
     }
 
-
-    private ObPair<Long, ObTableParam> getTableByRowKeyWithRoute(String tableName, Object[] rowKey, boolean refresh,
-                                               boolean waitForRefresh, boolean needFetchAll, ObServerRoute route)
-                                                                                           throws Exception {
-        TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh, needFetchAll);
+    private ObPair<Long, ObTableParam> getTableByRowKeyWithRoute(String tableName, Object[] rowKey,
+                                                                 boolean refresh,
+                                                                 boolean waitForRefresh,
+                                                                 boolean needFetchAll,
+                                                                 ObServerRoute route)
+                                                                                     throws Exception {
+        TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh,
+            needFetchAll);
         Row row = new Row();
         if (tableEntry.isPartitionTable()
             && tableEntry.getPartitionInfo().getLevel() != ObPartitionLevel.LEVEL_ZERO) {
@@ -1558,9 +1565,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return ObPair of partId and table
      * @throws Exception exception
      */
-    public ObPair<Long, ObTableParam> getTableByRowKeyWithName(String tableName, Row rowKey, boolean refresh,
-                                               boolean waitForRefresh) throws Exception {
-        return getTableByRowKeyWithNameInternal(tableName, rowKey, refresh, waitForRefresh, false, getRoute(false));
+    public ObPair<Long, ObTableParam> getTableByRowKeyWithName(String tableName, Row rowKey,
+                                                               boolean refresh,
+                                                               boolean waitForRefresh)
+                                                                                      throws Exception {
+        return getTableByRowKeyWithNameInternal(tableName, rowKey, refresh, waitForRefresh, false,
+            getRoute(false));
     }
 
     /**
@@ -1574,10 +1584,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return ObPair of partId and table
      * @throws Exception exception
      */
-    private ObPair<Long, ObTableParam> getTableByRowKeyWithNameInternal(String tableName, Row rowKey, boolean refresh,
-                                               boolean waitForRefresh, boolean needFetchAll, ObServerRoute route)
-                                                                                           throws Exception {
-        TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh, needFetchAll);
+    private ObPair<Long, ObTableParam> getTableByRowKeyWithNameInternal(String tableName,
+                                                                        Row rowKey,
+                                                                        boolean refresh,
+                                                                        boolean waitForRefresh,
+                                                                        boolean needFetchAll,
+                                                                        ObServerRoute route)
+                                                                                            throws Exception {
+        TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh,
+            needFetchAll);
         long partId;
         partId = getPartition(tableEntry, rowKey); // partition id in 3.x, origin partId in 4.x, logicId
 
