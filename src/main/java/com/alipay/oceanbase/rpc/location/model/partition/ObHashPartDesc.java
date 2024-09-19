@@ -29,10 +29,7 @@ import com.alipay.oceanbase.rpc.mutation.Row;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.LCD;
 
@@ -130,7 +127,13 @@ public class ObHashPartDesc extends ObPartDesc {
                         throw new IllegalArgumentException("rowkey length is " + startRow.size()
                                                            + ", which is shortest than " + refIdx);
                     }
-                    Object startValue = startRow.get(curObRefColumnName);
+                    Object startValue = null;
+                    for (Map.Entry<String, Object> entry : startRow.getMap().entrySet()) {
+                        if (entry.getKey().equalsIgnoreCase(curObRefColumnName)) {
+                            startValue = entry.getValue();
+                            break;
+                        }
+                    }
                     if (startValue == null) {
                         throw new IllegalArgumentException("Please include all partition key in start range. Currently missing key: { " + curObRefColumnName + " }");
                     }
@@ -138,7 +141,14 @@ public class ObHashPartDesc extends ObPartDesc {
                         && (((ObObj) startValue).isMinObj() || ((ObObj) startValue).isMaxObj())) {
                         return completeWorks;
                     }
-                    Object endValue = endRow.get(curObRefColumnName);
+
+                    Object endValue = null;
+                    for (Map.Entry<String, Object> entry : endRow.getMap().entrySet()) {
+                        if (entry.getKey().equalsIgnoreCase(curObRefColumnName)) {
+                            endValue = entry.getValue();
+                            break;
+                        }
+                    }
                     if (endValue == null) {
                         throw new IllegalArgumentException("Please include all partition key in end range. Currently missing key: { " + curObRefColumnName + " }");
                     }
