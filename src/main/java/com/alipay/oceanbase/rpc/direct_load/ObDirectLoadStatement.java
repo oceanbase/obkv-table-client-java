@@ -24,6 +24,7 @@ import com.alipay.oceanbase.rpc.direct_load.exception.ObDirectLoadIllegalArgumen
 import com.alipay.oceanbase.rpc.direct_load.exception.ObDirectLoadIllegalStateException;
 import com.alipay.oceanbase.rpc.direct_load.exception.ObDirectLoadTimeoutException;
 import com.alipay.oceanbase.rpc.direct_load.exception.ObDirectLoadUnexpectedException;
+import com.alipay.oceanbase.rpc.direct_load.execution.ObDirectLoadStatementExecutionId;
 import com.alipay.oceanbase.rpc.direct_load.execution.ObDirectLoadStatementExecutor;
 import com.alipay.oceanbase.rpc.direct_load.future.ObDirectLoadStatementFailedFuture;
 import com.alipay.oceanbase.rpc.direct_load.future.ObDirectLoadStatementFuture;
@@ -276,6 +277,21 @@ public class ObDirectLoadStatement {
         }
         checkStatus();
         executor.write(bucket);
+    }
+
+    public ObDirectLoadStatementExecutionId getExecutionId() throws ObDirectLoadException {
+        checkStatus();
+        return executor.getExecutionId();
+    }
+
+    public void resume(ObDirectLoadStatementExecutionId executionId) throws ObDirectLoadException {
+        if (executionId == null || !executionId.isValid()) {
+            logger.warn("Param 'executionId' must not be null or invalid, value:" + executionId);
+            throw new ObDirectLoadIllegalArgumentException(
+                "Param 'executionId' must not be null or invalid, value:" + executionId);
+        }
+        checkStatus();
+        executor.resume(executionId);
     }
 
     public static final class Builder {
