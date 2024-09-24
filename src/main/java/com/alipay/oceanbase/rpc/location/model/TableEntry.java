@@ -23,9 +23,10 @@ import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionInfo;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionLevel;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -53,7 +54,26 @@ public class TableEntry {
     // partition location
     private TableEntryKey                    tableEntryKey         = null;
     private volatile ObPartitionEntry        partitionEntry        = null;
-
+    
+    // tablet id ==> refresh time
+    private final ConcurrentHashMap<Long, Long> refreshTimeMap = new ConcurrentHashMap<>();
+    public ConcurrentHashMap<Long, Lock> refreshLockMap = new ConcurrentHashMap<>();
+    
+    public long getTabletLocationLastRefreshTimeMills(Long tabletId) {
+        return refreshTimeMap.getOrDefault(tabletId, 0L);
+    }
+    public void setTableLocationLastRefreshTimeMills(Long tabletId, Long lastRefreshTime) {
+        refreshTimeMap.put(tabletId, lastRefreshTime);
+    }
+    
+    public Lock getRefreshLock(Long tabletId) {
+        return refreshLockMap.get(tabletId);
+    }
+    public void setRefreshLock(Long tabletId, Lock refreshLock) {
+        refreshLockMap.put(tabletId, refreshLock);
+    }
+    
+    
     /*
      * Is valid.
      */
@@ -218,8 +238,6 @@ public class TableEntry {
             checkArgument(partitionInfo != null, "partition table partition info is not ready. key"
                                                  + tableEntryKey);
             partitionInfo.prepare();
-            checkArgument(partitionEntry != null,
-                "partition table partition entry is not ready. key" + tableEntryKey);
         }
     }
 
