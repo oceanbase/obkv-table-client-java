@@ -23,6 +23,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static com.alipay.oceanbase.rpc.protocol.payload.Constants.OB_INVALID_ID;
 
+// 这个类不做线程安全之类的处理
 public class ObPartitionLocationInfo {
     private ObPartitionLocation   partitionLocation   = null;
     private Long                  tabletLsId          = OB_INVALID_ID;
@@ -30,6 +31,10 @@ public class ObPartitionLocationInfo {
     public ReentrantReadWriteLock rwLock              = new ReentrantReadWriteLock();
     public AtomicBoolean          initialized         = new AtomicBoolean(false);
     public final CountDownLatch   initializationLatch = new CountDownLatch(1);
+
+    public ObPartitionLocationInfo() {
+        this.lastUpdateTime = System.currentTimeMillis(); // 初始化为当前时间  
+    }
 
     public ObPartitionLocation getPartitionLocation() {
         rwLock.readLock().lock();

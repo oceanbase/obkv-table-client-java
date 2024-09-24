@@ -31,6 +31,9 @@ public class ObPartitionEntry {
     private Map<Long, Long> tabletLsIdMap = new HashMap<>();
     
     // tabelt id -> (PartitionLocation, LsId)
+    // tablet id 作为索引管理PartitionInfo 其中包含了 PartitionLocation 和LSID
+    // 外部会通过tablet id并发的读写ObPartitionLocationInfo
+    // 写的场景就是更新，读的场景是正常的请求执行，需要保证读写的安全性，更新的时候一方面是保证线程安全，另一方面还需要保证不能频繁更新
     private ConcurrentHashMap<Long, ObPartitionLocationInfo> partitionInfos = new ConcurrentHashMap<>();
 
 
