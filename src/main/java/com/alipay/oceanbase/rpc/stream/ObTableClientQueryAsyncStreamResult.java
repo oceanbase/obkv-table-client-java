@@ -84,8 +84,10 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                         it = expectant.entrySet().iterator();
                         retryTimes++;
                         if (retryTimes > maxRetries) {
-                            RUNTIME.error("Fail to get refresh table entry response after {}", retryTimes);
-                            throw new ObTableRetryExhaustedException("Fail to get refresh table entry response after " + retryTimes);
+                            RUNTIME.error("Fail to get refresh table entry response after {}",
+                                retryTimes);
+                            throw new ObTableRetryExhaustedException(
+                                "Fail to get refresh table entry response after " + retryTimes);
 
                         }
                     } else {
@@ -237,8 +239,10 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                         it = expectant.entrySet().iterator();
                         retryTimes++;
                         if (retryTimes > client.getTableEntryRefreshTryTimes()) {
-                            RUNTIME.error("Fail to get refresh table entry response after {}", retryTimes);
-                            throw new ObTableRetryExhaustedException("Fail to get refresh table entry response after " + retryTimes);
+                            RUNTIME.error("Fail to get refresh table entry response after {}",
+                                retryTimes);
+                            throw new ObTableRetryExhaustedException(
+                                "Fail to get refresh table entry response after " + retryTimes);
                         }
                         continue;
                     } else {
