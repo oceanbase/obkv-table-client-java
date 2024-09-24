@@ -21,13 +21,30 @@ import com.alipay.oceanbase.rpc.location.model.ObServerLdcLocation;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 
 public class ObPartitionEntry {
     private Map<Long, ObPartitionLocation> partitionLocation = new HashMap<Long, ObPartitionLocation>();
 
     // mapping from tablet id to ls id, and the part id to tablet id mapping is in ObPartitionInfo
     private Map<Long, Long> tabletLsIdMap = new HashMap<>();
+    
+    // tabelt id -> (PartitionLocation, LsId)
+    // tablet id 作为索引管理PartitionInfo 其中包含了 PartitionLocation 和LSID
+    // 外部会通过tablet id并发的读写ObPartitionLocationInfo
+    // 写的场景就是更新，读的场景是正常的请求执行，需要保证读写的安全性，更新的时候一方面是保证线程安全，另一方面还需要保证不能频繁更新
+    private ConcurrentHashMap<Long, ObPartitionLocationInfo> partitionInfos = new ConcurrentHashMap<>();
 
+    
+    public ObPartitionLocationInfo getPartitionInfo(long tabletId) {
+        if (!partitionInfos.containsKey(tabletId)) {
+            ObPartitionLocationInfo partitionInfo = new ObPartitionLocationInfo();
+            partitionInfos.put(tabletId, partitionInfo);
+        }
+        return partitionInfos.get(tabletId);
+    }
+    
     public Map<Long, ObPartitionLocation> getPartitionLocation() {
         return partitionLocation;
     }
@@ -39,6 +56,16 @@ public class ObPartitionEntry {
         this.partitionLocation = partitionLocation;
     }
 
+    public Map<Long, Long> getTabletLsIdMap() {
+        return tabletLsIdMap;
+    }
+
+    public void setTabletLsIdMap(Map<Long, Long> tabletLsIdMap) {
+        this.tabletLsIdMap = tabletLsIdMap;
+    }
+
+    public long getLsId(long tabletId) { return tabletLsIdMap.get(tabletId); }
+    
     /*
      * Get partition location with part id.
      */
@@ -86,14 +113,4 @@ public class ObPartitionEntry {
     public String toString() {
         return "ObPartitionEntry{" + "partitionLocation=" + partitionLocation + '}';
     }
-
-    public Map<Long, Long> getTabletLsIdMap() {
-        return tabletLsIdMap;
-    }
-
-    public void setTabletLsIdMap(Map<Long, Long> tabletLsIdMap) {
-        this.tabletLsIdMap = tabletLsIdMap;
-    }
-
-    public long getLsId(long tabletId) { return tabletLsIdMap.get(tabletId); }
 }
