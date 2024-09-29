@@ -1061,6 +1061,17 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return indexTableName;
     }
 
+    @Override
+    public void setRpcExecuteTimeout(int rpcExecuteTimeout) {
+        this.properties.put(RPC_EXECUTE_TIMEOUT.getKey(), String.valueOf(rpcExecuteTimeout));
+        this.rpcExecuteTimeout = rpcExecuteTimeout;
+        for (ObTable obTable : tableRoster.values()) {
+            if (obTable != null) {
+                obTable.setObTableExecuteTimeout(rpcExecuteTimeout);
+            }
+        }
+    }
+
     public String constructIndexTableName(final String dataTableName, final String indexName)
                                                                                              throws Exception {
         // construct index table name
