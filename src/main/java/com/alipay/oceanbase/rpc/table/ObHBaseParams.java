@@ -61,11 +61,6 @@ public class ObHBaseParams extends ObKVParamsBase {
         this.checkExistenceOnly = checkExistenceOnly;
     }
 
-    private int getContentSize() {
-        return 4 + Serialization.getNeedBytes(caching) + Serialization.getNeedBytes(callTimeout)
-               + 1;
-    }
-
     public int getCaching() {
         return caching;
     }

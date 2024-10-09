@@ -37,10 +37,11 @@ public class ObDirectLoadStatementExecutor {
     private static final int                   NONE          = 0;
     private static final int                   BEGINNING     = 1;
     private static final int                   LOADING       = 2;                      // 可以导入数据
-    private static final int                   COMMITTING    = 3;
-    private static final int                   COMMIT        = 4;
-    private static final int                   FAIL          = 5;
-    private static final int                   ABORT         = 6;
+    private static final int                   LOADING_ONLY  = 3;
+    private static final int                   COMMITTING    = 4;
+    private static final int                   COMMIT        = 5;
+    private static final int                   FAIL          = 6;
+    private static final int                   ABORT         = 7;
     private AtomicInteger                      stateFlag     = new AtomicInteger(NONE);
 
     private final ObDirectLoadStatement        statement;
@@ -133,6 +134,27 @@ public class ObDirectLoadStatementExecutor {
         return task;
     }
 
+    public ObDirectLoadStatementExecutionId getExecutionId() throws ObDirectLoadException {
+        checkState(LOADING, "getExecutionId");
+        ObDirectLoadStatementExecutionId executionId = new ObDirectLoadStatementExecutionId(
+            tableId, taskId, svrAddr);
+        return executionId;
+    }
+
+    public synchronized void resume(ObDirectLoadStatementExecutionId executionId)
+                                                                                 throws ObDirectLoadException {
+        logger.info("statement call resume");
+        try {
+            compareAndSetState(NONE, LOADING_ONLY, "resume");
+        } catch (ObDirectLoadException e) {
+            logger.warn("statement resume failed", e);
+            throw e;
+        }
+        tableId = executionId.getTableId();
+        taskId = executionId.getTaskId();
+        svrAddr = executionId.getSvrAddr();
+    }
+
     public synchronized void close() {
         // 如果begin还在执行, 等待begin结束
         if (beginFuture != null && !beginFuture.isDone()) {
@@ -202,6 +224,8 @@ public class ObDirectLoadStatementExecutor {
             reason = "begin not finish";
         } else if (state == LOADING) {
             needAbort = true;
+        } else if (state == LOADING_ONLY) {
+            needAbort = false;
         } else if (state == COMMITTING) {
             unexpectedState = true;
             reason = "commit not finish";
@@ -274,7 +298,7 @@ public class ObDirectLoadStatementExecutor {
     }
 
     public void write(ObDirectLoadBucket bucket) throws ObDirectLoadException {
-        checkState(LOADING, "write");
+        checkState(LOADING, LOADING_ONLY, "write");
         ObDirectLoadStatementPromiseTask task = new ObDirectLoadStatementWriteTask(statement, this,
             bucket);
         task.run();
@@ -499,7 +523,7 @@ public class ObDirectLoadStatementExecutor {
 
         @Override
         void checkState() throws ObDirectLoadException {
-            executor.checkState(LOADING, "write");
+            executor.checkState(LOADING, LOADING_ONLY, "write");
         }
 
         void setSuccess() throws ObDirectLoadException {
