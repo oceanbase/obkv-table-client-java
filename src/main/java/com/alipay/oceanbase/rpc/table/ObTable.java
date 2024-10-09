@@ -759,10 +759,16 @@ public class ObTable extends AbstractObTable implements Lifecycle {
          * 4. Attempt to reconnect the marked connections.
          **/
         private void checkAndReconnect() {
+            // do nothing when there is only 1 connection
+            if (obTableConnectionPoolSize == 1) {
+                return;
+            }
+
             // Iterate over the connection pool to identify connections that have expired
             List<Integer> expiredConnIds = new ArrayList<>();
+            long num = turn.get();
             for (int i = 1; i <= obTableConnectionPoolSize; ++i) {
-                int idx = (int) ((i + turn.get()) % obTableConnectionPoolSize);
+                int idx = (int) ((i + num) % obTableConnectionPoolSize);
                 if (connectionPool[idx].checkExpired()) {
                     expiredConnIds.add(idx);
                 }

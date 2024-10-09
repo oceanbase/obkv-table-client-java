@@ -116,7 +116,13 @@ public class ObKeyPartDesc extends ObPartDesc {
                         throw new IllegalArgumentException("rowkey length is " + startRow.size()
                                                            + ", which is shortest than " + refIdx);
                     }
-                    Object startValue = startRow.get(curObRefColumnName);
+                    Object startValue = null;
+                    for (Map.Entry<String, Object> entry : startRow.getMap().entrySet()) {
+                        if (entry.getKey().equalsIgnoreCase(curObRefColumnName)) {
+                            startValue = entry.getValue();
+                            break;
+                        }
+                    }
                     if (startValue == null) {
                         throw new IllegalArgumentException("Please include all partition key in start range. Currently missing key: { " + curObRefColumnName + " }");
                     }
@@ -124,7 +130,14 @@ public class ObKeyPartDesc extends ObPartDesc {
                             && (((ObObj) startValue).isMinObj() || ((ObObj) startValue).isMaxObj())) {
                         return completeWorks;
                     }
-                    Object endValue = endRow.get(curObRefColumnName);
+
+                    Object endValue = null;
+                    for (Map.Entry<String, Object> entry : endRow.getMap().entrySet()) {
+                        if (entry.getKey().equalsIgnoreCase(curObRefColumnName)) {
+                            endValue = entry.getValue();
+                            break;
+                        }
+                    }
                     if (endValue == null) {
                         throw new IllegalArgumentException("Please include all partition key in end range. Currently missing key: { " + curObRefColumnName + " }");
                     }

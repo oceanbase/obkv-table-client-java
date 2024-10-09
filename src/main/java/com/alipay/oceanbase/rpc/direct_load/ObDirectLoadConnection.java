@@ -374,6 +374,8 @@ public class ObDirectLoadConnection {
                 String.valueOf(timeoutMillis));
             properties.setProperty(Property.RPC_OPERATION_TIMEOUT.getKey(),
                 String.valueOf(timeoutMillis));
+            properties
+                .setProperty(Property.SERVER_ENABLE_REROUTING.getKey(), String.valueOf(false));
             tables = new ObTable[poolSize];
             try {
                 for (int i = 0; i < tables.length; ++i) {
