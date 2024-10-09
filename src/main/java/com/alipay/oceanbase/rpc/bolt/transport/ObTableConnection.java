@@ -38,18 +38,19 @@ import static com.alipay.oceanbase.rpc.util.TraceUtil.formatTraceMessage;
 
 public class ObTableConnection {
 
-    private static final Logger LOGGER         = TableClientLoggerFactory
-                                                   .getLogger(ObTableConnection.class);
+    private static final Logger LOGGER           = TableClientLoggerFactory
+                                                     .getLogger(ObTableConnection.class);
     private ObBytesString       credential;
-    private long                tenantId       = 1;                                    //默认值切勿不要随意改动
+    private long                tenantId         = 1;                                    //默认值切勿不要随意改动
     private Connection          connection;
     private final ObTable       obTable;
-    private long                uniqueId;                                              // as trace0 in rpc header
-    private AtomicLong          sequence;                                              // as trace1 in rpc header
-    private AtomicBoolean       isReConnecting = new AtomicBoolean(false);             // indicate is re-connecting or not
-    private AtomicBoolean       isExpired      = new AtomicBoolean(false);
+    private long                uniqueId;                                                // as trace0 in rpc header
+    private AtomicLong          sequence;                                                // as trace1 in rpc header
+    private AtomicBoolean       isReConnecting   = new AtomicBoolean(false);             // indicate is re-connecting or not
+    private AtomicBoolean       isExpired        = new AtomicBoolean(false);
     private LocalDateTime       lastConnectionTime;
     private boolean             loginWithConfigs = false;
+
     public static long ipToLong(String strIp) {
         String[] ip = strIp.split("\\.");
         return (Long.parseLong(ip[0]) << 24) + (Long.parseLong(ip[1]) << 16)
@@ -69,10 +70,10 @@ public class ObTableConnection {
         isExpired.set(expired);
     }
 
-    
     public void enableLoginWithConfigs() {
         loginWithConfigs = true;
     }
+
     /*
      * Ob table connection.
      */

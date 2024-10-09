@@ -47,31 +47,31 @@ import static org.junit.Assert.assertTrue;
 
 public class ObTableModeTest {
     ObTableClient        client;
-    public static String tableName = "test_varchar_table";
-    public static String mysqlCompatMode = "mysql";
+    public static String tableName        = "test_varchar_table";
+    public static String mysqlCompatMode  = "mysql";
     public static String oracleCompatMode = "oracle";
 
-    public static String allKVMode = "ALL";
-    public static String tableKVMode = "TABLEAPI";
-    public static String hbaseKVMode = "HBASE";
-    public static String RedisKVMode = "REDIS";
-    public static String noneKVMode = "NONE";
+    public static String allKVMode        = "ALL";
+    public static String tableKVMode      = "TABLEAPI";
+    public static String hbaseKVMode      = "HBASE";
+    public static String RedisKVMode      = "REDIS";
+    public static String noneKVMode       = "NONE";
 
-    public static String tpUnit = "tpUnit";
-    public static String tpPool = "tpPool";
-    public static String tpTenant = "tpTenant";
+    public static String tpUnit           = "tpUnit";
+    public static String tpPool           = "tpPool";
+    public static String tpTenant         = "tpTenant";
 
-    public static String hbaseUnit = "hbaseUnit";
-    public static String hbasePool = "hbasePool";
-    public static String hbaseTenant = "hbaseTenant";
+    public static String hbaseUnit        = "hbaseUnit";
+    public static String hbasePool        = "hbasePool";
+    public static String hbaseTenant      = "hbaseTenant";
 
-    public static String tableUnit = "tableUnit";
-    public static String tablePool = "tablePool";
-    public static String tableTenant = "tableTenant";
+    public static String tableUnit        = "tableUnit";
+    public static String tablePool        = "tablePool";
+    public static String tableTenant      = "tableTenant";
 
-    public static String redisUnit = "redisUnit";
-    public static String redisPool = "redisPool";
-    public static String redisTenant = "redisTenant";
+    public static String redisUnit        = "redisUnit";
+    public static String redisPool        = "redisPool";
+    public static String redisTenant      = "redisTenant";
 
     @Before
     public void setup() throws Exception {
@@ -97,21 +97,17 @@ public class ObTableModeTest {
 
     public void createTable(String userName, String tenantName) throws Exception {
         String user = userName + "@" + tenantName;
-        String  url                = "jdbc:mysql://" + JDBC_IP + ":" + JDBC_PORT + "/ " + "test" + "?" +
-                "rewriteBatchedStatements=TRUE&" +
-                "allowMultiQueries=TRUE&" +
-                "useLocalSessionState=TRUE&" +
-                "useUnicode=TRUE&" +
-                "characterEncoding=utf-8&" +
-                "socketTimeout=3000000&" +
-                "connectTimeout=60000";
+        String url = "jdbc:mysql://" + JDBC_IP + ":" + JDBC_PORT + "/ " + "test" + "?"
+                     + "rewriteBatchedStatements=TRUE&" + "allowMultiQueries=TRUE&"
+                     + "useLocalSessionState=TRUE&" + "useUnicode=TRUE&"
+                     + "characterEncoding=utf-8&" + "socketTimeout=3000000&"
+                     + "connectTimeout=60000";
         Connection conn = DriverManager.getConnection(url, user, PASSWORD);
         Statement statement = conn.createStatement();
-        statement.execute("CREATE TABLE IF NOT EXISTS `test_varchar_table` (" +
-                "     `c1` varchar(20) NOT NULL," +
-                "     `c2` varchar(20) DEFAULT NULL," +
-                "     PRIMARY KEY (`c1`)" +
-                "     );");
+        statement.execute("CREATE TABLE IF NOT EXISTS `test_varchar_table` ("
+                          + "     `c1` varchar(20) NOT NULL,"
+                          + "     `c2` varchar(20) DEFAULT NULL," + "     PRIMARY KEY (`c1`)"
+                          + "     );");
     }
 
     public void createResourceUnit(String unitName) throws Exception {
@@ -124,15 +120,19 @@ public class ObTableModeTest {
         createResourceUnit(unitName);
         Connection conn = ObTableClientTestUtil.getSysConnection();
         Statement statement = conn.createStatement();
-        statement.execute("create resource pool " + poolName + " unit = '" + unitName + "', unit_num = 1;");
+        statement.execute("create resource pool " + poolName + " unit = '" + unitName
+                          + "', unit_num = 1;");
     }
 
-    public void createTenant(String unitName, String poolName, String tenantName, String compatMode, String kvMode) throws Exception {
+    public void createTenant(String unitName, String poolName, String tenantName,
+                             String compatMode, String kvMode) throws Exception {
         createResourcePool(unitName, poolName);
         Connection conn = ObTableClientTestUtil.getSysConnection();
         Statement statement = conn.createStatement();
-        statement.execute("create tenant " + tenantName + " replica_num = 1, resource_pool_list=('"+ poolName +"') " +
-                "set ob_tcp_invited_nodes='%', ob_compatibility_mode='" + compatMode + "', ob_kv_mode='" + kvMode + "';");
+        statement.execute("create tenant " + tenantName + " replica_num = 1, resource_pool_list=('"
+                          + poolName + "') "
+                          + "set ob_tcp_invited_nodes='%', ob_compatibility_mode='" + compatMode
+                          + "', ob_kv_mode='" + kvMode + "';");
     }
 
     public void dropResourceUnit(String unitName) throws Exception {
@@ -263,8 +263,7 @@ public class ObTableModeTest {
             client.addRowKeyElement(tableName, new String[] { "c1" });
 
             client.insert(tableName).setRowKey(colVal("c1", "a"))
-                    .addMutateColVal(colVal("c2", "a"))
-                    .execute();
+                .addMutateColVal(colVal("c2", "a")).execute();
         } finally {
             dropTenant(tableTenant);
             dropResourcePool(tablePool);

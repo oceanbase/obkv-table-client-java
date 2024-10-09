@@ -91,7 +91,6 @@ public class ObGlobal {
                 || OB_VERSION >= OB_VERSION_4_3_4_0;
     }
 
-    public static final long OB_VERSION_4_2_1_0 = calcVersion(4, (short) 2, (byte) 1, (byte) 0);
 
     public static final long OB_VERSION_4_2_3_0 = calcVersion(4, (short) 2, (byte) 3, (byte) 0);
 

@@ -20,6 +20,8 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableConsistencyLevel;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
+import com.alipay.oceanbase.rpc.table.ObHBaseParams;
+import com.alipay.oceanbase.rpc.table.ObKVParams;
 import com.alipay.oceanbase.rpc.util.ObBytesString;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -80,6 +82,10 @@ public class ObTableQueryPayloadTest {
     public void test_ObTableQueryWithHbaseQuery() {
         ObTableQuery obTableQuery = getObTableQuery();
         obTableQuery.sethTableFilter(getObHTableFilter());
+        ObHBaseParams hBaseParams = new ObHBaseParams();
+        ObKVParams kv_prams = new ObKVParams();
+        kv_prams.setObParamsBase(hBaseParams);
+        obTableQuery.setObKVParams(kv_prams);
 
         byte[] bytes = obTableQuery.encode();
         ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer();

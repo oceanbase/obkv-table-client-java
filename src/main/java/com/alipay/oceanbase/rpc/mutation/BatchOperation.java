@@ -160,11 +160,12 @@ public class BatchOperation {
     public BatchOperationResult execute() throws Exception {
         if (returnOneResult && !ObGlobal.isReturnOneResultSupport()) {
             throw new FeatureNotSupportedException(
-                    "returnOneResult is not supported in this Observer version [" + ObGlobal.obVsnString() +"]");
+                "returnOneResult is not supported in this Observer version ["
+                        + ObGlobal.obVsnString() + "]");
         } else if (returnOneResult
-            && !(isSameType && (lastType == ObTableOperationType.INSERT
-                                || lastType == ObTableOperationType.PUT
-                                || lastType == ObTableOperationType.REPLACE || lastType == ObTableOperationType.DEL))) {
+                   && !(isSameType && (lastType == ObTableOperationType.INSERT
+                                       || lastType == ObTableOperationType.PUT
+                                       || lastType == ObTableOperationType.REPLACE || lastType == ObTableOperationType.DEL))) {
             throw new IllegalArgumentException(
                 "returnOneResult only support multi-insert/put/replace/del");
         }

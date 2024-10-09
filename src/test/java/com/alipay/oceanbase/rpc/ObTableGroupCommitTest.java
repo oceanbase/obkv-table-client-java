@@ -90,9 +90,10 @@ public class ObTableGroupCommitTest {
         // mysql tenant
         Connection mysql_conn = ObTableClientTestUtil.getConnection();
         Statement statement = mysql_conn.createStatement();
-        statement.execute("select b.tenant_id as tenant_id, b.tenant_name as tenant_name, a.group_type as group_type, a.batch_size as batch_size " +
-                " from oceanbase.GV$OB_KV_GROUP_COMMIT_STATUS a inner join " +
-                "oceanbase.DBA_OB_TENANTS b on a.tenant_id = b.tenant_id group by a.group_type");
+        statement
+            .execute("select b.tenant_id as tenant_id, b.tenant_name as tenant_name, a.group_type as group_type, a.batch_size as batch_size "
+                     + " from oceanbase.GV$OB_KV_GROUP_COMMIT_STATUS a inner join "
+                     + "oceanbase.DBA_OB_TENANTS b on a.tenant_id = b.tenant_id group by a.group_type");
         ResultSet resultSet = statement.getResultSet();
         int resCount = 0;
         System.out.println("visit by mysql tenant:");
@@ -101,7 +102,8 @@ public class ObTableGroupCommitTest {
             String tenant_name = resultSet.getString("tenant_name");
             String group_type = resultSet.getString("group_type");
             long batch_size = resultSet.getLong("batch_size");
-            System.out.println("tenant_id:" + tenant_id+", tenant_name: "+ tenant_name +", group_type: "+group_type+", batch_size: "+batch_size);
+            System.out.println("tenant_id:" + tenant_id + ", tenant_name: " + tenant_name
+                               + ", group_type: " + group_type + ", batch_size: " + batch_size);
             resCount++;
         }
         Assert.assertTrue(resCount >= 3);
@@ -110,9 +112,12 @@ public class ObTableGroupCommitTest {
         // sys tenant
         Connection sys_conn = ObTableClientTestUtil.getSysConnection();
         Statement statement2 = sys_conn.createStatement();
-        statement2.execute("select b.tenant_id as tenant_id, b.tenant_name as tenant_name, a.group_type as group_type, a.batch_size as batch_size " +
-                " from oceanbase.GV$OB_KV_GROUP_COMMIT_STATUS a inner join " +
-                "oceanbase.__all_tenant b on a.tenant_id = b.tenant_id where b.tenant_name in ('sys', '"+ObTableClientTestUtil.getTenantName()+"') group by b.tenant_name, a.group_type;");
+        statement2
+            .execute("select b.tenant_id as tenant_id, b.tenant_name as tenant_name, a.group_type as group_type, a.batch_size as batch_size "
+                     + " from oceanbase.GV$OB_KV_GROUP_COMMIT_STATUS a inner join "
+                     + "oceanbase.__all_tenant b on a.tenant_id = b.tenant_id where b.tenant_name in ('sys', '"
+                     + ObTableClientTestUtil.getTenantName()
+                     + "') group by b.tenant_name, a.group_type;");
         resultSet = statement2.getResultSet();
         resCount = 0;
         System.out.println("visit by sys tenant:");
@@ -121,7 +126,8 @@ public class ObTableGroupCommitTest {
             String tenant_name = resultSet.getString("tenant_name");
             String group_type = resultSet.getString("group_type");
             long batch_size = resultSet.getLong("batch_size");
-            System.out.println("tenant_id:" + tenant_id+", tenant_name: "+ tenant_name +", group_type: "+group_type+", batch_size: "+batch_size);
+            System.out.println("tenant_id:" + tenant_id + ", tenant_name: " + tenant_name
+                               + ", group_type: " + group_type + ", batch_size: " + batch_size);
             resCount++;
         }
         Assert.assertTrue(resCount >= 4);
@@ -149,7 +155,7 @@ public class ObTableGroupCommitTest {
                     String c1 = String.format("rk_%d_%d", id, counter);
                     String c2 = String.format("col_%d_%d", id, counter);
                     obTableClient.insert(tableName).setRowKey(row(colVal("c1", c1)))
-                            .addMutateRow(row(colVal("c2",c2))).execute();
+                        .addMutateRow(row(colVal("c2", c2))).execute();
                     counter++;
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -192,12 +198,12 @@ public class ObTableGroupCommitTest {
         int batch_size = is_enable ? 10 : 1;
         Connection mysql_conn = ObTableClientTestUtil.getConnection();
         Statement statement = mysql_conn.createStatement();
-        statement.execute("alter system set kv_group_commit_batch_size = "+ batch_size);
+        statement.execute("alter system set kv_group_commit_batch_size = " + batch_size);
     }
 
     private void deleteTable(String tableName) throws SQLException {
         Connection mysql_conn = ObTableClientTestUtil.getConnection();
         Statement statement = mysql_conn.createStatement();
-        statement.execute("delete from "+ tableName);
+        statement.execute("delete from " + tableName);
     }
 }
