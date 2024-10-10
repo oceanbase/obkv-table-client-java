@@ -36,13 +36,9 @@ public class ObPartitionEntry {
     // 写的场景就是更新，读的场景是正常的请求执行，需要保证读写的安全性，更新的时候一方面是保证线程安全，另一方面还需要保证不能频繁更新
     private ConcurrentHashMap<Long, ObPartitionLocationInfo> partitionInfos = new ConcurrentHashMap<>();
 
-    
+
     public ObPartitionLocationInfo getPartitionInfo(long tabletId) {
-        if (!partitionInfos.containsKey(tabletId)) {
-            ObPartitionLocationInfo partitionInfo = new ObPartitionLocationInfo();
-            partitionInfos.put(tabletId, partitionInfo);
-        }
-        return partitionInfos.get(tabletId);
+        return partitionInfos.computeIfAbsent(tabletId, id -> new ObPartitionLocationInfo());
     }
     
     public Map<Long, ObPartitionLocation> getPartitionLocation() {

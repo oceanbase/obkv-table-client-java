@@ -1160,52 +1160,53 @@ public class LocationUtil {
                                                                               long tabletId)
                                                                                             throws SQLException,
                                                                                             ObTablePartitionLocationRefreshException {
+
         if (partitionEntry == null || tableEntry == null) {
             throw new IllegalArgumentException("partitionEntry: " + partitionEntry
                                                + " tableEntry: " + tableEntry);
         }
+
         ObPartitionLocationInfo partitionLocationInfo = partitionEntry.getPartitionInfo(tabletId);
+
+        partitionLocationInfo.rwLock.writeLock().lock();
         try {
-            partitionLocationInfo.rwLock.writeLock().lock();
             while (rs.next()) {
                 ReplicaLocation replica = buildReplicaLocation(rs);
-                long partitionId;
-                long lsId;
-                if (ObGlobal.obVsnMajor() >= 4) {
-                    partitionId = rs.getLong("tablet_id");
-                    lsId = rs.getLong("ls_id");
-                    if (rs.wasNull()) {
-                        lsId = INVALID_LS_ID; // non-partitioned table
-                    }
-                    partitionLocationInfo.setTabletLsId(lsId);
-                } else {
-                    partitionId = rs.getLong("partition_id");
-                    if (tableEntry.isPartitionTable()
-                        && null != tableEntry.getPartitionInfo().getSubPartDesc()) {
-                        partitionId = ObPartIdCalculator.getPartIdx(partitionId, tableEntry
-                            .getPartitionInfo().getSubPartDesc().getPartNum());
-                    }
+
+                long partitionId = (ObGlobal.obVsnMajor() >= 4) ? rs.getLong("tablet_id") : rs
+                    .getLong("partition_id");
+                long lsId = ObGlobal.obVsnMajor() >= 4 ? rs.getLong("ls_id") : INVALID_LS_ID;
+                if (rs.wasNull() && ObGlobal.obVsnMajor() >= 4) {
+                    lsId = INVALID_LS_ID; // For non-partitioned table  
                 }
+                partitionLocationInfo.setTabletLsId(lsId);
+
+                if (ObGlobal.obVsnMajor() < 4 && tableEntry.isPartitionTable()
+                    && tableEntry.getPartitionInfo().getSubPartDesc() != null) {
+                    partitionId = ObPartIdCalculator.getPartIdx(partitionId, tableEntry
+                        .getPartitionInfo().getSubPartDesc().getPartNum());
+                }
+
                 if (!replica.isValid()) {
                     RUNTIME
                         .warn(format(
-                            "replica is invalid, continue, replica=%s, partitionId/tabletId=%d, tableId=%d",
+                            "Replica is invalid; continuing. Replica=%s, PartitionId/TabletId=%d, TableId=%d",
                             replica, partitionId, tableEntry.getTableId()));
                     continue;
                 }
                 ObPartitionLocation location = partitionLocationInfo.getPartitionLocation();
-
                 if (location == null) {
                     location = new ObPartitionLocation();
-                    partitionLocationInfo.setPartitionLocation(location);
+                    partitionLocationInfo.updateLocation(location);
                 }
                 location.addReplicaLocation(replica);
+
+                if (partitionLocationInfo.initialized.compareAndSet(false, true)) {
+                    partitionLocationInfo.initializationLatch.countDown();
+                }
             }
         } finally {
             partitionLocationInfo.rwLock.writeLock().unlock();
-        }
-        // TODO: v3
-        if (ObGlobal.obVsnMajor() < 4) {
         }
         return partitionEntry;
     }
