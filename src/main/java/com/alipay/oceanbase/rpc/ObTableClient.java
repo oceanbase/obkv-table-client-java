@@ -1073,7 +1073,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     obTable.setObTableExecuteTimeout(rpcExecuteTimeout);
                 }
             }
-        } else if (null != odpTable) {
+        }
+        if (null != odpTable) {
             odpTable.setObTableExecuteTimeout(rpcExecuteTimeout);
         }
     }
