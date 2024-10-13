@@ -32,6 +32,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableApiMove;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableStreamRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.QueryStreamResult;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.table.ObTableParam;
@@ -156,8 +157,12 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         result = subObTable.execute(request);
                         if (result instanceof ObTableApiMove) {
                             ObTableApiMove move = (ObTableApiMove) result;
-                            logger.warn("The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. " +
-                                    "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move .getReplica().getServer().ipToString());
+                            logger
+                                .warn(
+                                    "The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. "
+                                            + "Rerouting return IP is {}", moveResponse
+                                        .getReplica().getServer().ipToString(), move.getReplica()
+                                        .getServer().ipToString());
                             throw new ObTableRoutingWrongException();
                         }
                     }
@@ -222,12 +227,22 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                             throw e;
                         }
                     } else if (e instanceof ObTableException) {
-                        if ((((ObTableException) e).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode || ((ObTableException) e)
-                            .getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode)
-                            && ((ObTableQueryRequest) request).getTableQuery().isHbaseQuery()
-                            && client.getTableGroupInverted().get(indexTableName) != null) {
-                            // table not exists && hbase mode && table group exists , three condition both
-                            client.eraseTableGroupFromCache(tableName);
+                        if (((ObTableException) e).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode
+                            || ((ObTableException) e).getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode) {
+                            if (request instanceof ObTableQueryRequest) {
+                                if (((ObTableQueryRequest) request).getTableQuery().isHbaseQuery()
+                                    && client.getTableGroupInverted().get(indexTableName) != null) {
+                                    // table not exists && hbase mode && table group exists , three condition both
+                                    client.eraseTableGroupFromCache(tableName);
+                                }
+                            } else if (request instanceof ObTableQueryAsyncRequest) {
+                                if (((ObTableQueryAsyncRequest) request).getObTableQueryRequest()
+                                    .getTableQuery().isHbaseQuery()
+                                    && client.getTableGroupInverted().get(indexTableName) != null) {
+                                    // table not exists && hbase mode && table group exists , three condition both
+                                    client.eraseTableGroupFromCache(tableName);
+                                }
+                            }
                         }
                         if (((ObTableException) e).isNeedRefreshTableEntry()) {
                             needRefreshTableEntry = true;
