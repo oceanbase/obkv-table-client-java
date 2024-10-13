@@ -3257,10 +3257,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 }
             }
         }
-        // set db as "default" if the user does not assign any database
-        if (db == null) {
-            db = "default";
-        }
 
         if (StringUtils.isBlank(db)) {
             throw new IllegalArgumentException(String.format(
