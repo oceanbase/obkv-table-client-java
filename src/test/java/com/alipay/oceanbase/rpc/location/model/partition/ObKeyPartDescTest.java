@@ -105,59 +105,150 @@ public class ObKeyPartDescTest {
     @Test
     public void testGetPartId() {
         // key binary
+        Map<String, Object> partition1 = new HashMap<String, Object>() {
+            {
+                put("K", "partition_1");
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
+        Map<String, Object> Partition1 = new HashMap<String, Object>() {
+            {
+                put("K", "Partition_1");
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
+        Map<String, Object> PARTITION1 = new HashMap<String, Object>() {
+            {
+                put("K", "PARTITION_1");
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
+        Map<String, Object> PARTITION1_byte = new HashMap<String, Object>() {
+            {
+                put("K", "PARTITION_1".getBytes());
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
+        Map<String, Object> Partition1_byte = new HashMap<String, Object>() {
+            {
+                put("K", "Partition_1".getBytes());
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
+        Map<String, Object> Partition2_byte = new HashMap<String, Object>() {
+            {
+                put("K", "Partition_2".getBytes());
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
+        Map<String, Object> partition1_byte = new HashMap<String, Object>() {
+            {
+                put("K", "partition_1".getBytes());
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
+        Map<String, Object> partition2 = new HashMap<String, Object>() {
+            {
+                put("K", "partition_2");
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
+        Map<String, Object> partition2_byte = new HashMap<String, Object>() {
+            {
+                put("K", "partition_2".getBytes());
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
+        Map<String, Object> test1 = new HashMap<String, Object>() {
+            {
+                put("K", "test_1");
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
+        Map<String, Object> test1_byte = new HashMap<String, Object>() {
+            {
+                put("K", "test_1".getBytes());
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
+        Map<String, Object> test2 = new HashMap<String, Object>() {
+            {
+                put("K", "test_2");
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
+        Map<String, Object> test2_byte = new HashMap<String, Object>() {
+            {
+                put("K", "test_2".getBytes());
+                put("Q", "column_1");
+                put("T", System.currentTimeMillis());
+            }
+        };
 
-        long partId = keyBinary.getPartId("partition_1", "column_1", System.currentTimeMillis());
+        long partId = keyBinary.getPartId(new Row(partition1));
         Assert.assertEquals(11, partId);
 
         Assert.assertEquals(
-            keyBinary.getPartId("partition_1", "column_1", System.currentTimeMillis()),
-            keyBinary.getPartId("partition_2", "column_1", System.currentTimeMillis()));
+            keyBinary.getPartId(new Row(partition1)),
+            keyBinary.getPartId(new Row(partition2)));
 
         Assert.assertEquals(
-            keyBinary.getPartId("partition_1", "column_1", System.currentTimeMillis()),
-            keyBinary.getPartId("partition_1".getBytes(), "column_1", System.currentTimeMillis()));
+            keyBinary.getPartId(new Row(partition1)),
+            keyBinary.getPartId(new Row(partition1_byte)));
 
-        Assert.assertEquals(keyBinary.getPartId("test_1", "column_1", System.currentTimeMillis()),
-            keyBinary.getPartId("test_2", "column_1", System.currentTimeMillis()));
+        Assert.assertEquals(keyBinary.getPartId(new Row(test1)),
+            keyBinary.getPartId(new Row(test2)));
 
-        Assert.assertEquals(keyBinary.getPartId("test_1", "column_1", System.currentTimeMillis()),
-            keyBinary.getPartId("test_2".getBytes(), "column_1", System.currentTimeMillis()));
-
-        Assert.assertEquals(
-            keyBinary.getPartId("test_1".getBytes(), "column_1", System.currentTimeMillis()),
-            keyBinary.getPartId("test_2".getBytes(), "column_1", System.currentTimeMillis()));
+        Assert.assertEquals(keyBinary.getPartId(new Row(test1)),
+            keyBinary.getPartId(new Row(test2_byte)));
 
         Assert.assertEquals(
-            keyUtf8_CI.getPartId("partition_1", "column_1", System.currentTimeMillis()),
-            keyUtf8_CI.getPartId("Partition_1".getBytes(), "column_1", System.currentTimeMillis()));
+            keyBinary.getPartId(new Row(test1_byte)),
+            keyBinary.getPartId(new Row(test2_byte)));
 
         Assert.assertEquals(
-            keyUtf8_CI.getPartId("partition_1", "column_1", System.currentTimeMillis()),
-            keyUtf8_CI.getPartId("Partition_2".getBytes(), "column_1", System.currentTimeMillis()));
+            keyUtf8_CI.getPartId(new Row(partition1)),
+            keyUtf8_CI.getPartId(new Row(Partition1_byte)));
 
         Assert.assertEquals(
-            keyUtf8.getPartId("partition_1", "column_1", System.currentTimeMillis()),
-            keyUtf8.getPartId("partition_2", "column_1", System.currentTimeMillis()));
+            keyUtf8_CI.getPartId(new Row(partition1)),
+            keyUtf8_CI.getPartId(new Row(Partition2_byte)));
 
         Assert.assertEquals(
-            keyUtf8.getPartId("partition_1", "column_1", System.currentTimeMillis()),
-            keyUtf8.getPartId("partition_2".getBytes(), "column_1", System.currentTimeMillis()));
+            keyUtf8.getPartId(new Row(partition1)),
+            keyUtf8.getPartId(new Row(partition2)));
 
         Assert.assertEquals(
-            keyUtf8.getPartId("partition_1", "column_1", System.currentTimeMillis()),
-            keyUtf8.getPartId("partition_2", "column_1", System.currentTimeMillis()));
+            keyUtf8.getPartId(new Row(partition1)),
+            keyUtf8.getPartId(new Row(partition2_byte)));
+
+        Assert.assertEquals(
+            keyUtf8.getPartId(new Row(partition1)),
+            keyUtf8.getPartId(new Row(partition2)));
 
         Assert.assertNotEquals(
-            keyUtf8.getPartId("partition_1", "column_1", System.currentTimeMillis()),
-            keyUtf8.getPartId("Partition_1", "column_1", System.currentTimeMillis()));
+            keyUtf8.getPartId(new Row(partition1)),
+            keyUtf8.getPartId(new Row(Partition1)));
 
         Assert.assertNotEquals(
-            keyUtf8_CI.getPartId("PARTITION_1", "column_1", System.currentTimeMillis()),
-            keyUtf8.getPartId("partition_1".getBytes(), "column_1", System.currentTimeMillis()));
+            keyUtf8_CI.getPartId(new Row(PARTITION1)),
+            keyUtf8.getPartId(new Row(partition1_byte)));
 
         Assert.assertNotEquals(
-            keyUtf8_CI.getPartId("partition_1", "column_1", System.currentTimeMillis()),
-            keyBinary.getPartId("PARTITION_1".getBytes(), "column_1", System.currentTimeMillis()));
+            keyUtf8_CI.getPartId(new Row(partition1)),
+            keyBinary.getPartId(new Row(PARTITION1_byte)));
     }
 
     @Test
@@ -264,7 +355,7 @@ public class ObKeyPartDescTest {
             keyBinary.getPartIds(new Row(startKey2), false, new Row(endKey1), false));
 
         try {
-            List<Long> ans = keyBinary.getPartIds(startKey1, false, endKey3, false);
+            List<Long> ans = keyBinary.getPartIds(new Row(startKey1), false, new Row(endKey3), false);
             Assert.assertEquals(16, ans.size());
         } catch (Exception e) {
             e.printStackTrace();
@@ -272,7 +363,7 @@ public class ObKeyPartDescTest {
         }
 
         try {
-            List<Long> ans = keyBinary.getPartIds(startKey3, false, endKey1, true);
+            List<Long> ans = keyBinary.getPartIds(new Row(startKey3), false, new Row(endKey1), true);
             Assert.assertEquals(16, ans.size());
         } catch (Exception e) {
             e.printStackTrace();
@@ -280,7 +371,7 @@ public class ObKeyPartDescTest {
         }
 
         try {
-            List<Long> ans = keyBinary.getPartIds(startKey1, false, endKey4, true);
+            List<Long> ans = keyBinary.getPartIds(new Row(startKey1), false, new Row(endKey4), true);
             Assert.assertEquals(16, ans.size());
         } catch (Exception e) {
             e.printStackTrace();
