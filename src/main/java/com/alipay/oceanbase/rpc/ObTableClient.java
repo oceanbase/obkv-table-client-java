@@ -1365,7 +1365,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             RUNTIME.error("RefreshTableEntry encountered an exception", e);
             throw e;
         } catch (Exception e) {
-            String errorMsg = String.format("Failed to get table entry. Key=%s, Original TableEntry=%s", tableEntryKey, tableEntry);
+            String errorMsg = String.format("Failed to get table entry. Key=%s, Original TableEntry=%s, TabletId=%d", tableEntryKey, tableEntry, tabletId);
             RUNTIME.error(LCD.convert("01-00020"), tableEntryKey, tableEntry, e);
             throw new ObTableEntryRefreshException(errorMsg, e);
         }
@@ -1949,7 +1949,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
     }
 
-    private long getTabletIdByPartId(TableEntry tableEntry, Long partId) {
+    public long getTabletIdByPartId(TableEntry tableEntry, Long partId) {
         if (ObGlobal.obVsnMajor() >= 4 && tableEntry.isPartitionTable()) {
             ObPartitionInfo partInfo = tableEntry.getPartitionInfo();
             Map<Long, Long> tabletIdMap = partInfo.getPartTabletIdMap();
@@ -2041,17 +2041,17 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObServerAddr addr = replica.getAddr();
             ObTable obTable = tableRoster.get(addr);
             boolean addrExpired = addr.isExpired(serverAddressCachingTimeout);
-//            if (addrExpired || obTable == null) {
-//                logger
-//                    .warn(
-//                        "server address {} is expired={} or can not get ob table. So that will sync refresh metadata",
-//                        addr, addrExpired);
-//                syncRefreshMetadata();
-//                tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
-//                replica = getPartitionLocation(tableEntry, partId, route);
-//                addr = replica.getAddr();
-//                obTable = tableRoster.get(addr);
-//            }
+            if (addrExpired || obTable == null) {
+                logger
+                    .warn(
+                        "server address {} is expired={} or can not get ob table. So that will sync refresh metadata",
+                        addr, addrExpired);
+                syncRefreshMetadata();
+                tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
+                replica = getPartitionLocation(tableEntry, tabletId, route);
+                addr = replica.getAddr();
+                obTable = tableRoster.get(addr);
+            }
 
             if (obTable == null) {
                 RUNTIME.error("cannot get table by addr: " + addr);
