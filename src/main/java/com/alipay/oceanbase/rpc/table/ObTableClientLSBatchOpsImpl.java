@@ -740,7 +740,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             // Execute sub-batch operation one by one
             for (final Map.Entry<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> entry : lsOperations
                 .entrySet()) {
-                partitionExecute(obTableOperationResults, entry);
+                executeWithRetries(obTableOperationResults, entry, maxRetries);
             }
         }
 
