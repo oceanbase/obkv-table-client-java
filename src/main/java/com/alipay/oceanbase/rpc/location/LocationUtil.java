@@ -873,7 +873,6 @@ public class LocationUtil {
                 // ignore
             }
         }
-        // 可能不需要了
         tableEntry.setRefreshTimeMills(System.currentTimeMillis());
         return tableEntry;
     }
