@@ -167,8 +167,10 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                     && !tableQuery.getIndexName().equalsIgnoreCase("primary")) {
                     throw new ObTableException("key range columns must be specified when use index");
                 }
-            }
-            if (getPartId() == null) {
+            } else if (tableQuery.getIndexName() != null) {
+                this.partitionObTables.put(0L, new ObPair<Long, ObTableParam>(0L, new ObTableParam(
+                        obTableClient.getOdpTable())));
+            } else if (getPartId() == null) {
                 initPartitions();
             } else {
                 ObPair<Long, ObTableParam> odpTable = obTableClient.getODPTableWithPartId(
