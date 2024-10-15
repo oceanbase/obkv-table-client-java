@@ -280,6 +280,7 @@ public class ObGetPartitionTest {
 
     @Test
     public void testGetPartitionWithRowKeyValues() throws Exception {
+        client.addRowKeyElement("test_mutation", new String[] {"c1", "c2" } );
         Object values[][] = { { 1L, "c2_val", "c3_val", 100L }, { 400L, "c2_val", "c3_val", 100L },
                 { 1001L, "c2_val", "c3_val", 100L } };
         int rowCnt = values.length;
