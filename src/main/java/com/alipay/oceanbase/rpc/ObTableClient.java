@@ -1369,7 +1369,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
             long lastRefreshTime = tableEntry.getPartitionEntry().getPartitionInfo(tabletId).getLastUpdateTime();
             long currentTime = System.currentTimeMillis();
-            if (currentTime - lastRefreshTime < 200) {
+            if (currentTime - lastRefreshTime < tableEntryRefreshIntervalBase) {
                 return tableEntry;
             }
             
@@ -2209,7 +2209,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                 addr, addrExpired);
                 syncRefreshMetadata();
                 tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
-                replica = getPartitionLocation(tableEntry, tabletId, route);
+                replica = getPartitionLocation(tableEntry, partId, route);
                 addr = replica.getAddr();
                 obTable = tableRoster.get(addr);
             }
