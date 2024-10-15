@@ -1338,7 +1338,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
             long lastRefreshTime = tableEntry.getPartitionEntry().getPartitionInfo(tabletId).getLastUpdateTime();
             long currentTime = System.currentTimeMillis();
-            if (currentTime - lastRefreshTime < 200) {
+            if (currentTime - lastRefreshTime < tableEntryRefreshIntervalBase) {
                 return tableEntry;
             }
             
@@ -2036,7 +2036,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         // obTableParams -> List<Pair<logicId, obTableParams>>
         List<ObPair<Long, ObTableParam>> obTableParams = new ArrayList<ObPair<Long, ObTableParam>>();
         for (ObPair<Long, ReplicaLocation> partIdWithReplica : partIdWithReplicaList) {
-            long tabletId = partIdWithReplica.getLeft();
+            long partId = partIdWithReplica.getLeft();
             ReplicaLocation replica = partIdWithReplica.getRight();
             ObServerAddr addr = replica.getAddr();
             ObTable obTable = tableRoster.get(addr);
@@ -2048,7 +2048,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         addr, addrExpired);
                 syncRefreshMetadata();
                 tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
-                replica = getPartitionLocation(tableEntry, tabletId, route);
+                replica = getPartitionLocation(tableEntry, partId, route);
                 addr = replica.getAddr();
                 obTable = tableRoster.get(addr);
             }
@@ -2059,9 +2059,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
 
             ObTableParam param = new ObTableParam(obTable);
+            if (ObGlobal.obVsnMajor() >= 4) {
+                long partIdx = tableEntry.getPartIdx(partId);
+                partId = tableEntry.isPartitionTable() ? tableEntry.getPartitionInfo()
+                        .getPartTabletIdMap().get(partIdx) : partId;
+            }
             param.setTableId(tableEntry.getTableId());
             // real partition(tablet) id
-            param.setPartitionId(tabletId);
+            param.setPartitionId(partId);
 
             addr.recordAccess();
             obTableParams.add(new ObPair<Long, ObTableParam>(partIdWithReplica.getLeft(), param));
