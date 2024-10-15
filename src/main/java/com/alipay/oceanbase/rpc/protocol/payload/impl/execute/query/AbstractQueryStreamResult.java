@@ -51,7 +51,6 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     protected volatile boolean                                                 closed              = false;
     protected volatile List<ObObj>                                             row                 = null;
     protected volatile int                                                     rowIndex            = -1;
-    // 调整它的startKey
     protected ObTableQuery                                                     tableQuery;
     protected long                                                             operationTimeout    = -1;
     protected String                                                           tableName;
