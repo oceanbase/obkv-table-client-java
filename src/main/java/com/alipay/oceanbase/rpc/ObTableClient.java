@@ -2039,7 +2039,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                       boolean refresh, boolean waitForRefresh)
                                                                                               throws Exception {
         return getTables(tableName, query, start, startInclusive, end, endInclusive, refresh,
-            waitForRefresh, getRoute(false));
+            waitForRefresh, false, getRoute(false));
     }
 
     /**
@@ -2060,10 +2060,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                       Object[] start, boolean startInclusive,
                                                       Object[] end, boolean endInclusive,
                                                       boolean refresh, boolean waitForRefresh,
-                                                      ObServerRoute route) throws Exception {
+                                                      boolean needFetchAll, ObServerRoute route) throws Exception {
 
         // 1. get TableEntry information
-        TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh, false);
+        TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh, needFetchAll);
 
         List<String> scanRangeColumns = query.getScanRangeColumns();
         if (scanRangeColumns == null || scanRangeColumns.isEmpty()) {
@@ -3025,7 +3025,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (odpMode) {
             obPair = getODPTableWithRowKey(tableName, rowKey, false);
         } else {
-            obPair = getTable(tableName, rowKey, false, false);
+            obPair = getTable(tableName, rowKey, true, true, true, getRoute(false));
         }
         ObTableParam tableParam = obPair.getRight();
         return new Partition(tableParam.getPartitionId(), obPair.getLeft(),
@@ -3063,7 +3063,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         } else {
             // List<ObPair<logic partId, obTableParam>>
             List<ObPair<Long, ObTableParam>> allTables = getTables(tableName, new ObTableQuery(), new Object[]{ ObObj.getMin() }, true,
-                    new Object[]{ ObObj.getMax() }, true, false, false);
+                    new Object[]{ ObObj.getMax() }, true, true, true, true, getRoute(false));
             for (ObPair<Long, ObTableParam> table : allTables) {
                 ObTableParam tableParam = table.getRight();
                 Partition partition = new Partition(tableParam.getPartitionId(), table.getLeft(), tableParam.getTableId(),
