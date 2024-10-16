@@ -103,10 +103,9 @@ public class ObKeyPartDesc extends ObPartDesc {
             if (startRow.size() != endRow.size()) {
                 throw new IllegalArgumentException("length of start key and end key is not equal");
             }
-            if (startRow.size() == 1 && startRow.getValues()[0] instanceof ObObj
-                && ((ObObj) startRow.getValues()[0]).isMinObj() && endRow.size() == 1
-                && endRow.getValues()[0] instanceof ObObj
-                && ((ObObj) endRow.getValues()[0]).isMaxObj()) {
+
+            if (startRow.size() == 1  && startRow.getValues()[0] instanceof ObObj && ((ObObj) startRow.getValues()[0]).isMinObj() &&
+                    endRow.size() == 1  && endRow.getValues()[0] instanceof ObObj && ((ObObj) endRow.getValues()[0]).isMaxObj()) {
                 return completeWorks;
             }
 
@@ -118,14 +117,33 @@ public class ObKeyPartDesc extends ObPartDesc {
                         throw new IllegalArgumentException("rowkey length is " + startRow.size()
                                                            + ", which is shortest than " + refIdx);
                     }
-                    if (startRow.get(curObRefColumnName) instanceof ObObj
-                        && (((ObObj) startRow.get(curObRefColumnName)).isMinObj() || ((ObObj) startRow
-                            .get(curObRefColumnName)).isMaxObj())) {
+                    Object startValue = null;
+                    for (Map.Entry<String, Object> entry : startRow.getMap().entrySet()) {
+                        if (entry.getKey().equalsIgnoreCase(curObRefColumnName)) {
+                            startValue = entry.getValue();
+                            break;
+                        }
+                    }
+                    if (startValue == null) {
+                        throw new IllegalArgumentException("Please include all partition key in start range. Currently missing key: { " + curObRefColumnName + " }");
+                    }
+                    if (startValue instanceof ObObj
+                            && (((ObObj) startValue).isMinObj() || ((ObObj) startValue).isMaxObj())) {
                         return completeWorks;
                     }
-                    if (endRow.get(curObRefColumnName) instanceof ObObj
-                        && (((ObObj) endRow.get(curObRefColumnName)).isMinObj() || ((ObObj) endRow
-                            .get(curObRefColumnName)).isMaxObj())) {
+
+                    Object endValue = null;
+                    for (Map.Entry<String, Object> entry : endRow.getMap().entrySet()) {
+                        if (entry.getKey().equalsIgnoreCase(curObRefColumnName)) {
+                            endValue = entry.getValue();
+                            break;
+                        }
+                    }
+                    if (endValue == null) {
+                        throw new IllegalArgumentException("Please include all partition key in end range. Currently missing key: { " + curObRefColumnName + " }");
+                    }
+                    if (endValue instanceof ObObj
+                            && (((ObObj) endValue).isMinObj() || ((ObObj) endValue).isMaxObj())) {
                         return completeWorks;
                     }
                 }

@@ -150,7 +150,6 @@ public class ObTableDirectLoadResult extends AbstractPayload {
          */
         @Override
         public Header decode(ByteBuf buf) {
-            addr = new ObAddr();
             addr.decode(buf);
             operationType = ObTableDirectLoadOperationType.valueOf(Serialization.decodeI8(buf));
             return this;

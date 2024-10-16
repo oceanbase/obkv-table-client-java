@@ -288,8 +288,9 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             // pairs -> List<Pair<logicId, param>>
             List<ObPair<Long, ObTableParam>> pairs = null;
             if (!this.obTableClient.isOdpMode()) {
-                pairs = this.obTableClient.getTables(indexTableName, tableQuery, start,
-                    borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false, false);
+                pairs = this.obTableClient.getTables(indexTableName,
+                        tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(),
+                        false, false);
             } else {
                 pairs = this.obTableClient.getOdpTables(tableName, tableQuery, start,
                     borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd());

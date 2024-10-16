@@ -59,6 +59,10 @@ public class ObAddr /*extends ObUnisVersion*/implements ObSimplePayload {
         this.port = port;
     }
 
+    public boolean isValid() {
+        return version == VER.IPV4 && ip[0] != 0 && port > 0;
+    }
+
     public String toString() {
         String str = new String();
         if (version == VER.IPV4) {

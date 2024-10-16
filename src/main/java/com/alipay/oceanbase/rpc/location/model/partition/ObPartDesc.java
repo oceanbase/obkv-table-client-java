@@ -170,8 +170,7 @@ public abstract class ObPartDesc {
 
     //to prepare partition calculate resource
     //to check partition calculate is ready
-    public void prepare() throws IllegalArgumentException { /* do nothing now */
-    }
+    public void prepare() throws IllegalArgumentException { /* do nothing now */ }
 
     /*
      * Eval row key values.
@@ -183,38 +182,38 @@ public abstract class ObPartDesc {
         String[] rowColumnNames = row.getColumns();
 
         if (rowValues.length < partColumnSize) {
-            throw new IllegalArgumentException("Input row key should at least include "
-                                               + partColumns + "but found"
-                                               + Arrays.toString(rowValues));
+            throw new IllegalArgumentException("Input row key should at least include " + partColumns
+                    + "but found" + Arrays.toString(rowValues));
         }
+
 
         boolean needEval = true;
 
         // column or generate column
         for (int i = 0; i < partColumns.size(); ++i) {
             ObColumn curObColumn = partColumns.get(i);
-            List<String> curObRefColumnNames = curObColumn.getRefColumnNames();
-            Object[] evalParams = new Object[curObRefColumnNames.size()];
-            for (int j = 0; j < curObRefColumnNames.size(); ++j) {
-                for (int k = 0; k < rowColumnNames.length; ++k) {
-                    if (rowColumnNames[k].equalsIgnoreCase(curObRefColumnNames.get(j))) {
-                        if (curObRefColumnNames.size() == 1 && rowValues[k] instanceof ObObj) {
-                            ObObj obj = (ObObj) rowValues[k];
-                            if (obj.isMaxObj() || obj.isMinObj()) {
-                                evalValues.add(obj);
-                                needEval = false;
-                                break;
+                List<String> curObRefColumnNames = curObColumn.getRefColumnNames();
+                Object[] evalParams = new Object[curObRefColumnNames.size()];
+                for (int j = 0; j < curObRefColumnNames.size(); ++j) {
+                    for (int k = 0; k < rowColumnNames.length; ++k) {
+                        if (rowColumnNames[k].equalsIgnoreCase(curObRefColumnNames.get(j))) {
+                            if (curObRefColumnNames.size() == 1 && rowValues[k] instanceof ObObj) {
+                                ObObj obj = (ObObj) rowValues[k];
+                                if (obj.isMaxObj() || obj.isMinObj()) {
+                                    evalValues.add(obj);
+                                    needEval = false;
+                                    break;
+                                }
                             }
+                            evalParams[j] = rowValues[k];
+                            break;
                         }
-                        evalParams[j] = rowValues[k];
-                        break;
                     }
                 }
+                if (needEval) {
+                    evalValues.add(curObColumn.evalValue(evalParams));
+                }
             }
-            if (needEval) {
-                evalValues.add(curObColumn.evalValue(evalParams));
-            }
-        }
 
         return evalValues;
     }
@@ -239,5 +238,4 @@ public abstract class ObPartDesc {
     public abstract Long getRandomPartId();
 
     public abstract void setPartNum(int n);
-
 }

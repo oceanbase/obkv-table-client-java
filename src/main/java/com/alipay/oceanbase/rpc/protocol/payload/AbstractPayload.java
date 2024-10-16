@@ -43,6 +43,7 @@ public abstract class AbstractPayload implements ObPayload {
     protected long                     tenantId  = 1;
     private long                       version   = 1;
     protected long                     timeout   = RPC_OPERATION_TIMEOUT.getDefaultLong();
+    protected int                      groupId   = 0;
 
     /*
      * Get pcode.
@@ -115,6 +116,21 @@ public abstract class AbstractPayload implements ObPayload {
      */
     public void setTenantId(long tenantId) {
         this.tenantId = tenantId;
+    }
+
+    /*
+     * Get group id.
+     */
+    @Override
+    public int getGroupId() {
+        return groupId;
+    }
+
+    /*
+     * Set group id.
+     */
+    public void setGroupId(int groupId) {
+        this.groupId = groupId;
     }
 
     /*

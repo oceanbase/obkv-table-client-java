@@ -20,6 +20,8 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableConsistencyLevel;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
+import com.alipay.oceanbase.rpc.table.ObHBaseParams;
+import com.alipay.oceanbase.rpc.table.ObKVParams;
 import com.alipay.oceanbase.rpc.util.ObBytesString;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -28,6 +30,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 public class ObTableQueryPayloadTest {
@@ -79,6 +82,10 @@ public class ObTableQueryPayloadTest {
     public void test_ObTableQueryWithHbaseQuery() {
         ObTableQuery obTableQuery = getObTableQuery();
         obTableQuery.sethTableFilter(getObHTableFilter());
+        ObHBaseParams hBaseParams = new ObHBaseParams();
+        ObKVParams kv_prams = new ObKVParams();
+        kv_prams.setObParamsBase(hBaseParams);
+        obTableQuery.setObKVParams(kv_prams);
 
         byte[] bytes = obTableQuery.encode();
         ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer();
@@ -185,7 +192,7 @@ public class ObTableQueryPayloadTest {
         assertEquals(obHTableFilter.getLimitPerRowPerCf(), newObHTableFilter.getLimitPerRowPerCf());
         assertEquals(obHTableFilter.getOffsetPerRowPerCf(),
             newObHTableFilter.getOffsetPerRowPerCf());
-        assertEquals(obHTableFilter.getFilterString(), newObHTableFilter.getFilterString());
+        assertArrayEquals(obHTableFilter.getFilterString(), newObHTableFilter.getFilterString());
         assertEquals(obHTableFilter.getSelectColumnQualifier().size(), newObHTableFilter
             .getSelectColumnQualifier().size());
         assertEquals(new String(obHTableFilter.getSelectColumnQualifier().get(0).bytes),
@@ -204,7 +211,7 @@ public class ObTableQueryPayloadTest {
         obHTableFilter.setMaxVersions(300);
         obHTableFilter.setLimitPerRowPerCf(400);
         obHTableFilter.setOffsetPerRowPerCf(500);
-        obHTableFilter.setFilterString("123");
+        obHTableFilter.setFilterString("123".getBytes());
 
         List<ObBytesString> qs = new ArrayList<ObBytesString>();
         qs.add(new ObBytesString("q1".getBytes()));
