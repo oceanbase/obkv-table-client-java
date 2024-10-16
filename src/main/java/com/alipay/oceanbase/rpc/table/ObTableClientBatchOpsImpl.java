@@ -22,6 +22,8 @@ import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.result.*;
+import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
@@ -35,7 +37,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
-import static com.alipay.oceanbase.rpc.util.TraceUtil.formatTraceMessage;
 
 public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
 
@@ -230,13 +231,9 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             for (int j = 0; j < rowKeySize; j++) {
                 rowKey[j] = rowKeyObject.getObj(j).getValue();
             }
-            ObPair<Long, ObTableParam> tableObPair = null;
-            if (!obTableClient.isOdpMode()) {
-                tableObPair = obTableClient.getTableBySingleRowKeyWithRoute(tableName, rowKey,
-                    false, false, false, obTableClient.getRoute(batchOperation.isReadOnly()));
-            } else {
-                tableObPair = obTableClient.getODPTableWithRowKeyValue(tableName, rowKey, false);
-            }
+            ObPair<Long, ObTableParam> tableObPair = obTableClient.getTable(
+                tableName, rowKey, false, false,
+                obTableClient.getRoute(batchOperation.isReadOnly()));
             ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>> obTableOperations = partitionOperationsMap
                 .get(tableObPair.getLeft());
             if (obTableOperations == null) {
@@ -338,8 +335,21 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         subRequest.setPartitionId(newParam.getPartitionId());
                     }
                 }
-                subObTableBatchOperationResult = (ObTableBatchOperationResult) subObTable
-                    .execute(subRequest);
+                ObPayload result = subObTable.execute(subRequest);
+                if (result != null && result.getPcode() == Pcodes.OB_TABLE_API_MOVE) {
+                    ObTableApiMove moveResponse = (ObTableApiMove) result;
+                    obTableClient.getRouteTableRefresher().addTableIfAbsent(tableName, true);
+                    obTableClient.getRouteTableRefresher().triggerRefreshTable();
+                    subObTable = obTableClient.getTable(moveResponse);
+                    result = subObTable.execute(subRequest);
+                    if (result instanceof ObTableApiMove) {
+                        ObTableApiMove move = (ObTableApiMove) result;
+                        logger.warn("The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. " +
+                                "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move .getReplica().getServer().ipToString());
+                        throw new ObTableRoutingWrongException();
+                    }
+                }
+                subObTableBatchOperationResult = (ObTableBatchOperationResult) result;
                 obTableClient.resetExecuteContinuousFailureCount(tableName);
                 break;
             } catch (Exception ex) {

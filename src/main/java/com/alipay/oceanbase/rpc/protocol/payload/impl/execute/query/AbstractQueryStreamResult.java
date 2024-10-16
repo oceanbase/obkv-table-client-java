@@ -28,6 +28,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableApiMove;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableStreamRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.QueryStreamResult;
@@ -103,7 +104,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                       ObPayload request,
                                       AtomicReference<ObTableConnection> connectionRef)
                                                                                        throws Exception {
-        Object result;
+        ObPayload result;
         ObTable subObTable = partIdWithIndex.getRight().getObTable();
         boolean needRefreshTableEntry = false;
         boolean odpNeedRenew = false;
@@ -149,6 +150,20 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     result = subObTable.executeWithConnection(request, connectionRef);
                 } else {
                     result = subObTable.execute(request);
+
+                    if (result != null && result.getPcode() == Pcodes.OB_TABLE_API_MOVE) {
+                        ObTableApiMove moveResponse = (ObTableApiMove) result;
+                        client.getRouteTableRefresher().addTableIfAbsent(indexTableName, true);
+                        client.getRouteTableRefresher().triggerRefreshTable();
+                        subObTable = client.getTable(moveResponse);
+                        result = subObTable.execute(request);
+                        if (result instanceof ObTableApiMove) {
+                            ObTableApiMove move = (ObTableApiMove) result;
+                            logger.warn("The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. " +
+                                    "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move .getReplica().getServer().ipToString());
+                            throw new ObTableRoutingWrongException();
+                        }
+                    }
                 }
                 client.resetExecuteContinuousFailureCount(indexTableName);
                 break;
@@ -255,7 +270,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
             }
             Thread.sleep(client.getRuntimeRetryInterval());
         }
-        return (ObPayload) result;
+        return result;
     }
 
     /*

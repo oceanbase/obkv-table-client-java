@@ -66,7 +66,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
 
     private volatile boolean      initialized = false;
     private volatile boolean      closed      = false;
-    private boolean               reRouting   = false;              // only used for init packet factory
+    private boolean               reRouting   = true;              // only used for init packet factory
 
     private ReentrantLock         statusLock  = new ReentrantLock();
 
@@ -172,6 +172,10 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             Map<String, String> runtimeMap = (Map<String, String>) value;
             runtimeMap.put(RPC_OPERATION_TIMEOUT.getKey(), String.valueOf(obTableOperationTimeout));
         }
+    }
+
+    public boolean getReRouting(){
+        return reRouting;
     }
 
     /*
@@ -755,10 +759,16 @@ public class ObTable extends AbstractObTable implements Lifecycle {
          * 4. Attempt to reconnect the marked connections.
          **/
         private void checkAndReconnect() {
+            // do nothing when there is only 1 connection
+            if (obTableConnectionPoolSize == 1) {
+                return;
+            }
+
             // Iterate over the connection pool to identify connections that have expired
             List<Integer> expiredConnIds = new ArrayList<>();
+            long num = turn.get();
             for (int i = 1; i <= obTableConnectionPoolSize; ++i) {
-                int idx = (int) ((i + turn.get()) % obTableConnectionPoolSize);
+                int idx = (int) ((i + num) % obTableConnectionPoolSize);
                 if (connectionPool[idx].checkExpired()) {
                     expiredConnIds.add(idx);
                 }

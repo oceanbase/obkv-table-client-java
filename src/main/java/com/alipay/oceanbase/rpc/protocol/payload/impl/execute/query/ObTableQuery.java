@@ -17,6 +17,9 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
+import com.alipay.oceanbase.rpc.exception.FeatureNotSupportedException;
+import com.alipay.oceanbase.rpc.table.ObHBaseParams;
+import com.alipay.oceanbase.rpc.table.ObKVParams;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationSingle;
@@ -59,13 +62,15 @@ public class ObTableQuery extends AbstractPayload {
     private long                maxResultSize             = -1;
     private ObHTableFilter      hTableFilter;
 
-    private static final byte[] HTABLE_FILTER_DUMMY_BYTES = new byte[] { 0x01, 0x00 };
+    private static final byte[] HTABLE_DUMMY_BYTES = new byte[] { 0x01, 0x00 };
     private boolean             isHbaseQuery              = false;
     private List<String>        scanRangeColumns          = new LinkedList<String>();
 
     private List<ObTableAggregationSingle>    aggregations       = new LinkedList<>();
 
     private Long partId = null;
+
+    private ObKVParams obKVParams;
 
     /*
      * Check filter.
@@ -152,8 +157,8 @@ public class ObTableQuery extends AbstractPayload {
             len = (int) hTableFilter.getPayloadSize();
             System.arraycopy(hTableFilter.encode(), 0, bytes, idx, len);
         } else {
-            len = HTABLE_FILTER_DUMMY_BYTES.length;
-            System.arraycopy(HTABLE_FILTER_DUMMY_BYTES, 0, bytes, idx, len);
+            len = HTABLE_DUMMY_BYTES.length;
+            System.arraycopy(HTABLE_DUMMY_BYTES, 0, bytes, idx, len);
         }
         idx += len;
 
@@ -173,6 +178,16 @@ public class ObTableQuery extends AbstractPayload {
         for (ObTableAggregationSingle obTableAggregationSingle : aggregations) {
             len = (int) obTableAggregationSingle.getPayloadSize();
             System.arraycopy(obTableAggregationSingle.encode(), 0, bytes, idx, len);
+            idx += len;
+        }
+
+        if (isHbaseQuery && obKVParams != null) {
+            len = (int) obKVParams.getPayloadSize();
+            System.arraycopy(obKVParams.encode(), 0, bytes, idx, len);
+            idx += len;
+        } else {
+            len = HTABLE_DUMMY_BYTES.length;
+            System.arraycopy(HTABLE_DUMMY_BYTES, 0, bytes, idx, len);
             idx += len;
         }
 
@@ -233,6 +248,10 @@ public class ObTableQuery extends AbstractPayload {
             String agg_column = Serialization.decodeVString(buf);
             this.aggregations.add(new ObTableAggregationSingle(ObTableAggregationType.fromByte(agg_type), agg_column));
         }
+        if (isHbaseQuery) {
+            obKVParams = new ObKVParams();
+            this.obKVParams.decode(buf);
+        }
         return this;
     }
 
@@ -262,7 +281,12 @@ public class ObTableQuery extends AbstractPayload {
         if (isHbaseQuery) {
             contentSize += hTableFilter.getPayloadSize();
         } else {
-            contentSize += HTABLE_FILTER_DUMMY_BYTES.length;
+            contentSize += HTABLE_DUMMY_BYTES.length;
+        }
+        if (isHbaseQuery && obKVParams != null) {
+            contentSize += obKVParams.getPayloadSize();
+        } else {
+            contentSize += HTABLE_DUMMY_BYTES.length;
         }
         contentSize += Serialization.getNeedBytes(scanRangeColumns.size());
         for (String scanRangeColumn : scanRangeColumns) {
@@ -475,4 +499,17 @@ public class ObTableQuery extends AbstractPayload {
     }
 
     public Long getPartId() { return this.partId; }
+
+    // This interface is just for OBKV-Hbase
+    public void setObKVParams(ObKVParams obKVParams) {
+        if (!(obKVParams.getObParamsBase() instanceof ObHBaseParams)) {
+            throw new FeatureNotSupportedException("only ObHBaseParams support currently");
+        }
+        this.isHbaseQuery = true;
+        this.obKVParams = obKVParams;
+    }
+
+    public ObKVParams getObKVParams() {
+        return obKVParams;
+    }
 }

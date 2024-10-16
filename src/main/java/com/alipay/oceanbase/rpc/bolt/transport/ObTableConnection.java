@@ -150,7 +150,9 @@ public class ObTableConnection {
         request.setTenantName(obTable.getTenantName());
         request.setUserName(obTable.getUserName());
         request.setDatabaseName(obTable.getDatabase());
-        if (loginWithConfigs) {
+        // When the caller doesn't provide any parameters, configsMap is empty.  
+        // In this case, we don't generate any JSON to avoid creating an empty object.
+        if (loginWithConfigs && !obTable.getConfigs().isEmpty()) {
             JSONObject json = new JSONObject(obTable.getConfigs());
             request.setConfigsStr(json.toJSONString());
             loginWithConfigs = false;

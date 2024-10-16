@@ -546,4 +546,19 @@ public class ObRpcPacketHeader {
     public void setOriginalLen(int originalLen) {
         this.originalLen = originalLen;
     }
+
+    /*
+     * Get group id.
+     */
+    public int getGroupId() {
+        return groupId;
+    }
+
+    /*
+     * Set group id.
+     */
+    public void setGroupId(int groupId) {
+        this.groupId = groupId;
+    }
+
 }
