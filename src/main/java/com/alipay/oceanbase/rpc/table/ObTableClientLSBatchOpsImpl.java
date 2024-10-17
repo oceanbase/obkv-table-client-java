@@ -314,24 +314,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     public Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> partitionPrepare()
             throws Exception {
         List<ObTableSingleOp> operations = getSingleOperations();
-        // map: <ls_id, map<tablet_id, <table param, <idx in origin batch, table operation>>>>
+        // map: <ls_id, map<part_id, <table param, <idx in origin batch, table operation>>>>
         Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> lsOperationsMap =
                 new HashMap();
-
-        // In ODP mode, client send the request to ODP directly without route
-        if (obTableClient.isOdpMode()) {
-            Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperationsMap = new HashMap<>();
-            ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>> obTableOperations =
-                    new ObPair(new ObTableParam(obTableClient.getOdpTable()),
-                            new ArrayList<ObPair<Integer, ObTableSingleOp>>());
-            for (int i = 0; i < operations.size(); i++) {
-                ObTableSingleOp operation = operations.get(i);
-                obTableOperations.getRight().add(new ObPair<Integer, ObTableSingleOp>(i, operation));
-            }
-            tabletOperationsMap.put(INVALID_TABLET_ID, obTableOperations);
-            lsOperationsMap.put(INVALID_LS_ID, tabletOperationsMap);
-            return lsOperationsMap;
-        }
 
         for (int i = 0; i < operations.size(); i++) {
             ObTableSingleOp operation = operations.get(i);
@@ -341,13 +326,17 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             for (int j = 0; j < rowKeySize; j++) {
                 rowKey[j] = rowkeyObjs.get(j).getValue();
             }
-
-            String real_tableName = tableName;
-            if (this.entityType == ObTableEntityType.HKV && obTableClient.isTableGroupName(tableName)) {
-                real_tableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
+            ObPair<Long, ObTableParam>  tableObPair = null;
+            if (!obTableClient.isOdpMode()) {
+                String real_tableName = tableName;
+                if (this.entityType == ObTableEntityType.HKV && obTableClient.isTableGroupName(tableName)) {
+                    real_tableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
+                }
+                tableObPair= obTableClient.getTable(real_tableName, rowKey,
+                        false, false, obTableClient.getRoute(false));
+            } else {
+                tableObPair = obTableClient.getODPTableWithRowKeyValue(tableName, rowKey, false);
             }
-            ObPair<Long, ObTableParam>  tableObPair= obTableClient.getTable(real_tableName, rowKey,
-                    false, false, obTableClient.getRoute(false));
             long lsId = tableObPair.getRight().getLsId();
 
             Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperations
@@ -360,13 +349,13 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
             ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>> singleOperations =
                     tabletOperations.get(tableObPair.getLeft());
-            // if tablet id not exists
+            // if part_id not exists
             if (singleOperations == null) {
                 singleOperations = new ObPair<>(tableObPair.getRight(), new ArrayList<>());
                 tabletOperations.put(tableObPair.getLeft(), singleOperations);
             }
 
-            singleOperations.getRight().add(new ObPair(i, operation));
+            singleOperations.getRight().add(new ObPair<Integer, ObTableSingleOp>(i, operation));
         }
 
         return lsOperationsMap;
@@ -435,6 +424,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
         ObTableLSOpResult subLSOpResult;
         boolean needRefreshTableEntry = false;
+        boolean odpNeedRenew = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
         Set<String> failedServerList = null;
@@ -457,7 +447,12 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             tryTimes++;
             try {
                 if (obTableClient.isOdpMode()) {
-                    subObTable = obTableClient.getOdpTable();
+                    if (tryTimes > 1) {
+                        ObTableParam param = obTableClient.getODPTableWithPartId(tableName, originPartId, odpNeedRenew).getRight();
+                        subObTable = param.getObTable();
+                        tableLsOpRequest.getLSOperation().setLsId(param.getLsId());
+                        tableLsOpRequest.setTableId(param.getTableId());
+                    }
                 } else {
                     if (tryTimes > 1) {
                         if (route == null) {
@@ -490,9 +485,19 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 break;
             } catch (Exception ex) {
                 if (obTableClient.isOdpMode()) {
-                    logger.warn("meet exception when execute ls batch in odp mode." +
-                            "tablename: {}, errMsg: {}", tableName, ex.getMessage());
-                    throw ex;
+                    if ((tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
+                        logger.warn("meet exception when execute ls batch in odp mode." +
+                                "tablename: {}, errMsg: {}", tableName, ex.getMessage());
+                        if (ex instanceof ObTablePartitionChangeException &&
+                                ((ObTablePartitionChangeException) ex).getErrorCode() == ResultCodes.OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
+                            odpNeedRenew = true;
+                        }
+                        else {
+                            throw ex;
+                        }
+                    } else {
+                        throw ex;
+                    }
                 } else if (ex instanceof ObTableReplicaNotReadableException) {
                     if ((tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
                         logger.warn("tablename:{} ls id:{} retry when replica not readable: {}",

@@ -21,6 +21,7 @@ import com.alipay.oceanbase.rpc.exception.FeatureNotSupportedException;
 import com.alipay.oceanbase.rpc.table.ObHBaseParams;
 import com.alipay.oceanbase.rpc.table.ObKVParams;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationSingle;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
 import com.alipay.oceanbase.rpc.util.Serialization;
@@ -66,6 +67,8 @@ public class ObTableQuery extends AbstractPayload {
     private List<String>        scanRangeColumns          = new LinkedList<String>();
 
     private List<ObTableAggregationSingle>    aggregations       = new LinkedList<>();
+
+    private Long partId = null;
 
     private ObKVParams obKVParams;
 
@@ -490,6 +493,12 @@ public class ObTableQuery extends AbstractPayload {
     public void setScanRangeColumns(List<String> scanRangeColumns) {
         this.scanRangeColumns = scanRangeColumns;
     }
+
+    public void setPartId(Long partId) {
+        this.partId = partId;
+    }
+
+    public Long getPartId() { return this.partId; }
 
     // This interface is just for OBKV-Hbase
     public void setObKVParams(ObKVParams obKVParams) {

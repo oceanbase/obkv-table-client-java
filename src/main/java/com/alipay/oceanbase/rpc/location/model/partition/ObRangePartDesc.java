@@ -26,6 +26,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObGeneratedColumn;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObSimpleColumn;
 import com.alipay.oceanbase.rpc.util.RandomUtil;
+import com.alipay.oceanbase.rpc.util.Serialization;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.slf4j.Logger;
@@ -66,7 +67,8 @@ public class ObRangePartDesc extends ObPartDesc {
     public List<ObObjType> getOrderedCompareColumnTypes() {
         return orderedCompareColumnTypes;
     }
-    private List<Long>          completeWorks;
+
+    private List<Long> completeWorks;
 
     /*
      * Set ordered compare column types.
@@ -299,12 +301,12 @@ public class ObRangePartDesc extends ObPartDesc {
         try {
             List<Object> evalParams = evalRowKeyValues(rowKey);
             List<Comparable> comparableElement = super.initComparableElementByTypes(evalParams,
-                    this.orderedCompareColumns);
+                this.orderedCompareColumns);
             ObPartitionKey searchKey = ObPartitionKey.getInstance(orderedCompareColumns,
-                    comparableElement);
+                comparableElement);
 
             int pos = upperBound(this.bounds, new ObComparableKV<ObPartitionKey, Long>(searchKey,
-                    (long) -1));
+                (long) -1));
             if (pos >= this.bounds.size()) {
                 if (isScan) {
                     // if range is bigger than rangeMax while scanning
@@ -312,7 +314,7 @@ public class ObRangePartDesc extends ObPartDesc {
                     return this.bounds.size() - 1;
                 }
                 throw new ArrayIndexOutOfBoundsException("Table has no partition for value in "
-                        + this.getPartExpr());
+                                                         + this.getPartExpr());
             } else {
                 return pos;
             }

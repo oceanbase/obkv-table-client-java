@@ -110,6 +110,7 @@ public class ObListPartDesc extends ObPartDesc {
                                  boolean endInclusive) {
         throw new IllegalArgumentException("getPartIds for List partition is not supported");
     }
+
     /*
      * Get part id.
      */

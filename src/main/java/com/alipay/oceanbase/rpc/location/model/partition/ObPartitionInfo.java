@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.location.model.partition;
 
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObColumn;
+import com.alipay.oceanbase.rpc.util.Serialization;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +31,7 @@ public class ObPartitionInfo {
     private ObPartDesc           firstPartDesc   = null;
     private ObPartDesc           subPartDesc     = null;
     private List<ObColumn>       partColumns     = new ArrayList<ObColumn>(1);
-    // mapping from part id to tablet id, and the tablet id to ls id mapping is in ObPartitionInfo
+    // mapping from part id to tablet id, and the tablet id to ls id mapping is in ObPartitionEntry
     private Map<Long, Long>      partTabletIdMap = null;
     private Map<String, Long>    partNameIdMap   = null;
     private Map<String, Integer> rowKeyElement   = null;
@@ -163,4 +164,5 @@ public class ObPartitionInfo {
     public void setPartTabletIdMap(Map<Long, Long> partTabletIdMap) {
         this.partTabletIdMap = partTabletIdMap;
     }
+
 }

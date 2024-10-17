@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl.column;
 
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObCollationType;
+import com.alipay.oceanbase.rpc.util.ObVString;
 import com.alipay.oceanbase.rpc.util.Serialization;
 
 import java.util.ArrayList;
@@ -154,6 +155,8 @@ public class ObGeneratedColumnSubStrFunc implements ObGeneratedColumnSimpleFunc 
                 evalBytes = ((String) ref).getBytes(UTF_8);
             } else if (ref instanceof byte[]) {
                 evalBytes = (byte[]) ref;
+            } else if (ref instanceof ObVString) {
+                evalBytes = (((ObVString) ref).getStringVal()).getBytes(UTF_8);
             } else {
                 throw new IllegalArgumentException(
                     "Object ["
