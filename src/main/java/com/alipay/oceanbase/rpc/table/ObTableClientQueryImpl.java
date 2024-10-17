@@ -293,7 +293,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                         false, false);
             } else {
                 pairs = this.obTableClient.getOdpTables(tableName, tableQuery, start,
-                    borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd());
+                    borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false);
             }
             if (this.tableQuery.getScanOrder() == ObScanOrder.Reverse) {
                 for (int i = pairs.size() - 1; i >= 0; i--) {

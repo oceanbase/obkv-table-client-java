@@ -2150,10 +2150,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     public List<ObPair<Long, ObTableParam>> getOdpTables(String tableName, ObTableQuery query,
                                                          Object[] start, boolean startInclusive,
-                                                         Object[] end, boolean endInclusive)
+                                                         Object[] end, boolean endInclusive, boolean needRenew)
                                                                                              throws Exception {
         List<ObPair<Long, ObTableParam>> obTableParams = new ArrayList<ObPair<Long, ObTableParam>>();
-        TableEntry odpTableEntry = getOrFetchODPPartitionMeta(tableName, false);
+        TableEntry odpTableEntry = getOrFetchODPPartitionMeta(tableName, needRenew);
 
         List<String> scanRangeColumns = query.getScanRangeColumns();
         if (scanRangeColumns == null || scanRangeColumns.isEmpty()) {
@@ -3009,8 +3009,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return Partition information
      * @throws Exception Exception
      */
-    public Partition getPartition(String tableName, Row rowKey) throws Exception {
-        return getSinglePartitionInternal(tableName, rowKey);
+    public Partition getPartition(String tableName, Row rowKey, boolean refresh) throws Exception {
+        return getSinglePartitionInternal(tableName, rowKey, refresh);
     }
 
     /**
@@ -3020,12 +3020,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return Partition information
      * @throws Exception Exception
      */
-    private Partition getSinglePartitionInternal(String tableName, Row rowKey) throws Exception {
+    private Partition getSinglePartitionInternal(String tableName, Row rowKey, boolean refresh) throws Exception {
         ObPair<Long, ObTableParam> obPair = null;
         if (odpMode) {
-            obPair = getODPTableWithRowKey(tableName, rowKey, false);
+            obPair = getODPTableWithRowKey(tableName, rowKey, refresh);
         } else {
-            obPair = getTable(tableName, rowKey, true, true, true, getRoute(false));
+            if (refresh) {
+                obPair = getTable(tableName, rowKey, true, true, true, getRoute(false));
+            } else {
+                obPair = getTable(tableName, rowKey, false, false, false, getRoute(false));
+            }
         }
         ObTableParam tableParam = obPair.getRight();
         return new Partition(tableParam.getPartitionId(), obPair.getLeft(),
@@ -3039,8 +3043,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return partitions
      * @throws Exception Exception
      */
-    public List<Partition> getPartition(String tableName) throws Exception {
-        return getAllPartitionInternal(tableName);
+    public List<Partition> getPartition(String tableName, boolean refresh) throws Exception {
+        return getAllPartitionInternal(tableName, refresh);
     }
 
     /**
@@ -3049,11 +3053,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return List<Partition> partitions
      * @throws Exception Exception
      */
-    private List<Partition> getAllPartitionInternal(String tableName) throws Exception {
+    private List<Partition> getAllPartitionInternal(String tableName, boolean refresh) throws Exception {
         List<Partition> partitions = new ArrayList<>();
         if (odpMode) {
             List<ObPair<Long, ObTableParam>> allTables = getOdpTables(tableName, new ObTableQuery(), new Object[]{ ObObj.getMin() }, true,
-                    new Object[]{ ObObj.getMax() }, true);
+                        new Object[]{ ObObj.getMax() }, true, refresh);
             for (ObPair<Long, ObTableParam> table : allTables) {
                 ObTableParam tableParam = table.getRight();
                 Partition partition = new Partition(tableParam.getPartitionId(), table.getLeft(), tableParam.getTableId(),
@@ -3061,9 +3065,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 partitions.add(partition);
             }
         } else {
-            // List<ObPair<logic partId, obTableParam>>
-            List<ObPair<Long, ObTableParam>> allTables = getTables(tableName, new ObTableQuery(), new Object[]{ ObObj.getMin() }, true,
-                    new Object[]{ ObObj.getMax() }, true, true, true, true, getRoute(false));
+            List<ObPair<Long, ObTableParam>> allTables;
+            if (refresh) {
+                // List<ObPair<logic partId, obTableParam>>
+                allTables = getTables(tableName, new ObTableQuery(), new Object[]{ ObObj.getMin() }, true,
+                        new Object[]{ ObObj.getMax() }, true, true, true, true, getRoute(false));
+            } else {
+                // List<ObPair<logic partId, obTableParam>>
+                allTables = getTables(tableName, new ObTableQuery(), new Object[]{ ObObj.getMin() }, true,
+                        new Object[]{ ObObj.getMax() }, true, false, false, false, getRoute(false));
+            }
             for (ObPair<Long, ObTableParam> table : allTables) {
                 ObTableParam tableParam = table.getRight();
                 Partition partition = new Partition(tableParam.getPartitionId(), table.getLeft(), tableParam.getTableId(),
