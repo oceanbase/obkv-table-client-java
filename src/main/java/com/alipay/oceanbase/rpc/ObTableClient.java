@@ -1241,8 +1241,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 // the server roster is ordered by priority
                 long punishInterval = (long) (tableEntryRefreshIntervalBase * Math.pow(2,
                     -serverRoster.getMaxPriority()));
-                punishInterval = punishInterval <= tableEntryRefreshIntervalCeiling ? punishInterval
-                    : tableEntryRefreshIntervalCeiling;
+                punishInterval = Math.min(punishInterval, tableEntryRefreshIntervalCeiling);
                 // control refresh frequency less than 100 milli second
                 // just in case of connecting to OB Server failed or change master
                 long interval = System.currentTimeMillis() - tableEntry.getRefreshTimeMills();
@@ -1267,8 +1266,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 }
 
                 int serverSize = serverRoster.getMembers().size();
-                int refreshTryTimes = tableEntryRefreshTryTimes > serverSize ? serverSize
-                    : tableEntryRefreshTryTimes;
+                int refreshTryTimes = Math.min(tableEntryRefreshTryTimes, serverSize);
 
                 for (int i = 0; i < refreshTryTimes; i++) {
                     try {
@@ -1330,6 +1328,62 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return refreshTableEntry(tableEntry, tableName, false);
     }
 
+    public TableEntry refreshTableLocationByTabletId(TableEntry tableEntry, String tableName, Long tabletId) throws ObTableAuthException {
+        TableEntryKey tableEntryKey = new TableEntryKey(clusterName, tenantName, database, tableName);
+        try {
+            if (tableEntry == null) {
+                throw new ObTableEntryRefreshException("Table entry is null, tableName=" + tableName);
+            }
+            long lastRefreshTime = tableEntry.getPartitionEntry().getPartitionInfo(tabletId).getLastUpdateTime();
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastRefreshTime < tableEntryRefreshLockTimeout) {
+                return tableEntry;
+            }
+            
+            Lock lock = tableEntry.refreshLockMap.computeIfAbsent(tabletId, k -> new ReentrantLock());
+
+            if (!lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS)) {
+                String errMsg = String.format("Try to lock table-entry refreshing timeout. DataSource: %s, TableName: %s, Timeout: %d.",
+                        dataSourceName, tableName, tableEntryRefreshLockTimeout);
+                RUNTIME.error(errMsg);
+                throw new ObTableEntryRefreshException(errMsg);
+            }
+
+            try {
+                lastRefreshTime = tableEntry.getPartitionEntry().getPartitionInfo(tabletId).getLastUpdateTime();
+                currentTime = System.currentTimeMillis();
+                if (currentTime - lastRefreshTime < tableEntryRefreshLockTimeout) {
+                    return tableEntry;
+                }
+                tableEntry = loadTableEntryLocationWithPriority(serverRoster, tableEntryKey, tableEntry, tabletId,
+                        tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
+                        serverAddressPriorityTimeout, serverAddressCachingTimeout, sysUA);
+
+                tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
+            } finally {
+                lock.unlock();
+            }
+
+        } catch (ObTableNotExistException | ObTableServerCacheExpiredException e) {
+            RUNTIME.error("RefreshTableEntry encountered an exception", e);
+            throw e;
+        } catch (Exception e) {
+            String errorMsg = String.format("Failed to get table entry. Key=%s, TabletId=%d, message=%s", tableEntryKey, tabletId, e.getMessage());
+            RUNTIME.error(LCD.convert("01-00020"), tableEntryKey, tableEntry, e);
+            throw new ObTableEntryRefreshException(errorMsg, e);
+        }
+
+        tableLocations.put(tableName, tableEntry);
+        tableEntryRefreshContinuousFailureCount.set(0);
+
+        if (logger.isInfoEnabled()) {
+            logger.info("Refreshed table entry. DataSource: {}, TableName: {}, Key: {}, Entry: {}",
+                    dataSourceName, tableName, tableEntryKey, JSON.toJSON(tableEntry));
+        }
+
+        return tableEntry;
+    }
+
     /**
      * 刷新 table entry 元数据
      * @param tableEntry
@@ -1345,13 +1399,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         try {
             // if table entry is exist we just need to refresh table locations
             if (tableEntry != null && !fetchAll) {
-                tableEntry = loadTableEntryLocationWithPriority(serverRoster, //
-                    tableEntryKey,//
-                    tableEntry,//
-                    tableEntryAcquireConnectTimeout,//
-                    tableEntryAcquireSocketTimeout,//
-                    serverAddressPriorityTimeout, //
-                    serverAddressCachingTimeout, sysUA);
+                // do nothing
             } else {
                 // if table entry is not exist we should fetch partition info and table locations
                 tableEntry = loadTableEntryWithPriority(serverRoster, //
@@ -1360,7 +1408,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     tableEntryAcquireSocketTimeout,//
                     serverAddressPriorityTimeout,//
                     serverAddressCachingTimeout, sysUA);
-
                 if (tableEntry.isPartitionTable()) {
                     switch (runningMode) {
                         case HBASE:
@@ -1544,17 +1591,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     private ReplicaLocation getPartitionLocation(TableEntry tableEntry, long partId,
                                                  ObServerRoute route) {
-        if (ObGlobal.obVsnMajor() >= 4 && tableEntry.isPartitionTable()) {
-            ObPartitionInfo partInfo = tableEntry.getPartitionInfo();
-            Map<Long, Long> tabletIdMap = partInfo.getPartTabletIdMap();
-            long partIdx = tableEntry.getPartIdx(partId);
-            long TabletId = tabletIdMap.get(partIdx);
-            return tableEntry.getPartitionEntry().getPartitionLocationWithTabletId(TabletId)
-                .getReplica(route);
-        } else {
-            return tableEntry.getPartitionEntry().getPartitionLocationWithPartId(partId)
-                .getReplica(route);
-        }
+        long tabletId = getTabletIdByPartId(tableEntry, partId);
+        return tableEntry.getPartitionEntry().getPartitionLocationWithTabletId(tabletId)
+            .getReplica(route);
+
+    }
+
+    private ReplicaLocation getPartitionLocation(ObPartitionLocationInfo obPartitionLocationInfo,
+                                                 ObServerRoute route) {
+        return obPartitionLocationInfo.getPartitionLocation().getReplica(route);
     }
 
     /**
@@ -1784,48 +1829,62 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     public ObPair<Long, ObTableParam> getTableInternal(String tableName, TableEntry tableEntry,
                                                        long partId, boolean waitForRefresh,
                                                        ObServerRoute route) throws Exception {
-        ObPair<Long, ReplicaLocation> partitionReplica = getPartitionReplica(tableEntry, partId,
-            route);
+        long tabletId = getTabletIdByPartId(tableEntry, partId);
+        ObPartitionLocationInfo obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
 
-        ReplicaLocation replica = partitionReplica.getRight();
-
+        ReplicaLocation replica = getPartitionLocation(obPartitionLocationInfo, route);
         ObServerAddr addr = replica.getAddr();
         ObTable obTable = tableRoster.get(addr);
-        boolean addrExpired = addr.isExpired(serverAddressCachingTimeout);
-        if (obTable == null) {
-            logger.warn("can not get ObTable by addr {}, refresh metadata.", addr);
-            syncRefreshMetadata();
-        }
-        if (addrExpired || obTable == null) {
-            if (logger.isInfoEnabled() && addrExpired) {
-                logger.info("server addr {} is expired, refresh tableEntry.", addr);
-            }
 
-            tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
-            replica = getPartitionReplica(tableEntry, partId, route).getRight();
+        if (obTable == null || addr.isExpired(serverAddressCachingTimeout)) {
+            if (obTable == null) {
+                logger.warn("Cannot get ObTable by addr {}, refreshing metadata.", addr);
+                syncRefreshMetadata();
+            }
+            if (addr.isExpired(serverAddressCachingTimeout)) {
+                logger.info("Server addr {} is expired, refreshing tableEntry.", addr);
+            }
+            
+            obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
+            replica = getPartitionLocation(obPartitionLocationInfo, route);
             addr = replica.getAddr();
             obTable = tableRoster.get(addr);
+
+            if (obTable == null) {
+                RUNTIME.error("Cannot get table by addr: " + addr);
+                throw new ObTableGetException("Cannot get table by addr: " + addr);
+            }
         }
 
-        if (obTable == null) {
-            RUNTIME.error("cannot get table by addr: " + addr);
-            throw new ObTableGetException("cannot get table by addr: " + addr);
-        }
-
-        ObTableParam param = new ObTableParam(obTable);
-        param.setPartId(partId); // used in getTable(), 4.x may change the origin partId
-        if (ObGlobal.obVsnMajor() >= 4 && tableEntry != null) {
-            long partIdx = tableEntry.getPartIdx(partId);
-            partId = tableEntry.isPartitionTable() ? tableEntry.getPartitionInfo()
-                .getPartTabletIdMap().get(partIdx) : partId;
-            param.setLsId(tableEntry.getPartitionEntry().getLsId(partId));
-        }
-
-        param.setTableId(tableEntry.getTableId());
-        param.setPartitionId(partId);
-
+        ObTableParam param = createTableParam(obTable, tableEntry, obPartitionLocationInfo, partId, tabletId);
         addr.recordAccess();
-        return new ObPair<Long, ObTableParam>(partitionReplica.getLeft(), param);
+        return new ObPair<>(tabletId, param);
+    }
+
+    private ObPartitionLocationInfo getOrRefreshPartitionInfo(TableEntry tableEntry,
+                                                              String tableName, long tabletId)
+                                                                                              throws Exception {
+        ObPartitionLocationInfo obPartitionLocationInfo = tableEntry.getPartitionEntry()
+            .getPartitionInfo(tabletId);
+        if (!obPartitionLocationInfo.initialized.get()) {
+            tableEntry = refreshTableLocationByTabletId(tableEntry, tableName, tabletId);
+            obPartitionLocationInfo = tableEntry.getPartitionEntry().getPartitionInfo(tabletId);
+            obPartitionLocationInfo.initializationLatch.await();
+        }
+        return obPartitionLocationInfo;
+    }
+
+    private ObTableParam createTableParam(ObTable obTable, TableEntry tableEntry,
+                                          ObPartitionLocationInfo obPartitionLocationInfo,
+                                          long partId, long tabletId) {
+        ObTableParam param = new ObTableParam(obTable);
+        param.setPartId(partId);
+        if (ObGlobal.obVsnMajor() >= 4 && tableEntry != null) {
+            param.setLsId(obPartitionLocationInfo.getTabletLsId());
+        }
+        param.setTableId(tableEntry.getTableId());
+        param.setPartitionId(tabletId);
+        return param;
     }
 
     /**
@@ -1840,39 +1899,58 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws Exception
      */
     private List<ObPair<Long, ReplicaLocation>> getPartitionReplica(TableEntry tableEntry,
+                                                                    String tableName,
                                                                     Row startRow,
                                                                     boolean startIncluded,
                                                                     Row endRow,
                                                                     boolean endIncluded,
-                                                                    ObServerRoute route)
-                                                                                        throws Exception {
-        // non partition
-        List<ObPair<Long, ReplicaLocation>> replicas = new ArrayList<ObPair<Long, ReplicaLocation>>();
-        if (!tableEntry.isPartitionTable()
-            || tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ZERO) {
-            replicas.add(new ObPair<Long, ReplicaLocation>(0L, getPartitionLocation(tableEntry, 0L,
-                route)));
+                                                                    ObServerRoute route) throws Exception {
+        List<ObPair<Long, ReplicaLocation>> replicas = new ArrayList<>();
+
+        if (!tableEntry.isPartitionTable() || tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ZERO) {
+            long tabletId = getTabletIdByPartId(tableEntry, 0L);
+            ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
+            replicas.add(new ObPair<>(tabletId, getPartitionLocation(locationInfo, route)));
             return replicas;
-        } else if (tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ONE) {
-            List<Long> partIds = tableEntry.getPartitionInfo().getFirstPartDesc()
+        }
+
+        ObPartitionLevel partitionLevel = tableEntry.getPartitionInfo().getLevel();
+        List<Long> partIds = getPartitionTablePartitionIds(tableEntry, startRow, startIncluded, endRow, endIncluded, partitionLevel);
+
+        for (Long partId : partIds) {
+            long tabletId = getTabletIdByPartId(tableEntry, partId);
+            ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
+            replicas.add(new ObPair<>(tabletId, getPartitionLocation(locationInfo, route)));
+        }
+
+        return replicas;
+    }
+
+    private List<Long> getPartitionTablePartitionIds(TableEntry tableEntry,
+                                                     Row startRow, boolean startIncluded,
+                                                     Row endRow, boolean endIncluded,
+                                                     ObPartitionLevel level)
+                                                                                                 throws Exception {
+        if (level == ObPartitionLevel.LEVEL_ONE) {
+            return tableEntry.getPartitionInfo().getFirstPartDesc()
                 .getPartIds(startRow, startIncluded, endRow, endIncluded);
-            for (Long partId : partIds) {
-                replicas.add(new ObPair<Long, ReplicaLocation>(partId, getPartitionLocation(
-                    tableEntry, partId, route)));
-            }
-        } else if (tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
-            List<Long> partIds = getPartitionsForLevelTwo(tableEntry, startRow, startIncluded,
-                endRow, endIncluded);
-            for (Long partId : partIds) {
-                replicas.add(new ObPair<Long, ReplicaLocation>(partId, getPartitionLocation(
-                    tableEntry, partId, route)));
-            }
+        } else if (level == ObPartitionLevel.LEVEL_TWO) {
+            return getPartitionsForLevelTwo(tableEntry, startRow, startIncluded,
+                    endRow, endIncluded);
         } else {
             RUNTIME.error("not allowed bigger than level two");
             throw new ObTableGetException("not allowed bigger than level two");
         }
+    }
 
-        return replicas;
+    public long getTabletIdByPartId(TableEntry tableEntry, Long partId) {
+        if (ObGlobal.obVsnMajor() >= 4 && tableEntry.isPartitionTable()) {
+            ObPartitionInfo partInfo = tableEntry.getPartitionInfo();
+            Map<Long, Long> tabletIdMap = partInfo.getPartTabletIdMap();
+            long partIdx = tableEntry.getPartIdx(partId);
+            return tabletIdMap.getOrDefault(partIdx, partId);
+        }
+        return partId;
     }
 
     /**
@@ -1947,7 +2025,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
         }
 
-        List<ObPair<Long, ReplicaLocation>> partIdWithReplicaList = getPartitionReplica(tableEntry,
+        List<ObPair<Long, ReplicaLocation>> partIdWithReplicaList = getPartitionReplica(tableEntry, tableName,
             startRow, startInclusive, endRow, endInclusive, route);
 
         // obTableParams -> List<Pair<logicId, obTableParams>>
@@ -1976,12 +2054,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
 
             ObTableParam param = new ObTableParam(obTable);
-            if (ObGlobal.obVsnMajor() >= 4) {
-                long partIdx = tableEntry.getPartIdx(partId);
-                partId = tableEntry.isPartitionTable() ? tableEntry.getPartitionInfo()
-                    .getPartTabletIdMap().get(partIdx) : partId;
-            }
-
             param.setTableId(tableEntry.getTableId());
             // real partition(tablet) id
             param.setPartitionId(partId);
