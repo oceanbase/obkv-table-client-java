@@ -395,7 +395,8 @@ public class LocationUtil {
                 RUNTIME.error(LCD.convert("01-00007"), url, key, e);
             }
             throw new ObTableEntryRefreshException(format(
-                "fail to refresh table entry from remote url=%s, key=%s", url, key), e);
+                "fail to refresh table entry from remote url=%s, key=%s, message=%s", url, key,
+                e.getMessage()), e);
         } finally {
             try {
                 if (null != connection) {
