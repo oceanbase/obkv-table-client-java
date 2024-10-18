@@ -31,6 +31,8 @@ import com.alipay.remoting.exception.RemotingException;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 
+import javax.xml.transform.Result;
+
 import static com.alipay.oceanbase.rpc.protocol.packet.ObCompressType.INVALID_COMPRESSOR;
 import static com.alipay.oceanbase.rpc.protocol.packet.ObCompressType.NONE_COMPRESSOR;
 
@@ -139,7 +141,8 @@ public class ObTableRemoting extends BaseRemoting {
                     throw new ObTableNeedFetchAllException(errMessage, resultCode.getRcode());
                 }
             }
-            if (resultCode.getRcode() != 0 && response.getHeader().getPcode() != Pcodes.OB_TABLE_API_MOVE) {
+            if (resultCode.getRcode() != 0
+                && response.getHeader().getPcode() != Pcodes.OB_TABLE_API_MOVE) {
                 String errMessage = TraceUtil.formatTraceMessage(conn, request,
                     "routed to the wrong server: " + response.getMessage());
                 logger.warn(errMessage);
@@ -193,6 +196,7 @@ public class ObTableRemoting extends BaseRemoting {
                || errorCode == ResultCodes.OB_TABLE_NOT_EXIST.errorCode
                || errorCode == ResultCodes.OB_TABLET_NOT_EXIST.errorCode
                || errorCode == ResultCodes.OB_LS_NOT_EXIST.errorCode
+               || errorCode == ResultCodes.OB_MAPPING_BETWEEN_TABLET_AND_LS_NOT_EXIST.errorCode
                || (pcode == Pcodes.OB_TABLE_API_LS_EXECUTE && errorCode == ResultCodes.OB_NOT_MASTER.errorCode);
     }
 
