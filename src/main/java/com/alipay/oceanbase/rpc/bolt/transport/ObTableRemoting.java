@@ -31,6 +31,8 @@ import com.alipay.remoting.exception.RemotingException;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 
+import javax.xml.transform.Result;
+
 import static com.alipay.oceanbase.rpc.protocol.packet.ObCompressType.INVALID_COMPRESSOR;
 import static com.alipay.oceanbase.rpc.protocol.packet.ObCompressType.NONE_COMPRESSOR;
 
