@@ -1366,10 +1366,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (tableEntry == null) {
                 throw new ObTableEntryRefreshException("Table entry is null, tableName=" + tableName);
             }
-
             long lastRefreshTime = tableEntry.getPartitionEntry().getPartitionInfo(tabletId).getLastUpdateTime();
             long currentTime = System.currentTimeMillis();
-            if (currentTime - lastRefreshTime < tableEntryRefreshIntervalBase) {
+            if (currentTime - lastRefreshTime < tableEntryRefreshLockTimeout) {
                 return tableEntry;
             }
             
@@ -1396,7 +1395,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             RUNTIME.error("RefreshTableEntry encountered an exception", e);
             throw e;
         } catch (Exception e) {
-            String errorMsg = String.format("Failed to get table entry. Key=%s, Original TableEntry=%s, TabletId=%d", tableEntryKey, tableEntry, tabletId);
+            String errorMsg = String.format("Failed to get table entry. Key=%s, TabletId=%d, message=%s", tableEntryKey, tabletId, e.getMessage());
             RUNTIME.error(LCD.convert("01-00020"), tableEntryKey, tableEntry, e);
             throw new ObTableEntryRefreshException(errorMsg, e);
         }
