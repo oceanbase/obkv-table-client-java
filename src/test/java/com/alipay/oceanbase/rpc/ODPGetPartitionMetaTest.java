@@ -451,7 +451,7 @@ public class ODPGetPartitionMetaTest {
                             List<Partition> partitions = client.getPartition(table_name, false);
                             Assert.assertEquals(15, partitions.size());
                             for (Partition partition : partitions) {
-                                System.out.println("testHash: " + partition.toString());
+                                System.out.println("testKey: " + partition.toString());
                             }
                             cnt.getAndIncrement();
                         } else {
@@ -462,7 +462,7 @@ public class ODPGetPartitionMetaTest {
                             List<Partition> partitions = client.getPartition(table_name, false);
                             Assert.assertEquals(3, partitions.size());
                             for (Partition partition : partitions) {
-                                System.out.println("testHash: " + partition.toString());
+                                System.out.println("testRange: " + partition.toString());
                             }
                             cnt.getAndIncrement();
                         }
