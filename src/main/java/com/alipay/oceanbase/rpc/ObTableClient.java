@@ -3021,6 +3021,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws Exception Exception
      */
     private Partition getSinglePartitionInternal(String tableName, Row rowKey, boolean refresh) throws Exception {
+        if (tableRowKeyElement.get(tableName) == null) {
+            addRowKeyElement(tableName, rowKey.getColumns());
+        }
         ObPair<Long, ObTableParam> obPair = null;
         if (odpMode) {
             obPair = getODPTableWithRowKey(tableName, rowKey, refresh);

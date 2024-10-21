@@ -38,10 +38,7 @@ import org.junit.Test;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.*;
@@ -548,9 +545,6 @@ public class ObGetPartitionTest {
         String[] table_names = { "testHash", "testKey", "testRange" };
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         Random random = new Random();
-        client.addRowKeyElement("testHash", new String[] { "K", "Q", "T" });
-        client.addRowKeyElement("testKey", new String[] { "K", "Q", "T" });
-        client.addRowKeyElement("testRange", new String[] { "c1", "c2" });
         AtomicInteger cnt = new AtomicInteger(0);
         CountDownLatch latch = new CountDownLatch(20);
 
@@ -558,42 +552,46 @@ public class ObGetPartitionTest {
             for (int i = 0; i < 20; ++i) {
                 executorService.submit(() -> {
                     try {
-                        cnt.getAndIncrement();
                         String table_name = table_names[random.nextInt(table_names.length)];
-                        List<Partition> partitions = client.getPartition(table_name, false);
                         if (table_name.equalsIgnoreCase("testHash")) {
-                            Assert.assertEquals(15, partitions.size());
-                            for (Partition partition : partitions) {
-                                System.out.println("testHash: " + partition.toString());
-                            }
                             MutationResult resultSet = client.insert("testHash")
                                     .setRowKey(row(colVal("K", random.nextLong()), colVal("Q", "Q_val1"), colVal("T", System.currentTimeMillis())))
                                     .addMutateRow(row(colVal("V", "V_val1"))).execute();
                             Assert.assertEquals(1, resultSet.getAffectedRows());
-                        } else if (table_name.equalsIgnoreCase("testKey")) {
+                            List<Partition> partitions = client.getPartition(table_name, false);
                             Assert.assertEquals(15, partitions.size());
                             for (Partition partition : partitions) {
-                                System.out.println("testKey: " + partition.toString());
+                                System.out.println("testHash: " + partition.toString());
                             }
+                            cnt.getAndIncrement();
+                        } else if (table_name.equalsIgnoreCase("testKey")) {
                             byte[] bytes = new byte[10];
                             random.nextBytes(bytes);
                             MutationResult resultSet = client.insert("testKey")
                                     .setRowKey(row(colVal("K", bytes), colVal("Q", "Q_val1"), colVal("T", System.currentTimeMillis())))
                                     .addMutateRow(row(colVal("V", "V_val1"))).execute();
                             Assert.assertEquals(1, resultSet.getAffectedRows());
-                        } else {
-                            Assert.assertEquals(3, partitions.size());
+                            List<Partition> partitions = client.getPartition(table_name, false);
+                            Assert.assertEquals(15, partitions.size());
                             for (Partition partition : partitions) {
-                                System.out.println("testRange: " + partition.toString());
+                                System.out.println("testHash: " + partition.toString());
                             }
+                            cnt.getAndIncrement();
+                        } else {
                             MutationResult resultSet = client.insert("testRange")
                                     .setRowKey(row(colVal("c1", random.nextInt()), colVal("c2", "c2_val1")))
                                     .addMutateRow(row(colVal("c3", "c3_val1"), colVal("c4", 10L))).execute();
                             Assert.assertEquals(1, resultSet.getAffectedRows());
+                            List<Partition> partitions = client.getPartition(table_name, false);
+                            Assert.assertEquals(3, partitions.size());
+                            for (Partition partition : partitions) {
+                                System.out.println("testHash: " + partition.toString());
+                            }
+                            cnt.getAndIncrement();
                         }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        Assert.assertTrue(false);
+                    } catch (Throwable t) {
+                        t.printStackTrace();
+                        throw new RuntimeException(t);
                     } finally {
                         latch.countDown();
                     }
@@ -601,8 +599,8 @@ public class ObGetPartitionTest {
             }
             latch.await();
             Assert.assertEquals(20, cnt.get());
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable t) {
+            t.printStackTrace();
             Assert.assertTrue(false);
         } finally {
             executorService.shutdown();

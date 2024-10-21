@@ -44,9 +44,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.compareVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
@@ -133,7 +135,6 @@ public class ODPGetPartitionMetaTest {
     public void testOneLevelKeyPartition() throws Exception {
         String table_name = "testKey";
         BatchOperation batchOperation = client.batchOperation(table_name);
-//        client.setRunningMode(ObTableClient.RunningMode.HBASE);
         Object values[][] = { { "K_val1", "Q_val1", 1L, "V_val1" },
                 { "K_val2", "Q_val2", 101L, "V_val2" }, { "K_val3", "Q_val3", 501L, "V_val3" },
                 { "K_val4", "Q_val4", 1001L, "V_val4" }, { "K_val5", "Q_val5", 5001L, "V_val5" },
@@ -187,13 +188,12 @@ public class ODPGetPartitionMetaTest {
         `V` varbinary(1024),
         INDEX i1(`K`, `V`) local,
         PRIMARY KEY(`K`, `Q`, `T`)
-    ) partition by hash(`K`) partitions 16;
+    ) partition by hash(`K`) partitions 15;
     * */
     @Test
     public void testOneLevelHashPartition() throws Exception {
         String table_name = "testHash";
         BatchOperation batchOperation = client.batchOperation(table_name);
-//        client.setRunningMode(ObTableClient.RunningMode.HBASE);
         Object values[][] = { { 1L, "Q_val1", 1L, "V_val1" }, { 10L, "Q_val2", 101L, "V_val2" },
                 { 501L, "Q_val3", 501L, "V_val3" }, { 1001L, "Q_val4", 1001L, "V_val4" },
                 { 5001L, "Q_val5", 5001L, "V_val5" }, { 10001L, "Q_val6", 10001L, "V_val6" }, };
@@ -386,7 +386,6 @@ public class ODPGetPartitionMetaTest {
     public void testTwoLevelRangePartition() throws Exception {
         client.setRunningMode(ObTableClient.RunningMode.NORMAL);
         String testTable = "testPartitionRangeComplex";
-        client.addRowKeyElement(testTable, new String[] { "c1", "c2", "c3", "c4" });
         Random rng = new Random();
         try {
             cleanTable(testTable);
@@ -423,59 +422,72 @@ public class ODPGetPartitionMetaTest {
         String[] table_names = { "testHash", "testKey", "testRange" };
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         Random random = new Random();
+        AtomicInteger cnt = new AtomicInteger(0);
+        CountDownLatch latch = new CountDownLatch(20);
 
         try {
             for (int i = 0; i < 20; ++i) {
                 executorService.submit(() -> {
                     try {
                         String table_name = table_names[random.nextInt(table_names.length)];
-                        List<Partition> partitions = client.getPartition(table_name, false);
                         if (table_name.equalsIgnoreCase("testHash")) {
+                            MutationResult resultSet = client.insert("testHash")
+                                    .setRowKey(row(colVal("K", random.nextLong()), colVal("Q", "Q_val1"), colVal("T", System.currentTimeMillis())))
+                                    .addMutateRow(row(colVal("V", "V_val1"))).execute();
+                            Assert.assertEquals(1, resultSet.getAffectedRows());
+                            List<Partition> partitions = client.getPartition(table_name, false);
                             Assert.assertEquals(15, partitions.size());
                             for (Partition partition : partitions) {
                                 System.out.println("testHash: " + partition.toString());
                             }
-                            MutationResult resultSet = client.insertOrUpdate("testHash")
-                                    .setRowKey(row(colVal("K", random.nextInt()), colVal("Q", "Q_val1"), colVal("T", System.currentTimeMillis())))
-                                    .addMutateRow(row(colVal("V", "V_val1"))).execute();
-                            Assert.assertEquals(1, resultSet.getAffectedRows());
+                            cnt.getAndIncrement();
                         } else if (table_name.equalsIgnoreCase("testKey")) {
-                            Assert.assertEquals(15, partitions.size());
-                            for (Partition partition : partitions) {
-                                System.out.println("testKey: " + partition.toString());
-                            }
-                            byte[] bytes = new byte[]{};
+                            byte[] bytes = new byte[10];
                             random.nextBytes(bytes);
-                            MutationResult resultSet = client.insertOrUpdate("testKey")
+                            MutationResult resultSet = client.insert("testKey")
                                     .setRowKey(row(colVal("K", bytes), colVal("Q", "Q_val1"), colVal("T", System.currentTimeMillis())))
                                     .addMutateRow(row(colVal("V", "V_val1"))).execute();
                             Assert.assertEquals(1, resultSet.getAffectedRows());
-                        } else {
-                            Assert.assertEquals(3, partitions.size());
+                            List<Partition> partitions = client.getPartition(table_name, false);
+                            Assert.assertEquals(15, partitions.size());
                             for (Partition partition : partitions) {
-                                System.out.println("testRange: " + partition.toString());
+                                System.out.println("testHash: " + partition.toString());
                             }
-                            MutationResult resultSet = client.insertOrUpdate("testRange")
+                            cnt.getAndIncrement();
+                        } else {
+                            MutationResult resultSet = client.insert("testRange")
                                     .setRowKey(row(colVal("c1", random.nextInt()), colVal("c2", "c2_val1")))
                                     .addMutateRow(row(colVal("c3", "c3_val1"), colVal("c4", 10L))).execute();
                             Assert.assertEquals(1, resultSet.getAffectedRows());
+                            List<Partition> partitions = client.getPartition(table_name, false);
+                            Assert.assertEquals(3, partitions.size());
+                            for (Partition partition : partitions) {
+                                System.out.println("testHash: " + partition.toString());
+                            }
+                            cnt.getAndIncrement();
                         }
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+                    } catch (Throwable t) {
+                        t.printStackTrace();
+                        throw new RuntimeException(t);
+                    } finally {
+                        latch.countDown();
                     }
                 });
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+            latch.await();
+            Assert.assertEquals(20, cnt.get());
+        } catch (Throwable t) {
+            t.printStackTrace();
             Assert.assertTrue(false);
         } finally {
             executorService.shutdown();
             try {
                 // wait for all tasks done
-                if (!executorService.awaitTermination(500L, TimeUnit.MILLISECONDS)) {
+                if (!executorService.awaitTermination(2000L, TimeUnit.MILLISECONDS)) {
                     executorService.shutdownNow();
-                    if (!executorService.awaitTermination(500L, TimeUnit.MILLISECONDS)) {
+                    if (!executorService.awaitTermination(2000L, TimeUnit.MILLISECONDS)) {
                         System.err.println("the thread pool did not shut down");
+                        Assert.assertTrue(false);
                     }
                 }
                 cleanTable("testHash");
@@ -484,6 +496,7 @@ public class ODPGetPartitionMetaTest {
             } catch (InterruptedException ie) {
                 executorService.shutdownNow();
                 Thread.currentThread().interrupt();
+                Assert.assertTrue(false);
             }
         }
     }
