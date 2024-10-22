@@ -337,6 +337,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             } else {
                 tableObPair = obTableClient.getODPTableWithRowKeyValue(tableName, rowKey, false);
             }
+            if (tableObPair == null) {
+                throw new ObTableUnexpectedException("fail to get table pair in batch");
+            }
             long lsId = tableObPair.getRight().getLsId();
 
             Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperations

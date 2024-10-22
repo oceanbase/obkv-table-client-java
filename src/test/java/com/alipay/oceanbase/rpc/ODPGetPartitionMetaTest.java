@@ -62,12 +62,102 @@ import static org.junit.Assert.assertNotNull;
 
 public class ODPGetPartitionMetaTest {
     public ObTableClient client;
+    private static final String TABLE_NAME = "test_tinyint_table";
+    private static final String TABLE_NAME1 = "testKey";
+    private static final String TABLE_NAME2 = "testHash";
+    private static final String TABLE_NAME3 = "testRange";
+    private static final String TABLE_NAME4 = "testPartitionKeyComplex";
+    private static final String TABLE_NAME5 = "testPartitionRangeComplex";
+    private static final String TABLE_NAME6 = "test_auto_increment_rowkey";
 
     @Before
     public void setup() throws Exception {
         final ObTableClient obTableClient = ObTableClientTestUtil.newTestClient();
         obTableClient.init();
         this.client = obTableClient;
+        Connection connection = ObTableClientTestUtil.getConnection();
+        Statement statement = connection.createStatement();
+        statement.execute("CREATE TABLE IF NOT EXISTS `test_tinyint_table` (\n" +
+                "        `c1` varchar(20) NOT NULL,\n" +
+                "        `c2` tinyint(4) DEFAULT NULL,\n" +
+                "        PRIMARY KEY (`c1`)\n" +
+                "      );");
+        statement.execute("CREATE TABLE IF NOT EXISTS `testKey` (\n" +
+                "        `K` varbinary(1024),\n" +
+                "        `Q` varbinary(256),\n" +
+                "        `T` bigint,\n" +
+                "        `V` varbinary(1024),\n" +
+                "        PRIMARY KEY(`K`, `Q`, `T`)\n" +
+                "    ) partition by key(K) partitions 15;");
+        statement.execute("CREATE TABLE IF NOT EXISTS `testHash`(\n" +
+                "        `K` bigint,\n" +
+                "        `Q` varbinary(256),\n" +
+                "        `T` bigint,\n" +
+                "        `V` varbinary(1024),\n" +
+                "        INDEX i1(`K`, `V`) local,\n" +
+                "        PRIMARY KEY(`K`, `Q`, `T`)\n" +
+                "    ) partition by hash(`K`) partitions 16;");
+        statement.execute("CREATE TABLE IF NOT EXISTS `testRange` (\n" +
+                "                `c1` int NOT NULL,\n" +
+                "                `c2` varchar(20) NOT NULL,\n" +
+                "                `c3` varbinary(1024) DEFAULT NULL,\n" +
+                "                `c4` bigint DEFAULT NULL,\n" +
+                "                PRIMARY KEY(`c1`, `c2`)) partition by range columns (`c1`, `c2`) (\n" +
+                "                      PARTITION p0 VALUES LESS THAN (300, 't'),\n" +
+                "                      PARTITION p1 VALUES LESS THAN (1000, 'T'),\n" +
+                "                      PARTITION p2 VALUES LESS THAN (MAXVALUE, MAXVALUE));");
+        statement.execute("CREATE TABLE IF NOT EXISTS `testPartitionKeyComplex` (\n" +
+                "        `c0` tinyint NOT NULL,\n" +
+                "        `c1` int NOT NULL,\n" +
+                "        `c2` bigint NOT NULL,\n" +
+                "        `c3` varbinary(1024) NOT NULL,\n" +
+                "        `c4` varchar(1024) NOT NULL,\n" +
+                "        `c5` varchar(1024) NOT NULL,\n" +
+                "        `c6` varchar(20) default NULL,\n" +
+                "    PRIMARY KEY (`c0`, `c1`, `c2`, `c3`, `c4`, `c5`)\n" +
+                "    ) DEFAULT CHARSET = utf8mb4 ROW_FORMAT = DYNAMIC COMPRESSION = 'lz4_1.0' REPLICA_NUM = 3 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 10\n" +
+                "    partition by key(`c0`, `c1`, `c2`, `c3`, `c4`) subpartition by key(`c5`) subpartitions 4 partitions 16;");
+        statement.execute("CREATE TABLE IF NOT EXISTS `testPartitionRangeComplex` (\n" +
+                "       `c1` int NOT NULL,\n" +
+                "       `c2` bigint NOT NULL,\n" +
+                "       `c3` varbinary(1024) NOT NULL,\n" +
+                "       `c4` varchar(1024) NOT NULL,\n" +
+                "       `c5` varchar(20) default NULL,\n" +
+                "    PRIMARY KEY (`c1`, `c2`, `c3`, `c4`)\n" +
+                "    ) DEFAULT CHARSET = utf8mb4 ROW_FORMAT = DYNAMIC COMPRESSION = 'lz4_1.0' REPLICA_NUM = 3 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 10\n" +
+                "    partition by range(`c1`) subpartition by range columns (`c2`, `c3`, `c4`) (\n" +
+                "    PARTITION p0 VALUES LESS THAN (500)\n" +
+                "    (\n" +
+                "       SUBPARTITION p0sp0 VALUES LESS THAN (500, 't', 't'),\n" +
+                "       SUBPARTITION p0sp1 VALUES LESS THAN (1000, 'T', 'T'),\n" +
+                "       SUBPARTITION p0sp2 VALUES LESS THAN (MAXVALUE, MAXVALUE, MAXVALUE)\n" +
+                "    ),\n" +
+                "    PARTITION p1 VALUES LESS THAN (1000)\n" +
+                "    (\n" +
+                "       SUBPARTITION p1sp0 VALUES LESS THAN (500, 't', 't'),\n" +
+                "       SUBPARTITION p1sp1 VALUES LESS THAN (1000, 'T', 'T'),\n" +
+                "       SUBPARTITION p1sp2 VALUES LESS THAN (MAXVALUE, MAXVALUE, MAXVALUE)\n" +
+                "    ),\n" +
+                "    PARTITION p2 VALUES LESS THAN MAXVALUE\n" +
+                "    (\n" +
+                "       SUBPARTITION p2sp0 VALUES LESS THAN (500, 't', 't'),\n" +
+                "       SUBPARTITION p2sp1 VALUES LESS THAN (1000, 'T', 'T'),\n" +
+                "       SUBPARTITION p2sp2 VALUES LESS THAN (MAXVALUE, MAXVALUE, MAXVALUE)\n" +
+                "    ));");
+        statement.execute("CREATE TABLE IF NOT EXISTS `test_auto_increment_rowkey` ("
+                        + "`c1` int auto_increment,"
+                        + "`c2` int NOT NULL,"
+                        + "`c3` int DEFAULT NULL,"
+                        + "`c4` varchar(255) DEFAULT NULL,"
+                        + "PRIMARY KEY(`c1`, `c2`)) partition by range columns(`c2`)"
+                        + "(PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (1000));");
+        cleanTable(TABLE_NAME);
+        cleanTable(TABLE_NAME1);
+        cleanTable(TABLE_NAME2);
+        cleanTable(TABLE_NAME3);
+        cleanTable(TABLE_NAME4);
+        cleanTable(TABLE_NAME5);
+        cleanTable(TABLE_NAME6);
     }
 
     /*
@@ -79,8 +169,7 @@ public class ODPGetPartitionMetaTest {
     * */
     @Test
     public void testNonPartition() throws Exception {
-        String table_name = "test_tinyint_table";
-        BatchOperation batchOperation = client.batchOperation(table_name);
+        BatchOperation batchOperation = client.batchOperation(TABLE_NAME);
         client.setRunningMode(ObTableClient.RunningMode.NORMAL);
         Object values[][] = { { "c1_1", (byte) 1 }, { "c1_2", (byte) 11 }, { "c1_3", (byte) 51 },
                 { "c1_4", (byte) 101 } };
@@ -97,7 +186,7 @@ public class ODPGetPartitionMetaTest {
             }
             BatchOperationResult batchOperationResult = batchOperation.execute();
             // test get all partitions
-            List<Partition> partitions = client.getPartition(table_name, false);
+            List<Partition> partitions = client.getPartition(TABLE_NAME, false);
             Assert.assertEquals(1, partitions.size());
             for (Partition partition : partitions) {
                 System.out.println(partition.toString());
@@ -105,7 +194,7 @@ public class ODPGetPartitionMetaTest {
             Long lastPartId = -1L;
             for (int i = 0; i < rowCnt; i++) {
                 Object[] curRow = values[i];
-                Partition partition = client.getPartition(table_name, row(colVal("c1", curRow[0])), false);
+                Partition partition = client.getPartition(TABLE_NAME, row(colVal("c1", curRow[0])), false);
                 if (lastPartId == -1L) {
                     lastPartId = partition.getPartitionId();
                 } else {
@@ -114,7 +203,7 @@ public class ODPGetPartitionMetaTest {
             }
         } finally {
             for (int j = 0; j < rowCnt; j++) {
-                Delete delete = client.delete(table_name);
+                Delete delete = client.delete(TABLE_NAME);
                 delete.setRowKey(row(colVal("c1", values[j][0])));
                 MutationResult res = delete.execute();
                 Assert.assertEquals(1, res.getAffectedRows());
@@ -133,8 +222,7 @@ public class ODPGetPartitionMetaTest {
     * */
     @Test
     public void testOneLevelKeyPartition() throws Exception {
-        String table_name = "testKey";
-        BatchOperation batchOperation = client.batchOperation(table_name);
+        BatchOperation batchOperation = client.batchOperation(TABLE_NAME1);
         Object values[][] = { { "K_val1", "Q_val1", 1L, "V_val1" },
                 { "K_val2", "Q_val2", 101L, "V_val2" }, { "K_val3", "Q_val3", 501L, "V_val3" },
                 { "K_val4", "Q_val4", 1001L, "V_val4" }, { "K_val5", "Q_val5", 5001L, "V_val5" },
@@ -153,16 +241,16 @@ public class ODPGetPartitionMetaTest {
             }
             BatchOperationResult batchOperationResult = batchOperation.execute();
             // test get all partitions
-            List<Partition> partitions = client.getPartition(table_name, false);
+            List<Partition> partitions = client.getPartition(TABLE_NAME1, false);
             Assert.assertEquals(15, partitions.size());
             for (Partition partition : partitions) {
                 System.out.println(partition.toString());
             }
 
             // test get the partition with only partition key with only partition key
-            Partition first_partition = client.getPartition(table_name,
+            Partition first_partition = client.getPartition(TABLE_NAME1,
                 row(colVal("K", "K_val1"), colVal("Q", "Q_val1"), colVal("T", 1L)), false);
-            Partition part_key_partition = client.getPartition(table_name,
+            Partition part_key_partition = client.getPartition(TABLE_NAME1,
                 row(colVal("K", "K_val1")), false);
             Assert.assertEquals(first_partition.getPartitionId(),
                 part_key_partition.getPartitionId());
@@ -171,7 +259,7 @@ public class ODPGetPartitionMetaTest {
             Assert.assertTrue(false);
         } finally {
             for (int j = 0; j < rowCnt; j++) {
-                Delete delete = client.delete(table_name);
+                Delete delete = client.delete(TABLE_NAME1);
                 delete.setRowKey(row(colVal("K", values[j][0]), colVal("Q", values[j][1]),
                     colVal("T", values[j][2])));
                 MutationResult res = delete.execute();
@@ -188,12 +276,11 @@ public class ODPGetPartitionMetaTest {
         `V` varbinary(1024),
         INDEX i1(`K`, `V`) local,
         PRIMARY KEY(`K`, `Q`, `T`)
-    ) partition by hash(`K`) partitions 15;
+    ) partition by hash(`K`) partitions 16;
     * */
     @Test
     public void testOneLevelHashPartition() throws Exception {
-        String table_name = "testHash";
-        BatchOperation batchOperation = client.batchOperation(table_name);
+        BatchOperation batchOperation = client.batchOperation(TABLE_NAME2);
         Object values[][] = { { 1L, "Q_val1", 1L, "V_val1" }, { 10L, "Q_val2", 101L, "V_val2" },
                 { 501L, "Q_val3", 501L, "V_val3" }, { 1001L, "Q_val4", 1001L, "V_val4" },
                 { 5001L, "Q_val5", 5001L, "V_val5" }, { 10001L, "Q_val6", 10001L, "V_val6" }, };
@@ -211,16 +298,16 @@ public class ODPGetPartitionMetaTest {
             }
             BatchOperationResult batchOperationResult = batchOperation.execute();
             // test get all partitions
-            List<Partition> partitions = client.getPartition(table_name, false);
+            List<Partition> partitions = client.getPartition(TABLE_NAME2, false);
             Assert.assertEquals(16, partitions.size());
             for (Partition partition : partitions) {
                 System.out.println(partition.toString());
             }
 
             // test get the partition with only partition key with only partition key
-            Partition first_partition = client.getPartition(table_name,
+            Partition first_partition = client.getPartition(TABLE_NAME2,
                 row(colVal("K", 1), colVal("Q", "Q_val1"), colVal("T", 1L)), false);
-            Partition part_key_partition = client.getPartition(table_name, row(colVal("K", 1)), false);
+            Partition part_key_partition = client.getPartition(TABLE_NAME2, row(colVal("K", 1)), false);
             Assert.assertEquals(first_partition.getPartitionId(),
                 part_key_partition.getPartitionId());
         } catch (Exception e) {
@@ -228,7 +315,7 @@ public class ODPGetPartitionMetaTest {
             Assert.assertTrue(false);
         } finally {
             for (int j = 0; j < rowCnt; j++) {
-                Delete delete = client.delete(table_name);
+                Delete delete = client.delete(TABLE_NAME2);
                 delete.setRowKey(row(colVal("K", values[j][0]), colVal("Q", values[j][1]),
                     colVal("T", values[j][2])));
                 MutationResult res = delete.execute();
@@ -250,8 +337,7 @@ public class ODPGetPartitionMetaTest {
     * */
     @Test
     public void testOneLevelRangePartition() throws Exception {
-        String table_name = "testRange";
-        BatchOperation batchOperation = client.batchOperation(table_name);
+        BatchOperation batchOperation = client.batchOperation(TABLE_NAME3);
         Object values[][] = { { 1, "c2_val1", "c3_val1", 1L }, { 101, "c2_val1", "c3_val1", 101L },
                 { 501, "c2_val1", "c3_val1", 501L }, { 901, "c2_val1", "c3_val1", 901L },
                 { 1001, "c2_val1", "c3_val1", 1001L }, { 1501, "c2_val1", "c3_val1", 1501L }, };
@@ -268,23 +354,23 @@ public class ODPGetPartitionMetaTest {
             }
             BatchOperationResult batchOperationResult = batchOperation.execute();
             // test get all partitions
-            List<Partition> partitions = client.getPartition(table_name, false);
+            List<Partition> partitions = client.getPartition(TABLE_NAME3, false);
             Assert.assertEquals(3, partitions.size());
             for (Partition partition : partitions) {
                 System.out.println(partition.toString());
             }
 
             // test get the first partition
-            Partition first_partition = client.getPartition(table_name,
+            Partition first_partition = client.getPartition(TABLE_NAME3,
                 row(colVal("c1", 1L), colVal("c2", "c2_val")), false);
             Assert.assertEquals(partitions.get(0).getPartitionId(),
                 first_partition.getPartitionId());
             // test get the second partition
-            Partition sec_partition = client.getPartition(table_name,
+            Partition sec_partition = client.getPartition(TABLE_NAME3,
                 row(colVal("c1", 401L), colVal("c2", "c2_val")), false);
             Assert.assertEquals(partitions.get(1).getPartitionId(), sec_partition.getPartitionId());
             // test get the same partition with the first partition key
-            Partition partition1 = client.getPartition(table_name,
+            Partition partition1 = client.getPartition(TABLE_NAME3,
                 row(colVal("c1", 101L), colVal("c2", "c2_val")), false);
             Assert.assertEquals(first_partition.getPartitionId(), partition1.getPartitionId());
         } catch (Exception e) {
@@ -292,7 +378,7 @@ public class ODPGetPartitionMetaTest {
             Assert.assertTrue(false);
         } finally {
             for (int j = 0; j < rowCnt; j++) {
-                Delete delete = client.delete(table_name);
+                Delete delete = client.delete(TABLE_NAME3);
                 delete.setRowKey(row(colVal("c1", values[j][0]), colVal("c2", values[j][1])));
                 MutationResult res = delete.execute();
                 Assert.assertEquals(1, res.getAffectedRows());
@@ -316,9 +402,7 @@ public class ODPGetPartitionMetaTest {
     @Test
     public void testTwoLevelKeyPartition() throws Exception {
         client.setRunningMode(ObTableClient.RunningMode.NORMAL);
-        String testTable = "testPartitionKeyComplex";
         try {
-            cleanTable(testTable);
             Connection connection = ObTableClientTestUtil.getConnection();
             Statement statement = connection.createStatement();
             for (int i = 0; i < 64; i++) {
@@ -330,17 +414,17 @@ public class ODPGetPartitionMetaTest {
                 String c5 = generateRandomStringByUUID(5) + c3 + generateRandomStringByUUID(5);
 
                 // use sql to insert data
-                statement.execute("insert into " + testTable
+                statement.execute("insert into " + TABLE_NAME4
                                   + "(c0, c1, c2, c3, c4, c5, c6) values (" + c0 + "," + c1 + ","
                                   + c2 + ",'" + c3 + "','" + c4 + "','" + c5 + "'," + "'value')");
                 Partition partition = client.getPartition(
-                    testTable,
+                        TABLE_NAME4,
                     row(colVal("c0", c0), colVal("c1", c1), colVal("c2", c2), colVal("c3", c3),
                         colVal("c4", c4), colVal("c5", c5)), false);
                 Assert.assertNotNull(partition);
                 System.out.println(partition.toString());
                 // test scan range with partition
-                QueryResultSet result = client.query(testTable)
+                QueryResultSet result = client.query(TABLE_NAME4)
                     .addScanRange(partition.start(), partition.end()).execute();
                 Assert.assertTrue(result.cacheSize() >= 1);
             }
@@ -349,7 +433,7 @@ public class ODPGetPartitionMetaTest {
             e.printStackTrace();
             Assert.assertTrue(false);
         } finally {
-            cleanTable(testTable);
+            cleanTable(TABLE_NAME4);
         }
     }
 
@@ -385,10 +469,8 @@ public class ODPGetPartitionMetaTest {
     @Test
     public void testTwoLevelRangePartition() throws Exception {
         client.setRunningMode(ObTableClient.RunningMode.NORMAL);
-        String testTable = "testPartitionRangeComplex";
         Random rng = new Random();
         try {
-            cleanTable(testTable);
             Connection connection = ObTableClientTestUtil.getConnection();
             Statement statement = connection.createStatement();
             for (int i = 0; i < 64; i++) {
@@ -398,14 +480,14 @@ public class ODPGetPartitionMetaTest {
                 String c4 = generateRandomStringByUUID(5) + c3 + generateRandomStringByUUID(5);
 
                 // use sql to insert data
-                statement.execute("insert into " + testTable + "(c1, c2, c3, c4, c5) values (" + c1
+                statement.execute("insert into " + TABLE_NAME5 + "(c1, c2, c3, c4, c5) values (" + c1
                                   + "," + c2 + ",'" + c3 + "','" + c4 + "'," + "'value')");
-                Partition partition = client.getPartition(testTable,
+                Partition partition = client.getPartition(TABLE_NAME5,
                     row(colVal("c1", c1), colVal("c2", c2), colVal("c3", c3), colVal("c4", c4)), false);
                 Assert.assertNotNull(partition);
                 System.out.println(partition.toString());
                 // test scan range with partition
-                QueryResultSet result = client.query(testTable)
+                QueryResultSet result = client.query(TABLE_NAME5)
                     .addScanRange(partition.start(), partition.end()).execute();
                 Assert.assertTrue(result.cacheSize() >= 1);
             }
@@ -413,13 +495,13 @@ public class ODPGetPartitionMetaTest {
             e.printStackTrace();
             Assert.assertTrue(false);
         } finally {
-            cleanTable(testTable);
+            cleanTable(TABLE_NAME5);
         }
     }
 
     @Test
     public void testConcurrentGetPartition() throws Exception {
-        String[] table_names = { "testHash", "testKey", "testRange" };
+        String[] table_names = { TABLE_NAME2, TABLE_NAME1, TABLE_NAME3 };
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         Random random = new Random();
         AtomicInteger cnt = new AtomicInteger(0);
@@ -430,8 +512,8 @@ public class ODPGetPartitionMetaTest {
                 executorService.submit(() -> {
                     try {
                         String table_name = table_names[random.nextInt(table_names.length)];
-                        if (table_name.equalsIgnoreCase("testHash")) {
-                            MutationResult resultSet = client.insert("testHash")
+                        if (table_name.equalsIgnoreCase(TABLE_NAME2)) {
+                            MutationResult resultSet = client.insert(TABLE_NAME2)
                                     .setRowKey(row(colVal("K", random.nextLong()), colVal("Q", "Q_val1"), colVal("T", System.currentTimeMillis())))
                                     .addMutateRow(row(colVal("V", "V_val1"))).execute();
                             Assert.assertEquals(1, resultSet.getAffectedRows());
@@ -441,10 +523,10 @@ public class ODPGetPartitionMetaTest {
                                 System.out.println("testHash: " + partition.toString());
                             }
                             cnt.getAndIncrement();
-                        } else if (table_name.equalsIgnoreCase("testKey")) {
+                        } else if (table_name.equalsIgnoreCase(TABLE_NAME1)) {
                             byte[] bytes = new byte[10];
                             random.nextBytes(bytes);
-                            MutationResult resultSet = client.insert("testKey")
+                            MutationResult resultSet = client.insert(TABLE_NAME1)
                                     .setRowKey(row(colVal("K", bytes), colVal("Q", "Q_val1"), colVal("T", System.currentTimeMillis())))
                                     .addMutateRow(row(colVal("V", "V_val1"))).execute();
                             Assert.assertEquals(1, resultSet.getAffectedRows());
@@ -455,7 +537,7 @@ public class ODPGetPartitionMetaTest {
                             }
                             cnt.getAndIncrement();
                         } else {
-                            MutationResult resultSet = client.insert("testRange")
+                            MutationResult resultSet = client.insert(TABLE_NAME3)
                                     .setRowKey(row(colVal("c1", random.nextInt()), colVal("c2", "c2_val1")))
                                     .addMutateRow(row(colVal("c3", "c3_val1"), colVal("c4", 10L))).execute();
                             Assert.assertEquals(1, resultSet.getAffectedRows());
@@ -490,9 +572,9 @@ public class ODPGetPartitionMetaTest {
                         Assert.assertTrue(false);
                     }
                 }
-                cleanTable("testHash");
-                cleanTable("testKey");
-                cleanTable("testRange");
+                cleanTable(TABLE_NAME2);
+                cleanTable(TABLE_NAME1);
+                cleanTable(TABLE_NAME3);
             } catch (InterruptedException ie) {
                 executorService.shutdownNow();
                 Thread.currentThread().interrupt();
@@ -503,19 +585,19 @@ public class ODPGetPartitionMetaTest {
 
     @Test
     public void testReFetchPartitionMeta() throws Exception {
-        String table_name = "testRange";
+        String table_name = TABLE_NAME3;
         BatchOperation batchOperation = client.batchOperation(table_name);
         Object values[][] = { { 1, "c2_val1", "c3_val1", 1L }, { 101, "c2_val1", "c3_val1", 101L },
                 { 501, "c2_val1", "c3_val1", 501L }, { 901, "c2_val1", "c3_val1", 901L },
                 { 1001, "c2_val1", "c3_val1", 1001L }, { 1501, "c2_val1", "c3_val1", 1501L }, };
         int rowCnt = values.length;
         try {
-            MutationResult resultSet = client.insertOrUpdate("testRange")
+            MutationResult resultSet = client.insertOrUpdate(TABLE_NAME3)
                 .setRowKey(row(colVal("c1", 10), colVal("c2", "c2_val1")))
                 .addMutateRow(row(colVal("c3", "c3_val1"), colVal("c4", 10L))).execute();
             Assert.assertEquals(1, resultSet.getAffectedRows());
             // need to manually breakpoint here to change table schema in database
-            resultSet = client.insertOrUpdate("testRange")
+            resultSet = client.insertOrUpdate(TABLE_NAME3)
                 .setRowKey(row(colVal("c1", 10), colVal("c2", "c2_val1")))
                 .addMutateRow(row(colVal("c3", "c3_val1"), colVal("c4", 10L))).execute();
             Assert.assertEquals(1, resultSet.getAffectedRows());
@@ -540,12 +622,12 @@ public class ODPGetPartitionMetaTest {
                 Assert.assertEquals(1, batchOperationResult.get(j).getAffectedRows());
             }
 
-            QueryResultSet result = client.query("testRange")
+            QueryResultSet result = client.query(TABLE_NAME3)
                 .addScanRange(new Object[] { 1, "c2_val1" }, new Object[] { 2000, "c2_val1" })
                 .select("c1", "c2", "c3", "c4").execute();
             Assert.assertEquals(rowCnt, result.cacheSize());
             // need to manually breakpoint here to change table schema in database
-            result = client.query("testRange")
+            result = client.query(TABLE_NAME3)
                 .addScanRange(new Object[] { 1, "c2_val1" }, new Object[] { 2000, "c2_val1" })
                 .select("c1", "c2", "c3", "c4").execute();
             Assert.assertEquals(1, result.cacheSize());
@@ -565,25 +647,13 @@ public class ODPGetPartitionMetaTest {
             return;
         }
 
-        final String TABLE_NAME = "test_auto_increment_rowkey";
-        client.addRowKeyElement(TABLE_NAME, new String[] { "c1", "c2" });
+        client.addRowKeyElement(TABLE_NAME6, new String[] { "c1", "c2" });
 
         try {
-            Connection connection = ObTableClientTestUtil.getConnection();
-            Statement statement = connection.createStatement();
-            statement
-                .execute("CREATE TABLE IF NOT EXISTS `test_auto_increment_rowkey` ("
-                         + "`c1` int auto_increment,"
-                         + "`c2` int NOT NULL,"
-                         + "`c3` int DEFAULT NULL,"
-                         + "`c4` varchar(255) DEFAULT NULL,"
-                         + "PRIMARY KEY(`c1`, `c2`)) partition by range columns(`c2`)"
-                         + "(PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (1000));");
-
-            client.insert(TABLE_NAME, new Object[] { 0, 1 }, new String[] { "c3" },
+            client.insert(TABLE_NAME6, new Object[] { 0, 1 }, new String[] { "c3" },
                 new Object[] { 1 });
 
-            TableQuery tableQuery = client.query(TABLE_NAME);
+            TableQuery tableQuery = client.query(TABLE_NAME6);
             tableQuery.select("c1", "c2", "c3");
             tableQuery.addScanRange(new Object[] { 1, 1 }, new Object[] { 200, 90 });
             ObTableValueFilter filter = new ObTableValueFilter(ObCompareOp.EQ, "c1", 1);
@@ -595,7 +665,7 @@ public class ODPGetPartitionMetaTest {
             Assert.assertEquals(1, value.get("c3"));
 
             // test insert use user value
-            client.insert(TABLE_NAME, new Object[] { 100, 1 }, new String[] { "c3" },
+            client.insert(TABLE_NAME6, new Object[] { 100, 1 }, new String[] { "c3" },
                 new Object[] { 1 });
 
             tableQuery.select("c1", "c2", "c3");
@@ -608,7 +678,7 @@ public class ODPGetPartitionMetaTest {
             Assert.assertEquals(1, value.get("c3"));
 
             // test insert sync global auto inc val
-            client.insert(TABLE_NAME, new Object[] { 0, 1 }, new String[] { "c3" },
+            client.insert(TABLE_NAME6, new Object[] { 0, 1 }, new String[] { "c3" },
                 new Object[] { 1 });
 
             tableQuery.select("c1", "c2", "c3");
@@ -621,7 +691,7 @@ public class ODPGetPartitionMetaTest {
             Assert.assertEquals(1, value.get("c3"));
 
             // test delete
-            client.delete(TABLE_NAME, new Object[] { 101, 1 });
+            client.delete(TABLE_NAME6, new Object[] { 101, 1 });
 
             // test confirm delete
             tableQuery.select("c1", "c2", "c3");
@@ -633,7 +703,7 @@ public class ODPGetPartitionMetaTest {
             // test update
             ObTableValueFilter filter_3 = compareVal(ObCompareOp.EQ, "c3", 1);
 
-            MutationResult updateResult = client.update(TABLE_NAME)
+            MutationResult updateResult = client.update(TABLE_NAME6)
                 .setRowKey(colVal("c1", 1), colVal("c2", 1)).setFilter(filter_3)
                 .addMutateRow(row(colVal("c3", 5))).execute();
 
@@ -647,7 +717,7 @@ public class ODPGetPartitionMetaTest {
             Assert.assertEquals(5, value.get("c3"));
 
             // test replace not exist, insert
-            MutationResult theResult = client.replace(TABLE_NAME)
+            MutationResult theResult = client.replace(TABLE_NAME6)
                 .setRowKey(colVal("c1", 0), colVal("c2", 1)).addMutateRow(row(colVal("c3", 2)))
                 .execute();
 
@@ -661,7 +731,7 @@ public class ODPGetPartitionMetaTest {
             Assert.assertEquals(2, value.get("c3"));
 
             // test replace exist, replace
-            theResult = client.replace(TABLE_NAME).setRowKey(colVal("c1", 101), colVal("c2", 1))
+            theResult = client.replace(TABLE_NAME6).setRowKey(colVal("c1", 101), colVal("c2", 1))
                 .addMutateRow(row(colVal("c3", 20))).execute();
 
             tableQuery.select("c1", "c2", "c3");
@@ -674,7 +744,7 @@ public class ODPGetPartitionMetaTest {
             Assert.assertEquals(20, value.get("c3"));
 
             // test insertup not exist, insert
-            theResult = client.insertOrUpdate(TABLE_NAME)
+            theResult = client.insertOrUpdate(TABLE_NAME6)
                 .setRowKey(colVal("c1", 0), colVal("c2", 1)).addMutateRow(row(colVal("c3", 5)))
                 .execute();
 
@@ -688,7 +758,7 @@ public class ODPGetPartitionMetaTest {
             Assert.assertEquals(5, value.get("c3"));
 
             // test insertup exist, update
-            theResult = client.insertOrUpdate(TABLE_NAME)
+            theResult = client.insertOrUpdate(TABLE_NAME6)
                 .setRowKey(colVal("c1", 103), colVal("c2", 1)).addMutateRow(row(colVal("c3", 50)))
                 .execute();
 
@@ -702,7 +772,7 @@ public class ODPGetPartitionMetaTest {
             Assert.assertEquals(50, value.get("c3"));
 
             // test insertup exist, update again
-            theResult = client.insertOrUpdate(TABLE_NAME)
+            theResult = client.insertOrUpdate(TABLE_NAME6)
                 .setRowKey(colVal("c1", 103), colVal("c2", 1)).addMutateRow(row(colVal("c3", 50)))
                 .execute();
 
@@ -716,7 +786,7 @@ public class ODPGetPartitionMetaTest {
             Assert.assertEquals(50, value.get("c3"));
 
             // test increment not exist, insert
-            value = client.increment(TABLE_NAME, new Object[] { 0, 1 }, new String[] { "c3" },
+            value = client.increment(TABLE_NAME6, new Object[] { 0, 1 }, new String[] { "c3" },
                 new Object[] { 6 }, true);
 
             tableQuery.select("c1", "c2", "c3");
@@ -729,7 +799,7 @@ public class ODPGetPartitionMetaTest {
             Assert.assertEquals(6, value.get("c3"));
 
             // test increment exist, increment
-            value = client.increment(TABLE_NAME, new Object[] { 104, 1 }, new String[] { "c3" },
+            value = client.increment(TABLE_NAME6, new Object[] { 104, 1 }, new String[] { "c3" },
                 new Object[] { 6 }, true);
 
             tableQuery.select("c1", "c2", "c3");
@@ -743,7 +813,7 @@ public class ODPGetPartitionMetaTest {
 
             // test illegal increment on auto increment column
             try {
-                value = client.increment(TABLE_NAME, new Object[] { 104, 1 },
+                value = client.increment(TABLE_NAME6, new Object[] { 104, 1 },
                     new String[] { "c1" }, new Object[] { 1 }, true);
             } catch (ObTableException e) {
                 assertNotNull(e);
@@ -751,7 +821,7 @@ public class ODPGetPartitionMetaTest {
             }
 
             // test append not exist, insert
-            Map<String, Object> res = client.append(TABLE_NAME, new Object[] { 0, 1 },
+            Map<String, Object> res = client.append(TABLE_NAME6, new Object[] { 0, 1 },
                 new String[] { "c4" }, new Object[] { "a" }, true);
 
             tableQuery.select("c1", "c2", "c3", "c4");
@@ -764,7 +834,7 @@ public class ODPGetPartitionMetaTest {
             Assert.assertEquals("a", value.get("c4"));
 
             // test append exist, append
-            res = client.append(TABLE_NAME, new Object[] { 105, 1 }, new String[] { "c4" },
+            res = client.append(TABLE_NAME6, new Object[] { 105, 1 }, new String[] { "c4" },
                 new Object[] { "b" }, true);
 
             tableQuery.select("c1", "c2", "c3", "c4");
@@ -785,7 +855,7 @@ public class ODPGetPartitionMetaTest {
         } finally { // drop table
             Connection connection = ObTableClientTestUtil.getConnection();
             Statement statement = connection.createStatement();
-            statement.execute("drop table " + TABLE_NAME);
+            statement.execute("drop table " + TABLE_NAME6);
         }
     }
 

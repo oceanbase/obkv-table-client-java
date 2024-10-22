@@ -231,9 +231,16 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             for (int j = 0; j < rowKeySize; j++) {
                 rowKey[j] = rowKeyObject.getObj(j).getValue();
             }
-            ObPair<Long, ObTableParam> tableObPair = obTableClient.getTable(
-                tableName, rowKey, false, false,
-                obTableClient.getRoute(batchOperation.isReadOnly()));
+            ObPair<Long, ObTableParam> tableObPair = null;
+            if (!obTableClient.isOdpMode()) {
+                tableObPair = obTableClient.getTable(tableName, rowKey,
+                        false, false, obTableClient.getRoute(batchOperation.isReadOnly()));
+            } else {
+                tableObPair = obTableClient.getODPTableWithRowKeyValue(tableName, rowKey, false);
+            }
+            if (tableObPair == null) {
+                throw new ObTableUnexpectedException("fail to get table pair in batch");
+            }
             ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>> obTableOperations = partitionOperationsMap
                 .get(tableObPair.getLeft());
             if (obTableOperations == null) {
@@ -344,8 +351,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                     result = subObTable.execute(subRequest);
                     if (result instanceof ObTableApiMove) {
                         ObTableApiMove move = (ObTableApiMove) result;
-                        logger.warn("The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. " +
-                                "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move .getReplica().getServer().ipToString());
+                        logger
+                            .warn(
+                                "The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. "
+                                        + "Rerouting return IP is {}", moveResponse.getReplica()
+                                    .getServer().ipToString(), move.getReplica().getServer()
+                                    .ipToString());
                         throw new ObTableRoutingWrongException();
                     }
                 }
