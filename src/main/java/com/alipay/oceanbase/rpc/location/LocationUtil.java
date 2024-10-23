@@ -735,11 +735,16 @@ public class LocationUtil {
                         }
                     }
                 }
-
-                // only set empty partitionEntry
-                ObPartitionEntry partitionEntry = new ObPartitionEntry();
-                tableEntry.setPartitionEntry(partitionEntry);
-                tableEntry.setRefreshTimeMills(System.currentTimeMillis());
+                
+                if (ObGlobal.obVsnMajor() >= 4) {
+                    // only set empty partitionEntry
+                    ObPartitionEntry partitionEntry = new ObPartitionEntry();
+                    tableEntry.setPartitionEntry(partitionEntry);
+                    tableEntry.setRefreshTimeMills(System.currentTimeMillis());
+                } else {
+                    // get location info
+                    getTableEntryLocationFromRemote(connection, key, tableEntry);
+                }
 
                 if (!initialized) {
                     if (BOOT.isInfoEnabled()) {
@@ -774,6 +779,7 @@ public class LocationUtil {
         return tableEntry;
     }
 
+    // Note: This code is applicable only for refreshing locations based on tablet ID in version 4.x
     private static String genLocationSQLByTabletId() {
         String sql = null;
         if (ObGlobal.obVsnMajor() >= 4) {
@@ -890,6 +896,37 @@ public class LocationUtil {
         PreparedStatement ps = null;
         ResultSet rs = null;
         ObPartitionEntry partitionEntry = new ObPartitionEntry();
+        long partitionNum = tableEntry.getPartitionNum();
+        int epoch = (int) ((partitionNum / MAX_TABLET_NUMS_EPOCH) + 1);
+        for (int i = 0; i < epoch; i++) {
+            try {
+                int offset = i * MAX_TABLET_NUMS_EPOCH;
+                // // This code is executed only in version 3.x
+                String sql = genLocationSQLByOffset(tableEntry, offset, MAX_TABLET_NUMS_EPOCH);
+                ps = connection.prepareStatement(sql);
+                ps.setString(1, key.getTenantName());
+                ps.setString(2, key.getDatabaseName());
+                ps.setString(3, key.getTableName());
+                rs = ps.executeQuery();
+                partitionEntry = getPartitionLocationFromResultSet(tableEntry, rs, partitionEntry);
+            } catch (Exception e) {
+                RUNTIME.error(LCD.convert("01-00010"), key, partitionNum, tableEntry, e);
+                throw new ObTablePartitionLocationRefreshException(format(
+                        "fail to get partition location entry from remote entryKey = %s partNum = %d tableEntry =%s "
+                                + "offset =%d epoch =%d", key, partitionNum, tableEntry, i, epoch), e);
+            } finally {
+                try {
+                    if (null != rs) {
+                        rs.close();
+                    }
+                    if (null != ps) {
+                        ps.close();
+                    }
+                } catch (SQLException e) {
+                    // ignore
+                }
+            }
+        } // end for
         tableEntry.setPartitionEntry(partitionEntry);
         tableEntry.setRefreshTimeMills(System.currentTimeMillis());
         return tableEntry;
