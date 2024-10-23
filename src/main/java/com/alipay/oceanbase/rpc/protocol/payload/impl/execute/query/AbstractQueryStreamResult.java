@@ -17,11 +17,13 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.model.ObReadConsistency;
 import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
+import com.alipay.oceanbase.rpc.location.model.TableEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
@@ -323,10 +325,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
 
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchAllException) {
-                        // Adjust the start key and refresh the expectant
-                        this.tableQuery.adjustStartKey(currentStartKey);
                         setExpectant(refreshPartition(tableQuery, tableName));
-
                         // Reset the iterator to start over  
                         it = expectant.entrySet().iterator();
                         referPartition.clear(); // Clear the referPartition if needed

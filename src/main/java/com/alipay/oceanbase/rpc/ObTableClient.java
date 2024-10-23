@@ -1399,7 +1399,18 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         try {
             // if table entry is exist we just need to refresh table locations
             if (tableEntry != null && !fetchAll) {
-                // do nothing
+                if (ObGlobal.obVsnMajor() >= 4) {
+                    // do nothing
+                } else {
+                    // 3.x still proactively refreshes all locations
+                    tableEntry = loadTableEntryLocationWithPriority(serverRoster, //
+                            tableEntryKey,//
+                            tableEntry,//
+                            tableEntryAcquireConnectTimeout,//
+                            tableEntryAcquireSocketTimeout,//
+                            serverAddressPriorityTimeout, //
+                            serverAddressCachingTimeout, sysUA);
+                }
             } else {
                 // if table entry is not exist we should fetch partition info and table locations
                 tableEntry = loadTableEntryWithPriority(serverRoster, //
@@ -1829,10 +1840,23 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     public ObPair<Long, ObTableParam> getTableInternal(String tableName, TableEntry tableEntry,
                                                        long partId, boolean waitForRefresh,
                                                        ObServerRoute route) throws Exception {
+        ReplicaLocation replica = null;
         long tabletId = getTabletIdByPartId(tableEntry, partId);
-        ObPartitionLocationInfo obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
+        ObPartitionLocationInfo obPartitionLocationInfo = null;
+        if (ObGlobal.obVsnMajor() >= 4) {
 
-        ReplicaLocation replica = getPartitionLocation(obPartitionLocationInfo, route);
+            obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
+    
+            replica = getPartitionLocation(obPartitionLocationInfo, route);
+        } else {
+            ObPair<Long, ReplicaLocation> partitionReplica = getPartitionReplica(tableEntry, partId,
+                    route);
+            replica = partitionReplica.getRight();
+        }
+        if (replica == null) {
+            RUNTIME.error("Cannot get replica by partId: " + partId);
+            throw new ObTableGetException("Cannot get replica by partId: " + partId);
+        }
         ObServerAddr addr = replica.getAddr();
         ObTable obTable = tableRoster.get(addr);
 
@@ -1845,8 +1869,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 logger.info("Server addr {} is expired, refreshing tableEntry.", addr);
             }
             
-            obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
-            replica = getPartitionLocation(obPartitionLocationInfo, route);
+            if (ObGlobal.obVsnMajor() >= 4) {
+                obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
+                replica = getPartitionLocation(obPartitionLocationInfo, route);
+            } else {
+                tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
+                replica = getPartitionReplica(tableEntry, partId, route).getRight();
+            }
+            
             addr = replica.getAddr();
             obTable = tableRoster.get(addr);
 
@@ -1855,8 +1885,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 throw new ObTableGetException("Cannot get table by addr: " + addr);
             }
         }
-
-        ObTableParam param = createTableParam(obTable, tableEntry, obPartitionLocationInfo, partId, tabletId);
+        ObTableParam param = null;
+        if (ObGlobal.obVsnMajor() >= 4) {
+            param = createTableParam(obTable, tableEntry, obPartitionLocationInfo, partId, tabletId);
+        } else {
+            param.setPartId(partId);
+            param.setTableId(tableEntry.getTableId());
+            param.setPartitionId(partId);
+        }
         addr.recordAccess();
         return new ObPair<>(tabletId, param);
     }
