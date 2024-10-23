@@ -167,7 +167,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                     && !tableQuery.getIndexName().equalsIgnoreCase("primary")) {
                     throw new ObTableException("key range columns must be specified when use index");
                 }
-            } else if (tableQuery.getIndexName() != null) {
+            }
+            if (tableQuery.getIndexName() != null) {
                 this.partitionObTables.put(0L, new ObPair<Long, ObTableParam>(0L, new ObTableParam(
                         obTableClient.getOdpTable())));
             } else if (getPartId() == null) {
@@ -288,9 +289,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             // pairs -> List<Pair<logicId, param>>
             List<ObPair<Long, ObTableParam>> pairs = null;
             if (!this.obTableClient.isOdpMode()) {
-                pairs = this.obTableClient.getTables(indexTableName,
-                        tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(),
-                        false, false);
+                pairs = this.obTableClient.getTables(indexTableName, tableQuery, start,
+                    borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false, false);
             } else {
                 pairs = this.obTableClient.getOdpTables(tableName, tableQuery, start,
                     borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false);
