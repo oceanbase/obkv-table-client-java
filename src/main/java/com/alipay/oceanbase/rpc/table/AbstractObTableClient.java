@@ -62,6 +62,9 @@ public abstract class AbstractObTableClient extends AbstractTable {
     protected long            tableEntryRefreshLockTimeout              = TABLE_ENTRY_REFRESH_LOCK_TIMEOUT
                                                                             .getDefaultLong();
 
+    protected long            ODPTableEntryRefreshLockTimeout           = ODP_TABLE_ENTRY_REFRESH_LOCK_TIMEOUT
+                                                                            .getDefaultLong();
+
     protected int             tableEntryRefreshContinuousFailureCeiling = TABLE_ENTRY_REFRESH_CONTINUOUS_FAILURE_CEILING
                                                                             .getDefaultInt();
 

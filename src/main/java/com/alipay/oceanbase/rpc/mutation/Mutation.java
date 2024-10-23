@@ -40,15 +40,15 @@ import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
 
 public class Mutation<T> {
-    private String          tableName;
-    private Table           client;
-    protected Row           rowKey;
-    private TableQuery      query;
-    private boolean         hasSetRowKey = false;
-    protected List<String>  rowKeyNames  = null;
-    protected  List<Object> rowKeyValues = null;
-    protected List<String>  columns;
-    protected List<Object>  values;
+    private String         tableName;
+    private Table          client;
+    protected Row          rowKey;
+    private TableQuery     query;
+    private boolean        hasSetRowKey = false;
+    protected List<String> rowKeyNames  = null;
+    protected List<Object> rowKeyValues = null;
+    protected List<String> columns;
+    protected List<Object> values;
 
     /*
      * default constructor
@@ -139,7 +139,9 @@ public class Mutation<T> {
     /*
      * get rowkey values
      */
-    public List<Object> getRowKeyValues() { return rowKeyValues; }
+    public List<Object> getRowKeyValues() {
+        return rowKeyValues;
+    }
 
     /*
      * check mutation filter

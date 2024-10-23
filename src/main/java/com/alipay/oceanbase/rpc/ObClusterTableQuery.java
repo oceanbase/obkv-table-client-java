@@ -17,7 +17,9 @@
 
 package com.alipay.oceanbase.rpc;
 
+import com.alipay.oceanbase.rpc.location.model.partition.Partition;
 import com.alipay.oceanbase.rpc.mutation.Row;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilter;
@@ -150,6 +152,28 @@ public class ObClusterTableQuery extends AbstractTableQuery {
                                    boolean endEquals) {
         tableClientQuery.addScanRange(start, startEquals, end, endEquals);
         return this;
+    }
+
+    @Override
+    public TableQuery addScanRange(Object start, Object end) {
+        if (start instanceof Partition) {
+            Long startPartitionId = ((Partition) start).getPartitionId();
+            Long endPartitionId = ((Partition) end).getPartitionId();
+            if (!startPartitionId.equals(endPartitionId)) {
+                throw new IllegalArgumentException(
+                    "The partition id must be the same for start and end partition in scan range");
+            }
+            Long startPartId = ((Partition) start).getPartId();
+            Long endPartId = ((Partition) end).getPartId();
+            if (!startPartId.equals(endPartId)) {
+                throw new IllegalArgumentException(
+                    "The logic part id must be the same for start and end partition in scan range");
+            }
+            tableClientQuery.setPartId(startPartId);
+            start = ObObj.getMin();
+            end = ObObj.getMax();
+        }
+        return addScanRange(new Object[] { start }, true, new Object[] { end }, true);
     }
 
     /**
