@@ -360,18 +360,17 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     false, false, obTableClient.getRoute(false));
             long lsId = tableObPair.getRight().getLsId();
 
-             Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperations
+            Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperations
                      = lsOperationsMap.computeIfAbsent(lsId, k -> new HashMap<>());
-             // if ls id not exists
+            // if ls id not exists
 
-             ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>> singleOperations =
+            ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>> singleOperations =
                      tabletOperations.computeIfAbsent(tableObPair.getLeft(), k -> new ObPair<>(tableObPair.getRight(), new ArrayList<>()));
-             // if tablet id not exists
+            // if tablet id not exists
+            singleOperations.getRight().add(new ObPair<>(i, operation));
+        }
 
-             singleOperations.getRight().add(new ObPair<>(i, operation));
-         }
-
-         return lsOperationsMap;
+        return lsOperationsMap;
     }
 
     public Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> partitionPrepare()
