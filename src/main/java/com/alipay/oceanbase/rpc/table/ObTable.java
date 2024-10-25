@@ -66,7 +66,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
 
     private volatile boolean      initialized = false;
     private volatile boolean      closed      = false;
-    private boolean               reRouting   = true;              // only used for init packet factory
+    private boolean enableRerouting = true;              // only used for init packet factory
 
     private ReentrantLock         statusLock  = new ReentrantLock();
 
@@ -89,7 +89,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                 .configWriteBufferWaterMark(getNettyBufferLowWatermark(),
                     getNettyBufferHighWatermark()).build();
             connectionFactory.init(new ConnectionEventHandler(new GlobalSwitch())); // Only for monitoring connection status
-            realClient = new ObTableRemoting(new ObPacketFactory(reRouting));
+            realClient = new ObTableRemoting(new ObPacketFactory(enableRerouting));
             connectionPool = new ObTableConnectionPool(this, obTableConnectionPoolSize);
             connectionPool.init();
             initialized = true;
@@ -164,7 +164,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             nettyBufferHighWatermark);
         nettyBlockingWaitInterval = parseToInt(NETTY_BLOCKING_WAIT_INTERVAL.getKey(),
             nettyBlockingWaitInterval);
-        reRouting = parseToBoolean(SERVER_ENABLE_REROUTING.getKey(), reRouting);
+        enableRerouting = parseToBoolean(SERVER_ENABLE_REROUTING.getKey(), enableRerouting);
         maxConnExpiredTime = parseToLong(MAX_CONN_EXPIRED_TIME.getKey(), maxConnExpiredTime);
 
         Object value = this.configs.get("runtime");
@@ -174,8 +174,8 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         }
     }
 
-    public boolean getReRouting(){
-        return reRouting;
+    public boolean isEnableRerouting(){
+        return enableRerouting;
     }
 
     /*

@@ -21,13 +21,23 @@ import com.alipay.oceanbase.rpc.location.model.ObServerLdcLocation;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 
 public class ObPartitionEntry {
     private Map<Long, ObPartitionLocation> partitionLocation = new HashMap<Long, ObPartitionLocation>();
 
     // mapping from tablet id to ls id, and the part id to tablet id mapping is in ObPartitionInfo
     private Map<Long, Long> tabletLsIdMap = new HashMap<>();
+    
+    // tabelt id -> (PartitionLocation, LsId)
+    private ConcurrentHashMap<Long, ObPartitionLocationInfo> partitionInfos = new ConcurrentHashMap<>();
 
+
+    public ObPartitionLocationInfo getPartitionInfo(long tabletId) {
+        return partitionInfos.computeIfAbsent(tabletId, id -> new ObPartitionLocationInfo());
+    }
+    
     public Map<Long, ObPartitionLocation> getPartitionLocation() {
         return partitionLocation;
     }
@@ -39,6 +49,16 @@ public class ObPartitionEntry {
         this.partitionLocation = partitionLocation;
     }
 
+    public Map<Long, Long> getTabletLsIdMap() {
+        return tabletLsIdMap;
+    }
+
+    public void setTabletLsIdMap(Map<Long, Long> tabletLsIdMap) {
+        this.tabletLsIdMap = tabletLsIdMap;
+    }
+
+    public long getLsId(long tabletId) { return tabletLsIdMap.get(tabletId); }
+    
     /*
      * Get partition location with part id.
      */
@@ -86,14 +106,4 @@ public class ObPartitionEntry {
     public String toString() {
         return "ObPartitionEntry{" + "partitionLocation=" + partitionLocation + '}';
     }
-
-    public Map<Long, Long> getTabletLsIdMap() {
-        return tabletLsIdMap;
-    }
-
-    public void setTabletLsIdMap(Map<Long, Long> tabletLsIdMap) {
-        this.tabletLsIdMap = tabletLsIdMap;
-    }
-
-    public long getLsId(long tabletId) { return tabletLsIdMap.get(tabletId); }
 }

@@ -21,14 +21,18 @@ import com.alipay.oceanbase.rpc.exception.FeatureNotSupportedException;
 import com.alipay.oceanbase.rpc.table.ObHBaseParams;
 import com.alipay.oceanbase.rpc.table.ObKVParams;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationSingle;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import static com.alipay.oceanbase.rpc.util.ByteUtil.*;
 import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
 import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderLength;
 
@@ -68,6 +72,47 @@ public class ObTableQuery extends AbstractPayload {
     private List<ObTableAggregationSingle>    aggregations       = new LinkedList<>();
 
     private ObKVParams obKVParams;
+    
+    public void adjustStartKey(List<ObObj> key) throws IllegalArgumentException {
+        List<ObNewRange> keyRanges = getKeyRanges();
+        for (ObNewRange range : keyRanges) {
+            if (key != null && isKeyInRange(range, key)) {
+                ObRowKey newStartKey;
+                if (getScanOrder() == ObScanOrder.Forward) {
+                    // get the real rowkey
+                    newStartKey = ObRowKey.getInstance(new Object[]{key.get(0).getValue(), ObObj.getMax(), ObObj.getMax()});
+                } else {
+                    newStartKey = ObRowKey.getInstance(new Object[]{key.get(0).getValue(), ObObj.getMax(), ObObj.getMax()});
+                }
+                range.setStartKey(newStartKey);
+                return;
+            }
+        }
+        /* keyRanges not changed */
+    }
+
+    private byte[] parseStartKeyToBytes(List<ObObj> key) {
+        if (key != null) {
+            ObObj obObjKey = key.get(0);
+            return obObjKey.encode();
+        }
+        return new byte[0];
+    }
+
+    private boolean isKeyInRange(ObNewRange range, List<ObObj> key) {
+        byte[] startKeyBytes = parseStartKeyToBytes(range.getStartKey().getObjs());
+        byte[] endKeyBytes = parseStartKeyToBytes(range.getEndKey().getObjs());
+        byte[] keyBytes = parseStartKeyToBytes(key);
+
+        int startComparison = compareByteArrays(startKeyBytes, keyBytes);
+        int endComparison = compareByteArrays(endKeyBytes, keyBytes);
+        
+        boolean withinStart = startComparison <= 0;
+        boolean withinEnd = endComparison > 0;
+
+        return withinStart && withinEnd;
+    }
+
 
     /*
      * Check filter.
