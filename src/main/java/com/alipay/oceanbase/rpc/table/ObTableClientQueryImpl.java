@@ -235,7 +235,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     }
 
     public Map<Long, ObPair<Long, ObTableParam>> initPartitions(ObTableQuery tableQuery, String tableName) throws Exception {
-        Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new HashMap<>();
+        Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new LinkedHashMap<>();
         String indexName = tableQuery.getIndexName();
         String indexTableName = null;
 
