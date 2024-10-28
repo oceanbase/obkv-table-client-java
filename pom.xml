@@ -386,6 +386,35 @@
                             </execution>
                         </executions>
                     </plugin>
+                    <plugin>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <version>3.2.4</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>shade</goal>
+                                </goals>
+                                <configuration>
+                                    <shadedArtifactAttached>true</shadedArtifactAttached>
+                                    <shadedClassifierName>shade</shadedClassifierName>
+                                    <!-- Any name that makes sense -->
+                                </configuration>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <relocations>
+                                <relocation>
+                                    <pattern>com.alipay.sofa.common</pattern>
+                                    <shadedPattern>com.shaded.alipay.sofa.common</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.alipay.remoting</pattern>
+                                    <shadedPattern>com.shaded.alipay.remoting</shadedPattern>
+                                </relocation>
+                            </relocations>
+                        </configuration>
+                    </plugin>
                 </plugins>
             </build>
         </profile>
