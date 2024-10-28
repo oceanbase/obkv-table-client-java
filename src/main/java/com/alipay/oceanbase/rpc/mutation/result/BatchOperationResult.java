@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.mutation.result;
 
 import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.get.result.GetResult;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 
 import java.util.ArrayList;
@@ -81,11 +82,18 @@ public class BatchOperationResult {
      * get result
      */
     public OperationResult get(int pos) {
+        OperationResult result = null;
         if (pos >= results.size()) {
             throw new IllegalArgumentException("Invalid pos: " + pos
                                                + ", while size of results is: " + results.size());
         }
-        return (MutationResult) results.get(pos);
+
+        if (results.get(pos) instanceof MutationResult) {
+            result = (MutationResult) results.get(pos);
+        } else if (results.get(pos) instanceof GetResult) {
+            result = (GetResult) results.get(pos);
+        }
+        return result;
     }
 
     /*

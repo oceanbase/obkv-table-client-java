@@ -29,28 +29,21 @@ import static com.alipay.oceanbase.rpc.ObGlobal.OB_VERSION;
 import static com.alipay.oceanbase.rpc.ObGlobal.calcVersion;
 
 public class ObTableClientTestUtil {
-    public static String  FULL_USER_NAME          = "full-user-name";
-    public static String  PARAM_URL               = "config-url";
-    public static String  PASSWORD                = "password";
-    public static String  PROXY_SYS_USER_NAME     = "sys-user-name";
-    public static String  PROXY_SYS_USER_PASSWORD = "sys-user-password";
+    public static String  FULL_USER_NAME          = "root@mysql#ob10.chenweixin.cwx.11.158.97.240";
+    public static String  PARAM_URL               = "http://ocp-cfg.alibaba.net:8080/services?User_ID=alibaba&UID=test&Action=ObRootServiceInfo&ObCluster=ob10.chenweixin.cwx.11.158.97.240&database=test";
+    public static String  PASSWORD                = "";
+    public static String  PROXY_SYS_USER_NAME     = "root";
+    public static String  PROXY_SYS_USER_PASSWORD = "";
 
     public static boolean USE_ODP                 = false;
     public static String  ODP_IP                  = "ip-addr";
     public static int     ODP_PORT                = 0;
     public static String  ODP_DATABASE            = "database-name";
 
-    public static String  JDBC_IP                 = "";
-    public static String  JDBC_PORT               = "";
-    public static String  JDBC_DATABASE           = "OCEANBASE";
-    public static String  JDBC_URL                = "jdbc:mysql://" + JDBC_IP + ":" + JDBC_PORT + "/ " + JDBC_DATABASE + "?" +
-            "rewriteBatchedStatements=TRUE&" +
-            "allowMultiQueries=TRUE&" +
-            "useLocalSessionState=TRUE&" +
-            "useUnicode=TRUE&" +
-            "characterEncoding=utf-8&" +
-            "socketTimeout=3000000&" +
-            "connectTimeout=60000";
+    public static String  JDBC_IP                 = "11.158.97.240";
+    public static String  JDBC_PORT               = "41103";
+
+    public static String  JDBC_URL                = "jdbc:mysql://11.158.97.240:41103/test?rewriteBatchedStatements=TRUE&allowMultiQueries=TRUE&useLocalSessionState=TRUE&useUnicode=TRUE&characterEncoding=utf-8&socketTimeout=3000000&connectTimeout=60000";
 
     public static ObTableClient newTestClient() throws Exception {
         ObTableClient obTableClient = new ObTableClient();

@@ -20,6 +20,8 @@ package com.alipay.oceanbase.rpc.table;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.exception.*;
+import com.alipay.oceanbase.rpc.get.Get;
+import com.alipay.oceanbase.rpc.get.result.GetResult;
 import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.*;
@@ -275,6 +277,21 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         addOperation(singleOp);
     }
 
+    public void addOperation(Get get) throws Exception {
+        if (get.getRowKey() == null) {
+            throw new ObTableException("RowKey is null");
+        }
+        String[] rowKeyNames = get.getRowKey().getColumns();
+        Object[] rowKeyValues = get.getRowKey().getValues();
+        String[] propertiesNames = get.getSelectColumns();
+        ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKeyValues,
+                propertiesNames, null);
+        ObTableSingleOp singleOp = new ObTableSingleOp();
+        singleOp.setSingleOpType(ObTableOperationType.GET);
+        singleOp.addEntity(entity);
+        addOperation(singleOp);
+    }
+
     /*
      * Execute.
      */
@@ -301,7 +318,11 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         for (ObTableSingleOpResult result : executeInternal()) {
             int errCode = result.getHeader().getErrno();
             if (errCode == ResultCodes.OB_SUCCESS.errorCode) {
-                results.add(new MutationResult(result));
+                if (result.getOperationType() == ObTableOperationType.GET) {
+                    results.add(new GetResult(result));
+                } else {
+                    results.add(new MutationResult(result));
+                }
             } else {
                 results.add(ExceptionUtil.convertToObTableException(result.getExecuteHost(),
                     result.getExecutePort(), result.getSequence(), result.getUniqueId(), errCode,
