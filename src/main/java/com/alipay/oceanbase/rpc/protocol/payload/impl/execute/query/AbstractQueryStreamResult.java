@@ -272,6 +272,13 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     }
 
     /*
+     * RenewLease.
+     */
+    public void renewLease() throws Exception {
+        throw new IllegalStateException("renew only support stream query");
+    }
+
+    /*
      * Next.
      */
     public boolean next() throws Exception {
