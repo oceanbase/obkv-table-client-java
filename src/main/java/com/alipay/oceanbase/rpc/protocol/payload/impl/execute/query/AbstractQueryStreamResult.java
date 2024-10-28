@@ -360,7 +360,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     }
 
     protected Map<Long, ObPair<Long, ObTableParam>> buildPartitions(ObTableClient client, ObTableQuery tableQuery, String tableName) throws Exception {
-        Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new HashMap<>();
+        Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new LinkedHashMap<>();
         String indexName = tableQuery.getIndexName();
         String indexTableName = null;
 
