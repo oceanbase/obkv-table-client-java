@@ -488,6 +488,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 break;
             } catch (Exception ex) {
                 if (obTableClient.isOdpMode()) {
+                    if (obTableClient.getRuntimeRetryTimes() == 1) {
+                        obTableClient.setRuntimeRetryTimes(3);
+                    }
                     if ((tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
                         logger.warn("meet exception when execute ls batch in odp mode." +
                                 "tablename: {}, errMsg: {}", tableName, ex.getMessage());
