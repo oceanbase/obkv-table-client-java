@@ -786,15 +786,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     obPair = new ObPair<Long, ObTableParam>(0L, new ObTableParam(odpTable));
                 } else {
                     if (null != callback.getRowKey()) {
+                        // in the case of retry, the location always needs to be refreshed here
                         if (tryTimes > 1) {
                             TableEntry entry = getOrRefreshTableEntry(tableName, false, false, false);
                             Long partId = getPartition(entry, callback.getRowKey());
                             refreshTableLocationByTabletId(entry, tableName, getTabletIdByPartId(entry, partId));
                         }
                         // using row key
-                        obPair = getTable(tableName, callback.getRowKey(),
-                            needRefreshTableEntry, tableEntryRefreshIntervalWait,
-                            false, route);
+                        obPair = getTable(tableName, callback.getRowKey(), needRefreshTableEntry, tableEntryRefreshIntervalWait, false, route);
                     } else if (null != callback.getKeyRanges()) {
                         // using scan range
                         obPair = getTable(tableName, new ObTableQuery(),
