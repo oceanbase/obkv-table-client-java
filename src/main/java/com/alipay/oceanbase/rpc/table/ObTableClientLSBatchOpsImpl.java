@@ -631,7 +631,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> currentPartitions = new HashMap<>();
         currentPartitions.put(entry.getKey(), entry.getValue());
 
-        while (retryCount < maxRetries && !success) {
+        while (retryCount <= maxRetries && !success) {
             boolean allPartitionsSuccess = true;
 
             for (Map.Entry<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> currentEntry : currentPartitions.entrySet()) {
