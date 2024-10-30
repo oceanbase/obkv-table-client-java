@@ -3202,7 +3202,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                     "tablename:{} partition id:{} batch ops refresh table while meet ObTableMasterChangeException, errorCode: {}",
                                     request.getTableName(), request.getPartitionId(), ((ObTableException) ex).getErrorCode(), ex);
 
-                            if (isRetryOnChangeMasterTimes() && tryTimes < maxRetries) {
+                            if (isRetryOnChangeMasterTimes() && tryTimes <= maxRetries) {
                                 logger.warn(
                                         "tablename:{} partition id:{} batch ops retry while meet ObTableMasterChangeException, errorCode: {} , retry times {}",
                                         request.getTableName(), request.getPartitionId(), ((ObTableException) ex).getErrorCode(),
