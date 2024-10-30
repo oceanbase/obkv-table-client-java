@@ -767,7 +767,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             throw new IllegalArgumentException("table name is null");
         }
         boolean needRefreshTableEntry = false;
-        boolean needFetchAllRouteInfo = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
         while (true) {
@@ -787,10 +786,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     obPair = new ObPair<Long, ObTableParam>(0L, new ObTableParam(odpTable));
                 } else {
                     if (null != callback.getRowKey()) {
+                        if (tryTimes > 1) {
+                            TableEntry entry = getOrRefreshTableEntry(tableName, false, false, false);
+                            Long partId = getPartition(entry, callback.getRowKey());
+                            refreshTableLocationByTabletId(entry, tableName, getTabletIdByPartId(entry, partId));
+                        }
                         // using row key
                         obPair = getTable(tableName, callback.getRowKey(),
                             needRefreshTableEntry, tableEntryRefreshIntervalWait,
-                            needFetchAllRouteInfo, route);
+                            false, route);
                     } else if (null != callback.getKeyRanges()) {
                         // using scan range
                         obPair = getTable(tableName, new ObTableQuery(),
@@ -852,7 +856,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                     ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                     tryTimes);
                             if (ex instanceof ObTableNeedFetchAllException) {
-                                needFetchAllRouteInfo = true;
+                                getOrRefreshTableEntry(tableName, needRefreshTableEntry, isTableEntryRefreshIntervalWait(), true);
                                 // reset failure count while fetch all route info
                                 this.resetExecuteContinuousFailureCount(tableName);
                             }
