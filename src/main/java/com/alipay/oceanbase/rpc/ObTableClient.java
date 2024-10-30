@@ -677,6 +677,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                     tryTimes);
                             if (ex instanceof ObTableNeedFetchAllException) {
                                 needFetchAllRouteInfo = true;
+                                getOrRefreshTableEntry(tableName, true, true, true);
                                 // reset failure count while fetch all route info
                                 this.resetExecuteContinuousFailureCount(tableName);
                             }
@@ -1679,7 +1680,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
 
         long partId = getPartition(tableEntry, row); // partition id in 3.x, origin partId in 4.x, logicId
-
+        if (refresh) {
+            refreshTableLocationByTabletId(tableEntry, tableName, getTabletIdByPartId(tableEntry, partId));
+        }
         return getTableInternal(tableName, tableEntry, partId, waitForRefresh, route);
     }
 
