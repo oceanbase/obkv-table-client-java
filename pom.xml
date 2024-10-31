@@ -375,7 +375,12 @@
                                 <configuration>
                                     <shadedArtifactAttached>true</shadedArtifactAttached>
                                     <shadedClassifierName>shade</shadedClassifierName>
-                                    <!-- Any name that makes sense -->
+                                    <artifactSet>
+                                        <excludes>
+                                            <exclude>mysql:mysql-connector-java</exclude>
+                                            <exclude>org.slf4j:slf4j-api</exclude>
+                                        </excludes>
+                                    </artifactSet>
                                 </configuration>
                             </execution>
                         </executions>
