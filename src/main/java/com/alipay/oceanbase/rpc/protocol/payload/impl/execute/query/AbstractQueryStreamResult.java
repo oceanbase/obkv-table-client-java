@@ -577,6 +577,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                 iterator = exceptionHandler.handle(client, maxRetryTimes, tableName, iterator,
                     entry, e, retryTimes);
             }
+            Thread.sleep(client.getRuntimeRetryInterval());
         }
     }
 
@@ -590,7 +591,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                                                                                    throws Exception {
 
         if (client.isOdpMode()) {
-            if ((retryTimes - 1) < maxRetryTimes) {
+            if (retryTimes <= maxRetryTimes) {
                 if (e instanceof ObTableException) {
                     logger.warn(
                         "execute while meet Exception, errorCode: {} , errorMsg: {}, try times {}",
