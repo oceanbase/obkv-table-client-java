@@ -36,14 +36,17 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableStreamRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.QueryStreamResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
+import com.alipay.oceanbase.rpc.stream.ObTableClientQueryStreamResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.table.ObTableParam;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.RUNTIME;
 
@@ -70,8 +73,9 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     private ObReadConsistency                                                  readConsistency     = ObReadConsistency.STRONG;
     // ObRowKey objs: [startKey, MIN_OBJECT, MIN_OBJECT]
     public List<ObObj>                                                         currentStartKey;
-    protected ObTableClient          client;
-    
+    protected ObTableClient                                                    client;
+    private static final Logger                                                logger              = LoggerFactory
+                                                                                                       .getLogger(AbstractQueryStreamResult.class);
     /*
      * Get pcode.
      */
@@ -163,8 +167,12 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         result = subObTable.execute(request);
                         if (result instanceof ObTableApiMove) {
                             ObTableApiMove move = (ObTableApiMove) result;
-                            logger.warn("The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. " +
-                                    "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move .getReplica().getServer().ipToString());
+                            logger
+                                .warn(
+                                    "The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. "
+                                            + "Rerouting return IP is {}", moveResponse
+                                        .getReplica().getServer().ipToString(), move.getReplica()
+                                        .getServer().ipToString());
                             throw new ObTableRoutingWrongException();
                         }
                     }
@@ -492,9 +500,11 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                                             ObPayload streamRequest)
                                                                                     throws Exception;
 
-    protected abstract Map<Long, ObPair<Long, ObTableParam>> refreshPartition(ObTableQuery tableQuery,
-                                                                              String tableName)
-                                                                                               throws Exception;
+    protected Map<Long, ObPair<Long, ObTableParam>> refreshPartition(ObTableQuery tableQuery,
+                                                                     String tableName)
+                                                                                      throws Exception {
+        return buildPartitions(client, tableQuery, tableName);
+    }
 
     protected void cacheResultRows(ObTableQueryResult tableQueryResult) {
         cacheRows.addAll(tableQueryResult.getPropertiesRows());
@@ -523,6 +533,93 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
             partitionLastResult.addLast(new ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>(
                 partIdWithObTable, tableQueryAsyncResult.getAffectedEntity()));
         }
+    }
+
+    @FunctionalInterface
+    public interface ThrowingConsumer<T> {
+        void accept(T t) throws Exception;
+    }
+
+    @FunctionalInterface
+    public interface ExceptionHandler<T> {
+        Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> handle(ObTableClient client,
+                                                                     int maxRetryTimes,
+                                                                     String tableName,
+                                                                     Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> iterator,
+                                                                     Map.Entry<Long, ObPair<Long, ObTableParam>> entry,
+                                                                     Exception e, int retryTimes)
+                                                                                                 throws Exception;
+    }
+
+    public void executeWithRetry(ObTableClient client,
+                                 int maxRetryTimes,
+                                 String tableName,
+                                 Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> iterator,
+                                 ThrowingConsumer<ObPair<Long, ObTableParam>> operation,
+                                 ExceptionHandler<Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>>> exceptionHandler)
+                                                                                                                          throws Exception {
+        int retryTimes = 0;
+
+        while (iterator.hasNext()) {
+            retryTimes++;
+            Map.Entry<Long, ObPair<Long, ObTableParam>> entry = iterator.next();
+
+            try {
+                if (retryTimes > 1) {
+                    TableEntry tableEntry = client.getOrRefreshTableEntry(tableName, false, false,
+                        false);
+                    client.refreshTableLocationByTabletId(tableEntry, tableName, entry.getValue()
+                        .getRight().getPartitionId());
+                }
+                operation.accept(entry.getValue());
+
+            } catch (Exception e) {
+                iterator = exceptionHandler.handle(client, maxRetryTimes, tableName, iterator,
+                    entry, e, retryTimes);
+            }
+        }
+    }
+
+    protected Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> handleException(ObTableClient client,
+                                                                                    int maxRetryTimes,
+                                                                                    String tableName,
+                                                                                    Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> iterator,
+                                                                                    Map.Entry<Long, ObPair<Long, ObTableParam>> entry,
+                                                                                    Exception e,
+                                                                                    int retryTimes)
+                                                                                                   throws Exception {
+
+        if (client.isOdpMode()) {
+            if ((retryTimes - 1) < maxRetryTimes) {
+                if (e instanceof ObTableException) {
+                    logger.warn(
+                        "execute while meet Exception, errorCode: {} , errorMsg: {}, try times {}",
+                        ((ObTableException) e).getErrorCode(), e.getMessage(), retryTimes);
+                } else {
+                    logger.warn("execute while meet Exception, exception: {}, try times {}", e,
+                        retryTimes);
+                }
+            } else {
+                throw e;
+            }
+        } else {
+            if (e instanceof ObTableException && ((ObTableException) e).isNeedRefreshTableEntry()) {
+                if (client.isRetryOnChangeMasterTimes() && retryTimes <= maxRetryTimes) {
+                    if (e instanceof ObTableNeedFetchAllException) {
+                        // Refresh table info  
+                        client.getOrRefreshTableEntry(tableName, true,
+                            client.isTableEntryRefreshIntervalWait(), true);
+                        setExpectant(refreshPartition(tableQuery, tableName));
+                        // Return a new iterator  
+                        return expectant.entrySet().iterator();
+                    }
+                } else {
+                    client.calculateContinuousFailure(tableName, e.getMessage());
+                    throw e;
+                }
+            }
+        }
+        return iterator; // Return the original iterator if no changes are made  
     }
 
     /**
@@ -554,30 +651,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         if (tableQuery.getBatchSize() == -1) {
             if (!expectant.isEmpty()) {
                 Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
-                        .iterator();
-                int retryTimes = 0;
-                while (it.hasNext()) {
-                    Map.Entry<Long, ObPair<Long, ObTableParam>> entry = it.next();
-                    try {
-                        // try access new partition, async will not remove useless expectant
-                        referToNewPartition(entry.getValue());
-                    } catch (Exception e) {
-                        if (e instanceof ObTableNeedFetchAllException) {
-                            setExpectant(refreshPartition(tableQuery, tableName));
-                            it = expectant.entrySet().iterator();
-                            retryTimes++;
-                            if (retryTimes > client.getRuntimeRetryTimes()) {
-                                RUNTIME.error("Fail to get refresh table entry response after {}",
-                                        retryTimes);
-                                throw new ObTableRetryExhaustedException(
-                                        "Fail to get refresh table entry response after " + retryTimes);
-
-                            }
-                        } else {
-                            throw e;
-                        }
-                    }
-                }
+                    .iterator();
+                executeWithRetry(client, client.getRuntimeRetryTimes(), tableName, it, this::referToNewPartition, this::handleException);
             }
             expectant.clear();
         } else {

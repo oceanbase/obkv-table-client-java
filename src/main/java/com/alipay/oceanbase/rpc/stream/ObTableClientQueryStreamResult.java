@@ -75,11 +75,4 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                                                    ObPayload streamRequest) throws Exception {
         throw new IllegalArgumentException("not support this execute");
     }
-
-    @Override
-    protected Map<Long, ObPair<Long, ObTableParam>> refreshPartition(ObTableQuery tableQuery,
-                                                                     String tableName)
-                                                                                      throws Exception {
-        return buildPartitions(client, tableQuery, tableName);
-    }
 }
