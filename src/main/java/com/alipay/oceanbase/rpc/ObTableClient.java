@@ -1340,33 +1340,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
             long lastRefreshTime = tableEntry.getPartitionEntry().getPartitionInfo(tabletId).getLastUpdateTime();
             long currentTime = System.currentTimeMillis();
-            if (currentTime - lastRefreshTime < tableEntryRefreshLockTimeout) {
+            if (currentTime - lastRefreshTime < 1000) {
                 return tableEntry;
             }
-            
-            Lock lock = tableEntry.refreshLockMap.computeIfAbsent(tabletId, k -> new ReentrantLock());
+            tableEntry = loadTableEntryLocationWithPriority(serverRoster, tableEntryKey, tableEntry, tabletId,
+                    tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
+                    serverAddressPriorityTimeout, serverAddressCachingTimeout, sysUA);
 
-            if (!lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS)) {
-                String errMsg = String.format("Try to lock table-entry refreshing timeout. DataSource: %s, TableName: %s, Timeout: %d.",
-                        dataSourceName, tableName, tableEntryRefreshLockTimeout);
-                RUNTIME.error(errMsg);
-                throw new ObTableEntryRefreshException(errMsg);
-            }
-
-            try {
-                lastRefreshTime = tableEntry.getPartitionEntry().getPartitionInfo(tabletId).getLastUpdateTime();
-                currentTime = System.currentTimeMillis();
-                if (currentTime - lastRefreshTime < tableEntryRefreshLockTimeout) {
-                    return tableEntry;
-                }
-                tableEntry = loadTableEntryLocationWithPriority(serverRoster, tableEntryKey, tableEntry, tabletId,
-                        tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
-                        serverAddressPriorityTimeout, serverAddressCachingTimeout, sysUA);
-
-                tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
-            } finally {
-                lock.unlock();
-            }
+            tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
 
         } catch (ObTableNotExistException | ObTableServerCacheExpiredException e) {
             RUNTIME.error("RefreshTableEntry encountered an exception", e);
