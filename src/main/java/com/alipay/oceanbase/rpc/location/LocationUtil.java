@@ -168,21 +168,7 @@ public class LocationUtil {
                                                                                 + "   WHERE C.tenant_name = ? "
                                                                                 + ") AS right_table ON left_table.tablet__id = right_table.tablet_id;";
 
-    private static final String PROXY_LOCATION_SQL_PARTITION_BY_TABLETID_V4   = "SELECT /*+READ_CONSISTENCY(WEAK)*/ * FROM ( "
-                                                                                + "   SELECT A.tablet_id as tablet__id, A.svr_ip as svr_ip, A.sql_port as sql_port, A.table_id as table_id, "
-                                                                                + "   A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, "
-                                                                                + "   B.stop_time as stop_time, A.spare1 as replica_type "
-                                                                                + "   FROM oceanbase.__all_virtual_proxy_schema A "
-                                                                                + "   INNER JOIN oceanbase.__all_server B ON A.svr_ip = B.svr_ip AND A.sql_port = B.inner_port "
-                                                                                + "   WHERE A.tablet_id = ? AND A.tenant_name = ? AND A.database_name = ? AND A.table_name = ?) AS left_table "
-                                                                                + "LEFT JOIN ("
-                                                                                + "   SELECT D.ls_id, D.tablet_id "
-                                                                                + "   FROM oceanbase.__all_virtual_tablet_to_ls D "
-                                                                                + "   INNER JOIN oceanbase.DBA_OB_TENANTS C ON D.tenant_id = C.tenant_id "
-                                                                                + "   WHERE C.tenant_name = ? "
-                                                                                + ") AS right_table ON left_table.tablet__id = right_table.tablet_id;";
-
-    private static final String PROXY_LOCATION_SQL_PARTITION_BY_TABLETID_V4_2 = "SELECT /*+READ_CONSISTENCY(WEAK)*/ "
+    private static final String PROXY_LOCATION_SQL_PARTITION_BY_TABLETID_V4 = "SELECT /*+READ_CONSISTENCY(WEAK)*/ "
                                                                                 + "    A.tablet_id as tablet_id, "
                                                                                 + "    A.svr_ip as svr_ip, "
                                                                                 + "    A.sql_port as sql_port, "
@@ -805,7 +791,7 @@ public class LocationUtil {
     private static String genLocationSQLByTabletId() {
         String sql = null;
         if (ObGlobal.obVsnMajor() >= 4) {
-            sql = PROXY_LOCATION_SQL_PARTITION_BY_TABLETID_V4_2;
+            sql = PROXY_LOCATION_SQL_PARTITION_BY_TABLETID_V4;
         } else {
             throw new FeatureNotSupportedException("not support ob version less than 4");
         }
