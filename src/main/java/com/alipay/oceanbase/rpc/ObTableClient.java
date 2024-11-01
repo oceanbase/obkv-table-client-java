@@ -789,9 +789,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     if (null != callback.getRowKey()) {
                         // in the case of retry, the location always needs to be refreshed here
                         if (tryTimes > 1) {
-                            TableEntry entry = getOrRefreshTableEntry(tableName, false, false, false);
-                            Long partId = getPartition(entry, callback.getRowKey());
-                            refreshTableLocationByTabletId(entry, tableName, getTabletIdByPartId(entry, partId));
+                                TableEntry entry = getOrRefreshTableEntry(tableName, false, false, false);
+                            if (ObGlobal.obVsnMajor() >= 4 && entry.isPartitionTable()) {
+                                Long partId = getPartition(entry, callback.getRowKey());
+                                refreshTableLocationByTabletId(entry, tableName, getTabletIdByPartId(entry, partId));
+                            }
                         }
                         // using row key
                         obPair = getTable(tableName, callback.getRowKey(), needRefreshTableEntry, tableEntryRefreshIntervalWait, false, route);
@@ -1340,7 +1342,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
             long lastRefreshTime = tableEntry.getPartitionEntry().getPartitionInfo(tabletId).getLastUpdateTime();
             long currentTime = System.currentTimeMillis();
-            if (currentTime - lastRefreshTime < 1000) {
+            if (currentTime - lastRefreshTime < tableEntryRefreshIntervalCeiling) {
                 return tableEntry;
             }
             tableEntry = loadTableEntryLocationWithPriority(serverRoster, tableEntryKey, tableEntry, tabletId,
@@ -1662,7 +1664,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         long partId = getPartition(tableEntry, row); // partition id in 3.x, origin partId in 4.x, logicId
         if (refresh) {
-            refreshTableLocationByTabletId(tableEntry, tableName, getTabletIdByPartId(tableEntry, partId));
+            if (ObGlobal.obVsnMajor() >= 4 && tableEntry.isPartitionTable()) {
+                refreshTableLocationByTabletId(tableEntry, tableName, getTabletIdByPartId(tableEntry, partId));
+            }
         }
         return getTableInternal(tableName, tableEntry, partId, waitForRefresh, route);
     }

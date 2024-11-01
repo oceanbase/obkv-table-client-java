@@ -568,8 +568,10 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                 if (retryTimes > 1) {
                     TableEntry tableEntry = client.getOrRefreshTableEntry(tableName, false, false,
                         false);
-                    client.refreshTableLocationByTabletId(tableEntry, tableName, entry.getValue()
-                        .getRight().getPartitionId());
+                    if (ObGlobal.obVsnMajor() >= 4 && tableEntry.isPartitionTable()) {
+                        client.refreshTableLocationByTabletId(tableEntry, tableName, entry.getValue()
+                                .getRight().getPartitionId());
+                    }
                 }
                 operation.accept(entry.getValue());
 
