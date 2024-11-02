@@ -1214,9 +1214,6 @@ public class LocationUtil {
         ObPartitionLocationInfo partitionLocationInfo = partitionEntry.getPartitionInfo(tabletId);
 
         while (rs.next()) {
-            if (partitionLocationInfo.initialized.get()) {
-                continue;
-            }
             ReplicaLocation replica = buildReplicaLocation(rs);
             long partitionId = (ObGlobal.obVsnMajor() >= 4) ? rs.getLong("tablet_id") : rs
                 .getLong("partition_id");
