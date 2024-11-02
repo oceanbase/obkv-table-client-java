@@ -168,27 +168,19 @@ public class LocationUtil {
                                                                                 + "   WHERE C.tenant_name = ? "
                                                                                 + ") AS right_table ON left_table.tablet__id = right_table.tablet_id;";
 
-    private static final String PROXY_LOCATION_SQL_PARTITION_BY_TABLETID_V4 = "SELECT /*+READ_CONSISTENCY(WEAK)*/ "
-                                                                                + "    A.tablet_id as tablet_id, "
-                                                                                + "    A.svr_ip as svr_ip, "
-                                                                                + "    A.sql_port as sql_port, "
-                                                                                + "    A.table_id as table_id, "
-                                                                                + "    A.role as role, "
-                                                                                + "    A.replica_num as replica_num, "
-                                                                                + "    A.part_num as part_num, "
-                                                                                + "    (SELECT B.svr_port FROM oceanbase.__all_server B WHERE A.svr_ip = B.svr_ip AND A.sql_port = B.inner_port) as svr_port, "
-                                                                                + "    (SELECT B.status FROM oceanbase.__all_server B WHERE A.svr_ip = B.svr_ip AND A.sql_port = B.inner_port) as status, "
-                                                                                + "    (SELECT B.stop_time FROM oceanbase.__all_server B WHERE A.svr_ip = B.svr_ip AND A.sql_port = B.inner_port) as stop_time, "
-                                                                                + "    A.spare1 as replica_type, "
-                                                                                + "    (SELECT D.ls_id FROM oceanbase.__all_virtual_tablet_to_ls D WHERE A.tablet_id = D.tablet_id AND D.tenant_id = "
-                                                                                + "        (SELECT C.tenant_id FROM oceanbase.DBA_OB_TENANTS C WHERE C.tenant_name = ?)) as ls_id "
-                                                                                + "FROM "
-                                                                                + "    oceanbase.__all_virtual_proxy_schema A "
-                                                                                + "WHERE "
-                                                                                + "    A.tablet_id = ? "
-                                                                                + "    AND A.tenant_name = ? "
-                                                                                + "    AND A.database_name = ? "
-                                                                                + "    AND A.table_name = ?;";
+    private static final String PROXY_LOCATION_SQL_PARTITION_BY_TABLETID_V4 = "SELECT /*+READ_CONSISTENCY(WEAK)*/ * FROM ( "
+                                                                                + "   SELECT A.tablet_id as tablet__id, A.svr_ip as svr_ip, A.sql_port as sql_port, A.table_id as table_id, "
+                                                                                + "   A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, "
+                                                                                + "   B.stop_time as stop_time, A.spare1 as replica_type "
+                                                                                + "   FROM oceanbase.__all_virtual_proxy_schema A "
+                                                                                + "   INNER JOIN oceanbase.__all_server B ON A.svr_ip = B.svr_ip AND A.sql_port = B.inner_port "
+                                                                                + "   WHERE A.tablet_id = ? AND A.tenant_name = ? AND A.database_name = ? AND A.table_name = ?) AS left_table "
+                                                                                + "LEFT JOIN ("
+                                                                                + "   SELECT D.ls_id, D.tablet_id "
+                                                                                + "   FROM oceanbase.__all_virtual_tablet_to_ls D "
+                                                                                + "   INNER JOIN oceanbase.DBA_OB_TENANTS C ON D.tenant_id = C.tenant_id "
+                                                                                + "   WHERE C.tenant_name = ? "
+                                                                                + ") AS right_table ON left_table.tablet__id = right_table.tablet_id;";
 
     private static final String PROXY_FIRST_PARTITION_SQL_V4                  = "SELECT /*+READ_CONSISTENCY(WEAK)*/ part_id, part_name, tablet_id, high_bound_val, sub_part_num "
                                                                                 + "FROM oceanbase.__all_virtual_proxy_partition "
@@ -865,11 +857,11 @@ public class LocationUtil {
         String sql = genLocationSQLByTabletId();
         try {
             ps = connection.prepareStatement(sql);
-            ps.setString(1, key.getTenantName());
-            ps.setLong(2, tabletId);
-            ps.setString(3, key.getTenantName());
-            ps.setString(4, key.getDatabaseName());
-            ps.setString(5, key.getTableName());
+            ps.setLong(1, tabletId);
+            ps.setString(2, key.getTenantName());
+            ps.setString(3, key.getDatabaseName());
+            ps.setString(4, key.getTableName());
+            ps.setString(5, key.getTenantName());
             rs = ps.executeQuery();
             getPartitionLocationFromResultSetByTablet(tableEntry, rs, partitionEntry, tabletId);
         } catch (Exception e) {
