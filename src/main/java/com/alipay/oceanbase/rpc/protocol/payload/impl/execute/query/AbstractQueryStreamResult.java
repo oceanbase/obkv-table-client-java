@@ -620,6 +620,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     client.calculateContinuousFailure(tableName, e.getMessage());
                     throw e;
                 }
+            } else {
+                throw e;
             }
         }
         return iterator; // Return the original iterator if no changes are made  
