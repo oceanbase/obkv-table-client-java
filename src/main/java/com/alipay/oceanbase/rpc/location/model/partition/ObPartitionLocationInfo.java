@@ -28,9 +28,9 @@ public class ObPartitionLocationInfo {
     private Long                  tabletLsId          = OB_INVALID_ID;
     private Long                  lastUpdateTime      = 0L;
     public ReentrantReadWriteLock rwLock              = new ReentrantReadWriteLock();
-    public AtomicBoolean          initialized         = new AtomicBoolean(false);public final CountDownLatch   initializationLatch = new CountDownLatch(1);
-
+    public AtomicBoolean          initialized         = new AtomicBoolean(false);
     public final CountDownLatch   initializationLatch = new CountDownLatch(1);
+    
 
     public ObPartitionLocation getPartitionLocation() {
         rwLock.readLock().lock();
@@ -42,9 +42,14 @@ public class ObPartitionLocationInfo {
     }
 
     public void updateLocation(ObPartitionLocation newLocation, Long tabletLsId) {
-        this.partitionLocation = newLocation;
+        rwLock.writeLock().lock();
+        try {
+            this.partitionLocation = newLocation;
             this.tabletLsId = tabletLsId;
-        this.lastUpdateTime = System.currentTimeMillis();
+            this.lastUpdateTime = System.currentTimeMillis();
+        } finally {
+            rwLock.writeLock().unlock();
+        }
     }
 
     public Long getTabletLsId() {

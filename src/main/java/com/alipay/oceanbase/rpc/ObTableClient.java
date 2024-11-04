@@ -699,6 +699,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                     tryTimes);
                             if (ex instanceof ObTableNeedFetchAllException) {
                                 needFetchAllRouteInfo = true;
+                                getOrRefreshTableEntry(tableName, true, true, true);
                                 // reset failure count while fetch all route info
                                 this.resetExecuteContinuousFailureCount(tableName);
                             }
@@ -789,7 +790,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             throw new IllegalArgumentException("table name is null");
         }
         boolean needRefreshTableEntry = false;
-        boolean needFetchAllRouteInfo = false;
         boolean needRenew = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
@@ -810,10 +810,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     obPair = getODPTableWithRowKey(tableName, callback.getRowKey(), needRenew);
                 } else {
                     if (null != callback.getRowKey()) {
+                        // in the case of retry, the location always needs to be refreshed here
+                        if (tryTimes > 1) {
+                            TableEntry entry = getOrRefreshTableEntry(tableName, false, false, false);
+                            Long partId = getPartition(entry, callback.getRowKey());
+                            refreshTableLocationByTabletId(entry, tableName, getTabletIdByPartId(entry, partId));
+                        }
                         // using row key
-                        obPair = getTable(tableName, callback.getRowKey(),
-                            needRefreshTableEntry, tableEntryRefreshIntervalWait,
-                            needFetchAllRouteInfo, route);
+                        obPair = getTable(tableName, callback.getRowKey(), needRefreshTableEntry, tableEntryRefreshIntervalWait, false, route);
                     } else if (null != callback.getKeyRanges()) {
                         // using scan range
                         obPair = getTable(tableName, new ObTableQuery(),
@@ -884,7 +888,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                     ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                     tryTimes);
                             if (ex instanceof ObTableNeedFetchAllException) {
-                                needFetchAllRouteInfo = true;
+                                getOrRefreshTableEntry(tableName, needRefreshTableEntry, isTableEntryRefreshIntervalWait(), true);
                                 // reset failure count while fetch all route info
                                 this.resetExecuteContinuousFailureCount(tableName);
                             }
@@ -1368,33 +1372,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
             long lastRefreshTime = tableEntry.getPartitionEntry().getPartitionInfo(tabletId).getLastUpdateTime();
             long currentTime = System.currentTimeMillis();
-            if (currentTime - lastRefreshTime < tableEntryRefreshLockTimeout) {
+            if (currentTime - lastRefreshTime < tableEntryRefreshIntervalCeiling) {
                 return tableEntry;
             }
-            
-            Lock lock = tableEntry.refreshLockMap.computeIfAbsent(tabletId, k -> new ReentrantLock());
+            tableEntry = loadTableEntryLocationWithPriority(serverRoster, tableEntryKey, tableEntry, tabletId,
+                    tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
+                    serverAddressPriorityTimeout, serverAddressCachingTimeout, sysUA);
 
-            if (!lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS)) {
-                String errMsg = String.format("Try to lock table-entry refreshing timeout. DataSource: %s, TableName: %s, Timeout: %d.",
-                        dataSourceName, tableName, tableEntryRefreshLockTimeout);
-                RUNTIME.error(errMsg);
-                throw new ObTableEntryRefreshException(errMsg);
-            }
-
-            try {
-                lastRefreshTime = tableEntry.getPartitionEntry().getPartitionInfo(tabletId).getLastUpdateTime();
-                currentTime = System.currentTimeMillis();
-                if (currentTime - lastRefreshTime < tableEntryRefreshLockTimeout) {
-                    return tableEntry;
-                }
-                tableEntry = loadTableEntryLocationWithPriority(serverRoster, tableEntryKey, tableEntry, tabletId,
-                        tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
-                        serverAddressPriorityTimeout, serverAddressCachingTimeout, sysUA);
-
-                tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
-            } finally {
-                lock.unlock();
-            }
+            tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
 
         } catch (ObTableNotExistException | ObTableServerCacheExpiredException e) {
             RUNTIME.error("RefreshTableEntry encountered an exception", e);
@@ -1707,7 +1692,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
 
         long partId = getPartition(tableEntry, row); // partition id in 3.x, origin partId in 4.x, logicId
-
+        if (refresh) {
+            refreshTableLocationByTabletId(tableEntry, tableName, getTabletIdByPartId(tableEntry, partId));
+        }
         return getTableInternal(tableName, tableEntry, partId, waitForRefresh, route);
     }
 

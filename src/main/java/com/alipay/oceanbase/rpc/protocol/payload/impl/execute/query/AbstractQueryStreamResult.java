@@ -46,6 +46,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.RUNTIME;
+
 public abstract class AbstractQueryStreamResult extends AbstractPayload implements
                                                                        QueryStreamResult {
 
@@ -69,7 +71,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     private ObReadConsistency                                                  readConsistency     = ObReadConsistency.STRONG;
     // ObRowKey objs: [startKey, MIN_OBJECT, MIN_OBJECT]
     public List<ObObj>                                                         currentStartKey;
-
+    protected ObTableClient          client;
+    
     /*
      * Get pcode.
      */
@@ -574,9 +577,32 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
             return;
         }
         if (tableQuery.getBatchSize() == -1) {
-            for (Map.Entry<Long, ObPair<Long, ObTableParam>> entry : expectant.entrySet()) {
-                // mark the refer partition
-                referToNewPartition(entry.getValue());
+            if (!expectant.isEmpty()) {
+                Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
+                        .iterator();
+                int retryTimes = 0;
+                while (it.hasNext()) {
+                    Map.Entry<Long, ObPair<Long, ObTableParam>> entry = it.next();
+                    try {
+                        // try access new partition, async will not remove useless expectant
+                        referToNewPartition(entry.getValue());
+                    } catch (Exception e) {
+                        if (e instanceof ObTableNeedFetchAllException) {
+                            setExpectant(refreshPartition(tableQuery, tableName));
+                            it = expectant.entrySet().iterator();
+                            retryTimes++;
+                            if (retryTimes > client.getRuntimeRetryTimes()) {
+                                RUNTIME.error("Fail to get refresh table entry response after {}",
+                                        retryTimes);
+                                throw new ObTableRetryExhaustedException(
+                                        "Fail to get refresh table entry response after " + retryTimes);
+
+                            }
+                        } else {
+                            throw e;
+                        }
+                    }
+                }
             }
             expectant.clear();
         } else {
@@ -716,5 +742,20 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
      */
     public void setReadConsistency(ObReadConsistency readConsistency) {
         this.readConsistency = readConsistency;
+    }
+
+    /**
+     * Get client.
+     * @return client
+     */
+    public ObTableClient getClient() {
+        return client;
+    }
+
+    /*
+     * Set client.
+     */
+    public void setClient(ObTableClient client) {
+        this.client = client;
     }
 }
