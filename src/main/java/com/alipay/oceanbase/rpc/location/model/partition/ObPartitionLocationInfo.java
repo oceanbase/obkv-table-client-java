@@ -40,17 +40,24 @@ public class ObPartitionLocationInfo {
         }
     }
 
-    public void updateLocation(ObPartitionLocation newLocation) {
-        this.partitionLocation = newLocation;
-        this.lastUpdateTime = System.currentTimeMillis();
+    public void updateLocation(ObPartitionLocation newLocation, Long tabletLsId) {
+        rwLock.writeLock().lock();
+        try {
+            this.partitionLocation = newLocation;
+            this.tabletLsId = tabletLsId;
+            this.lastUpdateTime = System.currentTimeMillis();
+        } finally {
+            rwLock.writeLock().unlock();
+        }
     }
 
     public Long getTabletLsId() {
-        return tabletLsId;
-    }
-
-    public void setTabletLsId(Long tabletLsId) {
-        this.tabletLsId = tabletLsId;
+        rwLock.readLock().lock();
+        try {
+            return tabletLsId;
+        } finally {
+            rwLock.readLock().unlock();
+        }
     }
 
     public Long getLastUpdateTime() {
