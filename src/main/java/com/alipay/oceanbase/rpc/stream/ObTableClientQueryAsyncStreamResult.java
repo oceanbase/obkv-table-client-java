@@ -41,7 +41,6 @@ import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.RUNTIME;
 public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResult {
     private static final Logger      logger         = LoggerFactory
                                                         .getLogger(ObTableClientQueryStreamResult.class);
-    protected ObTableClient          client;
     private boolean                  isEnd          = true;
     private long                     sessionId      = Constants.OB_INVALID_ID;
     private ObTableQueryAsyncRequest asyncRequest   = new ObTableQueryAsyncRequest();
@@ -363,19 +362,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             closeLastStreamResult(lastEntry.getValue());
         }
     }
-
-    public ObTableClient getClient() {
-        return client;
-    }
-
-    /**
-     * Set client.
-     * @param client client want to set
-     */
-    public void setClient(ObTableClient client) {
-        this.client = client;
-    }
-
+    
     public boolean isEnd() {
         return isEnd;
     }
