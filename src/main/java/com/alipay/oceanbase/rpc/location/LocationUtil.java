@@ -55,156 +55,164 @@ import java.util.regex.Pattern;
 
 public class LocationUtil {
 
-    private static final Logger logger                                      = TableClientLoggerFactory
-                                                                                .getLogger(LocationUtil.class);
+    private static final Logger logger                                        = TableClientLoggerFactory
+                                                                                  .getLogger(LocationUtil.class);
     static {
         ParserConfig.getGlobalInstance().setSafeMode(true);
     }
 
-    private static final String OB_VERSION_SQL                              = "SELECT /*+READ_CONSISTENCY(WEAK)*/ OB_VERSION() AS CLUSTER_VERSION;";
+    private static final String OB_VERSION_SQL                                = "SELECT /*+READ_CONSISTENCY(WEAK)*/ OB_VERSION() AS CLUSTER_VERSION;";
 
-    private static final String PROXY_INDEX_INFO_SQL                        = "SELECT /*+READ_CONSISTENCY(WEAK)*/ data_table_id, table_id, index_type FROM oceanbase.__all_virtual_table "
-                                                                              + "where table_name = ?";
+    private static final String PROXY_INDEX_INFO_SQL                          = "SELECT /*+READ_CONSISTENCY(WEAK)*/ data_table_id, table_id, index_type FROM oceanbase.__all_virtual_table "
+                                                                                + "where table_name = ?";
 
-    private static final String PROXY_TABLE_ID_SQL                          = "SELECT /*+READ_CONSISTENCY(WEAK)*/ table_id from oceanbase.__all_virtual_proxy_schema "
-                                                                              + "where tenant_name = ? and database_name = ? and table_name = ? limit 1";
+    private static final String PROXY_TABLE_ID_SQL                            = "SELECT /*+READ_CONSISTENCY(WEAK)*/ table_id from oceanbase.__all_virtual_proxy_schema "
+                                                                                + "where tenant_name = ? and database_name = ? and table_name = ? limit 1";
 
-    private static final String OB_TENANT_EXIST_SQL                         = "SELECT /*+READ_CONSISTENCY(WEAK)*/ tenant_id from __all_tenant where tenant_name = ?;";
-
-    @Deprecated
-    @SuppressWarnings("unused")
-    private static final String PROXY_PLAIN_SCHEMA_SQL_FORMAT               = "SELECT /*+READ_CONSISTENCY(WEAK)*/ partition_id, svr_ip, sql_port, table_id, role, part_num, replica_num, schema_version, spare1 "
-                                                                              + "FROM oceanbase.__all_virtual_proxy_schema "
-                                                                              + "WHERE tenant_name = ? AND database_name = ?  AND table_name = ? AND partition_id in ({0}) AND sql_port > 0 "
-                                                                              + "ORDER BY role ASC LIMIT ?";
-
-    private static final String PROXY_PART_INFO_SQL                         = "SELECT /*+READ_CONSISTENCY(WEAK)*/ part_level, part_num, part_type, part_space, part_expr, "
-                                                                              + "part_range_type, part_interval_bin, interval_start_bin, "
-                                                                              + "sub_part_num, sub_part_type, sub_part_space, "
-                                                                              + "sub_part_range_type, def_sub_part_interval_bin, def_sub_interval_start_bin, sub_part_expr, "
-                                                                              + "part_key_name, part_key_type, part_key_idx, part_key_extra, spare1 "
-                                                                              + "FROM oceanbase.__all_virtual_proxy_partition_info "
-                                                                              + "WHERE table_id = ? group by part_key_name order by part_key_name LIMIT ?;";
-    @Deprecated
-    @SuppressWarnings("unused")
-    private static final String PROXY_TENANT_SCHEMA_SQL                     = "SELECT /*+READ_CONSISTENCY(WEAK)*/ svr_ip, sql_port, table_id, role, part_num, replica_num, spare1 "
-                                                                              + "FROM oceanbase.__all_virtual_proxy_schema "
-                                                                              + "WHERE tenant_name = ? AND database_name = ?  AND table_name = ? AND sql_port > 0 "
-                                                                              + "ORDER BY partition_id ASC, role ASC LIMIT ?";
-
-    private static final String PROXY_DUMMY_LOCATION_SQL                    = "SELECT /*+READ_CONSISTENCY(WEAK)*/ A.partition_id as partition_id, A.svr_ip as svr_ip, A.sql_port as sql_port, "
-                                                                              + "A.table_id as table_id, A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, B.stop_time as stop_time "
-                                                                              + ", A.spare1 as replica_type "
-                                                                              + "FROM oceanbase.__all_virtual_proxy_schema A inner join oceanbase.__all_server B on A.svr_ip = B.svr_ip and A.sql_port = B.inner_port "
-                                                                              + "WHERE tenant_name = ? and database_name=? and table_name = ?";
-
-    private static final String PROXY_LOCATION_SQL                          = "SELECT /*+READ_CONSISTENCY(WEAK)*/ A.partition_id as partition_id, A.svr_ip as svr_ip, A.sql_port as sql_port, "
-                                                                              + "A.table_id as table_id, A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, B.stop_time as stop_time "
-                                                                              + ", A.spare1 as replica_type "
-                                                                              + "FROM oceanbase.__all_virtual_proxy_schema A inner join oceanbase.__all_server B on A.svr_ip = B.svr_ip and A.sql_port = B.inner_port "
-                                                                              + "WHERE tenant_name = ? and database_name=? and table_name = ? and partition_id = 0";
-
-    private static final String PROXY_LOCATION_SQL_PARTITION                = "SELECT /*+READ_CONSISTENCY(WEAK)*/ A.partition_id as partition_id, A.svr_ip as svr_ip, A.sql_port as sql_port, "
-                                                                              + "A.table_id as table_id, A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, B.stop_time as stop_time "
-                                                                              + ", A.spare1 as replica_type "
-                                                                              + "FROM oceanbase.__all_virtual_proxy_schema A inner join oceanbase.__all_server B on A.svr_ip = B.svr_ip and A.sql_port = B.inner_port "
-                                                                              + "WHERE tenant_name = ? and database_name=? and table_name = ? and partition_id in ({0})";
-
-    private static final String PROXY_FIRST_PARTITION_SQL                   = "SELECT /*+READ_CONSISTENCY(WEAK)*/ part_id, part_name, high_bound_val "
-                                                                              + "FROM oceanbase.__all_virtual_proxy_partition "
-                                                                              + "WHERE table_id = ? LIMIT ?;";
-
-    private static final String PROXY_SUB_PARTITION_SQL                     = "SELECT /*+READ_CONSISTENCY(WEAK)*/ sub_part_id, part_name, high_bound_val "
-                                                                              + "FROM oceanbase.__all_virtual_proxy_sub_partition "
-                                                                              + "WHERE table_id = ? LIMIT ?;";
-
-    private static final String PROXY_SERVER_STATUS_INFO                    = "SELECT ss.svr_ip, ss.zone, zs.region, zs.spare4 as idc "
-                                                                              + "FROM oceanbase.__all_virtual_proxy_server_stat ss, oceanbase.__all_virtual_zone_stat zs "
-                                                                              + "WHERE zs.zone = ss.zone ;";
+    private static final String OB_TENANT_EXIST_SQL                           = "SELECT /*+READ_CONSISTENCY(WEAK)*/ tenant_id from __all_tenant where tenant_name = ?;";
 
     @Deprecated
     @SuppressWarnings("unused")
-    private static final String PROXY_PLAIN_SCHEMA_SQL_FORMAT_V4            = "SELECT /*+READ_CONSISTENCY(WEAK)*/ tablet_id, svr_ip, sql_port, table_id, role, part_num, replica_num, schema_version, spare1 "
-                                                                              + "FROM oceanbase.__all_virtual_proxy_schema "
-                                                                              + "WHERE tenant_name = ? AND database_name = ?  AND table_name = ? AND tablet_id in ({0}) AND sql_port > 0 "
-                                                                              + "ORDER BY role ASC LIMIT ?";
+    private static final String PROXY_PLAIN_SCHEMA_SQL_FORMAT                 = "SELECT /*+READ_CONSISTENCY(WEAK)*/ partition_id, svr_ip, sql_port, table_id, role, part_num, replica_num, schema_version, spare1 "
+                                                                                + "FROM oceanbase.__all_virtual_proxy_schema "
+                                                                                + "WHERE tenant_name = ? AND database_name = ?  AND table_name = ? AND partition_id in ({0}) AND sql_port > 0 "
+                                                                                + "ORDER BY role ASC LIMIT ?";
 
-    private static final String PROXY_PART_INFO_SQL_V4                      = "SELECT /*+READ_CONSISTENCY(WEAK)*/ part_level, part_num, part_type, part_space, part_expr, "
-                                                                              + "part_range_type, sub_part_num, sub_part_type, sub_part_space, sub_part_range_type, sub_part_expr, "
-                                                                              + "part_key_name, part_key_type, part_key_idx, part_key_extra, part_key_collation_type "
-                                                                              + "FROM oceanbase.__all_virtual_proxy_partition_info "
-                                                                              + "WHERE tenant_name = ? and table_id = ? group by part_key_name order by part_key_name LIMIT ?;";
+    private static final String PROXY_PART_INFO_SQL                           = "SELECT /*+READ_CONSISTENCY(WEAK)*/ part_level, part_num, part_type, part_space, part_expr, "
+                                                                                + "part_range_type, part_interval_bin, interval_start_bin, "
+                                                                                + "sub_part_num, sub_part_type, sub_part_space, "
+                                                                                + "sub_part_range_type, def_sub_part_interval_bin, def_sub_interval_start_bin, sub_part_expr, "
+                                                                                + "part_key_name, part_key_type, part_key_idx, part_key_extra, spare1 "
+                                                                                + "FROM oceanbase.__all_virtual_proxy_partition_info "
+                                                                                + "WHERE table_id = ? group by part_key_name order by part_key_name LIMIT ?;";
     @Deprecated
     @SuppressWarnings("unused")
-    private static final String PROXY_TENANT_SCHEMA_SQL_V4                  = "SELECT /*+READ_CONSISTENCY(WEAK)*/ svr_ip, sql_port, table_id, role, part_num, replica_num, spare1 "
-                                                                              + "FROM oceanbase.__all_virtual_proxy_schema "
-                                                                              + "WHERE tenant_name = ? AND database_name = ?  AND table_name = ? AND sql_port > 0 "
-                                                                              + "ORDER BY tablet_id ASC, role ASC LIMIT ?";
+    private static final String PROXY_TENANT_SCHEMA_SQL                       = "SELECT /*+READ_CONSISTENCY(WEAK)*/ svr_ip, sql_port, table_id, role, part_num, replica_num, spare1 "
+                                                                                + "FROM oceanbase.__all_virtual_proxy_schema "
+                                                                                + "WHERE tenant_name = ? AND database_name = ?  AND table_name = ? AND sql_port > 0 "
+                                                                                + "ORDER BY partition_id ASC, role ASC LIMIT ?";
 
-    private static final String PROXY_DUMMY_LOCATION_SQL_V4                 = "SELECT /*+READ_CONSISTENCY(WEAK)*/ A.tablet_id as tablet_id, A.svr_ip as svr_ip, A.sql_port as sql_port, "
-                                                                              + "A.table_id as table_id, A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, B.stop_time as stop_time "
-                                                                              + ", A.spare1 as replica_type "
-                                                                              + "FROM oceanbase.__all_virtual_proxy_schema A inner join oceanbase.__all_server B on A.svr_ip = B.svr_ip and A.sql_port = B.inner_port "
-                                                                              + "WHERE tenant_name = ? and database_name=? and table_name = ?";
+    private static final String PROXY_DUMMY_LOCATION_SQL                      = "SELECT /*+READ_CONSISTENCY(WEAK)*/ A.partition_id as partition_id, A.svr_ip as svr_ip, A.sql_port as sql_port, "
+                                                                                + "A.table_id as table_id, A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, B.stop_time as stop_time "
+                                                                                + ", A.spare1 as replica_type "
+                                                                                + "FROM oceanbase.__all_virtual_proxy_schema A inner join oceanbase.__all_server B on A.svr_ip = B.svr_ip and A.sql_port = B.inner_port "
+                                                                                + "WHERE tenant_name = ? and database_name=? and table_name = ?";
 
-    private static final String PROXY_LOCATION_SQL_V4                       = "SELECT /*+READ_CONSISTENCY(WEAK)*/ A.tablet_id as tablet_id, A.svr_ip as svr_ip, A.sql_port as sql_port, "
-                                                                              + "A.table_id as table_id, A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, B.stop_time as stop_time "
-                                                                              + ", A.spare1 as replica_type "
-                                                                              + "FROM oceanbase.__all_virtual_proxy_schema A inner join oceanbase.__all_server B on A.svr_ip = B.svr_ip and A.sql_port = B.inner_port "
-                                                                              + "WHERE tenant_name = ? and database_name=? and table_name = ? and tablet_id = 0";
+    private static final String PROXY_LOCATION_SQL                            = "SELECT /*+READ_CONSISTENCY(WEAK)*/ A.partition_id as partition_id, A.svr_ip as svr_ip, A.sql_port as sql_port, "
+                                                                                + "A.table_id as table_id, A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, B.stop_time as stop_time "
+                                                                                + ", A.spare1 as replica_type "
+                                                                                + "FROM oceanbase.__all_virtual_proxy_schema A inner join oceanbase.__all_server B on A.svr_ip = B.svr_ip and A.sql_port = B.inner_port "
+                                                                                + "WHERE tenant_name = ? and database_name=? and table_name = ? and partition_id = 0";
 
-    private static final String PROXY_LOCATION_SQL_PARTITION_V4             = "SELECT /*+READ_CONSISTENCY(WEAK)*/ * FROM ( "
-                                                                              + "   SELECT A.tablet_id as tablet__id, A.svr_ip as svr_ip, A.sql_port as sql_port, A.table_id as table_id, "
-                                                                              + "   A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, "
-                                                                              + "   B.stop_time as stop_time, A.spare1 as replica_type "
-                                                                              + "   FROM oceanbase.__all_virtual_proxy_schema A "
-                                                                              + "   INNER JOIN oceanbase.__all_server B ON A.svr_ip = B.svr_ip AND A.sql_port = B.inner_port "
-                                                                              + "   WHERE A.tablet_id IN ({0}) AND A.tenant_name = ? AND A.database_name = ? AND A.table_name = ?) AS left_table "
-                                                                              + "LEFT JOIN ("
-                                                                              + "   SELECT D.ls_id, D.tablet_id "
-                                                                              + "   FROM oceanbase.__all_virtual_tablet_to_ls D "
-                                                                              + "   INNER JOIN oceanbase.DBA_OB_TENANTS C ON D.tenant_id = C.tenant_id "
-                                                                              + "   WHERE C.tenant_name = ? "
-                                                                              + ") AS right_table ON left_table.tablet__id = right_table.tablet_id;";
+    private static final String PROXY_LOCATION_SQL_PARTITION                  = "SELECT /*+READ_CONSISTENCY(WEAK)*/ A.partition_id as partition_id, A.svr_ip as svr_ip, A.sql_port as sql_port, "
+                                                                                + "A.table_id as table_id, A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, B.stop_time as stop_time "
+                                                                                + ", A.spare1 as replica_type "
+                                                                                + "FROM oceanbase.__all_virtual_proxy_schema A inner join oceanbase.__all_server B on A.svr_ip = B.svr_ip and A.sql_port = B.inner_port "
+                                                                                + "WHERE tenant_name = ? and database_name=? and table_name = ? and partition_id in ({0})";
 
-    private static final String PROXY_LOCATION_SQL_PARTITION_BY_TABLETID_V4 = "SELECT /*+READ_CONSISTENCY(WEAK)*/ * FROM ( "
-                                                                              + "   SELECT A.tablet_id as tablet__id, A.svr_ip as svr_ip, A.sql_port as sql_port, A.table_id as table_id, "
-                                                                              + "   A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, "
-                                                                              + "   B.stop_time as stop_time, A.spare1 as replica_type "
-                                                                              + "   FROM oceanbase.__all_virtual_proxy_schema A "
-                                                                              + "   INNER JOIN oceanbase.__all_server B ON A.svr_ip = B.svr_ip AND A.sql_port = B.inner_port "
-                                                                              + "   WHERE A.tablet_id = ? AND A.tenant_name = ? AND A.database_name = ? AND A.table_name = ?) AS left_table "
-                                                                              + "LEFT JOIN ("
-                                                                              + "   SELECT D.ls_id, D.tablet_id "
-                                                                              + "   FROM oceanbase.__all_virtual_tablet_to_ls D "
-                                                                              + "   INNER JOIN oceanbase.DBA_OB_TENANTS C ON D.tenant_id = C.tenant_id "
-                                                                              + "   WHERE C.tenant_name = ? "
-                                                                              + ") AS right_table ON left_table.tablet__id = right_table.tablet_id;";
+    private static final String PROXY_FIRST_PARTITION_SQL                     = "SELECT /*+READ_CONSISTENCY(WEAK)*/ part_id, part_name, high_bound_val "
+                                                                                + "FROM oceanbase.__all_virtual_proxy_partition "
+                                                                                + "WHERE table_id = ? LIMIT ?;";
 
-    private static final String PROXY_FIRST_PARTITION_SQL_V4                = "SELECT /*+READ_CONSISTENCY(WEAK)*/ part_id, part_name, tablet_id, high_bound_val, sub_part_num "
-                                                                              + "FROM oceanbase.__all_virtual_proxy_partition "
-                                                                              + "WHERE tenant_name = ? and table_id = ? LIMIT ?;";
+    private static final String PROXY_SUB_PARTITION_SQL                       = "SELECT /*+READ_CONSISTENCY(WEAK)*/ sub_part_id, part_name, high_bound_val "
+                                                                                + "FROM oceanbase.__all_virtual_proxy_sub_partition "
+                                                                                + "WHERE table_id = ? LIMIT ?;";
 
-    private static final String PROXY_SUB_PARTITION_SQL_V4                  = "SELECT /*+READ_CONSISTENCY(WEAK)*/ sub_part_id, part_name, tablet_id, high_bound_val "
-                                                                              + "FROM oceanbase.__all_virtual_proxy_sub_partition "
-                                                                              + "WHERE tenant_name = ? and table_id = ? LIMIT ?;";
+    private static final String PROXY_SERVER_STATUS_INFO                      = "SELECT ss.svr_ip, ss.zone, zs.region, zs.spare4 as idc "
+                                                                                + "FROM oceanbase.__all_virtual_proxy_server_stat ss, oceanbase.__all_virtual_zone_stat zs "
+                                                                                + "WHERE zs.zone = ss.zone ;";
 
-    private static final String PROXY_SERVER_STATUS_INFO_V4                 = "SELECT ss.svr_ip, ss.zone, zs.region, zs.idc as idc "
-                                                                              + "FROM DBA_OB_SERVERS ss, DBA_OB_ZONES zs "
-                                                                              + "WHERE zs.zone = ss.zone ;";
+    @Deprecated
+    @SuppressWarnings("unused")
+    private static final String PROXY_PLAIN_SCHEMA_SQL_FORMAT_V4              = "SELECT /*+READ_CONSISTENCY(WEAK)*/ tablet_id, svr_ip, sql_port, table_id, role, part_num, replica_num, schema_version, spare1 "
+                                                                                + "FROM oceanbase.__all_virtual_proxy_schema "
+                                                                                + "WHERE tenant_name = ? AND database_name = ?  AND table_name = ? AND tablet_id in ({0}) AND sql_port > 0 "
+                                                                                + "ORDER BY role ASC LIMIT ?";
 
-    private static final String home                                        = System.getProperty(
-                                                                                "user.home",
-                                                                                "/home/admin");
+    private static final String PROXY_PART_INFO_SQL_V4                        = "SELECT /*+READ_CONSISTENCY(WEAK)*/ part_level, part_num, part_type, part_space, part_expr, "
+                                                                                + "part_range_type, sub_part_num, sub_part_type, sub_part_space, sub_part_range_type, sub_part_expr, "
+                                                                                + "part_key_name, part_key_type, part_key_idx, part_key_extra, part_key_collation_type "
+                                                                                + "FROM oceanbase.__all_virtual_proxy_partition_info "
+                                                                                + "WHERE tenant_name = ? and table_id = ? group by part_key_name order by part_key_name LIMIT ?;";
+    @Deprecated
+    @SuppressWarnings("unused")
+    private static final String PROXY_TENANT_SCHEMA_SQL_V4                    = "SELECT /*+READ_CONSISTENCY(WEAK)*/ svr_ip, sql_port, table_id, role, part_num, replica_num, spare1 "
+                                                                                + "FROM oceanbase.__all_virtual_proxy_schema "
+                                                                                + "WHERE tenant_name = ? AND database_name = ?  AND table_name = ? AND sql_port > 0 "
+                                                                                + "ORDER BY tablet_id ASC, role ASC LIMIT ?";
 
-    private static final String TABLE_GROUP_GET_TABLE_NAME_V4               = "SELECT /*+READ_CONSISTENCY(WEAK)*/ table_name "
-                                                                              + "FROM oceanbase.CDB_OB_TABLEGROUP_TABLES "
-                                                                              + "WHERE tablegroup_name = ? and tenant_id = ? limit 1;";
+    private static final String PROXY_DUMMY_LOCATION_SQL_V4                   = "SELECT /*+READ_CONSISTENCY(WEAK)*/ A.tablet_id as tablet_id, A.svr_ip as svr_ip, A.sql_port as sql_port, "
+                                                                                + "A.table_id as table_id, A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, B.stop_time as stop_time "
+                                                                                + ", A.spare1 as replica_type "
+                                                                                + "FROM oceanbase.__all_virtual_proxy_schema A inner join oceanbase.__all_server B on A.svr_ip = B.svr_ip and A.sql_port = B.inner_port "
+                                                                                + "WHERE tenant_name = ? and database_name=? and table_name = ?";
 
-    private static final int    TEMPLATE_PART_ID                            = -1;
+    private static final String PROXY_LOCATION_SQL_V4                         = "SELECT /*+READ_CONSISTENCY(WEAK)*/ A.tablet_id as tablet_id, A.svr_ip as svr_ip, A.sql_port as sql_port, "
+                                                                                + "A.table_id as table_id, A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, B.stop_time as stop_time "
+                                                                                + ", A.spare1 as replica_type "
+                                                                                + "FROM oceanbase.__all_virtual_proxy_schema A inner join oceanbase.__all_server B on A.svr_ip = B.svr_ip and A.sql_port = B.inner_port "
+                                                                                + "WHERE tenant_name = ? and database_name=? and table_name = ? and tablet_id = 0";
+
+    private static final String PROXY_LOCATION_SQL_PARTITION_V4               = "SELECT /*+READ_CONSISTENCY(WEAK)*/ * FROM ( "
+                                                                                + "   SELECT A.tablet_id as tablet__id, A.svr_ip as svr_ip, A.sql_port as sql_port, A.table_id as table_id, "
+                                                                                + "   A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, "
+                                                                                + "   B.stop_time as stop_time, A.spare1 as replica_type "
+                                                                                + "   FROM oceanbase.__all_virtual_proxy_schema A "
+                                                                                + "   INNER JOIN oceanbase.__all_server B ON A.svr_ip = B.svr_ip AND A.sql_port = B.inner_port "
+                                                                                + "   WHERE A.tablet_id IN ({0}) AND A.tenant_name = ? AND A.database_name = ? AND A.table_name = ?) AS left_table "
+                                                                                + "LEFT JOIN ("
+                                                                                + "   SELECT D.ls_id, D.tablet_id "
+                                                                                + "   FROM oceanbase.__all_virtual_tablet_to_ls D "
+                                                                                + "   INNER JOIN oceanbase.DBA_OB_TENANTS C ON D.tenant_id = C.tenant_id "
+                                                                                + "   WHERE C.tenant_name = ? "
+                                                                                + ") AS right_table ON left_table.tablet__id = right_table.tablet_id;";
+
+    private static final String PROXY_LOCATION_SQL_PARTITION_BY_TABLETID_V4 = "SELECT /*+READ_CONSISTENCY(WEAK)*/ "
+                                                                                + "    A.tablet_id as tablet_id, "
+                                                                                + "    A.svr_ip as svr_ip, "
+                                                                                + "    A.sql_port as sql_port, "
+                                                                                + "    A.table_id as table_id, "
+                                                                                + "    A.role as role, "
+                                                                                + "    A.replica_num as replica_num, "
+                                                                                + "    A.part_num as part_num, "
+                                                                                + "    (SELECT B.svr_port FROM oceanbase.__all_server B WHERE A.svr_ip = B.svr_ip AND A.sql_port = B.inner_port) as svr_port, "
+                                                                                + "    (SELECT B.status FROM oceanbase.__all_server B WHERE A.svr_ip = B.svr_ip AND A.sql_port = B.inner_port) as status, "
+                                                                                + "    (SELECT B.stop_time FROM oceanbase.__all_server B WHERE A.svr_ip = B.svr_ip AND A.sql_port = B.inner_port) as stop_time, "
+                                                                                + "    A.spare1 as replica_type, "
+                                                                                + "    (SELECT D.ls_id FROM oceanbase.__all_virtual_tablet_to_ls D WHERE A.tablet_id = D.tablet_id AND D.tenant_id = "
+                                                                                + "        (SELECT C.tenant_id FROM oceanbase.DBA_OB_TENANTS C WHERE C.tenant_name = ?)) as ls_id "
+                                                                                + "FROM "
+                                                                                + "    oceanbase.__all_virtual_proxy_schema A "
+                                                                                + "WHERE "
+                                                                                + "    A.tablet_id = ? "
+                                                                                + "    AND A.tenant_name = ? "
+                                                                                + "    AND A.database_name = ? "
+                                                                                + "    AND A.table_name = ?;";
+
+    private static final String PROXY_FIRST_PARTITION_SQL_V4                  = "SELECT /*+READ_CONSISTENCY(WEAK)*/ part_id, part_name, tablet_id, high_bound_val, sub_part_num "
+                                                                                + "FROM oceanbase.__all_virtual_proxy_partition "
+                                                                                + "WHERE tenant_name = ? and table_id = ? LIMIT ?;";
+
+    private static final String PROXY_SUB_PARTITION_SQL_V4                    = "SELECT /*+READ_CONSISTENCY(WEAK)*/ sub_part_id, part_name, tablet_id, high_bound_val "
+                                                                                + "FROM oceanbase.__all_virtual_proxy_sub_partition "
+                                                                                + "WHERE tenant_name = ? and table_id = ? LIMIT ?;";
+
+    private static final String PROXY_SERVER_STATUS_INFO_V4                   = "SELECT ss.svr_ip, ss.zone, zs.region, zs.idc as idc "
+                                                                                + "FROM DBA_OB_SERVERS ss, DBA_OB_ZONES zs "
+                                                                                + "WHERE zs.zone = ss.zone ;";
+
+    private static final String home                                          = System.getProperty(
+                                                                                  "user.home",
+                                                                                  "/home/admin");
+
+    private static final String TABLE_GROUP_GET_TABLE_NAME_V4                 = "SELECT /*+READ_CONSISTENCY(WEAK)*/ table_name "
+                                                                                + "FROM oceanbase.CDB_OB_TABLEGROUP_TABLES "
+                                                                                + "WHERE tablegroup_name = ? and tenant_id = ? limit 1;";
+
+    private static final int    TEMPLATE_PART_ID                              = -1;
 
     // limit the size of get tableEntry location from remote each time
-    private static final int    MAX_TABLET_NUMS_EPOCH                       = 300;
+    private static final int    MAX_TABLET_NUMS_EPOCH                         = 300;
 
     private abstract static class TableEntryRefreshWithPriorityCallback<T> {
         abstract T execute(ObServerAddr obServerAddr) throws ObTableEntryRefreshException;
@@ -734,7 +742,7 @@ public class LocationUtil {
                         }
                     }
                 }
-                
+
                 if (ObGlobal.obVsnMajor() >= 4) {
                     // only set empty partitionEntry
                     ObPartitionEntry partitionEntry = new ObPartitionEntry();
@@ -856,11 +864,11 @@ public class LocationUtil {
         String sql = genLocationSQLByTabletId();
         try {
             ps = connection.prepareStatement(sql);
-            ps.setLong(1, tabletId);
-            ps.setString(2, key.getTenantName());
-            ps.setString(3, key.getDatabaseName());
-            ps.setString(4, key.getTableName());
-            ps.setString(5, key.getTenantName());
+            ps.setString(1, key.getTenantName());
+            ps.setLong(2, tabletId);
+            ps.setString(3, key.getTenantName());
+            ps.setString(4, key.getDatabaseName());
+            ps.setString(5, key.getTableName());
             rs = ps.executeQuery();
             getPartitionLocationFromResultSetByTablet(tableEntry, rs, partitionEntry, tabletId);
         } catch (Exception e) {
@@ -911,8 +919,8 @@ public class LocationUtil {
             } catch (Exception e) {
                 RUNTIME.error(LCD.convert("01-00010"), key, partitionNum, tableEntry, e);
                 throw new ObTablePartitionLocationRefreshException(format(
-                        "fail to get partition location entry from remote entryKey = %s partNum = %d tableEntry =%s "
-                                + "offset =%d epoch =%d", key, partitionNum, tableEntry, i, epoch), e);
+                    "fail to get partition location entry from remote entryKey = %s partNum = %d tableEntry =%s "
+                            + "offset =%d epoch =%d", key, partitionNum, tableEntry, i, epoch), e);
             } finally {
                 try {
                     if (null != rs) {
@@ -1204,46 +1212,47 @@ public class LocationUtil {
 
         ObPartitionLocationInfo partitionLocationInfo = partitionEntry.getPartitionInfo(tabletId);
 
-        partitionLocationInfo.rwLock.writeLock().lock();
-        try {
-            while (rs.next()) {
-                ReplicaLocation replica = buildReplicaLocation(rs);
+        while (rs.next()) {
+            ReplicaLocation replica = buildReplicaLocation(rs);
+            long partitionId = (ObGlobal.obVsnMajor() >= 4) ? rs.getLong("tablet_id") : rs
+                .getLong("partition_id");
+            long lsId = ObGlobal.obVsnMajor() >= 4 ? rs.getLong("ls_id") : INVALID_LS_ID;
+            if (rs.wasNull() && ObGlobal.obVsnMajor() >= 4) {
+                lsId = INVALID_LS_ID; // For non-partitioned table  
+            }
 
-                long partitionId = (ObGlobal.obVsnMajor() >= 4) ? rs.getLong("tablet_id") : rs
-                    .getLong("partition_id");
-                long lsId = ObGlobal.obVsnMajor() >= 4 ? rs.getLong("ls_id") : INVALID_LS_ID;
-                if (rs.wasNull() && ObGlobal.obVsnMajor() >= 4) {
-                    lsId = INVALID_LS_ID; // For non-partitioned table  
-                }
-                partitionLocationInfo.setTabletLsId(lsId);
-
-                if (ObGlobal.obVsnMajor() < 4 && tableEntry.isPartitionTable()
-                    && tableEntry.getPartitionInfo().getSubPartDesc() != null) {
-                    partitionId = ObPartIdCalculator.getPartIdx(partitionId, tableEntry
-                        .getPartitionInfo().getSubPartDesc().getPartNum());
-                }
-
-                if (!replica.isValid()) {
-                    RUNTIME
-                        .warn(format(
-                            "Replica is invalid; continuing. Replica=%s, PartitionId/TabletId=%d, TableId=%d",
-                            replica, partitionId, tableEntry.getTableId()));
-                    continue;
-                }
-                ObPartitionLocation location = partitionLocationInfo.getPartitionLocation();
-                if (location == null) {
-                    location = new ObPartitionLocation();
-                    partitionLocationInfo.updateLocation(location);
-                }
-                location.addReplicaLocation(replica);
-
-                if (partitionLocationInfo.initialized.compareAndSet(false, true)) {
-                    partitionLocationInfo.initializationLatch.countDown();
+            if (ObGlobal.obVsnMajor() < 4 && tableEntry.isPartitionTable()
+                && tableEntry.getPartitionInfo().getSubPartDesc() != null) {
+                partitionId = ObPartIdCalculator.getPartIdx(partitionId, tableEntry
+                    .getPartitionInfo().getSubPartDesc().getPartNum());
+            }
+            if (!replica.isValid()) {
+                RUNTIME
+                    .warn(format(
+                        "Replica is invalid; continuing. Replica=%s, PartitionId/TabletId=%d, TableId=%d",
+                        replica, partitionId, tableEntry.getTableId()));
+                continue;
+            }
+            ObPartitionLocation location = partitionLocationInfo.getPartitionLocation();
+            if (location == null) {
+                partitionLocationInfo.rwLock.writeLock().lock();
+                try {
+                    location = partitionLocationInfo.getPartitionLocation();
+                    if (location == null) {
+                        location = new ObPartitionLocation();
+                        partitionLocationInfo.updateLocation(location, lsId);
+                    }
+                } finally {
+                    partitionLocationInfo.rwLock.writeLock().unlock();
                 }
             }
-        } finally {
-            partitionLocationInfo.rwLock.writeLock().unlock();
+            location.addReplicaLocation(replica);
+
+            if (partitionLocationInfo.initialized.compareAndSet(false, true)) {
+                partitionLocationInfo.initializationLatch.countDown();
+            }
         }
+
         return partitionEntry;
     }
 
