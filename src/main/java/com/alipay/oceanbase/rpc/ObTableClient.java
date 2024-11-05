@@ -1341,7 +1341,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
             long lastRefreshTime = tableEntry.getPartitionEntry().getPartitionInfo(tabletId).getLastUpdateTime();
             long currentTime = System.currentTimeMillis();
-            if (currentTime - lastRefreshTime < tableEntryRefreshIntervalCeiling) {
+            if (currentTime - lastRefreshTime < tableEntryRefreshIntervalBase) {
                 return tableEntry;
             }
             tableEntry = loadTableEntryLocationWithPriority(serverRoster, tableEntryKey, tableEntry, tabletId,
