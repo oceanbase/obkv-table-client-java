@@ -596,6 +596,39 @@ public class ObTableFullTextIndexTest {
         }
     }
 
+    @Test
+    public void testFtsQuery() throws Exception {
+        try {
+            //sync query
+            QueryResultSet resultSet = client.query(tableName)
+                    .setSearchText("native")
+                    .indexName("full_idx1_tbl1")
+                    .execute();
+            while(resultSet.next()) {
+                Map<String, Object> row = resultSet.getRow();
+                for (Map.Entry<String, Object> entry: row.entrySet()) {
+                    System.out.println("colname: " + entry.getKey() + " \nvalue: " + entry.getValue());
+                }
+                System.out.println();
+            }
+            // async query
+            System.out.println("========async query:=========");
+            QueryResultSet asyncResultSet = client.query(tableName)
+                    .indexName("full_idx1_tbl1")
+                    .setSearchText("oceanbase")
+                    .asyncExecute();
+            while(asyncResultSet.next()) {
+                Map<String, Object> row = asyncResultSet.getRow();
+                for (Map.Entry<String, Object> entry: row.entrySet()) {
+                    System.out.println("colname: " + entry.getKey() + " \nvalue: " + entry.getValue());
+                }
+                System.out.println();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private void executeSQL(String createSQL) throws SQLException {
         Connection connection = ObTableClientTestUtil.getConnection();
         Statement statement = connection.createStatement();
