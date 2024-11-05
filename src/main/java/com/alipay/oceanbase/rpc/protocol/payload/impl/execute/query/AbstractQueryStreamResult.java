@@ -159,8 +159,12 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         result = subObTable.execute(request);
                         if (result instanceof ObTableApiMove) {
                             ObTableApiMove move = (ObTableApiMove) result;
-                            logger.warn("The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. " +
-                                    "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move .getReplica().getServer().ipToString());
+                            logger
+                                .warn(
+                                    "The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. "
+                                            + "Rerouting return IP is {}", moveResponse
+                                        .getReplica().getServer().ipToString(), move.getReplica()
+                                        .getServer().ipToString());
                             throw new ObTableRoutingWrongException();
                         }
                     }

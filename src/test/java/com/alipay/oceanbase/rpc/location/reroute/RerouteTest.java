@@ -37,16 +37,17 @@ import static com.alipay.oceanbase.rpc.util.ObTableClientTestUtil.*;
 
 public class RerouteTest {
 
-    public ObTableClient moveClient;
-    public ObTableClient clientNotReroute;
-    private static final boolean passReroutingTest = false;
-    private static final String tenantName = "";
-    private static final String databaseName = "";
-    private static final int partNum = 2;
-    private static final String testInt32RerouteTableName = "test_int32_reroute";
-    private static final String testInt32RerouteCreateStatement = "create table if not exists `test_int32_reroute`(`c1` int(12) not null,`c2` int(12) default null,primary key (`c1`)) partition by hash(c1) partitions 2;";
+    public ObTableClient         moveClient;
+    public ObTableClient         clientNotReroute;
+    private static final boolean passReroutingTest               = false;
+    private static final String  tenantName                      = "";
+    private static final String  databaseName                    = "";
+    private static final int     partNum                         = 2;
+    private static final String  testInt32RerouteTableName       = "test_int32_reroute";
+    private static final String  testInt32RerouteCreateStatement = "create table if not exists `test_int32_reroute`(`c1` int(12) not null,`c2` int(12) default null,primary key (`c1`)) partition by hash(c1) partitions 2;";
 
-    private ReplicaOperation replicaOperation;
+    private ReplicaOperation     replicaOperation;
+
     @Before
     public void setup() throws Exception {
 
@@ -65,15 +66,12 @@ public class RerouteTest {
 
     private Connection getConnection() throws SQLException {
         String[] userNames = FULL_USER_NAME.split("#");
-        return DriverManager.getConnection("jdbc:mysql://" + JDBC_IP + ":" + JDBC_PORT
-                +  "/" + databaseName + "?"
-                + "rewriteBatchedStatements=TRUE&"
-                + "allowMultiQueries=TRUE&"
-                + "useLocalSessionState=TRUE&"
-                + "useUnicode=TRUE&"
-                + "characterEncoding=utf-8&"
-                + "socketTimeout=3000000&"
-                + "connectTimeout=60000", userNames[0], PASSWORD);
+        return DriverManager.getConnection("jdbc:mysql://" + JDBC_IP + ":" + JDBC_PORT + "/"
+                                           + databaseName + "?" + "rewriteBatchedStatements=TRUE&"
+                                           + "allowMultiQueries=TRUE&"
+                                           + "useLocalSessionState=TRUE&" + "useUnicode=TRUE&"
+                                           + "characterEncoding=utf-8&" + "socketTimeout=3000000&"
+                                           + "connectTimeout=60000", userNames[0], PASSWORD);
     }
 
     public static void setReroutingEnable(boolean enable) throws SQLException {
@@ -88,35 +86,42 @@ public class RerouteTest {
         ps.execute();
         ps.close();
     }
+
     @Test
     public void testMoveReplicaSingleOp() throws Exception {
         try {
             if (passReroutingTest) {
                 System.out.println("Please run Rerouting tests manually!!!");
-                System.out.println("Change passReroutingTest to false in src/test/java/com/alipay/oceanbase/rpc/location/model/RerouteTest.java to run rerouting tests.");
+                System.out
+                    .println("Change passReroutingTest to false in src/test/java/com/alipay/oceanbase/rpc/location/model/RerouteTest.java to run rerouting tests.");
                 Assert.assertFalse(passReroutingTest);
             }
             setReroutingEnable(true);
-            moveClient.addRowKeyElement(testInt32RerouteTableName, new String[]{"c1"});
-            long affectRow = moveClient.insert(testInt32RerouteTableName, new Object[]{0}, new String[]{"c2"}, new Object[]{0});
+            moveClient.addRowKeyElement(testInt32RerouteTableName, new String[] { "c1" });
+            long affectRow = moveClient.insert(testInt32RerouteTableName, new Object[] { 0 },
+                new String[] { "c2" }, new Object[] { 0 });
             Assert.assertEquals(1, affectRow);
 
-            Map<String, Object> result = moveClient.get(testInt32RerouteTableName, new Object[]{0}, new String[]{"c2"});
+            Map<String, Object> result = moveClient.get(testInt32RerouteTableName,
+                new Object[] { 0 }, new String[] { "c2" });
 
             Assert.assertEquals(0, result.get("c2"));
             if (ObGlobal.OB_VERSION < 4) {
-                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName, testInt32RerouteTableName, partNum);
+                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName,
+                    testInt32RerouteTableName, partNum);
             } else {
-                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName, testInt32RerouteTableName);
+                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName,
+                    testInt32RerouteTableName);
             }
 
             Thread.sleep(5000);
 
-            result = moveClient.get(testInt32RerouteTableName, new Object[]{0}, new String[]{"c2"});
+            result = moveClient.get(testInt32RerouteTableName, new Object[] { 0 },
+                new String[] { "c2" });
 
             Assert.assertEquals(0, result.get("c2"));
         } finally {
-            moveClient.delete(testInt32RerouteTableName, new Object[] {0});
+            moveClient.delete(testInt32RerouteTableName, new Object[] { 0 });
         }
     }
 
@@ -125,25 +130,30 @@ public class RerouteTest {
         try {
             if (passReroutingTest) {
                 System.out.println("Please run Rerouting tests manually!!!");
-                System.out.println("Change passReroutingTest to false in src/test/java/com/alipay/oceanbase/rpc/location/model/RerouteTest.java to run rerouting tests.");
+                System.out
+                    .println("Change passReroutingTest to false in src/test/java/com/alipay/oceanbase/rpc/location/model/RerouteTest.java to run rerouting tests.");
                 Assert.assertFalse(passReroutingTest);
             }
             setReroutingEnable(true);
-            moveClient.addRowKeyElement(testInt32RerouteTableName, new String[]{"c1"});
+            moveClient.addRowKeyElement(testInt32RerouteTableName, new String[] { "c1" });
 
-            long affectRow = moveClient.insert(testInt32RerouteTableName, new Object[]{0}, new String[]{"c2"}, new Object[]{0});
+            long affectRow = moveClient.insert(testInt32RerouteTableName, new Object[] { 0 },
+                new String[] { "c2" }, new Object[] { 0 });
             Assert.assertEquals(affectRow, 1);
             if (ObGlobal.OB_VERSION < 4) {
-                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName, testInt32RerouteTableName, partNum);
+                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName,
+                    testInt32RerouteTableName, partNum);
             } else {
-                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName, testInt32RerouteTableName);
+                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName,
+                    testInt32RerouteTableName);
             }
             Thread.sleep(5000);
 
-            affectRow = moveClient.insertOrUpdate(testInt32RerouteTableName, new Object[]{0}, new String[]{"c2"}, new Object[]{0});
+            affectRow = moveClient.insertOrUpdate(testInt32RerouteTableName, new Object[] { 0 },
+                new String[] { "c2" }, new Object[] { 0 });
             Assert.assertEquals(affectRow, 1);
         } finally {
-            moveClient.delete(testInt32RerouteTableName, new Object[] {0});
+            moveClient.delete(testInt32RerouteTableName, new Object[] { 0 });
         }
     }
 
@@ -152,29 +162,35 @@ public class RerouteTest {
         try {
             if (passReroutingTest) {
                 System.out.println("Please run Rerouting tests manually!!!");
-                System.out.println("Change passReroutingTest to false in src/test/java/com/alipay/oceanbase/rpc/location/model/RerouteTest.java to run rerouting tests.");
+                System.out
+                    .println("Change passReroutingTest to false in src/test/java/com/alipay/oceanbase/rpc/location/model/RerouteTest.java to run rerouting tests.");
                 Assert.assertFalse(passReroutingTest);
             }
             setReroutingEnable(true);
-            moveClient.addRowKeyElement(testInt32RerouteTableName, new String[]{"c1"});
+            moveClient.addRowKeyElement(testInt32RerouteTableName, new String[] { "c1" });
 
-            long affectRow = moveClient.insert(testInt32RerouteTableName, new Object[]{0}, new String[]{"c2"}, new Object[]{0});
+            long affectRow = moveClient.insert(testInt32RerouteTableName, new Object[] { 0 },
+                new String[] { "c2" }, new Object[] { 0 });
             Assert.assertEquals(affectRow, 1);
             if (ObGlobal.OB_VERSION < 4) {
-                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName, testInt32RerouteTableName, partNum);
+                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName,
+                    testInt32RerouteTableName, partNum);
             } else {
-                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName, testInt32RerouteTableName);
+                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName,
+                    testInt32RerouteTableName);
             }
             Thread.sleep(5000);
 
             TableBatchOps tableBatchOps = moveClient.batch(testInt32RerouteTableName);
-            tableBatchOps.get(new Object[] {0}, new String[] {"c1", "c2"});
+            tableBatchOps.get(new Object[] { 0 }, new String[] { "c1", "c2" });
             List<Object> batchResult = tableBatchOps.execute();
             Assert.assertEquals(batchResult.size(), 1);
-            Assert.assertEquals(((HashMap<String, Integer>) batchResult.get(0)).get("c1").intValue(), 0);
-            Assert.assertEquals(((HashMap<String, Integer>) batchResult.get(0)).get("c2").intValue(), 0);
+            Assert.assertEquals(((HashMap<String, Integer>) batchResult.get(0)).get("c1")
+                .intValue(), 0);
+            Assert.assertEquals(((HashMap<String, Integer>) batchResult.get(0)).get("c2")
+                .intValue(), 0);
         } finally {
-            moveClient.delete(testInt32RerouteTableName, new Object[] {0});
+            moveClient.delete(testInt32RerouteTableName, new Object[] { 0 });
         }
     }
 
@@ -183,29 +199,34 @@ public class RerouteTest {
         try {
             if (passReroutingTest) {
                 System.out.println("Please run Rerouting tests manually!!!");
-                System.out.println("Change passReroutingTest to false in src/test/java/com/alipay/oceanbase/rpc/location/model/RerouteTest.java to run rerouting tests.");
+                System.out
+                    .println("Change passReroutingTest to false in src/test/java/com/alipay/oceanbase/rpc/location/model/RerouteTest.java to run rerouting tests.");
                 Assert.assertFalse(passReroutingTest);
             }
             setReroutingEnable(true);
-            moveClient.addRowKeyElement(testInt32RerouteTableName, new String[]{"c1"});
+            moveClient.addRowKeyElement(testInt32RerouteTableName, new String[] { "c1" });
 
-            long affectRow = moveClient.insert(testInt32RerouteTableName, new Object[]{0}, new String[]{"c2"}, new Object[]{0});
+            long affectRow = moveClient.insert(testInt32RerouteTableName, new Object[] { 0 },
+                new String[] { "c2" }, new Object[] { 0 });
             Assert.assertEquals(affectRow, 1);
             if (ObGlobal.OB_VERSION < 4) {
-                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName, testInt32RerouteTableName, partNum);
+                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName,
+                    testInt32RerouteTableName, partNum);
             } else {
-                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName, testInt32RerouteTableName);
+                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName,
+                    testInt32RerouteTableName);
             }
             Thread.sleep(5000);
 
             TableBatchOps tableBatchOps = moveClient.batch(testInt32RerouteTableName);
-            tableBatchOps.insertOrUpdate(new Object[] {0}, new String[] {"c2"}, new Object[] {5});
+            tableBatchOps.insertOrUpdate(new Object[] { 0 }, new String[] { "c2" },
+                new Object[] { 5 });
             List<Object> result = tableBatchOps.execute();
 
             Assert.assertEquals(1, result.size());
-            Assert.assertEquals((long)1, result.get(0));
+            Assert.assertEquals((long) 1, result.get(0));
         } finally {
-            moveClient.delete(testInt32RerouteTableName, new Object[] {0});
+            moveClient.delete(testInt32RerouteTableName, new Object[] { 0 });
         }
     }
 
@@ -214,29 +235,34 @@ public class RerouteTest {
         try {
             if (passReroutingTest) {
                 System.out.println("Please run Rerouting tests manually!!!");
-                System.out.println("Change passReroutingTest to false in src/test/java/com/alipay/oceanbase/rpc/location/model/RerouteTest.java to run rerouting tests.");
+                System.out
+                    .println("Change passReroutingTest to false in src/test/java/com/alipay/oceanbase/rpc/location/model/RerouteTest.java to run rerouting tests.");
                 Assert.assertFalse(passReroutingTest);
             }
             setReroutingEnable(true);
-            moveClient.addRowKeyElement(testInt32RerouteTableName, new String[]{"c1"});
+            moveClient.addRowKeyElement(testInt32RerouteTableName, new String[] { "c1" });
 
-            long affectRow = moveClient.insert(testInt32RerouteTableName, new Object[]{0}, new String[]{"c2"}, new Object[]{0});
+            long affectRow = moveClient.insert(testInt32RerouteTableName, new Object[] { 0 },
+                new String[] { "c2" }, new Object[] { 0 });
             Assert.assertEquals(affectRow, 1);
             if (ObGlobal.OB_VERSION < 4) {
-                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName, testInt32RerouteTableName, partNum);
+                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName,
+                    testInt32RerouteTableName, partNum);
             } else {
-                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName, testInt32RerouteTableName);
+                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName,
+                    testInt32RerouteTableName);
             }
             Thread.sleep(5000);
 
-            QueryResultSet result = moveClient.query(testInt32RerouteTableName).select("c1", "c2").addScanRange(new Object[] {0}, new Object[] {0}).execute();
+            QueryResultSet result = moveClient.query(testInt32RerouteTableName).select("c1", "c2")
+                .addScanRange(new Object[] { 0 }, new Object[] { 0 }).execute();
 
             while (result.next()) {
                 Assert.assertEquals(0, result.getRow().get("c1"));
                 Assert.assertEquals(0, result.getRow().get("c2"));
             }
         } finally {
-            moveClient.delete(testInt32RerouteTableName, new Object[] {0});
+            moveClient.delete(testInt32RerouteTableName, new Object[] { 0 });
         }
     }
 
@@ -245,25 +271,30 @@ public class RerouteTest {
         try {
             if (passReroutingTest) {
                 System.out.println("Please run Rerouting tests manually!!!");
-                System.out.println("Change passReroutingTest to false in src/test/java/com/alipay/oceanbase/rpc/location/model/RerouteTest.java to run rerouting tests.");
+                System.out
+                    .println("Change passReroutingTest to false in src/test/java/com/alipay/oceanbase/rpc/location/model/RerouteTest.java to run rerouting tests.");
                 Assert.assertFalse(passReroutingTest);
             }
             setReroutingEnable(true);
-            moveClient.addRowKeyElement(testInt32RerouteTableName, new String[]{"c1"});
+            moveClient.addRowKeyElement(testInt32RerouteTableName, new String[] { "c1" });
 
-            long affectRow = moveClient.insert(testInt32RerouteTableName, new Object[]{0}, new String[]{"c2"}, new Object[]{0});
+            long affectRow = moveClient.insert(testInt32RerouteTableName, new Object[] { 0 },
+                new String[] { "c2" }, new Object[] { 0 });
             Assert.assertEquals(affectRow, 1);
             if (ObGlobal.OB_VERSION < 4) {
-                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName, testInt32RerouteTableName, partNum);
+                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName,
+                    testInt32RerouteTableName, partNum);
             } else {
-                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName, testInt32RerouteTableName);
+                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName,
+                    testInt32RerouteTableName);
             }
             Thread.sleep(5000);
 
-            affectRow = moveClient.update(testInt32RerouteTableName, new Object[]{0}, new String[] {"c2"}, new Object[] {5});
+            affectRow = moveClient.update(testInt32RerouteTableName, new Object[] { 0 },
+                new String[] { "c2" }, new Object[] { 5 });
             Assert.assertEquals(1, affectRow);
         } finally {
-            moveClient.delete(testInt32RerouteTableName, new Object[] {0});
+            moveClient.delete(testInt32RerouteTableName, new Object[] { 0 });
         }
     }
 
@@ -273,40 +304,48 @@ public class RerouteTest {
         try {
             if (passReroutingTest) {
                 System.out.println("Please run Rerouting tests manually!!!");
-                System.out.println("Change passReroutingTest to false in src/test/java/com/alipay/oceanbase/rpc/location/model/RerouteTest.java to run rerouting tests.");
+                System.out
+                    .println("Change passReroutingTest to false in src/test/java/com/alipay/oceanbase/rpc/location/model/RerouteTest.java to run rerouting tests.");
                 Assert.assertFalse(passReroutingTest);
             }
             setReroutingEnable(false);
-            moveClient.addRowKeyElement(testInt32RerouteTableName, new String[]{"c1"});
+            moveClient.addRowKeyElement(testInt32RerouteTableName, new String[] { "c1" });
 
-            long affectRow = moveClient.insert(testInt32RerouteTableName, new Object[]{0}, new String[]{"c2"}, new Object[]{0});
+            long affectRow = moveClient.insert(testInt32RerouteTableName, new Object[] { 0 },
+                new String[] { "c2" }, new Object[] { 0 });
             Assert.assertEquals(affectRow, 1);
             if (ObGlobal.OB_VERSION < 4) {
-                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName, testInt32RerouteTableName, partNum);
+                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName,
+                    testInt32RerouteTableName, partNum);
             } else {
-                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName, testInt32RerouteTableName);
+                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName,
+                    testInt32RerouteTableName);
             }
             Thread.sleep(5000);
 
             // single get
-            Map<String, Object> rs= moveClient.get(testInt32RerouteTableName, new Object[] {0}, new String[] {"c2"});
+            Map<String, Object> rs = moveClient.get(testInt32RerouteTableName, new Object[] { 0 },
+                new String[] { "c2" });
             Assert.assertEquals(0, rs.get("c2"));
             // multi get
             TableBatchOps tableBatchOps = moveClient.batch(testInt32RerouteTableName);
-            tableBatchOps.get(new Object[] {0}, new String[] {"c2"});
-            List<Object> res =  tableBatchOps.execute();
+            tableBatchOps.get(new Object[] { 0 }, new String[] { "c2" });
+            List<Object> res = tableBatchOps.execute();
             Assert.assertEquals(1, res.size());
-            Assert.assertEquals(0, ((Map<String, Integer>)res.get(0)).get("c2").intValue());
+            Assert.assertEquals(0, ((Map<String, Integer>) res.get(0)).get("c2").intValue());
 
             // 所有操作前都进行切主，为了防止前边刷新路由表之后，后边对切主无感。
             if (ObGlobal.OB_VERSION < 4) {
-                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName, testInt32RerouteTableName, partNum);
+                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName,
+                    testInt32RerouteTableName, partNum);
             } else {
-                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName, testInt32RerouteTableName);
+                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName,
+                    testInt32RerouteTableName);
             }
             Thread.sleep(5000);
             // query
-            TableQuery tableQuery = moveClient.query(testInt32RerouteTableName).select("c1", "c2").addScanRange(new Object[] {0}, new Object[] {0});
+            TableQuery tableQuery = moveClient.query(testInt32RerouteTableName).select("c1", "c2")
+                .addScanRange(new Object[] { 0 }, new Object[] { 0 });
             QueryResultSet queryResultSet = tableQuery.execute();
             while (queryResultSet.next()) {
                 Assert.assertEquals(0, queryResultSet.getRow().get("c1"));
@@ -314,18 +353,21 @@ public class RerouteTest {
             }
 
             if (ObGlobal.OB_VERSION < 4) {
-                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName, testInt32RerouteTableName, partNum);
+                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName,
+                    testInt32RerouteTableName, partNum);
             } else {
-                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName, testInt32RerouteTableName);
+                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName,
+                    testInt32RerouteTableName);
             }
             Thread.sleep(5000);
             // update
-            affectRow = moveClient.update(testInt32RerouteTableName, new Object[]{0}, new String[] {"c2"}, new Object[] {5});
+            affectRow = moveClient.update(testInt32RerouteTableName, new Object[] { 0 },
+                new String[] { "c2" }, new Object[] { 5 });
             Assert.assertEquals(1, affectRow);
         } finally {
             setReroutingEnable(true);
             Thread.sleep(1000);
-            moveClient.delete(testInt32RerouteTableName, new Object[] {0});
+            moveClient.delete(testInt32RerouteTableName, new Object[] { 0 });
         }
     }
 
@@ -336,40 +378,48 @@ public class RerouteTest {
         try {
             if (passReroutingTest) {
                 System.out.println("Please run Rerouting tests manually!!!");
-                System.out.println("Change passReroutingTest to false in src/test/java/com/alipay/oceanbase/rpc/location/model/RerouteTest.java to run rerouting tests.");
+                System.out
+                    .println("Change passReroutingTest to false in src/test/java/com/alipay/oceanbase/rpc/location/model/RerouteTest.java to run rerouting tests.");
                 Assert.assertFalse(passReroutingTest);
             }
             setReroutingEnable(true);
-            clientNotReroute.addRowKeyElement(testInt32RerouteTableName, new String[]{"c1"});
+            clientNotReroute.addRowKeyElement(testInt32RerouteTableName, new String[] { "c1" });
 
-            long affectRow = clientNotReroute.insert(testInt32RerouteTableName, new Object[]{0}, new String[]{"c2"}, new Object[]{0});
+            long affectRow = clientNotReroute.insert(testInt32RerouteTableName, new Object[] { 0 },
+                new String[] { "c2" }, new Object[] { 0 });
             Assert.assertEquals(affectRow, 1);
             if (ObGlobal.OB_VERSION < 4) {
-                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName, testInt32RerouteTableName, partNum);
+                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName,
+                    testInt32RerouteTableName, partNum);
             } else {
-                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName, testInt32RerouteTableName);
+                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName,
+                    testInt32RerouteTableName);
             }
             Thread.sleep(5000);
 
             // single get
-            Map<String, Object> rs= clientNotReroute.get(testInt32RerouteTableName, new Object[] {0}, new String[] {"c2"});
+            Map<String, Object> rs = clientNotReroute.get(testInt32RerouteTableName,
+                new Object[] { 0 }, new String[] { "c2" });
             Assert.assertEquals(0, rs.get("c2"));
             // multi get
             TableBatchOps tableBatchOps = clientNotReroute.batch(testInt32RerouteTableName);
-            tableBatchOps.get(new Object[] {0}, new String[] {"c2"});
-            List<Object> res =  tableBatchOps.execute();
+            tableBatchOps.get(new Object[] { 0 }, new String[] { "c2" });
+            List<Object> res = tableBatchOps.execute();
             Assert.assertEquals(1, res.size());
-            Assert.assertEquals(0, ((Map<String, Integer>)res.get(0)).get("c2").intValue());
+            Assert.assertEquals(0, ((Map<String, Integer>) res.get(0)).get("c2").intValue());
 
             // 所有操作前都进行切主，为了防止前边刷新路由表之后，后边对切主无感。
             if (ObGlobal.OB_VERSION < 4) {
-                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName, testInt32RerouteTableName, partNum);
+                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName,
+                    testInt32RerouteTableName, partNum);
             } else {
-                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName, testInt32RerouteTableName);
+                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName,
+                    testInt32RerouteTableName);
             }
             Thread.sleep(5000);
             // query
-            TableQuery tableQuery = clientNotReroute.query(testInt32RerouteTableName).select("c1", "c2").addScanRange(new Object[] {0}, new Object[] {0});
+            TableQuery tableQuery = clientNotReroute.query(testInt32RerouteTableName)
+                .select("c1", "c2").addScanRange(new Object[] { 0 }, new Object[] { 0 });
             QueryResultSet queryResultSet = tableQuery.execute();
             while (queryResultSet.next()) {
                 Assert.assertEquals(0, queryResultSet.getRow().get("c1"));
@@ -377,17 +427,20 @@ public class RerouteTest {
             }
 
             if (ObGlobal.OB_VERSION < 4) {
-                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName, testInt32RerouteTableName, partNum);
+                replicaOperation.switchReplicaLeaderRandomly(tenantName, databaseName,
+                    testInt32RerouteTableName, partNum);
             } else {
-                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName, testInt32RerouteTableName);
+                replicaOperation.switchReplicaLeaderRandomly4x(tenantName, databaseName,
+                    testInt32RerouteTableName);
             }
             Thread.sleep(5000);
             // update
-            affectRow = clientNotReroute.update(testInt32RerouteTableName, new Object[]{0}, new String[] {"c2"}, new Object[] {5});
+            affectRow = clientNotReroute.update(testInt32RerouteTableName, new Object[] { 0 },
+                new String[] { "c2" }, new Object[] { 5 });
             Assert.assertEquals(1, affectRow);
         } finally {
-            moveClient.addRowKeyElement(testInt32RerouteTableName, new String[]{"c1"});
-            moveClient.delete(testInt32RerouteTableName, new Object[] {0});
+            moveClient.addRowKeyElement(testInt32RerouteTableName, new String[] { "c1" });
+            moveClient.delete(testInt32RerouteTableName, new Object[] { 0 });
         }
     }
 }
