@@ -159,8 +159,8 @@ public class Insert extends Mutation<Insert> {
             if (checkMutationWithFilter()) {
                 // QueryAndInsert
                 ObTableOperation operation = ObTableOperation.getInstance(
-                    ObTableOperationType.INSERT, getRowKeyValues().toArray(), columns.toArray(new String[0]),
-                    values.toArray());
+                    ObTableOperationType.INSERT, getRowKeyValues().toArray(),
+                    columns.toArray(new String[0]), values.toArray());
                 return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(
                     getQuery(), getRowKey(), getKeyRanges(), operation, true));
             } else {

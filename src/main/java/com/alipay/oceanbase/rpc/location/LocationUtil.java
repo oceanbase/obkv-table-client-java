@@ -735,7 +735,7 @@ public class LocationUtil {
                         }
                     }
                 }
-                
+
                 if (ObGlobal.obVsnMajor() >= 4) {
                     // only set empty partitionEntry
                     ObPartitionEntry partitionEntry = new ObPartitionEntry();
@@ -912,8 +912,8 @@ public class LocationUtil {
             } catch (Exception e) {
                 RUNTIME.error(LCD.convert("01-00010"), key, partitionNum, tableEntry, e);
                 throw new ObTablePartitionLocationRefreshException(format(
-                        "fail to get partition location entry from remote entryKey = %s partNum = %d tableEntry =%s "
-                                + "offset =%d epoch =%d", key, partitionNum, tableEntry, i, epoch), e);
+                    "fail to get partition location entry from remote entryKey = %s partNum = %d tableEntry =%s "
+                            + "offset =%d epoch =%d", key, partitionNum, tableEntry, i, epoch), e);
             } finally {
                 try {
                     if (null != rs) {

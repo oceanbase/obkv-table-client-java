@@ -19,11 +19,12 @@ package com.alipay.oceanbase.rpc.location.reroute.util;
 
 import java.util.ArrayList;
 import java.util.List;
+
 public class Partition {
-    private long tableId;
-    private long partId;
-    private long replicaNum;
-    private Replica leader;
+    private long          tableId;
+    private long          partId;
+    private long          replicaNum;
+    private Replica       leader;
     private List<Replica> follower;
 
     public Partition(long partId) {
