@@ -21,16 +21,38 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum ObIndexType {
-    IndexTypeIsNot(0), IndexTypeNormalLocal(1), IndexTypeUniqueLocal(2), IndexTypeNormalGlobal(3), IndexTypeUniqueGlobal(
-                                                                                                                         4), IndexTypePrimary(
-                                                                                                                                              5), IndexTypeDomainCtxcat(
-                                                                                                                                                                        6), IndexTypeNormalGlobalLocalStorage(
-                                                                                                                                                                                                              7), IndexTypeUniqueGlobalLocalStorage(
-                                                                                                                                                                                                                                                    8), IndexTypeSpatialLocal(
-                                                                                                                                                                                                                                                                              10), IndexTypeSpatialGlobal(
-                                                                                                                                                                                                                                                                                                          11), IndexTypeSpatialGlobalLocalStorage(
-                                                                                                                                                                                                                                                                                                                                                  12), IndexTypeMax(
-                                                                                                                                                                                                                                                                                                                                                                    13);
+    IndexTypeIsNot(0),
+    IndexTypeNormalLocal(1),
+    IndexTypeUniqueLocal(2),
+    IndexTypeNormalGlobal(3),
+    IndexTypeUniqueGlobal(4),
+    IndexTypePrimary(5),
+    IndexTypeDomainCtxcat(6),
+    IndexTypeNormalGlobalLocalStorage(7),
+    IndexTypeUniqueGlobalLocalStorage(8),
+    IndexTypeSpatialLocal(10),
+    IndexTypeSpatialGlobal(11),
+    IndexTypeSpatialGlobalLocalStorage(12),
+    IndexTypeRowkeyDocIdLocal(13),
+    IndexTypeDocIdRowkeyLocal(14),
+    IndexTypeFtsIndexLocal(15),
+    IndexTypeFtsDocWordLocal(16),
+    /*
+    IndexTypeDocIdRowkeyGlobal(17),
+    IndexTypeFtsIndexGlobal(18),
+    IndexTypeFtsDocWordGlobal(19),
+    IndexTypeDocIdRowkeyGlobalLocalStorage(20),
+    IndexTypeFtsIndexGlobalLocalStorage(21),
+    IndexTypeFtsDocWordGlobalLocalStorage(22),
+    IndexTypeNormalMultivalueLocal(23),
+    IndexTypeUniqueMultivalueLocal(24),
+    IndexTypeVecRowkeyVidLocal(25),
+    IndexTypeVecVidRowkeyLocal(26),
+    IndexTypeVecDeltaBufferLocal(27),
+    IndexTypeVecIndexIdLocal(28),
+    IndexTypeVecIndexSnapshotDataLocal(29),
+    */
+    IndexTypeMax(30);
 
     private int                              value;
     private static Map<Integer, ObIndexType> map = new HashMap<Integer, ObIndexType>();
