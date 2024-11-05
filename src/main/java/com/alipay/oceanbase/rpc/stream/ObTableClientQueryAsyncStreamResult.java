@@ -202,20 +202,22 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                     referToLastStreamResult(lastEntry.getValue());
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchAllException) {
-                        
-                        TableEntry entry = client.getOrRefreshTableEntry(tableName, false, false, false);
+
+                        TableEntry entry = client.getOrRefreshTableEntry(tableName, false, false,
+                            false);
                         // Calculate the next partition only when the range partition is affected by a split, based on the keys already scanned.
                         if (ObGlobal.obVsnMajor() >= 4
-                                && entry.isPartitionTable()
-                                && entry.getPartitionInfo().getFirstPartDesc().getPartFuncType().isRangePart()) {
+                            && entry.isPartitionTable()
+                            && entry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
+                                .isRangePart()) {
                             this.asyncRequest.getObTableQueryRequest().getTableQuery()
-                                    .adjustStartKey(currentStartKey);
-                            setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
-                                    .getTableQuery(), tableName));
+                                .adjustStartKey(currentStartKey);
+                            setExpectant(refreshPartition(this.asyncRequest
+                                .getObTableQueryRequest().getTableQuery(), tableName));
                             setEnd(true);
                         } else {
-                            setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
-                                    .getTableQuery(), tableName));
+                            setExpectant(refreshPartition(this.asyncRequest
+                                .getObTableQueryRequest().getTableQuery(), tableName));
                         }
                     } else {
                         throw e;
@@ -243,14 +245,16 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                     referToNewPartition(entry.getValue());
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchAllException) {
-                        TableEntry tableEntry = client.getOrRefreshTableEntry(tableName, false, false, false);
+                        TableEntry tableEntry = client.getOrRefreshTableEntry(tableName, false,
+                            false, false);
                         if (ObGlobal.obVsnMajor() >= 4
                             && tableEntry.isPartitionTable()
-                            && tableEntry.getPartitionInfo().getFirstPartDesc().getPartFuncType().isRangePart()) {
+                            && tableEntry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
+                                .isRangePart()) {
                             this.asyncRequest.getObTableQueryRequest().getTableQuery()
-                                    .adjustStartKey(currentStartKey);
-                            setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
-                                    .getTableQuery(), tableName));
+                                .adjustStartKey(currentStartKey);
+                            setExpectant(refreshPartition(this.asyncRequest
+                                .getObTableQueryRequest().getTableQuery(), tableName));
                         }
                         it = expectant.entrySet().iterator();
                         retryTimes++;
@@ -337,7 +341,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             closeLastStreamResult(lastEntry.getValue());
         }
     }
-    
+
     public boolean isEnd() {
         return isEnd;
     }
