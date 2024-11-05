@@ -18,11 +18,13 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
 import com.alipay.oceanbase.rpc.exception.FeatureNotSupportedException;
+import com.alipay.oceanbase.rpc.table.ObFTSParams;
 import com.alipay.oceanbase.rpc.table.ObHBaseParams;
-import com.alipay.oceanbase.rpc.table.ObKVParams;
+import com.alipay.oceanbase.rpc.table. ObKVParams;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationSingle;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
+import com.alipay.oceanbase.rpc.table.ObKVParamsBase;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -67,7 +69,7 @@ public class ObTableQuery extends AbstractPayload {
 
     private List<ObTableAggregationSingle>    aggregations       = new LinkedList<>();
 
-    private ObKVParams obKVParams;
+    private ObKVParams obKVParams = null;
 
     /*
      * Check filter.
@@ -178,7 +180,7 @@ public class ObTableQuery extends AbstractPayload {
             idx += len;
         }
 
-        if (isHbaseQuery && obKVParams != null) {
+        if (obKVParams != null) { // hbaseQuery or FTSQuery will use obKVParams
             len = (int) obKVParams.getPayloadSize();
             System.arraycopy(obKVParams.encode(), 0, bytes, idx, len);
             idx += len;
@@ -245,7 +247,11 @@ public class ObTableQuery extends AbstractPayload {
             String agg_column = Serialization.decodeVString(buf);
             this.aggregations.add(new ObTableAggregationSingle(ObTableAggregationType.fromByte(agg_type), agg_column));
         }
-        if (isHbaseQuery) {
+
+        buf.markReaderIndex();
+        if (buf.readByte() > 0) {
+            // read pType if is exists
+            buf.resetReaderIndex();
             obKVParams = new ObKVParams();
             this.obKVParams.decode(buf);
         }
@@ -280,7 +286,7 @@ public class ObTableQuery extends AbstractPayload {
         } else {
             contentSize += HTABLE_DUMMY_BYTES.length;
         }
-        if (isHbaseQuery && obKVParams != null) {
+        if (obKVParams != null) {
             contentSize += obKVParams.getPayloadSize();
         } else {
             contentSize += HTABLE_DUMMY_BYTES.length;
@@ -498,6 +504,18 @@ public class ObTableQuery extends AbstractPayload {
         }
         this.isHbaseQuery = true;
         this.obKVParams = obKVParams;
+    }
+
+    public void setSearchText(String searchText) {
+        if (isHbaseQuery) {
+            throw new FeatureNotSupportedException("Hbase query not support full text search currently");
+        }
+        if (obKVParams == null) {
+            obKVParams = new ObKVParams();
+        }
+        ObFTSParams ftsParams = (ObFTSParams)obKVParams.getObParams(ObKVParamsBase.paramType.FTS);
+        ftsParams.setSearchText(searchText);
+        obKVParams.setObParamsBase(ftsParams);
     }
 
     public ObKVParams getObKVParams() {

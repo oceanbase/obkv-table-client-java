@@ -20,11 +20,15 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableConsistencyLevel;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
+import com.alipay.oceanbase.rpc.table.ObFTSParams;
 import com.alipay.oceanbase.rpc.table.ObHBaseParams;
 import com.alipay.oceanbase.rpc.table.ObKVParams;
+import com.alipay.oceanbase.rpc.table.ObKVParamsBase;
 import com.alipay.oceanbase.rpc.util.ObBytesString;
+import com.sun.xml.internal.ws.wsdl.writer.document.ParamType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -148,6 +152,37 @@ public class ObTableQueryPayloadTest {
         assertEquals(obTableQueryResult.getPropertiesNames().get(1), newObTableQueryResult
             .getPropertiesNames().get(1));
         buf.release();
+    }
+
+    @Test
+    public void testFtsParam() {
+        ObFTSParams ftsParams = new ObFTSParams();
+        ftsParams.setSearchText("oceanbase");
+        byte[] bytes = ftsParams.encode();
+        ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer();
+        buf.writeBytes(bytes);
+        ObFTSParams newFtsParams = new ObFTSParams();
+        assertEquals(ftsParams.getType(), ObKVParamsBase.paramType.valueOf(buf.readByte()));
+        newFtsParams.decode(buf);
+        assertEquals(ftsParams.getSearchText(), newFtsParams.getSearchText());
+        buf.release();
+    }
+
+    @Test
+    public void testFtsQuery() {
+        ObTableQuery obTableQuery = getObTableQuery();
+        obTableQuery.setIndexName("ftx_idx");
+        obTableQuery.setSearchText("oceanbase");
+        byte[] bytes = obTableQuery.encode();
+        ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer();
+        buf.writeBytes(bytes);
+
+        ObTableQuery newObTableQuery = new ObTableQuery();
+        newObTableQuery.decode(buf);
+        ObKVParamsBase kv_params_base = newObTableQuery.getObKVParams().obKVParamsBase;
+        Assert.assertEquals(ObKVParamsBase.paramType.FTS, kv_params_base.getType());
+        ObFTSParams fts_params = (ObFTSParams) kv_params_base;
+        Assert.assertEquals("oceanbase", fts_params.getSearchText());
     }
 
     private ObTableQuery getObTableQuery() {

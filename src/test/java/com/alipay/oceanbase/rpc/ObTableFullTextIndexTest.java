@@ -3,6 +3,8 @@ package com.alipay.oceanbase.rpc;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
+import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
 import com.google.protobuf.MapEntry;
@@ -320,6 +322,39 @@ public class ObTableFullTextIndexTest {
             e.printStackTrace();
         } finally {
            // executeSQL(truncateTTLTableSQL);
+        }
+    }
+
+    @Test
+    public void testFtsQuery() throws Exception {
+        try {
+            //sync query
+            QueryResultSet resultSet = client.query(tableName)
+                    .setSearchText("native")
+                    .indexName("full_idx1_tbl1")
+                    .execute();
+            while(resultSet.next()) {
+                Map<String, Object> row = resultSet.getRow();
+                for (Map.Entry<String, Object> entry: row.entrySet()) {
+                    System.out.println("colname: " + entry.getKey() + " \nvalue: " + entry.getValue());
+                }
+                System.out.println();
+            }
+            // async query
+            System.out.println("========async query:=========");
+            QueryResultSet asyncResultSet = client.query(tableName)
+                    .indexName("full_idx1_tbl1")
+                    .setSearchText("oceanbase")
+                    .asyncExecute();
+            while(asyncResultSet.next()) {
+                Map<String, Object> row = asyncResultSet.getRow();
+                for (Map.Entry<String, Object> entry: row.entrySet()) {
+                    System.out.println("colname: " + entry.getKey() + " \nvalue: " + entry.getValue());
+                }
+                System.out.println();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
