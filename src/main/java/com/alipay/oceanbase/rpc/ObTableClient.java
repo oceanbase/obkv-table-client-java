@@ -1279,7 +1279,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         RUNTIME.error("getOrRefreshTableEntry meet exception", e);
                         throw e;
                     } catch (ObTableServerCacheExpiredException e) {
-                        RUNTIME.error("getOrRefreshTableEntry meet exception", e);
+                        RUNTIME.warn("getOrRefreshTableEntry meet exception", e);
 
                         if (logger.isInfoEnabled()) {
                             logger.info("server addr is expired and it will refresh metadata.");
@@ -1350,7 +1350,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
 
         } catch (ObTableNotExistException | ObTableServerCacheExpiredException e) {
-            RUNTIME.error("RefreshTableEntry encountered an exception", e);
+            if (e instanceof ObTableNotExistException) {
+                RUNTIME.error("RefreshTableEntry encountered an exception", e);
+            } else {
+                RUNTIME.warn("RefreshTableEntry encountered an exception", e);
+            }
             throw e;
         } catch (Exception e) {
             String errorMsg = String.format("Failed to get table entry. Key=%s, TabletId=%d, message=%s", tableEntryKey, tabletId, e.getMessage());
@@ -1432,7 +1436,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             RUNTIME.error("refreshTableEntry meet exception", e);
             throw e;
         } catch (ObTableServerCacheExpiredException e) {
-            RUNTIME.error("refreshTableEntry meet exception", e);
+            RUNTIME.warn("refreshTableEntry meet exception", e);
             throw e;
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00020"), tableEntryKey, tableEntry, e);
@@ -1477,7 +1481,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             RUNTIME.error("refreshTableNameByTableGroup from tableGroup meet exception", e);
             throw e;
         } catch (ObTableServerCacheExpiredException e) {
-            RUNTIME.error("refreshTableEntry from tableGroup meet exception", e);
+            RUNTIME.warn("refreshTableEntry from tableGroup meet exception", e);
             throw e;
         } catch (Exception e) {
             RUNTIME.error("refreshTableEntry from tableGroup meet exception", tableEntryKey,
@@ -2142,7 +2146,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     RUNTIME.error("getOrRefreshTableName from TableGroup meet exception", e);
                     throw e;
                 } catch (ObTableServerCacheExpiredException e) {
-                    RUNTIME.error("getOrRefreshTableName from TableGroup meet exception", e);
+                    RUNTIME.warn("getOrRefreshTableName from TableGroup meet exception", e);
 
                     if (logger.isInfoEnabled()) {
                         logger.info("server addr is expired and it will refresh metadata.");
