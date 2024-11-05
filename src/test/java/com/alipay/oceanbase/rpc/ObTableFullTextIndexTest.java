@@ -597,11 +597,13 @@ public class ObTableFullTextIndexTest {
     }
 
     @Test
-    public void testFtsQuery() throws Exception {
+    public void testFTSQuery() throws Exception {
         try {
+            client.addRowKeyElement(tableName, new String[] {"id"});
+
             //sync query
             QueryResultSet resultSet = client.query(tableName)
-                    .setSearchText("native")
+                    .setSearchText("oceanbase")
                     .indexName("full_idx1_tbl1")
                     .execute();
             while(resultSet.next()) {

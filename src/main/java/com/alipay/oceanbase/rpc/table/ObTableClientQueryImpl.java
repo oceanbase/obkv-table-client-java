@@ -170,6 +170,10 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         // fill a whole range if no range is added explicitly.
         if (tableQuery.getKeyRanges().isEmpty()) {
             tableQuery.addKeyRange(ObNewRange.getWholeRange());
+        } else if (tableQuery.isFTSQuery()) {
+            // Currently, fulltext query only support scan all partitions
+            tableQuery.getKeyRanges().clear();
+            tableQuery.addKeyRange(ObNewRange.getWholeRange());
         }
 
         // init partitionObTables
