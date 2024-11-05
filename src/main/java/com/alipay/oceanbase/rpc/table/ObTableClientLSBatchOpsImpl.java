@@ -661,7 +661,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         if (!success) {
             errMsg = "Failed to execute operation after retrying " + maxRetries + " times. Last error Msg:" +
                     "[errCode="+ errCode +"] " + errMsg;
-            throw new ObTableUnexpectedException("Failed to execute operation after retrying " + maxRetries + " times.");
+            throw new ObTableUnexpectedException(errMsg);
         }
     }
 
