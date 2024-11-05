@@ -17,29 +17,33 @@
 
 package com.alipay.oceanbase.rpc.stream;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.exception.ObTableNeedFetchAllException;
+import com.alipay.oceanbase.rpc.exception.ObTableRetryExhaustedException;
+import com.alipay.oceanbase.rpc.location.model.TableEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.AbstractQueryStreamResult;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryRequest;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryResult;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObQueryOperationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
 import com.alipay.oceanbase.rpc.table.ObTableParam;
+import com.alipay.oceanbase.rpc.util.ByteUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.RUNTIME;
+
 public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResult {
     private static final Logger      logger         = LoggerFactory
                                                         .getLogger(ObTableClientQueryStreamResult.class);
-    protected ObTableClient          client;
     private boolean                  isEnd          = true;
     private long                     sessionId      = Constants.OB_INVALID_ID;
     private ObTableQueryAsyncRequest asyncRequest   = new ObTableQueryAsyncRequest();
@@ -50,6 +54,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         if (initialized) {
             return;
         }
+        int maxRetries = client.getTableEntryRefreshTryTimes();
         // init request
         ObTableQueryRequest request = new ObTableQueryRequest();
         request.setTableName(tableName);
@@ -66,8 +71,31 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         if (!expectant.isEmpty()) {
             Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
                 .iterator();
-            Map.Entry<Long, ObPair<Long, ObTableParam>> firstEntry = it.next();
-            referToNewPartition(firstEntry.getValue());
+            int retryTimes = 0;
+            while (it.hasNext()) {
+                Map.Entry<Long, ObPair<Long, ObTableParam>> firstEntry = it.next();
+                try {
+                    // try access new partition, async will not remove useless expectant
+                    referToNewPartition(firstEntry.getValue());
+                    break;
+                } catch (Exception e) {
+                    if (e instanceof ObTableNeedFetchAllException) {
+                        setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
+                            .getTableQuery(), tableName));
+                        it = expectant.entrySet().iterator();
+                        retryTimes++;
+                        if (retryTimes > maxRetries) {
+                            RUNTIME.error("Fail to get refresh table entry response after {}",
+                                retryTimes);
+                            throw new ObTableRetryExhaustedException(
+                                "Fail to get refresh table entry response after " + retryTimes);
+
+                        }
+                    } else {
+                        throw e;
+                    }
+                }
+            }
             if (isEnd())
                 it.remove();
         }
@@ -146,6 +174,13 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
     }
 
     @Override
+    protected Map<Long, ObPair<Long, ObTableParam>> refreshPartition(ObTableQuery tableQuery,
+                                                                     String tableName)
+                                                                                      throws Exception {
+        return buildPartitions(client, tableQuery, tableName);
+    }
+
+    @Override
     public boolean next() throws Exception {
         checkStatus();
         lock.lock();
@@ -160,10 +195,34 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             if (!isEnd() && !expectant.isEmpty()) {
                 Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
                     .iterator();
-                Map.Entry<Long, ObPair<Long, ObTableParam>> lastEntry = it.next();
-                // try access new partition, async will not remove useless expectant
-                referToLastStreamResult(lastEntry.getValue());
 
+                Map.Entry<Long, ObPair<Long, ObTableParam>> lastEntry = it.next();
+                try {
+                    // try access new partition, async will not remove useless expectant
+                    referToLastStreamResult(lastEntry.getValue());
+                } catch (Exception e) {
+                    if (e instanceof ObTableNeedFetchAllException) {
+
+                        TableEntry entry = client.getOrRefreshTableEntry(tableName, false, false,
+                            false);
+                        // Calculate the next partition only when the range partition is affected by a split, based on the keys already scanned.
+                        if (ObGlobal.obVsnMajor() >= 4
+                            && entry.isPartitionTable()
+                            && entry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
+                                .isRangePart()) {
+                            this.asyncRequest.getObTableQueryRequest().getTableQuery()
+                                .adjustStartKey(currentStartKey);
+                            setExpectant(refreshPartition(this.asyncRequest
+                                .getObTableQueryRequest().getTableQuery(), tableName));
+                            setEnd(true);
+                        } else {
+                            setExpectant(refreshPartition(this.asyncRequest
+                                .getObTableQueryRequest().getTableQuery(), tableName));
+                        }
+                    } else {
+                        throw e;
+                    }
+                }
                 // remove useless expectant if it is end
                 if (isEnd())
                     it.remove();
@@ -178,10 +237,38 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             boolean hasNext = false;
             Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
                 .iterator();
+            int retryTimes = 0;
             while (it.hasNext()) {
                 Map.Entry<Long, ObPair<Long, ObTableParam>> entry = it.next();
-                // try access new partition, async will not remove useless expectant
-                referToNewPartition(entry.getValue());
+                try {
+                    // try access new partition, async will not remove useless expectant
+                    referToNewPartition(entry.getValue());
+                } catch (Exception e) {
+                    if (e instanceof ObTableNeedFetchAllException) {
+                        TableEntry tableEntry = client.getOrRefreshTableEntry(tableName, false,
+                            false, false);
+                        if (ObGlobal.obVsnMajor() >= 4
+                            && tableEntry.isPartitionTable()
+                            && tableEntry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
+                                .isRangePart()) {
+                            this.asyncRequest.getObTableQueryRequest().getTableQuery()
+                                .adjustStartKey(currentStartKey);
+                            setExpectant(refreshPartition(this.asyncRequest
+                                .getObTableQueryRequest().getTableQuery(), tableName));
+                        }
+                        it = expectant.entrySet().iterator();
+                        retryTimes++;
+                        if (retryTimes > client.getTableEntryRefreshTryTimes()) {
+                            RUNTIME.error("Fail to get refresh table entry response after {}",
+                                retryTimes);
+                            throw new ObTableRetryExhaustedException(
+                                "Fail to get refresh table entry response after " + retryTimes);
+                        }
+                        continue;
+                    } else {
+                        throw e;
+                    }
+                }
 
                 // remove useless expectant if it is end
                 if (isEnd())
@@ -254,19 +341,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             closeLastStreamResult(lastEntry.getValue());
         }
     }
-
-    public ObTableClient getClient() {
-        return client;
-    }
-
-    /**
-     * Set client.
-     * @param client client want to set
-     */
-    public void setClient(ObTableClient client) {
-        this.client = client;
-    }
-
+    
     public boolean isEnd() {
         return isEnd;
     }

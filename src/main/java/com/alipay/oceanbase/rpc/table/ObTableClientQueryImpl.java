@@ -32,6 +32,7 @@ import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.util.MonitorUtil;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -244,52 +245,57 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         });
     }
 
+    public Map<Long, ObPair<Long, ObTableParam>> initPartitions(ObTableQuery tableQuery, String tableName) throws Exception {
+        Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new LinkedHashMap<>();
+        String indexName = tableQuery.getIndexName();
+        String indexTableName = null;
+
+        if (!this.obTableClient.isOdpMode()) {
+            indexTableName = obTableClient.getIndexTableName(tableName, indexName, tableQuery.getScanRangeColumns(), false);
+        }
+
+        for (ObNewRange range : tableQuery.getKeyRanges()) {
+            ObRowKey startKey = range.getStartKey();
+            int startKeySize = startKey.getObjs().size();
+            ObRowKey endKey = range.getEndKey();
+            int endKeySize = endKey.getObjs().size();
+            Object[] start = new Object[startKeySize];
+            Object[] end = new Object[endKeySize];
+
+            for (int i = 0; i < startKeySize; i++) {
+                start[i] = startKey.getObj(i).isMinObj() || startKey.getObj(i).isMaxObj() ?
+                        startKey.getObj(i) : startKey.getObj(i).getValue();
+            }
+
+            for (int i = 0; i < endKeySize; i++) {
+                end[i] = endKey.getObj(i).isMinObj() || endKey.getObj(i).isMaxObj() ?
+                        endKey.getObj(i) : endKey.getObj(i).getValue();
+            }
+
+            ObBorderFlag borderFlag = range.getBorderFlag();
+            List<ObPair<Long, ObTableParam>> pairs = this.obTableClient.getTables(indexTableName,
+                    tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(),
+                    false, false);
+
+            if (tableQuery.getScanOrder() == ObScanOrder.Reverse) {
+                for (int i = pairs.size() - 1; i >= 0; i--) {
+                    partitionObTables.put(pairs.get(i).getLeft(), pairs.get(i));
+                }
+            } else {
+                for (ObPair<Long, ObTableParam> pair : pairs) {
+                    partitionObTables.put(pair.getLeft(), pair);
+                }
+            }
+        }
+
+        return partitionObTables;
+    }
+
     /*
      * Init partition tables involved in this query
      */
     public void initPartitions() throws Exception {
-        String indexName = tableQuery.getIndexName();
-        if (!this.obTableClient.isOdpMode()) {
-            indexTableName = obTableClient.getIndexTableName(tableName, indexName,
-                tableQuery.getScanRangeColumns(), false);
-        }
-
-        for (ObNewRange rang : this.tableQuery.getKeyRanges()) {
-            ObRowKey startKey = rang.getStartKey();
-            int startKeySize = startKey.getObjs().size();
-            ObRowKey endKey = rang.getEndKey();
-            int endKeySize = endKey.getObjs().size();
-            Object[] start = new Object[startKeySize];
-            Object[] end = new Object[endKeySize];
-            for (int i = 0; i < startKeySize; i++) {
-                if (startKey.getObj(i).isMinObj() || startKey.getObj(i).isMaxObj()) {
-                    start[i] = startKey.getObj(i);
-                } else {
-                    start[i] = startKey.getObj(i).getValue();
-                }
-            }
-            for (int i = 0; i < endKeySize; i++) {
-                if (endKey.getObj(i).isMinObj() || endKey.getObj(i).isMaxObj()) {
-                    end[i] = endKey.getObj(i);
-                } else {
-                    end[i] = endKey.getObj(i).getValue();
-                }
-            }
-            ObBorderFlag borderFlag = rang.getBorderFlag();
-            // pairs -> List<Pair<logicId, param>>
-            List<ObPair<Long, ObTableParam>> pairs = this.obTableClient.getTables(indexTableName,
-                    tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(),
-                    false, false);
-            if (this.tableQuery.getScanOrder() == ObScanOrder.Reverse) {
-                for (int i = pairs.size() - 1; i >= 0; i--) {
-                    this.partitionObTables.put(pairs.get(i).getLeft(), pairs.get(i));
-                }
-            } else {
-                for (ObPair<Long, ObTableParam> pair : pairs) {
-                    this.partitionObTables.put(pair.getLeft(), pair);
-                }
-            }
-        }
+        this.partitionObTables = initPartitions(tableQuery, tableName);
     }
 
     /*

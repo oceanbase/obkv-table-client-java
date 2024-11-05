@@ -17,11 +17,13 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.model.ObReadConsistency;
 import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
+import com.alipay.oceanbase.rpc.location.model.TableEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
@@ -29,9 +31,11 @@ import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableApiMove;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableStreamRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.QueryStreamResult;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.table.ObTableParam;
@@ -41,6 +45,8 @@ import org.slf4j.Logger;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.RUNTIME;
 
 public abstract class AbstractQueryStreamResult extends AbstractPayload implements
                                                                        QueryStreamResult {
@@ -58,12 +64,15 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     // global index: key is index table name (be like: __idx_<data_table_id>_<index_name>)
     protected String                                                           indexTableName;
     protected ObTableEntityType                                                entityType;
-    protected Map<Long, ObPair<Long, ObTableParam>>                            expectant;                                                                                     // Map<logicId, ObPair<logicId, param>>
+    protected Map<Long, ObPair<Long, ObTableParam>>                            expectant;
     protected List<String>                                                     cacheProperties     = new LinkedList<String>();
     protected LinkedList<List<ObObj>>                                          cacheRows           = new LinkedList<List<ObObj>>();
     private LinkedList<ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>> partitionLastResult = new LinkedList<ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>>();
     private ObReadConsistency                                                  readConsistency     = ObReadConsistency.STRONG;
-
+    // ObRowKey objs: [startKey, MIN_OBJECT, MIN_OBJECT]
+    public List<ObObj>                                                         currentStartKey;
+    protected ObTableClient          client;
+    
     /*
      * Get pcode.
      */
@@ -126,7 +135,6 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
             }
             tryTimes++;
             try {
-                // 重试时重新 getTable
                 if (tryTimes > 1) {
                     if (client.isOdpMode()) {
                         subObTable = client.getOdpTable();
@@ -156,8 +164,12 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         result = subObTable.execute(request);
                         if (result instanceof ObTableApiMove) {
                             ObTableApiMove move = (ObTableApiMove) result;
-                            logger.warn("The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. " +
-                                    "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move .getReplica().getServer().ipToString());
+                            logger
+                                .warn(
+                                    "The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. "
+                                            + "Rerouting return IP is {}", moveResponse
+                                        .getReplica().getServer().ipToString(), move.getReplica()
+                                        .getServer().ipToString());
                             throw new ObTableRoutingWrongException();
                         }
                     }
@@ -224,7 +236,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     } else if (e instanceof ObTableException) {
                         if ((((ObTableException) e).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode || ((ObTableException) e)
                             .getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode)
-                            && ((ObTableQueryRequest) request).getTableQuery().isHbaseQuery()
+                            && ((request instanceof ObTableQueryAsyncRequest && ((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery().isHbaseQuery())
+                            || (request instanceof ObTableQueryRequest && ((ObTableQueryRequest) request).getTableQuery().isHbaseQuery()))
                             && client.getTableGroupInverted().get(indexTableName) != null) {
                             // table not exists && hbase mode && table group exists , three condition both
                             client.eraseTableGroupFromCache(tableName);
@@ -243,6 +256,11 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                         "tablename:{} partition id:{} stream query retry while meet Exception needing refresh, errorCode: {} , retry times {}",
                                         indexTableName, partIdWithIndex.getLeft(),
                                         ((ObTableException) e).getErrorCode(), tryTimes, e);
+                                // tablet not exists, refresh table entry
+                                if (e instanceof ObTableNeedFetchAllException) {
+                                    client.getOrRefreshTableEntry(tableName, true, true, true);
+                                    throw e;
+                                }
                             } else {
                                 client.calculateContinuousFailure(indexTableName, e.getMessage());
                                 throw e;
@@ -270,7 +288,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         lock.lock();
         try {
             // firstly, refer to the cache
-            if (cacheRows.size() > 0) {
+            if (!cacheRows.isEmpty()) {
                 nextRow();
                 return true;
             }
@@ -293,6 +311,39 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
             // lastly, refer to the new partition
             boolean hasNext = false;
             List<Map.Entry<Long, ObPair<Long, ObTableParam>>> referPartition = new ArrayList<Map.Entry<Long, ObPair<Long, ObTableParam>>>();
+            Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
+                .iterator();
+            while (it.hasNext()) {
+                Map.Entry<Long, ObPair<Long, ObTableParam>> entry = it.next();
+                referPartition.add(entry);
+                try {
+                    // Mark the refer partition  
+                    referPartition.add(entry);
+
+                    // Try accessing the new partition  
+                    ObTableQueryResult tableQueryResult = (ObTableQueryResult) referToNewPartition(entry
+                        .getValue());
+
+                    if (tableQueryResult.getRowCount() == 0) {
+                        continue;
+                    }
+
+                    hasNext = true;
+                    nextRow();
+                    break;
+
+                } catch (Exception e) {
+                    if (e instanceof ObTableNeedFetchAllException) {
+                        setExpectant(refreshPartition(tableQuery, tableName));
+                        // Reset the iterator to start over  
+                        it = expectant.entrySet().iterator();
+                        referPartition.clear(); // Clear the referPartition if needed
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+
             for (Map.Entry<Long, ObPair<Long, ObTableParam>> entry : expectant.entrySet()) {
                 // mark the refer partition
                 referPartition.add(entry);
@@ -317,9 +368,58 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         }
     }
 
+    protected Map<Long, ObPair<Long, ObTableParam>> buildPartitions(ObTableClient client, ObTableQuery tableQuery, String tableName) throws Exception {
+        Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new LinkedHashMap<>();
+        String indexName = tableQuery.getIndexName();
+        String indexTableName = null;
+
+        if (!client.isOdpMode()) {
+            indexTableName = client.getIndexTableName(tableName, indexName, tableQuery.getScanRangeColumns(), false);
+        }
+
+        for (ObNewRange range : tableQuery.getKeyRanges()) {
+            ObRowKey startKey = range.getStartKey();
+            int startKeySize = startKey.getObjs().size();
+            ObRowKey endKey = range.getEndKey();
+            int endKeySize = endKey.getObjs().size();
+            Object[] start = new Object[startKeySize];
+            Object[] end = new Object[endKeySize];
+
+            for (int i = 0; i < startKeySize; i++) {
+                start[i] = startKey.getObj(i).isMinObj() || startKey.getObj(i).isMaxObj() ?
+                        startKey.getObj(i) : startKey.getObj(i).getValue();
+            }
+
+            for (int i = 0; i < endKeySize; i++) {
+                end[i] = endKey.getObj(i).isMinObj() || endKey.getObj(i).isMaxObj() ?
+                        endKey.getObj(i) : endKey.getObj(i).getValue();
+            }
+
+            ObBorderFlag borderFlag = range.getBorderFlag();
+            List<ObPair<Long, ObTableParam>> pairs = client.getTables(indexTableName,
+                    tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(),
+                    false, false);
+
+            if (tableQuery.getScanOrder() == ObScanOrder.Reverse) {
+                for (int i = pairs.size() - 1; i >= 0; i--) {
+                    partitionObTables.put(pairs.get(i).getLeft(), pairs.get(i));
+                }
+            } else {
+                for (ObPair<Long, ObTableParam> pair : pairs) {
+                    partitionObTables.put(pair.getLeft(), pair);
+                }
+            }
+        }
+
+        return partitionObTables;
+    }
+
     protected void nextRow() {
         rowIndex = rowIndex + 1;
         row = cacheRows.poll();
+        if (row != null) {
+            currentStartKey = row;
+        }
     }
 
     protected void checkStatus() throws IllegalStateException {
@@ -398,6 +498,10 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                                             ObPayload streamRequest)
                                                                                     throws Exception;
 
+    protected abstract Map<Long, ObPair<Long, ObTableParam>> refreshPartition(ObTableQuery tableQuery,
+                                                                              String tableName)
+                                                                                               throws Exception;
+
     protected void cacheResultRows(ObTableQueryResult tableQueryResult) {
         cacheRows.addAll(tableQueryResult.getPropertiesRows());
         cacheProperties = tableQueryResult.getPropertiesNames();
@@ -454,9 +558,32 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
             return;
         }
         if (tableQuery.getBatchSize() == -1) {
-            for (Map.Entry<Long, ObPair<Long, ObTableParam>> entry : expectant.entrySet()) {
-                // mark the refer partition
-                referToNewPartition(entry.getValue());
+            if (!expectant.isEmpty()) {
+                Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
+                        .iterator();
+                int retryTimes = 0;
+                while (it.hasNext()) {
+                    Map.Entry<Long, ObPair<Long, ObTableParam>> entry = it.next();
+                    try {
+                        // try access new partition, async will not remove useless expectant
+                        referToNewPartition(entry.getValue());
+                    } catch (Exception e) {
+                        if (e instanceof ObTableNeedFetchAllException) {
+                            setExpectant(refreshPartition(tableQuery, tableName));
+                            it = expectant.entrySet().iterator();
+                            retryTimes++;
+                            if (retryTimes > client.getRuntimeRetryTimes()) {
+                                RUNTIME.error("Fail to get refresh table entry response after {}",
+                                        retryTimes);
+                                throw new ObTableRetryExhaustedException(
+                                        "Fail to get refresh table entry response after " + retryTimes);
+
+                            }
+                        } else {
+                            throw e;
+                        }
+                    }
+                }
             }
             expectant.clear();
         } else {
@@ -596,5 +723,20 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
      */
     public void setReadConsistency(ObReadConsistency readConsistency) {
         this.readConsistency = readConsistency;
+    }
+
+    /**
+     * Get client.
+     * @return client
+     */
+    public ObTableClient getClient() {
+        return client;
+    }
+
+    /*
+     * Set client.
+     */
+    public void setClient(ObTableClient client) {
+        this.client = client;
     }
 }

@@ -156,7 +156,8 @@ public class MonitorUtil {
                             String methodName, String endpoint, Object[] rowKeys,
                             ObTableOperationResult result, long routeTableTime, long executeTime,
                             long slowQueryMonitorThreshold) {
-        if ( slowQueryMonitorThreshold > 0 && (routeTableTime + executeTime >= slowQueryMonitorThreshold)) {
+        if (slowQueryMonitorThreshold > 0
+            && (routeTableTime + executeTime >= slowQueryMonitorThreshold)) {
             MONITOR.info(logMessage(formatTraceMessage(payload), database, tableName, methodName,
                 endpoint, rowKeys, result, routeTableTime, executeTime));
         }
@@ -238,7 +239,8 @@ public class MonitorUtil {
     public static void info(final ObPayload payload, String database, String tableName,
                             String methodName, String endpoint, int resultSize,
                             long routeTableTime, long executeTime, long slowQueryMonitorThreshold) {
-        if (slowQueryMonitorThreshold >= 0 && routeTableTime + executeTime >= slowQueryMonitorThreshold) {
+        if (slowQueryMonitorThreshold >= 0
+            && routeTableTime + executeTime >= slowQueryMonitorThreshold) {
             MONITOR.info(logMessage(formatTraceMessage(payload), database, tableName, methodName,
                 endpoint, resultSize, routeTableTime, executeTime));
         }

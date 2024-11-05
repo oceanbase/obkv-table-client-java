@@ -200,12 +200,10 @@ public class ObKeyPartDescTest {
         long partId = keyBinary.getPartId(new Row(partition1));
         Assert.assertEquals(11, partId);
 
-        Assert.assertEquals(
-            keyBinary.getPartId(new Row(partition1)),
+        Assert.assertEquals(keyBinary.getPartId(new Row(partition1)),
             keyBinary.getPartId(new Row(partition2)));
 
-        Assert.assertEquals(
-            keyBinary.getPartId(new Row(partition1)),
+        Assert.assertEquals(keyBinary.getPartId(new Row(partition1)),
             keyBinary.getPartId(new Row(partition1_byte)));
 
         Assert.assertEquals(keyBinary.getPartId(new Row(test1)),
@@ -214,40 +212,31 @@ public class ObKeyPartDescTest {
         Assert.assertEquals(keyBinary.getPartId(new Row(test1)),
             keyBinary.getPartId(new Row(test2_byte)));
 
-        Assert.assertEquals(
-            keyBinary.getPartId(new Row(test1_byte)),
+        Assert.assertEquals(keyBinary.getPartId(new Row(test1_byte)),
             keyBinary.getPartId(new Row(test2_byte)));
 
-        Assert.assertEquals(
-            keyUtf8_CI.getPartId(new Row(partition1)),
+        Assert.assertEquals(keyUtf8_CI.getPartId(new Row(partition1)),
             keyUtf8_CI.getPartId(new Row(Partition1_byte)));
 
-        Assert.assertEquals(
-            keyUtf8_CI.getPartId(new Row(partition1)),
+        Assert.assertEquals(keyUtf8_CI.getPartId(new Row(partition1)),
             keyUtf8_CI.getPartId(new Row(Partition2_byte)));
 
-        Assert.assertEquals(
-            keyUtf8.getPartId(new Row(partition1)),
+        Assert.assertEquals(keyUtf8.getPartId(new Row(partition1)),
             keyUtf8.getPartId(new Row(partition2)));
 
-        Assert.assertEquals(
-            keyUtf8.getPartId(new Row(partition1)),
+        Assert.assertEquals(keyUtf8.getPartId(new Row(partition1)),
             keyUtf8.getPartId(new Row(partition2_byte)));
 
-        Assert.assertEquals(
-            keyUtf8.getPartId(new Row(partition1)),
+        Assert.assertEquals(keyUtf8.getPartId(new Row(partition1)),
             keyUtf8.getPartId(new Row(partition2)));
 
-        Assert.assertNotEquals(
-            keyUtf8.getPartId(new Row(partition1)),
+        Assert.assertNotEquals(keyUtf8.getPartId(new Row(partition1)),
             keyUtf8.getPartId(new Row(Partition1)));
 
-        Assert.assertNotEquals(
-            keyUtf8_CI.getPartId(new Row(PARTITION1)),
+        Assert.assertNotEquals(keyUtf8_CI.getPartId(new Row(PARTITION1)),
             keyUtf8.getPartId(new Row(partition1_byte)));
 
-        Assert.assertNotEquals(
-            keyUtf8_CI.getPartId(new Row(partition1)),
+        Assert.assertNotEquals(keyUtf8_CI.getPartId(new Row(partition1)),
             keyBinary.getPartId(new Row(PARTITION1_byte)));
     }
 
@@ -355,7 +344,8 @@ public class ObKeyPartDescTest {
             keyBinary.getPartIds(new Row(startKey2), false, new Row(endKey1), false));
 
         try {
-            List<Long> ans = keyBinary.getPartIds(new Row(startKey1), false, new Row(endKey3), false);
+            List<Long> ans = keyBinary.getPartIds(new Row(startKey1), false, new Row(endKey3),
+                false);
             Assert.assertEquals(16, ans.size());
         } catch (Exception e) {
             e.printStackTrace();
@@ -363,7 +353,8 @@ public class ObKeyPartDescTest {
         }
 
         try {
-            List<Long> ans = keyBinary.getPartIds(new Row(startKey3), false, new Row(endKey1), true);
+            List<Long> ans = keyBinary
+                .getPartIds(new Row(startKey3), false, new Row(endKey1), true);
             Assert.assertEquals(16, ans.size());
         } catch (Exception e) {
             e.printStackTrace();
@@ -371,7 +362,8 @@ public class ObKeyPartDescTest {
         }
 
         try {
-            List<Long> ans = keyBinary.getPartIds(new Row(startKey1), false, new Row(endKey4), true);
+            List<Long> ans = keyBinary
+                .getPartIds(new Row(startKey1), false, new Row(endKey4), true);
             Assert.assertEquals(16, ans.size());
         } catch (Exception e) {
             e.printStackTrace();

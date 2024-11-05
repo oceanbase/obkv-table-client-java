@@ -20,20 +20,21 @@ package com.alipay.oceanbase.rpc.location.reroute.util;
 import com.alipay.oceanbase.rpc.location.model.ObServerRole;
 
 public class Replica {
-    long tableId;
-    long partId;
-    String ip;
-    int port;
+    long         tableId;
+    long         partId;
+    String       ip;
+    int          port;
     ObServerRole role;
 
-    public Replica(long tableId, long partId, String ip, int port, ObServerRole role ) {
+    public Replica(long tableId, long partId, String ip, int port, ObServerRole role) {
         this.tableId = tableId;
         this.partId = partId;
         this.ip = ip;
         this.port = port;
         this.role = role;
     }
-    public ObServerRole getRole(){
+
+    public ObServerRole getRole() {
         return role;
     }
 }

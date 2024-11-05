@@ -1,3 +1,20 @@
+/*-
+ * #%L
+ * com.oceanbase:obkv-table-client
+ * %%
+ * Copyright (C) 2021 - 2024 OceanBase
+ * %%
+ * OBKV Table Client Framework is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * #L%
+ */
+
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
@@ -8,7 +25,7 @@ import io.netty.buffer.ByteBuf;
 public class ObTableApiMove extends AbstractPayload {
 
     private ObTableMoveReplicaInfo replica;
-    private long reserved;
+    private long                   reserved;
 
     public ObTableApiMove() {
         replica = new ObTableMoveReplicaInfo();
@@ -36,8 +53,10 @@ public class ObTableApiMove extends AbstractPayload {
 
         // 0. encode header
         idx = encodeHeader(bytes, idx);
-        System.arraycopy(replica.encode(), 0, bytes, idx, Serialization.getNeedBytes(replica.encode()));
-        System.arraycopy(Serialization.encodeVi64(reserved), 0, bytes, idx, Serialization.getNeedBytes(reserved));
+        System.arraycopy(replica.encode(), 0, bytes, idx,
+            Serialization.getNeedBytes(replica.encode()));
+        System.arraycopy(Serialization.encodeVi64(reserved), 0, bytes, idx,
+            Serialization.getNeedBytes(reserved));
 
         return bytes;
     }

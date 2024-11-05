@@ -25,12 +25,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.util.Map;
 
+import static com.alipay.oceanbase.rpc.ObGlobal.OB_VERSION_4_3_4_0;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
 import static org.junit.Assert.assertEquals;
 
@@ -574,4 +572,83 @@ public class ObTableGlobalIndexTest {
         }
     }
 
+    @Test
+    public void test_for_auto_split() throws Exception {
+        if (ObGlobal.OB_VERSION < OB_VERSION_4_3_4_0) {
+            return;
+        }
+        String tableName = "test_auto_split_global_index";
+        String creteTableSql = "create table if not exists `test_auto_split_global_index` ("
+                               + " `c1` int," + " `c2` varchar(128), " + " `c3` varchar(128),"
+                               + " primary key(`c1`)," + " key `g_idx` (`c2`) global)"
+                               + " partition by range() size ('128MB');";
+        executeSQL(creteTableSql);
+        try {
+            String c1 = "c1";
+            String c2 = "c2";
+            String c3 = "c3";
+            int rowCnt = 10;
+            // prepare data
+            for (int i = 0; i < rowCnt; i++) {
+                client.insert(tableName).setRowKey(colVal(c1, i))
+                    .addMutateColVal(colVal(c2, c2 + "_" + i), colVal(c3, c3 + "_" + i)).execute();
+            }
+            QueryResultSet resultSet;
+            int scanCnt = 0;
+            // query with primary index
+            resultSet = client.query(tableName).setScanRangeColumns("c1")
+                .addScanRange(new Object[] { 0 }, new Object[] { rowCnt + 1 }).execute();
+            while (resultSet.next()) {
+                Map<String, Object> res = resultSet.getRow();
+                Assert.assertEquals(res.get(c1), scanCnt);
+                Assert.assertEquals(res.get(c2), c2 + "_" + scanCnt);
+                Assert.assertEquals(res.get(c3), c3 + "_" + scanCnt);
+                scanCnt++;
+            }
+            Assert.assertEquals(rowCnt, scanCnt);
+
+            // query with global index without lookup table
+            scanCnt = 0;
+            resultSet = client.query(tableName).indexName("g_idx").setScanRangeColumns(c2)
+                .select(c1, c2).addScanRange(new Object[] { "c2_0" }, new Object[] { "c2_9" })
+                .execute();
+            while (resultSet.next()) {
+                Map<String, Object> res = resultSet.getRow();
+                Assert.assertEquals(res.get(c1), scanCnt);
+                Assert.assertEquals(res.get(c2), c2 + "_" + scanCnt);
+                scanCnt++;
+            }
+            Assert.assertEquals(rowCnt, scanCnt);
+
+            // query with gloabl index with lookup table
+            scanCnt = 0;
+            resultSet = client.query(tableName).indexName("g_idx").setScanRangeColumns("c2")
+                .addScanRange(new Object[] { "c2_0" }, new Object[] { "c2_9" }).execute();
+            while (resultSet.next()) {
+                Map<String, Object> res = resultSet.getRow();
+                Assert.assertEquals(res.get(c1), scanCnt);
+                Assert.assertEquals(res.get(c2), c2 + "_" + scanCnt);
+                Assert.assertEquals(res.get(c3), c3 + "_" + scanCnt);
+                scanCnt++;
+            }
+            Assert.assertEquals(rowCnt, scanCnt);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            dropTable(tableName);
+        }
+    }
+
+    private void executeSQL(String createSQL) throws SQLException {
+        Connection connection = ObTableClientTestUtil.getConnection();
+        Statement statement = connection.createStatement();
+        statement.execute(createSQL);
+    }
+
+    private void dropTable(String tableName) throws SQLException {
+        // use sql to drop table
+        Connection connection = ObTableClientTestUtil.getConnection();
+        Statement statement = connection.createStatement();
+        statement.execute("drop table " + tableName);
+    }
 }
