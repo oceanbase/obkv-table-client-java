@@ -70,6 +70,7 @@ public class ObTableQuery extends AbstractPayload {
 
     protected static final byte[] HTABLE_DUMMY_BYTES = new byte[] { 0x01, 0x00 };
     protected boolean             isHbaseQuery              = false;
+    protected boolean             isFTSQuery                = false;
     protected List<String>        scanRangeColumns          = new LinkedList<String>();
 
     protected List<ObTableAggregationSingle>    aggregations       = new LinkedList<>();
@@ -561,18 +562,21 @@ public class ObTableQuery extends AbstractPayload {
     }
 
     public void setSearchText(String searchText) {
-        if (isHbaseQuery) {
+        if (this.isHbaseQuery) {
             throw new FeatureNotSupportedException("Hbase query not support full text search currently");
         }
-        if (obKVParams == null) {
+        if (this.obKVParams == null) {
             obKVParams = new ObKVParams();
         }
         ObFTSParams ftsParams = (ObFTSParams)obKVParams.getObParams(ObKVParamsBase.paramType.FTS);
         ftsParams.setSearchText(searchText);
-        obKVParams.setObParamsBase(ftsParams);
+        this.obKVParams.setObParamsBase(ftsParams);
+        this.isFTSQuery = true;
     }
 
     public ObKVParams getObKVParams() {
         return obKVParams;
     }
+
+    public boolean isFTSQuery() { return isFTSQuery; }
 }
