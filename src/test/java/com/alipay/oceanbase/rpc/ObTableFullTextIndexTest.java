@@ -27,7 +27,7 @@ public class ObTableFullTextIndexTest {
     ObTableClient client;
     String tableName = "tbl1";
     String ttlTableName = "ttl_tbl1";
-    String createTableSQL = "CREATE TABLE IF NOT EXISTS tbl1(id INT, c2 INT, txt text, PRIMARY KEY (id), FULLTEXT INDEX full_idx1_tbl1(txt));";
+    String createTableSQL = "CREATE TABLE IF NOT EXISTS tbl1(id INT, c2 INT, txt text, PRIMARY KEY (id), FULLTEXT INDEX full_idx1_tbl1(txt)) partition by key(id) partitions 3;";
     String createTTLTableSQL = "CREATE TABLE IF NOT EXISTS ttl_tbl1(id INT, c2 INT, txt text, expired_ts timestamp(6), PRIMARY KEY (id), FULLTEXT INDEX full_idx1_tbl1(txt)) TTL(expired_ts + INTERVAL 10 SECOND);;";
     String truncateTableSQL = "truncate table tbl1;";
     String truncateTTLTableSQL = "truncate table ttl_tbl1;";
@@ -326,11 +326,13 @@ public class ObTableFullTextIndexTest {
     }
 
     @Test
-    public void testFtsQuery() throws Exception {
+    public void testFTSQuery() throws Exception {
         try {
+            client.addRowKeyElement(tableName, new String[] {"id"});
+
             //sync query
             QueryResultSet resultSet = client.query(tableName)
-                    .setSearchText("native")
+                    .setSearchText("oceanbase")
                     .indexName("full_idx1_tbl1")
                     .execute();
             while(resultSet.next()) {
