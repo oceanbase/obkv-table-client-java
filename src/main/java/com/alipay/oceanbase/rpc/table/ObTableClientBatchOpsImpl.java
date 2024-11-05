@@ -357,8 +357,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                             false, false);
                         obTableClient.refreshTableLocationByTabletId(entry, tableName, partId);
                         ObTableParam newParam = obTableClient.getTableWithPartId(tableName, partId,
-                            false, obTableClient.isTableEntryRefreshIntervalWait(), needFetchAllRouteInfo, route)
-                            .getRight();
+                            false, obTableClient.isTableEntryRefreshIntervalWait(),
+                            needFetchAllRouteInfo, route).getRight();
                         subObTable = newParam.getObTable();
                         subRequest.setPartitionId(newParam.getPartitionId());
                     }
@@ -372,8 +372,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                     result = subObTable.execute(subRequest);
                     if (result instanceof ObTableApiMove) {
                         ObTableApiMove move = (ObTableApiMove) result;
-                        logger.warn("The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. " +
-                                "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move .getReplica().getServer().ipToString());
+                        logger
+                            .warn(
+                                "The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. "
+                                        + "Rerouting return IP is {}", moveResponse.getReplica()
+                                    .getServer().ipToString(), move.getReplica().getServer()
+                                    .ipToString());
                         throw new ObTableRoutingWrongException();
                     }
                 }

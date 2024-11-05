@@ -200,43 +200,49 @@ public class BatchOperation {
                                                            + type);
                     case INSERT:
                         ((Insert) mutation).removeRowkeyFromMutateColval();
-                        batchOps.insert(((Insert) mutation).getRowKeyValues().toArray(new Object[0]), ((Insert) mutation).getColumns(),
+                        batchOps.insert(((Insert) mutation).getRowKeyValues()
+                            .toArray(new Object[0]), ((Insert) mutation).getColumns(),
                             ((Insert) mutation).getValues());
                         break;
                     case DEL:
-                        batchOps.delete(((Delete) mutation).getRowKeyValues().toArray(new Object[0]));
+                        batchOps.delete(((Delete) mutation).getRowKeyValues()
+                            .toArray(new Object[0]));
                         break;
                     case UPDATE:
                         ((Update) mutation).removeRowkeyFromMutateColval();
-                        batchOps.update(((Update) mutation).getRowKeyValues().toArray(new Object[0]), ((Update) mutation).getColumns(),
+                        batchOps.update(((Update) mutation).getRowKeyValues()
+                            .toArray(new Object[0]), ((Update) mutation).getColumns(),
                             ((Update) mutation).getValues());
                         break;
                     case INSERT_OR_UPDATE:
                         ((InsertOrUpdate) mutation).removeRowkeyFromMutateColval();
-                        batchOps.insertOrUpdate(((InsertOrUpdate) mutation).getRowKeyValues().toArray(new Object[0]),
-                            ((InsertOrUpdate) mutation).getColumns(),
+                        batchOps.insertOrUpdate(((InsertOrUpdate) mutation).getRowKeyValues()
+                            .toArray(new Object[0]), ((InsertOrUpdate) mutation).getColumns(),
                             ((InsertOrUpdate) mutation).getValues());
                         break;
                     case REPLACE:
                         ((Replace) mutation).removeRowkeyFromMutateColval();
-                        batchOps.replace(((Replace) mutation).getRowKeyValues().toArray(new Object[0]), ((Replace) mutation).getColumns(),
-                            ((Replace) mutation).getValues());
+                        batchOps.replace(
+                            ((Replace) mutation).getRowKeyValues().toArray(new Object[0]),
+                            ((Replace) mutation).getColumns(), ((Replace) mutation).getValues());
                         break;
                     case INCREMENT:
                         ((Increment) mutation).removeRowkeyFromMutateColval();
-                        batchOps.increment(((Increment) mutation).getRowKeyValues().toArray(new Object[0]),
+                        batchOps.increment(
+                            ((Increment) mutation).getRowKeyValues().toArray(new Object[0]),
                             ((Increment) mutation).getColumns(),
                             ((Increment) mutation).getValues(), withResult);
                         break;
                     case APPEND:
                         ((Append) mutation).removeRowkeyFromMutateColval();
-                        batchOps.append(((Append) mutation).getRowKeyValues().toArray(new Object[0]), ((Append) mutation).getColumns(),
+                        batchOps.append(((Append) mutation).getRowKeyValues()
+                            .toArray(new Object[0]), ((Append) mutation).getColumns(),
                             ((Append) mutation).getValues(), withResult);
                         break;
                     case PUT:
                         ((Put) mutation).removeRowkeyFromMutateColval();
-                        batchOps.put(((Put) mutation).getRowKeyValues().toArray(new Object[0]), ((Put) mutation).getColumns(),
-                            ((Put) mutation).getValues());
+                        batchOps.put(((Put) mutation).getRowKeyValues().toArray(new Object[0]),
+                            ((Put) mutation).getColumns(), ((Put) mutation).getValues());
                         break;
                     default:
                         throw new ObTableException("unknown operation type " + type);

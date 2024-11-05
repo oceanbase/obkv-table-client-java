@@ -1,3 +1,20 @@
+/*-
+ * #%L
+ * com.oceanbase:obkv-table-client
+ * %%
+ * Copyright (C) 2021 - 2024 OceanBase
+ * %%
+ * OBKV Table Client Framework is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * #L%
+ */
+
 package com.alipay.oceanbase.rpc.location.reroute.util;
 
 import com.alipay.oceanbase.rpc.location.model.ObServerRole;
@@ -18,12 +35,11 @@ public class ReplicaOperation {
     private static final String getFollowerAddrSql = "SELECT concat(svr_ip,':',svr_port) AS host FROM oceanbase.__all_virtual_ls_meta_table WHERE tenant_id = 1004 and ls_id = ? and role = 2 and replica_status = 'NORMAL' limit 1;";
     private static final String switch2FollwerSql  = "ALTER SYSTEM SWITCH REPLICA LEADER ls = ? server= ? tenant='java_client'";
 
-    private Connection connection;
+    private Connection          connection;
 
     public ReplicaOperation() throws SQLException {
         connection = ObTableClientTestUtil.getSysConnection();
     }
-
 
     public String createInStatement(int partNum) {
         long[] values = new long[partNum];
@@ -44,7 +60,8 @@ public class ReplicaOperation {
         return inStatement.toString();
     }
 
-    public void getPartitions(String tenantName, String databaseName, String tableName, int partNum, List<Partition> partitions) throws SQLException {
+    public void getPartitions(String tenantName, String databaseName, String tableName,
+                              int partNum, List<Partition> partitions) throws SQLException {
         String sql = getReplicaSql + createInStatement(partNum);
         Connection connection = ObTableClientTestUtil.getConnection();
         PreparedStatement ps = connection.prepareStatement(sql);
@@ -105,7 +122,8 @@ public class ReplicaOperation {
         int partNum = partitions.size();
         for (Partition partition : partitions) {
             if (partition.getFollower().size() != 2) {
-                throw new RuntimeException("invalid follower num: " + partition.getFollower().size());
+                throw new RuntimeException("invalid follower num: "
+                                           + partition.getFollower().size());
             }
         }
 
@@ -116,8 +134,11 @@ public class ReplicaOperation {
 
         // switch all replica leader to ip:port
         for (Partition partition : partitions) {
-            String partIdStr = String.format("%d%%%d@%d", partition.getPartId(), partNum, partition.getTableId());
-            String sql = String.format("ALTER SYSTEM SWITCH REPLICA LEADER PARTITION_ID '%s' SERVER '%s';", partIdStr, server);
+            String partIdStr = String.format("%d%%%d@%d", partition.getPartId(), partNum,
+                partition.getTableId());
+            String sql = String.format(
+                "ALTER SYSTEM SWITCH REPLICA LEADER PARTITION_ID '%s' SERVER '%s';", partIdStr,
+                server);
             PreparedStatement ps = connection.prepareStatement(sql);
             ps.executeQuery();
         }
@@ -175,7 +196,7 @@ public class ReplicaOperation {
                 if (prevLsId == Long.MAX_VALUE) {
                     prevLsId = lsId;
                 } else {
-                    if (lsId != prevLsId){
+                    if (lsId != prevLsId) {
                         return -1;
                     }
                 }
@@ -255,7 +276,8 @@ public class ReplicaOperation {
         }
     }
 
-    public void switchReplicaLeaderRandomly4x(String tenantName, String databaseName, String tableName) throws SQLException {
+    public void switchReplicaLeaderRandomly4x(String tenantName, String databaseName,
+                                              String tableName) throws SQLException {
         long lsId = getLsId(databaseName, tableName);
         String addr = getFollowerAddr(lsId);
         switch2Follower(lsId, addr);
