@@ -247,9 +247,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     } else if (e instanceof ObTableException) {
                         if ((((ObTableException) e).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode || ((ObTableException) e)
                             .getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode)
-                            && ((request instanceof ObTableQueryAsyncRequest && ((ObTableQueryAsyncRequest) request)
-                                .getObTableQueryRequest().getTableQuery().isHbaseQuery()) || (request instanceof ObTableQueryRequest && ((ObTableQueryRequest) request)
-                                .getTableQuery().isHbaseQuery()))
+                            && ((request instanceof ObTableQueryAsyncRequest && ((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery().isHbaseQuery())
+                            || (request instanceof ObTableQueryRequest && ((ObTableQueryRequest) request).getTableQuery().isHbaseQuery()))
                             && client.getTableGroupInverted().get(indexTableName) != null) {
                             // table not exists && hbase mode && table group exists , three condition both
                             client.eraseTableGroupFromCache(tableName);
