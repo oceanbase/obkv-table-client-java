@@ -512,16 +512,18 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         
         Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> currentPartitions = new HashMap<>();
         currentPartitions.put(entry.getKey(), entry.getValue());
-
-        while (retryCount < maxRetries && !success) {
+        int errCode = ResultCodes.OB_SUCCESS.errorCode;
+        String errMsg = null;
+        while (retryCount <= maxRetries && !success) {
             boolean allPartitionsSuccess = true;
-
             for (Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> currentEntry : currentPartitions.entrySet()) {
                 try {
                     partitionExecute(results, currentEntry);
                 } catch (Exception e) {
                     if (shouldRetry(e)) {
                         retryCount++;
+                        errCode = ((ObTableNeedFetchAllException)e).getErrorCode();
+                        errMsg = e.getMessage();
                         List<ObTableOperation> failedOperations = extractOperations(currentEntry.getValue().getRight());
                         currentPartitions = prepareOperations(failedOperations);
                         allPartitionsSuccess = false;
@@ -538,7 +540,9 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         }
 
         if (!success) {
-            throw new ObTableUnexpectedException("Failed to execute operation after retrying " + maxRetries + " times.");
+            errMsg = "Failed to execute operation after retrying " + maxRetries + " times. Last error Msg:" +
+                    "[errCode="+ errCode +"] " + errMsg;
+            throw new ObTableUnexpectedException(errMsg);
         }
     }
 
