@@ -1640,8 +1640,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh,
             needFetchAll);
         Row row = new Row();
-        if (tableEntry.isPartitionTable()
-            && tableEntry.getPartitionInfo().getLevel() != ObPartitionLevel.LEVEL_ZERO) {
+        if (tableEntry.isPartitionTable()) {
             List<String> curTableRowKeyNames = new ArrayList<String>();
             Map<String, Integer> tableRowKeyEle = getRowKeyElement(tableName);
             if (tableRowKeyEle != null) {
@@ -2052,8 +2051,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         Row startRow = new Row();
         Row endRow = new Row();
         // ensure the format of column names and values if the current table is a table with partition
-        if (tableEntry.isPartitionTable()
-            && tableEntry.getPartitionInfo().getLevel() != ObPartitionLevel.LEVEL_ZERO) {
+        if (tableEntry.isPartitionTable()) {
             // scanRangeColumn may be longer than start/end in prefix scanning situation
             if (scanRangeColumns == null || scanRangeColumns.size() < start.length) {
                 throw new IllegalArgumentException(
