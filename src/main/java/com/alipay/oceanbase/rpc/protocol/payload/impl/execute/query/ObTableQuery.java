@@ -116,8 +116,6 @@ public class ObTableQuery extends AbstractPayload {
         return withinStart && withinEnd;
     }
 
->>>>>>> ob/master
-
     /*
      * Check filter.
      */
