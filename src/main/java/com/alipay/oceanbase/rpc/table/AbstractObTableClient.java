@@ -50,6 +50,8 @@ public abstract class AbstractObTableClient extends AbstractTable {
     protected long            tableEntryRefreshIntervalBase             = TABLE_ENTRY_REFRESH_INTERVAL_BASE
                                                                             .getDefaultLong();
 
+    protected long            tableEntryLocationRefreshThreshold        = TABLE_ENTRY_LOCATION_REFRESH_THRESHOLD.getDefaultLong();
+    
     protected long            tableEntryRefreshIntervalCeiling          = TABLE_ENTRY_REFRESH_INTERVAL_CEILING
                                                                             .getDefaultLong();
 

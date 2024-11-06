@@ -47,6 +47,7 @@ import java.util.*;
 
 import static com.alipay.oceanbase.rpc.location.model.partition.ObPartitionKey.MAX_PARTITION_ELEMENT;
 import static com.alipay.oceanbase.rpc.location.model.partition.ObPartitionKey.MIN_PARTITION_ELEMENT;
+import static com.alipay.oceanbase.rpc.property.Property.TABLE_ENTRY_LOCATION_REFRESH_THRESHOLD;
 import static com.alipay.oceanbase.rpc.util.RandomUtil.getRandomNum;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
 import static java.lang.String.format;
@@ -745,10 +746,14 @@ public class LocationUtil {
                 }
 
                 if (ObGlobal.obVsnMajor() >= 4) {
-                    // only set empty partitionEntry
-                    ObPartitionEntry partitionEntry = new ObPartitionEntry();
-                    tableEntry.setPartitionEntry(partitionEntry);
-                    tableEntry.setRefreshTimeMills(System.currentTimeMillis());
+                    // only set empty partitionEntry 
+                    if (tableEntry.getPartitionNum() <= TABLE_ENTRY_LOCATION_REFRESH_THRESHOLD.getDefaultLong()) {
+                        getTableEntryLocationFromRemote(connection, key, tableEntry);
+                    } else {
+                        ObPartitionEntry partitionEntry = new ObPartitionEntry();
+                        tableEntry.setPartitionEntry(partitionEntry);
+                        tableEntry.setRefreshTimeMills(System.currentTimeMillis());
+                    }
                 } else {
                     // get location info
                     getTableEntryLocationFromRemote(connection, key, tableEntry);
@@ -915,6 +920,7 @@ public class LocationUtil {
                 ps.setString(1, key.getTenantName());
                 ps.setString(2, key.getDatabaseName());
                 ps.setString(3, key.getTableName());
+                ps.setString(4, key.getTenantName());
                 rs = ps.executeQuery();
                 partitionEntry = getPartitionLocationFromResultSet(tableEntry, rs, partitionEntry);
             } catch (Exception e) {
@@ -1279,28 +1285,55 @@ public class LocationUtil {
                 } else {
                     tabletLsIdMap.put(partitionId, INVALID_LS_ID); // non-partitioned table
                 }
+                ObPartitionLocationInfo partitionLocationInfo = partitionEntry
+                        .getPartitionInfo(partitionId);
+                ObPartitionLocation location = partitionLocationInfo.getPartitionLocation();
+                if (location == null) {
+                    partitionLocationInfo.rwLock.writeLock().lock();
+                    try {
+                        location = partitionLocationInfo.getPartitionLocation();
+                        if (location == null) {
+                            location = new ObPartitionLocation();
+                            partitionLocationInfo.updateLocation(location, lsId);
+                        }
+                    } finally {
+                        partitionLocationInfo.rwLock.writeLock().unlock();
+                    }
+                }
+                if (!replica.isValid()) {
+                    RUNTIME
+                            .warn(format(
+                                    "Replica is invalid; continuing. Replica=%s, PartitionId/TabletId=%d, TableId=%d",
+                                    replica, partitionId, tableEntry.getTableId()));
+                    continue;
+                }
+                location.addReplicaLocation(replica);
+
+                if (partitionLocationInfo.initialized.compareAndSet(false, true)) {
+                    partitionLocationInfo.initializationLatch.countDown();
+                }
             } else {
                 partitionId = rs.getLong("partition_id");
                 if (tableEntry.isPartitionTable()
-                    && null != tableEntry.getPartitionInfo().getSubPartDesc()) {
+                        && null != tableEntry.getPartitionInfo().getSubPartDesc()) {
                     partitionId = ObPartIdCalculator.getPartIdx(partitionId, tableEntry
-                        .getPartitionInfo().getSubPartDesc().getPartNum());
+                            .getPartitionInfo().getSubPartDesc().getPartNum());
                 }
-            }
-            if (!replica.isValid()) {
-                RUNTIME
-                    .warn(format(
-                        "replica is invalid, continue, replica=%s, partitionId/tabletId=%d, tableId=%d",
-                        replica, partitionId, tableEntry.getTableId()));
-                continue;
-            }
-            ObPartitionLocation location = partitionLocation.get(partitionId);
+                if (!replica.isValid()) {
+                    RUNTIME
+                            .warn(format(
+                                    "replica is invalid, continue, replica=%s, partitionId/tabletId=%d, tableId=%d",
+                                    replica, partitionId, tableEntry.getTableId()));
+                    continue;
+                }
+                ObPartitionLocation location = partitionLocation.get(partitionId);
 
-            if (location == null) {
-                location = new ObPartitionLocation();
-                partitionLocation.put(partitionId, location);
+                if (location == null) {
+                    location = new ObPartitionLocation();
+                    partitionLocation.put(partitionId, location);
+                }
+                location.addReplicaLocation(replica);
             }
-            location.addReplicaLocation(replica);
         }
 
         if (ObGlobal.obVsnMajor() < 4) {
