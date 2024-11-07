@@ -47,7 +47,6 @@ import java.util.*;
 
 import static com.alipay.oceanbase.rpc.location.model.partition.ObPartitionKey.MAX_PARTITION_ELEMENT;
 import static com.alipay.oceanbase.rpc.location.model.partition.ObPartitionKey.MIN_PARTITION_ELEMENT;
-import static com.alipay.oceanbase.rpc.property.Property.TABLE_ENTRY_LOCATION_REFRESH_THRESHOLD;
 import static com.alipay.oceanbase.rpc.util.RandomUtil.getRandomNum;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
 import static java.lang.String.format;
@@ -214,7 +213,8 @@ public class LocationUtil {
     private static final int    TEMPLATE_PART_ID                              = -1;
 
     // limit the size of get tableEntry location from remote each time
-    private static final int    MAX_TABLET_NUMS_EPOCH                         = 300;
+    private static final int    MAX_TABLET_NUMS_EPOCH                       = 300;
+    private static final int    TABLE_ENTRY_LOCATION_REFRESH_THRESHOLD      = 100;
 
     private abstract static class TableEntryRefreshWithPriorityCallback<T> {
         abstract T execute(ObServerAddr obServerAddr) throws ObTableEntryRefreshException;
@@ -747,7 +747,7 @@ public class LocationUtil {
 
                 if (ObGlobal.obVsnMajor() >= 4) {
                     // only set empty partitionEntry 
-                    if (tableEntry.getPartitionNum() <= TABLE_ENTRY_LOCATION_REFRESH_THRESHOLD.getDefaultLong()) {
+                    if (tableEntry.getPartitionNum() <= TABLE_ENTRY_LOCATION_REFRESH_THRESHOLD) {
                         getTableEntryLocationFromRemote(connection, key, tableEntry);
                     } else {
                         ObPartitionEntry partitionEntry = new ObPartitionEntry();

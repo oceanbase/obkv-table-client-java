@@ -59,8 +59,6 @@ public enum Property {
     TABLE_ENTRY_ACQUIRE_SOCKET_TIMEOUT("table.entry.acquire.socket.timeout", 3000L,
                                        "刷新TABLE地址的SOCKET超时时间"),
 
-    TABLE_ENTRY_LOCATION_REFRESH_THRESHOLD("table.entry.location.refresh.threshold", 100L, "刷新TABLE ENTRY同时刷新LOCATION的阈值"),
-
     TABLE_ENTRY_REFRESH_INTERVAL_BASE("table.entry.refresh.interval.base", 100L, "刷新TABLE地址的基础时间间隔"),
 
     @Deprecated
