@@ -271,7 +271,7 @@ public class ObTableFullTextIndexTest {
             Assert.assertEquals(3, res.size());
             Assert.assertEquals(id, res.get(idCol));
             Assert.assertEquals(100, res.get(c2Col));
-            Assert.assertEquals(txt, res.get(txtCol));
+            Assert.assertEquals(null, res.get(txtCol));
 
             // replace-conflict with fulltext column
             txt = " The birds chirped happily as they flew from tree to tree";
@@ -283,7 +283,7 @@ public class ObTableFullTextIndexTest {
             res = client.get(partTableName, new Object[] { id }, null);
             Assert.assertEquals(3, res.size());
             Assert.assertEquals(id, res.get(idCol));
-            Assert.assertEquals(100, res.get(c2Col));
+            Assert.assertEquals(null, res.get(c2Col));
             Assert.assertEquals(txt, res.get(txtCol));
 
             // replace-conflict with all column
@@ -364,7 +364,7 @@ public class ObTableFullTextIndexTest {
 
             // get
             res = client.get(ttlTableName, new Object[]{id + 1}, null);
-            Assert.assertEquals(id, res.get(idCol));
+            Assert.assertEquals(id + 1, res.get(idCol));
             Assert.assertEquals(curTs, res.get(expireTsCol));
             Assert.assertEquals(null, res.get(c2Col));
             Assert.assertEquals(txt4, res.get(txtCol));
