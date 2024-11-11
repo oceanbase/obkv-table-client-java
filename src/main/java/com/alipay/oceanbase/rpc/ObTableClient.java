@@ -1938,9 +1938,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         List<ObPair<Long, ReplicaLocation>> replicas = new ArrayList<>();
 
         if (!tableEntry.isPartitionTable() || tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ZERO) {
-            long tabletId = getTabletIdByPartId(tableEntry, 0L);
-            ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
-            replicas.add(new ObPair<>(tabletId, getPartitionLocation(locationInfo, route)));
+            if (ObGlobal.obVsnMajor() >= 4) {
+                long tabletId = getTabletIdByPartId(tableEntry, 0L);
+                ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
+                replicas.add(new ObPair<>(tabletId, getPartitionLocation(locationInfo, route)));
+            } else {
+                replicas.add(new ObPair<Long, ReplicaLocation>(0L, getPartitionLocation(tableEntry, 0L,
+                        route)));
+            }
             return replicas;
         }
 
