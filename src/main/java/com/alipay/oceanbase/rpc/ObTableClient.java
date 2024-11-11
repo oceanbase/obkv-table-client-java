@@ -792,7 +792,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         if (tryTimes > 1) {
                             TableEntry entry = getOrRefreshTableEntry(tableName, false, false, false);
                             Long partId = getPartition(entry, callback.getRowKey());
-                            refreshTableLocationByTabletId(entry, tableName, getTabletIdByPartId(entry, partId));
+                            if (ObGlobal.obVsnMajor() >= 4) {
+                                refreshTableLocationByTabletId(entry, tableName, getTabletIdByPartId(entry, partId));
+                            }
                         }
                         // using row key
                         obPair = getTable(tableName, callback.getRowKey(), needRefreshTableEntry, tableEntryRefreshIntervalWait, false, route);
@@ -1661,7 +1663,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
 
         long partId = getPartition(tableEntry, row); // partition id in 3.x, origin partId in 4.x, logicId
-        if (refresh) {
+        if (refresh && ObGlobal.obVsnMajor() >= 4) {
             refreshTableLocationByTabletId(tableEntry, tableName, getTabletIdByPartId(tableEntry, partId));
         }
         return getTableInternal(tableName, tableEntry, partId, waitForRefresh, route);
