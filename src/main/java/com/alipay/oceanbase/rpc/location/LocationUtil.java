@@ -154,19 +154,13 @@ public class LocationUtil {
                                                                                 + "FROM oceanbase.__all_virtual_proxy_schema A inner join oceanbase.__all_server B on A.svr_ip = B.svr_ip and A.sql_port = B.inner_port "
                                                                                 + "WHERE tenant_name = ? and database_name=? and table_name = ? and tablet_id = 0";
 
-    private static final String PROXY_LOCATION_SQL_PARTITION_V4               = "SELECT /*+READ_CONSISTENCY(WEAK)*/ * FROM ( "
-                                                                                + "   SELECT A.tablet_id as tablet__id, A.svr_ip as svr_ip, A.sql_port as sql_port, A.table_id as table_id, "
-                                                                                + "   A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, "
-                                                                                + "   B.stop_time as stop_time, A.spare1 as replica_type "
-                                                                                + "   FROM oceanbase.__all_virtual_proxy_schema A "
-                                                                                + "   INNER JOIN oceanbase.__all_server B ON A.svr_ip = B.svr_ip AND A.sql_port = B.inner_port "
-                                                                                + "   WHERE A.tablet_id IN ({0}) AND A.tenant_name = ? AND A.database_name = ? AND A.table_name = ?) AS left_table "
-                                                                                + "LEFT JOIN ("
-                                                                                + "   SELECT D.ls_id, D.tablet_id "
-                                                                                + "   FROM oceanbase.__all_virtual_tablet_to_ls D "
-                                                                                + "   INNER JOIN oceanbase.DBA_OB_TENANTS C ON D.tenant_id = C.tenant_id "
-                                                                                + "   WHERE C.tenant_name = ? "
-                                                                                + ") AS right_table ON left_table.tablet__id = right_table.tablet_id;";
+    private static final String PROXY_LOCATION_SQL_PARTITION_V4               = "SELECT /*+READ_CONSISTENCY(WEAK)*/ A.tablet_id as tablet_id, A.svr_ip as svr_ip, A.sql_port as sql_port, "
+                                                                                + "A.table_id as table_id, A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, B.stop_time as stop_time "
+                                                                                + ", A.spare1 as replica_type, D.ls_id as ls_id "
+                                                                                + "FROM oceanbase.__all_virtual_proxy_schema A inner join oceanbase.__all_server B on A.svr_ip = B.svr_ip and A.sql_port = B.inner_port "
+                                                                                + "inner join oceanbase.DBA_OB_TENANTS C on C.tenant_name = A.tenant_name "
+                                                                                + "left join oceanbase.CDB_OB_TABLET_TO_LS D on D.tenant_id = C.tenant_id and D.tablet_id = A.tablet_id "
+                                                                                + "WHERE C.tenant_name = ? and database_name= ? and table_name = ? and A.tablet_id in ({0}) ";
 
     private static final String PROXY_LOCATION_SQL_PARTITION_BY_TABLETID_V4 = "SELECT /*+READ_CONSISTENCY(WEAK)*/ "
                                                                                 + "    A.tablet_id as tablet_id, "
@@ -904,7 +898,7 @@ public class LocationUtil {
     public static TableEntry getTableEntryLocationFromRemote(Connection connection,
                                                              TableEntryKey key,
                                                              TableEntry tableEntry)
-                                                                                   throws ObTablePartitionLocationRefreshException {
+            throws ObTablePartitionLocationRefreshException {
 
         PreparedStatement ps = null;
         ResultSet rs = null;
@@ -914,23 +908,18 @@ public class LocationUtil {
         for (int i = 0; i < epoch; i++) {
             try {
                 int offset = i * MAX_TABLET_NUMS_EPOCH;
-                // // This code is executed only in version 3.x
                 String sql = genLocationSQLByOffset(tableEntry, offset, MAX_TABLET_NUMS_EPOCH);
                 ps = connection.prepareStatement(sql);
                 ps.setString(1, key.getTenantName());
                 ps.setString(2, key.getDatabaseName());
                 ps.setString(3, key.getTableName());
-                if (ObGlobal.obVsnMajor() >= 4) {
-                    // Only for v4.
-                    ps.setString(4, key.getTenantName());
-                }
                 rs = ps.executeQuery();
                 partitionEntry = getPartitionLocationFromResultSet(tableEntry, rs, partitionEntry);
             } catch (Exception e) {
                 RUNTIME.error(LCD.convert("01-00010"), key, partitionNum, tableEntry, e);
                 throw new ObTablePartitionLocationRefreshException(format(
-                    "fail to get partition location entry from remote entryKey = %s partNum = %d tableEntry =%s "
-                            + "offset =%d epoch =%d", key, partitionNum, tableEntry, i, epoch), e);
+                        "fail to get partition location entry from remote entryKey = %s partNum = %d tableEntry =%s "
+                                + "offset =%d epoch =%d", key, partitionNum, tableEntry, i, epoch), e);
             } finally {
                 try {
                     if (null != rs) {
