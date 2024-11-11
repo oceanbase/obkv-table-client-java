@@ -1965,8 +1965,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
         } else {
             for (Long partId : partIds) {
-                long partitionId = ObPartIdCalculator.getPartIdx(partId, tableEntry
-                        .getPartitionInfo().getSubPartDesc().getPartNum());
+                long partitionId = partId;
+                if (tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
+                    partitionId = ObPartIdCalculator.getPartIdx(partId, tableEntry
+                            .getPartitionInfo().getSubPartDesc().getPartNum());
+                }
                 replicas.add(new ObPair<Long, ReplicaLocation>(partId, getPartitionLocation(
                         tableEntry, partitionId, route)));
             }

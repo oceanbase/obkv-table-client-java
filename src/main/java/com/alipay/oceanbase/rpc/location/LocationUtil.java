@@ -920,7 +920,10 @@ public class LocationUtil {
                 ps.setString(1, key.getTenantName());
                 ps.setString(2, key.getDatabaseName());
                 ps.setString(3, key.getTableName());
-                ps.setString(4, key.getTenantName());
+                if (ObGlobal.obVsnMajor() >= 4) {
+                    // Only for v4.
+                    ps.setString(4, key.getTenantName());
+                }
                 rs = ps.executeQuery();
                 partitionEntry = getPartitionLocationFromResultSet(tableEntry, rs, partitionEntry);
             } catch (Exception e) {
