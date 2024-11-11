@@ -1897,9 +1897,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         ObPartitionLocationInfo obPartitionLocationInfo = tableEntry.getPartitionEntry()
             .getPartitionInfo(tabletId);
         if (!obPartitionLocationInfo.initialized.get()) {
-            if (ObGlobal.obVsnMajor() >= 4) {
-                tableEntry = refreshTableLocationByTabletId(tableEntry, tableName, tabletId);
-            }
+            tableEntry = refreshTableLocationByTabletId(tableEntry, tableName, tabletId);
             obPartitionLocationInfo = tableEntry.getPartitionEntry().getPartitionInfo(tabletId);
             obPartitionLocationInfo.initializationLatch.await();
         }
