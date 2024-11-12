@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.table;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.exception.*;
@@ -477,7 +478,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         }
                         TableEntry entry = obTableClient.getOrRefreshTableEntry(tableName, false,
                                 false, false);
-                        obTableClient.refreshTableLocationByTabletId(entry, tableName, obTableClient.getTabletIdByPartId(entry, originPartId));
+                        if (ObGlobal.obVsnMajor() >= 4) {
+                            obTableClient.refreshTableLocationByTabletId(entry, tableName, obTableClient.getTabletIdByPartId(entry, originPartId));
+                        }
                         subObTable = obTableClient.getTableWithPartId(tableName, originPartId, needRefreshTableEntry,
                                         obTableClient.isTableEntryRefreshIntervalWait(), false, route).
                                             getRight().getObTable();
@@ -641,7 +644,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
         Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> currentPartitions = new HashMap<>();
         currentPartitions.put(entry.getKey(), entry.getValue());
-
+        int errCode = ResultCodes.OB_SUCCESS.errorCode;
+        String errMsg = null;
         while (retryCount <= maxRetries && !success) {
             boolean allPartitionsSuccess = true;
 
@@ -651,6 +655,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 } catch (Exception e) {
                     if (shouldRetry(e)) {
                         retryCount++;
+                        errCode = ((ObTableNeedFetchAllException)e).getErrorCode();
+                        errMsg = e.getMessage();
                         List<ObTableSingleOp> failedOperations = extractOperations(currentEntry.getValue());
                         currentPartitions = prepareOperations(failedOperations);
                         allPartitionsSuccess = false;
@@ -667,7 +673,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         }
 
         if (!success) {
-            throw new ObTableUnexpectedException("Failed to execute operation after retrying " + maxRetries + " times.");
+            errMsg = "Failed to execute operation after retrying " + maxRetries + " times. Last error Msg:" +
+                    "[errCode="+ errCode +"] " + errMsg;
+            throw new ObTableUnexpectedException(errMsg);
         }
     }
 

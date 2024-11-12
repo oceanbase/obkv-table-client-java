@@ -221,7 +221,7 @@ public class ObRangePartDesc extends ObPartDesc {
 
         if (!(startRowObj instanceof Row) || !(endRowObj instanceof Row)) {
             throw new ObTableException("invalid format of rowObj: " + startRowObj + ", "
-                    + endRowObj);
+                                       + endRowObj);
         }
         Row startRow = (Row) startRowObj, endRow = (Row) endRowObj;
         // pre-check start and end
@@ -229,8 +229,9 @@ public class ObRangePartDesc extends ObPartDesc {
         if (startRow.size() != endRow.size()) {
             throw new IllegalArgumentException("length of start key and end key is not equal");
         }
-        if (startRow.size() == 1  && startRow.getValues()[0] instanceof ObObj && ((ObObj) startRow.getValues()[0]).isMinObj() &&
-                endRow.size() == 1  && endRow.getValues()[0] instanceof ObObj && ((ObObj) endRow.getValues()[0]).isMaxObj()) {
+        if (startRow.size() == 1 && startRow.getValues()[0] instanceof ObObj
+            && ((ObObj) startRow.getValues()[0]).isMinObj() && endRow.size() == 1
+            && endRow.getValues()[0] instanceof ObObj && ((ObObj) endRow.getValues()[0]).isMaxObj()) {
             return completeWorks;
         }
 
@@ -266,8 +267,9 @@ public class ObRangePartDesc extends ObPartDesc {
         }
         Row row = (Row) rowObj.get(0);
         if (row.size() < partColumns.size()) {
-            throw new IllegalArgumentException("Input row key should at least include " + partColumns
-                                               + "but found" + Arrays.toString(row.getValues()));
+            throw new IllegalArgumentException("Input row key should at least include "
+                                               + partColumns + "but found"
+                                               + Arrays.toString(row.getValues()));
         }
 
         try {

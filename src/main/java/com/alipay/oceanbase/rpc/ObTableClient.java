@@ -815,7 +815,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         if (tryTimes > 1) {
                             TableEntry entry = getOrRefreshTableEntry(tableName, false, false, false);
                             Long partId = getPartition(entry, callback.getRowKey());
-                            refreshTableLocationByTabletId(entry, tableName, getTabletIdByPartId(entry, partId));
+                            if (ObGlobal.obVsnMajor() >= 4) {
+                                refreshTableLocationByTabletId(entry, tableName, getTabletIdByPartId(entry, partId));
+                            }
                         }
                         // using row key
                         obPair = getTable(tableName, callback.getRowKey(), needRefreshTableEntry, tableEntryRefreshIntervalWait, false, route);
@@ -1672,8 +1674,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh,
             needFetchAll);
         Row row = new Row();
-        if (tableEntry.isPartitionTable()
-            && tableEntry.getPartitionInfo().getLevel() != ObPartitionLevel.LEVEL_ZERO) {
+        if (tableEntry.isPartitionTable()) {
             List<String> curTableRowKeyNames = new ArrayList<String>();
             Map<String, Integer> tableRowKeyEle = getRowKeyElement(tableName);
             if (tableRowKeyEle != null) {
@@ -1694,7 +1695,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
 
         long partId = getPartition(tableEntry, row); // partition id in 3.x, origin partId in 4.x, logicId
-        if (refresh) {
+        if (refresh && ObGlobal.obVsnMajor() >= 4) {
             refreshTableLocationByTabletId(tableEntry, tableName, getTabletIdByPartId(tableEntry, partId));
         }
         return getTableInternal(tableName, tableEntry, partId, waitForRefresh, route);
@@ -1929,6 +1930,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                        ObServerRoute route) throws Exception {
         ReplicaLocation replica = null;
         long tabletId = getTabletIdByPartId(tableEntry, partId);
+        long partitionId = partId;
         ObPartitionLocationInfo obPartitionLocationInfo = null;
         if (ObGlobal.obVsnMajor() >= 4) {
 
@@ -1936,7 +1938,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
             replica = getPartitionLocation(obPartitionLocationInfo, route);
         } else {
-            ObPair<Long, ReplicaLocation> partitionReplica = getPartitionReplica(tableEntry, partId,
+            if (tableEntry.isPartitionTable()
+                    && null != tableEntry.getPartitionInfo().getSubPartDesc()) {
+                partitionId = ObPartIdCalculator.getPartIdx(partId, tableEntry
+                        .getPartitionInfo().getSubPartDesc().getPartNum());
+            }
+            ObPair<Long, ReplicaLocation> partitionReplica = getPartitionReplica(tableEntry, partitionId,
                     route);
             replica = partitionReplica.getRight();
         }
@@ -1961,7 +1968,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 replica = getPartitionLocation(obPartitionLocationInfo, route);
             } else {
                 tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
-                replica = getPartitionReplica(tableEntry, partId, route).getRight();
+                replica = getPartitionReplica(tableEntry, partitionId, route).getRight();
             }
 
             addr = replica.getAddr();
@@ -1972,9 +1979,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 throw new ObTableGetException("Cannot get table by addr: " + addr);
             }
         }
-        ObTableParam param = null;
+        ObTableParam param = createTableParam(obTable, tableEntry, obPartitionLocationInfo, partId, tabletId);
         if (ObGlobal.obVsnMajor() >= 4) {
-            param = createTableParam(obTable, tableEntry, obPartitionLocationInfo, partId, tabletId);
         } else {
             param.setPartId(partId);
             param.setTableId(tableEntry.getTableId());
@@ -2047,19 +2053,36 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         List<ObPair<Long, ReplicaLocation>> replicas = new ArrayList<>();
 
         if (!tableEntry.isPartitionTable() || tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ZERO) {
-            long tabletId = getTabletIdByPartId(tableEntry, 0L);
-            ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
-            replicas.add(new ObPair<>(tabletId, getPartitionLocation(locationInfo, route)));
+            if (ObGlobal.obVsnMajor() >= 4) {
+                long tabletId = getTabletIdByPartId(tableEntry, 0L);
+                ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
+                replicas.add(new ObPair<>(tabletId, getPartitionLocation(locationInfo, route)));
+            } else {
+                replicas.add(new ObPair<Long, ReplicaLocation>(0L, getPartitionLocation(tableEntry, 0L,
+                        route)));
+            }
             return replicas;
         }
 
         ObPartitionLevel partitionLevel = tableEntry.getPartitionInfo().getLevel();
         List<Long> partIds = getPartitionTablePartitionIds(tableEntry, startRow, startIncluded, endRow, endIncluded, partitionLevel);
 
-        for (Long partId : partIds) {
-            long tabletId = getTabletIdByPartId(tableEntry, partId);
-            ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
-            replicas.add(new ObPair<>(tabletId, getPartitionLocation(locationInfo, route)));
+        if (ObGlobal.obVsnMajor() >= 4) {
+            for (Long partId : partIds) {
+                long tabletId = getTabletIdByPartId(tableEntry, partId);
+                ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
+                replicas.add(new ObPair<>(tabletId, getPartitionLocation(locationInfo, route)));
+            }
+        } else {
+            for (Long partId : partIds) {
+                long partitionId = partId;
+                if (tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_TWO) {
+                    partitionId = ObPartIdCalculator.getPartIdx(partId, tableEntry
+                            .getPartitionInfo().getSubPartDesc().getPartNum());
+                }
+                replicas.add(new ObPair<Long, ReplicaLocation>(partId, getPartitionLocation(
+                        tableEntry, partitionId, route)));
+            }
         }
 
         return replicas;
@@ -2182,8 +2205,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         Row startRow = new Row();
         Row endRow = new Row();
         // ensure the format of column names and values if the current table is a table with partition
-        if (tableEntry.isPartitionTable()
-            && tableEntry.getPartitionInfo().getLevel() != ObPartitionLevel.LEVEL_ZERO) {
+        if (tableEntry.isPartitionTable()) {
             if ((scanRangeColumns == null || scanRangeColumns.isEmpty()) && start.length == 1
                 && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj() && end.length == 1
                 && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
@@ -3599,11 +3621,21 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             Object[] start = new Object[startKeySize];
                             Object[] end = new Object[endKeySize];
                             for (int i = 0; i < startKeySize; i++) {
-                                start[i] = startKey.getObj(i).getValue();
+                                ObObj curStart = startKey.getObj(i);
+                                if (curStart.isMinObj()) {
+                                    start[i] = curStart;
+                                } else {
+                                    start[i] = curStart.getValue();
+                                }
                             }
 
                             for (int i = 0; i < endKeySize; i++) {
-                                end[i] = endKey.getObj(i).getValue();
+                                ObObj curEnd = endKey.getObj(i);
+                                if (curEnd.isMaxObj()) {
+                                    end[i] = curEnd;
+                                } else {
+                                    end[i] = curEnd.getValue();
+                                }
                             }
                             ObBorderFlag borderFlag = rang.getBorderFlag();
                             List<ObPair<Long, ObTableParam>> pairList = getTables(request.getTableName(),

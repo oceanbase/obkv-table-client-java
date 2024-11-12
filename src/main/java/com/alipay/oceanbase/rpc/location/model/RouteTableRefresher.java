@@ -18,7 +18,6 @@ package com.alipay.oceanbase.rpc.location.model;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 
-
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,21 +29,22 @@ import org.slf4j.Logger;
 
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.getLogger;
 
-public class RouteTableRefresher extends Thread{
+public class RouteTableRefresher extends Thread {
 
-    private static final Logger logger                                  = getLogger(RouteTableRefresher.class);
+    private static final Logger                                     logger     = getLogger(RouteTableRefresher.class);
 
-    private volatile AtomicBoolean isFinished = new AtomicBoolean(false);                                       // Thread end flag
+    private volatile AtomicBoolean                                  isFinished = new AtomicBoolean(
+                                                                                   false);                            // Thread end flag
 
-    private final Semaphore semaphore = new Semaphore(0);
+    private final Semaphore                                         semaphore  = new Semaphore(0);
 
-    private volatile ConcurrentLinkedQueue<ObPair<String, Boolean>> refreshTableTasks; // Task refresh queue
+    private volatile ConcurrentLinkedQueue<ObPair<String, Boolean>> refreshTableTasks;                                // Task refresh queue
 
-    ObTableClient client;
+    ObTableClient                                                   client;
 
-    private final Lock lock = new ReentrantLock();                  // Ensure the atomicity of the AddIfAbsent operation.
+    private final Lock                                              lock       = new ReentrantLock();                 // Ensure the atomicity of the AddIfAbsent operation.
 
-    public RouteTableRefresher(ObTableClient client){
+    public RouteTableRefresher(ObTableClient client) {
         this.client = client;
     }
 

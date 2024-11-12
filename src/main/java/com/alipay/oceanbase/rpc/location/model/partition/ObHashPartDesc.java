@@ -115,8 +115,10 @@ public class ObHashPartDesc extends ObPartDesc {
                 throw new IllegalArgumentException("length of start key and end key is not equal");
             }
 
-            if (startRow.size() == 1  && startRow.getValues()[0] instanceof ObObj && ((ObObj) startRow.getValues()[0]).isMinObj() &&
-                    endRow.size() == 1  && endRow.getValues()[0] instanceof ObObj && ((ObObj) endRow.getValues()[0]).isMaxObj()) {
+            if (startRow.size() == 1 && startRow.getValues()[0] instanceof ObObj
+                && ((ObObj) startRow.getValues()[0]).isMinObj() && endRow.size() == 1
+                && endRow.getValues()[0] instanceof ObObj
+                && ((ObObj) endRow.getValues()[0]).isMaxObj()) {
                 return completeWorks;
             }
 
@@ -136,7 +138,9 @@ public class ObHashPartDesc extends ObPartDesc {
                         }
                     }
                     if (startValue == null) {
-                        throw new IllegalArgumentException("Please include all partition key in start range. Currently missing key: { " + curObRefColumnName + " }");
+                        throw new IllegalArgumentException(
+                            "Please include all partition key in start range. Currently missing key: { "
+                                    + curObRefColumnName + " }");
                     }
                     if (startValue instanceof ObObj
                         && (((ObObj) startValue).isMinObj() || ((ObObj) startValue).isMaxObj())) {
@@ -151,7 +155,9 @@ public class ObHashPartDesc extends ObPartDesc {
                         }
                     }
                     if (endValue == null) {
-                        throw new IllegalArgumentException("Please include all partition key in end range. Currently missing key: { " + curObRefColumnName + " }");
+                        throw new IllegalArgumentException(
+                            "Please include all partition key in end range. Currently missing key: { "
+                                    + curObRefColumnName + " }");
                     }
                     if (endValue instanceof ObObj
                         && (((ObObj) endValue).isMinObj() || ((ObObj) endValue).isMaxObj())) {

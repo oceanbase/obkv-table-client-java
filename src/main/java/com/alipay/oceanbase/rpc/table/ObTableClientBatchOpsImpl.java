@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.table;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
@@ -368,10 +369,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         }
                         TableEntry entry = obTableClient.getOrRefreshTableEntry(tableName, false,
                             false, false);
-                        obTableClient.refreshTableLocationByTabletId(entry, tableName, partId);
+                        if (ObGlobal.obVsnMajor() >= 4) {
+                            obTableClient.refreshTableLocationByTabletId(entry, tableName, partId);
+                        }
                         ObTableParam newParam = obTableClient.getTableWithPartId(tableName, partId,
-                            false, obTableClient.isTableEntryRefreshIntervalWait(), needFetchAllRouteInfo, route)
-                            .getRight();
+                            false, obTableClient.isTableEntryRefreshIntervalWait(),
+                            needFetchAllRouteInfo, route).getRight();
                         subObTable = newParam.getObTable();
                         subRequest.setPartitionId(newParam.getPartitionId());
                     }
@@ -385,8 +388,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                     result = subObTable.execute(subRequest);
                     if (result instanceof ObTableApiMove) {
                         ObTableApiMove move = (ObTableApiMove) result;
-                        logger.warn("The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. " +
-                                "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move .getReplica().getServer().ipToString());
+                        logger
+                            .warn(
+                                "The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. "
+                                        + "Rerouting return IP is {}", moveResponse.getReplica()
+                                    .getServer().ipToString(), move.getReplica().getServer()
+                                    .ipToString());
                         throw new ObTableRoutingWrongException();
                     }
                 }
@@ -534,16 +541,18 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
 
         Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> currentPartitions = new HashMap<>();
         currentPartitions.put(entry.getKey(), entry.getValue());
-
-        while (retryCount < maxRetries && !success) {
+        int errCode = ResultCodes.OB_SUCCESS.errorCode;
+        String errMsg = null;
+        while (retryCount <= maxRetries && !success) {
             boolean allPartitionsSuccess = true;
-
             for (Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> currentEntry : currentPartitions.entrySet()) {
                 try {
                     partitionExecute(results, currentEntry);
                 } catch (Exception e) {
                     if (shouldRetry(e)) {
                         retryCount++;
+                        errCode = ((ObTableNeedFetchAllException)e).getErrorCode();
+                        errMsg = e.getMessage();
                         List<ObTableOperation> failedOperations = extractOperations(currentEntry.getValue().getRight());
                         currentPartitions = prepareOperations(failedOperations);
                         allPartitionsSuccess = false;
@@ -560,7 +569,9 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         }
 
         if (!success) {
-            throw new ObTableUnexpectedException("Failed to execute operation after retrying " + maxRetries + " times.");
+            errMsg = "Failed to execute operation after retrying " + maxRetries + " times. Last error Msg:" +
+                    "[errCode="+ errCode +"] " + errMsg;
+            throw new ObTableUnexpectedException(errMsg);
         }
     }
 

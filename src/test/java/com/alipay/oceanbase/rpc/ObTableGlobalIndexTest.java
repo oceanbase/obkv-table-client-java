@@ -584,13 +584,10 @@ public class ObTableGlobalIndexTest {
             return;
         }
         String tableName = "test_auto_split_global_index";
-        String creteTableSql = "create table if not exists `test_auto_split_global_index` (" +
-                " `c1` int," +
-                " `c2` varchar(128), " +
-                " `c3` varchar(128)," +
-                " primary key(`c1`)," +
-                " key `g_idx` (`c2`) global)" +
-                " partition by range() size ('128MB');";
+        String creteTableSql = "create table if not exists `test_auto_split_global_index` ("
+                               + " `c1` int," + " `c2` varchar(128), " + " `c3` varchar(128),"
+                               + " primary key(`c1`)," + " key `g_idx` (`c2`) global)"
+                               + " partition by range() size ('128MB');";
         executeSQL(creteTableSql);
         try {
             String c1 = "c1";
@@ -600,50 +597,44 @@ public class ObTableGlobalIndexTest {
             // prepare data
             for (int i = 0; i < rowCnt; i++) {
                 client.insert(tableName).setRowKey(colVal(c1, i))
-                        .addMutateColVal(colVal(c2, c2+"_"+i), colVal(c3, c3+"_"+i))
-                        .execute();
+                    .addMutateColVal(colVal(c2, c2 + "_" + i), colVal(c3, c3 + "_" + i)).execute();
             }
             QueryResultSet resultSet;
-            int scanCnt= 0;
+            int scanCnt = 0;
             // query with primary index
-            resultSet = client.query(tableName)
-                    .setScanRangeColumns("c1")
-                    .addScanRange(new Object[] { 0 }, new Object[] { rowCnt + 1 }).execute();
-            while(resultSet.next()) {
+            resultSet = client.query(tableName).setScanRangeColumns("c1")
+                .addScanRange(new Object[] { 0 }, new Object[] { rowCnt + 1 }).execute();
+            while (resultSet.next()) {
                 Map<String, Object> res = resultSet.getRow();
                 Assert.assertEquals(res.get(c1), scanCnt);
-                Assert.assertEquals(res.get(c2), c2+"_"+scanCnt);
-                Assert.assertEquals(res.get(c3), c3+"_"+scanCnt);
+                Assert.assertEquals(res.get(c2), c2 + "_" + scanCnt);
+                Assert.assertEquals(res.get(c3), c3 + "_" + scanCnt);
                 scanCnt++;
             }
             Assert.assertEquals(rowCnt, scanCnt);
 
             // query with global index without lookup table
             scanCnt = 0;
-            resultSet = client.query(tableName)
-                    .indexName("g_idx")
-                    .setScanRangeColumns(c2)
-                    .select(c1,c2)
-                    .addScanRange(new Object[] { "c2_0" }, new Object[] { "c2_9" }).execute();
-            while(resultSet.next()) {
+            resultSet = client.query(tableName).indexName("g_idx").setScanRangeColumns(c2)
+                .select(c1, c2).addScanRange(new Object[] { "c2_0" }, new Object[] { "c2_9" })
+                .execute();
+            while (resultSet.next()) {
                 Map<String, Object> res = resultSet.getRow();
                 Assert.assertEquals(res.get(c1), scanCnt);
-                Assert.assertEquals(res.get(c2), c2+"_"+scanCnt);
+                Assert.assertEquals(res.get(c2), c2 + "_" + scanCnt);
                 scanCnt++;
             }
             Assert.assertEquals(rowCnt, scanCnt);
 
             // query with gloabl index with lookup table
             scanCnt = 0;
-            resultSet = client.query(tableName)
-                    .indexName("g_idx")
-                    .setScanRangeColumns("c2")
-                    .addScanRange(new Object[] { "c2_0" }, new Object[] { "c2_9" }).execute();
-            while(resultSet.next()) {
+            resultSet = client.query(tableName).indexName("g_idx").setScanRangeColumns("c2")
+                .addScanRange(new Object[] { "c2_0" }, new Object[] { "c2_9" }).execute();
+            while (resultSet.next()) {
                 Map<String, Object> res = resultSet.getRow();
                 Assert.assertEquals(res.get(c1), scanCnt);
-                Assert.assertEquals(res.get(c2), c2+"_"+scanCnt);
-                Assert.assertEquals(res.get(c3), c3+"_"+scanCnt);
+                Assert.assertEquals(res.get(c2), c2 + "_" + scanCnt);
+                Assert.assertEquals(res.get(c3), c3 + "_" + scanCnt);
                 scanCnt++;
             }
             Assert.assertEquals(rowCnt, scanCnt);
