@@ -790,10 +790,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     if (null != callback.getRowKey()) {
                         // in the case of retry, the location always needs to be refreshed here
                         if (tryTimes > 1) {
-                            TableEntry entry = getOrRefreshTableEntry(tableName, false, false, false);
-                            Long partId = getPartition(entry, callback.getRowKey());
+                            
                             if (ObGlobal.obVsnMajor() >= 4) {
+                                TableEntry entry = getOrRefreshTableEntry(tableName, false, false, false);
+                                Long partId = getPartition(entry, callback.getRowKey());
                                 refreshTableLocationByTabletId(entry, tableName, getTabletIdByPartId(entry, partId));
+                            } else {
+                                getOrRefreshTableEntry(tableName, needRefreshTableEntry, isTableEntryRefreshIntervalWait(), false);
                             }
                         }
                         // using row key
@@ -801,7 +804,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     } else if (null != callback.getKeyRanges()) {
                         // using scan range
                         obPair = getTable(tableName, new ObTableQuery(),
-                            callback.getKeyRanges());
+                            callback.getKeyRanges(), needRefreshTableEntry, tableEntryRefreshIntervalWait);
                     } else {
                         throw new ObTableException("rowkey and scan range are null in mutation");
                     }
@@ -1676,7 +1679,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return ObPair of partId and table
      * @throws Exception exception
      */
-    public ObPair<Long, ObTableParam> getTable(String tableName, ObTableQuery query, List<ObNewRange> keyRanges)
+    public ObPair<Long, ObTableParam> getTable(String tableName, ObTableQuery query, List<ObNewRange> keyRanges, boolean refresh, boolean waitForRefresh)
                                                                                       throws Exception {
         Map<Long, ObTableParam> partIdMapObTable = new HashMap<Long, ObTableParam>();
         for (ObNewRange rang : keyRanges) {
@@ -1695,8 +1698,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
             ObBorderFlag borderFlag = rang.getBorderFlag();
             List<ObPair<Long, ObTableParam>> pairList = getTables(tableName, query, start,
-                    borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false,
-                    false);
+                    borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), refresh,
+                    waitForRefresh);
             for (ObPair<Long, ObTableParam> pair : pairList) {
                 partIdMapObTable.put(pair.getLeft(), pair.getRight());
             }
