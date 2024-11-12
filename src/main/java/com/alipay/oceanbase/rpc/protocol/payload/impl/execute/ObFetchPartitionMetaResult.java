@@ -159,9 +159,9 @@ public class ObFetchPartitionMetaResult extends AbstractPayload {
         tableId = Serialization.decodeVi64(buf);
         partitionNum = Serialization.decodeVi64(buf);
         // if the current table is a partition-table
-        if (partitionNum > 1) {
-            // decode odpPartitionData get partitionInfo data
-            odpPartitionData.decode(buf);
+        // decode odpPartitionData get partitionInfo data
+        odpPartitionData.decode(buf);
+        if (odpPartitionData.getLevel() == 1 || odpPartitionData.getLevel() == 2) {
             // get first partition id and bounds information
             long len = Serialization.decodeVi64(buf);
             for (long i = 0; i < len; ++i) {
@@ -204,6 +204,10 @@ public class ObFetchPartitionMetaResult extends AbstractPayload {
                 }
             }
         } else {
+            if (odpPartitionData.getLevel() == 0) {
+                partitionInfo = new ObPartitionInfo();
+                partitionInfo.setLevel(ObPartitionLevel.valueOf(odpPartitionData.getLevel()));
+            }
             tabletLsIdMap.put(0L, -1L);
         }
         ObPartitionEntry partitionEntry = new ObPartitionEntry();

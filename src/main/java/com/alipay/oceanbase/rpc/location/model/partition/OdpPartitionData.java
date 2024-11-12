@@ -155,6 +155,9 @@ public class OdpPartitionData extends AbstractPayload {
         super.decode(buf);
 
         level = Serialization.decodeVi64(buf);
+        if (level != 1 && level != 2) {
+            return this;
+        }
         partNum = Serialization.decodeVi64(buf);
         partExr = Serialization.decodeVString(buf);
         partType = Serialization.decodeVi64(buf);
