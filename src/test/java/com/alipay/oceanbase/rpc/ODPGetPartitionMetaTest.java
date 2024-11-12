@@ -518,7 +518,7 @@ public class ODPGetPartitionMetaTest {
                                     .addMutateRow(row(colVal("V", "V_val1"))).execute();
                             Assert.assertEquals(1, resultSet.getAffectedRows());
                             List<Partition> partitions = client.getPartition(table_name, false);
-                            Assert.assertEquals(15, partitions.size());
+                            Assert.assertEquals(16, partitions.size());
                             for (Partition partition : partitions) {
                                 System.out.println("testHash: " + partition.toString());
                             }

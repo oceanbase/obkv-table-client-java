@@ -3151,7 +3151,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
         }
         ObTableParam tableParam = obPair.getRight();
-        return new Partition(tableParam.getPartitionId(), obPair.getLeft(),
+        return new Partition(tableParam.getPartitionId(), tableParam.getPartId(),
             tableParam.getTableId(), tableParam.getObTable().getIp(), tableParam.getObTable()
                 .getPort(), tableParam.getLsId());
     }
@@ -3196,7 +3196,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
             for (ObPair<Long, ObTableParam> table : allTables) {
                 ObTableParam tableParam = table.getRight();
-                Partition partition = new Partition(tableParam.getPartitionId(), table.getLeft(), tableParam.getTableId(),
+                Partition partition = new Partition(tableParam.getPartitionId(), tableParam.getPartId(), tableParam.getTableId(),
                         tableParam.getObTable().getIp(), tableParam.getObTable().getPort(), tableParam.getLsId());
                 partitions.add(partition);
             }

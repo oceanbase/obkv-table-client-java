@@ -211,12 +211,12 @@ CREATE TABLE IF NOT EXISTS `test_hbase$fn` (
     PRIMARY KEY (`K`, `Q`, `T`)
 );
 
-CREATE TABLE `test_batch_query` (
+CREATE TABLE IF NOT EXISTS `test_batch_query` (
  `c1` bigint NOT NULL,
  `c2` varchar(20) DEFAULT NULL,
 PRIMARY KEY (`c1`))partition by range(`c1`)(partition p0 values less than(200), partition p1 values less than(500), partition p2 values less than(900));
 
-CREATE TABLE `test_query_filter_mutate` (
+CREATE TABLE IF NOT EXISTS `test_query_filter_mutate` (
  `c1` bigint NOT NULL,
  `c2` varbinary(1024) DEFAULT NULL,
  `c3` varchar(20) DEFAULT NULL,
@@ -226,7 +226,7 @@ CREATE TABLE `test_query_filter_mutate` (
       PARTITION p1 VALUES LESS THAN (1000),
       PARTITION p2 VALUES LESS THAN MAXVALUE);
 
-CREATE TABLE `test_mutation_with_range` (
+CREATE TABLE IF NOT EXISTS `test_mutation_with_range` (
     `c1` bigint NOT NULL,
     `c1sk` varchar(20) NOT NULL,
     `c2` varbinary(1024) DEFAULT NULL,
@@ -237,7 +237,7 @@ CREATE TABLE `test_mutation_with_range` (
           PARTITION p1 VALUES LESS THAN (1000),
           PARTITION p2 VALUES LESS THAN MAXVALUE);
 
-CREATE TABLE `test_mutation` (
+CREATE TABLE IF NOT EXISTS `test_mutation` (
     `c1` bigint NOT NULL,
     `c2` varchar(20) NOT NULL,
     `c3` varbinary(1024) DEFAULT NULL,
@@ -247,7 +247,7 @@ CREATE TABLE `test_mutation` (
           PARTITION p1 VALUES LESS THAN (1000),
           PARTITION p2 VALUES LESS THAN MAXVALUE);
 
-CREATE TABLE `test_mutation_column_reverse` (
+CREATE TABLE IF NOT EXISTS `test_mutation_column_reverse` (
      `c2` bigint NOT NULL,
      `c1` varchar(20) NOT NULL,
      `c3` varbinary(1024) DEFAULT NULL,
@@ -257,7 +257,7 @@ PARTITION p0 VALUES LESS THAN (300),
 PARTITION p1 VALUES LESS THAN (1000),
 PARTITION p2 VALUES LESS THAN MAXVALUE);
 
-CREATE TABLE `test_throttle` (
+CREATE TABLE IF NOT EXISTS `test_throttle` (
     `c1` bigint NOT NULL,
     `c2` varchar(20) NOT NULL,
     `c3` varbinary(1024) DEFAULT NULL,
@@ -267,7 +267,7 @@ CREATE TABLE `test_throttle` (
         PARTITION p1 VALUES LESS THAN (1000000),
         PARTITION p2 VALUES LESS THAN MAXVALUE);
 
-CREATE TABLE test_aggregation (
+CREATE TABLE IF NOT EXISTS test_aggregation (
     `c1` varchar(255),
     `c2` int NOT NULL,
     `c3` bigint NOT NULL,
@@ -278,7 +278,7 @@ CREATE TABLE test_aggregation (
     PRIMARY KEY(`c1`)
 );
         
-CREATE TABLE `test_partition_aggregation` (
+CREATE TABLE IF NOT EXISTS `test_partition_aggregation` (
     `c1` bigint NOT NULL,
     `c2` bigint DEFAULT NULL,
     PRIMARY KEY (`c1`))partition by range(`c1`) (
@@ -286,14 +286,14 @@ CREATE TABLE `test_partition_aggregation` (
         PARTITION p1 VALUES LESS THAN (500),
         PARTITION p2 VALUES LESS THAN (900));
 
-CREATE TABLE `test_ttl_timestamp` (
+CREATE TABLE IF NOT EXISTS `test_ttl_timestamp` (
  `c1` bigint NOT NULL,
  `c2` varchar(20) DEFAULT NULL,
  `c3` bigint DEFAULT NULL,
  `expired_ts` timestamp(6),
 PRIMARY KEY (`c1`)) TTL(expired_ts + INTERVAL 0 SECOND);
 
-CREATE TABLE `test_ttl_timestamp_5s` (
+CREATE TABLE IF NOT EXISTS `test_ttl_timestamp_5s` (
     `c1` bigint NOT NULL,
     `c2` varchar(20) DEFAULT NULL,
     `c3` bigint DEFAULT NULL,
@@ -423,7 +423,7 @@ CREATE TABLE IF NOT EXISTS `sync_item` (
     DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci
     PARTITION BY KEY(`uid`) PARTITIONS 32;
 
-CREATE TABLE `hash_key_sub_part` (
+CREATE TABLE IF NOT EXISTS `hash_key_sub_part` (
     `id` bigint(11) NOT NULL,
     `uid` varchar(20) NOT NULL,
     `object_id` varchar(32) NOT NULL,
@@ -456,7 +456,7 @@ CREATE TABLE IF NOT EXISTS `test_table_object` (
     `c19` longblob DEFAULT NULL
 );
 
-CREATE TABLE `test_query_scan_order` (
+CREATE TABLE IF NOT EXISTS `test_query_scan_order` (
   `c1` int(12) NOT NULL,
   `c2` int(11) NOT NULL,
   `c3` int(11) NOT NULL,
@@ -491,7 +491,7 @@ CREATE TABLE IF NOT EXISTS `test_put_with_global_index` (
     PRIMARY KEY(`id`)) TTL(expired_ts + INTERVAL 1 SECOND) PARTITION BY KEY(`id`) PARTITIONS 32;
 
 CREATE TABLEGROUP test SHARDING = 'ADAPTIVE';
-CREATE TABLE `test$family_group` (
+CREATE TABLE IF NOT EXISTS `test$family_group` (
     `K` varbinary(1024) NOT NULL,
     `Q` varbinary(256) NOT NULL,
     `T` bigint(20) NOT NULL,
@@ -500,7 +500,7 @@ CREATE TABLE `test$family_group` (
 ) TABLEGROUP = test;
 
 CREATE TABLEGROUP test2 SHARDING = 'ADAPTIVE';
-CREATE TABLE `test2$family1` (
+CREATE TABLE IF NOT EXISTS `test2$family1` (
     `K` varbinary(1024) NOT NULL,
     `Q` varbinary(256) NOT NULL,
     `T` bigint(20) NOT NULL,
@@ -509,7 +509,7 @@ CREATE TABLE `test2$family1` (
 ) TABLEGROUP = test2;
 
 CREATE TABLEGROUP test_start_end_keys_key SHARDING = 'ADAPTIVE';
-CREATE TABLE `test_start_end_keys$family_key` (
+CREATE TABLE IF NOT EXISTS `test_start_end_keys$family_key` (
     `K` varbinary(1024) NOT NULL,
     `Q` varbinary(256) NOT NULL,
     `T` bigint(20) NOT NULL,
@@ -519,7 +519,7 @@ CREATE TABLE `test_start_end_keys$family_key` (
 partition by key(K) partitions 17;
 
 CREATE TABLEGROUP test_start_end_keys_range SHARDING = 'ADAPTIVE';
-CREATE TABLE `test_start_end_keys_range$family_range` (
+CREATE TABLE IF NOT EXISTS `test_start_end_keys_range$family_range` (
     `K` varbinary(1024) NOT NULL,
     `Q` varbinary(256) NOT NULL,
     `T` bigint(20) NOT NULL,
@@ -532,7 +532,7 @@ partition by range columns (`K`) (
     PARTITION p2 VALUES LESS THAN MAXVALUE
 );
 
-CREATE TABLE `test_batch_get` (
+CREATE TABLE IF NOT EXISTS `test_batch_get` (
   `c1` int(11) NOT NULL,
   `c2` int(11) NOT NULL,
   `c3` int(11) DEFAULT NULL,
@@ -540,7 +540,7 @@ CREATE TABLE `test_batch_get` (
   PRIMARY KEY (`c1`, `c2`)
 ) partition by key(`c2`) partitions 3;
 
-CREATE TABLE `test_local_index_with_vgen_col` (
+CREATE TABLE IF NOT EXISTS `test_local_index_with_vgen_col` (
   `name` varchar(512) NOT NULL DEFAULT '',
   `pk` varchar(512) NOT NULL,
   `adiu` varchar(512) NOT NULL DEFAULT '',
@@ -551,7 +551,7 @@ CREATE TABLE `test_local_index_with_vgen_col` (
   KEY `idx_adiu_v_name` (`adiu`, `name_v`) BLOCK_SIZE 16384 LOCAL
 ) TTL (gmt_create + INTERVAL 300 SECOND) partition by key(adiu) partitions 8;
 
-CREATE TABLE `test_global_index_with_vgen_col` (
+CREATE TABLE IF NOT EXISTS `test_global_index_with_vgen_col` (
   `name` varchar(512) NOT NULL DEFAULT '',
   `pk` varchar(512) NOT NULL,
   `adiu` varchar(512) NOT NULL DEFAULT '',
@@ -562,7 +562,7 @@ CREATE TABLE `test_global_index_with_vgen_col` (
   KEY `idx_adiu_v_name` (`adiu`) global
 ) TTL (gmt_create + INTERVAL 300 SECOND) partition by key(adiu) partitions 8;
 
-CREATE TABLE `test_current_timestamp` (
+CREATE TABLE IF NOT EXISTS `test_current_timestamp` (
   `c1` int not null,
   `c2` varchar(255),
   `c3` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -570,7 +570,7 @@ CREATE TABLE `test_current_timestamp` (
    KEY `idx_adiu_v_name` (`c2`, `c3`) global partition by key(`c2`) partitions 5
 ) partition by key(`c1`) partitions 8;
 
-CREATE TABLE `table_ttl_00` (
+CREATE TABLE IF NOT EXISTS `table_ttl_00` (
   `name` varchar(512) NOT NULL,
   `pk` varchar(512) NOT NULL,
   `adiu` varchar(512) NOT NULL DEFAULT '',

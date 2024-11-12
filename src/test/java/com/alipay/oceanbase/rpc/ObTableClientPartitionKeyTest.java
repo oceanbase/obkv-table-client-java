@@ -58,14 +58,14 @@ public class ObTableClientPartitionKeyTest {
     public void setUp() throws Exception {
         /*
         *
-        * create table testPartition (
-            K varbinary(1024),
-            Q varbinary(256),
-            T bigint,
-            V varbinary(1024),
-            K_PREFIX varbinary(1024) generated always as (substring(K, 1, 4)),
-            primary key(K, Q, T)
-            ) partition by key(K_PREFIX) partitions 15;
+        * CREATE TABLE IF NOT EXISTS `testKey` (
+            `K` varbinary(1024),
+            `Q` varbinary(256),
+            `T` bigint,
+            `V` varbinary(1024),
+            INDEX i1(`K`, `V`) local,
+            PRIMARY KEY(`K`, `Q`, `T`)
+        ) partition by key(K) partitions 15;
         *
         * */
         System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
