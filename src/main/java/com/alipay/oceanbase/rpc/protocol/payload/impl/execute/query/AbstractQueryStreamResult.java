@@ -258,7 +258,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                         ((ObTableException) e).getErrorCode(), tryTimes, e);
                                 // tablet not exists, refresh table entry
                                 if (e instanceof ObTableNeedFetchAllException) {
-                                    client.getOrRefreshTableEntry(tableName, true, true, true);
+                                    client.getOrRefreshTableEntry(indexTableName, true, true, true);
                                     throw e;
                                 }
                             } else {
