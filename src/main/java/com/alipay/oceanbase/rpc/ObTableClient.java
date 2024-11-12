@@ -2043,23 +2043,22 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @return
      * @throws Exception
      */
-    private List<ObPair<Long, ReplicaLocation>> getPartitionReplica(TableEntry tableEntry,
+    private List<ObPair<ObPair<Long, Long>, ReplicaLocation>> getPartitionReplica(TableEntry tableEntry,
                                                                     String tableName,
                                                                     Row startRow,
                                                                     boolean startIncluded,
                                                                     Row endRow,
                                                                     boolean endIncluded,
                                                                     ObServerRoute route) throws Exception {
-        List<ObPair<Long, ReplicaLocation>> replicas = new ArrayList<>();
+        List<ObPair<ObPair<Long, Long>, ReplicaLocation>> replicas = new ArrayList<>();
 
         if (!tableEntry.isPartitionTable() || tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ZERO) {
             if (ObGlobal.obVsnMajor() >= 4) {
                 long tabletId = getTabletIdByPartId(tableEntry, 0L);
                 ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
-                replicas.add(new ObPair<>(tabletId, getPartitionLocation(locationInfo, route)));
+                replicas.add(new ObPair<>(new ObPair<>(0L, tabletId), getPartitionLocation(locationInfo, route)));
             } else {
-                replicas.add(new ObPair<Long, ReplicaLocation>(0L, getPartitionLocation(tableEntry, 0L,
-                        route)));
+                replicas.add(new ObPair<>(new ObPair<Long, Long>(0L, 0L), getPartitionLocation(tableEntry, 0L, route)));
             }
             return replicas;
         }
@@ -2071,7 +2070,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             for (Long partId : partIds) {
                 long tabletId = getTabletIdByPartId(tableEntry, partId);
                 ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
-                replicas.add(new ObPair<>(tabletId, getPartitionLocation(locationInfo, route)));
+                replicas.add(new ObPair<>(new ObPair<>(partId, tabletId), getPartitionLocation(locationInfo, route)));
             }
         } else {
             for (Long partId : partIds) {
@@ -2080,7 +2079,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     partitionId = ObPartIdCalculator.getPartIdx(partId, tableEntry
                             .getPartitionInfo().getSubPartDesc().getPartNum());
                 }
-                replicas.add(new ObPair<Long, ReplicaLocation>(partId, getPartitionLocation(
+                replicas.add(new ObPair<>(new ObPair<>(partId, partId), getPartitionLocation(
                         tableEntry, partitionId, route)));
             }
         }
@@ -2224,13 +2223,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
         }
 
-        List<ObPair<Long, ReplicaLocation>> partIdWithReplicaList = getPartitionReplica(tableEntry, tableName,
+        // partIdWithReplicaList -> List<Pair<Pair<logicId, tabletId> obTableParams>>
+        List<ObPair<ObPair<Long, Long>, ReplicaLocation>> partIdWithReplicaList = getPartitionReplica(tableEntry, tableName,
             startRow, startInclusive, endRow, endInclusive, route);
 
         // obTableParams -> List<Pair<logicId, obTableParams>>
         List<ObPair<Long, ObTableParam>> obTableParams = new ArrayList<ObPair<Long, ObTableParam>>();
-        for (ObPair<Long, ReplicaLocation> partIdWithReplica : partIdWithReplicaList) {
-            long partId = partIdWithReplica.getLeft();
+        for (ObPair<ObPair<Long, Long>, ReplicaLocation> partIdWithReplica : partIdWithReplicaList) {
+            long partId = partIdWithReplica.getLeft().getLeft();
+            long partitionId = partIdWithReplica.getLeft().getRight();
             ReplicaLocation replica = partIdWithReplica.getRight();
             ObServerAddr addr = replica.getAddr();
             ObTable obTable = tableRoster.get(addr);
@@ -2253,12 +2254,17 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
 
             ObTableParam param = new ObTableParam(obTable);
+            if (ObGlobal.obVsnMajor() >= 4 && tableEntry != null) {
+                ObPartitionLocationInfo partitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, partitionId);
+                param.setLsId(partitionLocationInfo.getTabletLsId());
+            }
             param.setTableId(tableEntry.getTableId());
+            param.setPartId(partId);
             // real partition(tablet) id
-            param.setPartitionId(partId);
+            param.setPartitionId(partitionId);
 
             addr.recordAccess();
-            obTableParams.add(new ObPair<Long, ObTableParam>(partIdWithReplica.getLeft(), param));
+            obTableParams.add(new ObPair<Long, ObTableParam>(partIdWithReplica.getLeft().getRight(), param));
         }
 
         return obTableParams;

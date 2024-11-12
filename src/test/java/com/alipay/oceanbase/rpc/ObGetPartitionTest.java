@@ -248,21 +248,21 @@ public class ObGetPartitionTest {
 
             Partition partition = client.getPartition(TABLE_NAME,
                 row(colVal("c1", 1L), colVal("c2", "c2_val")), true);
-            System.out.println("Row Key: {1L, c2_val:" + partition.toString());
+            System.out.println("Row Key: {1L, c2_val}:" + partition.toString());
             QueryResultSet result = client.query(TABLE_NAME)
                 .addScanRange(partition.start(), partition.end()).execute();
             Assert.assertEquals(1, result.cacheSize());
 
             partition = client.getPartition(TABLE_NAME,
                 row(colVal("c1", 400L), colVal("c2", "c2_val")), true);
-            System.out.println("Row Key: {400L, c2_val:" + partition.toString());
+            System.out.println("Row Key: {400L, c2_val}:" + partition.toString());
             result = client.query(TABLE_NAME).addScanRange(partition.start(), partition.end())
                 .execute();
             Assert.assertEquals(2, result.cacheSize());
 
             partition = client.getPartition(TABLE_NAME,
                 row(colVal("c1", 1000L), colVal("c2", "c2_val")), true);
-            System.out.println("Row Key: {1001L, c2_val:" + partition.toString());
+            System.out.println("Row Key: {1001L, c2_val}:" + partition.toString());
             result = client.query(TABLE_NAME).addScanRange(partition.start(), partition.end())
                 .execute();
             Assert.assertEquals(3, result.cacheSize());
@@ -650,9 +650,11 @@ public class ObGetPartitionTest {
                             }
                             cnt.getAndIncrement();
                         } else {
+                            byte[] bytes = new byte[10];
+                            random.nextBytes(bytes);
                             MutationResult resultSet = client.insert(TABLE_NAME4)
-                                    .setRowKey(row(colVal("c1", random.nextInt()), colVal("c2", "c2_val1")))
-                                    .addMutateRow(row(colVal("c3", "c3_val1"), colVal("c4", 10L))).execute();
+                                    .setRowKey(row(colVal("K", bytes), colVal("Q", "c2_val1"), colVal("T", random.nextLong())))
+                                    .addMutateRow(row(colVal("V", "c3_val1"))).execute();
                             Assert.assertEquals(1, resultSet.getAffectedRows());
                             List<Partition> partitions = client.getPartition(table_name, false);
                             Assert.assertEquals(3, partitions.size());
