@@ -20,6 +20,7 @@ package com.alipay.oceanbase.rpc.table;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
+import com.alipay.oceanbase.rpc.location.model.TableEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.result.*;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
@@ -217,11 +218,40 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         return results;
     }
 
-    public Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> partitionPrepare()
-                                                                                                      throws Exception {
-        // consistent can not be sure
-        List<ObTableOperation> operations = batchOperation.getTableOperations();
-        Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> partitionOperationsMap = new HashMap<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>>();
+    // Helper method to calculate RowKey from ObTableOperation
+    private Object[] calculateRowKey(ObTableOperation operation) {
+        ObRowKey rowKeyObject = operation.getEntity().getRowKey();
+        int rowKeySize = rowKeyObject.getObjs().size();
+        Object[] rowKey = new Object[rowKeySize];
+        for (int j = 0; j < rowKeySize; j++) {
+            rowKey[j] = rowKeyObject.getObj(j).getValue();
+        }
+        return rowKey;
+    }
+
+    public List<ObTableOperation> extractOperations(List<ObPair<Integer, ObTableOperation>> operationsPairs) {
+        List<ObTableOperation> operations = new ArrayList<>(operationsPairs.size());
+        for (ObPair<Integer, ObTableOperation> pair : operationsPairs) {
+            operations.add(pair.getRight());
+        }
+        return operations;
+    }
+
+    public Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> prepareOperations(List<ObTableOperation> operations) throws Exception {
+        Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> partitionOperationsMap = new HashMap<>();
+
+        if (obTableClient.isOdpMode()) {
+            ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>> obTableOperations = new ObPair<>(
+                    new ObTableParam(obTableClient.getOdpTable()),
+                    new ArrayList<>());
+            for (int i = 0; i < operations.size(); i++) {
+                ObTableOperation operation = operations.get(i);
+                obTableOperations.getRight().add(
+                        new ObPair<>(i, operation));
+            }
+            partitionOperationsMap.put(0L, obTableOperations);
+            return partitionOperationsMap;
+        }
 
         for (int i = 0; i < operations.size(); i++) {
             ObTableOperation operation = operations.get(i);
@@ -241,17 +271,20 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             if (tableObPair == null) {
                 throw new ObTableUnexpectedException("fail to get table pair in batch");
             }
+            final ObPair<Long, ObTableParam> tmpTableObPair = tableObPair;
             ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>> obTableOperations = partitionOperationsMap
-                .get(tableObPair.getLeft());
-            if (obTableOperations == null) {
-                obTableOperations = new ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>(
-                    tableObPair.getRight(), new ArrayList<ObPair<Integer, ObTableOperation>>());
-                partitionOperationsMap.put(tableObPair.getLeft(), obTableOperations);
-            }
-            obTableOperations.getRight().add(new ObPair<Integer, ObTableOperation>(i, operation));
+                    .computeIfAbsent(tmpTableObPair.getLeft(), k -> new ObPair<>(
+                            tmpTableObPair.getRight(), new ArrayList<>()));
+            obTableOperations.getRight().add(new ObPair<>(i, operation));
         }
-
         return partitionOperationsMap;
+    }
+
+    public Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> partitionPrepare()
+                                                                                                      throws Exception {
+        // consistent can not be sure
+        List<ObTableOperation> operations = batchOperation.getTableOperations();
+        return prepareOperations(operations);
     }
 
     /*
@@ -333,11 +366,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
-                        ObTableParam newParam = obTableClient.getTableWithPartId(tableName,
-                            originPartId, needRefreshTableEntry,
-                            obTableClient.isTableEntryRefreshIntervalWait(), needFetchAllRouteInfo,
-                            route).getRight();
-
+                        TableEntry entry = obTableClient.getOrRefreshTableEntry(tableName, false,
+                            false, false);
+                        obTableClient.refreshTableLocationByTabletId(entry, tableName, partId);
+                        ObTableParam newParam = obTableClient.getTableWithPartId(tableName, partId,
+                            false, obTableClient.isTableEntryRefreshIntervalWait(), needFetchAllRouteInfo, route)
+                            .getRight();
                         subObTable = newParam.getObTable();
                         subRequest.setPartitionId(newParam.getPartitionId());
                     }
@@ -351,12 +385,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                     result = subObTable.execute(subRequest);
                     if (result instanceof ObTableApiMove) {
                         ObTableApiMove move = (ObTableApiMove) result;
-                        logger
-                            .warn(
-                                "The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. "
-                                        + "Rerouting return IP is {}", moveResponse.getReplica()
-                                    .getServer().ipToString(), move.getReplica().getServer()
-                                    .ipToString());
+                        logger.warn("The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. " +
+                                "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move .getReplica().getServer().ipToString());
                         throw new ObTableRoutingWrongException();
                     }
                 }
@@ -366,6 +396,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             } catch (Exception ex) {
                 if (obTableClient.isOdpMode()) {
                     if ((tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
+                        assert ex instanceof ObTableException;
                         logger
                             .warn(
                                 "batch ops execute while meet Exception, tablename:{}, errorCode: {} , errorMsg: {}, try times {}",
@@ -409,9 +440,10 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                                 tableName, partId, ((ObTableException) ex).getErrorCode(),
                                 tryTimes, ex);
                         if (ex instanceof ObTableNeedFetchAllException) {
-                            needFetchAllRouteInfo = true;
-                            // reset failure count while fetch all route info
-                            obTableClient.resetExecuteContinuousFailureCount(tableName);
+                            // refresh table info
+                            obTableClient.getOrRefreshTableEntry(tableName, needRefreshTableEntry,
+                                obTableClient.isTableEntryRefreshIntervalWait(), true);
+                            throw ex;
                         }
                     } else {
                         obTableClient.calculateContinuousFailure(tableName, ex.getMessage());
@@ -435,7 +467,6 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             throw new ObTableUnexpectedException(
                 "check batch operation result error: client get unexpected NULL result");
         }
-
         List<ObTableOperationResult> subObTableOperationResults = subObTableBatchOperationResult
             .getResults();
 
@@ -493,50 +524,94 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             obTableClient.getslowQueryMonitorThreshold());
     }
 
-    /*
-     * Execute internal.
-     */
-    public ObTableBatchOperationResult executeInternal() throws Exception {
+    private boolean shouldRetry(Throwable throwable) {
+        return throwable instanceof ObTableNeedFetchAllException;
+    }
 
+    private void executeWithRetries(ObTableOperationResult[] results, Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> entry, int maxRetries) throws Exception {
+        int retryCount = 0;
+        boolean success = false;
+
+        Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> currentPartitions = new HashMap<>();
+        currentPartitions.put(entry.getKey(), entry.getValue());
+
+        while (retryCount < maxRetries && !success) {
+            boolean allPartitionsSuccess = true;
+
+            for (Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> currentEntry : currentPartitions.entrySet()) {
+                try {
+                    partitionExecute(results, currentEntry);
+                } catch (Exception e) {
+                    if (shouldRetry(e)) {
+                        retryCount++;
+                        List<ObTableOperation> failedOperations = extractOperations(currentEntry.getValue().getRight());
+                        currentPartitions = prepareOperations(failedOperations);
+                        allPartitionsSuccess = false;
+                        break;
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+
+            if (allPartitionsSuccess) {
+                success = true;
+            }
+        }
+
+        if (!success) {
+            throw new ObTableUnexpectedException("Failed to execute operation after retrying " + maxRetries + " times.");
+        }
+    }
+
+    public ObTableBatchOperationResult executeInternal() throws Exception {
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
         }
         long start = System.currentTimeMillis();
         List<ObTableOperation> operations = batchOperation.getTableOperations();
-        ObTableOperationResult[] obTableOperationResults = null;
-        if (returnOneResult) {
-            obTableOperationResults = new ObTableOperationResult[1];
-        } else {
-            obTableOperationResults = new ObTableOperationResult[operations.size()];
-        }
+        ObTableOperationResult[] obTableOperationResults = returnOneResult ? new ObTableOperationResult[1]
+            : new ObTableOperationResult[operations.size()];
 
         Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> partitions = partitionPrepare();
         long getTableTime = System.currentTimeMillis();
         final Map<Object, Object> context = ThreadLocalMap.getContextMap();
+        final int maxRetries = obTableClient.getRuntimeRetryTimes();
+
+        ConcurrentTaskExecutor executor = null;
         if (executorService != null && !executorService.isShutdown() && partitions.size() > 1) {
-            final ConcurrentTaskExecutor executor = new ConcurrentTaskExecutor(executorService,
-                partitions.size());
-            for (final Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> entry : partitions
-                .entrySet()) {
-                ObTableOperationResult[] finalObTableOperationResults = obTableOperationResults;
-                executor.execute(new ConcurrentTask() {
-                    /*
-                     * Do task.
-                     */
-                    @Override
-                    public void doTask() {
-                        try {
-                            ThreadLocalMap.transmitContextMap(context);
-                            partitionExecute(finalObTableOperationResults, entry);
-                        } catch (Exception e) {
-                            logger.error(LCD.convert("01-00026"), e);
-                            executor.collectExceptions(e);
-                        } finally {
-                            ThreadLocalMap.reset();
+            executor = new ConcurrentTaskExecutor(executorService, partitions.size());
+        }
+        for (final Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> entry : partitions
+            .entrySet()) {
+            try {
+                if (executor != null) {
+                    // Concurrent execution
+                    ConcurrentTaskExecutor finalExecutor = executor;
+                    executor.execute(new ConcurrentTask() {
+                        @Override
+                        public void doTask() {
+                            try {
+                                ThreadLocalMap.transmitContextMap(context);
+                                executeWithRetries(obTableOperationResults, entry, maxRetries);
+                            } catch (Exception e) {
+                                logger.error(LCD.convert("01-00026"), e);
+                                finalExecutor.collectExceptions(e);
+                            } finally {
+                                ThreadLocalMap.reset();
+                            }
                         }
-                    }
-                });
+                    });
+                } else {
+                    // Sequential execution
+                    executeWithRetries(obTableOperationResults, entry, maxRetries);
+                }
+            } catch (Exception e) {
+                logger.error("Error executing retry: {}", entry.getKey(), e);
+                throw e;
             }
+        }
+        if (executor != null) {
             long estimate = obTableClient.getRuntimeBatchMaxWait() * 1000L * 1000L;
             try {
                 while (estimate > 0) {
@@ -548,7 +623,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                             "Batch Concurrent Execute interrupted", e);
                     }
 
-                    if (executor.getThrowableList().size() > 0) {
+                    if (!executor.getThrowableList().isEmpty()) {
                         throw new ObTableUnexpectedException("Batch Concurrent Execute Error",
                             executor.getThrowableList().get(0));
                     }
@@ -563,21 +638,10 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 executor.stop();
             }
 
-            if (executor.getThrowableList().size() > 0) {
-                throw new ObTableUnexpectedException("Batch Concurrent Execute Error", executor
-                    .getThrowableList().get(0));
-            }
-
             if (!executor.isComplete()) {
                 throw new ObTableUnexpectedException("Batch Concurrent Execute Error ["
                                                      + obTableClient.getRpcExecuteTimeout()
                                                      + "]/ms");
-            }
-
-        } else {
-            for (final Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> entry : partitions
-                .entrySet()) {
-                partitionExecute(obTableOperationResults, entry);
             }
         }
 

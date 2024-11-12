@@ -22,6 +22,7 @@ import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.AbstractQueryStreamResult;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
@@ -29,13 +30,12 @@ import com.alipay.oceanbase.rpc.table.ObTableParam;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
 import org.slf4j.Logger;
 
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
-
     private static final Logger logger = TableClientLoggerFactory
                                            .getLogger(ObTableClientQueryStreamResult.class);
-    protected ObTableClient     client;
 
     protected ObTableQueryResult referToNewPartition(ObPair<Long, ObTableParam> partIdWithObTable)
                                                                                                   throws Exception {
@@ -76,18 +76,10 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
         throw new IllegalArgumentException("not support this execute");
     }
 
-    /**
-     * Get client.
-     * @return client
-     */
-    public ObTableClient getClient() {
-        return client;
-    }
-
-    /*
-     * Set client.
-     */
-    public void setClient(ObTableClient client) {
-        this.client = client;
+    @Override
+    protected Map<Long, ObPair<Long, ObTableParam>> refreshPartition(ObTableQuery tableQuery,
+                                                                     String tableName)
+                                                                                      throws Exception {
+        return buildPartitions(client, tableQuery, tableName);
     }
 }
