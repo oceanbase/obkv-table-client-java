@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.table;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.exception.*;
@@ -499,7 +500,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         }
                         TableEntry entry = obTableClient.getOrRefreshTableEntry(tableName, false,
                                 false, false);
-                        obTableClient.refreshTableLocationByTabletId(entry, tableName, obTableClient.getTabletIdByPartId(entry, originPartId));
+                        if (ObGlobal.obVsnMajor() >= 4) {
+                            obTableClient.refreshTableLocationByTabletId(entry, tableName, obTableClient.getTabletIdByPartId(entry, originPartId));
+                        }
                         subObTable = obTableClient.getTableWithPartId(tableName, originPartId, needRefreshTableEntry,
                                         obTableClient.isTableEntryRefreshIntervalWait(), false, route).
                                             getRight().getObTable();
