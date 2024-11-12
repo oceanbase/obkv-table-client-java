@@ -2019,6 +2019,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private ObPair<Long, ObTableParam> getODPTableInternal(TableEntry odpTableEntry, long partId) {
         ObTable obTable = odpTable;
         ObTableParam param = new ObTableParam(obTable);
+        param.setPartId(partId);
         long tabletId = partId;
         if (ObGlobal.obVsnMajor() >= 4) {
             long partIdx = odpTableEntry.getPartIdx(partId);
@@ -2318,6 +2319,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         for (Long partId : partIds) {
             ObTable obTable = odpTable;
             ObTableParam param = new ObTableParam(obTable);
+            param.setPartId(partId);
             Long tabletId = partId;
             if (ObGlobal.obVsnMajor() >= 4) {
                 long partIdx = odpTableEntry.getPartIdx(partId);
