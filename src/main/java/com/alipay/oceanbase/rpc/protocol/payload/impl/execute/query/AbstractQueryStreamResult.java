@@ -155,7 +155,6 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     result = subObTable.executeWithConnection(request, connectionRef);
                 } else {
                     result = subObTable.execute(request);
-                    System.err.println("indexTableName:" +indexTableName);
                     if (result != null && result.getPcode() == Pcodes.OB_TABLE_API_MOVE) {
                         ObTableApiMove moveResponse = (ObTableApiMove) result;
                         client.getRouteTableRefresher().addTableIfAbsent(indexTableName, true);
@@ -376,6 +375,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         if (!client.isOdpMode()) {
             indexTableName = client.getIndexTableName(tableName, indexName, tableQuery.getScanRangeColumns(), false);
         }
+
         for (ObNewRange range : tableQuery.getKeyRanges()) {
             ObRowKey startKey = range.getStartKey();
             int startKeySize = startKey.getObjs().size();

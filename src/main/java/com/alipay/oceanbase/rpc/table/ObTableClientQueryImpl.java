@@ -248,6 +248,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         if (!this.obTableClient.isOdpMode()) {
             indexTableName = obTableClient.getIndexTableName(tableName, indexName, tableQuery.getScanRangeColumns(), false);
         }
+
         for (ObNewRange range : tableQuery.getKeyRanges()) {
             ObRowKey startKey = range.getStartKey();
             int startKeySize = startKey.getObjs().size();
