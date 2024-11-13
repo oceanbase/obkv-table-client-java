@@ -74,20 +74,20 @@ public class ObTableQuery extends AbstractPayload {
     private ObKVParams obKVParams;
     
     public void adjustStartKey(List<ObObj> key) throws IllegalArgumentException {
-        List<ObNewRange> keyRanges = getKeyRanges();
-        for (ObNewRange range : keyRanges) {
-            if (key != null && isKeyInRange(range, key)) {
-                byte[] bytes = parseStartKeyToBytes(key);
-                ObRowKey newStartKey;
-                if (getScanOrder() == ObScanOrder.Forward) {
-                    newStartKey = ObRowKey.getInstance(new Object[]{incrementByteArray(bytes), ObObj.getMin(), ObObj.getMin()});
-                } else {
-                    newStartKey = ObRowKey.getInstance(new Object[]{decrementByteArray(bytes), ObObj.getMax(), ObObj.getMax()});
-                }
-                range.setStartKey(newStartKey);
-                return;
-            }
-        }
+//        List<ObNewRange> keyRanges = getKeyRanges();
+//        for (ObNewRange range : keyRanges) {
+//            if (key != null && isKeyInRange(range, key)) {
+//                byte[] bytes = parseStartKeyToBytes(key);
+//                ObRowKey newStartKey;
+//                if (getScanOrder() == ObScanOrder.Forward) {
+//                    newStartKey = ObRowKey.getInstance(new Object[]{incrementByteArray(bytes), ObObj.getMin(), ObObj.getMin()});
+//                } else {
+//                    newStartKey = ObRowKey.getInstance(new Object[]{decrementByteArray(bytes), ObObj.getMax(), ObObj.getMax()});
+//                }
+//                range.setStartKey(newStartKey);
+//                return;
+//            }
+//        }
         /* keyRanges not changed */
     }
 
