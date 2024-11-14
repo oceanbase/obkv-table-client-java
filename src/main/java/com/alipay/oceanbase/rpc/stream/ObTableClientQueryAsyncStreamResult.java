@@ -88,7 +88,8 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                             RUNTIME.error("Fail to get refresh table entry response after {}",
                                 retryTimes);
                             throw new ObTableRetryExhaustedException(
-                                "Fail to get refresh table entry response after " + retryTimes);
+                                "Fail to get refresh table entry response after " + retryTimes
+                                + "errorCode:" + ((ObTableNeedFetchAllException) e).getErrorCode());
 
                         }
                     } else {

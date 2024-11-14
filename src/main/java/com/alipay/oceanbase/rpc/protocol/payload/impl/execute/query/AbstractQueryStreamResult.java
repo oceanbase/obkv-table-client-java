@@ -160,7 +160,6 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     result = subObTable.executeWithConnection(request, connectionRef);
                 } else {
                     result = subObTable.execute(request);
-
                     if (result != null && result.getPcode() == Pcodes.OB_TABLE_API_MOVE) {
                         ObTableApiMove moveResponse = (ObTableApiMove) result;
                         client.getRouteTableRefresher().addTableIfAbsent(indexTableName, true);
@@ -263,7 +262,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                         ((ObTableException) e).getErrorCode(), tryTimes, e);
                                 // tablet not exists, refresh table entry
                                 if (e instanceof ObTableNeedFetchAllException) {
-                                    client.getOrRefreshTableEntry(tableName, true, true, true);
+                                    client.getOrRefreshTableEntry(indexTableName, true, true, true);
                                     throw e;
                                 }
                             } else {
@@ -581,7 +580,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                 RUNTIME.error("Fail to get refresh table entry response after {}",
                                         retryTimes);
                                 throw new ObTableRetryExhaustedException(
-                                        "Fail to get refresh table entry response after " + retryTimes);
+                                        "Fail to get refresh table entry response after " + retryTimes +
+                                                "errorCode:" + ((ObTableNeedFetchAllException) e).getErrorCode());
 
                             }
                         } else {
