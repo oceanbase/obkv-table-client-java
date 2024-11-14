@@ -160,8 +160,15 @@ public class ObHBaseParams extends ObKVParamsBase {
     }
 
     public long getPayloadContentSize() {
-        return 1 + Serialization.getNeedBytes(caching) + Serialization.getNeedBytes(callTimeout)
-               + 1; // all boolean to one byte
+        long contentSize = 1 + Serialization.getNeedBytes(caching) + Serialization.getNeedBytes(callTimeout)
+               + 1 // all boolean to one byte
+               + Serialization.getNeedBytes(timeRangeMap.size());
+        for (ObPair<ObBytesString, ObPair<Long, Long>> timeRange : timeRangeMap) {
+            contentSize += Serialization.getNeedBytes(timeRange.getLeft());
+            contentSize += Serialization.getNeedBytes(timeRange.getRight().getLeft());
+            contentSize += Serialization.getNeedBytes(timeRange.getRight().getRight());
+        }
+        return contentSize;
     }
 
     public String toString() {
