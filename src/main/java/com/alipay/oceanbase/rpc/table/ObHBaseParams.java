@@ -44,6 +44,10 @@ public class ObHBaseParams extends ObKVParamsBase {
         pType = paramType.HBase;
     }
 
+    public void addFamilyTimeRange(ObBytesString family, long min, long max) {
+        timeRangeMap.add(new ObPair<>(family, new ObPair<>(min, max)));
+    }
+
     public ObKVParamsBase.paramType getType() {
         return pType;
     }
