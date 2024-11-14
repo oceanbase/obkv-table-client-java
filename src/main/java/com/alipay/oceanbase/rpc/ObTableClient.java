@@ -64,6 +64,7 @@ import static com.alipay.oceanbase.rpc.location.model.partition.ObPartIdCalculat
 import static com.alipay.oceanbase.rpc.property.Property.*;
 import static com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType.*;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
+import static java.lang.String.format;
 
 public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private static final Logger                               logger                                  = getLogger(ObTableClient.class);
@@ -1834,10 +1835,22 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         long partitionId = partId;
         ObPartitionLocationInfo obPartitionLocationInfo = null;
         if (ObGlobal.obVsnMajor() >= 4) {
-
             obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
-    
             replica = getPartitionLocation(obPartitionLocationInfo, route);
+            /**
+             * Normally, getOrRefreshPartitionInfo makes sure that a thread only continues if it finds the leader  
+             * during a route refresh. But sometimes, there might not be a leader yet. In this case, the thread  
+             * is released, and since it can't get the replica, it throws an no master exception.  
+             */
+            if (replica == null && obPartitionLocationInfo.getPartitionLocation().getLeader() == null) {
+                RUNTIME.error(LCD.convert("01-00028"), partitionId, tableEntry.getPartitionEntry(), tableEntry);
+                RUNTIME.error(format(
+                        "partition=%d has no leader partitionEntry=%s original tableEntry=%s",
+                        partitionId, tableEntry.getPartitionEntry(), tableEntry));
+                throw new ObTablePartitionNoMasterException(format(
+                        "partition=%d has no leader partitionEntry=%s original tableEntry=%s",
+                        partitionId, tableEntry.getPartitionEntry(), tableEntry));
+            }
         } else {
             if (tableEntry.isPartitionTable()
                     && null != tableEntry.getPartitionInfo().getSubPartDesc()) {
