@@ -17,10 +17,10 @@
 
 package com.alipay.oceanbase.rpc.table;
 
+import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.util.ObBytesString;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
-import jdk.internal.net.http.common.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +37,7 @@ public class ObHBaseParams extends ObKVParamsBase {
     private static final int FLAG_ALLOW_PARTIAL_RESULTS = 1 << 0;
     private static final int FLAG_IS_CACHE_BLOCK        = 1 << 1;
     private static final int FLAG_CHECK_EXISTENCE_ONLY  = 1 << 2;
-    List<Pair<ObBytesString, Pair<Long, Long>>> timeRangeMap = new ArrayList<>();
+    List<ObPair<ObBytesString, ObPair<Long, Long>>> timeRangeMap = new ArrayList<>();
 
 
     public ObHBaseParams() {
@@ -121,15 +121,15 @@ public class ObHBaseParams extends ObKVParamsBase {
         int len = Serialization.getNeedBytes(timeRangeMap.size());
         System.arraycopy(Serialization.encodeVi64(timeRangeMap.size()), 0, bytes, idx, len);
         idx += len;
-        for (Pair<ObBytesString, Pair<Long, Long>> timeRange : timeRangeMap) {
-            len = Serialization.getNeedBytes(timeRange.first);
-            System.arraycopy(Serialization.encodeBytesString(timeRange.first), 0, bytes, idx, len);
+        for (ObPair<ObBytesString, ObPair<Long, Long>> timeRange : timeRangeMap) {
+            len = Serialization.getNeedBytes(timeRange.getLeft());
+            System.arraycopy(Serialization.encodeBytesString(timeRange.getLeft()), 0, bytes, idx, len);
             idx += len;
-            len = Serialization.getNeedBytes(timeRange.second.first);
-            System.arraycopy(Serialization.encodeVi64(timeRange.second.first), 0, bytes, idx, len);
+            len = Serialization.getNeedBytes(timeRange.getRight().getLeft());
+            System.arraycopy(Serialization.encodeVi64(timeRange.getRight().getLeft()), 0, bytes, idx, len);
             idx += len;
-            len = Serialization.getNeedBytes(timeRange.second.second);
-            System.arraycopy(Serialization.encodeVi64(timeRange.second.second), 0, bytes, idx, len);
+            len = Serialization.getNeedBytes(timeRange.getRight().getRight());
+            System.arraycopy(Serialization.encodeVi64(timeRange.getRight().getRight()), 0, bytes, idx, len);
             idx += len;
         }
 
@@ -150,7 +150,7 @@ public class ObHBaseParams extends ObKVParamsBase {
         long size = Serialization.decodeVi64(buf);
         this.timeRangeMap = new ArrayList<>((int) size);
         for (int i = 0; i < size; i++) {
-            this.timeRangeMap.add(new Pair<>(Serialization.decodeBytesString(buf), new Pair<>(Serialization.decodeVi64(buf), Serialization.decodeVi64(buf))));
+            this.timeRangeMap.add(new ObPair<>(Serialization.decodeBytesString(buf), new ObPair<>(Serialization.decodeVi64(buf), Serialization.decodeVi64(buf))));
         }
         return this;
     }
