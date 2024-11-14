@@ -17,8 +17,13 @@
 
 package com.alipay.oceanbase.rpc.table;
 
+import com.alipay.oceanbase.rpc.util.ObBytesString;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
+import jdk.internal.net.http.common.Pair;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
 
@@ -32,6 +37,8 @@ public class ObHBaseParams extends ObKVParamsBase {
     private static final int FLAG_ALLOW_PARTIAL_RESULTS = 1 << 0;
     private static final int FLAG_IS_CACHE_BLOCK        = 1 << 1;
     private static final int FLAG_CHECK_EXISTENCE_ONLY  = 1 << 2;
+    List<Pair<ObBytesString, Pair<Long, Long>>> timeRangeMap = new ArrayList<>();
+
 
     public ObHBaseParams() {
         pType = paramType.HBase;
@@ -111,6 +118,21 @@ public class ObHBaseParams extends ObKVParamsBase {
         System.arraycopy(booleansToByteArray(), 0, bytes, idx, 1);
         idx += 1;
 
+        int len = Serialization.getNeedBytes(timeRangeMap.size());
+        System.arraycopy(Serialization.encodeVi64(timeRangeMap.size()), 0, bytes, idx, len);
+        idx += len;
+        for (Pair<ObBytesString, Pair<Long, Long>> timeRange : timeRangeMap) {
+            len = Serialization.getNeedBytes(timeRange.first);
+            System.arraycopy(Serialization.encodeBytesString(timeRange.first), 0, bytes, idx, len);
+            idx += len;
+            len = Serialization.getNeedBytes(timeRange.second.first);
+            System.arraycopy(Serialization.encodeVi64(timeRange.second.first), 0, bytes, idx, len);
+            idx += len;
+            len = Serialization.getNeedBytes(timeRange.second.second);
+            System.arraycopy(Serialization.encodeVi64(timeRange.second.second), 0, bytes, idx, len);
+            idx += len;
+        }
+
         return bytes;
     }
 
@@ -125,6 +147,11 @@ public class ObHBaseParams extends ObKVParamsBase {
         caching = Serialization.decodeVi32(buf);
         callTimeout = Serialization.decodeVi32(buf);
         byteArrayToBooleans(buf);
+        long size = Serialization.decodeVi64(buf);
+        this.timeRangeMap = new ArrayList<>((int) size);
+        for (int i = 0; i < size; i++) {
+            this.timeRangeMap.add(new Pair<>(Serialization.decodeBytesString(buf), new Pair<>(Serialization.decodeVi64(buf), Serialization.decodeVi64(buf))));
+        }
         return this;
     }
 
@@ -137,7 +164,7 @@ public class ObHBaseParams extends ObKVParamsBase {
         return "ObParams: {\n pType = " + pType + ", \n caching = " + caching
                + ", \n callTimeout = " + callTimeout + ", \n allowPartialResult = "
                + allowPartialResults + ", \n isCacheBlock = " + isCacheBlock
-               + ", \n checkExistenceOnly = " + checkExistenceOnly + "\n}\n";
+               + ", \n checkExistenceOnly = " + checkExistenceOnly + ", \n timeRangeMap = " + timeRangeMap + "\n}\n";
     }
 
 }
