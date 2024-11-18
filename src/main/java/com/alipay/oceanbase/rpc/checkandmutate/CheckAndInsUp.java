@@ -38,13 +38,24 @@ public class CheckAndInsUp {
     private String         tableName;
     private ObTableFilter  filter;
     private InsertOrUpdate insUp;
-    boolean                checkExists = true;
+    private boolean        checkExists = true;
+    private boolean        rollbackWhenCheckFailed = false;
 
     public CheckAndInsUp(ObTableFilter filter, InsertOrUpdate insUp, boolean check_exists)
                                                                                           throws IllegalArgumentException {
         this.filter = filter;
         this.insUp = insUp;
         this.checkExists = check_exists;
+        this.tableName = null;
+        this.client = null;
+    }
+
+    public CheckAndInsUp(ObTableFilter filter, InsertOrUpdate insUp, boolean check_exists, boolean rollbackWhenCheckFailed)
+            throws IllegalArgumentException {
+        this.filter = filter;
+        this.insUp = insUp;
+        this.checkExists = check_exists;
+        this.rollbackWhenCheckFailed = rollbackWhenCheckFailed;
         this.tableName = null;
         this.client = null;
     }
@@ -57,6 +68,16 @@ public class CheckAndInsUp {
         this.filter = filter;
         this.insUp = insUp;
         this.checkExists = check_exists;
+    }
+
+    public CheckAndInsUp(Table client, String tableName, ObTableFilter filter,InsertOrUpdate insUp,
+                         boolean check_exists, boolean rollbackWhenCheckFailed) throws IllegalArgumentException {
+        this.client = client;
+        this.tableName = tableName;
+        this.filter = filter;
+        this.insUp = insUp;
+        this.checkExists = check_exists;
+        this.rollbackWhenCheckFailed = rollbackWhenCheckFailed;
     }
 
     public Row getRowKey() {
@@ -73,6 +94,10 @@ public class CheckAndInsUp {
 
     public boolean isCheckExists() {
         return checkExists;
+    }
+
+    public boolean isRollbackWhenCheckFailed() {
+        return rollbackWhenCheckFailed;
     }
 
     public MutationResult execute() throws Exception {
@@ -96,6 +121,7 @@ public class CheckAndInsUp {
         ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.INSERT_OR_UPDATE,
                 insUp.getRowKey().getValues(), insUp.getColumns(), insUp.getValues());
 
-        return new MutationResult(((ObTableClient)client).mutationWithFilter(query, rowKey, ranges, operation, false, true, checkExists));
+        return new MutationResult(((ObTableClient)client).mutationWithFilter(query, rowKey, ranges, operation,
+                false, true, checkExists, rollbackWhenCheckFailed));
     }
 }

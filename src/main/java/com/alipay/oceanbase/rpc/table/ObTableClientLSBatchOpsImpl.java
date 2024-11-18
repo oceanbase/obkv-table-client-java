@@ -176,6 +176,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         ObTableSingleOp singleOp = new ObTableSingleOp();
         singleOp.setSingleOpType(ObTableOperationType.CHECK_AND_INSERT_UP);
         singleOp.setIsCheckNoExists(!checkAndInsUp.isCheckExists());
+        singleOp.setIsRollbackWhenCheckFailed(checkAndInsUp.isRollbackWhenCheckFailed());
         singleOp.setQuery(query);
         singleOp.addEntity(entity);
 

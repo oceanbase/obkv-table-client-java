@@ -3299,7 +3299,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                         final ObTableOperation operation, final boolean withResult)
                                                                                                    throws Exception {
         return mutationWithFilter(tableQuery, rowKey, keyRanges, operation, withResult, false,
-            false);
+            false, false);
     }
 
     /**
@@ -3311,13 +3311,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @param withResult whether to bring back result
      * @param checkAndExecute whether execute check and execute instead of query and mutate
      * @param checkExists whether to check exists or not
+     * @param rollbackWhenCheckFailed whether rollback or not when check failed
      * @return execute result
      * @throws Exception exception
      */
     public ObPayload mutationWithFilter(final TableQuery tableQuery, final Row rowKey,
                                         final List<ObNewRange> keyRanges,
                                         final ObTableOperation operation, final boolean withResult,
-                                        final boolean checkAndExecute, final boolean checkExists)
+                                        final boolean checkAndExecute, final boolean checkExists,
+                                        final boolean rollbackWhenCheckFailed)
                                                                                                  throws Exception {
         final long start = System.currentTimeMillis();
         if (tableQuery != null && tableQuery.getObTableQuery().getKeyRanges().isEmpty()) {
@@ -3343,6 +3345,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 request.setPartitionId(tableParam.getPartitionId());
                 request.getTableQueryAndMutate().setIsCheckAndExecute(checkAndExecute);
                 request.getTableQueryAndMutate().setIsCheckNoExists(!checkExists);
+                request.getTableQueryAndMutate().setIsRollbackWhenCheckFailed(rollbackWhenCheckFailed);
                 ObPayload result = executeWithRetry(obTable, request, tableQuery.getTableName());
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
                 MonitorUtil.info(request, database, tableQuery.getTableName(), "QUERY_AND_MUTATE",
@@ -3669,6 +3672,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     public CheckAndInsUp checkAndInsUp(String tableName, ObTableFilter filter,
                                        InsertOrUpdate insUp, boolean checkExists) {
         return new CheckAndInsUp(this, tableName, filter, insUp, checkExists);
+    }
+
+    /**
+     * checkAndInsUp.
+     */
+    public CheckAndInsUp checkAndInsUp(String tableName, ObTableFilter filter, InsertOrUpdate insUp,
+                                       boolean checkExists, boolean rollbackWhenCheckFailed) {
+        return new CheckAndInsUp(this, tableName, filter, insUp, checkExists, rollbackWhenCheckFailed);
     }
 
     /**

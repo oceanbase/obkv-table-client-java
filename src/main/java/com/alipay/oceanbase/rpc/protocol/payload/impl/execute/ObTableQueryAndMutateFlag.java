@@ -18,9 +18,10 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
 public class ObTableQueryAndMutateFlag {
-    private static final int FLAG_IS_CHECK_AND_EXECUTE = 1 << 0;
-    private static final int FLAG_IS_CHECK_NOT_EXISTS  = 1 << 1;
-    private long             flags                     = 0;
+    private static final int FLAG_IS_CHECK_AND_EXECUTE          = 1 << 0;
+    private static final int FLAG_IS_CHECK_NOT_EXISTS           = 1 << 1;
+    private static final int FLAG_IS_ROLLBACK_WHEN_CHECK_FAILED = 1 << 2;
+    private long             flags                              = 0;
 
     public void setIsCheckAndExecute(boolean isCheckAndExecute) {
         if (isCheckAndExecute) {
@@ -38,6 +39,14 @@ public class ObTableQueryAndMutateFlag {
         }
     }
 
+    public void setIsRollbackWhenCheckFailed(boolean isRollbackWhenCheckFailed) {
+        if (isRollbackWhenCheckFailed) {
+            flags |= FLAG_IS_ROLLBACK_WHEN_CHECK_FAILED;
+        } else {
+            flags &= ~FLAG_IS_ROLLBACK_WHEN_CHECK_FAILED;
+        }
+    }
+
     public long getValue() {
         return flags;
     }
@@ -46,7 +55,11 @@ public class ObTableQueryAndMutateFlag {
         return (flags & FLAG_IS_CHECK_NOT_EXISTS) != 0;
     }
 
-    public boolean isChekAndExecute() {
+    public boolean isCheckAndExecute() {
         return (flags & FLAG_IS_CHECK_AND_EXECUTE) != 0;
+    }
+
+    public boolean isRollbackWhenCheckFailed() {
+        return (flags & FLAG_IS_ROLLBACK_WHEN_CHECK_FAILED) != 0;
     }
 }
