@@ -55,26 +55,26 @@ OB_UNIS_DEF_SERIALIZE(ObTableQuery,
  */
 public class ObTableQuery extends AbstractPayload {
 
-    private List<ObNewRange>    keyRanges                 = new LinkedList<ObNewRange>();
-    private List<String>        selectColumns             = new LinkedList<String>();
-    private String              filterString;
-    private int                 limit                     = -1;
-    private int                 offset                    = 0;
-    private ObScanOrder         scanOrder                 = ObScanOrder.Forward;
-    private String              indexName;
-    private int                 batchSize                 = -1;
-    private long                maxResultSize             = -1;
-    private ObHTableFilter      hTableFilter;
+    protected List<ObNewRange>    keyRanges                 = new LinkedList<ObNewRange>();
+    protected List<String>        selectColumns             = new LinkedList<String>();
+    protected String              filterString;
+    protected int                 limit                     = -1;
+    protected int                 offset                    = 0;
+    protected ObScanOrder         scanOrder                 = ObScanOrder.Forward;
+    protected String              indexName;
+    protected int                 batchSize                 = -1;
+    protected long                maxResultSize             = -1;
+    protected ObHTableFilter      hTableFilter;
 
-    private static final byte[] HTABLE_DUMMY_BYTES = new byte[] { 0x01, 0x00 };
-    private boolean             isHbaseQuery              = false;
-    private List<String>        scanRangeColumns          = new LinkedList<String>();
+    protected static final byte[] HTABLE_DUMMY_BYTES = new byte[] { 0x01, 0x00 };
+    protected boolean             isHbaseQuery              = false;
+    protected List<String>        scanRangeColumns          = new LinkedList<String>();
 
-    private List<ObTableAggregationSingle>    aggregations       = new LinkedList<>();
+    protected List<ObTableAggregationSingle>    aggregations       = new LinkedList<>();
 
     private Long partId = null;
 
-    private ObKVParams obKVParams;
+    protected ObKVParams obKVParams;
 
     public void adjustStartKey(List<ObObj> key) throws IllegalArgumentException {
         List<ObNewRange> keyRanges = getKeyRanges();
