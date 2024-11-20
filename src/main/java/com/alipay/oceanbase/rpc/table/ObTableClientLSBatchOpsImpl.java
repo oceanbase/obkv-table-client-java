@@ -33,6 +33,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.MonitorUtil;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
@@ -196,6 +197,18 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             needAllProp = true;
         }
         ObTableSingleOp singleOp = new ObTableSingleOp();
+        if (entityType == ObTableEntityType.HKV) {
+            ObTableQuery obTableQuery = query.getObTableQuery();
+            ObTableSingleOpQuery singleOpQuery = ObTableSingleOpQuery.getInstance(obTableQuery.getIndexName(),
+                                                                                  obTableQuery.getKeyRanges(),
+                                                                                  obTableQuery.getSelectColumns(),
+                                                                                  obTableQuery.getScanOrder(),
+                                                                                  obTableQuery.isHbaseQuery(),
+                                                                                  obTableQuery.gethTableFilter(),
+                                                                                  obTableQuery.getObKVParams(),
+                                                                                  obTableQuery.getFilterString());
+            singleOp.setQuery(singleOpQuery);
+        }
         singleOp.setSingleOpType(ObTableOperationType.GET);
         singleOp.addEntity(entity);
         addOperation(singleOp);
