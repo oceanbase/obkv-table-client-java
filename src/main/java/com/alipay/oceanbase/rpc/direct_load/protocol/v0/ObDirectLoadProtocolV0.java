@@ -30,6 +30,8 @@ public class ObDirectLoadProtocolV0 implements ObDirectLoadProtocol {
 
     public static final long         OB_VERSION_4_3_2_0 = ObGlobal.calcVersion(4, (short) 3,
                                                             (byte) 2, (byte) 0);
+    public static final long         OB_VERSION_4_3_5_0 = ObGlobal.calcVersion(4, (short) 3,
+                                                            (byte) 5, (byte) 0);
 
     private static final int         PROTOCOL_VERSION   = 0;
     private final ObDirectLoadLogger logger;
@@ -63,12 +65,14 @@ public class ObDirectLoadProtocolV0 implements ObDirectLoadProtocol {
                             + " is not supported, minimum version required is "
                             + ObGlobal.getObVsnString(OB_VERSION_4_3_2_0));
             }
-        } else if (statement.getPartitionNames().length > 0) {
+        } else if (obVersion < OB_VERSION_4_3_5_0 && statement.getPartitionNames().length > 0) {
             logger.warn("partition names in ob version " + ObGlobal.getObVsnString(obVersion)
-                        + "is not supported");
+                        + "is not supported, minimum version required is "
+                        + ObGlobal.getObVsnString(OB_VERSION_4_3_5_0));
             throw new ObDirectLoadNotSupportedException("partition names in ob version "
-                                                        + ObGlobal.getObVsnString(obVersion)
-                                                        + " is not supported");
+                                                    + ObGlobal.getObVsnString(obVersion)
+                                                    + " is not supported, minimum version required is "
+                                                    + ObGlobal.getObVsnString(OB_VERSION_4_3_5_0));
         }
     }
 
