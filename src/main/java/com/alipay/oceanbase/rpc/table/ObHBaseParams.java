@@ -28,6 +28,7 @@ public class ObHBaseParams extends ObKVParamsBase {
     boolean                  allowPartialResults        = true;  // whether allow partial row return or not
     boolean                  isCacheBlock               = false; // whether enable server block cache and row cache or not
     boolean                  checkExistenceOnly         = false; // check the existence only
+    String                   hbaseVersion               = "1.3.6";
 
     private static final int FLAG_ALLOW_PARTIAL_RESULTS = 1 << 0;
     private static final int FLAG_IS_CACHE_BLOCK        = 1 << 1;
@@ -61,6 +62,10 @@ public class ObHBaseParams extends ObKVParamsBase {
         this.checkExistenceOnly = checkExistenceOnly;
     }
 
+    public void setHbaseVersion(String version) {
+        this.hbaseVersion = version;
+    }
+
     public int getCaching() {
         return caching;
     }
@@ -79,6 +84,10 @@ public class ObHBaseParams extends ObKVParamsBase {
 
     public boolean isCheckExistenceOnly() {
         return checkExistenceOnly;
+    }
+
+    public String getHbaseVersion() {
+        return hbaseVersion;
     }
 
     // encode all boolean type to one byte
@@ -110,6 +119,9 @@ public class ObHBaseParams extends ObKVParamsBase {
         idx += Serialization.getNeedBytes(callTimeout);
         System.arraycopy(booleansToByteArray(), 0, bytes, idx, 1);
         idx += 1;
+        System.arraycopy(Serialization.encodeVString(hbaseVersion), 0, bytes, idx,
+                Serialization.getNeedBytes(hbaseVersion));
+        idx += Serialization.getNeedBytes(hbaseVersion);
 
         return bytes;
     }
@@ -125,19 +137,21 @@ public class ObHBaseParams extends ObKVParamsBase {
         caching = Serialization.decodeVi32(buf);
         callTimeout = Serialization.decodeVi32(buf);
         byteArrayToBooleans(buf);
+        hbaseVersion = Serialization.decodeVString(buf);
         return this;
     }
 
     public long getPayloadContentSize() {
         return 1 + Serialization.getNeedBytes(caching) + Serialization.getNeedBytes(callTimeout)
-               + 1; // all boolean to one byte
+               + Serialization.getNeedBytes(hbaseVersion) + 1; // all boolean to one byte
     }
 
     public String toString() {
         return "ObParams: {\n pType = " + pType + ", \n caching = " + caching
                + ", \n callTimeout = " + callTimeout + ", \n allowPartialResult = "
                + allowPartialResults + ", \n isCacheBlock = " + isCacheBlock
-               + ", \n checkExistenceOnly = " + checkExistenceOnly + "\n}\n";
+               + ", \n checkExistenceOnly = " + checkExistenceOnly
+               + ", \n hbaseVersion = " + hbaseVersion  + "\n}\n";
     }
 
 }
