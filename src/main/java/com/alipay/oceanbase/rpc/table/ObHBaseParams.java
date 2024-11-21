@@ -17,8 +17,13 @@
 
 package com.alipay.oceanbase.rpc.table;
 
+import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
+import com.alipay.oceanbase.rpc.util.ObBytesString;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
 
@@ -32,9 +37,15 @@ public class ObHBaseParams extends ObKVParamsBase {
     private static final int FLAG_ALLOW_PARTIAL_RESULTS = 1 << 0;
     private static final int FLAG_IS_CACHE_BLOCK        = 1 << 1;
     private static final int FLAG_CHECK_EXISTENCE_ONLY  = 1 << 2;
+    List<ObPair<ObBytesString, ObPair<Long, Long>>> timeRangeMap = new ArrayList<>();
+
 
     public ObHBaseParams() {
         pType = paramType.HBase;
+    }
+
+    public void addFamilyTimeRange(ObBytesString family, long min, long max) {
+        timeRangeMap.add(new ObPair<>(family, new ObPair<>(min, max)));
     }
 
     public ObKVParamsBase.paramType getType() {
@@ -111,6 +122,21 @@ public class ObHBaseParams extends ObKVParamsBase {
         System.arraycopy(booleansToByteArray(), 0, bytes, idx, 1);
         idx += 1;
 
+        int len = Serialization.getNeedBytes(timeRangeMap.size());
+        System.arraycopy(Serialization.encodeVi64(timeRangeMap.size()), 0, bytes, idx, len);
+        idx += len;
+        for (ObPair<ObBytesString, ObPair<Long, Long>> timeRange : timeRangeMap) {
+            len = Serialization.getNeedBytes(timeRange.getLeft());
+            System.arraycopy(Serialization.encodeBytesString(timeRange.getLeft()), 0, bytes, idx, len);
+            idx += len;
+            len = Serialization.getNeedBytes(timeRange.getRight().getLeft());
+            System.arraycopy(Serialization.encodeVi64(timeRange.getRight().getLeft()), 0, bytes, idx, len);
+            idx += len;
+            len = Serialization.getNeedBytes(timeRange.getRight().getRight());
+            System.arraycopy(Serialization.encodeVi64(timeRange.getRight().getRight()), 0, bytes, idx, len);
+            idx += len;
+        }
+
         return bytes;
     }
 
@@ -125,19 +151,31 @@ public class ObHBaseParams extends ObKVParamsBase {
         caching = Serialization.decodeVi32(buf);
         callTimeout = Serialization.decodeVi32(buf);
         byteArrayToBooleans(buf);
+        long size = Serialization.decodeVi64(buf);
+        this.timeRangeMap = new ArrayList<>((int) size);
+        for (int i = 0; i < size; i++) {
+            this.timeRangeMap.add(new ObPair<>(Serialization.decodeBytesString(buf), new ObPair<>(Serialization.decodeVi64(buf), Serialization.decodeVi64(buf))));
+        }
         return this;
     }
 
     public long getPayloadContentSize() {
-        return 1 + Serialization.getNeedBytes(caching) + Serialization.getNeedBytes(callTimeout)
-               + 1; // all boolean to one byte
+        long contentSize = 1 + Serialization.getNeedBytes(caching) + Serialization.getNeedBytes(callTimeout)
+               + 1 // all boolean to one byte
+               + Serialization.getNeedBytes(timeRangeMap.size());
+        for (ObPair<ObBytesString, ObPair<Long, Long>> timeRange : timeRangeMap) {
+            contentSize += Serialization.getNeedBytes(timeRange.getLeft());
+            contentSize += Serialization.getNeedBytes(timeRange.getRight().getLeft());
+            contentSize += Serialization.getNeedBytes(timeRange.getRight().getRight());
+        }
+        return contentSize;
     }
 
     public String toString() {
         return "ObParams: {\n pType = " + pType + ", \n caching = " + caching
                + ", \n callTimeout = " + callTimeout + ", \n allowPartialResult = "
                + allowPartialResults + ", \n isCacheBlock = " + isCacheBlock
-               + ", \n checkExistenceOnly = " + checkExistenceOnly + "\n}\n";
+               + ", \n checkExistenceOnly = " + checkExistenceOnly + ", \n timeRangeMap = " + timeRangeMap + "\n}\n";
     }
 
 }
