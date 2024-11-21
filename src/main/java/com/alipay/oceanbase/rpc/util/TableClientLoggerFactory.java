@@ -18,10 +18,9 @@
 package com.alipay.oceanbase.rpc.util;
 
 import com.alipay.sofa.common.code.LogCode2Description;
-import com.alipay.sofa.common.log.MultiAppLoggerSpaceManager;
-import com.alipay.sofa.common.log.adapter.level.AdapterLevel;
 import org.slf4j.Logger;
 import org.slf4j.helpers.NOPLogger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -52,13 +51,7 @@ public class TableClientLoggerFactory {
             return null;
         }
 
-        if (!MultiAppLoggerSpaceManager.isSpaceInitialized(OCEANBASE_TABLE_CLIENT_LOGGER_SPACE)) {
-            //initLogger();
-            MultiAppLoggerSpaceManager.init(OCEANBASE_TABLE_CLIENT_LOGGER_SPACE, null);
-        }
-
-        return MultiAppLoggerSpaceManager.getLoggerBySpace(name,
-            OCEANBASE_TABLE_CLIENT_LOGGER_SPACE);
+        return LoggerFactory.getLogger(name);
     }
 
     public static Logger getLogger(Class<?> klass) {
@@ -99,16 +92,5 @@ public class TableClientLoggerFactory {
         }
 
         return DIRECT;
-    }
-
-    public static void changeLevel(Map<String, String> levelMap) {
-        for (Map.Entry<String, String> entry : levelMap.entrySet()) {
-            changeLevel(entry.getKey(), entry.getValue());
-        }
-    }
-
-    public static void changeLevel(String name, String level) {
-        MultiAppLoggerSpaceManager.setLoggerLevel(name, OCEANBASE_TABLE_CLIENT_LOGGER_SPACE,
-            AdapterLevel.getAdapterLevel(level));
     }
 }
