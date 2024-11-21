@@ -32,6 +32,9 @@ public class ObKVParams extends AbstractPayload {
             case HBase:
                 return new ObHBaseParams();
             case Redis:
+                throw new RuntimeException("Currently does not support redis type");
+            case FTS:
+                return new ObFTSParams();
             default:
                 throw new RuntimeException("Currently does not support other types except HBase");
         }
