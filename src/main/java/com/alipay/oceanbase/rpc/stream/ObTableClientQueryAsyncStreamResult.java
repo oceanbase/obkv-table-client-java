@@ -17,11 +17,13 @@
 
 package com.alipay.oceanbase.rpc.stream;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.exception.ObTableNeedFetchAllException;
 import com.alipay.oceanbase.rpc.exception.ObTableRetryExhaustedException;
+import com.alipay.oceanbase.rpc.location.model.TableEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
@@ -80,14 +82,15 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchAllException) {
                         setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
-                            .getTableQuery(), tableName));
+                            .getTableQuery(), client.getPhyTableNameFromTableGroup(entityType, tableName)));
                         it = expectant.entrySet().iterator();
                         retryTimes++;
                         if (retryTimes > maxRetries) {
                             RUNTIME.error("Fail to get refresh table entry response after {}",
                                 retryTimes);
                             throw new ObTableRetryExhaustedException(
-                                "Fail to get refresh table entry response after " + retryTimes);
+                                "Fail to get refresh table entry response after " + retryTimes
+                                + "errorCode:" + ((ObTableNeedFetchAllException) e).getErrorCode());
 
                         }
                     } else {
@@ -201,10 +204,11 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                     referToLastStreamResult(lastEntry.getValue());
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchAllException) {
+                        String realTableName = client.getPhyTableNameFromTableGroup(entityType, tableName);
                         this.asyncRequest.getObTableQueryRequest().getTableQuery()
                             .adjustStartKey(currentStartKey);
                         setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
-                            .getTableQuery(), tableName));
+                            .getTableQuery(), realTableName));
                         setEnd(true);
                     } else {
                         throw e;
@@ -232,10 +236,11 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                     referToNewPartition(entry.getValue());
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchAllException) {
+                        String realTableName = client.getPhyTableNameFromTableGroup(entityType, tableName);
                         this.asyncRequest.getObTableQueryRequest().getTableQuery()
                             .adjustStartKey(currentStartKey);
                         setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
-                            .getTableQuery(), tableName));
+                            .getTableQuery(), realTableName));
                         it = expectant.entrySet().iterator();
                         retryTimes++;
                         if (retryTimes > client.getTableEntryRefreshTryTimes()) {

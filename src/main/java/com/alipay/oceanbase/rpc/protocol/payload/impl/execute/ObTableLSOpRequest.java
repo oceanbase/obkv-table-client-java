@@ -121,7 +121,14 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
     public void setLsOperation(ObTableLSOperation lsOperation) {
         this.lsOperation = lsOperation;
     }
-
+    
+    /*
+     * Get entity type.
+     */
+    public ObTableEntityType getEntityType() {
+        return entityType;
+    }
+    
     /*
      * Set entity type.
      */

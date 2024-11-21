@@ -3571,6 +3571,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return tableName;
     }
 
+    public String getPhyTableNameFromTableGroup(ObTableEntityType type, String tableName) throws Exception {
+        if (odpMode) {
+            // do nothing
+        } else if (type == ObTableEntityType.HKV && isTableGroupName(tableName)) {
+            tableName = tryGetTableNameFromTableGroupCache(tableName, false);
+        }
+        return tableName;
+    }
+    
     /*
      * Get the start keys of different tablets, byte[0] = [] = EMPTY_START_ROW = EMPTY_END_ROW
      * Example:
