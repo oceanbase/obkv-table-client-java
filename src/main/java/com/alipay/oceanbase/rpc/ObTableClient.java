@@ -3124,8 +3124,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         } else if (request instanceof ObTableQueryAsyncRequest) {
             // TableGroup -> TableName
             String tableName = request.getTableName();
-            tableName = getPhyTableNameFromTableGroup(
-                ((ObTableQueryAsyncRequest) request).getObTableQueryRequest(), tableName);
             ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(tableName,
                 ((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery(), this);
             tableQuery.setEntityType(request.getEntityType());
