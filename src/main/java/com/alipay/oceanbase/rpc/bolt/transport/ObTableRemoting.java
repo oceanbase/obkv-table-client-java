@@ -196,6 +196,7 @@ public class ObTableRemoting extends BaseRemoting {
                || errorCode == ResultCodes.OB_LS_NOT_EXIST.errorCode
                || errorCode == ResultCodes.OB_MAPPING_BETWEEN_TABLET_AND_LS_NOT_EXIST.errorCode
                || errorCode == ResultCodes.OB_SNAPSHOT_DISCARDED.errorCode
+               || errorCode == ResultCodes.OB_SCHEMA_EAGAIN.errorCode
                || (pcode == Pcodes.OB_TABLE_API_LS_EXECUTE && errorCode == ResultCodes.OB_NOT_MASTER.errorCode);
     }
 
