@@ -47,6 +47,7 @@ public class TableEntry {
     private ObPartitionInfo                  partitionInfo         = null;
     private volatile long                    refreshTimeMills;
     private volatile long                    refreshAllTimeMills;
+    private volatile long                    odpRefreshTimeMills;
     private Map<String, Integer>             rowKeyElement         = null;
 
     // table location
@@ -159,6 +160,10 @@ public class TableEntry {
         return refreshAllTimeMills;
     }
 
+    public long getOdpRefreshTimeMills() {
+        return odpRefreshTimeMills;
+    }
+
     /*
      * Set refresh time mills.
      */
@@ -171,6 +176,10 @@ public class TableEntry {
      */
     public void setRefreshAllTimeMills(long refreshAllTimeMills) {
         this.refreshAllTimeMills = refreshAllTimeMills;
+    }
+
+    public void setOdpRefreshTimeMills(long odpRefreshTimeMills) {
+        this.odpRefreshTimeMills = odpRefreshTimeMills;
     }
 
     public Map<String, Integer> getRowKeyElement() {

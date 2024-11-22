@@ -212,6 +212,7 @@ public class ObTableRemoting extends BaseRemoting {
                || errorCode == ResultCodes.OB_PARTITION_IS_BLOCKED.errorCode
                || errorCode == ResultCodes.OB_SERVER_IS_INIT.errorCode
                || errorCode == ResultCodes.OB_SERVER_IS_STOPPING.errorCode
+               || errorCode == ResultCodes.OB_TENANT_NOT_IN_SERVER.errorCode
                || errorCode == ResultCodes.OB_TRANS_RPC_TIMEOUT.errorCode
                || errorCode == ResultCodes.OB_NO_READABLE_REPLICA.errorCode;
     }

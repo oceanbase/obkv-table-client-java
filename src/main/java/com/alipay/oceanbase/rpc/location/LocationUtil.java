@@ -1506,23 +1506,23 @@ public class LocationUtil {
         }
 
         // get list partition column types here
-        List<ObColumn> orderedPartedColumns1 = null;
-        if (null != info.getFirstPartDesc()) {
-            if (info.getFirstPartDesc().getPartFuncType().isListPart()
-                || info.getFirstPartDesc().getPartFuncType().isRangePart()) {
-                orderedPartedColumns1 = getOrderedPartColumns(info.getPartColumns(),
-                    info.getFirstPartDesc());
-            }
-        }
-
-        List<ObColumn> orderedPartedColumns2 = null;
-        if (null != info.getSubPartDesc()) {
-            if (info.getSubPartDesc().getPartFuncType().isListPart()
-                || info.getSubPartDesc().getPartFuncType().isRangePart()) {
-                orderedPartedColumns2 = getOrderedPartColumns(info.getPartColumns(),
-                    info.getSubPartDesc());
-            }
-        }
+        //        List<ObColumn> orderedPartedColumns1 = null;
+        //        if (null != info.getFirstPartDesc()) {
+        //            if (info.getFirstPartDesc().getPartFuncType().isListPart()
+        //                || info.getFirstPartDesc().getPartFuncType().isRangePart()) {
+        //                orderedPartedColumns1 = getOrderedPartColumns(info.getPartColumns(),
+        //                    info.getFirstPartDesc());
+        //            }
+        //        }
+        //
+        //        List<ObColumn> orderedPartedColumns2 = null;
+        //        if (null != info.getSubPartDesc()) {
+        //            if (info.getSubPartDesc().getPartFuncType().isListPart()
+        //                || info.getSubPartDesc().getPartFuncType().isRangePart()) {
+        //                orderedPartedColumns2 = getOrderedPartColumns(info.getPartColumns(),
+        //                    info.getSubPartDesc());
+        //            }
+        //        }
 
         // set the property of first part and sub part
         List<ObColumn> firstPartColumns = new ArrayList<ObColumn>(), subPartColumns = new ArrayList<ObColumn>();
@@ -1546,8 +1546,8 @@ public class LocationUtil {
                 }
             }
         }
-        setPartDescProperty(info.getFirstPartDesc(), firstPartColumns, orderedPartedColumns1);
-        setPartDescProperty(info.getSubPartDesc(), subPartColumns, orderedPartedColumns2);
+        setPartDescProperty(info.getFirstPartDesc(), firstPartColumns, firstPartColumns);
+        setPartDescProperty(info.getSubPartDesc(), subPartColumns, subPartColumns);
 
         return info;
     }

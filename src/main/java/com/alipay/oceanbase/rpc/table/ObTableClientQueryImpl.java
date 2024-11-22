@@ -169,10 +169,24 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                     throw new ObTableException("key range columns must be specified when use index");
                 }
             }
-            this.partitionObTables.put(0L, new ObPair<Long, ObTableParam>(0L, new ObTableParam(
-                obTableClient.getOdpTable())));
+            if (tableQuery.getIndexName() != null) {
+                this.partitionObTables.put(0L, new ObPair<Long, ObTableParam>(0L, new ObTableParam(
+                        obTableClient.getOdpTable())));
+            } else if (getPartId() == null) {
+                initPartitions();
+            } else {
+                ObPair<Long, ObTableParam> odpTable = obTableClient.getODPTableWithPartId(
+                    tableName, getPartId(), false);
+                this.partitionObTables.put(odpTable.getLeft(), odpTable);
+            }
         } else {
-            initPartitions();
+            if (getPartId() == null) {
+                initPartitions();
+            } else { // directly get table from table entry by logic partId
+                ObPair<Long, ObTableParam> table = obTableClient.getTableWithPartId(tableName,
+                    getPartId(), false, false, false, obTableClient.getRoute(false));
+                partitionObTables.put(table.getLeft(), table);
+            }
         }
 
         StringBuilder stringBuilder = new StringBuilder();
@@ -246,7 +260,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         String indexName = tableQuery.getIndexName();
 
         if (!this.obTableClient.isOdpMode()) {
-            indexTableName = obTableClient.getIndexTableName(tableName, indexName, tableQuery.getScanRangeColumns(), false);
+            indexTableName = obTableClient.getIndexTableName(tableName, indexName,
+                tableQuery.getScanRangeColumns(), false);
         }
 
         for (ObNewRange range : tableQuery.getKeyRanges()) {
@@ -266,13 +281,17 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                 end[i] = endKey.getObj(i).isMinObj() || endKey.getObj(i).isMaxObj() ?
                         endKey.getObj(i) : endKey.getObj(i).getValue();
             }
-
             ObBorderFlag borderFlag = range.getBorderFlag();
-            List<ObPair<Long, ObTableParam>> pairs = this.obTableClient.getTables(indexTableName,
-                    tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(),
-                    false, false);
-
-            if (tableQuery.getScanOrder() == ObScanOrder.Reverse) {
+            // pairs -> List<Pair<logicId, param>>
+            List<ObPair<Long, ObTableParam>> pairs = null;
+            if (!this.obTableClient.isOdpMode()) {
+                pairs = this.obTableClient.getTables(indexTableName, tableQuery, start,
+                    borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false, false);
+            } else {
+                pairs = this.obTableClient.getOdpTables(tableName, tableQuery, start,
+                    borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false);
+            }
+            if (this.tableQuery.getScanOrder() == ObScanOrder.Reverse) {
                 for (int i = pairs.size() - 1; i >= 0; i--) {
                     partitionObTables.put(pairs.get(i).getLeft(), pairs.get(i));
                 }
@@ -325,5 +344,13 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
      */
     public Row getRowKey() {
         return this.rowKey;
+    }
+
+    public void setPartId(Long partId) {
+        getObTableQuery().setPartId(partId);
+    }
+
+    public Long getPartId() {
+        return getObTableQuery().getPartId();
     }
 }

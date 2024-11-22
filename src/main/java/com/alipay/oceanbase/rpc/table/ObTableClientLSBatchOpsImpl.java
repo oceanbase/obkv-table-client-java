@@ -363,11 +363,11 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             long lsId = tableObPair.getRight().getLsId();
 
             Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperations
-                     = lsOperationsMap.computeIfAbsent(lsId, k -> new HashMap<>());
+                    = lsOperationsMap.computeIfAbsent(lsId, k -> new HashMap<>());
             // if ls id not exists
 
             ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>> singleOperations =
-                     tabletOperations.computeIfAbsent(tableObPair.getLeft(), k -> new ObPair<>(tableObPair.getRight(), new ArrayList<>()));
+                    tabletOperations.computeIfAbsent(tableObPair.getLeft(), k -> new ObPair<>(tableObPair.getRight(), new ArrayList<>()));
             // if tablet id not exists
             singleOperations.getRight().add(new ObPair<>(i, operation));
         }
@@ -631,7 +631,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
         int retryCount = 0;
         boolean success = false;
-        
+
         Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> currentPartitions = new HashMap<>();
         currentPartitions.put(entry.getKey(), entry.getValue());
         int errCode = ResultCodes.OB_SUCCESS.errorCode;
