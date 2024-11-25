@@ -3254,13 +3254,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (ODPTableLocations.get(tableName) != null) {
             odpTableEntry = ODPTableLocations.get(tableName);
             long interval = System.currentTimeMillis() - odpTableEntry.getRefreshTimeMills();
-            // do not fetch partition meta if the refresh interval is less than 3 seconds
+            // do not fetch partition meta if and only if the refresh interval is less than 0.5 seconds
+            // and no need to fore renew
             if (interval < reFetchInterval) {
                 if (!needRenew) {
                     lock.unlock();
                     return odpTableEntry;
                 }
-
                 Thread.sleep(reFetchInterval - interval);
             }
         }
