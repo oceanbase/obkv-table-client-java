@@ -3226,6 +3226,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
         TableEntry odpTableEntry = ODPTableLocations.get(tableName);
         Long lastOdpRefreshTimeMills = null;
+        Long reFetchInterval = 500L;
 
         // already have odpTableEntry
         if (odpTableEntry != null) {
@@ -3254,9 +3255,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             odpTableEntry = ODPTableLocations.get(tableName);
             long interval = System.currentTimeMillis() - odpTableEntry.getRefreshTimeMills();
             // do not fetch partition meta if the refresh interval is less than 3 seconds
-            if (interval < 3000L) {
-                lock.unlock();
-                return odpTableEntry;
+            if (interval < reFetchInterval) {
+                if (!needRenew) {
+                    lock.unlock();
+                    return odpTableEntry;
+                }
+
+                Thread.sleep(reFetchInterval - interval);
             }
         }
 
