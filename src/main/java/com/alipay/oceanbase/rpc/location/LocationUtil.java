@@ -1257,8 +1257,17 @@ public class LocationUtil {
             }
             location.addReplicaLocation(replica);
 
-            if (partitionLocationInfo.initialized.compareAndSet(false, true)) {
+            if (location.getLeader() != null && partitionLocationInfo.initialized.compareAndSet(false, true)) {
                 partitionLocationInfo.initializationLatch.countDown();
+            } else if (rs.isLast() && location.getLeader() == null) {
+                partitionLocationInfo.initializationLatch.countDown();
+                RUNTIME.error(LCD.convert("01-00028"), partitionId, partitionEntry, tableEntry);
+                RUNTIME.error(format(
+                        "partition=%d has no leader partitionEntry=%s original tableEntry=%s",
+                        partitionId, partitionEntry, tableEntry));
+                throw new ObTablePartitionNoMasterException(format(
+                        "partition=%d has no leader partitionEntry=%s original tableEntry=%s",
+                        partitionId, partitionEntry, tableEntry));
             }
         }
 
@@ -1311,8 +1320,17 @@ public class LocationUtil {
                 }
                 location.addReplicaLocation(replica);
 
-                if (partitionLocationInfo.initialized.compareAndSet(false, true)) {
+                if (location.getLeader() != null && partitionLocationInfo.initialized.compareAndSet(false, true)) {
                     partitionLocationInfo.initializationLatch.countDown();
+                } else if (rs.isLast() && location.getLeader() == null) {
+                    partitionLocationInfo.initializationLatch.countDown();
+                    RUNTIME.error(LCD.convert("01-00028"), partitionId, partitionEntry, tableEntry);
+                    RUNTIME.error(format(
+                            "partition=%d has no leader partitionEntry=%s original tableEntry=%s",
+                            partitionId, partitionEntry, tableEntry));
+                    throw new ObTablePartitionNoMasterException(format(
+                            "partition=%d has no leader partitionEntry=%s original tableEntry=%s",
+                            partitionId, partitionEntry, tableEntry)); 
                 }
             } else {
                 partitionId = rs.getLong("partition_id");
