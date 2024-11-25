@@ -182,6 +182,32 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         return buildPartitions(client, tableQuery, tableName);
     }
 
+    // This function is designed for HBase-type requests.
+    // It is used to extend the session duration of a scan
+    @Override
+    public void renewLease() throws Exception {
+        if (!isEnd() && !expectant.isEmpty()) {
+            Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
+                    .iterator();
+            Map.Entry<Long, ObPair<Long, ObTableParam>> lastEntry = it.next();
+            ObPair<Long, ObTableParam> partIdWithObTable = lastEntry.getValue();
+            // try access new partition, async will not remove useless expectant
+            ObTableParam obTableParam = partIdWithObTable.getRight();
+            ObTableQueryRequest queryRequest = asyncRequest.getObTableQueryRequest();
+
+            // refresh request info
+            queryRequest.setPartitionId(obTableParam.getPartitionId());
+            queryRequest.setTableId(obTableParam.getTableId());
+
+            // refresh async query request
+            asyncRequest.setQueryType(ObQueryOperationType.QUERY_RENEW);
+            asyncRequest.setQuerySessionId(sessionId);
+            executeAsync(partIdWithObTable, asyncRequest);
+        } else {
+            throw new ObTableException("query end or expectant is null");
+        }
+    }
+
     @Override
     public boolean next() throws Exception {
         checkStatus();

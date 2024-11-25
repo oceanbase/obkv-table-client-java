@@ -24,6 +24,7 @@ import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.*;
 import com.alipay.oceanbase.rpc.stream.ObTableClientQueryAsyncStreamResult;
@@ -192,14 +193,6 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             }
         }
 
-        // set correct table group name for hbase
-        if (tableQuery.isHbaseQuery()
-            && obTableClient.getTableGroupInverted().containsKey(tableName)
-            && tableName.equalsIgnoreCase(obTableClient.getTableGroupCache().get(
-                obTableClient.getTableGroupInverted().get(tableName)))) {
-            tableName = obTableClient.getTableGroupInverted().get(tableName);
-        }
-
         // init query stream result
         AbstractQueryStreamResult streamResult = callable.execute();
 
@@ -267,7 +260,9 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                 end[i] = endKey.getObj(i).isMinObj() || endKey.getObj(i).isMaxObj() ?
                         endKey.getObj(i) : endKey.getObj(i).getValue();
             }
-
+            if (this.entityType == ObTableEntityType.HKV && obTableClient.isTableGroupName(tableName)) {
+                indexTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
+            }
             ObBorderFlag borderFlag = range.getBorderFlag();
             List<ObPair<Long, ObTableParam>> pairs = this.obTableClient.getTables(indexTableName,
                     tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(),
