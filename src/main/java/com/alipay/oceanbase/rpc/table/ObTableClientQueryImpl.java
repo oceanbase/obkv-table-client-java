@@ -163,6 +163,11 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             // Currently, fulltext query only support scan all partitions
             tableQuery.getKeyRanges().clear();
             tableQuery.addKeyRange(ObNewRange.getWholeRange());
+            if (tableQuery.getIndexName() == null || tableQuery.getIndexName().isEmpty()
+                || tableQuery.getIndexName().equalsIgnoreCase("primary")) {
+                throw new IllegalArgumentException(
+                    "use fulltext search but specified index name is not fulltext index");
+            }
         }
 
         // init partitionObTables
