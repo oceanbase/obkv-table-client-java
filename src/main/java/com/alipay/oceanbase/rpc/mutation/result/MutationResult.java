@@ -87,4 +87,8 @@ public class MutationResult extends OperationResult {
         }
         return new Row(rowsMap);
     }
+
+    public ObPayload getResult() {
+        return this.result;
+    }
 }

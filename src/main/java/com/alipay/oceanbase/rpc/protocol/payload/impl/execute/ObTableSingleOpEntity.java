@@ -366,4 +366,8 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         this.rowkey = rowkey;
     }
 
+    public List<ObObj> getPropertiesValues() {
+        return this.propertiesValues;
+    }
+
 }
