@@ -1642,11 +1642,21 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             Object[] start = new Object[startKeySize];
             Object[] end = new Object[endKeySize];
             for (int i = 0; i < startKeySize; i++) {
-                start[i] = startKey.getObj(i).getValue();
+                ObObj curStart = startKey.getObj(i);
+                if (curStart.isMinObj()) {
+                    start[i] = curStart;
+                } else {
+                    start[i] = curStart.getValue();
+                }
             }
 
             for (int i = 0; i < endKeySize; i++) {
-                end[i] = endKey.getObj(i).getValue();
+                ObObj curEnd = endKey.getObj(i);
+                if (curEnd.isMaxObj()) {
+                    end[i] = curEnd;
+                } else {
+                    end[i] = curEnd.getValue();
+                }
             }
             ObBorderFlag borderFlag = rang.getBorderFlag();
             List<ObPair<Long, ObTableParam>> pairList = getTables(tableName, query, start,
