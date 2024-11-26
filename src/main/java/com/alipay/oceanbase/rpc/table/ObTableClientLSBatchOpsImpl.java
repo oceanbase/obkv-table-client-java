@@ -458,7 +458,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         long startExecute = System.currentTimeMillis();
         Set<String> failedServerList = null;
         ObServerRoute route = null;
-
+        // maybe get real table name
+        String realTableName = obTableClient.getPhyTableNameFromTableGroup(tableLsOpRequest.getEntityType(), tableName);
         while (true) {
             obTableClient.checkStatus();
             long currentExecute = System.currentTimeMillis();
@@ -467,7 +468,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 logger.error("table name: {} ls id:{} it has tried " + tryTimes
                                 + " times and it has waited " + costMillis + " ms"
                                 + " which exceeds runtime max wait timeout "
-                                + obTableClient.getRuntimeMaxWait() + " ms", tableName, lsId);
+                                + obTableClient.getRuntimeMaxWait() + " ms", realTableName, lsId);
                 throw new ObTableTimeoutExcetion("it has tried " + tryTimes
                         + " times and it has waited " + costMillis
                         + "ms which exceeds runtime max wait timeout "
@@ -485,12 +486,12 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
-                        TableEntry entry = obTableClient.getOrRefreshTableEntry(tableName, false,
+                        TableEntry entry = obTableClient.getOrRefreshTableEntry(realTableName, false,
                                 false, false);
                         if (ObGlobal.obVsnMajor() >= 4) {
-                            obTableClient.refreshTableLocationByTabletId(entry, tableName, obTableClient.getTabletIdByPartId(entry, originPartId));
+                            obTableClient.refreshTableLocationByTabletId(entry, realTableName, obTableClient.getTabletIdByPartId(entry, originPartId));
                         }
-                        subObTable = obTableClient.getTableWithPartId(tableName, originPartId, needRefreshTableEntry,
+                        subObTable = obTableClient.getTableWithPartId(realTableName, originPartId, needRefreshTableEntry,
                                         obTableClient.isTableEntryRefreshIntervalWait(), false, route).
                                             getRight().getObTable();
                     }
@@ -498,7 +499,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 ObPayload result = subObTable.execute(tableLsOpRequest);
                 if (result != null && result.getPcode() == Pcodes.OB_TABLE_API_MOVE) {
                     ObTableApiMove moveResponse = (ObTableApiMove) result;
-                    obTableClient.getRouteTableRefresher().addTableIfAbsent(tableName, true);
+                    obTableClient.getRouteTableRefresher().addTableIfAbsent(realTableName, true);
                     obTableClient.getRouteTableRefresher().triggerRefreshTable();
                     subObTable = obTableClient.getTable(moveResponse);
                     result = subObTable.execute(tableLsOpRequest);
@@ -510,17 +511,17 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     }
                 }
                 subLSOpResult = (ObTableLSOpResult) result;
-                obTableClient.resetExecuteContinuousFailureCount(tableName);
+                obTableClient.resetExecuteContinuousFailureCount(realTableName);
                 break;
             } catch (Exception ex) {
                 if (obTableClient.isOdpMode()) {
                     logger.warn("meet exception when execute ls batch in odp mode." +
-                            "tablename: {}, errMsg: {}", tableName, ex.getMessage());
+                            "tablename: {}, errMsg: {}", realTableName, ex.getMessage());
                     throw ex;
                 } else if (ex instanceof ObTableReplicaNotReadableException) {
                     if ((tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
                         logger.warn("tablename:{} ls id:{} retry when replica not readable: {}",
-                                tableName, lsId, ex.getMessage());
+                                realTableName, lsId, ex.getMessage());
                         if (failedServerList == null) {
                             failedServerList = new HashSet<String>();
                         }
@@ -533,23 +534,23 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         && ((ObTableException) ex).isNeedRefreshTableEntry()) {
                     needRefreshTableEntry = true;
                     logger.warn("tablename:{} ls id:{} batch ops refresh table while meet ObTableMasterChangeException, errorCode: {}",
-                                 tableName, lsId, ((ObTableException) ex).getErrorCode(), ex);
+                            realTableName, lsId, ((ObTableException) ex).getErrorCode(), ex);
                     if (obTableClient.isRetryOnChangeMasterTimes()
                             && (tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
                         logger.warn("tablename:{} ls id:{} batch ops retry while meet ObTableMasterChangeException, errorCode: {} , retry times {}",
-                                     tableName, lsId, ((ObTableException) ex).getErrorCode(),
+                                realTableName, lsId, ((ObTableException) ex).getErrorCode(),
                                      tryTimes, ex);
                         if (ex instanceof ObTableNeedFetchAllException) {
-                            obTableClient.getOrRefreshTableEntry(tableName, needRefreshTableEntry,
+                            obTableClient.getOrRefreshTableEntry(realTableName, needRefreshTableEntry,
                                     obTableClient.isTableEntryRefreshIntervalWait(), true);
                             throw ex;
                         }
                     } else {
-                        obTableClient.calculateContinuousFailure(tableName, ex.getMessage());
+                        obTableClient.calculateContinuousFailure(realTableName, ex.getMessage());
                         throw ex;
                     }
                 } else {
-                    obTableClient.calculateContinuousFailure(tableName, ex.getMessage());
+                    obTableClient.calculateContinuousFailure(realTableName, ex.getMessage());
                     throw ex;
                 }
             }
@@ -560,7 +561,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
         if (subLSOpResult == null) {
             RUNTIME.error("table name:{} ls id:{} check batch operation result error: client get unexpected NULL result",
-                           tableName, lsId);
+                    realTableName, lsId);
             throw new ObTableUnexpectedException("check batch operation result error: client get unexpected NULL result");
         }
 
@@ -623,7 +624,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
 
         String endpoint = subObTable.getIp() + ":" + subObTable.getPort();
-        MonitorUtil.info(tableLsOpRequest, subObTable.getDatabase(), tableName,
+        MonitorUtil.info(tableLsOpRequest, subObTable.getDatabase(), realTableName,
                 "LS_BATCH-Execute-", endpoint, tableLsOp,
                 affectedRows, endExecute - startExecute,
                 obTableClient.getslowQueryMonitorThreshold());

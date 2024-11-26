@@ -145,6 +145,11 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
+                        if (ObGlobal.obVsnMajor() >= 4) {
+                            TableEntry tableEntry = client.getOrRefreshTableEntry(indexTableName, false, false, false);
+                            client.refreshTableLocationByTabletId(tableEntry, indexTableName, client.getTabletIdByPartId(tableEntry, partIdWithIndex.getLeft()));
+                        }
+
                         subObTable = client
                             .getTableWithPartId(indexTableName, partIdWithIndex.getLeft(),
                                 needRefreshTableEntry, client.isTableEntryRefreshIntervalWait(),
@@ -278,6 +283,13 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
             Thread.sleep(client.getRuntimeRetryInterval());
         }
         return result;
+    }
+
+    /*
+     * RenewLease.
+     */
+    public void renewLease() throws Exception {
+        throw new IllegalStateException("renew only support stream query");
     }
 
     /*
