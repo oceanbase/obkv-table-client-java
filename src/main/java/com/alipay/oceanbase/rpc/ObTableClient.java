@@ -27,6 +27,7 @@ import com.alipay.oceanbase.rpc.location.model.partition.*;
 import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregation;
@@ -2997,36 +2998,36 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (request instanceof ObTableOperationRequest) {
             ObTableBatchOperation batchOperation = new ObTableBatchOperation();
             batchOperation.addTableOperation(((ObTableOperationRequest) request)
-                .getTableOperation());
+                    .getTableOperation());
             ObTableClientBatchOpsImpl batchOps = new ObTableClientBatchOpsImpl(
-                request.getTableName(), batchOperation, this);
+                    request.getTableName(), batchOperation, this);
             batchOps.setEntityType(request.getEntityType());
             ObTableBatchOperationResult batchOpsResult = new ObClusterTableBatchOps(batchOps)
-                .executeInternal();
+                    .executeInternal();
             return batchOpsResult.getResults().get(0);
         } else if (request instanceof ObTableQueryRequest) {
             // TableGroup -> TableName
             String tableName = request.getTableName();
             ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(tableName,
-                ((ObTableQueryRequest) request).getTableQuery(), this);
+                    ((ObTableQueryRequest) request).getTableQuery(), this);
             tableQuery.setEntityType(request.getEntityType());
             return new ObClusterTableQuery(tableQuery).executeInternal();
         } else if (request instanceof ObTableQueryAsyncRequest) {
             // TableGroup -> TableName
             String tableName = request.getTableName();
             ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(tableName,
-                ((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery(), this);
+                    ((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery(), this);
             tableQuery.setEntityType(request.getEntityType());
             return new ObClusterTableQuery(tableQuery).asyncExecuteInternal();
         } else if (request instanceof ObTableBatchOperationRequest) {
             ObTableClientBatchOpsImpl batchOps = new ObTableClientBatchOpsImpl(
-                request.getTableName(),
-                ((ObTableBatchOperationRequest) request).getBatchOperation(), this);
+                    request.getTableName(),
+                    ((ObTableBatchOperationRequest) request).getBatchOperation(), this);
             batchOps.setEntityType(request.getEntityType());
             return new ObClusterTableBatchOps(runtimeBatchExecutor, batchOps).executeInternal();
         } else if (request instanceof ObTableQueryAndMutateRequest) {
             ObTableQueryAndMutate tableQueryAndMutate = ((ObTableQueryAndMutateRequest) request)
-                .getTableQueryAndMutate();
+                    .getTableQueryAndMutate();
             ObTableQuery tableQuery = tableQueryAndMutate.getTableQuery();
             // fill a whole range if no range is added explicitly.
             if (tableQuery.getKeyRanges().isEmpty()) {
@@ -3036,47 +3037,111 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 request.setTimeout(getOdpTable().getObTableOperationTimeout());
                 return getOdpTable().execute(request);
             } else {
+                int maxRetries = getRuntimeRetryTimes(); // Define the maximum number of retries
+                int tryTimes = 0;
+                long startExecute = System.currentTimeMillis();
+                boolean needRefreshTableEntry = false;
                 Map<Long, ObTableParam> partIdMapObTable = new HashMap<Long, ObTableParam>();
-                for (ObNewRange rang : tableQuery.getKeyRanges()) {
-                    ObRowKey startKey = rang.getStartKey();
-                    int startKeySize = startKey.getObjs().size();
-                    ObRowKey endKey = rang.getEndKey();
-                    int endKeySize = endKey.getObjs().size();
-                    Object[] start = new Object[startKeySize];
-                    Object[] end = new Object[endKeySize];
-                    for (int i = 0; i < startKeySize; i++) {
-                        start[i] = startKey.getObj(i).getValue();
+                while (true) {
+                    long currentExecute = System.currentTimeMillis();
+                    long costMillis = currentExecute - startExecute;
+                    if (costMillis > getRuntimeMaxWait()) {
+                        logger.error(
+                                "tablename:{} it has tried " + tryTimes
+                                        + " times and it has waited " + costMillis
+                                        + "/ms which exceeds response timeout "
+                                        + getRuntimeMaxWait() + "/ms", request.getTableName());
+                        throw new ObTableTimeoutExcetion("it has tried " + tryTimes
+                                + " times and it has waited " + costMillis
+                                + "/ms which exceeds response timeout "
+                                + getRuntimeMaxWait() + "/ms");
                     }
+                    try {
+                        // Recalculate partIdMapObTable
+                        // Clear the map before recalculating
+                        partIdMapObTable.clear();
+                        for (ObNewRange rang : tableQuery.getKeyRanges()) {
+                            ObRowKey startKey = rang.getStartKey();
+                            int startKeySize = startKey.getObjs().size();
+                            ObRowKey endKey = rang.getEndKey();
+                            int endKeySize = endKey.getObjs().size();
+                            Object[] start = new Object[startKeySize];
+                            Object[] end = new Object[endKeySize];
+                            for (int i = 0; i < startKeySize; i++) {
+                                ObObj curStart = startKey.getObj(i);
+                                if (curStart.isMinObj()) {
+                                    start[i] = curStart;
+                                } else {
+                                    start[i] = curStart.getValue();
+                                }
+                            }
 
-                    for (int i = 0; i < endKeySize; i++) {
-                        end[i] = endKey.getObj(i).getValue();
-                    }
-                    ObBorderFlag borderFlag = rang.getBorderFlag();
-                    List<ObPair<Long, ObTableParam>> pairList = getTables(request.getTableName(),
-                        tableQuery, start, borderFlag.isInclusiveStart(), end,
-                        borderFlag.isInclusiveEnd(), false, false);
-                    for (ObPair<Long, ObTableParam> pair : pairList) {
-                        partIdMapObTable.put(pair.getLeft(), pair.getRight());
-                    }
-                }
-                if (partIdMapObTable.size() > 1) {
-                    throw new ObTablePartitionConsistentException(
-                        "query and mutate must be a atomic operation");
-                }
+                            for (int i = 0; i < endKeySize; i++) {
+                                ObObj curEnd = endKey.getObj(i);
+                                if (curEnd.isMaxObj()) {
+                                    end[i] = curEnd;
+                                } else {
+                                    end[i] = curEnd.getValue();
+                                }
+                            }
+                            ObBorderFlag borderFlag = rang.getBorderFlag();
+                            List<ObPair<Long, ObTableParam>> pairList = getTables(request.getTableName(),
+                                    tableQuery, start, borderFlag.isInclusiveStart(), end,
+                                    borderFlag.isInclusiveEnd(), needRefreshTableEntry, isTableEntryRefreshIntervalWait());
+                            for (ObPair<Long, ObTableParam> pair : pairList) {
+                                partIdMapObTable.put(pair.getLeft(), pair.getRight());
+                            }
+                        }
 
-                for (Long partId : partIdMapObTable.keySet()) {
-                    ObTableParam tableParam = partIdMapObTable.get(partId);
-                    request.setTableId(tableParam.getTableId());
-                    request.setPartitionId(tableParam.getPartitionId());
-                    request.setTimeout(tableParam.getObTable().getObTableOperationTimeout());
-                    ObTable obTable = tableParam.getObTable();
-                    return executeWithRetry(obTable, request, request.getTableName());
+                        // Check if partIdMapObTable size is greater than 1
+                        if (partIdMapObTable.size() > 1) {
+                            throw new ObTablePartitionConsistentException(
+                                    "query and mutate must be a atomic operation");
+                        }
+                        // Proceed with the operation
+                        Map.Entry<Long, ObTableParam> entry = partIdMapObTable.entrySet().iterator().next();
+                        ObTableParam tableParam = entry.getValue();
+                        request.setTableId(tableParam.getTableId());
+                        request.setPartitionId(tableParam.getPartitionId());
+                        request.setTimeout(tableParam.getObTable().getObTableOperationTimeout());
+                        ObTable obTable = tableParam.getObTable();
+
+                        // Attempt to execute the operation
+                        return executeWithRetry(obTable, request, request.getTableName());
+                    } catch (Exception ex) {
+                        tryTimes++;
+                        if (ex instanceof ObTableException && ((ObTableException) ex).isNeedRefreshTableEntry()) {
+                            needRefreshTableEntry = true;
+                            logger.warn(
+                                    "tablename:{} partition id:{} batch ops refresh table while meet ObTableMasterChangeException, errorCode: {}",
+                                    request.getTableName(), request.getPartitionId(), ((ObTableException) ex).getErrorCode(), ex);
+
+                            if (isRetryOnChangeMasterTimes() && tryTimes <= maxRetries) {
+                                logger.warn(
+                                        "tablename:{} partition id:{} batch ops retry while meet ObTableMasterChangeException, errorCode: {} , retry times {}",
+                                        request.getTableName(), request.getPartitionId(), ((ObTableException) ex).getErrorCode(),
+                                        tryTimes, ex);
+
+                                if (ex instanceof ObTableNeedFetchAllException) {
+                                    // Refresh table info
+                                    getOrRefreshTableEntry(request.getTableName(), needRefreshTableEntry, isTableEntryRefreshIntervalWait(), true);
+                                }
+                            } else {
+                                calculateContinuousFailure(request.getTableName(), ex.getMessage());
+                                throw ex;
+                            }
+                        } else {
+                            calculateContinuousFailure(request.getTableName(), ex.getMessage());
+                            // Handle other exceptions or rethrow
+                            throw ex;
+                        }
+                    }
                 }
             }
         }
 
         throw new FeatureNotSupportedException("request type " + request.getClass().getSimpleName()
-                                               + "is not supported. make sure the correct version");
+                + "is not supported. make sure the correct version");
     }
 
     private ObTableQueryAndMutate buildObTableQueryAndMutate(ObTableQuery obTableQuery,
