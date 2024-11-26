@@ -81,7 +81,8 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchAllException) {
                         setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
-                            .getTableQuery(), client.getPhyTableNameFromTableGroup(entityType, tableName)));
+                            .getTableQuery(), client.getPhyTableNameFromTableGroup(entityType,
+                            tableName)));
                         it = expectant.entrySet().iterator();
                         retryTimes++;
                         if (retryTimes > maxRetries) {
@@ -188,7 +189,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
     public void renewLease() throws Exception {
         if (!isEnd() && !expectant.isEmpty()) {
             Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
-                    .iterator();
+                .iterator();
             Map.Entry<Long, ObPair<Long, ObTableParam>> lastEntry = it.next();
             ObPair<Long, ObTableParam> partIdWithObTable = lastEntry.getValue();
             // try access new partition, async will not remove useless expectant
@@ -230,9 +231,10 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                     referToLastStreamResult(lastEntry.getValue());
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchAllException) {
-                        String realTableName = client.getPhyTableNameFromTableGroup(entityType, tableName);
-                        TableEntry entry = client.getOrRefreshTableEntry(realTableName, false, false,
-                            false);
+                        String realTableName = client.getPhyTableNameFromTableGroup(entityType,
+                            tableName);
+                        TableEntry entry = client.getOrRefreshTableEntry(realTableName, false,
+                            false, false);
                         // Calculate the next partition only when the range partition is affected by a split, based on the keys already scanned.
                         if (ObGlobal.obVsnMajor() >= 4
                             && entry.isPartitionTable()
@@ -273,7 +275,8 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                     referToNewPartition(entry.getValue());
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchAllException) {
-                        String realTableName = client.getPhyTableNameFromTableGroup(entityType, tableName);
+                        String realTableName = client.getPhyTableNameFromTableGroup(entityType,
+                            tableName);
                         TableEntry tableEntry = client.getOrRefreshTableEntry(realTableName, false,
                             false, false);
                         if (ObGlobal.obVsnMajor() >= 4

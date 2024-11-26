@@ -146,8 +146,10 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                             route.setBlackList(failedServerList);
                         }
                         if (ObGlobal.obVsnMajor() >= 4) {
-                            TableEntry tableEntry = client.getOrRefreshTableEntry(indexTableName, false, false, false);
-                            client.refreshTableLocationByTabletId(tableEntry, indexTableName, client.getTabletIdByPartId(tableEntry, partIdWithIndex.getLeft()));
+                            TableEntry tableEntry = client.getOrRefreshTableEntry(indexTableName,
+                                false, false, false);
+                            client.refreshTableLocationByTabletId(tableEntry, indexTableName,
+                                client.getTabletIdByPartId(tableEntry, partIdWithIndex.getLeft()));
                         }
 
                         subObTable = client
