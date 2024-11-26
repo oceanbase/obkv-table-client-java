@@ -242,8 +242,10 @@ public class ObTableSingleOpQuery extends ObTableQuery {
                 adjustStartKey.add(startKey.get((int) pair.origin_idx));
                 adjustEndtKey.add(endKey.get((int) pair.origin_idx));
             }
-            range.getStartKey().setObjs(adjustStartKey);
-            range.getEndKey().setObjs(adjustEndtKey);
+            if (!adjustStartKey.isEmpty() && !adjustEndtKey.isEmpty()) {
+                range.getStartKey().setObjs(adjustStartKey);
+                range.getEndKey().setObjs(adjustEndtKey);
+            }
         }
 
         this.scanRangeBitMap = byteArray;

@@ -89,7 +89,8 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                                 retryTimes);
                             throw new ObTableRetryExhaustedException(
                                 "Fail to get refresh table entry response after " + retryTimes
-                                + "errorCode:" + ((ObTableNeedFetchAllException) e).getErrorCode());
+                                        + "errorCode:"
+                                        + ((ObTableNeedFetchAllException) e).getErrorCode());
 
                         }
                     } else {
@@ -342,7 +343,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             closeLastStreamResult(lastEntry.getValue());
         }
     }
-    
+
     public boolean isEnd() {
         return isEnd;
     }

@@ -71,8 +71,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     private ObReadConsistency                                                  readConsistency     = ObReadConsistency.STRONG;
     // ObRowKey objs: [startKey, MIN_OBJECT, MIN_OBJECT]
     public List<ObObj>                                                         currentStartKey;
-    protected ObTableClient          client;
-    
+    protected ObTableClient                                                    client;
+
     /*
      * Get pcode.
      */
@@ -235,8 +235,9 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     } else if (e instanceof ObTableException) {
                         if ((((ObTableException) e).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode || ((ObTableException) e)
                             .getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode)
-                            && ((request instanceof ObTableQueryAsyncRequest && ((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery().isHbaseQuery())
-                            || (request instanceof ObTableQueryRequest && ((ObTableQueryRequest) request).getTableQuery().isHbaseQuery()))
+                            && ((request instanceof ObTableQueryAsyncRequest && ((ObTableQueryAsyncRequest) request)
+                                .getObTableQueryRequest().getTableQuery().isHbaseQuery()) || (request instanceof ObTableQueryRequest && ((ObTableQueryRequest) request)
+                                .getTableQuery().isHbaseQuery()))
                             && client.getTableGroupInverted().get(indexTableName) != null) {
                             // table not exists && hbase mode && table group exists , three condition both
                             client.eraseTableGroupFromCache(tableName);
@@ -559,7 +560,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         if (tableQuery.getBatchSize() == -1) {
             if (!expectant.isEmpty()) {
                 Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
-                        .iterator();
+                    .iterator();
                 int retryTimes = 0;
                 while (it.hasNext()) {
                     Map.Entry<Long, ObPair<Long, ObTableParam>> entry = it.next();
@@ -573,10 +574,11 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                             retryTimes++;
                             if (retryTimes > client.getRuntimeRetryTimes()) {
                                 RUNTIME.error("Fail to get refresh table entry response after {}",
-                                        retryTimes);
+                                    retryTimes);
                                 throw new ObTableRetryExhaustedException(
-                                        "Fail to get refresh table entry response after " + retryTimes +
-                                                "errorCode:" + ((ObTableNeedFetchAllException) e).getErrorCode());
+                                    "Fail to get refresh table entry response after " + retryTimes
+                                            + "errorCode:"
+                                            + ((ObTableNeedFetchAllException) e).getErrorCode());
 
                             }
                         } else {
