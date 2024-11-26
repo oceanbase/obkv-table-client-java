@@ -200,14 +200,11 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         ObTableSingleOp singleOp = new ObTableSingleOp();
         if (entityType == ObTableEntityType.HKV) {
             ObTableQuery obTableQuery = query.getObTableQuery();
-            ObTableSingleOpQuery singleOpQuery = ObTableSingleOpQuery.getInstance(obTableQuery.getIndexName(),
-                                                                                  obTableQuery.getKeyRanges(),
-                                                                                  obTableQuery.getSelectColumns(),
-                                                                                  obTableQuery.getScanOrder(),
-                                                                                  obTableQuery.isHbaseQuery(),
-                                                                                  obTableQuery.gethTableFilter(),
-                                                                                  obTableQuery.getObKVParams(),
-                                                                                  obTableQuery.getFilterString());
+            ObTableSingleOpQuery singleOpQuery = ObTableSingleOpQuery.getInstance(
+                obTableQuery.getIndexName(), obTableQuery.getKeyRanges(),
+                obTableQuery.getSelectColumns(), obTableQuery.getScanOrder(),
+                obTableQuery.isHbaseQuery(), obTableQuery.gethTableFilter(),
+                obTableQuery.getObKVParams(), obTableQuery.getFilterString());
             singleOp.setQuery(singleOpQuery);
         }
         singleOp.setSingleOpType(ObTableOperationType.GET);
