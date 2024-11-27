@@ -3208,11 +3208,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (refresh) {
                 // List<ObPair<logic partId, obTableParam>>
                 allTables = getTables(tableName, new ObTableQuery(), new Object[]{ ObObj.getMin() }, true,
-                        new Object[]{ ObObj.getMax() }, true, true, true, true, getRoute(false));
+                        new Object[]{ ObObj.getMax() }, true, true, true, getRoute(false));
             } else {
                 // List<ObPair<logic partId, obTableParam>>
                 allTables = getTables(tableName, new ObTableQuery(), new Object[]{ ObObj.getMin() }, true,
-                        new Object[]{ ObObj.getMax() }, true, false, false, false, getRoute(false));
+                        new Object[]{ ObObj.getMax() }, true, false, false, getRoute(false));
             }
             for (ObPair<Long, ObTableParam> table : allTables) {
                 ObTableParam tableParam = table.getRight();
