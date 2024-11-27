@@ -1688,11 +1688,21 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             Object[] start = new Object[startKeySize];
             Object[] end = new Object[endKeySize];
             for (int i = 0; i < startKeySize; i++) {
-                start[i] = startKey.getObj(i).getValue();
+                ObObj curStart = startKey.getObj(i);
+                if (curStart.isMinObj()) {
+                    start[i] = curStart;
+                } else {
+                    start[i] = curStart.getValue();
+                }
             }
 
             for (int i = 0; i < endKeySize; i++) {
-                end[i] = endKey.getObj(i).getValue();
+                ObObj curEnd = endKey.getObj(i);
+                if (curEnd.isMaxObj()) {
+                    end[i] = curEnd;
+                } else {
+                    end[i] = curEnd.getValue();
+                }
             }
             ObBorderFlag borderFlag = rang.getBorderFlag();
             List<ObPair<Long, ObTableParam>> pairList = getTables(tableName, query, start,
@@ -3130,36 +3140,36 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (request instanceof ObTableOperationRequest) {
             ObTableBatchOperation batchOperation = new ObTableBatchOperation();
             batchOperation.addTableOperation(((ObTableOperationRequest) request)
-                .getTableOperation());
+                    .getTableOperation());
             ObTableClientBatchOpsImpl batchOps = new ObTableClientBatchOpsImpl(
-                request.getTableName(), batchOperation, this);
+                    request.getTableName(), batchOperation, this);
             batchOps.setEntityType(request.getEntityType());
             ObTableBatchOperationResult batchOpsResult = new ObClusterTableBatchOps(batchOps)
-                .executeInternal();
+                    .executeInternal();
             return batchOpsResult.getResults().get(0);
         } else if (request instanceof ObTableQueryRequest) {
             // TableGroup -> TableName
             String tableName = request.getTableName();
             ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(tableName,
-                ((ObTableQueryRequest) request).getTableQuery(), this);
+                    ((ObTableQueryRequest) request).getTableQuery(), this);
             tableQuery.setEntityType(request.getEntityType());
             return new ObClusterTableQuery(tableQuery).executeInternal();
         } else if (request instanceof ObTableQueryAsyncRequest) {
             // TableGroup -> TableName
             String tableName = request.getTableName();
             ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(tableName,
-                ((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery(), this);
+                    ((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery(), this);
             tableQuery.setEntityType(request.getEntityType());
             return new ObClusterTableQuery(tableQuery).asyncExecuteInternal();
         } else if (request instanceof ObTableBatchOperationRequest) {
             ObTableClientBatchOpsImpl batchOps = new ObTableClientBatchOpsImpl(
-                request.getTableName(),
-                ((ObTableBatchOperationRequest) request).getBatchOperation(), this);
+                    request.getTableName(),
+                    ((ObTableBatchOperationRequest) request).getBatchOperation(), this);
             batchOps.setEntityType(request.getEntityType());
             return new ObClusterTableBatchOps(runtimeBatchExecutor, batchOps).executeInternal();
         } else if (request instanceof ObTableQueryAndMutateRequest) {
             ObTableQueryAndMutate tableQueryAndMutate = ((ObTableQueryAndMutateRequest) request)
-                .getTableQueryAndMutate();
+                    .getTableQueryAndMutate();
             ObTableQuery tableQuery = tableQueryAndMutate.getTableQuery();
             // fill a whole range if no range is added explicitly.
             if (tableQuery.getKeyRanges().isEmpty()) {
@@ -3273,7 +3283,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
 
         throw new FeatureNotSupportedException("request type " + request.getClass().getSimpleName()
-                                               + "is not supported. make sure the correct version");
+                + "is not supported. make sure the correct version");
     }
 
     private ObTableQueryAndMutate buildObTableQueryAndMutate(ObTableQuery obTableQuery,
