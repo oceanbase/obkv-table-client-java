@@ -44,6 +44,7 @@ import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.RUNTIME;
 public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResult {
     private static final Logger      logger         = LoggerFactory
                                                         .getLogger(ObTableClientQueryStreamResult.class);
+    protected ObTableClient          client;
     private boolean                  isEnd          = true;
     private long                     sessionId      = Constants.OB_INVALID_ID;
     private ObTableQueryAsyncRequest asyncRequest   = new ObTableQueryAsyncRequest();
@@ -230,22 +231,11 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchAllException) {
                         String realTableName = client.getPhyTableNameFromTableGroup(entityType, tableName);
-                        TableEntry entry = client.getOrRefreshTableEntry(realTableName, false, false,
-                            false);
-                        // Calculate the next partition only when the range partition is affected by a split, based on the keys already scanned.
-                        if (ObGlobal.obVsnMajor() >= 4
-                            && entry.isPartitionTable()
-                            && entry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
-                                .isRangePart()) {
-                            this.asyncRequest.getObTableQueryRequest().getTableQuery()
-                                .adjustStartKey(currentStartKey);
-                            setExpectant(refreshPartition(this.asyncRequest
-                                .getObTableQueryRequest().getTableQuery(), realTableName));
-                            setEnd(true);
-                        } else {
-                            setExpectant(refreshPartition(this.asyncRequest
-                                .getObTableQueryRequest().getTableQuery(), realTableName));
-                        }
+                        this.asyncRequest.getObTableQueryRequest().getTableQuery()
+                            .adjustStartKey(currentStartKey);
+                        setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
+                            .getTableQuery(), realTableName));
+                        setEnd(true);
                     } else {
                         throw e;
                     }
@@ -273,17 +263,10 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchAllException) {
                         String realTableName = client.getPhyTableNameFromTableGroup(entityType, tableName);
-                        TableEntry tableEntry = client.getOrRefreshTableEntry(realTableName, false,
-                            false, false);
-                        if (ObGlobal.obVsnMajor() >= 4
-                            && tableEntry.isPartitionTable()
-                            && tableEntry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
-                                .isRangePart()) {
-                            this.asyncRequest.getObTableQueryRequest().getTableQuery()
-                                .adjustStartKey(currentStartKey);
-                            setExpectant(refreshPartition(this.asyncRequest
-                                .getObTableQueryRequest().getTableQuery(), realTableName));
-                        }
+                        this.asyncRequest.getObTableQueryRequest().getTableQuery()
+                            .adjustStartKey(currentStartKey);
+                        setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
+                            .getTableQuery(), realTableName));
                         it = expectant.entrySet().iterator();
                         retryTimes++;
                         if (retryTimes > client.getTableEntryRefreshTryTimes()) {
@@ -369,7 +352,19 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             closeLastStreamResult(lastEntry.getValue());
         }
     }
-    
+
+    public ObTableClient getClient() {
+        return client;
+    }
+
+    /**
+     * Set client.
+     * @param client client want to set
+     */
+    public void setClient(ObTableClient client) {
+        this.client = client;
+    }
+
     public boolean isEnd() {
         return isEnd;
     }
