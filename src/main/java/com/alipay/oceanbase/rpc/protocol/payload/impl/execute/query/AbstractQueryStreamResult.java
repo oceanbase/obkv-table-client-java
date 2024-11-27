@@ -148,6 +148,11 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
+                        if (ObGlobal.obVsnMajor() >= 4) {
+                            TableEntry tableEntry = client.getOrRefreshTableEntry(indexTableName, false, false, false);
+                            client.refreshTableLocationByTabletId(tableEntry, indexTableName, client.getTabletIdByPartId(tableEntry, partIdWithIndex.getLeft()));
+                        }
+
                         subObTable = client
                             .getTableWithPartId(indexTableName, partIdWithIndex.getLeft(),
                                 needRefreshTableEntry, client.isTableEntryRefreshIntervalWait(),
@@ -158,7 +163,6 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     result = subObTable.executeWithConnection(request, connectionRef);
                 } else {
                     result = subObTable.execute(request);
-
                     if (result != null && result.getPcode() == Pcodes.OB_TABLE_API_MOVE) {
                         ObTableApiMove moveResponse = (ObTableApiMove) result;
                         client.getRouteTableRefresher().addTableIfAbsent(indexTableName, true);
@@ -269,7 +273,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                         ((ObTableException) e).getErrorCode(), tryTimes, e);
                                 // tablet not exists, refresh table entry
                                 if (e instanceof ObTableNeedFetchAllException) {
-                                    client.getOrRefreshTableEntry(tableName, true, true, true);
+                                    client.getOrRefreshTableEntry(indexTableName, true, true, true);
                                     throw e;
                                 }
                             } else {
@@ -289,6 +293,13 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
             Thread.sleep(client.getRuntimeRetryInterval());
         }
         return result;
+    }
+
+    /*
+     * RenewLease.
+     */
+    public void renewLease() throws Exception {
+        throw new IllegalStateException("renew only support stream query");
     }
 
     /*
@@ -587,7 +598,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                 RUNTIME.error("Fail to get refresh table entry response after {}",
                                         retryTimes);
                                 throw new ObTableRetryExhaustedException(
-                                        "Fail to get refresh table entry response after " + retryTimes);
+                                        "Fail to get refresh table entry response after " + retryTimes +
+                                                "errorCode:" + ((ObTableNeedFetchAllException) e).getErrorCode());
 
                             }
                         } else {

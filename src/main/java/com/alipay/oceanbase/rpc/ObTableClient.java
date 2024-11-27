@@ -65,6 +65,7 @@ import static com.alipay.oceanbase.rpc.property.Property.*;
 import static com.alipay.oceanbase.rpc.protocol.payload.ResultCodes.OB_ERR_KV_ROUTE_ENTRY_EXPIRE;
 import static com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType.*;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
+import static java.lang.String.format;
 
 public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private static final Logger                               logger                                  = getLogger(ObTableClient.class);
@@ -791,7 +792,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
         boolean needRefreshTableEntry = false;
         boolean needRenew = false;
-        boolean needFetchAllRouteInfo = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
         while (true) {
@@ -1933,10 +1933,22 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         long partitionId = partId;
         ObPartitionLocationInfo obPartitionLocationInfo = null;
         if (ObGlobal.obVsnMajor() >= 4) {
-
             obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
-
             replica = getPartitionLocation(obPartitionLocationInfo, route);
+            /**
+             * Normally, getOrRefreshPartitionInfo makes sure that a thread only continues if it finds the leader
+             * during a route refresh. But sometimes, there might not be a leader yet. In this case, the thread
+             * is released, and since it can't get the replica, it throws an no master exception.
+             */
+            if (replica == null && obPartitionLocationInfo.getPartitionLocation().getLeader() == null) {
+                RUNTIME.error(LCD.convert("01-00028"), partitionId, tableEntry.getPartitionEntry(), tableEntry);
+                RUNTIME.error(format(
+                        "partition=%d has no leader partitionEntry=%s original tableEntry=%s",
+                        partitionId, tableEntry.getPartitionEntry(), tableEntry));
+                throw new ObTablePartitionNoMasterException(format(
+                        "partition=%d has no leader partitionEntry=%s original tableEntry=%s",
+                        partitionId, tableEntry.getPartitionEntry(), tableEntry));
+            }
         } else {
             if (tableEntry.isPartitionTable()
                     && null != tableEntry.getPartitionInfo().getSubPartDesc()) {
@@ -2163,7 +2175,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                       boolean refresh, boolean waitForRefresh)
                                                                                               throws Exception {
         return getTables(tableName, query, start, startInclusive, end, endInclusive, refresh,
-            waitForRefresh, false, getRoute(false));
+            waitForRefresh, getRoute(false));
     }
 
     /**
@@ -2184,10 +2196,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                       Object[] start, boolean startInclusive,
                                                       Object[] end, boolean endInclusive,
                                                       boolean refresh, boolean waitForRefresh,
-                                                      boolean needFetchAll, ObServerRoute route) throws Exception {
+                                                      ObServerRoute route) throws Exception {
 
         // 1. get TableEntry information
-        TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh, needFetchAll);
+        TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh, false);
 
         List<String> scanRangeColumns = query.getScanRangeColumns();
         if (scanRangeColumns == null || scanRangeColumns.isEmpty()) {
@@ -3571,7 +3583,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         } else if (request instanceof ObTableQueryRequest) {
             // TableGroup -> TableName
             String tableName = request.getTableName();
-            tableName = getPhyTableNameFromTableGroup(((ObTableQueryRequest) request), tableName);
             ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(tableName,
                 ((ObTableQueryRequest) request).getTableQuery(), this);
             tableQuery.setEntityType(request.getEntityType());
@@ -3579,8 +3590,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         } else if (request instanceof ObTableQueryAsyncRequest) {
             // TableGroup -> TableName
             String tableName = request.getTableName();
-            tableName = getPhyTableNameFromTableGroup(
-                ((ObTableQueryAsyncRequest) request).getObTableQueryRequest(), tableName);
             ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(tableName,
                 ((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery(), this);
             tableQuery.setEntityType(request.getEntityType());
@@ -4194,6 +4203,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (odpMode) {
             // do nothing
         } else if (request.getTableQuery().isHbaseQuery() && isTableGroupName(tableName)) {
+            tableName = tryGetTableNameFromTableGroupCache(tableName, false);
+        }
+        return tableName;
+    }
+
+    public String getPhyTableNameFromTableGroup(ObTableEntityType type, String tableName) throws Exception {
+        if (odpMode) {
+            // do nothing
+        } else if (type == ObTableEntityType.HKV && isTableGroupName(tableName)) {
             tableName = tryGetTableNameFromTableGroupCache(tableName, false);
         }
         return tableName;

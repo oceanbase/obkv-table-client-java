@@ -24,6 +24,7 @@ import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.*;
 import com.alipay.oceanbase.rpc.stream.ObTableClientQueryAsyncStreamResult;
@@ -206,14 +207,6 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             }
         }
 
-        // set correct table group name for hbase
-        if (tableQuery.isHbaseQuery()
-            && obTableClient.getTableGroupInverted().containsKey(tableName)
-            && tableName.equalsIgnoreCase(obTableClient.getTableGroupCache().get(
-                obTableClient.getTableGroupInverted().get(tableName)))) {
-            tableName = obTableClient.getTableGroupInverted().get(tableName);
-        }
-
         // init query stream result
         AbstractQueryStreamResult streamResult = callable.execute();
 
@@ -258,11 +251,9 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     public Map<Long, ObPair<Long, ObTableParam>> initPartitions(ObTableQuery tableQuery, String tableName) throws Exception {
         Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new LinkedHashMap<>();
         String indexName = tableQuery.getIndexName();
-        String indexTableName = null;
 
         if (!this.obTableClient.isOdpMode()) {
-            indexTableName = obTableClient.getIndexTableName(tableName, indexName,
-                tableQuery.getScanRangeColumns(), false);
+            indexTableName = obTableClient.getIndexTableName(tableName, indexName, tableQuery.getScanRangeColumns(), false);
         }
 
         for (ObNewRange range : tableQuery.getKeyRanges()) {
@@ -282,6 +273,9 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                 end[i] = endKey.getObj(i).isMinObj() || endKey.getObj(i).isMaxObj() ?
                         endKey.getObj(i) : endKey.getObj(i).getValue();
             }
+            if (this.entityType == ObTableEntityType.HKV && obTableClient.isTableGroupName(tableName)) {
+                indexTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
+            }
             ObBorderFlag borderFlag = range.getBorderFlag();
             // pairs -> List<Pair<logicId, param>>
             List<ObPair<Long, ObTableParam>> pairs = null;
@@ -292,7 +286,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                 pairs = this.obTableClient.getOdpTables(tableName, tableQuery, start,
                     borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false);
             }
-            if (this.tableQuery.getScanOrder() == ObScanOrder.Reverse) {
+            if (tableQuery.getScanOrder() == ObScanOrder.Reverse) {
                 for (int i = pairs.size() - 1; i >= 0; i--) {
                     partitionObTables.put(pairs.get(i).getLeft(), pairs.get(i));
                 }
