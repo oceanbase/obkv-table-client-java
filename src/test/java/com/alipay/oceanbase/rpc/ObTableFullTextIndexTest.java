@@ -625,8 +625,9 @@ public class ObTableFullTextIndexTest {
             Assert.assertEquals(null, getRes.get(txtCol));
         } catch(Exception e) {
             e.printStackTrace();
+            Assert.fail();
         } finally {
-            // executeSQL(truncateTTLTableSQL);
+            executeSQL(truncatePartTableSQL);
         }
     }
 
@@ -660,8 +661,9 @@ public class ObTableFullTextIndexTest {
             Assert.assertEquals(txt1+txt2, getRes.get(txtCol));
         } catch(Exception e) {
             e.printStackTrace();
+            Assert.fail();
         } finally {
-            // executeSQL(truncateTTLTableSQL);
+            executeSQL(truncatePartTableSQL);
         }
     }
 
@@ -721,6 +723,7 @@ public class ObTableFullTextIndexTest {
             Assert.assertTrue(2 == count);
         } catch (Exception e) {
             e.printStackTrace();
+            Assert.fail();
         } finally {
             executeSQL(truncatePartTableSQL);
         }
@@ -792,6 +795,9 @@ public class ObTableFullTextIndexTest {
             Assert.assertTrue(1 == count);
         } catch (Exception e) {
             e.printStackTrace();
+            Assert.fail();
+        } finally {
+            executeSQL(truncateTTLTableSQL);
         }
     }
 
