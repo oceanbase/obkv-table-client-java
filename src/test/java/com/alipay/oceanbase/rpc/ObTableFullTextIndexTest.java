@@ -40,7 +40,6 @@ public class ObTableFullTextIndexTest {
     String truncateNoPartTableSQL = "truncate table tbl1;";
     String truncatePartTableSQL = "truncate table part_tbl1;";
     String truncateTTLTableSQL = "truncate table ttl_tbl1;";
-    String dropTableSQL = "drop table tbl1";
     String idCol = "id";
     String c2Col = "c2";
     String txtCol = "txt";
@@ -57,7 +56,9 @@ public class ObTableFullTextIndexTest {
 
     @After
     public void teardown() throws Exception {
-//        executeSQL(dropTableSQL);
+        executeSQL("drop table " + noPartTableName);
+        executeSQL("drop table " + partTableName);
+        executeSQL("drop table " + ttlTableName);
     }
 
     @Test
@@ -71,6 +72,9 @@ public class ObTableFullTextIndexTest {
             Assert.assertEquals(1, res.getAffectedRows());
         } catch (Exception e) {
             e.printStackTrace();
+            Assert.fail();
+        } finally {
+            executeSQL(truncatePartTableSQL);
         }
     }
 
@@ -92,6 +96,9 @@ public class ObTableFullTextIndexTest {
             Assert.assertEquals(txt, res.get(txtCol));
         } catch (Exception e) {
             e.printStackTrace();
+            Assert.fail();
+        } finally {
+            executeSQL(truncatePartTableSQL);
         }
     }
 
@@ -119,6 +126,9 @@ public class ObTableFullTextIndexTest {
             Assert.assertTrue(res.isEmpty());
         } catch (Exception e) {
             e.printStackTrace();
+            Assert.fail();
+        } finally {
+            executeSQL(truncatePartTableSQL);
         }
     }
 
@@ -178,6 +188,9 @@ public class ObTableFullTextIndexTest {
             Assert.assertEquals(txt, res.get(txtCol));
         } catch (Exception e) {
             e.printStackTrace();
+            Assert.fail();
+        } finally {
+            executeSQL(truncatePartTableSQL);
         }
     }
 
@@ -239,6 +252,7 @@ public class ObTableFullTextIndexTest {
 
         } catch (Exception e) {
             e.printStackTrace();
+            Assert.fail();
         } finally {
             executeSQL(truncatePartTableSQL);
         }
@@ -302,6 +316,7 @@ public class ObTableFullTextIndexTest {
 
         } catch (Exception e) {
             e.printStackTrace();
+            Assert.fail();
         } finally {
             executeSQL(truncatePartTableSQL);
         }
@@ -370,8 +385,9 @@ public class ObTableFullTextIndexTest {
             Assert.assertEquals(txt4, res.get(txtCol));
         } catch(Exception e) {
             e.printStackTrace();
+            Assert.fail();
         } finally {
-           // executeSQL(truncateTTLTableSQL);
+            executeSQL(truncateTTLTableSQL);
         }
     }
 
@@ -404,8 +420,9 @@ public class ObTableFullTextIndexTest {
             Assert.assertEquals(null, getRes.get(txtCol));
         } catch(Exception e) {
             e.printStackTrace();
+            Assert.fail();
         } finally {
-            // executeSQL(truncateTTLTableSQL);
+            executeSQL(truncatePartTableSQL);
         }
     }
 
@@ -439,8 +456,9 @@ public class ObTableFullTextIndexTest {
             Assert.assertEquals(txt1+txt2, getRes.get(txtCol));
         } catch(Exception e) {
             e.printStackTrace();
+            Assert.fail();
         } finally {
-            // executeSQL(truncateTTLTableSQL);
+            executeSQL(truncatePartTableSQL);
         }
     }
 
@@ -500,6 +518,7 @@ public class ObTableFullTextIndexTest {
             Assert.assertTrue(2 == count);
         } catch (Exception e) {
             e.printStackTrace();
+            Assert.fail();
         } finally {
             executeSQL(truncatePartTableSQL);
         }
@@ -571,6 +590,9 @@ public class ObTableFullTextIndexTest {
             Assert.assertTrue(1 == count);
         } catch (Exception e) {
             e.printStackTrace();
+            Assert.fail();
+        } finally {
+            executeSQL(truncateTTLTableSQL);
         }
     }
 
@@ -622,6 +644,7 @@ public class ObTableFullTextIndexTest {
             Assert.assertTrue(1 == count);
         } catch (Exception e) {
             e.printStackTrace();
+            Assert.fail();
         } finally {
             executeSQL(truncateNoPartTableSQL);
         }
@@ -730,6 +753,9 @@ public class ObTableFullTextIndexTest {
             }
         } catch (Exception e) {
             e.printStackTrace();
+            Assert.fail();
+        } finally {
+            executeSQL(truncatePartTableSQL);
         }
     }
 }
