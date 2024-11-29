@@ -119,9 +119,9 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         queryRequest.setPartitionId(obTableParam.getPartitionId());
         queryRequest.setTableId(obTableParam.getTableId());
         if (operationTimeout > 0) {
-            queryRequest.setTimeout(operationTimeout);
+            asyncRequest.setTimeout(operationTimeout);
         } else {
-            queryRequest.setTimeout(obTableParam.getObTable().getObTableOperationTimeout());
+            asyncRequest.setTimeout(obTableParam.getObTable().getObTableOperationTimeout());
         }
 
         // refresh async query request
