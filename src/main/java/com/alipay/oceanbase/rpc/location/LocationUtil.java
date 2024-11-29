@@ -725,9 +725,9 @@ public class LocationUtil {
                 tableEntry.setTableEntryKey(key);
                 // TODO: check capacity flag later
                 // fetch tablet ids when table is partition table
+                // fetch partition info
+                fetchPartitionInfo(connection, tableEntry);
                 if (tableEntry.isPartitionTable()) {
-                    // fetch partition info
-                    fetchPartitionInfo(connection, tableEntry);
                     if (null != tableEntry.getPartitionInfo()) {
                         // fetch first range part
                         if (null != tableEntry.getPartitionInfo().getFirstPartDesc()) {
