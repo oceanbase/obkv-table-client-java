@@ -69,7 +69,7 @@ public class ObTableQuery extends AbstractPayload {
 
     private static final byte[] HTABLE_DUMMY_BYTES = new byte[] { 0x01, 0x00 };
     private boolean             isHbaseQuery              = false;
-    private boolean             isFTSQuery                = true;
+    private boolean             isFTSQuery                = false;
     private List<String>        scanRangeColumns          = new LinkedList<String>();
 
     private List<ObTableAggregationSingle>    aggregations       = new LinkedList<>();
