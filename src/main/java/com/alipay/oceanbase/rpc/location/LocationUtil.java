@@ -46,6 +46,7 @@ import java.util.*;
 
 import static com.alipay.oceanbase.rpc.location.model.partition.ObPartitionKey.MAX_PARTITION_ELEMENT;
 import static com.alipay.oceanbase.rpc.location.model.partition.ObPartitionKey.MIN_PARTITION_ELEMENT;
+import static com.alipay.oceanbase.rpc.property.Property.TABLE_ENTRY_REFRESH_INTERVAL_CEILING;
 import static com.alipay.oceanbase.rpc.util.RandomUtil.getRandomNum;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
 import static java.lang.String.format;
@@ -861,12 +862,19 @@ public class LocationUtil {
 
     public static TableEntry getTableEntryLocationFromRemote(Connection connection,
                                                              TableEntryKey key,
-                                                             TableEntry tableEntry, Long tabletId)
-                                                                                                  throws ObTablePartitionLocationRefreshException {
+                                                             TableEntry tableEntry,
+                                                             Long tabletId)
+                                                             throws ObTablePartitionLocationRefreshException {
         PreparedStatement ps = null;
         ResultSet rs = null;
         ObPartitionEntry partitionEntry = tableEntry.getPartitionEntry();
         String sql = genLocationSQLByTabletId();
+        ObPartitionLocationInfo partitionLocationInfo = partitionEntry.getPartitionInfo(tabletId);
+        // return quickly if recently refreshed 
+        if (System.currentTimeMillis() - partitionLocationInfo.getLastUpdateTime()
+                < TABLE_ENTRY_REFRESH_INTERVAL_CEILING.getDefaultLong()) {
+            return tableEntry;
+        }
         try {
             ps = connection.prepareStatement(sql);
             ps.setString(1, key.getTenantName());
