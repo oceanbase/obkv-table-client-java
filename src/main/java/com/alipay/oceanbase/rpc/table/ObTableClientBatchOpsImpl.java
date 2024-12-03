@@ -438,12 +438,10 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                             tableName, partId, ((ObTableException) ex).getErrorCode(), ex);
                     if (obTableClient.isRetryOnChangeMasterTimes()
                         && (tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
-                        logger
-                            .warn(
-                                "tablename:{} partition id:{} batch ops retry while meet ObTableMasterChangeException, errorCode: {} , retry times {}",
-                                tableName, partId, ((ObTableException) ex).getErrorCode(),
-                                tryTimes, ex);
                         if (ex instanceof ObTableNeedFetchAllException) {
+                            logger.warn("tablename:{}, partition_id: {}  batch ops retry while meet ObTableNeedFetchAllException, errorCode: {} , retry times {}",
+                                    tableName, subRequest.getPartitionId(),((ObTableException) ex).getErrorCode(),
+                                    tryTimes, ex);
                             // refresh table info
                             obTableClient.getOrRefreshTableEntry(tableName, needRefreshTableEntry,
                                 obTableClient.isTableEntryRefreshIntervalWait(), true);
@@ -558,6 +556,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         throw e;
                     }
                 }
+                Thread.sleep(obTableClient.getRuntimeRetryInterval());
             }
 
             if (allPartitionsSuccess) {
