@@ -527,10 +527,10 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                             realTableName, lsId, ((ObTableException) ex).getErrorCode(), ex);
                     if (obTableClient.isRetryOnChangeMasterTimes()
                             && (tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
-                        logger.warn("tablename:{} ls id:{} batch ops retry while meet ObTableMasterChangeException, errorCode: {} , retry times {}",
-                                realTableName, lsId, ((ObTableException) ex).getErrorCode(),
-                                     tryTimes, ex);
                         if (ex instanceof ObTableNeedFetchAllException) {
+                            logger.warn("tablename:{} ls id:{} batch ops retry while meet ObTableNeedFetchAllException, errorCode: {} , retry times {}",
+                                    realTableName, lsId, ((ObTableException) ex).getErrorCode(),
+                                    tryTimes, ex);
                             obTableClient.getOrRefreshTableEntry(realTableName, needRefreshTableEntry,
                                     obTableClient.isTableEntryRefreshIntervalWait(), true);
                             throw ex;
@@ -655,6 +655,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         throw e;
                     }
                 }
+                Thread.sleep(obTableClient.getRuntimeRetryInterval());
             }
 
             if (allPartitionsSuccess) {
