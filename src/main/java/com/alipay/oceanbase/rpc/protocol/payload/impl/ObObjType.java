@@ -1350,10 +1350,12 @@ public enum ObObjType {
          * Parse to comparable.
          */
         @Override
-        public Comparable parseToComparable(Object o, ObCollationType ct)
-                                                                         throws IllegalArgumentException,
-                                                                         FeatureNotSupportedException {
-            throw new FeatureNotSupportedException("ObUnknownType is not supported .");
+        public Comparable parseToComparable(Object o, ObCollationType ct) throws IllegalArgumentException{
+            if (o instanceof Long) {
+                return parseLong(this, o, ct);
+            } else{
+                return parseTextToComparable(this, o, ct);
+            }
         }
 
     }, // Min, Max, NOP etc.
