@@ -34,7 +34,7 @@ public enum ObTableOperationType {
 
     private int                                       value;
     private static Map<Integer, ObTableOperationType> map             = new HashMap<Integer, ObTableOperationType>();
-    private static final List<Boolean>                needEncodeQuery = Arrays.asList(true, // GET
+    private static final List<Boolean>                needEncodeQuery = Arrays.asList(false, // GET
                                                                           false, // INSERT
                                                                           false, // DEL
                                                                           false, // UPDATE
@@ -42,7 +42,7 @@ public enum ObTableOperationType {
                                                                           false, // REPLACE
                                                                           false, // INCREMENT
                                                                           false, // APPEND
-                                                                          false, // SCAN
+                                                                          true, // SCAN
                                                                           false, // TTL
                                                                           true, // CHECK_AND_INSERT_UP
                                                                           false, // PUT

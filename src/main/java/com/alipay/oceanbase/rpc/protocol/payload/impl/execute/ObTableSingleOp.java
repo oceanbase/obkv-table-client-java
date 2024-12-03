@@ -163,7 +163,11 @@ public class ObTableSingleOp extends AbstractPayload {
     public List<ObObj> getRowkeyObjs() {
         List<ObObj> rowkeyObjs;
         if (singleOpType == ObTableOperationType.SCAN) {
-            throw new IllegalArgumentException("can not get rowkey from scan operation");
+            if (query.isHbaseQuery()) {
+                rowkeyObjs = entities.get(0).getRowkey();
+            } else {
+                throw new IllegalArgumentException("can not get rowkey from scan operation");
+            }
         } else if (singleOpType == ObTableOperationType.CHECK_AND_INSERT_UP) {
             rowkeyObjs = getScanRange().get(0).getStartKey().getObjs();
         } else {
