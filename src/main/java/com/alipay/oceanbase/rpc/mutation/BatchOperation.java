@@ -88,12 +88,26 @@ public class BatchOperation {
      * add queries
      */
     public BatchOperation addOperation(TableQuery... queries) {
-        if (isSameType && lastType != ObTableOperationType.INVALID
-            && lastType != ObTableOperationType.GET) {
-            isSameType = false;
+        boolean isHBaseQuery = false;
+        for (TableQuery query : queries) {
+            if (query.getObTableQuery().isHbaseQuery()) {
+                isHBaseQuery = true;
+            }
+            break;
         }
-
-        lastType = ObTableOperationType.GET;
+        if (isHBaseQuery) {
+            if (isSameType && lastType != ObTableOperationType.INVALID
+                && lastType != ObTableOperationType.SCAN) {
+                isSameType = false;
+            }
+            lastType = ObTableOperationType.SCAN;
+        } else {
+            if (isSameType && lastType != ObTableOperationType.INVALID
+                && lastType != ObTableOperationType.GET) {
+                isSameType = false;
+            }
+            lastType = ObTableOperationType.GET;
+        }
         this.operations.addAll(Arrays.asList(queries));
         return this;
     }

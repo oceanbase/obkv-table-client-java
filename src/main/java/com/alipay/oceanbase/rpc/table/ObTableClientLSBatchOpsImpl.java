@@ -205,8 +205,10 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 obTableQuery.isHbaseQuery(), obTableQuery.gethTableFilter(),
                 obTableQuery.getObKVParams(), obTableQuery.getFilterString());
             singleOp.setQuery(singleOpQuery);
+            singleOp.setSingleOpType(ObTableOperationType.SCAN);
+        } else {
+            singleOp.setSingleOpType(ObTableOperationType.GET);
         }
-        singleOp.setSingleOpType(ObTableOperationType.GET);
         singleOp.addEntity(entity);
         addOperation(singleOp);
     }
