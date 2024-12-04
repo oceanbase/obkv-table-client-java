@@ -1351,7 +1351,7 @@ public enum ObObjType {
          */
         @Override
         public Comparable parseToComparable(Object o, ObCollationType ct) throws IllegalArgumentException{
-            if (o instanceof Long) {
+            if (o instanceof Number) {
                 return parseLong(this, o, ct);
             } else{
                 return parseTextToComparable(this, o, ct);
