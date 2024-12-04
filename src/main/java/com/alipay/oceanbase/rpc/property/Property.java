@@ -134,7 +134,7 @@ public enum Property {
     NETTY_BLOCKING_WAIT_INTERVAL("bolt.netty.blocking.wait.interval", 1, "netty写缓存满后等待时间"),
 
     // [ObTable][OTHERS]
-    SERVER_ENABLE_REROUTING("server.enable.rerouting", true, "开启server端的重定向回复功能"),
+    SERVER_ENABLE_REROUTING("server.enable.rerouting", false, "开启server端的重定向回复功能"),
 
     /*
      * other config

@@ -17,9 +17,11 @@
 
 package com.alipay.oceanbase.rpc.table;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
+import com.alipay.oceanbase.rpc.location.model.TableEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.result.*;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
@@ -352,11 +354,14 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
-                        ObTableParam newParam = obTableClient.getTableWithPartId(tableName,
-                            originPartId, needRefreshTableEntry,
-                            obTableClient.isTableEntryRefreshIntervalWait(), needFetchAllRouteInfo,
-                            route).getRight();
-
+                        TableEntry entry = obTableClient.getOrRefreshTableEntry(tableName, false,
+                            false, false);
+                        if (ObGlobal.obVsnMajor() >= 4) {
+                            obTableClient.refreshTableLocationByTabletId(entry, tableName, partId);
+                        }
+                        ObTableParam newParam = obTableClient.getTableWithPartId(tableName, partId,
+                            false, obTableClient.isTableEntryRefreshIntervalWait(), needFetchAllRouteInfo, route)
+                            .getRight();
                         subObTable = newParam.getObTable();
                         subRequest.setPartitionId(newParam.getPartitionId());
                     }
@@ -416,12 +421,11 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                             tableName, partId, ((ObTableException) ex).getErrorCode(), ex);
                     if (obTableClient.isRetryOnChangeMasterTimes()
                         && (tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
-                        logger
-                            .warn(
-                                "tablename:{} partition id:{} batch ops retry while meet ObTableMasterChangeException, errorCode: {} , retry times {}",
-                                tableName, partId, ((ObTableException) ex).getErrorCode(),
-                                tryTimes, ex);
                         if (ex instanceof ObTableNeedFetchAllException) {
+                            logger.warn("tablename:{}, partition_id: {}  batch ops retry while meet ObTableNeedFetchAllException, errorCode: {} , retry times {}",
+                                    tableName, subRequest.getPartitionId(),((ObTableException) ex).getErrorCode(),
+                                    tryTimes, ex);
+                            // refresh table info
                             obTableClient.getOrRefreshTableEntry(tableName, needRefreshTableEntry,
                                 obTableClient.isTableEntryRefreshIntervalWait(), true);
                             throw ex;
@@ -448,7 +452,6 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             throw new ObTableUnexpectedException(
                 "check batch operation result error: client get unexpected NULL result");
         }
-
         List<ObTableOperationResult> subObTableOperationResults = subObTableBatchOperationResult
             .getResults();
 
@@ -536,6 +539,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         throw e;
                     }
                 }
+                Thread.sleep(obTableClient.getRuntimeRetryInterval());
             }
             
             if (allPartitionsSuccess) {

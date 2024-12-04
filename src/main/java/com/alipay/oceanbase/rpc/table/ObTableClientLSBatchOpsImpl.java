@@ -17,10 +17,12 @@
 
 package com.alipay.oceanbase.rpc.table;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
+import com.alipay.oceanbase.rpc.location.model.TableEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
@@ -474,7 +476,12 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
-                        subObTable = obTableClient.getTableWithPartId(realTableName, originPartId, needRefreshTableEntry,
+                        TableEntry entry = obTableClient.getOrRefreshTableEntry(tableName, false,
+                                false, false);
+                        if (ObGlobal.obVsnMajor() >= 4) {
+                            obTableClient.refreshTableLocationByTabletId(entry, tableName, obTableClient.getTabletIdByPartId(entry, originPartId));
+                        }
+                        subObTable = obTableClient.getTableWithPartId(tableName, originPartId, needRefreshTableEntry,
                                         obTableClient.isTableEntryRefreshIntervalWait(), false, route).
                                             getRight().getObTable();
                     }
@@ -520,10 +527,10 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                             realTableName, lsId, ((ObTableException) ex).getErrorCode(), ex);
                     if (obTableClient.isRetryOnChangeMasterTimes()
                             && (tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
-                        logger.warn("tablename:{} ls id:{} batch ops retry while meet ObTableMasterChangeException, errorCode: {} , retry times {}",
-                                realTableName, lsId, ((ObTableException) ex).getErrorCode(),
-                                     tryTimes, ex);
                         if (ex instanceof ObTableNeedFetchAllException) {
+                            logger.warn("tablename:{} ls id:{} batch ops retry while meet ObTableNeedFetchAllException, errorCode: {} , retry times {}",
+                                    realTableName, lsId, ((ObTableException) ex).getErrorCode(),
+                                    tryTimes, ex);
                             obTableClient.getOrRefreshTableEntry(realTableName, needRefreshTableEntry,
                                     obTableClient.isTableEntryRefreshIntervalWait(), true);
                             throw ex;
@@ -648,6 +655,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         throw e;
                     }
                 }
+                Thread.sleep(obTableClient.getRuntimeRetryInterval());
             }
 
             if (allPartitionsSuccess) {
