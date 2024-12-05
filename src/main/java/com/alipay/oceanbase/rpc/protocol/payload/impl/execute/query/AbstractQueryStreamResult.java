@@ -231,10 +231,11 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         }
                     } else if (e instanceof ObTableException) {
                         if ((((ObTableException) e).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode || ((ObTableException) e)
-                                .getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode)
-                                && ((request instanceof ObTableQueryAsyncRequest && ((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery().isHbaseQuery())
-                                || (request instanceof ObTableQueryRequest && ((ObTableQueryRequest) request).getTableQuery().isHbaseQuery()))
-                                && client.getTableGroupInverted().get(indexTableName) != null) {
+                            .getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode)
+                            && ((request instanceof ObTableQueryAsyncRequest && ((ObTableQueryAsyncRequest) request)
+                                .getObTableQueryRequest().getTableQuery().isHbaseQuery()) || (request instanceof ObTableQueryRequest && ((ObTableQueryRequest) request)
+                                .getTableQuery().isHbaseQuery()))
+                            && client.getTableGroupInverted().get(indexTableName) != null) {
                             // table not exists && hbase mode && table group exists , three condition both
                             client.eraseTableGroupFromCache(tableName);
                         }
@@ -254,7 +255,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                         ((ObTableException) e).getErrorCode(), tryTimes, e);
                                 // tablet not exists, refresh table entry
                                 if (e instanceof ObTableNeedFetchAllException) {
-                                    client.getOrRefreshTableEntry(tableName, true, true, true);
+                                    client.getOrRefreshTableEntry(indexTableName, true, true, true);
                                     throw e;
                                 }
                             } else {
