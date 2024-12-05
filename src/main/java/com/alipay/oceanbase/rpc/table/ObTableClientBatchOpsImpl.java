@@ -367,14 +367,11 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
-                        TableEntry entry = obTableClient.getOrRefreshTableEntry(tableName, false,
-                            false, false);
-                        if (ObGlobal.obVsnMajor() >= 4) {
-                            obTableClient.refreshTableLocationByTabletId(entry, tableName, partId);
-                        }
-                        ObTableParam newParam = obTableClient.getTableWithPartId(tableName, partId,
-                            false, obTableClient.isTableEntryRefreshIntervalWait(),
-                            needFetchAllRouteInfo, route).getRight();
+                        ObTableParam newParam = obTableClient.getTableWithPartId(tableName,
+                                originPartId, needRefreshTableEntry,
+                                obTableClient.isTableEntryRefreshIntervalWait(), needFetchAllRouteInfo,
+                                route).getRight();
+
                         subObTable = newParam.getObTable();
                         subRequest.setPartitionId(newParam.getPartitionId());
                     }

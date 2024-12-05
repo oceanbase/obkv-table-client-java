@@ -251,9 +251,11 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     public Map<Long, ObPair<Long, ObTableParam>> initPartitions(ObTableQuery tableQuery, String tableName) throws Exception {
         Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new LinkedHashMap<>();
         String indexName = tableQuery.getIndexName();
+        String indexTableName = null;
 
         if (!this.obTableClient.isOdpMode()) {
             indexTableName = obTableClient.getIndexTableName(tableName, indexName, tableQuery.getScanRangeColumns(), false);
+            this.indexTableName = indexTableName;
         }
 
         for (ObNewRange range : tableQuery.getKeyRanges()) {
@@ -275,6 +277,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             }
             if (this.entityType == ObTableEntityType.HKV && obTableClient.isTableGroupName(tableName)) {
                 indexTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
+                this.indexTableName = indexTableName;
             }
             ObBorderFlag borderFlag = range.getBorderFlag();
             // pairs -> List<Pair<logicId, param>>

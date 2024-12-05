@@ -34,8 +34,10 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
+
     private static final Logger logger = TableClientLoggerFactory
                                            .getLogger(ObTableClientQueryStreamResult.class);
+    protected ObTableClient     client;
 
     protected ObTableQueryResult referToNewPartition(ObPair<Long, ObTableParam> partIdWithObTable)
                                                                                                   throws Exception {
@@ -81,5 +83,20 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
                                                                      String tableName)
                                                                                       throws Exception {
         return buildPartitions(client, tableQuery, tableName);
+    }
+
+    /**
+     * Get client.
+     * @return client
+     */
+    public ObTableClient getClient() {
+        return client;
+    }
+
+    /*
+     * Set client.
+     */
+    public void setClient(ObTableClient client) {
+        this.client = client;
     }
 }

@@ -173,8 +173,12 @@ public class ObTableConnection {
                     credential = result.getCredential();
                     tenantId = result.getTenantId();
                     // Set version if missing
-                    if (ObGlobal.obVsnMajor() == 0 && !result.getServerVersion().isEmpty()) {
+                    if (ObGlobal.obVsnMajor() == 0) {
                         // version should be set before login when direct mode
+                        if (result.getServerVersion().isEmpty()) {
+                            throw new RuntimeException(
+                                "Failed to get server version from login result");
+                        }
                         LocationUtil.parseObVerionFromLogin(result.getServerVersion());
                         LOGGER.info("The OB_VERSION parsed from login result is: {}",
                             ObGlobal.OB_VERSION);

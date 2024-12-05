@@ -17,12 +17,10 @@
 
 package com.alipay.oceanbase.rpc.table;
 
-import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
-import com.alipay.oceanbase.rpc.location.model.TableEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
@@ -363,11 +361,11 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             long lsId = tableObPair.getRight().getLsId();
 
             Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperations
-                    = lsOperationsMap.computeIfAbsent(lsId, k -> new HashMap<>());
+                     = lsOperationsMap.computeIfAbsent(lsId, k -> new HashMap<>());
             // if ls id not exists
 
             ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>> singleOperations =
-                    tabletOperations.computeIfAbsent(tableObPair.getLeft(), k -> new ObPair<>(tableObPair.getRight(), new ArrayList<>()));
+                     tabletOperations.computeIfAbsent(tableObPair.getLeft(), k -> new ObPair<>(tableObPair.getRight(), new ArrayList<>()));
             // if tablet id not exists
             singleOperations.getRight().add(new ObPair<>(i, operation));
         }
@@ -475,11 +473,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         }
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
-                        }
-                        TableEntry entry = obTableClient.getOrRefreshTableEntry(realTableName, false,
-                                false, false);
-                        if (ObGlobal.obVsnMajor() >= 4) {
-                            obTableClient.refreshTableLocationByTabletId(entry, realTableName, obTableClient.getTabletIdByPartId(entry, originPartId));
                         }
                         subObTable = obTableClient.getTableWithPartId(realTableName, originPartId, needRefreshTableEntry,
                                         obTableClient.isTableEntryRefreshIntervalWait(), false, route).
@@ -631,7 +624,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
         int retryCount = 0;
         boolean success = false;
-
+        
         Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> currentPartitions = new HashMap<>();
         currentPartitions.put(entry.getKey(), entry.getValue());
         int errCode = ResultCodes.OB_SUCCESS.errorCode;
