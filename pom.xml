@@ -331,6 +331,7 @@
                     <nrOfIndentSpace>4</nrOfIndentSpace>
                     <keepBlankLines>true</keepBlankLines>
                     <sortProperties>true</sortProperties>
+                    <expandEmptyElements>false</expandEmptyElements>
                     <encoding>${project.encoding}</encoding>
                 </configuration>
             </plugin>

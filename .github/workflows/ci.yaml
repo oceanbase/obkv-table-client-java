@@ -43,7 +43,9 @@ jobs:
           distribution: 'zulu'
           cache: 'maven'
       - name: Maven Build
-        run: mvn -B clean verify -Dgpg.skip -DskipTests=true
+        run: |
+          mvn -B clean verify -Dgpg.skip -DskipTests=true
+          git diff --exit-code
 
   test-obkv-table-client-java:
     name: Test (obkv-table-client-java)

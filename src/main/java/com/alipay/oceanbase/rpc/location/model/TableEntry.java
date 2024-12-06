@@ -102,9 +102,10 @@ public class TableEntry {
      * Is partition table.
      */
     public boolean isPartitionTable() {
-        return partitionNum > 1 || (partitionInfo != null && partitionInfo.getLevel()
-                .getIndex() > ObPartitionLevel.LEVEL_ZERO.getIndex() && partitionInfo.getLevel()
-                .getIndex() < ObPartitionLevel.UNKNOWN.getIndex());
+        return partitionNum > 1
+               || (partitionInfo != null
+                   && partitionInfo.getLevel().getIndex() > ObPartitionLevel.LEVEL_ZERO.getIndex() && partitionInfo
+                   .getLevel().getIndex() < ObPartitionLevel.UNKNOWN.getIndex());
     }
 
     /*
