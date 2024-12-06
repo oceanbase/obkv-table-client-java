@@ -22,9 +22,7 @@ import com.alipay.remoting.*;
 import com.alipay.remoting.codec.Codec;
 import com.alipay.remoting.config.ConfigManager;
 import com.alipay.remoting.config.ConfigurableInstance;
-import com.alipay.remoting.connection.AbstractConnectionFactory;
 import com.alipay.remoting.connection.ConnectionFactory;
-import com.alipay.remoting.log.BoltLoggerFactory;
 import com.alipay.remoting.rpc.RpcHandler;
 import com.alipay.remoting.rpc.protocol.UserProcessor;
 import com.alipay.remoting.util.NettyEventLoopUtil;
@@ -35,14 +33,14 @@ import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ObConnectionFactory implements ConnectionFactory {
 
-    private static final Logger         logger      = BoltLoggerFactory
-                                                        .getLogger(AbstractConnectionFactory.class);
+    private static final Logger         logger      = LoggerFactory.getLogger(ObConnectionFactory.class);
 
     private static final EventLoopGroup workerGroup = NettyEventLoopUtil.newEventLoopGroup(Runtime
                                                         .getRuntime().availableProcessors() + 1,

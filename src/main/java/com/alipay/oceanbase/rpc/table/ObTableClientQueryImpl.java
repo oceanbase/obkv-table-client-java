@@ -241,6 +241,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
         if (!this.obTableClient.isOdpMode()) {
             indexTableName = obTableClient.getIndexTableName(tableName, indexName, tableQuery.getScanRangeColumns(), false);
+            this.indexTableName = indexTableName;
         }
 
         for (ObNewRange range : tableQuery.getKeyRanges()) {
@@ -262,6 +263,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             }
             if (this.entityType == ObTableEntityType.HKV && obTableClient.isTableGroupName(tableName)) {
                 indexTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
+                this.indexTableName = indexTableName;
             }
             ObBorderFlag borderFlag = range.getBorderFlag();
             List<ObPair<Long, ObTableParam>> pairs = this.obTableClient.getTables(indexTableName,
