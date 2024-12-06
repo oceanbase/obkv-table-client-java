@@ -44,9 +44,18 @@ public class ObTableClientPartitionRangeTest {
     @Before
     public void setUp() throws Exception {
         /*
-         *
-         * create table testRange (K varbinary(1024), Q varbinary(256), T bigint, V varbinary(102400), primary key(K, Q, T)) partition by range columns (K) (PARTITION p0 VALUES LESS THAN ('a'), PARTITION p1 VALUES LESS THAN ('w'), PARTITION p2 VALUES LESS THAN MAXVALUE);
-         *
+         * CREATE TABLE IF NOT EXISTS `testRange` (
+                `K` varbinary(1024),
+                `Q` varbinary(256),
+                `T` bigint,
+                `V` varbinary(10240),
+                INDEX i1(`K`, `V`) local,
+                PRIMARY KEY(`K`, `Q`, `T`)
+            ) partition by range columns (`K`) (
+                PARTITION p0 VALUES LESS THAN ('a'),
+                PARTITION p1 VALUES LESS THAN ('w'),
+                PARTITION p2 VALUES LESS THAN MAXVALUE
+            );
          * */
         System.setProperty("ob_table_min_rslist_refresh_interval_millis", "1");
 

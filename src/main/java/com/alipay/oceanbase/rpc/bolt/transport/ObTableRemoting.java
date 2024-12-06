@@ -122,7 +122,7 @@ public class ObTableRemoting extends BaseRemoting {
             ObRpcResultCode resultCode = new ObRpcResultCode();
             resultCode.decode(buf);
             // If response indicates the request is routed to wrong server, we should refresh the routing meta.
-            if (!conn.getObTable().getReRouting() &&response.getHeader().isRoutingWrong()) {
+            if (!conn.getObTable().isEnableRerouting() && response.getHeader().isRoutingWrong()) {
                 String errMessage = TraceUtil.formatTraceMessage(conn, request,
                     "routed to the wrong server: " + response.getMessage());
                 logger.warn(errMessage);
@@ -139,7 +139,8 @@ public class ObTableRemoting extends BaseRemoting {
                     throw new ObTableNeedFetchAllException(errMessage, resultCode.getRcode());
                 }
             }
-            if (resultCode.getRcode() != 0 && response.getHeader().getPcode() != Pcodes.OB_TABLE_API_MOVE) {
+            if (resultCode.getRcode() != 0
+                && response.getHeader().getPcode() != Pcodes.OB_TABLE_API_MOVE) {
                 String errMessage = TraceUtil.formatTraceMessage(conn, request,
                     "routed to the wrong server: " + response.getMessage());
                 logger.warn(errMessage);
@@ -193,23 +194,25 @@ public class ObTableRemoting extends BaseRemoting {
                || errorCode == ResultCodes.OB_TABLE_NOT_EXIST.errorCode
                || errorCode == ResultCodes.OB_TABLET_NOT_EXIST.errorCode
                || errorCode == ResultCodes.OB_LS_NOT_EXIST.errorCode
+               || errorCode == ResultCodes.OB_MAPPING_BETWEEN_TABLET_AND_LS_NOT_EXIST.errorCode
+               || errorCode == ResultCodes.OB_SNAPSHOT_DISCARDED.errorCode
                || (pcode == Pcodes.OB_TABLE_API_LS_EXECUTE && errorCode == ResultCodes.OB_NOT_MASTER.errorCode);
     }
 
     private boolean needFetchPartial(int errorCode) {
         return errorCode == ResultCodes.OB_LOCATION_LEADER_NOT_EXIST.errorCode
-               || errorCode == ResultCodes.OB_NOT_MASTER.errorCode
-               || errorCode == ResultCodes.OB_RS_NOT_MASTER.errorCode
-               || errorCode == ResultCodes.OB_RS_SHUTDOWN.errorCode
-               || errorCode == ResultCodes.OB_RPC_SEND_ERROR.errorCode
-               || errorCode == ResultCodes.OB_RPC_POST_ERROR.errorCode
-               || errorCode == ResultCodes.OB_PARTITION_NOT_EXIST.errorCode
-               || errorCode == ResultCodes.OB_LOCATION_NOT_EXIST.errorCode
-               || errorCode == ResultCodes.OB_PARTITION_IS_STOPPED.errorCode
-               || errorCode == ResultCodes.OB_PARTITION_IS_BLOCKED.errorCode
-               || errorCode == ResultCodes.OB_SERVER_IS_INIT.errorCode
-               || errorCode == ResultCodes.OB_SERVER_IS_STOPPING.errorCode
-               || errorCode == ResultCodes.OB_TRANS_RPC_TIMEOUT.errorCode
-               || errorCode == ResultCodes.OB_NO_READABLE_REPLICA.errorCode;
+                || errorCode == ResultCodes.OB_NOT_MASTER.errorCode
+                || errorCode == ResultCodes.OB_RS_NOT_MASTER.errorCode
+                || errorCode == ResultCodes.OB_RS_SHUTDOWN.errorCode
+                || errorCode == ResultCodes.OB_RPC_SEND_ERROR.errorCode
+                || errorCode == ResultCodes.OB_RPC_POST_ERROR.errorCode
+                || errorCode == ResultCodes.OB_PARTITION_NOT_EXIST.errorCode
+                || errorCode == ResultCodes.OB_LOCATION_NOT_EXIST.errorCode
+                || errorCode == ResultCodes.OB_PARTITION_IS_STOPPED.errorCode
+                || errorCode == ResultCodes.OB_PARTITION_IS_BLOCKED.errorCode
+                || errorCode == ResultCodes.OB_SERVER_IS_INIT.errorCode
+                || errorCode == ResultCodes.OB_SERVER_IS_STOPPING.errorCode
+                || errorCode == ResultCodes.OB_TRANS_RPC_TIMEOUT.errorCode
+                || errorCode == ResultCodes.OB_NO_READABLE_REPLICA.errorCode;
     }
 }

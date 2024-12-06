@@ -61,7 +61,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     // global index: key is index table name (be like: __idx_<data_table_id>_<index_name>)
     protected String                                                           indexTableName;
     protected ObTableEntityType                                                entityType;
-    protected Map<Long, ObPair<Long, ObTableParam>>                            expectant;                                                                                     // Map<logicId, ObPair<logicId, param>>
+    protected Map<Long, ObPair<Long, ObTableParam>>                            expectant;
     protected List<String>                                                     cacheProperties     = new LinkedList<String>();
     protected LinkedList<List<ObObj>>                                          cacheRows           = new LinkedList<List<ObObj>>();
     private LinkedList<ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>> partitionLastResult = new LinkedList<ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>>();
@@ -112,6 +112,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         ObPayload result;
         ObTable subObTable = partIdWithIndex.getRight().getObTable();
         boolean needRefreshTableEntry = false;
+        boolean odpNeedRenew = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
         Set<String> failedServerList = null;
@@ -133,7 +134,9 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
             try {
                 if (tryTimes > 1) {
                     if (client.isOdpMode()) {
-                        subObTable = client.getOdpTable();
+                        subObTable = client
+                            .getODPTableWithPartId(tableName, partIdWithIndex.getLeft(),
+                                odpNeedRenew).getRight().getObTable();
                     } else {
                         if (route == null) {
                             route = client.getReadRoute();
@@ -181,16 +184,24 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                     "tablename:{} stream query execute while meet Exception needing retry, errorCode: {}, errorMsg: {}, try times {}",
                                     indexTableName, ((ObTableException) e).getErrorCode(),
                                     e.getMessage(), tryTimes);
+                            if (e instanceof ObTablePartitionChangeException
+                                && ((ObTablePartitionChangeException) e).getErrorCode() == ResultCodes.OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
+                                odpNeedRenew = true;
+                            } else {
+                                throw e;
+                            }
                         } else if (e instanceof IllegalArgumentException) {
                             logger
                                 .warn(
                                     "tablename:{} stream query execute while meet Exception needing retry, try times {}, errorMsg: {}",
                                     indexTableName, tryTimes, e.getMessage());
+                            throw e;
                         } else {
                             logger
                                 .warn(
                                     "tablename:{} stream query execute while meet Exception needing retry, try times {}",
                                     indexTableName, tryTimes, e);
+                            throw e;
                         }
                     } else {
                         throw e;

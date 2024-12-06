@@ -277,7 +277,7 @@ CREATE TABLE test_aggregation (
     `c7` datetime,
     PRIMARY KEY(`c1`)
 );
-        
+
 CREATE TABLE `test_partition_aggregation` (
     `c1` bigint NOT NULL,
     `c2` bigint DEFAULT NULL,
