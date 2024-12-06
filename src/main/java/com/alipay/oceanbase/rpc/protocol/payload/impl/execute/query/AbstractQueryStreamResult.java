@@ -393,8 +393,6 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     protected Map<Long, ObPair<Long, ObTableParam>> buildPartitions(ObTableClient client, ObTableQuery tableQuery, String tableName) throws Exception {
         Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new LinkedHashMap<>();
         String indexName = tableQuery.getIndexName();
-        String indexTableName = null;
-
         if (!client.isOdpMode()) {
             indexTableName = client.getIndexTableName(tableName, indexName, tableQuery.getScanRangeColumns(), false);
         }
@@ -446,12 +444,12 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
 
     protected void checkStatus() throws IllegalStateException {
         if (!initialized) {
-            throw new IllegalStateException("table " + tableName
+            throw new IllegalStateException("table " + indexTableName
                                             + "query stream result is not initialized");
         }
 
         if (closed) {
-            throw new IllegalStateException("table " + tableName + " query stream result is closed");
+            throw new IllegalStateException("table " + indexTableName + " query stream result is closed");
         }
     }
 
