@@ -215,7 +215,7 @@ public class LocationUtil {
 
     // limit the size of get tableEntry location from remote each time
     private static final int    MAX_TABLET_NUMS_EPOCH                       = Integer.parseInt(System.getProperty("max.table.num.epoch","300"));
-    private static final int    TABLE_ENTRY_LOCATION_REFRESH_THRESHOLD      = Integer.parseInt(System.getProperty("table.entry.location.refresh.threshold","100"));
+    private static final int    TABLE_ENTRY_LOCATION_REFRESH_THRESHOLD      = Integer.parseInt(System.getProperty("table.entry.location.refresh.threshold","0"));
 
     private abstract static class TableEntryRefreshWithPriorityCallback<T> {
         abstract T execute(ObServerAddr obServerAddr) throws ObTableEntryRefreshException;
