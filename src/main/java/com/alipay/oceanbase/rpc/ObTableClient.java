@@ -1373,26 +1373,68 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (tableEntry == null) {
                 throw new ObTableEntryRefreshException("Table entry is null, tableName=" + tableName);
             }
-            long lastRefreshTime = tableEntry.getPartitionEntry().getPartitionInfo(tabletId).getLastUpdateTime();
+
+            ObPartitionLocationInfo info = tableEntry.getPartitionEntry().getPartitionInfo(tabletId);
+            if (info == null) {
+                throw new ObTableEntryRefreshException("Partition info is null for tabletId=" + tabletId);
+            }
+            
+            long lastRefreshTime = info.getLastUpdateTime();
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastRefreshTime < tableEntryRefreshIntervalCeiling) {
                 return tableEntry;
             }
-            tableEntry = loadTableEntryLocationWithPriority(serverRoster, tableEntryKey, tableEntry, tabletId,
-                    tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
-                    serverAddressPriorityTimeout, serverAddressCachingTimeout, sysUA);
+            
+            Lock lock = info.refreshLock;
+            boolean acquired = false;
+            try {
+                acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
 
-            tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
+                if (!acquired) {
+                    String errMsg = String.format(
+                            "Try to lock table location refreshing timeout. DataSource: %s, TableName: %s, Timeout: %dms.",
+                            dataSourceName, tableName, tableEntryRefreshLockTimeout);
+                    RUNTIME.error(errMsg);
+                    throw new ObTableEntryRefreshException(errMsg);
+                }
+
+                // Double-check
+                lastRefreshTime = info.getLastUpdateTime();
+                currentTime = System.currentTimeMillis();
+                if (currentTime - lastRefreshTime < tableEntryRefreshIntervalCeiling) {
+                    return tableEntry;
+                }
+                
+                tableEntry = loadTableEntryLocationWithPriority(
+                        serverRoster,
+                        tableEntryKey,
+                        tableEntry,
+                        tabletId,
+                        tableEntryAcquireConnectTimeout,
+                        tableEntryAcquireSocketTimeout,
+                        serverAddressPriorityTimeout,
+                        serverAddressCachingTimeout,
+                        sysUA
+                );
+                
+                tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
+
+            } finally {
+                if (acquired) {
+                    lock.unlock();
+                }
+            }
 
         } catch (ObTableNotExistException | ObTableServerCacheExpiredException e) {
             RUNTIME.error("RefreshTableEntry encountered an exception", e);
             throw e;
         } catch (Exception e) {
-            String errorMsg = String.format("Failed to get table entry. Key=%s, TabletId=%d, message=%s", tableEntryKey, tabletId, e.getMessage());
+            String errorMsg = String.format("Failed to get table entry. Key=%s, TabletId=%d, message=%s",
+                    tableEntryKey, tabletId, e.getMessage());
             RUNTIME.error(LCD.convert("01-00020"), tableEntryKey, tableEntry, e);
             throw new ObTableEntryRefreshException(errorMsg, e);
         }
-
+        
         tableLocations.put(tableName, tableEntry);
         tableEntryRefreshContinuousFailureCount.set(0);
 

@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.location.model.partition;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static com.alipay.oceanbase.rpc.protocol.payload.Constants.OB_INVALID_ID;
@@ -31,7 +32,8 @@ public class ObPartitionLocationInfo {
     public AtomicBoolean          initialized         = new AtomicBoolean(false);
     public final CountDownLatch   initializationLatch = new CountDownLatch(1);
     
-
+    public ReentrantLock refreshLock = new ReentrantLock();
+    
     public ObPartitionLocation getPartitionLocation() {
         rwLock.readLock().lock();
         try {
