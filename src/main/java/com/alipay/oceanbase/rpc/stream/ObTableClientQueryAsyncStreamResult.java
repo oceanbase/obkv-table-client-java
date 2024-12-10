@@ -17,11 +17,13 @@
 
 package com.alipay.oceanbase.rpc.stream;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.exception.ObTableNeedFetchAllException;
 import com.alipay.oceanbase.rpc.exception.ObTableRetryExhaustedException;
+import com.alipay.oceanbase.rpc.location.model.TableEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
@@ -238,7 +240,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                                     .getTableQuery(), realTableName));
                             setEnd(true);
                         } else {
-                            setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
+                            setExpectant(refreshPartition(this.asyn cRequest.getObTableQueryRequest()
                                     .getTableQuery(), realTableName));
                         }
                     } else {

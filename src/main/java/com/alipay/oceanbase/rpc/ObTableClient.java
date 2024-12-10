@@ -1664,8 +1664,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     private ReplicaLocation getPartitionLocation(TableEntry tableEntry, long partId,
                                                  ObServerRoute route) {
-        long tabletId = getTabletIdByPartId(tableEntry, partId);
-        return tableEntry.getPartitionEntry().getPartitionLocationWithTabletId(tabletId)
+        return tableEntry.getPartitionEntry().getPartitionLocationWithPartId(partId)
             .getReplica(route);
 
     }
