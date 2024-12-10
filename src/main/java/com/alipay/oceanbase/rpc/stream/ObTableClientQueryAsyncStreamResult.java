@@ -240,7 +240,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                                     .getTableQuery(), realTableName));
                             setEnd(true);
                         } else {
-                            setExpectant(refreshPartition(this.asyn cRequest.getObTableQueryRequest()
+                            setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
                                     .getTableQuery(), realTableName));
                         }
                     } else {
