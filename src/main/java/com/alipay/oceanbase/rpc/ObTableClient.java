@@ -22,6 +22,7 @@ import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.constant.Constants;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.filter.ObTableFilter;
+import com.alipay.oceanbase.rpc.get.Get;
 import com.alipay.oceanbase.rpc.location.model.*;
 import com.alipay.oceanbase.rpc.location.model.partition.*;
 import com.alipay.oceanbase.rpc.mutation.*;
@@ -715,11 +716,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
     }
 
-    private abstract class MutationExecuteCallback<T> {
+    private abstract class OperationExecuteCallback<T> {
         private final Row              rowKey;
         private final List<ObNewRange> keyRanges;
 
-        MutationExecuteCallback(Row rowKey, List<ObNewRange> keyRanges) {
+        OperationExecuteCallback(Row rowKey, List<ObNewRange> keyRanges) {
             this.rowKey = rowKey;
             this.keyRanges = keyRanges;
         }
@@ -773,16 +774,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     /**
      * For mutation
      */
-    private <T> T executeMutation(String tableName, MutationExecuteCallback<T> callback)
+    private <T> T execute(String tableName, OperationExecuteCallback<T> callback)
                                                                                         throws Exception {
         // force strong read by default, for backward compatibility.
-        return executeMutation(tableName, callback, getRoute(false));
+        return execute(tableName, callback, getRoute(false));
     }
 
     /**
      * Execute with a route strategy for mutation
      */
-    private <T> T executeMutation(String tableName, MutationExecuteCallback<T> callback,
+    private <T> T execute(String tableName, OperationExecuteCallback<T> callback,
                                   ObServerRoute route) throws Exception {
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
@@ -818,7 +819,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         obPair = getTable(tableName, new ObTableQuery(),
                             callback.getKeyRanges());
                     } else {
-                        throw new ObTableException("rowkey and scan range are null in mutation");
+                        throw new ObTableException("RowKey or scan range is null");
                     }
                 }
                 T t = callback.execute(obPair);
@@ -2415,8 +2416,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                       final List<ObNewRange> keyRanges, final String[] columns,
                                       final Object[] values) throws Exception {
         final long start = System.currentTimeMillis();
-        return executeMutation(tableName,
-            new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {
+        return execute(tableName,
+            new OperationExecuteCallback<ObPayload>(rowKey, keyRanges) {
                 /**
                  * Execute.
                  */
@@ -2495,8 +2496,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     public ObPayload deleteWithResult(final String tableName, final Row rowKey,
                                       final List<ObNewRange> keyRanges) throws Exception {
         final long start = System.currentTimeMillis();
-        return executeMutation(tableName,
-            new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {
+        return execute(tableName,
+            new OperationExecuteCallback<ObPayload>(rowKey, keyRanges) {
 
                 /**
                  * Execute.
@@ -2579,8 +2580,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                       final List<ObNewRange> keyRanges, final String[] columns,
                                       final Object[] values) throws Exception {
         final long start = System.currentTimeMillis();
-        return executeMutation(tableName,
-            new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {
+        return execute(tableName,
+            new OperationExecuteCallback<ObPayload>(rowKey, keyRanges) {
                 /**
                  * Execute.
                  */
@@ -2607,6 +2608,51 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /**
+     * Get.
+     */
+    public Get get(String tableName) {
+        return new Get(this, tableName);
+    }
+
+    /**
+     * get
+     * @param tableName which table to insert
+     * @param rowKey insert row key
+     * @param selectColumns select columns
+     * @return execute result
+     * @throws Exception exception
+     */
+    public Map<String, Object> get(final String tableName, final Row rowKey,
+                                   final String[] selectColumns) throws Exception {
+        final long start = System.currentTimeMillis();
+        return execute(tableName,
+                new OperationExecuteCallback<Map<String, Object>>(rowKey, null) {
+                    /**
+                     * Execute.
+                     */
+                    @Override
+                    public Map<String, Object> execute(ObPair<Long, ObTableParam> obPair) throws Exception {
+                        long TableTime = System.currentTimeMillis();
+                        ObTableParam tableParam = obPair.getRight();
+                        ObTable obTable = tableParam.getObTable();
+                        ObTableOperationRequest request = ObTableOperationRequest.getInstance(
+                                tableName, GET, rowKey.getValues(), selectColumns, null,
+                                obTable.getObTableOperationTimeout());
+                        request.setTableId(tableParam.getTableId());
+                        // partId/tabletId
+                        request.setPartitionId(tableParam.getPartitionId());
+                        ObPayload result = executeWithRetry(obTable, request, tableName);
+                        String endpoint = obTable.getIp() + ":" + obTable.getPort();
+                        MonitorUtil.info(request, database, tableName, "GET", endpoint,
+                                rowKey.getValues(), (ObTableOperationResult) result, TableTime - start,
+                                System.currentTimeMillis() - TableTime, getslowQueryMonitorThreshold());
+                        checkResult(obTable.getIp(), obTable.getPort(), request, result);
+                        return ((ObTableOperationResult) result).getEntity().getSimpleProperties();
+                    }
+                });
+    }
+
+    /**
      * put with result
      * @param tableName which table to put
      * @param rowKey insert row key
@@ -2620,8 +2666,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                    final List<ObNewRange> keyRanges, final String[] columns,
                                    final Object[] values) throws Exception {
         final long start = System.currentTimeMillis();
-        return executeMutation(tableName,
-            new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {
+        return execute(tableName,
+            new OperationExecuteCallback<ObPayload>(rowKey, keyRanges) {
                 /**
                  * Execute.
                  */
@@ -2703,8 +2749,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                        final List<ObNewRange> keyRanges, final String[] columns,
                                        final Object[] values) throws Exception {
         final long start = System.currentTimeMillis();
-        return executeMutation(tableName,
-            new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {
+        return execute(tableName,
+            new OperationExecuteCallback<ObPayload>(rowKey, keyRanges) {
                 /**
                  * Execute.
                  */
@@ -2788,8 +2834,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                               final String[] columns, final Object[] values,
                                               boolean usePut) throws Exception {
         final long start = System.currentTimeMillis();
-        return executeMutation(tableName,
-            new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {
+        return execute(tableName,
+            new OperationExecuteCallback<ObPayload>(rowKey, keyRanges) {
                 /**
                  * Execute.
                  */
@@ -2894,8 +2940,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                          final Object[] values, final boolean withResult)
                                                                                          throws Exception {
         final long start = System.currentTimeMillis();
-        return executeMutation(tableName,
-            new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {
+        return execute(tableName,
+            new OperationExecuteCallback<ObPayload>(rowKey, keyRanges) {
                 /**
                  *
                  * @param obPair
@@ -2979,8 +3025,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                       final Object[] values, final boolean withResult)
                                                                                       throws Exception {
         final long start = System.currentTimeMillis();
-        return executeMutation(tableName,
-            new MutationExecuteCallback<ObPayload>(rowKey, keyRanges) {
+        return execute(tableName,
+            new OperationExecuteCallback<ObPayload>(rowKey, keyRanges) {
                 @Override
                 public ObPayload execute(ObPair<Long, ObTableParam> obPair) throws Exception {
                     long TableTime = System.currentTimeMillis();
@@ -3270,7 +3316,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             // fill a whole range if no range is added explicitly.
             tableQuery.getObTableQuery().addKeyRange(ObNewRange.getWholeRange());
         }
-        return executeMutation(tableQuery.getTableName(), new MutationExecuteCallback<ObPayload>(
+        return execute(tableQuery.getTableName(), new OperationExecuteCallback<ObPayload>(
             rowKey, keyRanges) {
             /**
              * Execute.

@@ -21,6 +21,7 @@ import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.exception.FeatureNotSupportedException;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.get.Get;
 import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
@@ -95,6 +96,20 @@ public class BatchOperation {
 
         lastType = ObTableOperationType.GET;
         this.operations.addAll(Arrays.asList(queries));
+        return this;
+    }
+
+    /*
+     * add get
+     */
+    public BatchOperation addOperation(Get... gets) {
+        if (isSameType && lastType != ObTableOperationType.INVALID
+                && lastType != ObTableOperationType.GET) {
+            isSameType = false;
+        }
+
+        lastType = ObTableOperationType.GET;
+        this.operations.addAll(Arrays.asList(gets));
         return this;
     }
 
@@ -251,6 +266,9 @@ public class BatchOperation {
                 TableQuery query = (TableQuery) operation;
                 batchOps.get(query.getRowKey().getValues(),
                     query.getSelectColumns().toArray((new String[0])));
+            } else if (operation instanceof Get) {
+                Get get = (Get) operation;
+                batchOps.get(get.getRowKey().getValues(), get.getSelectColumns());
             } else {
                 throw new ObTableException("unknown operation " + operation);
             }
@@ -294,6 +312,9 @@ public class BatchOperation {
                             rowKeyNames.toArray(new String[0]));
                         hasSetRowkeyElement = true;
                     }
+                } else if (operation instanceof Get) {
+                    Get get = (Get) operation;
+                    batchOps.addOperation(get);
                 } else if (operation instanceof TableQuery) {
                     TableQuery query = (TableQuery) operation;
                     batchOps.addOperation(query);
