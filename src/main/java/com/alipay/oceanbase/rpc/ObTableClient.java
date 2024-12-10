@@ -2318,12 +2318,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
             ObTableParam param = new ObTableParam(obTable);
             param.setPartId(partId);
-            if (ObGlobal.obVsnMajor() >= 4) {
-                long partIdx = tableEntry.getPartIdx(partId);
-                partId = tableEntry.isPartitionTable() ? tableEntry.getPartitionInfo()
-                    .getPartTabletIdMap().get(partIdx) : partId;
-                param.setLsId(tableEntry.getPartitionEntry().getLsId(partId));
-            }
+            partId = getTabletIdByPartId(tableEntry, partId);
+            param.setLsId(tableEntry.getPartitionEntry().getPartitionInfo(partId).getTabletLsId());
 
             param.setTableId(tableEntry.getTableId());
             // real partition(tablet) id
