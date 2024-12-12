@@ -2047,7 +2047,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                       boolean refresh, boolean waitForRefresh)
                                                                                               throws Exception {
         return getTables(tableName, query, start, startInclusive, end, endInclusive, refresh,
-            waitForRefresh, getRoute(false));
+            waitForRefresh, false, getRoute(false));
     }
 
     /**
@@ -2070,8 +2070,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                       boolean refresh, boolean waitForRefresh,
                                                       ObServerRoute route) throws Exception {
 
+        return getTables(tableName, query, start, startInclusive, end, endInclusive, refresh, waitForRefresh, false, route);
+    }
+
+    private List<ObPair<Long, ObTableParam>> getTables(String tableName, ObTableQuery query,
+                                                      Object[] start, boolean startInclusive,
+                                                      Object[] end, boolean endInclusive,
+                                                      boolean refresh, boolean waitForRefresh,
+                                                      boolean needFetchAll, ObServerRoute route) throws Exception {
         // 1. get TableEntry information
-        TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh, false);
+        TableEntry tableEntry = getOrRefreshTableEntry(tableName, refresh, waitForRefresh, needFetchAll);
 
         List<String> scanRangeColumns = query.getScanRangeColumns();
         if (scanRangeColumns == null || scanRangeColumns.isEmpty()) {
@@ -2091,16 +2099,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         // ensure the format of column names and values if the current table is a table with partition
         if (tableEntry.isPartitionTable()) {
             if ((scanRangeColumns == null || scanRangeColumns.isEmpty()) && start.length == 1
-                && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj() && end.length == 1
-                && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
+                    && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj() && end.length == 1
+                    && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
                 // for getPartition to query all partitions
                 scanRangeColumns = new ArrayList<String>(Collections.nCopies(start.length,
-                    "partition"));
+                        "partition"));
             }
             // scanRangeColumn may be longer than start/end in prefix scanning situation
             if (scanRangeColumns == null || scanRangeColumns.size() < start.length) {
                 throw new IllegalArgumentException(
-                    "length of key and scan range columns do not match, please use addRowKeyElement or set scan range columns");
+                        "length of key and scan range columns do not match, please use addRowKeyElement or set scan range columns");
             }
             for (int i = 0; i < start.length; i++) {
                 startRow.add(scanRangeColumns.get(i), start[i]);
@@ -2109,7 +2117,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
 
         List<ObPair<Long, ReplicaLocation>> partIdWithReplicaList = getPartitionReplica(tableEntry,
-            startRow, startInclusive, endRow, endInclusive, route);
+                startRow, startInclusive, endRow, endInclusive, route);
 
         // obTableParams -> List<Pair<logicId, obTableParams>>
         List<ObPair<Long, ObTableParam>> obTableParams = new ArrayList<ObPair<Long, ObTableParam>>();
@@ -2121,9 +2129,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             boolean addrExpired = addr.isExpired(serverAddressCachingTimeout);
             if (addrExpired || obTable == null) {
                 logger
-                    .warn(
-                        "server address {} is expired={} or can not get ob table. So that will sync refresh metadata",
-                        addr, addrExpired);
+                        .warn(
+                                "server address {} is expired={} or can not get ob table. So that will sync refresh metadata",
+                                addr, addrExpired);
                 syncRefreshMetadata();
                 tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
                 replica = getPartitionLocation(tableEntry, partId, route);
@@ -2141,7 +2149,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (ObGlobal.obVsnMajor() >= 4) {
                 long partIdx = tableEntry.getPartIdx(partId);
                 partId = tableEntry.isPartitionTable() ? tableEntry.getPartitionInfo()
-                    .getPartTabletIdMap().get(partIdx) : partId;
+                        .getPartTabletIdMap().get(partIdx) : partId;
                 param.setLsId(tableEntry.getPartitionEntry().getLsId(partId));
             }
 
@@ -3081,11 +3089,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (refresh) {
                 // List<ObPair<logic partId, obTableParam>>
                 allTables = getTables(tableName, new ObTableQuery(), new Object[]{ ObObj.getMin() }, true,
-                        new Object[]{ ObObj.getMax() }, true, true, true, getRoute(false));
+                        new Object[]{ ObObj.getMax() }, true, true, true, true, getRoute(false));
             } else {
                 // List<ObPair<logic partId, obTableParam>>
                 allTables = getTables(tableName, new ObTableQuery(), new Object[]{ ObObj.getMin() }, true,
-                        new Object[]{ ObObj.getMax() }, true, false, false, getRoute(false));
+                        new Object[]{ ObObj.getMax() }, true, false, false, false, getRoute(false));
             }
             for (ObPair<Long, ObTableParam> table : allTables) {
                 ObTableParam tableParam = table.getRight();
