@@ -2019,21 +2019,21 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
         ObServerAddr addr = replica.getAddr();
         ObTable obTable = tableRoster.get(addr);
-
-        if (obTable == null || addr.isExpired(serverAddressCachingTimeout)) {
+        boolean addrExpired = addr.isExpired(serverAddressCachingTimeout);
+        if (obTable == null || addrExpired) {
             if (obTable == null) {
                 logger.warn("Cannot get ObTable by addr {}, refreshing metadata.", addr);
                 syncRefreshMetadata();
             }
             if (addr.isExpired(serverAddressCachingTimeout)) {
                 logger.info("Server addr {} is expired, refreshing tableEntry.", addr);
+                tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, true);
             }
             
             if (ObGlobal.obVsnMajor() >= 4) {
                 obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
                 replica = getPartitionLocation(obPartitionLocationInfo, route);
             } else {
-                tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
                 replica = getPartitionReplica(tableEntry, partitionId, route).getRight();
             }
             
@@ -2311,12 +2311,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObTable obTable = tableRoster.get(addr);
             boolean addrExpired = addr.isExpired(serverAddressCachingTimeout);
             if (addrExpired || obTable == null) {
-                logger
-                        .warn(
-                                "server address {} is expired={} or can not get ob table. So that will sync refresh metadata",
-                                addr, addrExpired);
-                syncRefreshMetadata();
-                tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
+                if (obTable == null) {
+                        logger.warn("Cannot get ObTable by addr {}, refreshing metadata.", addr);
+                    syncRefreshMetadata();
+                }
+                if (addrExpired) {
+                    logger.info("Server addr {} is expired, refreshing tableEntry.", addr);
+                    tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, true);
+                }
                 if (ObGlobal.obVsnMajor() >= 4) {
                     long tabletId = getTabletIdByPartId(tableEntry, partId);
                     ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
