@@ -2305,7 +2305,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         // obTableParams -> List<Pair<logicId, obTableParams>>
         List<ObPair<Long, ObTableParam>> obTableParams = new ArrayList<ObPair<Long, ObTableParam>>();
         for (ObPair<Long, ReplicaLocation> partIdWithReplica : partIdWithReplicaList) {
-            long partId = partIdWithReplica.getLeft();
+            Long partId = partIdWithReplica.getLeft();
             ReplicaLocation replica = partIdWithReplica.getRight();
             ObServerAddr addr = replica.getAddr();
             ObTable obTable = tableRoster.get(addr);
@@ -2317,7 +2317,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                 addr, addrExpired);
                 syncRefreshMetadata();
                 tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
-                replica = getPartitionLocation(tableEntry, partId, route);
+                if (ObGlobal.obVsnMajor() >= 4) {
+                    long tabletId = getTabletIdByPartId(tableEntry, partId);
+                    ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
+                    replica = getPartitionLocation(locationInfo, route);
+                } else {
+                    replica = getPartitionLocation(tableEntry, partId, route);
+                }
                 addr = replica.getAddr();
                 obTable = tableRoster.get(addr);
             }
