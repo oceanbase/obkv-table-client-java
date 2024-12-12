@@ -2027,7 +2027,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
             if (addr.isExpired(serverAddressCachingTimeout)) {
                 logger.info("Server addr {} is expired, refreshing tableEntry.", addr);
-                tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, true);
+                if (ObGlobal.obVsnMajor() >= 4) {
+                    refreshTableLocationByTabletId(tableEntry, tableName, tabletId);
+                } else {
+                    tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
+                }
             }
             
             if (ObGlobal.obVsnMajor() >= 4) {
@@ -2306,6 +2310,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         List<ObPair<Long, ObTableParam>> obTableParams = new ArrayList<ObPair<Long, ObTableParam>>();
         for (ObPair<Long, ReplicaLocation> partIdWithReplica : partIdWithReplicaList) {
             Long partId = partIdWithReplica.getLeft();
+            long tabletId = getTabletIdByPartId(tableEntry, partId);
             ReplicaLocation replica = partIdWithReplica.getRight();
             ObServerAddr addr = replica.getAddr();
             ObTable obTable = tableRoster.get(addr);
@@ -2317,10 +2322,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 }
                 if (addrExpired) {
                     logger.info("Server addr {} is expired, refreshing tableEntry.", addr);
-                    tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, true);
+                    if (ObGlobal.obVsnMajor() >= 4) {
+                        refreshTableLocationByTabletId(tableEntry, tableName, tabletId);
+                    } else {
+                        tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
+                    }
                 }
                 if (ObGlobal.obVsnMajor() >= 4) {
-                    long tabletId = getTabletIdByPartId(tableEntry, partId);
                     ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
                     replica = getPartitionLocation(locationInfo, route);
                 } else {
