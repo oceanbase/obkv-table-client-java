@@ -20,9 +20,13 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.column;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObCollationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObColumn;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjType;
+import com.alipay.oceanbase.rpc.util.Serialization;
+import io.netty.buffer.ByteBuf;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 public class ObSimpleColumn extends ObColumn {
 

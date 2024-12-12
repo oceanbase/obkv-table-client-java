@@ -23,9 +23,10 @@ import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionInfo;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionLevel;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -46,6 +47,7 @@ public class TableEntry {
     private ObPartitionInfo                  partitionInfo         = null;
     private volatile long                    refreshTimeMills;
     private volatile long                    refreshAllTimeMills;
+    private volatile long                    odpRefreshTimeMills;
     private Map<String, Integer>             rowKeyElement         = null;
 
     // table location
@@ -53,7 +55,9 @@ public class TableEntry {
     // partition location
     private TableEntryKey                    tableEntryKey         = null;
     private volatile ObPartitionEntry        partitionEntry        = null;
-
+    
+    public ConcurrentHashMap<Long, Lock> refreshLockMap = new ConcurrentHashMap<>();
+    
     /*
      * Is valid.
      */
@@ -156,6 +160,10 @@ public class TableEntry {
         return refreshAllTimeMills;
     }
 
+    public long getOdpRefreshTimeMills() {
+        return odpRefreshTimeMills;
+    }
+
     /*
      * Set refresh time mills.
      */
@@ -168,6 +176,10 @@ public class TableEntry {
      */
     public void setRefreshAllTimeMills(long refreshAllTimeMills) {
         this.refreshAllTimeMills = refreshAllTimeMills;
+    }
+
+    public void setOdpRefreshTimeMills(long odpRefreshTimeMills) {
+        this.odpRefreshTimeMills = odpRefreshTimeMills;
     }
 
     public Map<String, Integer> getRowKeyElement() {
@@ -220,8 +232,6 @@ public class TableEntry {
             checkArgument(partitionInfo != null, "partition table partition info is not ready. key"
                                                  + tableEntryKey);
             partitionInfo.prepare();
-            checkArgument(partitionEntry != null,
-                "partition table partition entry is not ready. key" + tableEntryKey);
         }
     }
 

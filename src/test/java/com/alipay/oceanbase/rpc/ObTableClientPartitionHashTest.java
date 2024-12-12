@@ -65,6 +65,7 @@ public class ObTableClientPartitionHashTest {
         if (null != this.obTableClient) {
             ((ObTableClient) this.obTableClient).close();
         }
+        ObTableClientTestUtil.cleanTable("testHash");
     }
 
     @Test

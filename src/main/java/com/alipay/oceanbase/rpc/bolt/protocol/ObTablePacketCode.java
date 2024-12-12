@@ -23,6 +23,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.direct_load.ObTableDirectLoadResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableApiMove;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObFetchPartitionMetaResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableBatchOperationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableLSOpResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationResult;
@@ -106,6 +107,15 @@ public enum ObTablePacketCode implements CommandCode {
             return new ObTableLSOpResult();
         }
     }, //
+    OB_TABLE_API_PART_META_QUERY(Pcodes.OB_TABLE_API_PART_META_QUERY) {
+        /**
+         * New payload.
+         */
+        @Override
+        public ObPayload newPayload(ObRpcPacketHeader header) {
+            return new ObFetchPartitionMetaResult();
+        }
+    }, //
     OB_TABLE_API_MOVE(Pcodes.OB_TABLE_API_MOVE) {
         /**
          * New payload.
@@ -159,6 +169,8 @@ public enum ObTablePacketCode implements CommandCode {
                 return OB_TABLE_API_DIRECT_LOAD;
             case Pcodes.OB_TABLE_API_LS_EXECUTE:
                 return OB_TABLE_API_LS_EXECUTE;
+            case Pcodes.OB_TABLE_API_PART_META_QUERY:
+                return OB_TABLE_API_PART_META_QUERY;
             case Pcodes.OB_TABLE_API_MOVE:
                 return OB_TABLE_API_MOVE;
             case Pcodes.OB_ERROR_PACKET:

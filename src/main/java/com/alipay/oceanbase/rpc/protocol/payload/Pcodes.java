@@ -24,6 +24,7 @@ public interface Pcodes {
     int OB_TABLE_API_BATCH_EXECUTE      = 0x1103;
     int OB_TABLE_API_EXECUTE_QUERY      = 0x1104;
     int OB_TABLE_API_QUERY_AND_MUTATE   = 0x1105;
+    int OB_TABLE_API_PART_META_QUERY    = 0x1110;
 
     // INVALID REQUEST PCODE, no such rpc
     int OB_ERROR_PACKET                 = 0x010;

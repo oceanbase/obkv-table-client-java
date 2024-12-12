@@ -76,6 +76,9 @@ public enum Property {
 
     TABLE_ENTRY_REFRESH_LOCK_TIMEOUT("table.entry.refresh.lock.timeout", 4000L, "刷新TABLE地址的锁超时时间"),
 
+    ODP_TABLE_ENTRY_REFRESH_LOCK_TIMEOUT("odp.table.entry.refresh.lock.timeout", 5000L,
+                                         "刷新ODP TABLE地址的锁超时时间"),
+
     TABLE_ENTRY_REFRESH_TRY_TIMES("table.entry.refresh.try.times", 3, "刷新TABLE地址的尝试次数"),
 
     TABLE_ENTRY_REFRESH_CONTINUOUS_FAILURE_CEILING(
@@ -134,7 +137,7 @@ public enum Property {
     NETTY_BLOCKING_WAIT_INTERVAL("bolt.netty.blocking.wait.interval", 1, "netty写缓存满后等待时间"),
 
     // [ObTable][OTHERS]
-    SERVER_ENABLE_REROUTING("server.enable.rerouting", true, "开启server端的重定向回复功能"),
+    SERVER_ENABLE_REROUTING("server.enable.rerouting", false, "开启server端的重定向回复功能"),
 
     /*
      * other config
