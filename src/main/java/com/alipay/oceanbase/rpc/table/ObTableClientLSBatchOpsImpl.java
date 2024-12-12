@@ -315,18 +315,22 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
      */
     public List<Object> executeWithResult() throws Exception {
         List<Object> results = new ArrayList<Object>(batchOperation.size());
-        for (ObTableSingleOpResult result : executeInternal()) {
+        ObTableSingleOpResult[] singleResults = executeInternal();
+        for (int i = 0; i < singleResults.length; i++) {
+            ObTableSingleOpResult result = singleResults[i];
+            // Sometimes the server does not set the operation type，so we use request operation type
+            ObTableOperationType opType = batchOperation.get(i).getSingleOpType();
             int errCode = result.getHeader().getErrno();
             if (errCode == ResultCodes.OB_SUCCESS.errorCode) {
-                if (result.getOperationType() == ObTableOperationType.GET) {
+                if (opType == ObTableOperationType.GET) {
                     results.add(new GetResult(result));
                 } else {
                     results.add(new MutationResult(result));
                 }
             } else {
                 results.add(ExceptionUtil.convertToObTableException(result.getExecuteHost(),
-                    result.getExecutePort(), result.getSequence(), result.getUniqueId(), errCode,
-                    result.getHeader().getErrMsg()));
+                        result.getExecutePort(), result.getSequence(), result.getUniqueId(), errCode,
+                        result.getHeader().getErrMsg()));
             }
         }
         return results;

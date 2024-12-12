@@ -268,6 +268,9 @@ public class BatchOperation {
                     query.getSelectColumns().toArray((new String[0])));
             } else if (operation instanceof Get) {
                 Get get = (Get) operation;
+                if (get.getRowKey() == null) {
+                    throw new IllegalArgumentException("RowKey is null in Get operation");
+                }
                 batchOps.get(get.getRowKey().getValues(), get.getSelectColumns());
             } else {
                 throw new ObTableException("unknown operation " + operation);
@@ -314,6 +317,9 @@ public class BatchOperation {
                     }
                 } else if (operation instanceof Get) {
                     Get get = (Get) operation;
+                    if (get.getRowKey() == null) {
+                        throw new IllegalArgumentException("RowKey is null in Get operation");
+                    }
                     batchOps.addOperation(get);
                 } else if (operation instanceof TableQuery) {
                     TableQuery query = (TableQuery) operation;
