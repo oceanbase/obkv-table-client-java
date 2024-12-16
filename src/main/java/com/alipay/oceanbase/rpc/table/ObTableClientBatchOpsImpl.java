@@ -17,11 +17,9 @@
 
 package com.alipay.oceanbase.rpc.table;
 
-import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
-import com.alipay.oceanbase.rpc.location.model.TableEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.result.*;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
@@ -368,9 +366,9 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                             route.setBlackList(failedServerList);
                         }
                         ObTableParam newParam = obTableClient.getTableWithPartId(tableName,
-                                originPartId, needRefreshTableEntry,
-                                obTableClient.isTableEntryRefreshIntervalWait(), needFetchAllRouteInfo,
-                                route).getRight();
+                            originPartId, needRefreshTableEntry,
+                            obTableClient.isTableEntryRefreshIntervalWait(), needFetchAllRouteInfo,
+                            route).getRight();
 
                         subObTable = newParam.getObTable();
                         subRequest.setPartitionId(newParam.getPartitionId());

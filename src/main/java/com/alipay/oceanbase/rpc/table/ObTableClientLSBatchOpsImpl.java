@@ -17,14 +17,12 @@
 
 package com.alipay.oceanbase.rpc.table;
 
-import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.get.Get;
 import com.alipay.oceanbase.rpc.get.result.GetResult;
 import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
-import com.alipay.oceanbase.rpc.location.model.TableEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
@@ -299,7 +297,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         Object[] rowKeyValues = get.getRowKey().getValues();
         String[] propertiesNames = get.getSelectColumns();
         ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKeyValues,
-                propertiesNames, null);
+            propertiesNames, null);
         ObTableSingleOp singleOp = new ObTableSingleOp();
         singleOp.setSingleOpType(ObTableOperationType.GET);
         singleOp.addEntity(entity);
@@ -343,8 +341,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 }
             } else {
                 results.add(ExceptionUtil.convertToObTableException(result.getExecuteHost(),
-                        result.getExecutePort(), result.getSequence(), result.getUniqueId(), errCode,
-                        result.getHeader().getErrMsg()));
+                    result.getExecutePort(), result.getSequence(), result.getUniqueId(), errCode,
+                    result.getHeader().getErrMsg()));
             }
         }
         return results;

@@ -17,13 +17,11 @@
 
 package com.alipay.oceanbase.rpc.stream;
 
-import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.exception.ObTableNeedFetchAllException;
 import com.alipay.oceanbase.rpc.exception.ObTableRetryExhaustedException;
-import com.alipay.oceanbase.rpc.location.model.TableEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
@@ -81,7 +79,8 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchAllException) {
                         setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
-                            .getTableQuery(), client.getPhyTableNameFromTableGroup(entityType, tableName)));
+                            .getTableQuery(), client.getPhyTableNameFromTableGroup(entityType,
+                            tableName)));
                         it = expectant.entrySet().iterator();
                         retryTimes++;
                         if (retryTimes > maxRetries) {
@@ -89,7 +88,8 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                                 retryTimes);
                             throw new ObTableRetryExhaustedException(
                                 "Fail to get refresh table entry response after " + retryTimes
-                                + "errorCode:" + ((ObTableNeedFetchAllException) e).getErrorCode());
+                                        + "errorCode:"
+                                        + ((ObTableNeedFetchAllException) e).getErrorCode());
 
                         }
                     } else {
@@ -187,7 +187,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
     public void renewLease() throws Exception {
         if (!isEnd() && !expectant.isEmpty()) {
             Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
-                    .iterator();
+                .iterator();
             Map.Entry<Long, ObPair<Long, ObTableParam>> lastEntry = it.next();
             ObPair<Long, ObTableParam> partIdWithObTable = lastEntry.getValue();
             // try access new partition, async will not remove useless expectant
@@ -229,7 +229,8 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                     referToLastStreamResult(lastEntry.getValue());
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchAllException) {
-                        String realTableName = client.getPhyTableNameFromTableGroup(entityType, tableName);
+                        String realTableName = client.getPhyTableNameFromTableGroup(entityType,
+                            tableName);
                         this.asyncRequest.getObTableQueryRequest().getTableQuery()
                             .adjustStartKey(currentStartKey);
                         setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
@@ -261,7 +262,8 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                     referToNewPartition(entry.getValue());
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchAllException) {
-                        String realTableName = client.getPhyTableNameFromTableGroup(entityType, tableName);
+                        String realTableName = client.getPhyTableNameFromTableGroup(entityType,
+                            tableName);
                         this.asyncRequest.getObTableQueryRequest().getTableQuery()
                             .adjustStartKey(currentStartKey);
                         setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
