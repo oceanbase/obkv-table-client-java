@@ -739,7 +739,7 @@ public enum ResultCodes {
     OB_KV_FILTER_PARSE_ERROR(-10514), //
     OB_KV_REDIS_PARSE_ERROR(-10515), //
     OB_KV_HBASE_INCR_FIELD_IS_NOT_LONG(-10516), //
-    OB_KV_ODP_TIMEOUT(-10650);
+    OB_KV_ODP_TIMEOUT(-10650), OB_ERR_KV_ROUTE_ENTRY_EXPIRE(-10653);
 
     public final int errorCode;
 

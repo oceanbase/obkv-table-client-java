@@ -23,11 +23,11 @@ import io.netty.buffer.ByteBuf;
 import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
 
 public class ObHBaseParams extends ObKVParamsBase {
-    int                      caching                    = -1;     // limit the number of for each rpc call
-    int                      callTimeout                = -1;     // scannerLeasePeriodTimeout in hbase, client rpc timeout
-    boolean                  allowPartialResults        = true;   // whether allow partial row return or not
-    boolean                  isCacheBlock               = false;  // whether enable server block cache and row cache or not
-    boolean                  checkExistenceOnly         = false;  // check the existence only
+    int                      caching                    = -1;    // limit the number of for each rpc call
+    int                      callTimeout                = -1;    // scannerLeasePeriodTimeout in hbase, client rpc timeout
+    boolean                  allowPartialResults        = true;  // whether allow partial row return or not
+    boolean                  isCacheBlock               = false; // whether enable server block cache and row cache or not
+    boolean                  checkExistenceOnly         = false; // check the existence only
     String                   hbaseVersion               = "1.3.6";
 
     private static final int FLAG_ALLOW_PARTIAL_RESULTS = 1 << 0;
@@ -120,7 +120,7 @@ public class ObHBaseParams extends ObKVParamsBase {
         System.arraycopy(booleansToByteArray(), 0, bytes, idx, 1);
         idx += 1;
         System.arraycopy(Serialization.encodeVString(hbaseVersion), 0, bytes, idx,
-            Serialization.getNeedBytes(hbaseVersion));
+                Serialization.getNeedBytes(hbaseVersion));
         idx += Serialization.getNeedBytes(hbaseVersion);
 
         return bytes;
@@ -150,8 +150,8 @@ public class ObHBaseParams extends ObKVParamsBase {
         return "ObParams: {\n pType = " + pType + ", \n caching = " + caching
                + ", \n callTimeout = " + callTimeout + ", \n allowPartialResult = "
                + allowPartialResults + ", \n isCacheBlock = " + isCacheBlock
-               + ", \n checkExistenceOnly = " + checkExistenceOnly + ", \n hbaseVersion = "
-               + hbaseVersion + "\n}\n";
+               + ", \n checkExistenceOnly = " + checkExistenceOnly
+               + ", \n hbaseVersion = " + hbaseVersion  + "\n}\n";
     }
 
 }

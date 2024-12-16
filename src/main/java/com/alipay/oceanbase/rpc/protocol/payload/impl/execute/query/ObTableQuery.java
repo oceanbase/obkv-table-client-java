@@ -23,6 +23,7 @@ import com.alipay.oceanbase.rpc.table.ObKVParams;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
+import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationSingle;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
 import com.alipay.oceanbase.rpc.util.Serialization;
@@ -54,25 +55,27 @@ OB_UNIS_DEF_SERIALIZE(ObTableQuery,
  */
 public class ObTableQuery extends AbstractPayload {
 
-    protected List<ObNewRange>    keyRanges                 = new LinkedList<ObNewRange>();
-    protected List<String>        selectColumns             = new LinkedList<String>();
-    protected String              filterString;
-    protected int                 limit                     = -1;
-    protected int                 offset                    = 0;
-    protected ObScanOrder         scanOrder                 = ObScanOrder.Forward;
-    protected String              indexName;
-    protected int                 batchSize                 = -1;
-    protected long                maxResultSize             = -1;
-    protected ObHTableFilter      hTableFilter;
+    private List<ObNewRange>    keyRanges                 = new LinkedList<ObNewRange>();
+    private List<String>        selectColumns             = new LinkedList<String>();
+    private String              filterString;
+    private int                 limit                     = -1;
+    private int                 offset                    = 0;
+    private ObScanOrder         scanOrder                 = ObScanOrder.Forward;
+    private String              indexName;
+    private int                 batchSize                 = -1;
+    private long                maxResultSize             = -1;
+    private ObHTableFilter      hTableFilter;
 
-    protected static final byte[] HTABLE_DUMMY_BYTES = new byte[] { 0x01, 0x00 };
-    protected boolean             isHbaseQuery              = false;
-    protected List<String>        scanRangeColumns          = new LinkedList<String>();
+    private static final byte[] HTABLE_DUMMY_BYTES = new byte[] { 0x01, 0x00 };
+    private boolean             isHbaseQuery              = false;
+    private List<String>        scanRangeColumns          = new LinkedList<String>();
 
-    protected List<ObTableAggregationSingle>    aggregations       = new LinkedList<>();
+    private List<ObTableAggregationSingle>    aggregations       = new LinkedList<>();
 
-    protected ObKVParams obKVParams;
-    
+    private Long partId = null;
+
+    private ObKVParams obKVParams;
+
     public void adjustStartKey(List<ObObj> key) throws IllegalArgumentException {
         List<ObNewRange> keyRanges = getKeyRanges();
         for (ObNewRange range : keyRanges) {
@@ -106,7 +109,7 @@ public class ObTableQuery extends AbstractPayload {
 
         int startComparison = compareByteArrays(startKeyBytes, keyBytes);
         int endComparison = compareByteArrays(endKeyBytes, keyBytes);
-        
+
         boolean withinStart = startComparison <= 0;
         boolean withinEnd = endComparison > 0;
 
@@ -535,6 +538,12 @@ public class ObTableQuery extends AbstractPayload {
     public void setScanRangeColumns(List<String> scanRangeColumns) {
         this.scanRangeColumns = scanRangeColumns;
     }
+
+    public void setPartId(Long partId) {
+        this.partId = partId;
+    }
+
+    public Long getPartId() { return this.partId; }
 
     // This interface is just for OBKV-Hbase
     public void setObKVParams(ObKVParams obKVParams) {

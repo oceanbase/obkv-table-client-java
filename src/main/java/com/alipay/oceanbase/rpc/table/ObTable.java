@@ -30,6 +30,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
+import com.alipay.oceanbase.rpc.util.TraceUtil;
 import com.alipay.remoting.ConnectionEventHandler;
 import com.alipay.remoting.config.switches.GlobalSwitch;
 import com.alipay.remoting.connection.ConnectionFactory;
@@ -417,6 +418,10 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             } catch (ObTableException ex) {
                 if (ex instanceof ObTableTenantNotInServerException && retryTimes < 2) {
                     needReconnect = true;
+                } else if (ex instanceof ObTableTenantNotInServerException) {
+                    String errMessage = TraceUtil.formatTraceMessage(connection, request,
+                            "meet ObTableTenantNotInServerException and has relogined, need to refresh route");
+                    throw new ObTableNeedFetchAllException(errMessage, ex.getErrorCode());
                 } else {
                     throw ex;
                 }

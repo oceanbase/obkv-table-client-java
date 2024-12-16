@@ -277,7 +277,7 @@ CREATE TABLE test_aggregation (
     `c7` datetime,
     PRIMARY KEY(`c1`)
 );
-        
+
 CREATE TABLE `test_partition_aggregation` (
     `c1` bigint NOT NULL,
     `c2` bigint DEFAULT NULL,
@@ -626,4 +626,12 @@ CREATE TABLE IF NOT EXISTS  `audit_test` (
      `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
      PRIMARY KEY (`c1`)
      ) TTL(update_time + INTERVAL 300 SECOND);
+
+CREATE TABLE IF NOT EXISTS `test_get` (
+    `c1` varchar(20) NOT NULL,
+    `c2` varchar(20) NOT NULL,
+    `c3` varchar(20) DEFAULT NULL,
+    PRIMARY KEY (`c1`, `c2`)
+    ) PARTITION BY KEY(`c1`) PARTITIONS 3;
+
 alter system set kv_hotkey_throttle_threshold = 50;

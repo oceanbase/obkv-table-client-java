@@ -283,6 +283,25 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         this.rowKeyBitMap = byteArray;
     }
 
+    // Support class, which is used for column name sorted
+    private static class ColumnNameValuePair implements Comparable<ColumnNameValuePair> {
+        long number;
+        // we could use idx here, and adjust obj after compare
+        String name;
+        ObObj obj;
+
+        ColumnNameValuePair(long number, String name, ObObj obj) {
+            this.number = number;
+            this.name = name;
+            this.obj = obj;
+        }
+
+        @Override
+        public int compareTo(ColumnNameValuePair other) {
+            return Long.compare(this.number, other.number);
+        }
+    }
+
     public void adjustPropertiesColumnName(Map<String, Long> columnNameIdxMap) {
         if (!ignoreEncodePropertiesColumnNames) {
             this.propertiesBitLen = columnNameIdxMap.size();
@@ -301,15 +320,17 @@ public class ObTableSingleOpEntity extends AbstractPayload {
             }
         }
 
-        List<ColumnNamePair> pairs = new ArrayList<>();
+        List<ColumnNameValuePair> pairs = new ArrayList<>();
         for (int i = 0; i < columnNameIdx.size(); i++) {
-            pairs.add(new ColumnNamePair(columnNameIdx.get(i), propertiesValues.get(i)));
+            pairs.add(new ColumnNameValuePair(columnNameIdx.get(i), propertiesNames.get(i), propertiesValues.get(i)));
         }
 
         Collections.sort(pairs);
 
+        propertiesNames = new ArrayList<>(pairs.size());
         propertiesValues = new ArrayList<>(pairs.size());
-        for (ColumnNamePair pair : pairs) {
+        for (ColumnNameValuePair pair : pairs) {
+            propertiesNames.add(pair.name);
             propertiesValues.add(pair.obj);
         }
 
