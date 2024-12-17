@@ -187,7 +187,7 @@ public class MonitorUtil {
     // for each sub batch opreation
     private static void logMessage0(final ObPayload payload, String database, String tableName, String methodName, String endpoint, ObTableBatchOperation subOperations,
                              long partId, int resultSize, long executeTime, long slowQueryMonitorThreshold) {
-        if (slowQueryMonitorThreshold >= 0 && executeTime < slowQueryMonitorThreshold) {
+        if (slowQueryMonitorThreshold < 0 || executeTime < slowQueryMonitorThreshold) {
             return;
         }
         String traceId = formatTraceMessage(payload);
