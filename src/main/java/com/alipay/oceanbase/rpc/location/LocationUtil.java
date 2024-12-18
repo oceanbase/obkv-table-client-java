@@ -746,10 +746,10 @@ public class LocationUtil {
                 }
 
                 if (ObGlobal.obVsnMajor() >= 4) {
-                    // only set empty partitionEntry 
                     if (tableEntry.getPartitionNum() <= TABLE_ENTRY_LOCATION_REFRESH_THRESHOLD) {
                         getTableEntryLocationFromRemote(connection, key, tableEntry);
                     } else {
+                        // only set empty partitionEntry 
                         ObPartitionEntry partitionEntry = new ObPartitionEntry();
                         tableEntry.setPartitionEntry(partitionEntry);
                         tableEntry.setRefreshTimeMills(System.currentTimeMillis());

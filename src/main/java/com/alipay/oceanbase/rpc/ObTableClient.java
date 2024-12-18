@@ -646,7 +646,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 resetExecuteContinuousFailureCount(tableName);
                 return t;
             } catch (Exception ex) {
-                RUNTIME.error("execute while meet exception", ex);
                 if (odpMode) {
                     if ((tryTimes - 1) < runtimeRetryTimes) {
                         if (ex instanceof ObTableException) {
@@ -837,22 +836,23 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 if (odpMode) {
                     if ((tryTimes - 1) < runtimeRetryTimes) {
                         if (ex instanceof ObTableException) {
-                            logger
-                                .warn(
+                            logger.warn(
                                     "execute while meet Exception, errorCode: {} , errorMsg: {}, try times {}",
                                     ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                     tryTimes);
-                            // if the cause is that ODP partition meta have expired, try to fetch new one
+                            // if the cause is that ODP partition meta have expired, try to fetch new one  
                             if (ex instanceof ObTablePartitionChangeException
-                                && ((ObTablePartitionChangeException) ex).getErrorCode() == OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
+                                    && ((ObTablePartitionChangeException) ex).getErrorCode() == OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
                                 needRenew = true;
                             } else {
+                                RUNTIME.error("execute while meet exception", ex);
                                 throw ex;
                             }
                         } else {
                             logger.warn(
-                                "execute while meet Exception, exception: {}, try times {}", ex,
-                                tryTimes);
+                                    "execute while meet Exception, exception: {}, try times {}", ex,
+                                    tryTimes);
+                            RUNTIME.error("execute while meet exception", ex);
                             throw ex;
                         }
                     } else {
@@ -867,40 +867,41 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                 route.addToBlackList(obPair.getRight().getObTable().getIp());
                             }
                         } else {
-                            logger.warn("exhaust retry when replica not readable: {}",
-                                ex.getMessage());
+                            logger.warn("exhaust retry when replica not readable: {}", ex.getMessage());
                             RUNTIME.error("replica not readable", ex);
                             throw ex;
                         }
                     } else if (ex instanceof ObTableException
-                               && ((ObTableException) ex).isNeedRefreshTableEntry()) {
-                        // if the problem is the lack of row key name, throw directly
+                            && ((ObTableException) ex).isNeedRefreshTableEntry()) {
+                        // if the problem is the lack of row key name, throw directly  
                         if (tableRowKeyElement.get(tableName) == null) {
+                            logger.warn("tableRowKeyElement not found table name: {}", ex.getMessage());
+                            RUNTIME.error("tableRowKeyElement not found table name", ex);
                             throw ex;
                         }
                         needRefreshTableEntry = true;
 
-                        logger
-                            .warn(
+                        logger.warn(
                                 "refresh table while meet Exception needing refresh, errorCode: {}, errorMsg: {}",
                                 ((ObTableException) ex).getErrorCode(), ex.getMessage());
                         if (retryOnChangeMasterTimes && (tryTimes - 1) < runtimeRetryTimes) {
-                            logger
-                                .warn(
-                                    "retry while meet Exception needing refresh, errorCode: {} , errorMsg: {},retry times {}",
+                            logger.warn(
+                                    "retry while meet Exception needing refresh, errorCode: {} , errorMsg: {}, retry times {}",
                                     ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                     tryTimes);
                             if (ex instanceof ObTableNeedFetchAllException) {
-                                getOrRefreshTableEntry(tableName, needRefreshTableEntry, isTableEntryRefreshIntervalWait(), true);
-                                // reset failure count while fetch all route info
+                                getOrRefreshTableEntry(tableName, true, true, true);
+                                // reset failure count while fetch all route info  
                                 this.resetExecuteContinuousFailureCount(tableName);
                             }
                         } else {
                             calculateContinuousFailure(tableName, ex.getMessage());
+                            RUNTIME.error("execute while meet exception", ex);
                             throw ex;
                         }
                     } else {
                         calculateContinuousFailure(tableName, ex.getMessage());
+                        RUNTIME.error("execute while meet exception", ex);
                         throw ex;
                     }
                 }
