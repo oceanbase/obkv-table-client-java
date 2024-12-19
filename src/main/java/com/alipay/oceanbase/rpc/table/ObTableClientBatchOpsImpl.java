@@ -401,14 +401,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         assert ex instanceof ObTableException;
                         logger
                             .warn(
-                                "batch ops execute while meet Exception, tablename:{}, errorCode: {} , errorMsg: {}, try times {}",
-                                tableName, ((ObTableException) ex).getErrorCode(), ex.getMessage(),
+                                "batch ops execute while meet Exception, tablename:{}, errorMsg: {}, try times {}",
+                                tableName, ex.getMessage(),
                                 tryTimes);
                         if (ex instanceof ObTablePartitionChangeException
                             && ((ObTablePartitionChangeException) ex).getErrorCode() == ResultCodes.OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
                             odpNeedRenew = true;
-                        } else {
-                            throw ex;
                         }
                     } else {
                         RUNTIME.error("retry fail when normal batch executing", ex);
