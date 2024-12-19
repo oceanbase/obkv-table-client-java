@@ -1240,7 +1240,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     long toHoldTime = punishInterval - interval;
                     logger
                         .info(
-                            "punish table entry {} : table entry refresh time {} punish interval {} current time {}. wait for refresh times {}",
+                            "punish table entry {} : table entry refresh time {} punish interval {} current time {}. wait for refresh times {}ms",
                             tableName, tableEntry.getRefreshTimeMills(), punishInterval, current,
                             toHoldTime);
                     try {
@@ -1438,12 +1438,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         
         tableLocations.put(tableName, tableEntry);
         tableEntryRefreshContinuousFailureCount.set(0);
-
-        if (logger.isInfoEnabled()) {
-            logger.info("Refreshed table entry. DataSource: {}, TableName: {}, Key: {}, Entry: {}",
-                    dataSourceName, tableName, tableEntryKey, JSON.toJSON(tableEntry));
-        }
-
         return tableEntry;
     }
 
