@@ -1257,8 +1257,15 @@ public class LocationUtil {
                     location = partitionLocationInfo.getPartitionLocation();
                     if (location == null) {
                         location = new ObPartitionLocation();
-                        partitionLocationInfo.updateLocation(location, lsId);
                     }
+                    partitionLocationInfo.updateLocation(location, lsId);
+                } finally {
+                    partitionLocationInfo.rwLock.writeLock().unlock();
+                }
+            } else {
+                partitionLocationInfo.rwLock.writeLock().lock();
+                try {
+                    partitionLocationInfo.updateLocation(location, lsId);
                 } finally {
                     partitionLocationInfo.rwLock.writeLock().unlock();
                 }
