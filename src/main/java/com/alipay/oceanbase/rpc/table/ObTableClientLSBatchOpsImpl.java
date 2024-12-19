@@ -53,7 +53,7 @@ import static com.alipay.oceanbase.rpc.protocol.payload.Constants.*;
 public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
     private static final Logger   logger                  = TableClientLoggerFactory
-                                                              .getLogger(ObTableClientBatchOpsImpl.class);
+                                                              .getLogger(ObTableClientLSBatchOpsImpl.class);
     private final ObTableClient   obTableClient;
     private ExecutorService       executorService;
     private boolean               returningAffectedEntity = false;
@@ -562,21 +562,23 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 } else if (ex instanceof ObTableException
                         && ((ObTableException) ex).isNeedRefreshTableEntry()) {
                     needRefreshTableEntry = true;
-                    logger.warn("tablename:{} ls id:{} batch ops refresh table while meet ObTableMasterChangeException, errorCode: {}",
-                            realTableName, lsId, ((ObTableException) ex).getErrorCode(), ex);
                     if (obTableClient.isRetryOnChangeMasterTimes()
                             && (tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
                         if (ex instanceof ObTableNeedFetchAllException) {
-                            logger.warn("tablename:{} ls id:{} batch ops retry while meet ObTableNeedFetchAllException, errorCode: {} , retry times {}",
-                                    realTableName, lsId, ((ObTableException) ex).getErrorCode(),
-                                    tryTimes, ex);
                             obTableClient.getOrRefreshTableEntry(realTableName, needRefreshTableEntry,
                                     obTableClient.isTableEntryRefreshIntervalWait(), true);
                             throw ex;
                         }
                     } else {
+                        String logMessage = String.format(
+                                "exhaust retry while meet NeedRefresh Exception, table name: %s, ls id: %d, batch ops refresh table, errorCode: %d",
+                                realTableName,
+                                lsId,
+                                ((ObTableException) ex).getErrorCode()
+                        );
+                        logger.warn(logMessage, ex);
                         obTableClient.calculateContinuousFailure(realTableName, ex.getMessage());
-                        throw ex;
+                        throw new ObTableRetryExhaustedException(logMessage, ex);
                     }
                 } else {
                     obTableClient.calculateContinuousFailure(realTableName, ex.getMessage());
@@ -589,9 +591,11 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         long endExecute = System.currentTimeMillis();
 
         if (subLSOpResult == null) {
-            RUNTIME.error("table name:{} ls id:{} check batch operation result error: client get unexpected NULL result",
+            String logMessage = String.format(
+                    "table name: %s ls id: %d check batch operation result error: client get unexpected NULL result",
                     realTableName, lsId);
-            throw new ObTableUnexpectedException("check batch operation result error: client get unexpected NULL result");
+            RUNTIME.error(logMessage);
+            throw new ObTableUnexpectedException(logMessage);
         }
 
         List<ObTableTabletOpResult> tabletOpResults = subLSOpResult.getResults();
