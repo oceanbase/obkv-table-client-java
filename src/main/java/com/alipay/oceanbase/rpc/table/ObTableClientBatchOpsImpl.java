@@ -398,7 +398,6 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             } catch (Exception ex) {
                 if (obTableClient.isOdpMode()) {
                     if ((tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
-                        assert ex instanceof ObTableException;
                         logger
                             .warn(
                                 "batch ops execute while meet Exception, tablename:{}, errorMsg: {}, try times {}",
