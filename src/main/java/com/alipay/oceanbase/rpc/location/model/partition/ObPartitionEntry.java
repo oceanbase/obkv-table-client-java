@@ -67,18 +67,18 @@ public class ObPartitionEntry {
     }
 
     /*
+     * Get partition location with tablet id.
+     */
+    public ObPartitionLocation getPartitionLocationWithTabletId(long tabletId) {
+        return partitionLocation.get(tabletId);
+    }
+
+    /*
      * Put partition location with part id.
      */
     public ObPartitionLocation putPartitionLocationWithPartId(long partId,
                                                               ObPartitionLocation ObpartitionLocation) {
         return partitionLocation.put(partId, ObpartitionLocation);
-    }
-
-    /*
-     * Get partition location with tablet id.
-     */
-    public ObPartitionLocation getPartitionLocationWithTabletId(long tabletId) {
-        return partitionLocation.get(tabletId);
     }
 
     /*
