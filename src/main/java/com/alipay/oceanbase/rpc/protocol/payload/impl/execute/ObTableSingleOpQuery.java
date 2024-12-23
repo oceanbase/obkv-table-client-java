@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObTableSerialUtil;
@@ -76,39 +77,34 @@ public class ObTableSingleOpQuery extends ObTableQuery {
         System.arraycopy(Serialization.encodeVString(filterString), 0, bytes, idx, len);
         idx += len;
 
-        // selectColumns + scanOrder + hTableFilter + obKVParams
-
-        len = Serialization.getNeedBytes(selectColumns.size());
-        System.arraycopy(Serialization.encodeVi64(selectColumns.size()), 0, bytes, idx, len);
-        idx += len;
-        for (String selectColumn : selectColumns) {
-            len = Serialization.getNeedBytes(selectColumn);
-            System.arraycopy(Serialization.encodeVString(selectColumn), 0, bytes, idx, len);
+        // encode HBase Batch Get required
+        if (isHbaseQuery && ObGlobal.isHBaseBatchGetSupport()) {
+            len = Serialization.getNeedBytes(selectColumns.size());
+            System.arraycopy(Serialization.encodeVi64(selectColumns.size()), 0, bytes, idx, len);
             idx += len;
-        }
+            for (String selectColumn : selectColumns) {
+                len = Serialization.getNeedBytes(selectColumn);
+                System.arraycopy(Serialization.encodeVString(selectColumn), 0, bytes, idx, len);
+                idx += len;
+            }
 
-        System.arraycopy(Serialization.encodeI8(scanOrder.getByteValue()), 0, bytes, idx, 1);
-        idx += 1;
+            System.arraycopy(Serialization.encodeI8(scanOrder.getByteValue()), 0, bytes, idx, 1);
+            idx += 1;
 
-        if (isHbaseQuery) {
             len = (int) hTableFilter.getPayloadSize();
             System.arraycopy(hTableFilter.encode(), 0, bytes, idx, len);
-        } else {
-            len = HTABLE_DUMMY_BYTES.length;
-            System.arraycopy(HTABLE_DUMMY_BYTES, 0, bytes, idx, len);
-        }
-        idx += len;
-
-        if (isHbaseQuery && obKVParams != null) {
-            len = (int) obKVParams.getPayloadSize();
-            System.arraycopy(obKVParams.encode(), 0, bytes, idx, len);
             idx += len;
-        } else {
-            len = HTABLE_DUMMY_BYTES.length;
-            System.arraycopy(HTABLE_DUMMY_BYTES, 0, bytes, idx, len);
-            idx += len;
-        }
 
+            if (obKVParams != null) {
+                len = (int) obKVParams.getPayloadSize();
+                System.arraycopy(obKVParams.encode(), 0, bytes, idx, len);
+                idx += len;
+            } else {
+                len = HTABLE_DUMMY_BYTES.length;
+                System.arraycopy(HTABLE_DUMMY_BYTES, 0, bytes, idx, len);
+                idx += len;
+            }
+        }
         return bytes;
     }
 
@@ -169,21 +165,24 @@ public class ObTableSingleOpQuery extends ObTableQuery {
         payloadContentSize += Serialization.getNeedBytes(indexName);
         payloadContentSize += Serialization.getNeedBytes(filterString);
 
-        payloadContentSize += Serialization.getNeedBytes(selectColumns.size());
-        for (String selectColumn : selectColumns) {
-            payloadContentSize += Serialization.getNeedBytes(selectColumn);
-        }
-        payloadContentSize += 1; // scanOrder
+        // calculate part required by HBase Batch Get
+        if (isHbaseQuery && ObGlobal.isHBaseBatchGetSupport()) {
+            payloadContentSize += Serialization.getNeedBytes(selectColumns.size());
+            for (String selectColumn : selectColumns) {
+                payloadContentSize += Serialization.getNeedBytes(selectColumn);
+            }
+            payloadContentSize += 1; // scanOrder
 
-        if (isHbaseQuery) {
-            payloadContentSize += hTableFilter.getPayloadSize();
-        } else {
-            payloadContentSize += HTABLE_DUMMY_BYTES.length;
-        }
-        if (isHbaseQuery && obKVParams != null) {
-            payloadContentSize += obKVParams.getPayloadSize();
-        } else {
-            payloadContentSize += HTABLE_DUMMY_BYTES.length;
+            if (isHbaseQuery) {
+                payloadContentSize += hTableFilter.getPayloadSize();
+            } else {
+                payloadContentSize += HTABLE_DUMMY_BYTES.length;
+            }
+            if (isHbaseQuery && obKVParams != null) {
+                payloadContentSize += obKVParams.getPayloadSize();
+            } else {
+                payloadContentSize += HTABLE_DUMMY_BYTES.length;
+            }
         }
 
         return payloadContentSize;

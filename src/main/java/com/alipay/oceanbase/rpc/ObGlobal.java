@@ -91,6 +91,11 @@ public class ObGlobal {
                || OB_VERSION >= OB_VERSION_4_3_4_0;
     }
 
+    public static boolean isHBaseBatchGetSupport() {
+        return (OB_VERSION >= OB_VERSION_4_2_5_2 && OB_VERSION < OB_VERSION_4_3_0_0) ||
+                OB_VERSION >= OB_VERSION_4_3_5_0;
+    }
+
     public static final long OB_VERSION_4_2_3_0 = calcVersion(4, (short) 2, (byte) 3, (byte) 0);
 
     public static final long OB_VERSION_4_2_5_2 = calcVersion(4, (short) 2, (byte) 5, (byte) 2);
