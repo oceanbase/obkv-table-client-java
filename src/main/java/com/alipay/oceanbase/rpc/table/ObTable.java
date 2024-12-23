@@ -347,11 +347,19 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     }
 
     /**
-     * Insert.
+     * checkAndInsUp.
      */
     public CheckAndInsUp checkAndInsUp(String tableName, ObTableFilter filter,
                                        InsertOrUpdate insUp, boolean checkExists) {
         return new CheckAndInsUp(this, tableName, filter, insUp, checkExists);
+    }
+
+    /**
+     * checkAndInsUp.
+     */
+    public CheckAndInsUp checkAndInsUp(String tableName, ObTableFilter filter, InsertOrUpdate insUp,
+                                       boolean checkExists, boolean rollbackWhenCheckFailed) {
+        return new CheckAndInsUp(this, tableName, filter, insUp, checkExists, rollbackWhenCheckFailed);
     }
 
     /*

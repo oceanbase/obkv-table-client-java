@@ -164,4 +164,8 @@ public class ObTableQueryAndMutate extends AbstractPayload {
     public void setIsCheckNoExists(boolean isCheckNoExists) {
         queryAndMutateFlag.setIsCheckNotExists(isCheckNoExists);
     }
+
+    public void setIsRollbackWhenCheckFailed(boolean isRollbackWhenCheckFailed) {
+        queryAndMutateFlag.setIsRollbackWhenCheckFailed(isRollbackWhenCheckFailed);
+    }
 }

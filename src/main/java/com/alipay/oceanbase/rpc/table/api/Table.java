@@ -97,4 +97,6 @@ public interface Table {
 
     CheckAndInsUp checkAndInsUp(String tableName, ObTableFilter filter, InsertOrUpdate insUp,
                                 boolean checkExists);
+    CheckAndInsUp checkAndInsUp(String tableName, ObTableFilter filter, InsertOrUpdate insUp,
+                                boolean checkExists, boolean rollbackWhenCheckFailed);
 }

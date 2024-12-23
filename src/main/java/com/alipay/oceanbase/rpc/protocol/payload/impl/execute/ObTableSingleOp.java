@@ -128,6 +128,10 @@ public class ObTableSingleOp extends AbstractPayload {
         singleOpFlag.setIsCheckNotExists(isCheckNoExists);
     }
 
+    public void setIsRollbackWhenCheckFailed(boolean isRollbackWhenCheckFailed) {
+        singleOpFlag.setIsRollbackWhenCheckFailed(isRollbackWhenCheckFailed);
+    }
+
     public ObTableOperationType getSingleOpType() {
         return singleOpType;
     }

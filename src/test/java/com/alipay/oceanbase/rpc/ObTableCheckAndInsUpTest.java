@@ -41,6 +41,8 @@ import java.util.Map;
 import static com.alipay.oceanbase.rpc.filter.ObTableFilterFactory.compareVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 public class ObTableCheckAndInsUpTest {
     public ObTableClient        client;
@@ -532,6 +534,107 @@ public class ObTableCheckAndInsUpTest {
             e.printStackTrace();
             Assert
                 .assertEquals(ResultCodes.OB_KV_COLUMN_TYPE_NOT_MATCH.errorCode, e.getErrorCode());
+        }
+    }
+
+    @Test
+    public void testSingleCheckInsUpWithRollback() throws Exception {
+        if (!isVersionSupported()) {
+            System.out.println("current version is not supported, current version: "
+                    + ObGlobal.OB_VERSION);
+            return;
+        }
+
+        try {
+            // 0. prepare data, insert(1, 'c2_v0', 'c3_v0', 100),(2, 'c2_v0', 'c3_v0', 100),(3, 'c2_v0', 'c3_v0', 100),(4, 'c2_v0', 'c3_v0', 100)
+            for (long i = 1L; i <= 4L; i++) {
+                InsertOrUpdate insertOrUpdate = client.insertOrUpdate(TABLE_NAME);
+                insertOrUpdate.setRowKey(row(colVal("c1", i), colVal("c2", "c2_v0")));
+                insertOrUpdate.addMutateRow(row(colVal("c3", "c3_v0"), colVal("c4", 100L)));
+                MutationResult res = insertOrUpdate.execute();
+                Assert.assertEquals(1, res.getAffectedRows());
+            }
+
+            // 1. check failed: insup(1, 'c2_v0', 'c3_v0', 200) if exists c3 <= 'c3_v0';
+            InsertOrUpdate insertOrUpdate1 = new InsertOrUpdate();
+            insertOrUpdate1.setRowKey(row(colVal("c1", 1L), colVal("c2", "c2_v0")));
+            insertOrUpdate1.addMutateRow(row(colVal("c3", "c3_v0"), colVal("c4", 200L)));
+            ObTableFilter filter = compareVal(ObCompareOp.LT, "c3", "c3_v0");
+            CheckAndInsUp checkAndInsUp1 = client.checkAndInsUp(TABLE_NAME, filter,insertOrUpdate1, true, true);
+            ObTableException thrown = assertThrows(
+                    ObTableException.class,
+                    () -> {
+                        checkAndInsUp1.execute();
+                    }
+            );
+
+            System.out.println(thrown.getMessage());
+            assertTrue(thrown.getMessage().contains("[-10518][OB_KV_CHECK_FAILED][Check failed in CheckAndInsUp]"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        } finally {
+            for (long i = 1L; i <= 4L; i++) {
+                Delete delete = client.delete(TABLE_NAME);
+                delete.setRowKey(row(colVal("c1", i), colVal("c2", "c2_v0")));
+                MutationResult res = delete.execute();
+                Assert.assertEquals(1, res.getAffectedRows());
+            }
+        }
+    }
+
+    @Test
+    public void testBatchCheckInsUpWithRollback() throws Exception {
+        if (!isVersionSupported()) {
+            System.out.println("current version is not supported, current version: "
+                    + ObGlobal.OB_VERSION);
+            return;
+        }
+
+        try {
+            // 0. prepare data, insert(1, 'c2_v0', 'c3_v0', 100),(2, 'c2_v0', 'c3_v0', 100),(3, 'c2_v0', 'c3_v0', 100),(4, 'c2_v0', 'c3_v0', 100)
+            for (long i = 1L; i <= 4L; i++) {
+                InsertOrUpdate insertOrUpdate = client.insertOrUpdate(TABLE_NAME);
+                insertOrUpdate.setRowKey(row(colVal("c1", i), colVal("c2", "c2_v0")));
+                insertOrUpdate.addMutateRow(row(colVal("c3", "c3_v0"), colVal("c4", 100L)));
+                MutationResult res = insertOrUpdate.execute();
+                Assert.assertEquals(1, res.getAffectedRows());
+            }
+
+            // 1. check pass: insup(1, 'c2_v0', 'c3_v0', 200) if exists c3 >= 'c3_v0';
+            InsertOrUpdate insertOrUpdate1 = new InsertOrUpdate();
+            insertOrUpdate1.setRowKey(row(colVal("c1", 1L), colVal("c2", "c2_v0")));
+            insertOrUpdate1.addMutateRow(row(colVal("c3", "c3_v0"), colVal("c4", 200L)));
+            ObTableFilter filter1 = compareVal(ObCompareOp.GT, "c3", "c3_v0");
+            CheckAndInsUp ck1 = client.checkAndInsUp(TABLE_NAME, filter1,insertOrUpdate1, true, true);
+
+            // 2. check failed: insup(1, 'c2_v0', 'c3_v0', 200) if exists c3 < 'c3_v0';
+            ObTableFilter filter2 = compareVal(ObCompareOp.LT, "c3", "c3_v0");
+            CheckAndInsUp ck2 = client.checkAndInsUp(TABLE_NAME, filter2,insertOrUpdate1, true, true);
+
+            // batch
+            BatchOperation batch = client.batchOperation(TABLE_NAME);
+            batch.addOperation(ck1, ck2);
+
+            ObTableException thrown = assertThrows(
+                    ObTableException.class,
+                    () -> {
+                        batch.execute();
+                    }
+            );
+
+            System.out.println(thrown.getMessage());
+            assertTrue(thrown.getMessage().contains("[-10518][OB_KV_CHECK_FAILED][Check failed in CheckAndInsUp]"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(false);
+        } finally {
+            for (long i = 1L; i <= 4L; i++) {
+                Delete delete = client.delete(TABLE_NAME);
+                delete.setRowKey(row(colVal("c1", i), colVal("c2", "c2_v0")));
+                MutationResult res = delete.execute();
+                Assert.assertEquals(1, res.getAffectedRows());
+            }
         }
     }
 }
