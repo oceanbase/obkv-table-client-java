@@ -1435,8 +1435,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             tableEntry.setRefreshAllTimeMills(System.currentTimeMillis());
         }
         tableEntryRefreshContinuousFailureCount.set(0);
-        if (logger.isInfoEnabled()) {
-            logger.info(
+        if (logger.isDebugEnabled()) {
+            logger.debug(
                 "refresh table entry, dataSource: {}, tableName: {}, refresh: {} key:{} entry:{} ",
                 dataSourceName, tableName, true, tableEntryKey, JSON.toJSON(tableEntry));
         }

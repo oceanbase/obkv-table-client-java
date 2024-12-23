@@ -259,7 +259,7 @@ public class ObTableConnection {
         } catch (ObTableServerConnectException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new ObTableConnectionStatusException("check status failed", ex);
+            throw new ObTableConnectionStatusException("check status failed, cause: " + ex.getMessage(), ex);
         }
     }
 

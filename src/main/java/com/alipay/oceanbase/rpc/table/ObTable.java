@@ -391,7 +391,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         } catch (ObTableServerConnectException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new ObTableConnectionStatusException("check status failed", ex);
+            throw new ObTableConnectionStatusException("check status failed, cause: " + ex.getMessage(), ex);
         }
         return executeWithReconnect(connection, request);
     }
@@ -455,7 +455,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         } catch (ObTableServerConnectException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new ObTableConnectionStatusException("check status failed", ex);
+            throw new ObTableConnectionStatusException("check status failed, cause: " + ex.getMessage(), ex);
         }
         return executeWithReconnect(connection, request);
     }
