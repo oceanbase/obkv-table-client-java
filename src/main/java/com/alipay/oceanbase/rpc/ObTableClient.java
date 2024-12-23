@@ -65,7 +65,6 @@ import static com.alipay.oceanbase.rpc.property.Property.*;
 import static com.alipay.oceanbase.rpc.protocol.payload.ResultCodes.OB_ERR_KV_ROUTE_ENTRY_EXPIRE;
 import static com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType.*;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
-import static java.lang.String.format;
 
 public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private static final Logger                               logger                                  = getLogger(ObTableClient.class);
