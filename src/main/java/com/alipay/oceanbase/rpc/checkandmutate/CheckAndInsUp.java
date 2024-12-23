@@ -54,7 +54,7 @@ public class CheckAndInsUp {
     public CheckAndInsUp(Table client, String tableName, ObTableFilter filter,
                          InsertOrUpdate insUp, boolean check_exists)
                                                                     throws IllegalArgumentException {
-        this(client, null, filter, insUp, check_exists, false);
+        this(client, tableName, filter, insUp, check_exists, false);
     }
 
     public CheckAndInsUp(Table client, String tableName, ObTableFilter filter,InsertOrUpdate insUp,
