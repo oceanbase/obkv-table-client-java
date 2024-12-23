@@ -93,7 +93,7 @@ public class ObGlobal {
 
     public static final long OB_VERSION_4_2_3_0 = calcVersion(4, (short) 2, (byte) 3, (byte) 0);
 
-    public static final long OB_VERSION_4_2_5_1 = calcVersion(4, (short) 2, (byte) 5, (byte) 1);
+    public static final long OB_VERSION_4_2_5_2 = calcVersion(4, (short) 2, (byte) 5, (byte) 2);
 
     public static final long OB_VERSION_4_3_0_0 = calcVersion(4, (short) 3, (byte) 0, (byte) 0);
 
