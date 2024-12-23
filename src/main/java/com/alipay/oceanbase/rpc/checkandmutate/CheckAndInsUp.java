@@ -43,31 +43,18 @@ public class CheckAndInsUp {
 
     public CheckAndInsUp(ObTableFilter filter, InsertOrUpdate insUp, boolean check_exists)
                                                                                           throws IllegalArgumentException {
-        this.filter = filter;
-        this.insUp = insUp;
-        this.checkExists = check_exists;
-        this.tableName = null;
-        this.client = null;
+        this(null, null, filter, insUp, check_exists, false);
     }
 
     public CheckAndInsUp(ObTableFilter filter, InsertOrUpdate insUp, boolean check_exists, boolean rollbackWhenCheckFailed)
             throws IllegalArgumentException {
-        this.filter = filter;
-        this.insUp = insUp;
-        this.checkExists = check_exists;
-        this.rollbackWhenCheckFailed = rollbackWhenCheckFailed;
-        this.tableName = null;
-        this.client = null;
+        this(null, null, filter, insUp, check_exists, rollbackWhenCheckFailed);
     }
 
     public CheckAndInsUp(Table client, String tableName, ObTableFilter filter,
                          InsertOrUpdate insUp, boolean check_exists)
                                                                     throws IllegalArgumentException {
-        this.client = client;
-        this.tableName = tableName;
-        this.filter = filter;
-        this.insUp = insUp;
-        this.checkExists = check_exists;
+        this(client, null, filter, insUp, check_exists, false);
     }
 
     public CheckAndInsUp(Table client, String tableName, ObTableFilter filter,InsertOrUpdate insUp,
