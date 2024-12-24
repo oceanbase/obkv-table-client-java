@@ -92,8 +92,7 @@ public class ObGlobal {
     }
 
     public static boolean isHBaseBatchGetSupport() {
-        return (OB_VERSION >= OB_VERSION_4_2_5_2 && OB_VERSION < OB_VERSION_4_3_0_0)
-               || OB_VERSION >= OB_VERSION_4_3_5_0;
+        return OB_VERSION >= OB_VERSION_4_2_5_2 && OB_VERSION < OB_VERSION_4_3_0_0;
     }
 
     public static boolean isCellTTLSupport() {

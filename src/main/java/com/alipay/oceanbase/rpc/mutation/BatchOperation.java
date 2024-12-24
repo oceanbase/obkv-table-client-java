@@ -90,11 +90,8 @@ public class BatchOperation {
      */
     public BatchOperation addOperation(TableQuery... queries) {
         boolean isHBaseQuery = false;
-        for (TableQuery query : queries) {
-            if (query.getObTableQuery().isHbaseQuery()) {
-                isHBaseQuery = true;
-            }
-            break;
+        if (queries != null && queries.length > 0) {
+            isHBaseQuery = queries[0].getObTableQuery().isHbaseQuery();
         }
         if (isHBaseQuery) {
             if (isSameType && lastType != ObTableOperationType.INVALID
@@ -118,7 +115,7 @@ public class BatchOperation {
      */
     public BatchOperation addOperation(Get... gets) {
         if (isSameType && lastType != ObTableOperationType.INVALID
-                && lastType != ObTableOperationType.GET) {
+            && lastType != ObTableOperationType.GET) {
             isSameType = false;
         }
 
