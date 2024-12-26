@@ -519,6 +519,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                                 false, false);
                         if (ObGlobal.obVsnMajor() >= 4) {
                             obTableClient.refreshTableLocationByTabletId(entry, realTableName, obTableClient.getTabletIdByPartId(entry, originPartId));
+                        } else { // 3.x
+                            obTableClient.getOrRefreshTableEntry(realTableName, needRefreshTableEntry,
+                                    obTableClient.isTableEntryRefreshIntervalWait(), false);
                         }
                         subObTable = obTableClient.getTableWithPartId(realTableName, originPartId, needRefreshTableEntry,
                                         obTableClient.isTableEntryRefreshIntervalWait(), false, route).
@@ -571,9 +574,10 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         }
                     } else {
                         String logMessage = String.format(
-                                "exhaust retry while meet NeedRefresh Exception, table name: %s, ls id: %d, batch ops refresh table, errorCode: %d",
+                                "exhaust retry while meet NeedRefresh Exception, table name: %s, ls id: %d, batch ops refresh table, retry times: %d, errorCode: %d",
                                 realTableName,
                                 lsId,
+                                obTableClient.getRuntimeRetryTimes(),
                                 ((ObTableException) ex).getErrorCode()
                         );
                         logger.warn(logMessage, ex);

@@ -259,26 +259,22 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         }
                         if (((ObTableException) e).isNeedRefreshTableEntry()) {
                             needRefreshTableEntry = true;
-                            logger
-                                .warn(
-                                    "tablename:{} partition id:{} stream query refresh table while meet Exception needing refresh, errorCode: {}",
-                                    indexTableName, partIdWithIndex.getLeft(),
-                                    ((ObTableException) e).getErrorCode(), e);
                             if (client.isRetryOnChangeMasterTimes()
                                 && (tryTimes - 1) < client.getRuntimeRetryTimes()) {
-                                logger
-                                    .warn(
-                                        "tablename:{} partition id:{} stream query retry while meet Exception needing refresh, errorCode: {} , retry times {}",
-                                        indexTableName, partIdWithIndex.getLeft(),
-                                        ((ObTableException) e).getErrorCode(), tryTimes, e);
                                 // tablet not exists, refresh table entry
                                 if (e instanceof ObTableNeedFetchAllException) {
                                     client.getOrRefreshTableEntry(indexTableName, true, true, true);
                                     throw e;
                                 }
                             } else {
+                                String logMessage = String.format(
+                                        "exhaust retry while meet NeedRefresh Exception, table name: %s, ls id: %d, batch ops refresh table, errorCode: %d",
+                                        indexTableName,
+                                        ((ObTableException) e).getErrorCode()
+                                );
+                                logger.warn(logMessage, e);
                                 client.calculateContinuousFailure(indexTableName, e.getMessage());
-                                throw e;
+                                throw new ObTableRetryExhaustedException(logMessage, e);
                             }
                         } else {
                             client.calculateContinuousFailure(indexTableName, e.getMessage());

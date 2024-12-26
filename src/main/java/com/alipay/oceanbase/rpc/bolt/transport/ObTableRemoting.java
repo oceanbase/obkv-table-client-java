@@ -165,7 +165,7 @@ public class ObTableRemoting extends BaseRemoting {
             } else {
                 String errMessage = TraceUtil.formatTraceMessage(conn, response,
                     "receive unexpected command code: " + response.getCmdCode().value());
-                throw new ObTableUnexpectedException(errMessage);
+                throw new ObTableUnexpectedException(errMessage, resultCode.getRcode());
             }
 
             payload.decode(buf);

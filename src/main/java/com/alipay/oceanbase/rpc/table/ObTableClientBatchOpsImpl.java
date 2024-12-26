@@ -432,24 +432,24 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 } else if (ex instanceof ObTableException
                            && ((ObTableException) ex).isNeedRefreshTableEntry()) {
                     needRefreshTableEntry = true;
-                    logger
-                        .warn(
-                            "tablename:{} partition id:{} batch ops refresh table while meet ObTableMasterChangeException, errorCode: {}",
-                            tableName, partId, ((ObTableException) ex).getErrorCode(), ex);
                     if (obTableClient.isRetryOnChangeMasterTimes()
                         && (tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
                         if (ex instanceof ObTableNeedFetchAllException) {
-                            logger.warn("tablename:{}, partition_id: {}  batch ops retry while meet ObTableNeedFetchAllException, errorCode: {} , retry times {}",
-                                    tableName, subRequest.getPartitionId(),((ObTableException) ex).getErrorCode(),
-                                    tryTimes, ex);
                             // refresh table info
                             obTableClient.getOrRefreshTableEntry(tableName, needRefreshTableEntry,
                                 obTableClient.isTableEntryRefreshIntervalWait(), true);
                             throw ex;
                         }
                     } else {
+                        String logMessage = String.format(
+                                "exhaust retry while meet NeedRefresh Exception, table name: %s, batch ops refresh table, retry times: %d, errorCode: %d",
+                                tableName,
+                                obTableClient.getRuntimeRetryTimes(),
+                                ((ObTableException) ex).getErrorCode()
+                        );
+                        logger.warn(logMessage, ex);
                         obTableClient.calculateContinuousFailure(tableName, ex.getMessage());
-                        throw ex;
+                        throw new ObTableRetryExhaustedException(logMessage, ex);
                     }
                 } else {
                     obTableClient.calculateContinuousFailure(tableName, ex.getMessage());
