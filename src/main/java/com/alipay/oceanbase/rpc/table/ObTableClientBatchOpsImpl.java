@@ -262,20 +262,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             for (int j = 0; j < rowKeySize; j++) {
                 rowKey[j] = rowKeyObject.getObj(j).getValue();
             }
-            ObPair<Long, ObTableParam> tableObPair = null;
-            if (!obTableClient.isOdpMode()) {
-                tableObPair = obTableClient.getTable(tableName, rowKey,
-                        false, false, obTableClient.getRoute(batchOperation.isReadOnly()));
-            } else {
-                tableObPair = obTableClient.getODPTableWithRowKeyValue(tableName, rowKey, false);
-            }
-            if (tableObPair == null) {
-                throw new ObTableUnexpectedException("fail to get table pair in batch");
-            }
-            final ObPair<Long, ObTableParam> tmpTableObPair = tableObPair;
+            ObPair<Long, ObTableParam> tableObPair = obTableClient.getTable(
+                    tableName, rowKey, false, false,
+                    obTableClient.getRoute(batchOperation.isReadOnly()));
             ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>> obTableOperations = partitionOperationsMap
-                    .computeIfAbsent(tmpTableObPair.getLeft(), k -> new ObPair<>(
-                            tmpTableObPair.getRight(), new ArrayList<>()));
+                    .computeIfAbsent(tableObPair.getLeft(), k -> new ObPair<>(
+                            tableObPair.getRight(), new ArrayList<>()));
             obTableOperations.getRight().add(new ObPair<>(i, operation));
         }
         return partitionOperationsMap;
@@ -351,16 +343,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             }
             tryTimes++;
             try {
-                if (tryTimes > 1) {
-                    if (obTableClient.isOdpMode()) {
-                        ObTableParam newParam = obTableClient.getODPTableWithPartId(tableName,
-                            originPartId, odpNeedRenew).getRight();
-                        subObTable = newParam.getObTable();
-                        subRequest.setPartitionId(newParam.getPartitionId());
-                        subRequest.setTableId(newParam.getTableId());
-                    } else {
-                        // getTable() when we need retry
-                        // we should use partIdx to get table
+                if (obTableClient.isOdpMode()) {
+                    subObTable = obTableClient.getOdpTable();
+                } else {
+                    // getTable() when we need retry
+                    // we should use partIdx to get table
+                    if (tryTimes > 1) {
                         if (route == null) {
                             route = obTableClient.getRoute(batchOperation.isReadOnly());
                         }
@@ -403,17 +391,13 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             } catch (Exception ex) {
                 if (obTableClient.isOdpMode()) {
                     if ((tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
+                        assert ex instanceof ObTableException;
                         logger
                             .warn(
                                 "batch ops execute while meet Exception, tablename:{}, errorMsg: {}, try times {}",
                                 tableName, ex.getMessage(),
                                 tryTimes);
-                        if (ex instanceof ObTablePartitionChangeException
-                            && ((ObTablePartitionChangeException) ex).getErrorCode() == ResultCodes.OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
-                            odpNeedRenew = true;
-                        }
                     } else {
-                        RUNTIME.error("retry fail when normal batch executing", ex);
                         throw ex;
                     }
                 } else if (ex instanceof ObTableReplicaNotReadableException) {

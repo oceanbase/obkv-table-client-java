@@ -618,7 +618,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             throw new IllegalArgumentException("table name is null");
         }
         boolean needRefreshTableEntry = false;
-        boolean needRenew = false;
         boolean needFetchAllRouteInfo = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
@@ -636,7 +635,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObPair<Long, ObTableParam> obPair = null;
             try {
                 if (odpMode) {
-                    obPair = getODPTableWithRowKeyValue(tableName, callback.getRowKey(), needRenew);
+                    obPair = new ObPair<Long, ObTableParam>(0L, new ObTableParam(odpTable));
                 } else {
                     obPair = getTable(tableName, callback.getRowKey(),
                         needRefreshTableEntry, tableEntryRefreshIntervalWait,
@@ -654,17 +653,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                     "execute while meet Exception, errorCode: {} , errorMsg: {}, try times {}",
                                     ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                     tryTimes);
-                            // if the cause is that ODP partition meta have expired, try to fetch new one
-                            if (ex instanceof ObTablePartitionChangeException
-                                && ((ObTablePartitionChangeException) ex).getErrorCode() == OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
-                                needRenew = true;
-                            } else {
-                                throw ex;
-                            }
                         } else {
                             logger.warn("execute while meet Exception, errorMsg: {}, try times {}",
                                 ex.getMessage(), tryTimes);
-                            throw ex;
                         }
                     } else {
                         RUNTIME.error("retry failed with exception", ex);
@@ -686,7 +677,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     } else if (ex instanceof ObTableException
                                && ((ObTableException) ex).isNeedRefreshTableEntry()) {
                         needRefreshTableEntry = true;
-                        
+
                         if (retryOnChangeMasterTimes && (tryTimes - 1) < runtimeRetryTimes) {
                             if (ex instanceof ObTableNeedFetchAllException) {
                                 needFetchAllRouteInfo = true;
@@ -787,7 +778,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             throw new IllegalArgumentException("table name is null");
         }
         boolean needRefreshTableEntry = false;
-        boolean needRenew = false;
+        boolean needFetchAllRouteInfo = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
         while (true) {
@@ -804,7 +795,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObPair<Long, ObTableParam> obPair = null;
             try {
                 if (odpMode) {
-                    obPair = getODPTableWithRowKey(tableName, callback.getRowKey(), needRenew);
+                    obPair = new ObPair<Long, ObTableParam>(0L, new ObTableParam(odpTable));
                 } else {
                     if (null != callback.getRowKey()) {
                         // in the case of retry, the location always needs to be refreshed here
@@ -837,20 +828,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                     "execute while meet Exception, errorCode: {} , errorMsg: {}, try times {}",
                                     ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                     tryTimes);
-                            // if the cause is that ODP partition meta have expired, try to fetch new one  
-                            if (ex instanceof ObTablePartitionChangeException
-                                    && ((ObTablePartitionChangeException) ex).getErrorCode() == OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
-                                needRenew = true;
-                            } else {
-                                RUNTIME.error("execute while meet exception", ex);
-                                throw ex;
-                            }
                         } else {
                             logger.warn(
-                                    "execute while meet Exception, exception: {}, try times {}", ex,
-                                    tryTimes);
-                            RUNTIME.error("execute while meet exception", ex);
-                            throw ex;
+                                "execute while meet Exception, exception: {}, try times {}", ex,
+                                tryTimes);
                         }
                     } else {
                         RUNTIME.error("retry failed with exception", ex);
@@ -870,7 +851,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         }
                     } else if (ex instanceof ObTableException
                             && ((ObTableException) ex).isNeedRefreshTableEntry()) {
-                        // if the problem is the lack of row key name, throw directly  
+                        // if the problem is the lack of row key name, throw directly
                         if (tableRowKeyElement.get(tableName) == null) {
                             logger.warn("tableRowKeyElement not found table name: {}", ex.getMessage());
                             RUNTIME.error("tableRowKeyElement not found table name", ex);
@@ -880,7 +861,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         if (retryOnChangeMasterTimes && (tryTimes - 1) < runtimeRetryTimes) {
                             if (ex instanceof ObTableNeedFetchAllException) {
                                 getOrRefreshTableEntry(tableName, true, true, true);
-                                // reset failure count while fetch all route info  
+                                // reset failure count while fetch all route info
                                 this.resetExecuteContinuousFailureCount(tableName);
                             }
                         } else {
@@ -1374,13 +1355,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (info == null) {
                 throw new ObTableEntryRefreshException("Partition info is null for tabletId=" + tabletId);
             }
-            
+
             long lastRefreshTime = info.getLastUpdateTime();
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastRefreshTime < tableEntryRefreshIntervalCeiling) {
                 return tableEntry;
             }
-            
+
             Lock lock = info.refreshLock;
             boolean acquired = false;
             try {
@@ -1400,7 +1381,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 if (currentTime - lastRefreshTime < tableEntryRefreshIntervalCeiling) {
                     return tableEntry;
                 }
-                
+
                 tableEntry = loadTableEntryLocationWithPriority(
                         serverRoster,
                         tableEntryKey,
@@ -1412,7 +1393,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         serverAddressCachingTimeout,
                         sysUA
                 );
-                
+
                 tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
 
             } finally {
@@ -1430,7 +1411,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             RUNTIME.error(LCD.convert("01-00020"), tableEntryKey, tableEntry, e);
             throw new ObTableEntryRefreshException(errorMsg, e);
         }
-        
+
         tableLocations.put(tableName, tableEntry);
         tableEntryRefreshContinuousFailureCount.set(0);
         return tableEntry;
@@ -1655,7 +1636,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private ReplicaLocation getPartitionLocation(TableEntry tableEntry, long partId,
                                                  ObServerRoute route) {
         // In all cases for 3.x and for non-partitioned tables in 4.x, partId will not change.
-        // If it is 4.x, it will be converted to tablet id. 
+        // If it is 4.x, it will be converted to tablet id.
         partId = getTabletIdByPartId(tableEntry, partId);
         return tableEntry.getPartitionEntry().getPartitionLocationWithTabletId(partId)
             .getReplica(route);
@@ -1980,9 +1961,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
             replica = getPartitionLocation(obPartitionLocationInfo, route);
             /**
-             * Normally, getOrRefreshPartitionInfo makes sure that a thread only continues if it finds the leader  
-             * during a route refresh. But sometimes, there might not be a leader yet. In this case, the thread  
-             * is released, and since it can't get the replica, it throws an no master exception.  
+             * Normally, getOrRefreshPartitionInfo makes sure that a thread only continues if it finds the leader
+             * during a route refresh. But sometimes, there might not be a leader yet. In this case, the thread
+             * is released, and since it can't get the replica, it throws an no master exception.
              */
             if (replica == null && obPartitionLocationInfo.getPartitionLocation().getLeader() == null) {
                 RUNTIME.error(LCD.convert("01-00028"), partitionId, tableEntry.getPartitionEntry(), tableEntry);
@@ -2023,14 +2004,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
                 }
             }
-            
+
             if (ObGlobal.obVsnMajor() >= 4) {
                 obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
                 replica = getPartitionLocation(obPartitionLocationInfo, route);
             } else {
                 replica = getPartitionReplica(tableEntry, partitionId, route).getRight();
             }
-            
+
             addr = replica.getAddr();
             obTable = tableRoster.get(addr);
 
