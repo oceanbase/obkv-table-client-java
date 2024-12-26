@@ -113,7 +113,7 @@ public enum Property {
     // [ObTable][RPC]
     RPC_CONNECT_TRY_TIMES("rpc.connect.try.times", 3, "建立RPC连接的尝试次数"),
 
-    RPC_EXECUTE_TIMEOUT("rpc.execute.timeout", 3000, "执行RPC请求的socket超时时间"),
+    RPC_EXECUTE_TIMEOUT("rpc.execute.timeout", 12000, "执行RPC请求的socket超时时间"),
 
     RPC_LOGIN_TIMEOUT("rpc.login.timeout", 1000, "请求RPC登录的超时时间"),
 
