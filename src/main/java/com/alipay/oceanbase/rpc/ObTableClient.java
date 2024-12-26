@@ -686,17 +686,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     } else if (ex instanceof ObTableException
                                && ((ObTableException) ex).isNeedRefreshTableEntry()) {
                         needRefreshTableEntry = true;
-
-                        logger
-                            .warn(
-                                "refresh table while meet Exception needing refresh, errorCode: {}, errorMsg: {}",
-                                ((ObTableException) ex).getErrorCode(), ex.getMessage());
+                        
                         if (retryOnChangeMasterTimes && (tryTimes - 1) < runtimeRetryTimes) {
-                            logger
-                                .warn(
-                                    "retry while meet Exception needing refresh, errorCode: {} , errorMsg: {},retry times {}",
-                                    ((ObTableException) ex).getErrorCode(), ex.getMessage(),
-                                    tryTimes);
                             if (ex instanceof ObTableNeedFetchAllException) {
                                 needFetchAllRouteInfo = true;
                                 getOrRefreshTableEntry(tableName, true, true, true);
@@ -708,8 +699,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             throw ex;
                         }
                     } else {
+                        String logMessage = String.format(
+                                "exhaust retry while meet NeedRefresh Exception, table name: %s, batch ops refresh table, errorCode: %d",
+                                tableName,
+                                ((ObTableException) ex).getErrorCode()
+                        );
+                        logger.warn(logMessage, ex);
                         calculateContinuousFailure(tableName, ex.getMessage());
-                        throw ex;
+                        throw new ObTableRetryExhaustedException(logMessage, ex);
                     }
                 }
             }
@@ -880,24 +877,21 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             throw ex;
                         }
                         needRefreshTableEntry = true;
-
-                        logger.warn(
-                                "refresh table while meet Exception needing refresh, errorCode: {}, errorMsg: {}",
-                                ((ObTableException) ex).getErrorCode(), ex.getMessage());
                         if (retryOnChangeMasterTimes && (tryTimes - 1) < runtimeRetryTimes) {
-                            logger.warn(
-                                    "retry while meet Exception needing refresh, errorCode: {} , errorMsg: {}, retry times {}",
-                                    ((ObTableException) ex).getErrorCode(), ex.getMessage(),
-                                    tryTimes);
                             if (ex instanceof ObTableNeedFetchAllException) {
                                 getOrRefreshTableEntry(tableName, true, true, true);
                                 // reset failure count while fetch all route info  
                                 this.resetExecuteContinuousFailureCount(tableName);
                             }
                         } else {
+                            String logMessage = String.format(
+                                    "exhaust retry while meet NeedRefresh Exception, table name: %s, batch ops refresh table, errorCode: %d",
+                                    tableName,
+                                    ((ObTableException) ex).getErrorCode()
+                            );
+                            logger.warn(logMessage, ex);
                             calculateContinuousFailure(tableName, ex.getMessage());
-                            RUNTIME.error("execute while meet exception", ex);
-                            throw ex;
+                            throw new ObTableRetryExhaustedException(logMessage, ex);
                         }
                     } else {
                         calculateContinuousFailure(tableName, ex.getMessage());
