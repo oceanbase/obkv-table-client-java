@@ -187,6 +187,13 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                         if (((ObTableException) e).getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode) {
                             // current ODP version does not support get partition meta information
                             throw new FeatureNotSupportedException("current ODP version does not support query with part id", e);
+                        } else if (((ObTableException) e).getErrorCode() == ResultCodes.OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
+                            // retry one time with force-renew flag
+                            ObPair<Long, ObTableParam> odpTable = obTableClient.getODPTableWithPartId(
+                                    tableName, getPartId(), true);
+                            partitionObTables.put(odpTable.getLeft(), odpTable);
+                        } else {
+                            throw e;
                         }
                     } else {
                         throw e;
