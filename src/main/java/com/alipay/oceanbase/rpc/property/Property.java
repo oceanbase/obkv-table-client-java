@@ -95,14 +95,14 @@ public enum Property {
 
     // [ObTableClient][RUNTIME]
     // property in both obTableClient / direct load client
-    RUNTIME_RETRY_TIMES("runtime.retry.times", 1, "运行过程中遇到可重试错误时的重试次数"),
+    RUNTIME_RETRY_TIMES("runtime.retry.times", 3, "运行过程中遇到可重试错误时的重试次数"),
 
     // property in both obTableClient / direct load client
-    RUNTIME_RETRY_INTERVAL("runtime.retry.interval", 1, "运行出错时重试的时间间隔"),
+    RUNTIME_RETRY_INTERVAL("runtime.retry.interval", 100, "运行出错时重试的时间间隔"),
 
-    RUNTIME_MAX_WAIT("runtime.max.wait", 3000L, "单次执行超时时间会在超时时间内重试"),
+    RUNTIME_MAX_WAIT("runtime.max.wait", 5000L, "单次执行超时时间会在超时时间内重试"),
 
-    RUNTIME_BATCH_MAX_WAIT("runtime.batch.max.wait", 3000L, "批量执行请求的超时时间"),
+    RUNTIME_BATCH_MAX_WAIT("runtime.batch.max.wait", 5000L, "批量执行请求的超时时间"),
 
     // [ObTableClient][LOG]
     SLOW_QUERY_MONITOR_THRESHOLD("slow.query.monitor.threshold", -1L, "记录到 MONITOR 日志中的慢操作的运行时间阈值"),
@@ -122,7 +122,7 @@ public enum Property {
     RPC_OPERATION_TIMEOUT("rpc.operation.timeout", 2000L, "OB内部执行RPC请求的超时时间"),
 
     // [ObTable][CONNECTION_POOL]
-    SERVER_CONNECTION_POOL_SIZE("server.connection.pool.size", 1, "单个SERVER的连接数"),
+    SERVER_CONNECTION_POOL_SIZE("server.connection.pool.size", 10, "单个SERVER的连接数"),
 
     // [ObTable][NETTY]
     // overwrite the global default netty watermark for ob table: [512K, 1M]
