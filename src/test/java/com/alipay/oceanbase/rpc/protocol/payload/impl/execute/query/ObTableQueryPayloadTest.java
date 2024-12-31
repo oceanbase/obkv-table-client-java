@@ -25,7 +25,6 @@ import com.alipay.oceanbase.rpc.table.ObHBaseParams;
 import com.alipay.oceanbase.rpc.table.ObKVParams;
 import com.alipay.oceanbase.rpc.table.ObKVParamsBase;
 import com.alipay.oceanbase.rpc.util.ObBytesString;
-import com.sun.xml.internal.ws.wsdl.writer.document.ParamType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import org.junit.Assert;
