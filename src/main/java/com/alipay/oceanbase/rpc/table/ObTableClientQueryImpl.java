@@ -17,7 +17,9 @@
 
 package com.alipay.oceanbase.rpc.table;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
+import com.alipay.oceanbase.rpc.exception.FeatureNotSupportedException;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.Row;
@@ -129,6 +131,15 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             throw new ObTableException("offset can not be use without limit");
         } else if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
+        } else if (tableQuery.isFTSQuery()) {
+            if (!ObGlobal.isFtsQuerySupport()) {
+                throw new FeatureNotSupportedException("full text query is not supported in "+ObGlobal.OB_VERSION);
+            }
+            if (tableQuery.getIndexName() == null || tableQuery.getIndexName().isEmpty()
+                    || tableQuery.getIndexName().equalsIgnoreCase("primary")) {
+                throw new IllegalArgumentException(
+                        "use fulltext search but specified index name is not fulltext index");
+            }
         }
     }
 
@@ -159,15 +170,6 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         // fill a whole range if no range is added explicitly.
         if (tableQuery.getKeyRanges().isEmpty()) {
             tableQuery.addKeyRange(ObNewRange.getWholeRange());
-        } else if (tableQuery.isFTSQuery()) {
-            // Currently, fulltext query only support scan all partitions
-            tableQuery.getKeyRanges().clear();
-            tableQuery.addKeyRange(ObNewRange.getWholeRange());
-            if (tableQuery.getIndexName() == null || tableQuery.getIndexName().isEmpty()
-                    || tableQuery.getIndexName().equalsIgnoreCase("primary")) {
-                throw new IllegalArgumentException(
-                        "use fulltext search but specified index name is not fulltext index");
-            }
         }
 
         // init partitionObTables
