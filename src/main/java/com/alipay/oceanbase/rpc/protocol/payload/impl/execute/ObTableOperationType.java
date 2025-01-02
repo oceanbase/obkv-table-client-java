@@ -42,7 +42,7 @@ public enum ObTableOperationType {
                                                                           false, // REPLACE
                                                                           false, // INCREMENT
                                                                           false, // APPEND
-                                                                          false, // SCAN
+                                                                          true, // SCAN
                                                                           false, // TTL
                                                                           true, // CHECK_AND_INSERT_UP
                                                                           false, // PUT

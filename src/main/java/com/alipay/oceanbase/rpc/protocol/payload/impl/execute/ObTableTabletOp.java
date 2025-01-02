@@ -155,8 +155,12 @@ public class ObTableTabletOp extends AbstractPayload {
             }
         }
 
-        if (isSameType() && singleOperations.get(0).getSingleOpType() == ObTableOperationType.GET) {
-            setIsReadOnly(true);
+        if (isSameType()) {
+            boolean isHbaseOps = singleOperations.get(0).getQuery().isHbaseQuery();
+            if ((isHbaseOps && singleOperations.get(0).getSingleOpType() == ObTableOperationType.SCAN)
+                || (!isHbaseOps && singleOperations.get(0).getSingleOpType() == ObTableOperationType.GET)) {
+                setIsReadOnly(true);
+            }
         }
         this.singleOperations = singleOperations;
     }

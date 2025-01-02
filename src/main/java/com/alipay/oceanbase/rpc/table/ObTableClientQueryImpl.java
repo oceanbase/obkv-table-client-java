@@ -171,19 +171,33 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             }
             if (tableQuery.getIndexName() != null) {
                 this.partitionObTables.put(0L, new ObPair<Long, ObTableParam>(0L, new ObTableParam(
-                        obTableClient.getOdpTable())));
+                    obTableClient.getOdpTable())));
             } else if (getPartId() == null) {
                 initPartitions();
             } else {
+                String realTableName = tableName;
+                if (this.entityType == ObTableEntityType.HKV
+                    && obTableClient.isTableGroupName(tableName)) {
+                    indexTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName,
+                        false);
+                    realTableName = indexTableName;
+                }
                 ObPair<Long, ObTableParam> odpTable = obTableClient.getODPTableWithPartId(
-                    tableName, getPartId(), false);
+                    realTableName, getPartId(), false);
                 this.partitionObTables.put(odpTable.getLeft(), odpTable);
             }
         } else {
             if (getPartId() == null) {
                 initPartitions();
             } else { // directly get table from table entry by logic partId
-                ObPair<Long, ObTableParam> table = obTableClient.getTableWithPartId(tableName,
+                if (this.entityType != ObTableEntityType.HKV) {
+                    indexTableName = obTableClient.getIndexTableName(tableName,
+                        tableQuery.getIndexName(), tableQuery.getScanRangeColumns(), false);
+                } else if (obTableClient.isTableGroupName(tableName)) {
+                    indexTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName,
+                        false);
+                }
+                ObPair<Long, ObTableParam> table = obTableClient.getTableWithPartId(indexTableName,
                     getPartId(), false, false, false, obTableClient.getRoute(false));
                 partitionObTables.put(table.getLeft(), table);
             }

@@ -89,12 +89,23 @@ public class BatchOperation {
      * add queries
      */
     public BatchOperation addOperation(TableQuery... queries) {
-        if (isSameType && lastType != ObTableOperationType.INVALID
-            && lastType != ObTableOperationType.GET) {
-            isSameType = false;
+        boolean isHBaseQuery = false;
+        if (queries != null && queries.length > 0) {
+            isHBaseQuery = queries[0].getObTableQuery().isHbaseQuery();
         }
-
-        lastType = ObTableOperationType.GET;
+        if (isHBaseQuery) {
+            if (isSameType && lastType != ObTableOperationType.INVALID
+                && lastType != ObTableOperationType.SCAN) {
+                isSameType = false;
+            }
+            lastType = ObTableOperationType.SCAN;
+        } else {
+            if (isSameType && lastType != ObTableOperationType.INVALID
+                && lastType != ObTableOperationType.GET) {
+                isSameType = false;
+            }
+            lastType = ObTableOperationType.GET;
+        }
         this.operations.addAll(Arrays.asList(queries));
         return this;
     }
@@ -104,7 +115,7 @@ public class BatchOperation {
      */
     public BatchOperation addOperation(Get... gets) {
         if (isSameType && lastType != ObTableOperationType.INVALID
-                && lastType != ObTableOperationType.GET) {
+            && lastType != ObTableOperationType.GET) {
             isSameType = false;
         }
 
@@ -197,6 +208,7 @@ public class BatchOperation {
             throw new IllegalArgumentException("table name is null");
         }
         TableBatchOps batchOps = client.batch(tableName);
+        batchOps.setEntityType(entityType);
         boolean hasSetRowkeyElement = false;
 
         for (Object operation : operations) {
@@ -276,7 +288,6 @@ public class BatchOperation {
                 throw new ObTableException("unknown operation " + operation);
             }
         }
-        batchOps.setEntityType(entityType);
         batchOps.setAtomicOperation(isAtomic);
         batchOps.setReturnOneResult(returnOneResult);
         return new BatchOperationResult(batchOps.executeWithResult());
@@ -292,6 +303,7 @@ public class BatchOperation {
 
         if (client instanceof ObTableClient) {
             batchOps = new ObTableClientLSBatchOpsImpl(tableName, (ObTableClient) client);
+            batchOps.setEntityType(entityType);
             for (Object operation : operations) {
                 if (operation instanceof CheckAndInsUp) {
                     checkAndInsUpCnt++;
@@ -342,7 +354,6 @@ public class BatchOperation {
         batchOps.setReturningAffectedEntity(withResult);
         batchOps.setReturnOneResult(returnOneResult);
         batchOps.setAtomicOperation(isAtomic);
-        batchOps.setEntityType(entityType);
         return new BatchOperationResult(batchOps.executeWithResult());
     }
 

@@ -69,10 +69,10 @@ public class ObDirectLoadProtocolV0 implements ObDirectLoadProtocol {
             logger.warn("partition names in ob version " + ObGlobal.getObVsnString(obVersion)
                         + "is not supported, minimum version required is "
                         + ObGlobal.getObVsnString(OB_VERSION_4_3_5_0));
-            throw new ObDirectLoadNotSupportedException("partition names in ob version "
-                                                    + ObGlobal.getObVsnString(obVersion)
-                                                    + " is not supported, minimum version required is "
-                                                    + ObGlobal.getObVsnString(OB_VERSION_4_3_5_0));
+            throw new ObDirectLoadNotSupportedException(
+                "partition names in ob version " + ObGlobal.getObVsnString(obVersion)
+                        + " is not supported, minimum version required is "
+                        + ObGlobal.getObVsnString(OB_VERSION_4_3_5_0));
         }
     }
 

@@ -17,25 +17,24 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
-import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObTableSerialUtil;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilter;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObScanOrder;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
+import com.alipay.oceanbase.rpc.table.ObKVParams;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
 import java.util.*;
 
-public class ObTableSingleOpQuery extends AbstractPayload {
-    private String indexName;
+public class ObTableSingleOpQuery extends ObTableQuery {
     private List<String> scanRangeColumns = new ArrayList<>();
     private byte[] scanRangeBitMap = null;
     private long scanRangeBitLen = 0;
     private List<String> aggColumnNames = new ArrayList<>();
-
-    private List<ObNewRange> scanRanges = new ArrayList<>();
-
-    private String filterString;
 
     /*
      * Encode.
@@ -63,10 +62,10 @@ public class ObTableSingleOpQuery extends AbstractPayload {
         }
 
         // 3. encode scan ranges
-        len = Serialization.getNeedBytes(scanRanges.size());
-        System.arraycopy(Serialization.encodeVi64(scanRanges.size()), 0, bytes, idx, len);
+        len = Serialization.getNeedBytes(keyRanges.size());
+        System.arraycopy(Serialization.encodeVi64(keyRanges.size()), 0, bytes, idx, len);
         idx += len;
-        for (ObNewRange range : scanRanges) {
+        for (ObNewRange range : keyRanges) {
             len =  ObTableSerialUtil.getEncodedSize(range);
             System.arraycopy(ObTableSerialUtil.encode(range), 0, bytes, idx, len);
             idx += len;
@@ -77,6 +76,34 @@ public class ObTableSingleOpQuery extends AbstractPayload {
         System.arraycopy(Serialization.encodeVString(filterString), 0, bytes, idx, len);
         idx += len;
 
+        // encode HBase Batch Get required
+        if (isHbaseQuery && ObGlobal.isHBaseBatchGetSupport()) {
+            len = Serialization.getNeedBytes(selectColumns.size());
+            System.arraycopy(Serialization.encodeVi64(selectColumns.size()), 0, bytes, idx, len);
+            idx += len;
+            for (String selectColumn : selectColumns) {
+                len = Serialization.getNeedBytes(selectColumn);
+                System.arraycopy(Serialization.encodeVString(selectColumn), 0, bytes, idx, len);
+                idx += len;
+            }
+
+            System.arraycopy(Serialization.encodeI8(scanOrder.getByteValue()), 0, bytes, idx, 1);
+            idx += 1;
+
+            len = (int) hTableFilter.getPayloadSize();
+            System.arraycopy(hTableFilter.encode(), 0, bytes, idx, len);
+            idx += len;
+
+            if (obKVParams != null) {
+                len = (int) obKVParams.getPayloadSize();
+                System.arraycopy(obKVParams.encode(), 0, bytes, idx, len);
+                idx += len;
+            } else {
+                len = HTABLE_DUMMY_BYTES.length;
+                System.arraycopy(HTABLE_DUMMY_BYTES, 0, bytes, idx, len);
+                idx += len;
+            }
+        }
         return bytes;
     }
 
@@ -110,7 +137,7 @@ public class ObTableSingleOpQuery extends AbstractPayload {
         for (int i = 0; i < len; i++) {
             ObNewRange range = new ObNewRange();
             ObTableSerialUtil.decode(buf, range);
-            scanRanges.add(range);
+            keyRanges.add(range);
         }
 
         // 4. decode filter string
@@ -129,13 +156,35 @@ public class ObTableSingleOpQuery extends AbstractPayload {
         payloadContentSize += Serialization.getNeedBytes(scanRangeBitLen);
         payloadContentSize += scanRangeBitMap.length;
 
-        payloadContentSize += Serialization.getNeedBytes(scanRanges.size());
-        for (ObNewRange range : scanRanges) {
+        payloadContentSize += Serialization.getNeedBytes(keyRanges.size());
+        for (ObNewRange range : keyRanges) {
             payloadContentSize += ObTableSerialUtil.getEncodedSize(range);
         }
 
-        return payloadContentSize + Serialization.getNeedBytes(indexName)
-                + Serialization.getNeedBytes(filterString);
+        payloadContentSize += Serialization.getNeedBytes(indexName);
+        payloadContentSize += Serialization.getNeedBytes(filterString);
+
+        // calculate part required by HBase Batch Get
+        if (isHbaseQuery && ObGlobal.isHBaseBatchGetSupport()) {
+            payloadContentSize += Serialization.getNeedBytes(selectColumns.size());
+            for (String selectColumn : selectColumns) {
+                payloadContentSize += Serialization.getNeedBytes(selectColumn);
+            }
+            payloadContentSize += 1; // scanOrder
+
+            if (isHbaseQuery) {
+                payloadContentSize += hTableFilter.getPayloadSize();
+            } else {
+                payloadContentSize += HTABLE_DUMMY_BYTES.length;
+            }
+            if (isHbaseQuery && obKVParams != null) {
+                payloadContentSize += obKVParams.getPayloadSize();
+            } else {
+                payloadContentSize += HTABLE_DUMMY_BYTES.length;
+            }
+        }
+
+        return payloadContentSize;
     }
 
     // Support class, which is used for column name sorted
@@ -181,7 +230,7 @@ public class ObTableSingleOpQuery extends AbstractPayload {
 
         Collections.sort(pairs);
 
-        for (ObNewRange range : scanRanges) {
+        for (ObNewRange range : keyRanges) {
             List<ObObj> startKey= range.getStartKey().getObjs();
             List<ObObj> endKey= range.getStartKey().getObjs();
             List<ObObj> adjustStartKey = new ArrayList<>(startKey.size());
@@ -191,23 +240,25 @@ public class ObTableSingleOpQuery extends AbstractPayload {
                 adjustStartKey.add(startKey.get((int) pair.origin_idx));
                 adjustEndtKey.add(endKey.get((int) pair.origin_idx));
             }
-            range.getStartKey().setObjs(adjustStartKey);
-            range.getEndKey().setObjs(adjustEndtKey);
+            if (!adjustStartKey.isEmpty() && !adjustEndtKey.isEmpty()) {
+                range.getStartKey().setObjs(adjustStartKey);
+                range.getEndKey().setObjs(adjustEndtKey);
+            }
         }
 
         this.scanRangeBitMap = byteArray;
     }
 
     public List<ObNewRange> getScanRanges() {
-        return scanRanges;
+        return keyRanges;
     }
 
     public void setScanRanges(List<ObNewRange> scanRanges) {
-        this.scanRanges = scanRanges;
+        this.keyRanges = scanRanges;
     }
 
     public void addScanRange(ObNewRange scanRange) {
-        this.scanRanges.add(scanRange);
+        this.keyRanges.add(scanRange);
     }
 
     public void addScanRangeColumns(List<String> scanRangeColumns) {
@@ -228,5 +279,26 @@ public class ObTableSingleOpQuery extends AbstractPayload {
 
     public void setAggColumnNames(List<String> columnNames) {
         this.aggColumnNames = columnNames;
+    }
+
+    public static ObTableSingleOpQuery getInstance(String indexName,
+                                                   List<ObNewRange> keyRanges,
+                                                   List<String> selectColumns,
+                                                   ObScanOrder scanOrder,
+                                                   boolean isHbaseQuery,
+                                                   ObHTableFilter obHTableFilter,
+                                                   ObKVParams obKVParams,
+                                                   String filterString) {
+        ObTableSingleOpQuery query = new ObTableSingleOpQuery();
+        query.setIndexName(indexName);
+        query.setScanRanges(keyRanges);
+        query.setSelectColumns(selectColumns);
+        query.setScanOrder(scanOrder);
+        if (isHbaseQuery) {
+            query.sethTableFilter(obHTableFilter);
+            query.setObKVParams(obKVParams);
+        }
+        query.setFilterString(filterString);
+        return query;
     }
 }
