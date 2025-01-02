@@ -617,7 +617,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             throw new IllegalArgumentException("table name is null");
         }
         boolean needRefreshTableEntry = false;
-        boolean needRenew = false;
         boolean needFetchAllRouteInfo = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
@@ -635,7 +634,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObPair<Long, ObTableParam> obPair = null;
             try {
                 if (odpMode) {
-                    obPair = getODPTableWithRowKeyValue(tableName, callback.getRowKey(), needRenew);
+                    obPair = new ObPair<Long, ObTableParam>(0L, new ObTableParam(odpTable));
                 } else {
                     obPair = getTable(tableName, callback.getRowKey(),
                         needRefreshTableEntry, tableEntryRefreshIntervalWait,
@@ -654,17 +653,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                     "execute while meet Exception, errorCode: {} , errorMsg: {}, try times {}",
                                     ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                     tryTimes);
-                            // if the cause is that ODP partition meta have expired, try to fetch new one
-                            if (ex instanceof ObTablePartitionChangeException
-                                && ((ObTablePartitionChangeException) ex).getErrorCode() == OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
-                                needRenew = true;
-                            } else {
-                                throw ex;
-                            }
                         } else {
                             logger.warn("execute while meet Exception, errorMsg: {}, try times {}",
                                 ex.getMessage(), tryTimes);
-                            throw ex;
                         }
                     } else {
                         RUNTIME.error("retry failed with exception", ex);
@@ -790,7 +781,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
         boolean needRefreshTableEntry = false;
         boolean needFetchAllRouteInfo = false;
-        boolean needRenew = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
         while (true) {
@@ -807,7 +797,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObPair<Long, ObTableParam> obPair = null;
             try {
                 if (odpMode) {
-                    obPair = getODPTableWithRowKey(tableName, callback.getRowKey(), needRenew);
+                    obPair = new ObPair<Long, ObTableParam>(0L, new ObTableParam(odpTable));
                 } else {
                     if (null != callback.getRowKey()) {
                         // using row key
@@ -835,18 +825,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                     "execute while meet Exception, errorCode: {} , errorMsg: {}, try times {}",
                                     ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                     tryTimes);
-                            // if the cause is that ODP partition meta have expired, try to fetch new one
-                            if (ex instanceof ObTablePartitionChangeException
-                                && ((ObTablePartitionChangeException) ex).getErrorCode() == OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
-                                needRenew = true;
-                            } else {
-                                throw ex;
-                            }
                         } else {
                             logger.warn(
                                 "execute while meet Exception, exception: {}, try times {}", ex,
                                 tryTimes);
-                            throw ex;
                         }
                     } else {
                         RUNTIME.error("retry failed with exception", ex);
@@ -1229,7 +1211,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if ((fetchAll && (fetchAllInterval < punishInterval))
                 || (!fetchAll && (interval < punishInterval))) {
                 if (waitForRefresh) {
-                    long toHoldTime = punishInterval - interval;
+                    long toHoldTime = fetchAll ? (punishInterval - fetchAllInterval) : (punishInterval - interval);
                     logger
                         .info(
                             "punish table entry {} : table entry refresh time {} punish interval {} current time {}. wait for refresh times {}",
