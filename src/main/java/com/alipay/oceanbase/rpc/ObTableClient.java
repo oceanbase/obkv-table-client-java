@@ -1213,7 +1213,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if ((fetchAll && (fetchAllInterval < punishInterval))
                 || (!fetchAll && (interval < punishInterval))) {
                 if (waitForRefresh) {
-                    long toHoldTime = punishInterval - interval;
+                    long toHoldTime = fetchAll ? (punishInterval - fetchAllInterval) : (punishInterval - interval);
                     logger
                         .info(
                             "punish table entry {} : table entry refresh time {} punish interval {} current time {}. wait for refresh times {}ms",
