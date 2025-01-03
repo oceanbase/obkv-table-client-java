@@ -71,7 +71,7 @@ public enum Property {
     TABLE_ENTRY_REFRESH_INTERNAL_CEILING("table.entry.refresh.internal.ceiling", 1600L,
                                          "刷新TABLE地址的最大时间间隔"),
 
-    TABLE_ENTRY_REFRESH_INTERVAL_WAIT("table.entry.refresh.interval.wait", false,
+    TABLE_ENTRY_REFRESH_INTERVAL_WAIT("table.entry.refresh.interval.wait", true,
                                       "刷新TABLE地址时是否等待间隔时间"),
 
     TABLE_ENTRY_REFRESH_LOCK_TIMEOUT("table.entry.refresh.lock.timeout", 4000L, "刷新TABLE地址的锁超时时间"),
@@ -113,7 +113,7 @@ public enum Property {
     // [ObTable][RPC]
     RPC_CONNECT_TRY_TIMES("rpc.connect.try.times", 3, "建立RPC连接的尝试次数"),
 
-    RPC_EXECUTE_TIMEOUT("rpc.execute.timeout", 3000, "执行RPC请求的socket超时时间"),
+    RPC_EXECUTE_TIMEOUT("rpc.execute.timeout", 12000, "执行RPC请求的socket超时时间"),
 
     RPC_LOGIN_TIMEOUT("rpc.login.timeout", 1000, "请求RPC登录的超时时间"),
 

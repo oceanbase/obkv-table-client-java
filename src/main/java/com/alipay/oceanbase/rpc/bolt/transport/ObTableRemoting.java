@@ -165,7 +165,7 @@ public class ObTableRemoting extends BaseRemoting {
             } else {
                 String errMessage = TraceUtil.formatTraceMessage(conn, response,
                     "receive unexpected command code: " + response.getCmdCode().value());
-                throw new ObTableUnexpectedException(errMessage);
+                throw new ObTableUnexpectedException(errMessage, resultCode.getRcode());
             }
 
             payload.decode(buf);
@@ -196,6 +196,8 @@ public class ObTableRemoting extends BaseRemoting {
                || errorCode == ResultCodes.OB_LS_NOT_EXIST.errorCode
                || errorCode == ResultCodes.OB_MAPPING_BETWEEN_TABLET_AND_LS_NOT_EXIST.errorCode
                || errorCode == ResultCodes.OB_SNAPSHOT_DISCARDED.errorCode
+               || errorCode == ResultCodes.OB_SCHEMA_EAGAIN.errorCode
+                || errorCode == ResultCodes.OB_ERR_WAIT_REMOTE_SCHEMA_REFRESH.errorCode
                || (pcode == Pcodes.OB_TABLE_API_LS_EXECUTE && errorCode == ResultCodes.OB_NOT_MASTER.errorCode);
     }
 

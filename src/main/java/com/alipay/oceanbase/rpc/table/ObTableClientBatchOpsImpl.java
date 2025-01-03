@@ -17,9 +17,11 @@
 
 package com.alipay.oceanbase.rpc.table;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
+import com.alipay.oceanbase.rpc.location.model.TableEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.result.*;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
@@ -365,11 +367,14 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
-                        ObTableParam newParam = obTableClient.getTableWithPartId(tableName,
-                                originPartId, needRefreshTableEntry,
-                                obTableClient.isTableEntryRefreshIntervalWait(), needFetchAllRouteInfo,
-                                route).getRight();
-
+                        TableEntry entry = obTableClient.getOrRefreshTableEntry(tableName, false,
+                            false, false);
+                        if (ObGlobal.obVsnMajor() >= 4) {
+                            obTableClient.refreshTableLocationByTabletId(entry, tableName, partId);
+                        }
+                        ObTableParam newParam = obTableClient.getTableWithPartId(tableName, partId,
+                                false, obTableClient.isTableEntryRefreshIntervalWait(), needFetchAllRouteInfo, route)
+                                .getRight();
                         subObTable = newParam.getObTable();
                         subRequest.setPartitionId(newParam.getPartitionId());
                     }
@@ -427,17 +432,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 } else if (ex instanceof ObTableException
                            && ((ObTableException) ex).isNeedRefreshTableEntry()) {
                     needRefreshTableEntry = true;
-                    logger
-                        .warn(
-                            "tablename:{} partition id:{} batch ops refresh table while meet ObTableMasterChangeException, errorCode: {}",
-                            tableName, partId, ((ObTableException) ex).getErrorCode(), ex);
                     if (obTableClient.isRetryOnChangeMasterTimes()
                         && (tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
-                        logger
-                            .warn(
-                                "tablename:{} partition id:{} batch ops retry while meet ObTableMasterChangeException, errorCode: {} , retry times {}",
-                                tableName, partId, ((ObTableException) ex).getErrorCode(),
-                                tryTimes, ex);
                         if (ex instanceof ObTableNeedFetchAllException) {
                             // refresh table info
                             obTableClient.getOrRefreshTableEntry(tableName, needRefreshTableEntry,
@@ -445,8 +441,15 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                             throw ex;
                         }
                     } else {
+                        String logMessage = String.format(
+                                "exhaust retry while meet NeedRefresh Exception, table name: %s, batch ops refresh table, retry times: %d, errorCode: %d",
+                                tableName,
+                                obTableClient.getRuntimeRetryTimes(),
+                                ((ObTableException) ex).getErrorCode()
+                        );
+                        logger.warn(logMessage, ex);
                         obTableClient.calculateContinuousFailure(tableName, ex.getMessage());
-                        throw ex;
+                        throw new ObTableRetryExhaustedException(logMessage, ex);
                     }
                 } else {
                     obTableClient.calculateContinuousFailure(tableName, ex.getMessage());
@@ -553,6 +556,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         throw e;
                     }
                 }
+                Thread.sleep(obTableClient.getRuntimeRetryInterval());
             }
 
             if (allPartitionsSuccess) {
