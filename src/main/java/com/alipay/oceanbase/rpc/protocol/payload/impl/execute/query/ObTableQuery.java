@@ -69,7 +69,7 @@ public class ObTableQuery extends AbstractPayload {
     protected ObHTableFilter      hTableFilter;
 
     private static final byte[] HTABLE_DUMMY_BYTES = new byte[] { 0x01, 0x00 };
-    private boolean             isHbaseQuery              = false;
+    protected boolean           isHbaseQuery              = false;
     private boolean             isFTSQuery                = false;
     private List<String>        scanRangeColumns          = new LinkedList<String>();
 
@@ -77,7 +77,7 @@ public class ObTableQuery extends AbstractPayload {
 
     private Long partId = null;
 
-    private ObKVParams obKVParams = null;
+    protected ObKVParams obKVParams = null;
 
     public void adjustStartKey(List<ObObj> key) throws IllegalArgumentException {
         List<ObNewRange> keyRanges = getKeyRanges();
