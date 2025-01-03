@@ -68,7 +68,7 @@ public class ObTableQuery extends AbstractPayload {
     protected long                maxResultSize             = -1;
     protected ObHTableFilter      hTableFilter;
 
-    private static final byte[] HTABLE_DUMMY_BYTES = new byte[] { 0x01, 0x00 };
+    protected static final byte[] HTABLE_DUMMY_BYTES = new byte[] { 0x01, 0x00 };
     protected boolean           isHbaseQuery              = false;
     private boolean             isFTSQuery                = false;
     private List<String>        scanRangeColumns          = new LinkedList<String>();
