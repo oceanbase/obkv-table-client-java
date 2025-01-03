@@ -199,4 +199,6 @@ public interface TableQuery {
     TableQuery setScanRangeColumns(String... columns);
 
     void clear();
+
+    TableQuery setSearchText(String searchText);
 }
