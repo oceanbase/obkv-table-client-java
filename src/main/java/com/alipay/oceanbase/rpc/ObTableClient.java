@@ -62,7 +62,6 @@ import static com.alipay.oceanbase.rpc.location.model.ObServerRoute.STRONG_READ;
 import static com.alipay.oceanbase.rpc.location.model.TableEntry.HBASE_ROW_KEY_ELEMENT;
 import static com.alipay.oceanbase.rpc.location.model.partition.ObPartIdCalculator.*;
 import static com.alipay.oceanbase.rpc.property.Property.*;
-import static com.alipay.oceanbase.rpc.protocol.payload.ResultCodes.OB_ERR_KV_ROUTE_ENTRY_EXPIRE;
 import static com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType.*;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
 import static java.lang.String.format;
@@ -2315,8 +2314,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObTableParam param = new ObTableParam(obTable);
             param.setPartId(partId);
             partId = getTabletIdByPartId(tableEntry, partId);
-            param.setLsId(tableEntry.getPartitionEntry().getPartitionInfo(partId).getTabletLsId());
-
+            if (ObGlobal.obVsnMajor() >= 4 && tableEntry != null) {
+                param.setLsId(tableEntry.getPartitionEntry().getPartitionInfo(partId).getTabletLsId());
+            }
             param.setTableId(tableEntry.getTableId());
             // real partition(tablet) id
             param.setPartitionId(partId);

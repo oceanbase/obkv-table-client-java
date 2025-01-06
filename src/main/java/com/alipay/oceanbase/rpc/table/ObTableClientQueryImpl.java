@@ -171,8 +171,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                 }
             }
             if (getPartId() != null && tableQuery.getIndexName() == null) {
+                String realTableName = tableName;
                 try {
-                    String realTableName = tableName;
                     if (this.entityType == ObTableEntityType.HKV
                             && obTableClient.isTableGroupName(tableName)) {
                         indexTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName,
@@ -190,7 +190,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                         } else if (((ObTableException) e).getErrorCode() == ResultCodes.OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
                             // retry one time with force-renew flag
                             ObPair<Long, ObTableParam> odpTable = obTableClient.getODPTableWithPartId(
-                                    tableName, getPartId(), true);
+                                    realTableName, getPartId(), true);
                             partitionObTables.put(odpTable.getLeft(), odpTable);
                         } else {
                             throw e;
@@ -199,7 +199,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                         throw e;
                     }
                 }
-            }  else {
+            } else {
                 partitionObTables.put(0L, new ObPair<Long, ObTableParam>(0L, new ObTableParam(
                         obTableClient.getOdpTable())));
             }
