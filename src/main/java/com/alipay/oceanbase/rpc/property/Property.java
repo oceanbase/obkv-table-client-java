@@ -98,7 +98,7 @@ public enum Property {
     RUNTIME_RETRY_TIMES("runtime.retry.times", 3, "运行过程中遇到可重试错误时的重试次数"),
 
     // property in both obTableClient / direct load client
-    RUNTIME_RETRY_INTERVAL("runtime.retry.interval", 100, "运行出错时重试的时间间隔"),
+    RUNTIME_RETRY_INTERVAL("runtime.retry.interval", 1, "运行出错时重试的时间间隔"),
 
     RUNTIME_MAX_WAIT("runtime.max.wait", 5000L, "单次执行超时时间会在超时时间内重试"),
 
