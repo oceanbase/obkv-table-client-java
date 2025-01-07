@@ -438,7 +438,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         tableLsOp.setLsId(lsId);
         tableLsOp.setReturnOneResult(returnOneResult);
         tableLsOp.setNeedAllProp(needAllProp);
-        tableLsOp.setTableName(tableName);
+        tableLsOp.setTableName(tableName.toLowerCase(Locale.ROOT));
         // fetch the following parameters in first entry for routing
         long tableId = 0;
         long originPartId = 0;
