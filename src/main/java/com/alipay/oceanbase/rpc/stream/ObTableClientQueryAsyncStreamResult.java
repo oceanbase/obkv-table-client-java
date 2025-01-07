@@ -56,7 +56,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         int maxRetries = client.getTableEntryRefreshTryTimes();
         // init request
         ObTableQueryRequest request = new ObTableQueryRequest();
-        request.setTableName(tableName.toLowerCase(Locale.ROOT));
+        request.setTableName(tableName);
         request.setTableQuery(tableQuery);
         request.setEntityType(entityType);
         request.setConsistencyLevel(getReadConsistency().toObTableConsistencyLevel());
