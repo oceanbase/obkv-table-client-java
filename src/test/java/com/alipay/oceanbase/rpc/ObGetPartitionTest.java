@@ -17,20 +17,13 @@
 
 package com.alipay.oceanbase.rpc;
 
-import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.location.model.partition.Partition;
 import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
-import com.alipay.oceanbase.rpc.property.Property;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
-import com.alipay.oceanbase.rpc.table.api.TableQuery;
-import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
-import net.bytebuddy.implementation.auxiliary.MethodCallProxy;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,9 +37,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.*;
 import static com.alipay.oceanbase.rpc.util.ObTableClientTestUtil.cleanTable;
 import static com.alipay.oceanbase.rpc.util.ObTableClientTestUtil.generateRandomStringByUUID;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 public class ObGetPartitionTest {
 
     public ObTableClient        client;
