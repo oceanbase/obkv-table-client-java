@@ -438,7 +438,15 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         tableLsOp.setLsId(lsId);
         tableLsOp.setReturnOneResult(returnOneResult);
         tableLsOp.setNeedAllProp(needAllProp);
-        tableLsOp.setTableName(tableName.toLowerCase(Locale.ROOT));
+        // On the server side, table group names may include uppercase letters,   
+        // but table names are always in lowercase. In certain cases, batch get   
+        // operations depend on the provided table name for matching. Therefore,   
+        // a conversion is performed here to ensure proper matching.
+        String argTableName = tableName;
+        if (entityType == ObTableEntityType.HKV && !obTableClient.isTableGroupName(argTableName)) {
+            argTableName = tableName.toLowerCase();
+        }
+        tableLsOp.setTableName(argTableName);
         // fetch the following parameters in first entry for routing
         long tableId = 0;
         long originPartId = 0;
