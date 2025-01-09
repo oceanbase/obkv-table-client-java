@@ -309,7 +309,7 @@ public class ObDirectLoadStatement {
         private long                         maxErrorRowCount  = 0;
         private String                       loadMethod        = "full";
 
-        private static final long            MAX_QUERY_TIMEOUT = 1L * 365 * 24 * 3600 * 1000;     // 1year
+        private static final long            MAX_QUERY_TIMEOUT = 2147483647;     // INT_MAX
 
         Builder(ObDirectLoadConnection connection) {
             this.connection = connection;
