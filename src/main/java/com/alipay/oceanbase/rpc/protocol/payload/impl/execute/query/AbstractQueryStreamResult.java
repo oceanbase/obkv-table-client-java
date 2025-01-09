@@ -257,7 +257,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                 }
                             } else {
                                 String logMessage = String.format(
-                                        "exhaust retry while meet NeedRefresh Exception, table name: %s, ls id: %d, batch ops refresh table, errorCode: %d",
+                                        "exhaust retry while meet NeedRefresh Exception, table name: %s, batch ops refresh table, errorCode: %d",
                                         indexTableName,
                                         ((ObTableException) e).getErrorCode()
                                 );

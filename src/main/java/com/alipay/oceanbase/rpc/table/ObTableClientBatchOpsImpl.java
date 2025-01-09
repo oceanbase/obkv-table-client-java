@@ -539,7 +539,6 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         throw e;
                     }
                 }
-                Thread.sleep(obTableClient.getRuntimeRetryInterval());
             }
 
             if (allPartitionsSuccess) {
