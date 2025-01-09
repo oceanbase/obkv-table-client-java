@@ -133,7 +133,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             throw new IllegalArgumentException("table name is null");
         } else if (tableQuery.isFTSQuery()) {
             if (!ObGlobal.isFtsQuerySupport()) {
-                throw new FeatureNotSupportedException("full text query is not supported in "+ObGlobal.OB_VERSION);
+                throw new FeatureNotSupportedException("full text query is not supported in "+ObGlobal.obVsnString());
             }
             if (tableQuery.getIndexName() == null || tableQuery.getIndexName().isEmpty()
                     || tableQuery.getIndexName().equalsIgnoreCase("primary")) {
