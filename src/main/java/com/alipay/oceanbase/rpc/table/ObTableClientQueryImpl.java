@@ -176,7 +176,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         if (obTableClient.isOdpMode()) {
             if (tableQuery.getScanRangeColumns().isEmpty()) {
                 if (tableQuery.getIndexName() != null
-                    && !tableQuery.getIndexName().equalsIgnoreCase("primary")) {
+                    && !tableQuery.getIndexName().equalsIgnoreCase("primary") && !tableQuery.isFTSQuery()) {
                     throw new ObTableException("key range columns must be specified when use index");
                 }
             }
