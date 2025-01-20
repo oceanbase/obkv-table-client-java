@@ -264,4 +264,10 @@ public class ObClusterTableQuery extends AbstractTableQuery {
         super.setEntityType(entityType);
         tableClientQuery.setEntityType(entityType);
     }
+
+    @Override
+    public TableQuery setSearchText(String searchText) {
+        tableClientQuery.setSearchText(searchText);
+        return this;
+    }
 }

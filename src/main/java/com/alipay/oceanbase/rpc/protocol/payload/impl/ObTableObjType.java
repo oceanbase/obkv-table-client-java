@@ -177,7 +177,10 @@ public enum ObTableObjType {
     ObTableLongBlobType(24) {
     },
 
-    ObTableInvalidType(25) {
+    ObTableCharType(25) {
+    },
+
+    ObTableInvalidType(26) {
     };
 
     private int                                 value;
@@ -230,6 +233,8 @@ public enum ObTableObjType {
             } else if (obj.isMaxObj()) {
                 return ObTableObjType.ObTableMaxType;
             }
+        } else if (objType == ObObjType.ObCharType) {
+            return ObTableObjType.ObTableCharType;
         }
 
         throw new IllegalArgumentException("cannot get ObTableObjType, invalid ob obj type: "
@@ -258,6 +263,7 @@ public enum ObTableObjType {
         tableObjTypeMap.put(ObTableLongBlobType, ObObjType.ObLongTextType);
         tableObjTypeMap.put(ObTableMinType, ObObjType.ObExtendType);
         tableObjTypeMap.put(ObTableMaxType, ObObjType.ObExtendType);
+        tableObjTypeMap.put(ObTableCharType, ObObjType.ObCharType);
     }
 
     public static ObObjType getObjType(ObTableObjType tableObjType) {
