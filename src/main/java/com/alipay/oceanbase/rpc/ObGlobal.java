@@ -87,8 +87,7 @@ public class ObGlobal {
     }
 
     public static boolean isFtsQuerySupport() {
-        // tmp use, before merge to master, we should change 435 to 4351
-        return OB_VERSION >= OB_VERSION_4_3_5_0;
+        return OB_VERSION >= OB_VERSION_4_3_5_1;
     }
 
     public static boolean isReturnOneResultSupport() {
