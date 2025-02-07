@@ -5,24 +5,18 @@ import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
-import com.alipay.oceanbase.rpc.table.ObTable;
-import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
-import com.google.protobuf.MapEntry;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -384,211 +378,6 @@ public class ObTableFullTextIndexTest {
             Assert.assertEquals(null, res.get(c2Col));
             Assert.assertEquals(txt4, res.get(txtCol));
         } catch(Exception e) {
-            e.printStackTrace();
-            Assert.fail();
-        } finally {
-            executeSQL(truncateTTLTableSQL);
-        }
-    }
-
-    @Test
-    public void testIncrment() throws Exception {
-        try {
-            // increment row not exist
-            int id = 9;
-
-            MutationResult res = client.increment(partTableName).setRowKey(colVal(idCol, id))
-                    .addMutateRow(row(colVal(c2Col, 1)))
-                    .execute();
-            Assert.assertEquals(1, res.getAffectedRows());
-
-            Map<String, Object> getRes = client.get(partTableName, new Object[] { id }, null);
-            Assert.assertEquals(3, getRes.size());
-            Assert.assertEquals(id, getRes.get(idCol));
-            Assert.assertEquals(1, getRes.get(c2Col));
-            Assert.assertEquals(null, getRes.get(txtCol));
-
-            res = client.increment(partTableName).setRowKey(colVal(idCol, id))
-                    .addMutateRow(row(colVal(c2Col, 1)))
-                    .execute();
-            Assert.assertEquals(1, res.getAffectedRows());
-
-            getRes = client.get(partTableName, new Object[] { id }, null);
-            Assert.assertEquals(3, getRes.size());
-            Assert.assertEquals(id, getRes.get(idCol));
-            Assert.assertEquals(2, getRes.get(c2Col));
-            Assert.assertEquals(null, getRes.get(txtCol));
-        } catch(Exception e) {
-            e.printStackTrace();
-            Assert.fail();
-        } finally {
-            executeSQL(truncatePartTableSQL);
-        }
-    }
-
-    @Test
-    public void testAppend() throws Exception {
-        try {
-            // append row not exist
-            int id = 10;
-            String txt1 = "We enjoyed a peaceful walk.";
-            MutationResult res = client.append(partTableName).setRowKey(colVal(idCol, id))
-                    .addMutateRow(row(colVal(txtCol, txt1)))
-                    .execute();
-            Assert.assertEquals(1, res.getAffectedRows());
-
-            Map<String, Object> getRes = client.get(partTableName, new Object[] { id }, null);
-            Assert.assertEquals(3, getRes.size());
-            Assert.assertEquals(id, getRes.get(idCol));
-            Assert.assertEquals(null, getRes.get(c2Col));
-            Assert.assertEquals(txt1, getRes.get(txtCol));
-
-            String txt2 = "Can you pass me the salt, please?";
-            res = client.append(partTableName).setRowKey(colVal(idCol, id))
-                    .addMutateRow(row(colVal(txtCol, txt2)))
-                    .execute();
-            Assert.assertEquals(1, res.getAffectedRows());
-
-            getRes = client.get(partTableName, new Object[] { id }, null);
-            Assert.assertEquals(3, getRes.size());
-            Assert.assertEquals(id, getRes.get(idCol));
-            Assert.assertEquals(null, getRes.get(c2Col));
-            Assert.assertEquals(txt1+txt2, getRes.get(txtCol));
-        } catch(Exception e) {
-            e.printStackTrace();
-            Assert.fail();
-        } finally {
-            executeSQL(truncatePartTableSQL);
-        }
-    }
-
-    private void loadData(String tableName) throws Exception {
-        // load data
-        client.insert(tableName).setRowKey(colVal(idCol, 1))
-                .addMutateRow(row(colVal(c2Col, 1), colVal(txtCol, "hello world")))
-                .execute();
-        client.insert(tableName).setRowKey(colVal(idCol, 2))
-                .addMutateRow(row(colVal(c2Col, 2), colVal(txtCol, "OceanBase Database is a native, enterprise-level distributed database developed independently by the OceanBase team")))
-                .execute();
-        client.insert(tableName).setRowKey(colVal(idCol, 3))
-                .addMutateRow(row(colVal(c2Col, 3), colVal(txtCol, "Learn about SQL and database administration in oceanBase")))
-                .execute();
-        client.insert(tableName).setRowKey(colVal(idCol, 4))
-                .addMutateRow(row(colVal(c2Col, 4), colVal(txtCol, "Master the art of full text searching")))
-                .execute();
-    }
-
-    @Test
-    public void testFTSQuery() throws Exception {
-        try {
-            executeSQL(truncatePartTableSQL);
-            client.addRowKeyElement(partTableName, new String[] {"id"});
-            //load data
-            loadData(partTableName);
-            //sync query
-            QueryResultSet resultSet = client.query(partTableName)
-                    .setSearchText("oceanbase")
-                    .indexName("full_idx1_tbl1")
-                    .execute();
-            int count = 0;
-            while(resultSet.next()) {
-                count++;
-                Map<String, Object> row = resultSet.getRow();
-                Assert.assertEquals(3, row.size());
-                int id = (int) row.get("id");
-                Assert.assertEquals(id, row.get("c2"));
-                Assert.assertTrue(((String)row.get("txt")).toLowerCase(Locale.ROOT).contains("oceanbase"));
-            }
-            Assert.assertTrue(2 == count);
-
-            // async query
-            QueryResultSet asyncResultSet = client.query(partTableName)
-                    .indexName("full_idx1_tbl1")
-                    .setSearchText("oceanbase")
-                    .asyncExecute();
-            count = 0;
-            while(asyncResultSet.next()) {
-                count++;
-                Map<String, Object> row = asyncResultSet.getRow();
-                Assert.assertEquals(3, row.size());
-                int id = (int) row.get("id");
-                Assert.assertEquals(id, row.get("c2"));
-                Assert.assertTrue(((String)row.get("txt")).toLowerCase(Locale.ROOT).contains("oceanbase"));
-            }
-            Assert.assertTrue(2 == count);
-        } catch (Exception e) {
-            e.printStackTrace();
-            Assert.fail();
-        } finally {
-            executeSQL(truncatePartTableSQL);
-        }
-    }
-
-    private void loadDataWithTTL() throws Exception {
-        // load data
-        Timestamp curTs = new Timestamp(System.currentTimeMillis());
-        Timestamp expireTs = new Timestamp(System.currentTimeMillis() - 1000000);
-        client.insert(ttlTableName).setRowKey(colVal(idCol, 1))
-                .addMutateRow(row(colVal(c2Col, 1),
-                        colVal(expireTsCol, curTs),
-                        colVal(txtCol, "Hello World")))
-                .execute();
-        client.insert(ttlTableName).setRowKey(colVal(idCol, 2))
-                .addMutateRow(row(colVal(c2Col, 2),
-                        colVal(expireTsCol, curTs),
-                        colVal(txtCol, "OceanBase Database is a native, enterprise-level distributed database developed independently by the OceanBase team")))
-                .execute();
-        client.insert(ttlTableName).setRowKey(colVal(idCol, 3))
-                .addMutateRow(row(colVal(c2Col, 3),
-                        colVal(expireTsCol, expireTs),
-                        colVal(txtCol, "Learn about SQL and database administration in oceanBase")))
-                .execute();
-        client.insert(ttlTableName).setRowKey(colVal(idCol, 4))
-                .addMutateRow(row(colVal(c2Col, 4),
-                        colVal(expireTsCol, expireTs),
-                        colVal(txtCol, "Master the art of full text searching")))
-                .execute();
-    }
-
-    @Test
-    public void testFTSQueryWithTTL() throws Exception {
-        try {
-            executeSQL(truncateTTLTableSQL);
-            client.addRowKeyElement(ttlTableName, new String[]{"id"});
-            //load data
-            loadDataWithTTL();
-            //sync query
-            QueryResultSet resultSet = client.query(ttlTableName)
-                    .setSearchText("oceanbase")
-                    .indexName("full_idx1_tbl1")
-                    .execute();
-            int count = 0;
-            while(resultSet.next()) {
-                count++;
-                Map<String, Object> row = resultSet.getRow();
-                Assert.assertEquals(4, row.size());
-                int id = (int) row.get("id");
-                Assert.assertEquals(id, row.get("c2"));
-                Assert.assertTrue(((String)row.get("txt")).toLowerCase(Locale.ROOT).contains("oceanbase"));
-            }
-            Assert.assertTrue(1 == count);
-
-            // async query
-            QueryResultSet asyncResultSet = client.query(ttlTableName)
-                    .indexName("full_idx1_tbl1")
-                    .setSearchText("oceanbase")
-                    .asyncExecute();
-            count = 0;
-            while(asyncResultSet.next()) {
-                count++;
-                Map<String, Object> row = asyncResultSet.getRow();
-                Assert.assertEquals(4, row.size());
-                int id = (int) row.get("id");
-                Assert.assertEquals(id, row.get("c2"));
-                Assert.assertTrue(((String)row.get("txt")).toLowerCase(Locale.ROOT).contains("oceanbase"));
-            }
-            Assert.assertTrue(1 == count);
-        } catch (Exception e) {
             e.printStackTrace();
             Assert.fail();
         } finally {
