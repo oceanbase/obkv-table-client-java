@@ -86,6 +86,10 @@ public class ObGlobal {
                || OB_VERSION >= OB_VERSION_4_3_4_0;
     }
 
+    public static boolean isFtsQuerySupport() {
+        return OB_VERSION >= OB_VERSION_4_3_5_1;
+    }
+
     public static boolean isReturnOneResultSupport() {
         return OB_VERSION >= OB_VERSION_4_2_3_0 && OB_VERSION < OB_VERSION_4_3_0_0
                || OB_VERSION >= OB_VERSION_4_3_4_0;

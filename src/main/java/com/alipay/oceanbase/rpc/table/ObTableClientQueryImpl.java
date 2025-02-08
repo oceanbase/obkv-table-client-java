@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.table;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.FeatureNotSupportedException;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
@@ -130,6 +131,15 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             throw new ObTableException("offset can not be use without limit");
         } else if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
+        } else if (tableQuery.isFTSQuery()) {
+            if (!ObGlobal.isFtsQuerySupport()) {
+                throw new FeatureNotSupportedException("full text query is not supported in "+ObGlobal.obVsnString());
+            }
+            if (tableQuery.getIndexName() == null || tableQuery.getIndexName().isEmpty()
+                    || tableQuery.getIndexName().equalsIgnoreCase("primary")) {
+                throw new IllegalArgumentException(
+                        "use fulltext search but specified index name is not fulltext index");
+            }
         }
     }
 
@@ -166,7 +176,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         if (obTableClient.isOdpMode()) {
             if (tableQuery.getScanRangeColumns().isEmpty()) {
                 if (tableQuery.getIndexName() != null
-                    && !tableQuery.getIndexName().equalsIgnoreCase("primary")) {
+                    && !tableQuery.getIndexName().equalsIgnoreCase("primary") && !tableQuery.isFTSQuery()) {
                     throw new ObTableException("key range columns must be specified when use index");
                 }
             }

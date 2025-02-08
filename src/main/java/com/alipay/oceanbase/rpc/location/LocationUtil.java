@@ -1016,12 +1016,11 @@ public class LocationUtil {
                 indexInfo.setIndexTableId(rs.getLong("table_id"));
                 indexInfo.setIndexType(ObIndexType.valueOf(rs.getInt("index_type")));
             } else {
-                throw new ObTableEntryRefreshException(
-                    "fail to get index info from remote, result set is empty");
+                throw new ObTableEntryRefreshException("index is not exist");
             }
         } catch (Exception e) {
             throw new ObTableEntryRefreshException(format(
-                "fail to get index info from remote, indexTableName: %s", indexTableName), e);
+                "fail to get index info from remote, indexTableName: %s, error message: %s", indexTableName, e.getMessage()), e);
         } finally {
             try {
                 if (null != rs) {
@@ -1771,8 +1770,14 @@ public class LocationUtil {
                         long subPartNum = rs.getLong("sub_part_num");
                         subHashPartDesc.setPartNum((int) subPartNum);
                     }
+                } else if (subPartDesc instanceof ObRangePartDesc) {
+                    ObRangePartDesc subRangePartDesc = (ObRangePartDesc) subPartDesc;
+                    if (!isSubPart && subRangePartDesc.getPartNum() == 0) {
+                        long subPartNum = rs.getLong("sub_part_num");
+                        subRangePartDesc.setPartNum((int) subPartNum);
+                    }
                 } else {
-                    throw new IllegalArgumentException("sub part desc is not key or hash part desc");
+                    throw new IllegalArgumentException("sub part desc is not key,hash and range part desc");
                 }
             }
             Long tabletId = rs.getLong("tablet_id");
