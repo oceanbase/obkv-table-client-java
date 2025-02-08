@@ -20,7 +20,7 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 import com.alipay.oceanbase.rpc.exception.FeatureNotSupportedException;
 import com.alipay.oceanbase.rpc.table.ObFTSParams;
 import com.alipay.oceanbase.rpc.table.ObHBaseParams;
-import com.alipay.oceanbase.rpc.table. ObKVParams;
+import com.alipay.oceanbase.rpc.table.ObKVParams;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
