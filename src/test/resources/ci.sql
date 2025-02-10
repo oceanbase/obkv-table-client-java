@@ -634,4 +634,23 @@ CREATE TABLE IF NOT EXISTS `test_get` (
     PRIMARY KEY (`c1`, `c2`)
     ) PARTITION BY KEY(`c1`) PARTITIONS 3;
 
+CREATE TABLE IF NOT EXISTS `test_datetime_range` (
+    `c1` bigint(20) NOT NULL,
+    `c2` datetime(6) NOT NULL,
+    `c3` bigint(20) NOT NULL,
+    `c4` varchar(20) DEFAULT NULL,
+    KEY `idx_c2` (`c1`, `c2`) LOCAL,
+    PRIMARY KEY (`c1`, `c2`, `c3`)
+    ) partition by range columns(c2) subpartition by key(c1) subpartition template (
+    subpartition `p0`,
+    subpartition `p1`,
+    subpartition `p2`,
+    subpartition `p3`)
+    (partition `p0` values less than ('2023-12-01 00:00:00'),
+     partition `p1` values less than ('2024-12-10 00:00:00'),
+     partition `p2` values less than ('2025-12-20 00:00:00'),
+     partition `p3` values less than ('2026-12-30 00:00:00'),
+     partition `p4` values less than ('2027-01-01 00:00:00'),
+     partition `p5` values less than MAXVALUE);
+
 alter system set kv_hotkey_throttle_threshold = 50;
