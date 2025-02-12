@@ -20,6 +20,7 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 public class ObTableSingleOpFlag {
     private static final int FLAG_IS_CHECK_NOT_EXISTS = 1 << 0;
     private static final int FLAG_IS_ROLLBACK_WHEN_CHECK_FAILED = 1 << 1;
+    private static final int FLAG_IS_USER_SPECIFIED_T = 1 << 2;
     private long             flags                    = 0;
 
     public void setIsCheckNotExists(boolean isCheckNotExists) {
@@ -37,6 +38,14 @@ public class ObTableSingleOpFlag {
             flags &= ~FLAG_IS_ROLLBACK_WHEN_CHECK_FAILED;
         }
     }
+    
+    public void setIsUserSpecifiedT(boolean isUserSpecifiedT) {
+        if (isUserSpecifiedT) {
+            flags |= FLAG_IS_USER_SPECIFIED_T;
+        } else {
+            flags &= ~FLAG_IS_USER_SPECIFIED_T;
+        }
+    }
 
     public long getValue() {
         return flags;
@@ -49,7 +58,10 @@ public class ObTableSingleOpFlag {
     public boolean isRollbackWhenCheckFailed() {
         return (flags & FLAG_IS_ROLLBACK_WHEN_CHECK_FAILED) != 0;
     }
-
+    public boolean isUserSpecifiedT() {
+        return (flags & FLAG_IS_USER_SPECIFIED_T) != 0;
+    }
+    
     void setValue(long value) {
         flags = value;
     }
