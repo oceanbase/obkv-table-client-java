@@ -21,6 +21,7 @@ public class ObTableQueryAndMutateFlag {
     private static final int FLAG_IS_CHECK_AND_EXECUTE          = 1 << 0;
     private static final int FLAG_IS_CHECK_NOT_EXISTS           = 1 << 1;
     private static final int FLAG_IS_ROLLBACK_WHEN_CHECK_FAILED = 1 << 2;
+    private static final int FLAG_IS_USER_SPECIFIED_T           = 1 << 3;
     private long             flags                              = 0;
 
     public void setIsCheckAndExecute(boolean isCheckAndExecute) {
@@ -46,6 +47,14 @@ public class ObTableQueryAndMutateFlag {
             flags &= ~FLAG_IS_ROLLBACK_WHEN_CHECK_FAILED;
         }
     }
+    
+    public void setIsUserSpecifiedT(boolean isUserSpecifiedT) {
+        if (isUserSpecifiedT) {
+            flags |= FLAG_IS_USER_SPECIFIED_T;
+        } else {
+            flags &= ~FLAG_IS_USER_SPECIFIED_T;
+        }
+    }
 
     public long getValue() {
         return flags;
@@ -61,5 +70,9 @@ public class ObTableQueryAndMutateFlag {
 
     public boolean isRollbackWhenCheckFailed() {
         return (flags & FLAG_IS_ROLLBACK_WHEN_CHECK_FAILED) != 0;
+    }
+    
+    public boolean isUserSpecifiedT() {
+        return (flags & FLAG_IS_USER_SPECIFIED_T) != 0;
     }
 }
