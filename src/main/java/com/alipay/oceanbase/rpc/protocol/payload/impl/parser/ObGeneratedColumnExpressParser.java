@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl.parser;
 
 import com.alipay.oceanbase.rpc.exception.GenerateColumnParseException;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObGeneratedColumnNegateFunc;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObGeneratedColumnReferFunc;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObGeneratedColumnSimpleFunc;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObGeneratedColumnSubStrFunc;
@@ -66,6 +67,10 @@ public class ObGeneratedColumnExpressParser {
                     default:
                         throw new GenerateColumnParseException("");
                 }
+            case SUB:
+                // If the first token is a '-' sign, then generate the opposite number expression.
+                String refColumn = lexer.stringVal();
+                return new ObGeneratedColumnNegateFunc(refColumn);
             default:
                 throw new GenerateColumnParseException("ERROR. token :  " + lexer.token()
                                                        + ", pos : " + lexer.pos());

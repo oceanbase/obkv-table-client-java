@@ -62,6 +62,8 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     private ConnectionFactory     connectionFactory;
     private ObTableRemoting       realClient;
     private ObTableConnectionPool connectionPool;
+
+    private ObTableServerCapacity serverCapacity = new ObTableServerCapacity();
     
     private Map<String, Object> configs;
 
@@ -512,6 +514,20 @@ public class ObTable extends AbstractObTable implements Lifecycle {
      */
     public void setPort(int port) {
         this.port = port;
+    }
+
+    /*
+     * Get server capacity.
+     */
+    public ObTableServerCapacity getServerCapacity() {
+        return serverCapacity;
+    }
+
+    /*
+     * Set server capacity.
+     */
+    public void setServerCapacity(int flags) {
+        serverCapacity.setFlags(flags);
     }
 
     /*

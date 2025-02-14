@@ -171,6 +171,7 @@ public class ObTableConnection {
                 if (result != null && result.getCredential() != null
                     && result.getCredential().length() > 0) {
                     credential = result.getCredential();
+                    obTable.setServerCapacity(result.getServerCapabilities());
                     tenantId = result.getTenantId();
                     // Set version if missing
                     if (ObGlobal.obVsnMajor() == 0) {
