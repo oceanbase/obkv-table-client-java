@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.alipay.oceanbase.rpc.constant.Constants.INVALID_TABLET_ID;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.RUNTIME;
 
 public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResult {
@@ -112,9 +113,10 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                                                                                                        throws Exception {
         ObTableParam obTableParam = partIdWithObTable.getRight();
         ObTableQueryRequest queryRequest = asyncRequest.getObTableQueryRequest();
-
+        long partitionId = client.getServerCapacity().isSupportSecondaryPartition() ?
+                INVALID_TABLET_ID : obTableParam.getPartitionId();
         // refresh request info
-        queryRequest.setPartitionId(obTableParam.getPartitionId());
+        queryRequest.setPartitionId(partitionId);
         queryRequest.setTableId(obTableParam.getTableId());
         if (operationTimeout > 0) {
             asyncRequest.setTimeout(operationTimeout);
