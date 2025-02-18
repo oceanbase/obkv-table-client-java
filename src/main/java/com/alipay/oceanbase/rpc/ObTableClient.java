@@ -1390,7 +1390,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         tableEntryAcquireSocketTimeout,
                         serverAddressPriorityTimeout,
                         serverAddressCachingTimeout,
-                        sysUA
+                        sysUA,
+                        !getServerCapacity().isSupportDistributedExecute() /* withLsId */
                 );
 
                 tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
@@ -4245,7 +4246,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
     }
 
-    private ObTableServerCapacity getServerCapacity() {
+    public ObTableServerCapacity getServerCapacity() {
         if (tableRoster.isEmpty()) {
             throw new IllegalStateException("client is not initialized and obTable is empty");
         }
