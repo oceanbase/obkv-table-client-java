@@ -901,11 +901,18 @@ public class LocationUtil {
         }
         try {
             ps = connection.prepareStatement(sql);
-            ps.setString(1, key.getTenantName());
-            ps.setLong(2, tabletId);
-            ps.setString(3, key.getTenantName());
-            ps.setString(4, key.getDatabaseName());
-            ps.setString(5, key.getTableName());
+            if (withLsId) {
+                ps.setString(1, key.getTenantName());
+                ps.setLong(2, tabletId);
+                ps.setString(3, key.getTenantName());
+                ps.setString(4, key.getDatabaseName());
+                ps.setString(5, key.getTableName());
+            } else {
+                ps.setLong(1, tabletId);
+                ps.setString(2, key.getTenantName());
+                ps.setString(3, key.getDatabaseName());
+                ps.setString(4, key.getTableName());
+            }
             rs = ps.executeQuery();
             getPartitionLocationFromResultSetByTablet(tableEntry, rs, partitionEntry, tabletId, withLsId);
         } catch (Exception e) {
