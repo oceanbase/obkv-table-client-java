@@ -4247,12 +4247,19 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     public ObTableServerCapacity getServerCapacity() {
-        if (tableRoster.isEmpty()) {
-            throw new IllegalStateException("client is not initialized and obTable is empty");
+        if (isOdpMode()) {
+            if (odpTable == null) {
+                throw new IllegalStateException("client is not initialized and obTable is empty");
+            }
+            return odpTable.getServerCapacity();
+        } else {
+            if (tableRoster == null || tableRoster.isEmpty()) {
+                throw new IllegalStateException("client is not initialized and obTable is empty");
+            }
+            Iterator<ObTable> iterator = tableRoster.values().iterator();
+            ObTable firstObTable = iterator.next();
+            return firstObTable.getServerCapacity();
         }
-        Iterator<ObTable> iterator = tableRoster.values().iterator();
-        ObTable firstObTable = iterator.next();
-        return firstObTable.getServerCapacity();
     }
 
     public void setOdpAddr(String odpAddr) {
