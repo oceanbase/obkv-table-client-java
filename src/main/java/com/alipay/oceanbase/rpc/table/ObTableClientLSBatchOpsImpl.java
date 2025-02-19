@@ -703,7 +703,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
     private void executeWithRetries(
             ObTableSingleOpResult[] results,
-            Map.Entry<Long,TabletOperationsMap> entry,
+            Map.Entry<Long, TabletOperationsMap> entry,
             int maxRetries) throws Exception {
 
         int retryCount = 0;
