@@ -33,16 +33,20 @@ import org.slf4j.Logger;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.alipay.oceanbase.rpc.protocol.payload.Constants.INVALID_TABLET_ID;
+
 public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
     private static final Logger logger = TableClientLoggerFactory
                                            .getLogger(ObTableClientQueryStreamResult.class);
 
     protected ObTableQueryResult referToNewPartition(ObPair<Long, ObTableParam> partIdWithObTable)
                                                                                                   throws Exception {
+        long partitionId = client.getServerCapacity().isSupportDistributedExecute() ?
+                INVALID_TABLET_ID : partIdWithObTable.getRight().getPartitionId();
         ObTableQueryRequest request = new ObTableQueryRequest();
         request.setTableName(tableName);
         request.setTableQuery(tableQuery);
-        request.setPartitionId(partIdWithObTable.getRight().getPartitionId());
+        request.setPartitionId(partitionId);
         request.setTableId(partIdWithObTable.getRight().getTableId());
         request.setEntityType(entityType);
         if (operationTimeout > 0) {

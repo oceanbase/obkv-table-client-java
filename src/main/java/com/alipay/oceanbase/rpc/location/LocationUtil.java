@@ -189,7 +189,25 @@ public class LocationUtil {
                                                                                 + "    AND A.tenant_name = ? "
                                                                                 + "    AND A.database_name = ? "
                                                                                 + "    AND A.table_name = ?;";
-
+    private static final String PROXY_LOCATION_SQL_PARTITION_BY_TABLETID_WITHOUT_V4 = "SELECT /*+READ_CONSISTENCY(WEAK)*/ "
+                                                                                + "    A.tablet_id as tablet_id, "
+                                                                                + "    A.svr_ip as svr_ip, "
+                                                                                + "    A.sql_port as sql_port, "
+                                                                                + "    A.table_id as table_id, "
+                                                                                + "    A.role as role, "
+                                                                                + "    A.replica_num as replica_num, "
+                                                                                + "    A.part_num as part_num, "
+                                                                                + "    (SELECT B.svr_port FROM oceanbase.__all_server B WHERE A.svr_ip = B.svr_ip AND A.sql_port = B.inner_port) as svr_port, "
+                                                                                + "    (SELECT B.status FROM oceanbase.__all_server B WHERE A.svr_ip = B.svr_ip AND A.sql_port = B.inner_port) as status, "
+                                                                                + "    (SELECT B.stop_time FROM oceanbase.__all_server B WHERE A.svr_ip = B.svr_ip AND A.sql_port = B.inner_port) as stop_time, "
+                                                                                + "    A.spare1 as replica_type "
+                                                                                + "FROM "
+                                                                                + "    oceanbase.__all_virtual_proxy_schema A "
+                                                                                + "WHERE "
+                                                                                + "    A.tablet_id = ? "
+                                                                                + "    AND A.tenant_name = ? "
+                                                                                + "    AND A.database_name = ? "
+                                                                                + "    AND A.table_name = ?;";
     private static final String PROXY_FIRST_PARTITION_SQL_V4                  = "SELECT /*+READ_CONSISTENCY(WEAK)*/ part_id, part_name, tablet_id, high_bound_val, sub_part_num "
                                                                                 + "FROM oceanbase.__all_virtual_proxy_partition "
                                                                                 + "WHERE tenant_name = ? and table_id = ? LIMIT ?;";
@@ -499,7 +517,8 @@ public class LocationUtil {
                                                                 final long socketTimeout,
                                                                 final long priorityTimeout,
                                                                 final long cachingTimeout,
-                                                                final ObUserAuth sysUA)
+                                                                final ObUserAuth sysUA,
+                                                                boolean withLsId)
                                                                                        throws ObTableEntryRefreshException {
 
         return callTableEntryRefreshWithPriority(serverRoster, priorityTimeout, cachingTimeout,
@@ -512,7 +531,7 @@ public class LocationUtil {
                             TableEntry execute(Connection connection)
                                                                      throws ObTablePartitionLocationRefreshException {
                                 return getTableEntryLocationFromRemote(connection, key, tableEntry,
-                                    tabletId);
+                                    tabletId, withLsId);
                             }
                         });
                 }
@@ -793,10 +812,14 @@ public class LocationUtil {
     }
 
     // Note: This code is applicable only for refreshing locations based on tablet ID in version 4.x
-    private static String genLocationSQLByTabletId() {
+    private static String genLocationSQLByTabletId(boolean withLsId) {
         String sql = null;
         if (ObGlobal.obVsnMajor() >= 4) {
-            sql = PROXY_LOCATION_SQL_PARTITION_BY_TABLETID_V4;
+            if (withLsId) {
+                sql = PROXY_LOCATION_SQL_PARTITION_BY_TABLETID_V4;
+            } else {
+                sql = PROXY_LOCATION_SQL_PARTITION_BY_TABLETID_WITHOUT_V4;
+            }
         } else {
             throw new FeatureNotSupportedException("not support ob version less than 4");
         }
@@ -863,12 +886,13 @@ public class LocationUtil {
     public static TableEntry getTableEntryLocationFromRemote(Connection connection,
                                                              TableEntryKey key,
                                                              TableEntry tableEntry,
-                                                             Long tabletId)
+                                                             Long tabletId,
+                                                             boolean withLsId)
                                                              throws ObTablePartitionLocationRefreshException {
         PreparedStatement ps = null;
         ResultSet rs = null;
         ObPartitionEntry partitionEntry = tableEntry.getPartitionEntry();
-        String sql = genLocationSQLByTabletId();
+        String sql = genLocationSQLByTabletId(withLsId);
         ObPartitionLocationInfo partitionLocationInfo = partitionEntry.getPartitionInfo(tabletId);
         // return quickly if recently refreshed 
         if (System.currentTimeMillis() - partitionLocationInfo.getLastUpdateTime()
@@ -877,13 +901,20 @@ public class LocationUtil {
         }
         try {
             ps = connection.prepareStatement(sql);
-            ps.setString(1, key.getTenantName());
-            ps.setLong(2, tabletId);
-            ps.setString(3, key.getTenantName());
-            ps.setString(4, key.getDatabaseName());
-            ps.setString(5, key.getTableName());
+            if (withLsId) {
+                ps.setString(1, key.getTenantName());
+                ps.setLong(2, tabletId);
+                ps.setString(3, key.getTenantName());
+                ps.setString(4, key.getDatabaseName());
+                ps.setString(5, key.getTableName());
+            } else {
+                ps.setLong(1, tabletId);
+                ps.setString(2, key.getTenantName());
+                ps.setString(3, key.getDatabaseName());
+                ps.setString(4, key.getTableName());
+            }
             rs = ps.executeQuery();
-            getPartitionLocationFromResultSetByTablet(tableEntry, rs, partitionEntry, tabletId);
+            getPartitionLocationFromResultSetByTablet(tableEntry, rs, partitionEntry, tabletId, withLsId);
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00010"), key, tableEntry, e);
             throw new ObTablePartitionLocationRefreshException(format(
@@ -1217,7 +1248,8 @@ public class LocationUtil {
     private static ObPartitionEntry getPartitionLocationFromResultSetByTablet(TableEntry tableEntry,
                                                                               ResultSet rs,
                                                                               ObPartitionEntry partitionEntry,
-                                                                              long tabletId)
+                                                                              long tabletId,
+                                                                              boolean withLsId)
                                                                                             throws SQLException,
                                                                                             ObTablePartitionLocationRefreshException {
 
@@ -1232,7 +1264,7 @@ public class LocationUtil {
             ReplicaLocation replica = buildReplicaLocation(rs);
             long partitionId = (ObGlobal.obVsnMajor() >= 4) ? rs.getLong("tablet_id") : rs
                 .getLong("partition_id");
-            long lsId = ObGlobal.obVsnMajor() >= 4 ? rs.getLong("ls_id") : INVALID_LS_ID;
+            long lsId = ObGlobal.obVsnMajor() >= 4 && withLsId ? rs.getLong("ls_id") : INVALID_LS_ID;
             if (rs.wasNull() && ObGlobal.obVsnMajor() >= 4) {
                 lsId = INVALID_LS_ID; // For non-partitioned table  
             }

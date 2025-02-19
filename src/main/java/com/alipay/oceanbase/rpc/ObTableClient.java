@@ -1390,7 +1390,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         tableEntryAcquireSocketTimeout,
                         serverAddressPriorityTimeout,
                         serverAddressCachingTimeout,
-                        sysUA
+                        sysUA,
+                        !getServerCapacity().isSupportDistributedExecute() /* withLsId */
                 );
 
                 tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
@@ -4245,13 +4246,20 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
     }
 
-    private ObTableServerCapacity getServerCapacity() {
-        if (tableRoster.isEmpty()) {
-            throw new IllegalStateException("client is not initialized and obTable is empty");
+    public ObTableServerCapacity getServerCapacity() {
+        if (isOdpMode()) {
+            if (odpTable == null) {
+                throw new IllegalStateException("client is not initialized and obTable is empty");
+            }
+            return odpTable.getServerCapacity();
+        } else {
+            if (tableRoster == null || tableRoster.isEmpty()) {
+                throw new IllegalStateException("client is not initialized and obTable is empty");
+            }
+            Iterator<ObTable> iterator = tableRoster.values().iterator();
+            ObTable firstObTable = iterator.next();
+            return firstObTable.getServerCapacity();
         }
-        Iterator<ObTable> iterator = tableRoster.values().iterator();
-        ObTable firstObTable = iterator.next();
-        return firstObTable.getServerCapacity();
     }
 
     public void setOdpAddr(String odpAddr) {
