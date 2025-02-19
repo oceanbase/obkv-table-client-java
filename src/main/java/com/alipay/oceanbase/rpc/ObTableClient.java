@@ -1390,61 +1390,61 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             Lock lock = info.refreshLock;
             boolean acquired = false;
             try {
-                acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
-
-                if (!acquired) {
-                    String errMsg = String.format(
-                            "Try to lock table location refreshing timeout. DataSource: %s, TableName: %s, Timeout: %dms.",
-                            dataSourceName, tableName, tableEntryRefreshLockTimeout);
-                    RUNTIME.error(errMsg);
-                    throw new ObTableEntryRefreshException(errMsg);
-                }
-
-                // Double-check
-                lastRefreshTime = info.getLastUpdateTime();
-                currentTime = System.currentTimeMillis();
-                if (currentTime - lastRefreshTime < tableEntryRefreshIntervalCeiling) {
-                    return tableEntry;
-                }
+                    acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
+    
+                    if (!acquired) {
+                        String errMsg = String.format(
+                                "Try to lock table location refreshing timeout. DataSource: %s, TableName: %s, Timeout: %dms.",
+                                dataSourceName, tableName, tableEntryRefreshLockTimeout);
+                        RUNTIME.error(errMsg);
+                        throw new ObTableEntryRefreshException(errMsg);
+                    }
+    
+                    // Double-check
+                    lastRefreshTime = info.getLastUpdateTime();
+                    currentTime = System.currentTimeMillis();
+                    if (currentTime - lastRefreshTime < tableEntryRefreshIntervalCeiling) {
+                        return tableEntry;
+                    }
                 for (int i = 0; i < tableEntryRefreshTryTimes; i++) {
-                    try {
-                        tableEntry = loadTableEntryLocationWithPriority(
-                                serverRoster,
-                                tableEntryKey,
-                                tableEntry,
-                                tabletId,
-                                tableEntryAcquireConnectTimeout,
-                                tableEntryAcquireSocketTimeout,
-                                serverAddressPriorityTimeout,
-                                serverAddressCachingTimeout,
-                                sysUA
+                   try {
+                       tableEntry = loadTableEntryLocationWithPriority(
+                            serverRoster,
+                            tableEntryKey,
+                            tableEntry,
+                            tabletId,
+                            tableEntryAcquireConnectTimeout,
+                            tableEntryAcquireSocketTimeout,
+                            serverAddressPriorityTimeout,
+                            serverAddressCachingTimeout,
+                            sysUA,
+                            !getServerCapacity().isSupportDistributedExecute() /* withLsId */
                         );
-                        tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
-                        break;
-                        
-                    } catch (ObTableNotExistException e) {
-                        RUNTIME.error("RefreshTableEntry encountered an exception", e);
-                        throw e;
-                    } catch (ObTableServerCacheExpiredException e) {
-                        RUNTIME.warn("RefreshTableEntry encountered an exception", e);
-                        syncRefreshMetadata(false);
-                        tableEntryRefreshContinuousFailureCount.set(0);
-                    } catch (ObTableEntryRefreshException e) {
-                        RUNTIME.error("getOrRefreshTableEntry meet exception", e);
-                        // if the problem is the lack of row key name, throw directly
-                        if (tableRowKeyElement.get(tableName) == null) {
-                            throw e;
-                        }
-                        if (tableEntryRefreshContinuousFailureCount.incrementAndGet() > tableEntryRefreshContinuousFailureCeiling) {
-                            logger.error(LCD.convert("01-00019"),
+                       tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
+                       break;
+                   } catch (ObTableNotExistException e) {
+                       RUNTIME.error("RefreshTableEntry encountered an exception", e);
+                       throw e;
+                   } catch (ObTableServerCacheExpiredException e) {
+                       RUNTIME.warn("RefreshTableEntry encountered an exception", e);
+                       syncRefreshMetadata(false);
+                       tableEntryRefreshContinuousFailureCount.set(0);
+                   } catch (ObTableEntryRefreshException e) {
+                       RUNTIME.error("getOrRefreshTableEntry meet exception", e);
+                       // if the problem is the lack of row key name, throw directly
+                       if (tableRowKeyElement.get(tableName) == null) {
+                           throw e;
+                       }
+                       if (tableEntryRefreshContinuousFailureCount.incrementAndGet() > tableEntryRefreshContinuousFailureCeiling) {
+                           logger.error(LCD.convert("01-00019"),
                                     tableEntryRefreshContinuousFailureCeiling);
-                            syncRefreshMetadata(false);
-                            tableEntryRefreshContinuousFailureCount.set(0);
-                        } else if (e.isConnectInactive()) {
-                            // getMetaRefreshConnection failed, maybe the server is down, so we need to refresh metadata directly
-                            syncRefreshMetadata(false);
-                            tableEntryRefreshContinuousFailureCount.set(0);
-                        }
+                           syncRefreshMetadata(false);
+                           tableEntryRefreshContinuousFailureCount.set(0);
+                       } else if (e.isConnectInactive()) {
+                           // getMetaRefreshConnection failed, maybe the server is down, so we need to refresh metadata directly
+                           syncRefreshMetadata(false);
+                           tableEntryRefreshContinuousFailureCount.set(0);
+                       }
                     } catch (Throwable t) {
                         RUNTIME.error("getOrRefreshTableEntry meet exception", t);
                         throw t;
@@ -4326,13 +4326,20 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
     }
 
-    private ObTableServerCapacity getServerCapacity() {
-        if (tableRoster.isEmpty()) {
-            throw new IllegalStateException("client is not initialized and obTable is empty");
+    public ObTableServerCapacity getServerCapacity() {
+        if (isOdpMode()) {
+            if (odpTable == null) {
+                throw new IllegalStateException("client is not initialized and obTable is empty");
+            }
+            return odpTable.getServerCapacity();
+        } else {
+            if (tableRoster == null || tableRoster.isEmpty()) {
+                throw new IllegalStateException("client is not initialized and obTable is empty");
+            }
+            Iterator<ObTable> iterator = tableRoster.values().iterator();
+            ObTable firstObTable = iterator.next();
+            return firstObTable.getServerCapacity();
         }
-        Iterator<ObTable> iterator = tableRoster.values().iterator();
-        ObTable firstObTable = iterator.next();
-        return firstObTable.getServerCapacity();
     }
 
     public void setOdpAddr(String odpAddr) {
