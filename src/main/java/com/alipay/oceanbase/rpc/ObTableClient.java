@@ -1343,7 +1343,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return refreshTableEntry(tableEntry, tableName, false);
     }
 
-    public TableEntry refreshTableLocationByTabletId(TableEntry tableEntry, String tableName, Long tabletId) throws ObTableAuthException {
+    public TableEntry refreshTableLocationByTabletId(TableEntry tableEntry, String tableName, Long tabletId) throws Exception {
         TableEntryKey tableEntryKey = new TableEntryKey(clusterName, tenantName, database, tableName);
         try {
             if (tableEntry == null) {
@@ -1380,30 +1380,51 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 if (currentTime - lastRefreshTime < tableEntryRefreshIntervalCeiling) {
                     return tableEntry;
                 }
-
-                tableEntry = loadTableEntryLocationWithPriority(
-                        serverRoster,
-                        tableEntryKey,
-                        tableEntry,
-                        tabletId,
-                        tableEntryAcquireConnectTimeout,
-                        tableEntryAcquireSocketTimeout,
-                        serverAddressPriorityTimeout,
-                        serverAddressCachingTimeout,
-                        sysUA
-                );
-
-                tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
-
+                for (int i = 0; i < tableEntryRefreshTryTimes; i++) {
+                    try {
+                        tableEntry = loadTableEntryLocationWithPriority(
+                                serverRoster,
+                                tableEntryKey,
+                                tableEntry,
+                                tabletId,
+                                tableEntryAcquireConnectTimeout,
+                                tableEntryAcquireSocketTimeout,
+                                serverAddressPriorityTimeout,
+                                serverAddressCachingTimeout,
+                                sysUA
+                        );
+                        tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
+                        break;
+                        
+                    } catch (ObTableNotExistException e) {
+                        RUNTIME.error("RefreshTableEntry encountered an exception", e);
+                        throw e;
+                    } catch (ObTableServerCacheExpiredException e) {
+                        RUNTIME.warn("RefreshTableEntry encountered an exception", e);
+                        syncRefreshMetadata();
+                        tableEntryRefreshContinuousFailureCount.set(0);
+                    } catch (ObTableEntryRefreshException e) {
+                        RUNTIME.error("getOrRefreshTableEntry meet exception", e);
+                        // if the problem is the lack of row key name, throw directly
+                        if (tableRowKeyElement.get(tableName) == null) {
+                            throw e;
+                        }
+                        if (tableEntryRefreshContinuousFailureCount.incrementAndGet() > tableEntryRefreshContinuousFailureCeiling) {
+                            logger.error(LCD.convert("01-00019"),
+                                    tableEntryRefreshContinuousFailureCeiling);
+                            syncRefreshMetadata();
+                            tableEntryRefreshContinuousFailureCount.set(0);
+                        }
+                    } catch (Throwable t) {
+                        RUNTIME.error("getOrRefreshTableEntry meet exception", t);
+                        throw t;
+                    }
+                }
             } finally {
                 if (acquired) {
                     lock.unlock();
                 }
             }
-
-        } catch (ObTableNotExistException | ObTableServerCacheExpiredException e) {
-            RUNTIME.error("RefreshTableEntry encountered an exception", e);
-            throw e;
         } catch (Exception e) {
             String errorMsg = String.format("Failed to get table entry. Key=%s, TabletId=%d, message=%s",
                     tableEntryKey, tabletId, e.getMessage());
