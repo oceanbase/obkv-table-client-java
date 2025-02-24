@@ -43,6 +43,7 @@ import java.net.URL;
 import java.sql.*;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.alipay.oceanbase.rpc.location.model.partition.ObPartitionKey.MAX_PARTITION_ELEMENT;
 import static com.alipay.oceanbase.rpc.location.model.partition.ObPartitionKey.MIN_PARTITION_ELEMENT;
@@ -216,6 +217,8 @@ public class LocationUtil {
     private static final int    MAX_TABLET_NUMS_EPOCH                       = Integer.parseInt(System.getProperty("max.table.num.epoch","300"));
     private static final int    TABLE_ENTRY_LOCATION_REFRESH_THRESHOLD      = Integer.parseInt(System.getProperty("table.entry.location.refresh.threshold","0"));
 
+    private static final AtomicBoolean DRIVER_LOADED = new AtomicBoolean();
+
     private abstract static class TableEntryRefreshWithPriorityCallback<T> {
         abstract T execute(ObServerAddr obServerAddr) throws ObTableEntryRefreshException;
     }
@@ -309,20 +312,26 @@ public class LocationUtil {
     }
 
     private static void loadJdbcDriver() {
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            return;
-        } catch (ClassNotFoundException e) {
-            RUNTIME.info("Class 'com.mysql.cj.jdbc.Driver' not found, "
-                         + "try to load legacy driver class 'com.mysql.jdbc.Driver'");
-        }
+        if (DRIVER_LOADED.get()) return;
 
-        try {
-            Class.forName("com.mysql.jdbc.Driver");
-        } catch (ClassNotFoundException e) {
-            RUNTIME.error(LCD.convert("01-00006"), e.getMessage(), e);
-            throw new ObTableEntryRefreshException(format("fail to find jdbc driver, errMsg=%s",
-                e.getMessage()), e);
+        synchronized (LocationUtil.class) {
+            if (DRIVER_LOADED.get()) return;
+
+            try {
+                Class.forName("com.mysql.cj.jdbc.Driver");
+                DRIVER_LOADED.set(true);
+                return;
+            } catch (ClassNotFoundException ignored) {
+                RUNTIME.debug("MySQL CJ driver not available");
+            }
+
+            try {
+                Class.forName("com.mysql.jdbc.Driver");
+                DRIVER_LOADED.set(true);
+            } catch (ClassNotFoundException e) {
+                RUNTIME.error(LCD.convert("01-00006"), "No JDBC driver found");
+                throw new ObTableEntryRefreshException("No JDBC driver available", e);
+            }
         }
     }
 
