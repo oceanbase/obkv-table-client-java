@@ -169,24 +169,28 @@ public class ObTableLSOperation extends AbstractPayload {
      */
     @Override
     public long getPayloadContentSize() {
-        long payloadContentSize = 0;
-        payloadContentSize += Serialization.getNeedBytes(tabletOperations.size());
-        for (ObTableTabletOp operation : tabletOperations) {
-            payloadContentSize += operation.getPayloadSize();
-        }
+        if (this.payLoadContentSize == -1) {
+            long payloadContentSize = 0;
+            payloadContentSize += Serialization.getNeedBytes(tabletOperations.size());
+            for (ObTableTabletOp operation : tabletOperations) {
+                payloadContentSize += operation.getPayloadSize();
+            }
 
-        payloadContentSize += Serialization.getNeedBytes(rowKeyNames.size());
-        for (String rowKeyName : rowKeyNames) {
-            payloadContentSize += Serialization.getNeedBytes(rowKeyName);
-        }
+            payloadContentSize += Serialization.getNeedBytes(rowKeyNames.size());
+            for (String rowKeyName : rowKeyNames) {
+                payloadContentSize += Serialization.getNeedBytes(rowKeyName);
+            }
 
-        payloadContentSize += Serialization.getNeedBytes(propertiesNames.size());
-        for (String propertyName : propertiesNames) {
-            payloadContentSize += Serialization.getNeedBytes(propertyName);
-        }
+            payloadContentSize += Serialization.getNeedBytes(propertiesNames.size());
+            for (String propertyName : propertiesNames) {
+                payloadContentSize += Serialization.getNeedBytes(propertyName);
+            }
 
-        return payloadContentSize + LS_ID_SIZE + Serialization.getNeedBytes(optionFlag.getValue())
-                +  Serialization.getNeedBytes(tableName) + Serialization.getNeedBytes(tableId);
+            this.payLoadContentSize = payloadContentSize + LS_ID_SIZE + Serialization.getNeedBytes(optionFlag.getValue())
+                    +  Serialization.getNeedBytes(tableName) + Serialization.getNeedBytes(tableId);
+        }
+        return this.payLoadContentSize;
+
     }
 
     /*

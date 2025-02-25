@@ -105,13 +105,16 @@ public class ObTableTabletOp extends AbstractPayload {
      */
     @Override
     public long getPayloadContentSize() {
-        long payloadContentSize = 0;
-        payloadContentSize += Serialization.getNeedBytes(singleOperations.size());
-        for (ObTableSingleOp operation : singleOperations) {
-            payloadContentSize += operation.getPayloadSize();
-        }
+        if (this.payLoadContentSize == -1) {
+            long payloadContentSize = 0;
+            payloadContentSize += Serialization.getNeedBytes(singleOperations.size());
+            for (ObTableSingleOp operation : singleOperations) {
+                payloadContentSize += operation.getPayloadSize();
+            }
 
-        return payloadContentSize + tabletIdSize + Serialization.getNeedBytes(optionFlag.getValue());
+            this.payLoadContentSize = payloadContentSize + tabletIdSize + Serialization.getNeedBytes(optionFlag.getValue());
+        }
+        return this.payLoadContentSize;
     }
 
     /*

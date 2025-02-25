@@ -39,7 +39,6 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
     protected ObTableEntityType       entityType       = ObTableEntityType.KV;
     protected ObTableConsistencyLevel consistencyLevel = ObTableConsistencyLevel.STRONG;
     private ObTableLSOperation        lsOperation      = null;
-
     /*
      * Get pcode.
      */
@@ -100,8 +99,11 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
      */
     @Override
     public long getPayloadContentSize() {
-        return lsOperation.getPayloadSize() + Serialization.getNeedBytes(credential) + 1 // entityType
-               + 1; // consistencyLevel
+        if (payLoadContentSize == -1) {
+            payLoadContentSize = lsOperation.getPayloadSize() + Serialization.getNeedBytes(credential) + 1 // entityType
+                    + 1; // consistencyLevel
+        }
+        return payLoadContentSize;
     }
 
     /*

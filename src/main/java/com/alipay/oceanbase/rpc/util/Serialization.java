@@ -441,15 +441,11 @@ public class Serialization {
      * @return bytes need for serialize long data
      */
     public static int getNeedBytes(long l) {
-        if (l < 0)
-            return 10;
-        int needBytes = 0;
-        for (long max : OB_MAX) {
-            needBytes++;
-            if (l <= max)
-                break;
+        if (l < 0) {
+            return 10;  // 负数固定返回10字节
         }
-        return needBytes;
+        // 计算最高位的位置，然后除以8(一个字节8位)向上取整
+        return (Long.SIZE - Long.numberOfLeadingZeros(l) + 7) >>> 3;
     }
 
     /**
@@ -458,15 +454,11 @@ public class Serialization {
      * @return bytes need for serialize int data
      */
     public static int getNeedBytes(int l) {
-        if (l < 0)
-            return 5;
-        int needBytes = 0;
-        for (long max : OB_MAX) {
-            needBytes++;
-            if (l <= max)
-                break;
+        if (l < 0) {
+            return 5;  // 负数固定返回5字节
         }
-        return needBytes;
+        // 计算最高位的位置，然后除以8(一个字节8位)向上取整
+        return (Integer.SIZE - Integer.numberOfLeadingZeros(l) + 7) >>> 3;
     }
 
     /**

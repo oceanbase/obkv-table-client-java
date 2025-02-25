@@ -44,6 +44,7 @@ public abstract class AbstractPayload implements ObPayload {
     private long                       version   = 1;
     protected long                     timeout   = RPC_OPERATION_TIMEOUT.getDefaultLong();
     protected int                      groupId   = 0;
+    protected long                     payLoadContentSize = -1;
 
     /*
      * Get pcode.
