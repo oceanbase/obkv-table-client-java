@@ -182,17 +182,11 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                     throw new ObTableException("key range columns must be specified when use index");
                 }
             }
-            if (getPartId() != null && tableQuery.getIndexName() == null) {
-                String realTableName = tableName;
+            if (entityType != ObTableEntityType.HKV &&
+                    getPartId() != null && tableQuery.getIndexName() == null) {
                 try {
-                    if (this.entityType == ObTableEntityType.HKV
-                            && obTableClient.isTableGroupName(tableName)) {
-                        indexTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName,
-                                false);
-                        realTableName = indexTableName;
-                    }
                     ObPair<Long, ObTableParam> odpTable = obTableClient.getODPTableWithPartId(
-                            realTableName, getPartId(), false);
+                            tableName, getPartId(), false);
                     partitionObTables.put(odpTable.getLeft(), odpTable);
                 } catch (Exception e) {
                     if (e instanceof ObTableException) {
@@ -203,17 +197,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                         } else if (((ObTableException) e).getErrorCode() == ResultCodes.OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
                             // retry one time with force-renew flag
                             ObPair<Long, ObTableParam> odpTable = obTableClient
-                                .getODPTableWithPartId(realTableName, getPartId(), true);
+                                .getODPTableWithPartId(tableName, getPartId(), true);
                             partitionObTables.put(odpTable.getLeft(), odpTable);
-                        } else if (e instanceof ObTableNotExistException) {
-                            if (this.entityType == ObTableEntityType.HKV
-                                && obTableClient.isTableGroupName(tableName)) {
-                                indexTableName = obTableClient.tryGetTableNameFromTableGroupCache(
-                                    tableName, true);
-                                ObPair<Long, ObTableParam> odpTable = obTableClient
-                                    .getODPTableWithPartId(indexTableName, getPartId(), false);
-                                partitionObTables.put(odpTable.getLeft(), odpTable);
-                            }
                         } else {
                             throw e;
                         }
