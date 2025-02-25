@@ -2071,7 +2071,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (!obPartitionLocationInfo.initialized.get()) {
             tableEntry = refreshTableLocationByTabletId(tableEntry, tableName, tabletId);
             obPartitionLocationInfo = tableEntry.getPartitionEntry().getPartitionInfo(tabletId);
-            obPartitionLocationInfo.initializationLatch.await();
+            // avoid to be hold here
+            boolean initSuccess = obPartitionLocationInfo.initializationLatch.await(1, TimeUnit.SECONDS);
+            if (!initSuccess) {
+                throw new ObTablePartitionInfoRefreshException("fail to initialize partition location info");
+            }
         }
         return obPartitionLocationInfo;
     }

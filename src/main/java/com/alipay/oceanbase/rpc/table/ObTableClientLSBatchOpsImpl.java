@@ -393,16 +393,24 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             if (this.entityType == ObTableEntityType.HKV && obTableClient.isTableGroupName(tableName)) {
                 real_tableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
             }
-            ObPair<Long, ObTableParam>  tableObPair= obTableClient.getTable(real_tableName, rowKey,
-                    false, false, obTableClient.getRoute(false));
+            ObPair<Long, ObTableParam> tableObPair;
+            try {
+                tableObPair = obTableClient.getTable(real_tableName, rowKey,
+                        false, false, obTableClient.getRoute(false));
+            } catch (ObTablePartitionInfoRefreshException e) {
+                real_tableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, true);
+                tableObPair = obTableClient.getTable(real_tableName, rowKey,
+                        false, false, obTableClient.getRoute(false));
+            }
             long lsId = tableObPair.getRight().getLsId();
 
             Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperations
                     = lsOperationsMap.computeIfAbsent(lsId, k -> new HashMap<>());
             // if ls id not exists
 
+            ObPair<Long, ObTableParam> finalTableObPair = tableObPair;
             ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>> singleOperations =
-                    tabletOperations.computeIfAbsent(tableObPair.getLeft(), k -> new ObPair<>(tableObPair.getRight(), new ArrayList<>()));
+                    tabletOperations.computeIfAbsent(tableObPair.getLeft(), k -> new ObPair<>(finalTableObPair.getRight(), new ArrayList<>()));
             // if tablet id not exists
             singleOperations.getRight().add(operationsWithIndex.get(i));
         }
