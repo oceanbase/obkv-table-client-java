@@ -18,13 +18,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
+import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
@@ -602,6 +601,12 @@ public class ObTableFullTextIndexTest {
         statement.execute(createSQL);
     }
 
+    private ResultSet executeQuery(String sql) throws SQLException {
+        Connection connection = ObTableClientTestUtil.getConnection();
+        Statement statement = connection.createStatement();
+        return statement.executeQuery(sql);
+    }
+
     @Test
     public void testQueryWithLimitOffset() throws Exception {
         try {
@@ -756,6 +761,267 @@ public class ObTableFullTextIndexTest {
             Assert.fail();
         } finally {
             executeSQL(truncatePartTableSQL);
+        }
+    }
+
+    @Test
+    public void testConcurrentMixedBatch() throws Exception {
+        try {
+            executeSQL(truncatePartTableSQL);
+
+            int threadCount = 5;
+            int batchSize = 6;
+            CountDownLatch latch = new CountDownLatch(threadCount);
+            Exception[] threadExceptions = new Exception[threadCount];
+
+            // 创建线程并发执行
+            Thread[] threads = new Thread[threadCount];
+            for (int t = 0; t < threadCount; t++) {
+                final int threadId = t;
+                threads[t] = new Thread(() -> {
+                    try {
+                        // 第一步：每个线程先插入自己的初始数据
+                        int baseId = threadId * batchSize;
+                        BatchOperation initBatch = client.batchOperation(partTableName);
+                        for (int i = 0; i < batchSize; i++) {
+                            int id = baseId + i;
+                            Insert insert = new Insert();
+                            insert.setRowKey(row(colVal(idCol, id)))
+                                    .addMutateRow(row(
+                                            colVal(c2Col, id),
+                                            colVal(txtCol, "Initial text " + id)
+                                    ));
+                            initBatch.addOperation(insert);
+                        }
+                        BatchOperationResult initRes = initBatch.execute();
+                        Assert.assertEquals(batchSize, initRes.size());
+
+                        // 第二步：执行混合batch操作
+                        BatchOperation mixedBatch = client.batchOperation(partTableName);
+
+                        // 1. InsertOrUpdate
+                        InsertOrUpdate insup = new InsertOrUpdate();
+                        insup.setRowKey(row(colVal(idCol, baseId)))
+                                .addMutateRow(row(
+                                        colVal(c2Col, baseId + 100),
+                                        colVal(txtCol, "Updated by insertOrUpdate " + baseId)
+                                ));
+                        mixedBatch.addOperation(insup);
+
+                        // 2. Update
+                        Update upd = new Update();
+                        upd.setRowKey(row(colVal(idCol, baseId + 1)))
+                                .addMutateRow(row(
+                                        colVal(c2Col, baseId + 101),
+                                        colVal(txtCol, "Updated by update " + (baseId + 1))
+                                ));
+                        mixedBatch.addOperation(upd);
+
+                        // 3. Replace
+                        Replace replace = new Replace();
+                        replace.setRowKey(row(colVal(idCol, baseId + 2)))
+                                .addMutateRow(row(
+                                        colVal(c2Col, baseId + 102),
+                                        colVal(txtCol, "Updated by replace " + (baseId + 2))
+                                ));
+                        mixedBatch.addOperation(replace);
+
+                        // 4. Increment
+                        Increment increment = new Increment();
+                        increment.setRowKey(row(colVal(idCol, baseId + 3)))
+                                .addMutateRow(row(colVal(c2Col, 100)));
+                        mixedBatch.addOperation(increment);
+
+                        // 5. Append
+                        Append append = new Append();
+                        append.setRowKey(row(colVal(idCol, baseId + 4)))
+                                .addMutateRow(row(
+                                        colVal(txtCol, " Appended text by thread " + threadId)
+                                ));
+                        mixedBatch.addOperation(append);
+
+                        // 执行混合batch操作
+                        BatchOperationResult mixedRes = mixedBatch.execute();
+                        Assert.assertEquals(5, mixedRes.size());
+
+                        // 验证结果
+                        BatchOperation getBatch = client.batchOperation(partTableName);
+                        for (int i = 0; i < batchSize - 1; i++) {  // 最后一行不验证
+                            int id = baseId + i;
+                            TableQuery query = client.query(partTableName)
+                                    .setRowKey(row(colVal(idCol, id)));
+                            getBatch.addOperation(query);
+                        }
+                        BatchOperationResult getRes = getBatch.execute();
+                        Assert.assertEquals(batchSize - 1, getRes.size());
+
+                        // 验证每种操作的结果
+                        for (int i = 0; i < getRes.size(); i++) {
+                            Row row = getRes.get(i).getOperationRow();
+                            int id = baseId + i;
+                            Assert.assertEquals(id, row.get(idCol));
+
+                            switch (i) {
+                                case 0: // InsertOrUpdate
+                                    Assert.assertEquals(baseId + 100, row.get(c2Col));
+                                    Assert.assertEquals("Updated by insertOrUpdate " + id, row.get(txtCol));
+                                    break;
+                                case 1: // Update
+                                    Assert.assertEquals(baseId + 101, row.get(c2Col));
+                                    Assert.assertEquals("Updated by update " + id, row.get(txtCol));
+                                    break;
+                                case 2: // Replace
+                                    Assert.assertEquals(baseId + 102, row.get(c2Col));
+                                    Assert.assertEquals("Updated by replace " + id, row.get(txtCol));
+                                    break;
+                                case 3: // Increment
+                                    Assert.assertEquals(id + 100, row.get(c2Col));
+                                    Assert.assertEquals("Initial text " + id, row.get(txtCol));
+                                    break;
+                                case 4: // Append
+                                    Assert.assertEquals(id, row.get(c2Col));
+                                    Assert.assertEquals("Initial text " + id + " Appended text by thread " + threadId,
+                                            row.get(txtCol));
+                                    break;
+                            }
+                        }
+
+                    } catch (Exception e) {
+                        threadExceptions[threadId] = e;
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+                threads[t].start();
+            }
+
+            // 等待所有线程完成
+            latch.await();
+
+            // 检查线程异常
+            for (int t = 0; t < threadCount; t++) {
+                if (threadExceptions[t] != null) {
+                    throw threadExceptions[t];
+                }
+            }
+
+            // 验证最终的总行数
+            QueryResultSet countResult = client.query(partTableName).execute();
+            int totalRows = 0;
+            while (countResult.next()) {
+                totalRows++;
+            }
+            Assert.assertEquals(threadCount * batchSize, totalRows);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.fail();
+        } finally {
+            executeSQL(truncatePartTableSQL);
+        }
+    }
+
+    @Test
+    public void testTTLExpiration() throws Exception {
+        try {
+            executeSQL(truncateTTLTableSQL);
+            executeSQL("ALTER SYSTEM SET enable_kv_ttl = true");
+
+            int batchSize = 100;
+            int baseId = 1000;
+            List<Integer> expiredIds = new ArrayList<>();
+            List<Integer> activeIds = new ArrayList<>();
+
+            // Insert expired data
+            Timestamp expiredTs = new Timestamp(System.currentTimeMillis() - 20000); // 20 seconds ago
+            BatchOperation expiredBatch = client.batchOperation(ttlTableName);
+            for (int i = 0; i < batchSize; i++) {
+                int id = baseId + i;
+                expiredIds.add(id);
+                Insert insert = new Insert();
+                insert.setRowKey(row(colVal(idCol, id)))
+                        .addMutateRow(row(
+                                colVal(expireTsCol, expiredTs),
+                                colVal(txtCol, "Expired text " + id)
+                        ));
+                expiredBatch.addOperation(insert);
+            }
+            BatchOperationResult expiredRes = expiredBatch.execute();
+            Assert.assertEquals(batchSize, expiredRes.size());
+
+            // Insert non-expired data
+            Timestamp activeTs = new Timestamp(System.currentTimeMillis() + 30000); // 30 seconds in future
+            BatchOperation activeBatch = client.batchOperation(ttlTableName);
+            for (int i = 0; i < batchSize; i++) {
+                int id = baseId + batchSize + i;
+                activeIds.add(id);
+                Insert insert = new Insert();
+                insert.setRowKey(row(colVal(idCol, id)))
+                        .addMutateRow(row(
+                                colVal(expireTsCol, activeTs),
+                                colVal(txtCol, "Active text " + id)
+                        ));
+                activeBatch.addOperation(insert);
+            }
+            BatchOperationResult activeRes = activeBatch.execute();
+            Assert.assertEquals(batchSize, activeRes.size());
+
+            // Verify data after TTL task completion
+            for (Integer id : expiredIds) {
+                Map<String, Object> getRes = client.get(ttlTableName, new Object[] { id }, null);
+                Assert.assertTrue("Expired row " + id + " should be deleted", getRes.isEmpty());
+            }
+
+            for (Integer id : activeIds) {
+                Map<String, Object> getRes = client.get(ttlTableName, new Object[] { id }, null);
+                Assert.assertFalse("Non-expired row " + id + " should exist", getRes.isEmpty());
+                Assert.assertEquals("Active text " + id, getRes.get(txtCol));
+                Assert.assertEquals(activeTs, getRes.get(expireTsCol));
+            }
+            // Trigger TTL cleanup
+            executeSQL("ALTER SYSTEM trigger ttl");
+
+            // Wait for TTL task to complete
+            boolean taskCompleted = false;
+            int maxRetries = 30;
+            int retryCount = 0;
+
+            while (!taskCompleted && retryCount < maxRetries) {
+                ResultSet rs = executeQuery("select * from oceanbase.dba_ob_kv_ttl_tasks where TABLE_NAME = '\" + ttlTableName + \"'");
+                boolean hasRunningTask = false;
+
+                System.out.println("\nTTL tasks status check #" + (retryCount + 1) + ":");
+                while (rs.next()) {
+                    String status = rs.getString("STATUS");
+                    System.out.println("Task ID: " + rs.getLong("TASK_ID") +
+                            ", Status: " + status +
+                            ", Table: " + rs.getString("TABLE_NAME"));
+
+                    if (!"FINISHED".equalsIgnoreCase(status)) {
+                        hasRunningTask = true;
+                    }
+                }
+
+                if (!hasRunningTask) {
+                    taskCompleted = true;
+                } else {
+                    Thread.sleep(2000);
+                    retryCount++;
+                }
+            }
+
+            if (!taskCompleted) {
+                System.err.println("Warning: TTL tasks did not complete within expected time");
+                Assert.fail();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.fail();
+        } finally {
+            // Only disable TTL and truncate table after tasks complete
+            executeSQL("ALTER SYSTEM SET enable_kv_ttl = false");
+            executeSQL(truncateTTLTableSQL);
         }
     }
 }
