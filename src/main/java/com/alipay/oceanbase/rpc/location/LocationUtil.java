@@ -43,7 +43,6 @@ import java.net.URL;
 import java.sql.*;
 import java.text.MessageFormat;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.alipay.oceanbase.rpc.location.model.partition.ObPartitionKey.MAX_PARTITION_ELEMENT;
 import static com.alipay.oceanbase.rpc.location.model.partition.ObPartitionKey.MIN_PARTITION_ELEMENT;
