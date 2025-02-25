@@ -60,6 +60,7 @@ public class LocationUtil {
                                                                                   .getLogger(LocationUtil.class);
     static {
         ParserConfig.getGlobalInstance().setSafeMode(true);
+        loadJdbcDriver();
     }
 
     private static final String OB_VERSION_SQL                                = "SELECT /*+READ_CONSISTENCY(WEAK)*/ OB_VERSION() AS CLUSTER_VERSION;";
@@ -298,7 +299,6 @@ public class LocationUtil {
      */
     private static Connection getMetaRefreshConnection(String url, ObUserAuth sysUA)
                                                                                     throws ObTableEntryRefreshException {
-        loadJdbcDriver();
 
         try {
             return DriverManager.getConnection(url, sysUA.getUserName(), sysUA.getPassword());
@@ -312,8 +312,8 @@ public class LocationUtil {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             return;
-        } catch (ClassNotFoundException e) {
-            RUNTIME.info("Class 'com.mysql.cj.jdbc.Driver' not found, "
+        } catch (ClassNotFoundException ignored) {
+            RUNTIME.debug("Class 'com.mysql.cj.jdbc.Driver' not found, "
                          + "try to load legacy driver class 'com.mysql.jdbc.Driver'");
         }
 
