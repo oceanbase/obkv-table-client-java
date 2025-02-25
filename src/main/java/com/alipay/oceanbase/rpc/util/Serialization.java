@@ -442,10 +442,13 @@ public class Serialization {
      */
     public static int getNeedBytes(long l) {
         if (l < 0) {
-            return 10;  // 负数固定返回10字节
+            return 10;
         }
-        // 计算最高位的位置，然后除以8(一个字节8位)向上取整
-        return (Long.SIZE - Long.numberOfLeadingZeros(l) + 7) >>> 3;
+        if (l == 0) {
+            return 1;
+        }
+        // 计算有效位数，然后除以7向上取整
+        return (Long.SIZE - Long.numberOfLeadingZeros(l) + 6) / 7;
     }
 
     /**
@@ -455,10 +458,13 @@ public class Serialization {
      */
     public static int getNeedBytes(int l) {
         if (l < 0) {
-            return 5;  // 负数固定返回5字节
+            return 5;
         }
-        // 计算最高位的位置，然后除以8(一个字节8位)向上取整
-        return (Integer.SIZE - Integer.numberOfLeadingZeros(l) + 7) >>> 3;
+        if (l == 0) {
+            return 1;
+        }
+        // 计算有效位数，然后除以7向上取整
+        return (Integer.SIZE - Integer.numberOfLeadingZeros(l) + 6) / 7;
     }
 
     /**
