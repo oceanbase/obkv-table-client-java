@@ -1294,19 +1294,20 @@ public class LocationUtil {
             }
             location.addReplicaLocation(replica);
 
-            if (location.getLeader() != null && partitionLocationInfo.initialized.compareAndSet(false, true)) {
-                partitionLocationInfo.initializationLatch.countDown();
+            if (location.getLeader() != null) {
+                partitionLocationInfo.initialized.compareAndSet(false, true);
             } else if (rs.isLast() && location.getLeader() == null) {
                 partitionLocationInfo.initializationLatch.countDown();
                 RUNTIME.error(LCD.convert("01-00028"), partitionId, partitionEntry, tableEntry);
                 RUNTIME.error(format(
-                        "partition=%d has no leader partitionEntry=%s original tableEntry=%s",
-                        partitionId, partitionEntry, tableEntry));
+                    "partition=%d has no leader partitionEntry=%s original tableEntry=%s",
+                    partitionId, partitionEntry, tableEntry));
                 throw new ObTablePartitionNoMasterException(format(
-                        "partition=%d has no leader partitionEntry=%s original tableEntry=%s",
-                        partitionId, partitionEntry, tableEntry));
+                    "partition=%d has no leader partitionEntry=%s original tableEntry=%s",
+                    partitionId, partitionEntry, tableEntry));
             }
         }
+        partitionLocationInfo.initializationLatch.countDown();
 
         return partitionEntry;
     }

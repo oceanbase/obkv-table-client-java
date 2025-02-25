@@ -300,7 +300,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         Object[] rowKeyValues = get.getRowKey().getValues();
         String[] propertiesNames = get.getSelectColumns();
         ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKeyValues,
-                propertiesNames, null);
+            propertiesNames, null);
         ObTableSingleOp singleOp = new ObTableSingleOp();
         singleOp.setSingleOpType(ObTableOperationType.GET);
         singleOp.addEntity(entity);
@@ -344,8 +344,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 }
             } else {
                 results.add(ExceptionUtil.convertToObTableException(result.getExecuteHost(),
-                        result.getExecutePort(), result.getSequence(), result.getUniqueId(), errCode,
-                        result.getHeader().getErrMsg()));
+                    result.getExecutePort(), result.getSequence(), result.getUniqueId(), errCode,
+                    result.getHeader().getErrMsg()));
             }
         }
         return results;
@@ -393,16 +393,24 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             if (this.entityType == ObTableEntityType.HKV && obTableClient.isTableGroupName(tableName)) {
                 real_tableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
             }
-            ObPair<Long, ObTableParam> tableObPair;
+            ObPair<Long, ObTableParam> tableObPair = null;
+            long lsId = INVALID_LS_ID;
             try {
                 tableObPair = obTableClient.getTable(real_tableName, rowKey,
                         false, false, obTableClient.getRoute(false));
-            } catch (ObTablePartitionInfoRefreshException e) {
-                real_tableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, true);
-                tableObPair = obTableClient.getTable(real_tableName, rowKey,
-                        false, false, obTableClient.getRoute(false));
+                lsId = tableObPair.getRight().getLsId();
+            } catch (ObTableNotExistException e) {
+                if (this.entityType == ObTableEntityType.HKV && obTableClient.isTableGroupName(tableName)) {
+                    real_tableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, true);
+                    tableObPair = obTableClient.getTable(real_tableName, rowKey,
+                            false, false, obTableClient.getRoute(false));
+                    lsId = tableObPair.getRight().getLsId();
+                }
             }
-            long lsId = tableObPair.getRight().getLsId();
+            if (lsId == INVALID_LS_ID || tableObPair == null) {
+                throw new ObTableUnexpectedException("LSBatch meets exception, lsId: " + lsId +
+                        ", tableObPair: " + tableObPair + ", tableName: " + tableName);
+            }
 
             Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperations
                     = lsOperationsMap.computeIfAbsent(lsId, k -> new HashMap<>());
@@ -576,6 +584,11 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     if (obTableClient.isRetryOnChangeMasterTimes()
                             && (tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
                         if (ex instanceof ObTableNeedFetchAllException) {
+                            if (((ObTableException) ex).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode) {
+                                if (entityType == ObTableEntityType.HKV && obTableClient.isTableGroupName(tableName)) {
+                                    realTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, true);
+                                }
+                            }
                             obTableClient.getOrRefreshTableEntry(realTableName, needRefreshTableEntry,
                                     obTableClient.isTableEntryRefreshIntervalWait(), true);
                             throw ex;
