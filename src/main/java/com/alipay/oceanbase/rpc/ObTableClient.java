@@ -1309,6 +1309,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                 tableEntryRefreshContinuousFailureCeiling);
                             syncRefreshMetadata();
                             tableEntryRefreshContinuousFailureCount.set(0);
+                        } else if (e.isConnectInactive()) {
+                            // getMetaRefreshConnection failed, maybe the server is down, so we need to refresh metadata directly
+                            syncRefreshMetadata();
+                            tableEntryRefreshContinuousFailureCount.set(0);
                         }
                     } catch (Throwable t) {
                         RUNTIME.error("getOrRefreshTableEntry meet exception", t);
@@ -1414,6 +1418,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                     tableEntryRefreshContinuousFailureCeiling);
                             syncRefreshMetadata();
                             tableEntryRefreshContinuousFailureCount.set(0);
+                        } else if (e.isConnectInactive()) {
+                            // getMetaRefreshConnection failed, maybe the server is down, so we need to refresh metadata directly
+                            syncRefreshMetadata();
+                            tableEntryRefreshContinuousFailureCount.set(0);
                         }
                     } catch (Throwable t) {
                         RUNTIME.error("getOrRefreshTableEntry meet exception", t);
@@ -1504,9 +1512,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             throw e;
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00020"), tableEntryKey, tableEntry, e);
-            throw new ObTableEntryRefreshException(String.format(
-                "failed to get table entry key=%s original tableEntry=%s ", tableEntryKey,
-                tableEntry), e);
+            if (e instanceof ObTableEntryRefreshException) {
+                throw new ObTableEntryRefreshException(String.format(
+                        "failed to get table entry key=%s original tableEntry=%s ", tableEntryKey,
+                        tableEntry), e, ((ObTableEntryRefreshException) e).isConnectInactive());
+            } else {
+                throw new ObTableEntryRefreshException(String.format(
+                        "failed to get table entry key=%s original tableEntry=%s ", tableEntryKey,
+                        tableEntry), e);
+            }
         }
         tableLocations.put(tableName, tableEntry);
         if (fetchAll) {

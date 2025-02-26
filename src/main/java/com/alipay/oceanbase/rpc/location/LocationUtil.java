@@ -304,7 +304,10 @@ public class LocationUtil {
             return DriverManager.getConnection(url, sysUA.getUserName(), sysUA.getPassword());
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00005"), e.getMessage(), e);
-            throw new ObTableEntryRefreshException("fail to connect meta server", e);
+            // Since the JDBC connection fails here, it is likely that the server has crashed or scaling down.   
+            // Therefore, we need to set the Inactive flag of the ObTableEntryRefreshException to true.   
+            // This allows the upper-layer retry mechanism to catch this exception and immediately refresh the metadata.
+            throw new ObTableEntryRefreshException("fail to connect meta server", e, true /* connect inactive */);
         }
     }
 
@@ -403,9 +406,15 @@ public class LocationUtil {
             } else {
                 RUNTIME.error(LCD.convert("01-00007"), url, key, e);
             }
-            throw new ObTableEntryRefreshException(format(
-                "fail to refresh table entry from remote url=%s, key=%s, message=%s", url, key,
-                e.getMessage()), e);
+            if (e instanceof ObTableEntryRefreshException) {
+                throw new ObTableEntryRefreshException(format(
+                        "fail to refresh table entry from remote url=%s, key=%s, message=%s", url, key,
+                        e.getMessage()), e, ((ObTableEntryRefreshException) e).isConnectInactive());
+            } else {
+                throw new ObTableEntryRefreshException(format(
+                        "fail to refresh table entry from remote url=%s, key=%s, message=%s", url, key,
+                        e.getMessage()), e.getCause());
+            }
         } finally {
             try {
                 if (null != connection) {
@@ -543,6 +552,10 @@ public class LocationUtil {
             RUNTIME.error("callTableEntryNameWithPriority meet exception", e);
             serverRoster.downgradePriority(addr);
             throw e;
+        } catch (ObTableEntryRefreshException e) {
+            RUNTIME.error("callTableEntryNameWithPriority meet exception", e);
+            throw new ObTableEntryRefreshException(format(
+                "fail to get table name from remote url=%s, key=%s", url, key), e, e.isConnectInactive());
         } catch (Exception e) {
             throw new ObTableNotExistException(format(
                 "fail to get table name from remote url=%s, key=%s", url, key), e);
@@ -979,8 +992,13 @@ public class LocationUtil {
                                                        + " table_id from remote");
             }
         } catch (Exception e) {
-            throw new ObTableEntryRefreshException("fail to get " + tableName
-                                                   + " table_id from remote", e);
+            if (e instanceof ObTableEntryRefreshException) {
+                throw new ObTableEntryRefreshException(format(
+                    "fail to get " + tableName + " table_id from remote", e), e, ((ObTableEntryRefreshException) e).isConnectInactive());
+            } else {
+                throw new ObTableEntryRefreshException(format(
+                    "fail to get " + tableName + " table_id from remote", e), e);
+            }
         } finally {
             try {
                 if (null != rs) {
@@ -1019,8 +1037,13 @@ public class LocationUtil {
                 throw new ObTableEntryRefreshException("index is not exist");
             }
         } catch (Exception e) {
-            throw new ObTableEntryRefreshException(format(
-                "fail to get index info from remote, indexTableName: %s, error message: %s", indexTableName, e.getMessage()), e);
+            if (e instanceof ObTableEntryRefreshException) {
+                throw new ObTableEntryRefreshException(format(
+                        "fail to get index info from remote, indexTableName: %s, error message: %s", indexTableName, e.getMessage()), e, ((ObTableEntryRefreshException) e).isConnectInactive());
+            } else {
+                throw new ObTableEntryRefreshException(format(
+                        "fail to get index info from remote, indexTableName: %s, error message: %s", indexTableName, e.getMessage()), e);
+            }
         } finally {
             try {
                 if (null != rs) {
