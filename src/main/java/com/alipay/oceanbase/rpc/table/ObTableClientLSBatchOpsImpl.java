@@ -407,10 +407,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     lsId = tableObPair.getRight().getLsId();
                 }
             }
-            if (lsId == INVALID_LS_ID || tableObPair == null) {
-                throw new ObTableUnexpectedException("LSBatch meets exception, lsId: " + lsId +
-                        ", tableObPair: " + tableObPair + ", tableName: " + tableName);
-            }
 
             Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperations
                     = lsOperationsMap.computeIfAbsent(lsId, k -> new HashMap<>());
