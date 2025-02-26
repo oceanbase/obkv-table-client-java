@@ -1008,13 +1008,14 @@ public class Serialization {
      * @return output data buffer
      */
     public static byte[] encodeObUniVersionHeader(long version, long payloadLen) {
-        byte[] bytes = new byte[(int) getObUniVersionHeaderLength(version, payloadLen)];
+        int versionBytes = Serialization.getNeedBytes(version);
+        int payloadLenBytes = Serialization.getNeedBytes(payloadLen);
+        byte[] bytes = new byte[versionBytes + payloadLenBytes];
         int idx = 0;
-
-        int len = Serialization.getNeedBytes(version);
+        int len = versionBytes;
         System.arraycopy(Serialization.encodeVi64(version), 0, bytes, idx, len);
-        idx += len;
-        len = Serialization.getNeedBytes(payloadLen);
+        idx += versionBytes;
+        len = payloadLenBytes;
         System.arraycopy(Serialization.encodeVi64(payloadLen), 0, bytes, idx, len);
 
         return bytes;
