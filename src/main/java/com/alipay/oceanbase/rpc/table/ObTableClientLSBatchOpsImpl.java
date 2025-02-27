@@ -294,6 +294,12 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         ObTableSingleOp singleOp = new ObTableSingleOp();
         singleOp.setSingleOpType(type);
         singleOp.addEntity(entity);
+        if (ObTableClient.RunningMode.HBASE == obTableClient.getRunningMode()) {
+            long ts = (long) ObTableClient.getRowKeyValue(mutation, 2);
+            if (ts != -Long.MAX_VALUE) {
+                singleOp.setIsUserSpecifiedT(true);
+            }
+        }
         addOperation(singleOp);
     }
 

@@ -3640,7 +3640,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         operations.addTableOperation(operation);
 
         ObTableQueryAndMutate queryAndMutate = buildObTableQueryAndMutate(obTableQuery, operations);
-
+        if (runningMode == RunningMode.HBASE) {
+            if (operation.getEntity() != null || operation.getEntity().getRowKeySize() != 3) {
+                throw new IllegalArgumentException("rowkey size is not 3");
+            }
+            long ts = (long)operation.getEntity().getRowKeyValue(2).getValue();
+            if (ts != -Long.MAX_VALUE) {
+                queryAndMutate.setIsUserSpecifiedT(true);
+            }
+        }
         ObTableQueryAndMutateRequest request = buildObTableQueryAndMutateRequest(queryAndMutate,
             tableName);
 
@@ -4536,5 +4544,18 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
 
         return endKeys;
+    }
+    public static void setRowKeyValue(Mutation mutation, int index, Object value) {
+        if (mutation.getRowKeyValues() == null || (index < 0 || mutation.getRowKeyValues().size() <= index)) {
+            throw new IllegalArgumentException("rowkey is null or index is out of range");
+        }
+        ((ObObj) mutation.getRowKeyValues().get(index)).setValue(value);
+    }
+
+    public static Object getRowKeyValue(Mutation mutation, int index) {
+        if (mutation.getRowKeyValues() == null || (index < 0 || index >= mutation.getRowKeyValues().size())) {
+            throw new IllegalArgumentException("rowkey is null or index is out of range");
+        }
+        return ((ObObj) mutation.getRowKeyValues().get(index)).getValue();
     }
 }

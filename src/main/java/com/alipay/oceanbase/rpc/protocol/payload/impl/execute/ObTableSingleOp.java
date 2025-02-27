@@ -131,6 +131,10 @@ public class ObTableSingleOp extends AbstractPayload {
     public void setIsRollbackWhenCheckFailed(boolean isRollbackWhenCheckFailed) {
         singleOpFlag.setIsRollbackWhenCheckFailed(isRollbackWhenCheckFailed);
     }
+    
+    public void setIsUserSpecifiedT(boolean isUserSpecifiedT) {
+        singleOpFlag.setIsUserSpecifiedT(isUserSpecifiedT);
+    }
 
     public ObTableOperationType getSingleOpType() {
         return singleOpType;
