@@ -2064,6 +2064,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 addr = replica.getAddr();
                 obTable = tableRoster.get(addr);
                 if (obTable == null) {
+                    syncRefreshMetadata();
+                    obTable = tableRoster.get(addr);
+                }
+                if (obTable == null) {
                     throw new ObTableGetException("obTable is null, addr is: " + addr.getIp() + ":" + addr.getSvrPort());
                 }
             }
