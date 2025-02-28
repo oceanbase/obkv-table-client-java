@@ -1797,7 +1797,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
         }
 
-        if (partIdMapObTable.size() > 1) {
+        if (partIdMapObTable.size() > 1 && !getServerCapacity().isSupportDistributedExecute()) {
             throw new ObTablePartitionConsistentException(
                     "query and mutate must be a atomic operation");
         } else if (partIdMapObTable.size() < 1) {
@@ -3763,7 +3763,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         }
 
                         // Check if partIdMapObTable size is greater than 1
-                        if (partIdMapObTable.size() > 1) {
+                        if (partIdMapObTable.size() > 1 && !getServerCapacity().isSupportDistributedExecute()) {
                             throw new ObTablePartitionConsistentException(
                                     "query and mutate must be a atomic operation");
                         }
