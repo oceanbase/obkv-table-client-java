@@ -1315,7 +1315,7 @@ public abstract class ObTableClientTestBase {
                 public void run() {
                     for (int i = 0; i < 10; i++) {
                         try {
-                            obTableClient.syncRefreshMetadata();
+                            obTableClient.syncRefreshMetadata(false);
                         } catch (Exception e) {
                             e.printStackTrace();
                             Assert.fail();
