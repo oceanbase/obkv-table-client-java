@@ -36,6 +36,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
+import com.alipay.oceanbase.rpc.queryandmutate.QueryAndMutate;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.MonitorUtil;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
@@ -221,6 +222,27 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         } else {
             singleOp.setSingleOpType(ObTableOperationType.GET);
         }
+        singleOp.addEntity(entity);
+        addOperation(singleOp);
+    }
+
+    public void addOperation(QueryAndMutate queryAndMutate) {
+
+        ObTableSingleOp singleOp = new ObTableSingleOp();
+        ObTableQuery obTableQuery = queryAndMutate.getQuery();
+        Delete delete = (Delete) queryAndMutate.getMutation();
+        ObTableSingleOpQuery singleOpQuery = ObTableSingleOpQuery.getInstance(obTableQuery.getIndexName(),
+                obTableQuery.getKeyRanges(), obTableQuery.getSelectColumns(),
+                obTableQuery.getScanOrder(), obTableQuery.isHbaseQuery(),
+                obTableQuery.gethTableFilter(), obTableQuery.getObKVParams(),
+                obTableQuery.getFilterString());
+            singleOp.setQuery(singleOpQuery);
+        singleOp.setQuery(singleOpQuery);
+        singleOp.setSingleOpType(ObTableOperationType.QUERY_AND_MUTATE);
+        String[] rowKeyNames = delete.getRowKey().getColumns();
+        Object[] rowKeyValues = delete.getRowKey().getValues();
+        ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKeyValues,
+            null, null);
         singleOp.addEntity(entity);
         addOperation(singleOp);
     }
