@@ -2028,13 +2028,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         boolean addrExpired = addr.isExpired(serverAddressCachingTimeout);
         while ((obTable == null || addrExpired) && retryTimes < 2) {
             ++retryTimes;
-            if (addr.isExpired(serverAddressCachingTimeout)) {
+            if (addrExpired) {
                 logger.info("Server addr {} is expired, refreshing tableEntry.", addr);
                 if (ObGlobal.obVsnMajor() >= 4) {
                     refreshTableLocationByTabletId(tableEntry, tableName, tabletId);
                 } else {
                     tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
                 }
+                addrExpired = addr.isExpired(serverAddressCachingTimeout);
             }
             if (obTable == null) {
                 // need to refresh table roster to ensure the current roster is the latest
@@ -2331,13 +2332,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             boolean addrExpired = addr.isExpired(serverAddressCachingTimeout);
             while ((obTable == null || addrExpired) && retryTimes < 2) {
                 ++retryTimes;
-                if (addr.isExpired(serverAddressCachingTimeout)) {
+                if (addrExpired) {
                     logger.info("Server addr {} is expired, refreshing tableEntry.", addr);
                     if (ObGlobal.obVsnMajor() >= 4) {
                         refreshTableLocationByTabletId(tableEntry, tableName, tabletId);
                     } else {
                         tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
                     }
+                    addrExpired = addr.isExpired(serverAddressCachingTimeout);
                 }
                 if (obTable == null) {
                     // need to refresh table roster to ensure the current roster is the latest
