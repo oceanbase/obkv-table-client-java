@@ -2041,7 +2041,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 syncRefreshMetadata(true);
                 // the addr is wrong, need to refresh location
                 if (logger.isInfoEnabled()) {
-                    logger.warn("Cannot get ObTable by addr {}, refreshing metadata.", addr);
+                    logger.info("Cannot get ObTable by addr {}, refreshing metadata.", addr);
                 }
                 // refresh tablet location based on the latest roster, in case that some of the observers hase been killed
                 // and used the old location
@@ -2061,6 +2061,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
         }
         if (obTable == null) {
+            RUNTIME.error("cannot get table by addr: " + addr);
             throw new ObTableGetException("obTable is null, addr is: " + addr.getIp() + ":" + addr.getSvrPort());
         }
         ObTableParam param = createTableParam(obTable, tableEntry, obPartitionLocationInfo, partId, tabletId);
@@ -2343,7 +2344,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     syncRefreshMetadata(true);
                     // the addr is wrong, need to refresh location
                     if (logger.isInfoEnabled()) {
-                        logger.warn("Cannot get ObTable by addr {}, refreshing metadata.", addr);
+                        logger.info("Cannot get ObTable by addr {}, refreshing metadata.", addr);
                     }
                     // refresh tablet location based on the latest roster, in case that some of the observers hase been killed
                     // and used the old location
