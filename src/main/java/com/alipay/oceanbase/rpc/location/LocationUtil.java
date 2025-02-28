@@ -782,12 +782,19 @@ public class LocationUtil {
                     }
                 }
             }
+        } catch (SQLException e) {
+            // cannot execute sql, maybe some of the observers have been killed
+            RUNTIME.error(LCD.convert("01-00010"), key, e.getMessage());
+            throw new ObTableEntryRefreshException("fail to get partition location entry from remote", e, true);
         } catch (ObTableNotExistException e) {
             // avoid to refresh meta for ObTableNotExistException
             RUNTIME.error("getTableEntryFromRemote meet exception", e);
             throw e;
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00009"), key, e);
+            if (e instanceof ObTableEntryRefreshException) {
+                throw e;
+            }
             throw new ObTableEntryRefreshException(format(
                 "fail to get table entry from remote, key=%s", key), e);
         } finally {
@@ -897,6 +904,10 @@ public class LocationUtil {
             ps.setString(5, key.getTableName());
             rs = ps.executeQuery();
             getPartitionLocationFromResultSetByTablet(tableEntry, rs, partitionEntry, tabletId);
+        } catch (SQLException e) {
+            // cannot execute sql, maybe some of the observers have been killed
+            RUNTIME.error(LCD.convert("01-00010"), key, tableEntry, e.getMessage());
+            throw new ObTableEntryRefreshException("fail to get partition location entry from remote", e, true);
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00010"), key, tableEntry, e);
             throw new ObTablePartitionLocationRefreshException(format(
@@ -946,6 +957,9 @@ public class LocationUtil {
                 }
                 rs = ps.executeQuery();
                 partitionEntry = getPartitionLocationFromResultSet(tableEntry, rs, partitionEntry);
+            } catch (SQLException e) {
+                RUNTIME.error(LCD.convert("01-00010"), key, partitionNum, tableEntry, e);
+                throw new ObTableEntryRefreshException("fail to get partition location entry from remote", e, true);
             } catch (Exception e) {
                 RUNTIME.error(LCD.convert("01-00010"), key, partitionNum, tableEntry, e);
                 throw new ObTablePartitionLocationRefreshException(format(
@@ -1061,7 +1075,8 @@ public class LocationUtil {
 
     private static void fetchFirstPart(Connection connection, TableEntry tableEntry,
                                        ObPartFuncType obPartFuncType)
-                                                                     throws ObTablePartitionInfoRefreshException {
+                                                                     throws ObTablePartitionInfoRefreshException,
+                                                                            SQLException {
         String tableName = "";
         TableEntryKey key = tableEntry.getTableEntryKey();
         if (key != null) {
@@ -1109,6 +1124,8 @@ public class LocationUtil {
                 tableEntry.getPartitionInfo().setPartTabletIdMap(
                     parseFirstPartKeyHash(rs, tableEntry));
             }
+        } catch (SQLException e) {
+            throw e;
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00011"), tableEntry, obPartFuncType, e);
 
@@ -1131,7 +1148,8 @@ public class LocationUtil {
 
     private static void fetchSubPart(Connection connection, TableEntry tableEntry,
                                      ObPartFuncType subPartFuncType)
-                                                                    throws ObTablePartitionInfoRefreshException {
+                                                                    throws ObTablePartitionInfoRefreshException,
+                                                                           SQLException {
         String tableName = "";
         TableEntryKey key = tableEntry.getTableEntryKey();
         if (key != null) {
@@ -1178,6 +1196,8 @@ public class LocationUtil {
                 tableEntry.getPartitionInfo().setPartTabletIdMap(
                     parseSubPartKeyHash(rs, tableEntry));
             }
+        } catch (SQLException e) {
+            throw e;
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00012"), tableEntry, subPartFuncType, e);
             throw new ObTablePartitionInfoRefreshException(format(
@@ -1454,7 +1474,8 @@ public class LocationUtil {
     }
 
     private static void fetchPartitionInfo(Connection connection, TableEntry tableEntry)
-                                                                                        throws ObTablePartitionInfoRefreshException {
+                                                                                        throws ObTablePartitionInfoRefreshException,
+                                                                                               SQLException {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         ObPartitionInfo info = null;
@@ -1477,6 +1498,8 @@ public class LocationUtil {
                 logger.info("get part info from remote info:{}", JSON.toJSON(info));
             }
             tableEntry.setPartitionInfo(info);
+        } catch (SQLException e) {
+            throw e;
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00014"), tableEntry);
             RUNTIME.error("fail to get part info from remote");
