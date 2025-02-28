@@ -2050,8 +2050,22 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             obTable = tableRoster.get(addr);
 
             if (obTable == null) {
-                RUNTIME.error("Cannot get table by addr: " + addr);
-                throw new ObTableGetException("Cannot get table by addr: " + addr);
+                // the addr is wrong, need to refresh location
+                if (RUNTIME.isInfoEnabled()) {
+                    RUNTIME.info("Cannot get table by addr: " + addr);
+                }
+                tableEntry = refreshTableLocationByTabletId(tableEntry, tableName, tabletId);
+                obPartitionLocationInfo = tableEntry.getPartitionEntry().getPartitionInfo(tabletId);
+                replica = getPartitionLocation(obPartitionLocationInfo, route);
+                if (replica == null) {
+                    RUNTIME.error("Cannot get replica by partId: " + partId);
+                    throw new ObTableGetException("Cannot get replica by partId: " + partId);
+                }
+                addr = replica.getAddr();
+                obTable = tableRoster.get(addr);
+                if (obTable == null) {
+                    throw new ObTableGetException("obTable is null, addr is: " + addr.getIp() + ":" + addr.getSvrPort());
+                }
             }
         }
         ObTableParam param = createTableParam(obTable, tableEntry, obPartitionLocationInfo, partId, tabletId);
