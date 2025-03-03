@@ -1141,17 +1141,20 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 logger.info("index info is not exist, create new index info, indexTableName: {}",
                     indexTableName);
                 int serverSize = serverRoster.getMembers().size();
-                int refreshTryTimes = tableEntryRefreshTryTimes > serverSize ? serverSize
-                    : tableEntryRefreshTryTimes;
+                int refreshTryTimes = Math.min(tableEntryRefreshTryTimes, serverSize);
                 for (int i = 0; i < refreshTryTimes; i++) {
                     try {
                         ObServerAddr serverAddr = serverRoster.getServer(serverAddressPriorityTimeout,
                                 serverAddressCachingTimeout);
+                        if (serverAddr.isExpired(serverAddressCachingTimeout)) {
+                            syncRefreshMetadata(false);
+                        }
                         indexInfo = getIndexInfoFromRemote(serverAddr, sysUA,
                                 tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
                                 indexTableName);
                         if (indexInfo != null) {
                             indexinfos.put(indexTableName, indexInfo);
+                            break;
                         } else {
                             RUNTIME.error("get index info from remote is null, indexTableName: {}",
                                     indexTableName);
