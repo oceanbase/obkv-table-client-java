@@ -1050,6 +1050,10 @@ public class LocationUtil {
             } else {
                 throw new ObTableEntryRefreshException("index is not exist");
             }
+        } catch (SQLException e) {
+            // cannot execute sql, maybe some of the observers have been killed
+            RUNTIME.error(LCD.convert("01-00010"), indexTableName, e.getMessage());
+            throw new ObTableEntryRefreshException("fail to get index info from remote", e, true);
         } catch (Exception e) {
             if (e instanceof ObTableEntryRefreshException) {
                 throw new ObTableEntryRefreshException(format(

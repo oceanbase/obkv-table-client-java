@@ -19,6 +19,9 @@ package com.alipay.oceanbase.rpc.stream;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
+import com.alipay.oceanbase.rpc.exception.ObTableEntryRefreshException;
+import com.alipay.oceanbase.rpc.exception.ObTableRetryExhaustedException;
+import com.alipay.oceanbase.rpc.exception.ObTableServerCacheExpiredException;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.AbstractQueryStreamResult;
@@ -62,9 +65,28 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
         AtomicReference<ObTableConnection> connectionRef = new AtomicReference<>();
 
         // execute request
-        ObTableQueryResult result = (ObTableQueryResult) commonExecute(this.client, logger,
-            partIdWithIndex, request, connectionRef);
-
+        ObTableQueryResult result = null;
+        for (int i = 0; i < client.getRuntimeRetryTimes(); i++) {
+            try {
+                 result = (ObTableQueryResult) commonExecute(this.client, logger,
+                        partIdWithIndex, request, connectionRef);
+                break;
+            } catch (ObTableServerCacheExpiredException e) {
+                client.syncRefreshMetadata(false);
+            }  catch (ObTableEntryRefreshException e) {
+                if (e.isConnectInactive()) {
+                    client.syncRefreshMetadata(false);
+                } else {
+                    throw e;
+                }
+            } catch (Throwable t) {
+                throw t;
+            }
+        }
+        if (result == null) {
+            throw new ObTableRetryExhaustedException("exhaust retry times " + client.getRuntimeRetryTimes());
+        }
+        
         cacheStreamNext(partIdWithIndex, checkObTableQueryResult(result));
 
         return result;

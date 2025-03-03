@@ -20,9 +20,7 @@ package com.alipay.oceanbase.rpc.stream;
 import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
-import com.alipay.oceanbase.rpc.exception.ObTableException;
-import com.alipay.oceanbase.rpc.exception.ObTableNeedFetchAllException;
-import com.alipay.oceanbase.rpc.exception.ObTableRetryExhaustedException;
+import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.model.TableEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
@@ -329,9 +327,27 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         }
 
         // execute request
-        ObTableQueryAsyncResult result = (ObTableQueryAsyncResult) commonExecute(this.client,
-            logger, partIdWithObTable, streamRequest, connectionRef);
-
+        ObTableQueryAsyncResult result = null;
+        for (int i = 0; i < client.getRuntimeRetryTimes(); i++) {
+            try {
+                result = (ObTableQueryAsyncResult) commonExecute(this.client,
+                        logger, partIdWithObTable, streamRequest, connectionRef);
+                break;
+            } catch (ObTableServerCacheExpiredException e) {
+                client.syncRefreshMetadata(false);
+            }  catch (ObTableEntryRefreshException e) {
+                if (e.isConnectInactive()) {
+                    client.syncRefreshMetadata(false);
+                } else {
+                    throw e;
+                }
+            } catch (Throwable t) {
+                throw t;
+            }
+        }
+        if (result == null) {
+            throw new ObTableRetryExhaustedException("exhaust retry times " + client.getRuntimeRetryTimes());
+        }
         // cache result
         cacheResultRows(result);
 
