@@ -1144,16 +1144,35 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 int refreshTryTimes = tableEntryRefreshTryTimes > serverSize ? serverSize
                     : tableEntryRefreshTryTimes;
                 for (int i = 0; i < refreshTryTimes; i++) {
-                    ObServerAddr serverAddr = serverRoster.getServer(serverAddressPriorityTimeout,
-                        serverAddressCachingTimeout);
-                    indexInfo = getIndexInfoFromRemote(serverAddr, sysUA,
-                        tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
-                        indexTableName);
-                    if (indexInfo != null) {
-                        indexinfos.put(indexTableName, indexInfo);
-                    } else {
-                        RUNTIME.error("get index info from remote is null, indexTableName: {}",
-                            indexTableName);
+                    try {
+                        ObServerAddr serverAddr = serverRoster.getServer(serverAddressPriorityTimeout,
+                                serverAddressCachingTimeout);
+                        indexInfo = getIndexInfoFromRemote(serverAddr, sysUA,
+                                tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
+                                indexTableName);
+                        if (indexInfo != null) {
+                            indexinfos.put(indexTableName, indexInfo);
+                        } else {
+                            RUNTIME.error("get index info from remote is null, indexTableName: {}",
+                                    indexTableName);
+                        }
+                    } catch (ObTableServerCacheExpiredException e) {
+                        RUNTIME.error("get index info from remote meet exception", e);
+                        syncRefreshMetadata(false);
+                    } catch (ObTableEntryRefreshException e) {
+                        RUNTIME.error("get index info from remote meet exception", e);
+                        if (tableEntryRefreshContinuousFailureCount.incrementAndGet() > tableEntryRefreshContinuousFailureCeiling) {
+                            logger.error(LCD.convert("01-00019"),
+                                    tableEntryRefreshContinuousFailureCeiling);
+                            syncRefreshMetadata(false);
+                            tableEntryRefreshContinuousFailureCount.set(0);
+                        } else if (e.isConnectInactive()) {
+                            syncRefreshMetadata(false);
+                            tableEntryRefreshContinuousFailureCount.set(0);
+                        }
+                    } catch (Throwable t) {
+                        RUNTIME.error("getOrRefreshTableEntry meet exception", t);
+                        throw t;
                     }
                 }
                 return indexInfo;
