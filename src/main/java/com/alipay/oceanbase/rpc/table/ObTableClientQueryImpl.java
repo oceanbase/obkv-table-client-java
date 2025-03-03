@@ -133,12 +133,13 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             throw new IllegalArgumentException("table name is null");
         } else if (tableQuery.isFTSQuery()) {
             if (!ObGlobal.isFtsQuerySupport()) {
-                throw new FeatureNotSupportedException("full text query is not supported in "+ObGlobal.obVsnString());
+                throw new FeatureNotSupportedException("full text query is not supported in "
+                                                       + ObGlobal.obVsnString());
             }
             if (tableQuery.getIndexName() == null || tableQuery.getIndexName().isEmpty()
-                    || tableQuery.getIndexName().equalsIgnoreCase("primary")) {
+                || tableQuery.getIndexName().equalsIgnoreCase("primary")) {
                 throw new IllegalArgumentException(
-                        "use fulltext search but specified index name is not fulltext index");
+                    "use fulltext search but specified index name is not fulltext index");
             }
         }
     }
@@ -224,9 +225,9 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                     indexTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName,
                         false);
                 }
-                ObPair<Long, ObTableParam> table = obTableClient.getTableWithPartId(indexTableName,
-                    getPartId(), false, false, false, obTableClient.getRoute(false));
-                partitionObTables.put(table.getLeft(), table);
+                ObTableParam table = obTableClient.getTableWithPartId(indexTableName,
+                    getPartId(), obTableClient.getRoute(false));
+                partitionObTables.put(table.getPartId(), new ObPair<>(table.getPartId(), table));
             }
         }
 
@@ -289,6 +290,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     }
 
     public Map<Long, ObPair<Long, ObTableParam>> initPartitions(ObTableQuery tableQuery, String tableName) throws Exception {
+        // partitionObTables -> <logicId, <logicId, tableParam>>
         Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new LinkedHashMap<>();
         String indexName = tableQuery.getIndexName();
 
@@ -317,16 +319,16 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                 indexTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
             }
             ObBorderFlag borderFlag = range.getBorderFlag();
-            // pairs -> List<Pair<logicId, param>>
-            List<ObPair<Long, ObTableParam>> pairs = this.obTableClient.getTables(indexTableName, tableQuery, start,
-                borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), false, false);
+            List<ObTableParam> params = this.obTableClient.getTables(indexTableName, tableQuery, start,
+                borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd());
             if (tableQuery.getScanOrder() == ObScanOrder.Reverse) {
-                for (int i = pairs.size() - 1; i >= 0; i--) {
-                    partitionObTables.put(pairs.get(i).getLeft(), pairs.get(i));
+                for (int i = params.size() - 1; i >= 0; i--) {
+                    ObTableParam param = params.get(i);
+                    partitionObTables.put(param.getPartId(), new ObPair<>(param.getPartId(), param));
                 }
             } else {
-                for (ObPair<Long, ObTableParam> pair : pairs) {
-                    partitionObTables.put(pair.getLeft(), pair);
+                for (ObTableParam param : params) {
+                    partitionObTables.put(param.getPartId(), new ObPair<>(param.getPartId(), param));
                 }
             }
         }

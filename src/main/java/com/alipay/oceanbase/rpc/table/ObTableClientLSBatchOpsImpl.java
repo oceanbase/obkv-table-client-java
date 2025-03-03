@@ -300,7 +300,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         Object[] rowKeyValues = get.getRowKey().getValues();
         String[] propertiesNames = get.getSelectColumns();
         ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKeyValues,
-                propertiesNames, null);
+            propertiesNames, null);
         ObTableSingleOp singleOp = new ObTableSingleOp();
         singleOp.setSingleOpType(ObTableOperationType.GET);
         singleOp.addEntity(entity);
@@ -344,8 +344,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 }
             } else {
                 results.add(ExceptionUtil.convertToObTableException(result.getExecuteHost(),
-                        result.getExecutePort(), result.getSequence(), result.getUniqueId(), errCode,
-                        result.getHeader().getErrMsg()));
+                    result.getExecutePort(), result.getSequence(), result.getUniqueId(), errCode,
+                    result.getHeader().getErrMsg()));
             }
         }
         return results;
@@ -393,16 +393,15 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             if (this.entityType == ObTableEntityType.HKV && obTableClient.isTableGroupName(tableName)) {
                 real_tableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
             }
-            ObPair<Long, ObTableParam>  tableObPair= obTableClient.getTable(real_tableName, rowKey,
-                    false, false, obTableClient.getRoute(false));
-            long lsId = tableObPair.getRight().getLsId();
+            ObTableParam tableParam = obTableClient.getTable(real_tableName, rowKey);
+            long lsId = tableParam.getLsId();
 
             Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperations
                     = lsOperationsMap.computeIfAbsent(lsId, k -> new HashMap<>());
             // if ls id not exists
 
             ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>> singleOperations =
-                    tabletOperations.computeIfAbsent(tableObPair.getLeft(), k -> new ObPair<>(tableObPair.getRight(), new ArrayList<>()));
+                    tabletOperations.computeIfAbsent(tableParam.getPartId(), k -> new ObPair<>(tableParam, new ArrayList<>()));
             // if tablet id not exists
             singleOperations.getRight().add(operationsWithIndex.get(i));
         }
@@ -515,17 +514,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
-                        TableEntry entry = obTableClient.getOrRefreshTableEntry(realTableName, false,
-                                false, false);
-                        if (ObGlobal.obVsnMajor() >= 4) {
-                            obTableClient.refreshTableLocationByTabletId(entry, realTableName, obTableClient.getTabletIdByPartId(entry, originPartId));
-                        } else { // 3.x
-                            obTableClient.getOrRefreshTableEntry(realTableName, needRefreshTableEntry,
-                                    obTableClient.isTableEntryRefreshIntervalWait(), false);
-                        }
-                        subObTable = obTableClient.getTableWithPartId(realTableName, originPartId, needRefreshTableEntry,
-                                        obTableClient.isTableEntryRefreshIntervalWait(), false, route).
-                                            getRight().getObTable();
+                        TableEntry entry = obTableClient.getOrRefreshTableEntry(realTableName, false);
+                        obTableClient.refreshTableLocationByTabletId(realTableName, obTableClient.getTabletIdByPartId(entry, originPartId));
+                        subObTable = obTableClient.getTableWithPartId(realTableName, originPartId, route).getObTable();
                     }
                 }
                 ObPayload result = subObTable.execute(tableLsOpRequest);
@@ -567,9 +558,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     needRefreshTableEntry = true;
                     if (obTableClient.isRetryOnChangeMasterTimes()
                             && (tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
-                        if (ex instanceof ObTableNeedFetchAllException) {
-                            obTableClient.getOrRefreshTableEntry(realTableName, needRefreshTableEntry,
-                                    obTableClient.isTableEntryRefreshIntervalWait(), true);
+                        if (ex instanceof ObTableNeedFetchMetaException) {
+                            obTableClient.getOrRefreshTableEntry(realTableName, true);
                             throw ex;
                         }
                     } else {
@@ -668,7 +658,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     }
 
     private boolean shouldRetry(Throwable throwable) {
-        return throwable instanceof ObTableNeedFetchAllException;
+        return throwable instanceof ObTableNeedFetchMetaException;
     }
 
     private void executeWithRetries(
@@ -692,7 +682,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 } catch (Exception e) {
                     if (shouldRetry(e)) {
                         retryCount++;
-                        errCode = ((ObTableNeedFetchAllException)e).getErrorCode();
+                        errCode = ((ObTableNeedFetchMetaException)e).getErrorCode();
                         errMsg = e.getMessage();
                         List<ObPair<Integer, ObTableSingleOp>> failedOperations = extractOperations(currentEntry.getValue());
                         currentPartitions = prepareOperations(failedOperations);

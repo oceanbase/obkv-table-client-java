@@ -262,12 +262,11 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             for (int j = 0; j < rowKeySize; j++) {
                 rowKey[j] = rowKeyObject.getObj(j).getValue();
             }
-            ObPair<Long, ObTableParam> tableObPair = obTableClient.getTable(
-                    tableName, rowKey, false, false,
-                    obTableClient.getRoute(batchOperation.isReadOnly()));
+            ObTableParam tableParam = obTableClient.getTableWithRoute(
+                    tableName, rowKey, obTableClient.getRoute(batchOperation.isReadOnly()));
             ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>> obTableOperations = partitionOperationsMap
-                    .computeIfAbsent(tableObPair.getLeft(), k -> new ObPair<>(
-                            tableObPair.getRight(), new ArrayList<>()));
+                    .computeIfAbsent(tableParam.getTabletId(), k -> new ObPair<>(
+                            tableParam, new ArrayList<>()));
             obTableOperations.getRight().add(new ObPair<>(i, operation));
         }
         return partitionOperationsMap;
@@ -355,14 +354,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
-                        TableEntry entry = obTableClient.getOrRefreshTableEntry(tableName, false,
-                            false, false);
+                        TableEntry entry = obTableClient.getOrRefreshTableEntry(tableName, false);
                         if (ObGlobal.obVsnMajor() >= 4) {
-                            obTableClient.refreshTableLocationByTabletId(entry, tableName, partId);
+                            obTableClient.refreshTableLocationByTabletId(tableName, partId);
                         }
                         ObTableParam newParam = obTableClient.getTableWithPartId(tableName, partId,
-                                false, obTableClient.isTableEntryRefreshIntervalWait(), needFetchAllRouteInfo, route)
-                                .getRight();
+                            route);
                         subObTable = newParam.getObTable();
                         subRequest.setPartitionId(newParam.getPartitionId());
                     }
@@ -394,8 +391,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         logger
                             .warn(
                                 "batch ops execute while meet Exception, tablename:{}, errorMsg: {}, try times {}",
-                                tableName, ex.getMessage(),
-                                tryTimes);
+                                tableName, ex.getMessage(), tryTimes);
                     } else {
                         throw ex;
                     }
@@ -417,19 +413,17 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                     needRefreshTableEntry = true;
                     if (obTableClient.isRetryOnChangeMasterTimes()
                         && (tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
-                        if (ex instanceof ObTableNeedFetchAllException) {
+                        if (ex instanceof ObTableNeedFetchMetaException) {
                             // refresh table info
-                            obTableClient.getOrRefreshTableEntry(tableName, needRefreshTableEntry,
-                                obTableClient.isTableEntryRefreshIntervalWait(), true);
+                            obTableClient.getOrRefreshTableEntry(tableName, true);
                             throw ex;
                         }
                     } else {
-                        String logMessage = String.format(
+                        String logMessage = String
+                            .format(
                                 "exhaust retry while meet NeedRefresh Exception, table name: %s, batch ops refresh table, retry times: %d, errorCode: %d",
-                                tableName,
-                                obTableClient.getRuntimeRetryTimes(),
-                                ((ObTableException) ex).getErrorCode()
-                        );
+                                tableName, obTableClient.getRuntimeRetryTimes(),
+                                ((ObTableException) ex).getErrorCode());
                         logger.warn(logMessage, ex);
                         obTableClient.calculateContinuousFailure(tableName, ex.getMessage());
                         throw new ObTableRetryExhaustedException(logMessage, ex);
@@ -510,7 +504,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
     }
 
     private boolean shouldRetry(Throwable throwable) {
-        return throwable instanceof ObTableNeedFetchAllException;
+        return throwable instanceof ObTableNeedFetchMetaException;
     }
 
     private void executeWithRetries(ObTableOperationResult[] results, Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> entry, int maxRetries) throws Exception {
@@ -529,7 +523,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 } catch (Exception e) {
                     if (shouldRetry(e)) {
                         retryCount++;
-                        errCode = ((ObTableNeedFetchAllException)e).getErrorCode();
+                        errCode = ((ObTableNeedFetchMetaException)e).getErrorCode();
                         errMsg = e.getMessage();
                         List<ObTableOperation> failedOperations = extractOperations(currentEntry.getValue().getRight());
                         currentPartitions = prepareOperations(failedOperations);

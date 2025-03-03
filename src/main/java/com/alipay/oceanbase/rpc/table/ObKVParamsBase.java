@@ -26,7 +26,7 @@ import java.util.Map;
 public abstract class ObKVParamsBase {
     public enum paramType {
         HBase((byte) 0), Redis((byte) 1), FTS((byte) 2);
-        private final byte value;
+        private final byte                           value;
         private static final Map<Integer, paramType> map = new HashMap<Integer, paramType>();
 
         static {
@@ -35,13 +35,17 @@ public abstract class ObKVParamsBase {
             }
         }
 
-        public static paramType valueOf(int value) { return map.get(value); }
+        public static paramType valueOf(int value) {
+            return map.get(value);
+        }
 
         paramType(byte value) {
             this.value = value;
         }
 
-        public byte getValue() { return value; }
+        public byte getValue() {
+            return value;
+        }
     }
 
     public int       byteSize;

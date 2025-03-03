@@ -17,45 +17,45 @@
 
 package com.alipay.oceanbase.rpc.exception;
 
-public class ObTableNeedFetchAllException extends ObTableException {
+public class ObTableNeedFetchMetaException extends ObTableException {
     /*
      * Ob table routing wrong exception.
      */
-    public ObTableNeedFetchAllException() {
+    public ObTableNeedFetchMetaException() {
     }
 
     /*
      * Ob table routing wrong exception with error code.
      */
-    public ObTableNeedFetchAllException(int errorCode) {
+    public ObTableNeedFetchMetaException(int errorCode) {
         super(errorCode);
     }
 
     /*
      * Ob table routing wrong exception with message and error code.
      */
-    public ObTableNeedFetchAllException(String message, int errorCode) {
+    public ObTableNeedFetchMetaException(String message, int errorCode) {
         super(message, errorCode);
     }
 
     /*
      * Ob table routing wrong exception with message.
      */
-    public ObTableNeedFetchAllException(String message) {
+    public ObTableNeedFetchMetaException(String message) {
         super(message);
     }
 
     /*
      * Ob table routing wrong exception with message and cause.
      */
-    public ObTableNeedFetchAllException(String message, Throwable cause) {
+    public ObTableNeedFetchMetaException(String message, Throwable cause) {
         super(message, cause);
     }
 
     /*
      * Ob table routing wrong exception with cause.
      */
-    public ObTableNeedFetchAllException(Throwable cause) {
+    public ObTableNeedFetchMetaException(Throwable cause) {
         super(cause);
     }
 

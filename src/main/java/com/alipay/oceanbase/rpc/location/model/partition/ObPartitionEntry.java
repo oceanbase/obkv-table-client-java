@@ -37,6 +37,14 @@ public class ObPartitionEntry {
     public ObPartitionLocationInfo getPartitionInfo(long tabletId) {
         return partitionInfos.computeIfAbsent(tabletId, id -> new ObPartitionLocationInfo());
     }
+
+    public void removeNonExistentTablet(Map<Long, Long> partTabletMap) {
+        for (Map.Entry<Long, ObPartitionLocationInfo> entry : partitionInfos.entrySet()) {
+            if (!partTabletMap.containsValue(entry.getKey())) {
+                partitionInfos.remove(entry.getKey());
+            }
+        }
+    }
     
     public Map<Long, ObPartitionLocation> getPartitionLocation() {
         return partitionLocation;

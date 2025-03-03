@@ -8,10 +8,10 @@ import com.alipay.oceanbase.rpc.table.api.Table;
 import java.util.Map;
 
 public class Get {
-    private Table           client;
-    private String          tableName;
-    protected Row           rowKey;
-    protected String[]  selectColumns;
+    private Table      client;
+    private String     tableName;
+    protected Row      rowKey;
+    protected String[] selectColumns;
 
     public Get() {
         tableName = null;
@@ -58,6 +58,6 @@ public class Get {
         if (client == null) {
             throw new IllegalArgumentException("client is null");
         }
-        return ((ObTableClient)client).get(tableName, rowKey, selectColumns);
+        return ((ObTableClient) client).get(tableName, rowKey, selectColumns);
     }
 }
