@@ -64,15 +64,13 @@ public class ObTableSingleOp extends AbstractPayload {
         }
 
         // 4. encode entities
-        if (!((singleOpType == ObTableOperationType.SCAN) && query.isHbaseQuery())) {
-            len = Serialization.getNeedBytes(entities.size());
-            System.arraycopy(Serialization.encodeVi64(entities.size()), 0, bytes, idx, len);
+        len = Serialization.getNeedBytes(entities.size());
+        System.arraycopy(Serialization.encodeVi64(entities.size()), 0, bytes, idx, len);
+        idx += len;
+        for (ObTableSingleOpEntity entity : entities) {
+            len = (int) entity.getPayloadSize();
+            System.arraycopy(entity.encode(), 0, bytes, idx, len);
             idx += len;
-            for (ObTableSingleOpEntity entity : entities) {
-                len = (int) entity.getPayloadSize();
-                System.arraycopy(entity.encode(), 0, bytes, idx, len);
-                idx += len;
-            }
         }
 
         return bytes;
@@ -111,11 +109,9 @@ public class ObTableSingleOp extends AbstractPayload {
             if (ObTableOperationType.needEncodeQuery(singleOpType)) {
                 payloadContentSize += query.getPayloadSize();
             }
-            if (!((singleOpType == ObTableOperationType.SCAN) && query.isHbaseQuery())) {
-                payloadContentSize += Serialization.getNeedBytes(entities.size());
-                for (ObTableSingleOpEntity entity : entities) {
-                    payloadContentSize += entity.getPayloadSize();
-                }
+            payloadContentSize += Serialization.getNeedBytes(entities.size());
+            for (ObTableSingleOpEntity entity : entities) {
+                payloadContentSize += entity.getPayloadSize();
             }
             this.payLoadContentSize = payloadContentSize;
         }
