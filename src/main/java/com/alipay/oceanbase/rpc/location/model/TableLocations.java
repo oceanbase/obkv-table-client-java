@@ -5,6 +5,7 @@ import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionLocationInfo;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObFetchPartitionMetaRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObFetchPartitionMetaResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObFetchPartitionMetaType;
@@ -27,6 +28,9 @@ public class TableLocations {
     private static final Logger     logger                                  = getLogger(TableLocations.class);
     private final ObTableClient     tableClient;
     private Map<String, Lock>       locks                                   = new ConcurrentHashMap<String, Lock>();
+    /*
+     * TableName -> TableEntry, containing table meta and location information
+     */
     private Map<String, TableEntry> locations                               = new ConcurrentHashMap<String, TableEntry>();
     private AtomicInteger           tableEntryRefreshContinuousFailureCount = new AtomicInteger(0);
 
@@ -60,7 +64,7 @@ public class TableLocations {
         int tableEntryRefreshContinuousFailureCeiling = tableClient
             .getTableEntryRefreshContinuousFailureCeiling();
         long tableEntryRefreshLockTimeout = tableClient.getTableEntryRefreshLockTimeout();
-        long fisrtTableEntryRefreshInterval = 3000L;
+        long fisrtTableEntryRefreshInterval = tableClient.getTableEntryRefreshIntervalCeiling();
         long afterTableEntryRefreshInterval = 100L;
 
         TableEntry tableEntry = locations.get(tableName);
@@ -102,8 +106,7 @@ public class TableLocations {
                 }
             }
             int serverSize = serverRoster.getMembers().size();
-            int refreshTryTimes = tableEntryRefreshTryTimes > serverSize ? serverSize
-                : tableEntryRefreshTryTimes;
+            int refreshTryTimes = Math.min(tableEntryRefreshTryTimes, serverSize);
             for (int i = 0; i < refreshTryTimes; ++i) {
                 try {
                     return refreshTableEntry(tableEntry, tableName, serverRoster, sysUA);
@@ -244,8 +247,7 @@ public class TableLocations {
             }
             boolean success = false;
             int serverSize = serverRoster.getMembers().size();
-            int retryTimes = tableEntryRefreshTryTimes > serverSize ? serverSize
-                : tableEntryRefreshTryTimes;
+            int retryTimes = Math.min(tableEntryRefreshTryTimes, serverSize);
             for (int i = 0; !success && i < retryTimes; ++i) {
                 try {
                     tableEntry = loadTableEntryLocationWithPriority(serverRoster, tableEntryKey,
@@ -290,22 +292,30 @@ public class TableLocations {
         }
     }
 
-    public void refreshODPTableMeta(String tableName, boolean forceRefresh, ObTable odpTable)
-                                                                                             throws Exception {
+    /**
+     * fetch ODP partition meta information
+     * @param tableName table name to query
+     * @param forceRefresh flag to force ODP to fetch the latest partition meta information
+     * @param odpTable odp table to execute refreshing
+     * @return TableEntry ODPTableEntry
+     * @throws Exception Exception
+     */
+    public TableEntry refreshODPMeta(String tableName, boolean forceRefresh, ObTable odpTable)
+                                                                                              throws Exception {
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
         }
+        long reFetchInterval = tableClient.getTableEntryRefreshIntervalCeiling();
         TableEntry odpTableEntry = locations.get(tableName);
-        long lastOdpRefreshTimeMills = -1;
-        long reFetchInterval = 500L;
+        long lastOdpCreateTimeMills = -1;
 
         // already have odpTableEntry
         if (odpTableEntry != null) {
-            lastOdpRefreshTimeMills = odpTableEntry.getRefreshMetaTimeMills();
-            // if no need to fetch new meta, directly return
-            if (!forceRefresh) {
-                return;
+            long lastRefreshTime = odpTableEntry.getRefreshMetaTimeMills();
+            if (!forceRefresh && System.currentTimeMillis() - lastRefreshTime < reFetchInterval) {
+                return odpTableEntry;
             }
+            lastOdpCreateTimeMills = odpTableEntry.getODPMetaCreateTimeMills();
         }
         Lock tmpLock = new ReentrantLock();
         Lock lock = getRefreshLock(tableName);
@@ -314,7 +324,6 @@ public class TableLocations {
         // use the time-out mechanism, avoiding the rpc hanging up
         boolean acquired = lock.tryLock(tableClient.getODPTableEntryRefreshLockTimeout(),
             TimeUnit.MILLISECONDS);
-
         if (!acquired) {
             String errMsg = "try to lock odpTable-entry refreshing timeout " + " ,tableName:"
                             + tableName + " , timeout:"
@@ -322,26 +331,25 @@ public class TableLocations {
             RUNTIME.error(errMsg);
             throw new ObTableEntryRefreshException(errMsg);
         }
-
-        if (locations.get(tableName) != null) {
-            odpTableEntry = locations.get(tableName);
-            long interval = System.currentTimeMillis() - odpTableEntry.getRefreshMetaTimeMills();
-            // do not fetch partition meta if and only if the refresh interval is less than 0.5 seconds
-            // and no need to fore renew
-            if (interval < reFetchInterval) {
-                if (!forceRefresh) {
-                    lock.unlock();
-                    return;
-                }
-                Thread.sleep(reFetchInterval - interval);
-            }
-        }
-
-        boolean forceRenew = forceRefresh;
-        boolean success = false;
-        int retryTime = 0;
         try {
-            do {
+            if (locations.get(tableName) != null) {
+                odpTableEntry = locations.get(tableName);
+                long interval = System.currentTimeMillis()
+                                - odpTableEntry.getRefreshMetaTimeMills();
+                // do not fetch partition meta if and only if the refresh interval is less than 0.5 seconds
+                // and no need to fore renew
+                if (interval < reFetchInterval) {
+                    if (!forceRefresh) {
+                        return odpTableEntry;
+                    }
+                    Thread.sleep(reFetchInterval - interval);
+                }
+            }
+            boolean forceRenew = forceRefresh;
+            int tableEntryRefreshTryTimes = tableClient.getTableEntryRefreshTryTimes();
+            int retryTime = 0;
+
+            while (true) {
                 try {
                     ObFetchPartitionMetaRequest request = ObFetchPartitionMetaRequest.getInstance(
                         ObFetchPartitionMetaType.GET_PARTITION_META.getIndex(), tableName,
@@ -349,7 +357,7 @@ public class TableLocations {
                         tableClient.getDatabase(), forceRenew,
                         odpTable.getObTableOperationTimeout()); // TODO: timeout setting need to be verified
                     ObPayload result = odpTable.execute(request);
-                    checkObFetchPartitionMetaResult(lastOdpRefreshTimeMills, request, result);
+                    checkODPPartitionMetaResult(lastOdpCreateTimeMills, request, result);
                     ObFetchPartitionMetaResult obFetchPartitionMetaResult = (ObFetchPartitionMetaResult) result;
                     odpTableEntry = obFetchPartitionMetaResult.getTableEntry();
                     TableEntryKey key = new TableEntryKey(tableClient.getClusterName(),
@@ -375,29 +383,50 @@ public class TableLocations {
                         }
                     }
                     locations.put(tableName, odpTableEntry);
-                    success = true;
-                } catch (Exception ex) {
-                    RUNTIME.error("Fetching ODP partition meta meet exception", ex);
+                    return odpTableEntry;
+                } catch (ObTableException ex) {
                     if (tableClient.getRowKeyElement(tableName) == null) {
                         // if the error is missing row key element, directly throw
                         throw ex;
                     }
-                    if (ex instanceof ObTableException) {
+                    if (tableClient.isRetryOnChangeMasterTimes()) {
+                        if (ex.getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode) {
+                            RUNTIME.error("This version of ODP does not support for getPartition.");
+                            throw ex;
+                        }
+                        RUNTIME
+                            .warn(
+                                "meet exception while refreshing ODP table meta, need to retry. TableName: {}, exception: {}",
+                                tableName, ex.getMessage());
                         forceRenew = true; // force ODP to fetch the latest partition meta
                         retryTime++;
+                        if (retryTime >= tableEntryRefreshTryTimes) {
+                            throw new ObTableRetryExhaustedException(
+                                "meet exception while refreshing ODP table meta and "
+                                        + "exhaust retry, tableName: " + tableName, ex);
+                        }
                     } else {
+                        RUNTIME
+                            .error(
+                                "meet exception while refreshing ODP table meta. TableName: {}, exception: {}",
+                                tableName, ex.getMessage());
                         throw ex;
                     }
+                } catch (Exception ex) {
+                    RUNTIME
+                        .error(
+                            "meet exception while refreshing ODP table meta. TableName: {}, exception: {}",
+                            tableName, ex.getMessage());
+                    throw ex;
                 }
-            } while (!success && retryTime < 3);
+            }
         } finally {
             lock.unlock();
         }
     }
 
-    private void checkObFetchPartitionMetaResult(long lastOdpRefreshTimeMills,
-                                                 ObFetchPartitionMetaRequest request,
-                                                 ObPayload result) {
+    private void checkODPPartitionMetaResult(long lastOdpCreateTimeMills,
+                                             ObFetchPartitionMetaRequest request, ObPayload result) {
         if (result == null) {
             RUNTIME.error("client get unexpected NULL result");
             throw new ObTableException("client get unexpected NULL result");
@@ -409,8 +438,8 @@ public class TableLocations {
                                        + result.getClass().getName());
         }
 
-        if (lastOdpRefreshTimeMills != -1) {
-            if (lastOdpRefreshTimeMills >= ((ObFetchPartitionMetaResult) result).getCreateTime()) {
+        if (lastOdpCreateTimeMills != -1) {
+            if (lastOdpCreateTimeMills >= ((ObFetchPartitionMetaResult) result).getCreateTime()) {
                 throw new ObTableException("client get outdated result from ODP");
             }
         }

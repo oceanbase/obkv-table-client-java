@@ -74,6 +74,9 @@ public class TableRoute {
         TableEntry tableEntry;
         if (tableClient.isOdpMode()) {
             tableEntry = odpTableLocations.getTableEntry(tableName);
+            if (tableEntry == null) {
+                tableEntry = refreshODPMeta(tableName, false);
+            }
         } else {
             tableEntry = tableLocations.getTableEntry(tableName);
             if (tableEntry == null) {
@@ -200,68 +203,13 @@ public class TableRoute {
             BOOT.info("finish initMetadata for all tables for database {}",
                 tableClient.getDatabase());
         }
+        // record last refresh meta time
+        this.lastRefreshMetadataTimestamp = System.currentTimeMillis();
     }
 
     public void launchRouteRefresher() {
         routeRefresher = new RouteTableRefresher(configServerInfo.getRsList(), this, tableClient);
         routeRefresher.start();
-    }
-
-    /**
-     * refresh the specific table's tablet meta information,
-     * like part_num, part_level, etc.
-     * */
-    public TableEntry refreshMeta(String tableName) throws Exception {
-        try {
-            return tableLocations.refreshMeta(tableName, serverRoster, sysUA);
-        } catch (ObTableEntryRefreshException e) {
-            checkRsListChanged(false);
-            // if fail to refresh table entry, the refreshMetaTimeMills will not update
-            return tableLocations.refreshMeta(tableName, serverRoster, sysUA);
-        }
-    }
-
-    /**
-     * refresh table meta information in odp mode
-     * only used when getPartition fails in odp mode
-     * */
-    public void refreshOdpMeta(String tableName, boolean forceRefresh) throws Exception {
-        odpTableLocations.refreshODPTableMeta(tableName, forceRefresh, odpInfo.getObTable());
-    }
-
-    /**
-     * refresh the tablet replica location of the specific table
-     * */
-    public TableEntry refreshPartitionLocation(String tableName, long tabletId) throws Exception {
-        TableEntry tableEntry = getTableEntry(tableName);
-        try {
-            return tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
-                serverRoster, sysUA);
-        } catch (ObTableEntryRefreshException e) {
-            logger.warn("refresh partition location meet entry refresh exception, tableName: {}",
-                tableName);
-            checkRsListChanged(false);
-            return tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
-                serverRoster, sysUA);
-        } catch (ObTableSchemaVersionMismatchException e) {
-            // schema version mismatched with the current tableEntry, need to refresh tableEntry meta first
-            logger.warn("refresh partition location meet schema version mismatched, tableName: {}",
-                tableName);
-            tableLocations.refreshMeta(tableName, serverRoster, sysUA);
-            return tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
-                serverRoster, sysUA);
-        } catch (ObTableGetException e) {
-            logger.warn("refresh partition location meets exception, tableName: {}", tableName);
-            if (e.getMessage().contains("Need to fetch meta")) {
-                refreshMeta(tableName);
-                return tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
-                    serverRoster, sysUA);
-            }
-            throw e;
-        } catch (Throwable t) {
-            logger.error("refresh partition location meets exception, tableName: {}", tableName);
-            throw t;
-        }
     }
 
     public String getIndexTableName(final String tableName, final String indexName,
@@ -425,6 +373,62 @@ public class TableRoute {
 
     /*------------------------------------------------------------------------Single Operation Routing------------------------------------------------------------------------*/
 
+    /**
+     * refresh the specific table's tablet meta information,
+     * like part_num, part_level, etc.
+     * */
+    public TableEntry refreshMeta(String tableName) throws Exception {
+        try {
+            return tableLocations.refreshMeta(tableName, serverRoster, sysUA);
+        } catch (ObTableEntryRefreshException e) {
+            checkRsListChanged(false);
+            // if fail to refresh table entry, the refreshMetaTimeMills will not update
+            return tableLocations.refreshMeta(tableName, serverRoster, sysUA);
+        }
+    }
+
+    /**
+     * refresh the tablet replica location of the specific table
+     * */
+    public TableEntry refreshPartitionLocation(String tableName, long tabletId) throws Exception {
+        TableEntry tableEntry = getTableEntry(tableName);
+        try {
+            return tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
+                serverRoster, sysUA);
+        } catch (ObTableEntryRefreshException e) {
+            logger.warn("refresh partition location meet entry refresh exception, tableName: {}",
+                tableName);
+            checkRsListChanged(false);
+            return tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
+                serverRoster, sysUA);
+        } catch (ObTableSchemaVersionMismatchException e) {
+            // schema version mismatched with the current tableEntry, need to refresh tableEntry meta first
+            logger.warn("refresh partition location meet schema version mismatched, tableName: {}",
+                tableName);
+            tableLocations.refreshMeta(tableName, serverRoster, sysUA);
+            return tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
+                serverRoster, sysUA);
+        } catch (ObTableGetException e) {
+            logger.warn("refresh partition location meets exception, tableName: {}", tableName);
+            if (e.getMessage().contains("Need to fetch meta")) {
+                refreshMeta(tableName);
+                return tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
+                    serverRoster, sysUA);
+            }
+            throw e;
+        } catch (Throwable t) {
+            logger.error("refresh partition location meets exception, tableName: {}", tableName);
+            throw t;
+        }
+    }
+
+    /**
+     * get or refresh table meta information in odp mode
+     * */
+    public TableEntry refreshODPMeta(String tableName, boolean forceRefresh) throws Exception {
+        return odpTableLocations.refreshODPMeta(tableName, forceRefresh, odpInfo.getObTable());
+    }
+
     public ObTableParam getTableParam(String tableName, Object[] rowkey) throws Exception {
         ObServerRoute route = tableClient.getRoute(false);
         return getTableParam(tableName, rowkey, route);
@@ -458,11 +462,19 @@ public class TableRoute {
             }
         }
         long partId = getPartId(tableEntry, row);
-        return getTableInternal(tableName, tableEntry, partId, route);
+        if (tableClient.isOdpMode()) {
+            return getODPTableInternal(tableEntry, partId);
+        } else {
+            return getTableInternal(tableName, tableEntry, partId, route);
+        }
     }
 
     /**
      * get TableParam by tableName and rowkey
+     * work for ocpMode and odpMode both
+     * @param tableName tableName
+     * @param rowkey row key or partition key names and values
+     * @return ObTableParam tableParam
      * */
     public ObTableParam getTableParam(String tableName, Row rowkey) throws Exception {
         TableEntry tableEntry = getTableEntry(tableName);
@@ -471,13 +483,21 @@ public class TableRoute {
             throw new ObTableEntryRefreshException("tableEntry is null, tableName: " + tableName);
         }
 
-        ObServerRoute route = tableClient.getRoute(false);
         long partId = getPartId(tableEntry, rowkey);
-        return getTableInternal(tableName, tableEntry, partId, route);
+        if (tableClient.isOdpMode()) {
+            return getODPTableInternal(tableEntry, partId);
+        } else {
+            ObServerRoute route = tableClient.getRoute(false);
+            return getTableInternal(tableName, tableEntry, partId, route);
+        }
     }
 
     /**
      * get TableParam by tableName and rowkeys in batch
+     * work for ocpMode and odpMode both
+     * @param tableName tableName
+     * @param rowkeys list of row key or partition key names and values
+     * @return ObTableParam tableParam
      * */
     public List<ObTableParam> geTableParams(String tableName, List<Row> rowkeys) throws Exception {
         TableEntry tableEntry = getTableEntry(tableName);
@@ -490,7 +510,12 @@ public class TableRoute {
         ObServerRoute route = tableClient.getRoute(false);
         for (Row rowkey : rowkeys) {
             long partId = getPartId(tableEntry, rowkey);
-            ObTableParam param = getTableInternal(tableName, tableEntry, getTabletIdByPartId(tableEntry, partId), route);
+            ObTableParam param = null;
+            if (tableClient.isOdpMode()) {
+                param = getODPTableInternal(tableEntry, partId);
+            } else {
+                param = getTableInternal(tableName, tableEntry, partId, route);
+            }
             params.add(param);
         }
         return params;
@@ -510,7 +535,7 @@ public class TableRoute {
      * 根据 rowkey 获取分区 id
      * @param tableEntry
      * @param row
-     * @return
+     * @return logic id of tablet
      */
     public long getPartId(TableEntry tableEntry, Row row) {
         // non partition
@@ -550,7 +575,11 @@ public class TableRoute {
     public ObTableParam getTableWithPartId(String tableName, long partId, ObServerRoute route)
                                                                                               throws Exception {
         TableEntry tableEntry = getTableEntry(tableName);
-        return getTableInternal(tableName, tableEntry, partId, route);
+        if (tableClient.isOdpMode()) {
+            return getODPTableInternal(tableEntry, partId);
+        } else {
+            return getTableInternal(tableName, tableEntry, partId, route);
+        }
     }
 
     /**
@@ -623,6 +652,24 @@ public class TableRoute {
         ObTableParam param = createTableParam(obTable, tableEntry, obPartitionLocationInfo, partId,
             tabletId);
         addr.recordAccess();
+        return param;
+    }
+
+    /**
+     * get odp table entry by partId, just get meta information
+     * @param odpTableEntry odp tableEntry
+     * @param partId logicId of tablet
+     * @return ObTableParam table information for execution
+     */
+    private ObTableParam getODPTableInternal(TableEntry odpTableEntry, long partId) {
+        ObTable obTable = odpInfo.getObTable();
+        ObTableParam param = new ObTableParam(obTable);
+        param.setPartId(partId);
+        long tabletId = getTabletIdByPartId(odpTableEntry, partId);
+        param.setLsId(odpTableEntry.getPartitionEntry().getLsId(tabletId));
+        param.setTableId(odpTableEntry.getTableId());
+        // real partition(tablet) id
+        param.setPartitionId(tabletId);
         return param;
     }
 
@@ -884,16 +931,7 @@ public class TableRoute {
                                                                     boolean endIncluded,
                                                                     ObServerRoute route) throws Exception {
         List<ObPair<Long, ReplicaLocation>> replicas = new ArrayList<>();
-
-        if (!tableEntry.isPartitionTable() || tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ZERO) {
-            long tabletId = getTabletIdByPartId(tableEntry, 0L);
-            ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
-            replicas.add(new ObPair<>(0L, getPartitionLocation(locationInfo, route)));
-            return replicas;
-        }
-
-        ObPartitionLevel partitionLevel = tableEntry.getPartitionInfo().getLevel();
-        List<Long> partIds = getPartitionTablePartitionIds(tableEntry, startRow, startIncluded, endRow, endIncluded, partitionLevel);
+        List<Long> partIds = getPartIds(tableEntry, startRow, startIncluded, endRow, endIncluded);
 
         for (Long partId : partIds) {
             long tabletId = getTabletIdByPartId(tableEntry, partId);
@@ -904,11 +942,18 @@ public class TableRoute {
         return replicas;
     }
 
-    // get partIds (logic ids) for partitioned table
-    private List<Long> getPartitionTablePartitionIds(TableEntry tableEntry, Row startRow,
-                                                     boolean startIncluded, Row endRow,
-                                                     boolean endIncluded, ObPartitionLevel level)
+    // get partIds (logic ids) for table
+    private List<Long> getPartIds(TableEntry tableEntry, Row startRow,
+                                                boolean startIncluded, Row endRow,
+                                                boolean endIncluded)
                                                                                                  throws Exception {
+        if (!tableEntry.isPartitionTable()
+                || tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ZERO) {
+            List<Long> ans = new ArrayList<>();
+            ans.add(0L);
+            return ans;
+        }
+        ObPartitionLevel level = tableEntry.getPartitionInfo().getLevel();
         if (level == ObPartitionLevel.LEVEL_ONE) {
             return tableEntry.getPartitionInfo().getFirstPartDesc()
                 .getPartIds(startRow, startIncluded, endRow, endIncluded);

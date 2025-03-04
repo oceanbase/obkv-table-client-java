@@ -19,6 +19,9 @@ public class IndexLocations {
     private final ObTableClient      tableClient;
     // String means indexName，one index is bound to one lock
     private Map<String, Lock>        locks     = new ConcurrentHashMap<String, Lock>();
+    /*
+     * indexTableName -> ObIndexInfo, containing index information
+     */
     private Map<String, ObIndexInfo> locations = new ConcurrentHashMap<String, ObIndexInfo>();
 
     public IndexLocations(ObTableClient tableClient) {

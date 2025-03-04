@@ -46,6 +46,8 @@ public class TableEntry {
     private Long                             replicaNum            = Constants.OB_INVALID_ID;
     private Long                             schemaVersion         = Constants.OB_INVALID_ID; // schema_version, to ensure atomicity of meta information in version above 4352
     private ObPartitionInfo                  partitionInfo         = null;
+    // this create time is the creation time of this odp tableEntry in odp server
+    private volatile long                    odpMetaCreateTimeMills;
     private volatile long                    refreshMetaTimeMills;
     private volatile long                    refreshPartLocationTimeMills;
     private Map<String, Integer>             rowKeyElement         = null;
@@ -171,6 +173,13 @@ public class TableEntry {
     }
 
     /*
+     * Get odp creation time mills.
+     */
+    public long getODPMetaCreateTimeMills() {
+        return odpMetaCreateTimeMills;
+    }
+
+    /*
      * Set refresh time mills.
      */
     public void setRefreshMetaTimeMills(long refreshMetaTimeMills) {
@@ -182,6 +191,13 @@ public class TableEntry {
      */
     public void setRefreshPartLocationTimeMills(long refreshPartLocationTimeMills) {
         this.refreshPartLocationTimeMills = refreshPartLocationTimeMills;
+    }
+
+    /*
+     * Set odp creation time mills.
+     */
+    public void setODPMetaCreateTimeMills(long odpMetaCreateTimeMills) {
+        this.odpMetaCreateTimeMills = odpMetaCreateTimeMills;
     }
 
     public Map<String, Integer> getRowKeyElement() {

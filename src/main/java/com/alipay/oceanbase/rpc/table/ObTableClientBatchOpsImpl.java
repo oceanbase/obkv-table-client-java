@@ -355,11 +355,10 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                             route.setBlackList(failedServerList);
                         }
                         TableEntry entry = obTableClient.getOrRefreshTableEntry(tableName, false);
-                        if (ObGlobal.obVsnMajor() >= 4) {
-                            obTableClient.refreshTableLocationByTabletId(tableName, partId);
-                        }
-                        ObTableParam newParam = obTableClient.getTableWithPartId(tableName, partId,
-                            route);
+                        obTableClient.refreshTableLocationByTabletId(tableName,
+                            obTableClient.getTabletIdByPartId(entry, originPartId));
+                        ObTableParam newParam = obTableClient.getTableWithPartId(tableName,
+                            originPartId, route);
                         subObTable = newParam.getObTable();
                         subRequest.setPartitionId(newParam.getPartitionId());
                     }
@@ -367,8 +366,6 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 ObPayload result = subObTable.execute(subRequest);
                 if (result != null && result.getPcode() == Pcodes.OB_TABLE_API_MOVE) {
                     ObTableApiMove moveResponse = (ObTableApiMove) result;
-                    obTableClient.getRouteTableRefresher().addTableIfAbsent(tableName, true);
-                    obTableClient.getRouteTableRefresher().triggerRefreshTable();
                     subObTable = obTableClient.getTable(moveResponse);
                     result = subObTable.execute(subRequest);
                     if (result instanceof ObTableApiMove) {

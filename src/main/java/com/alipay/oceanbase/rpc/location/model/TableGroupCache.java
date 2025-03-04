@@ -19,10 +19,12 @@ import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.getLogger;
 
 public class TableGroupCache {
     private static final Logger               logger               = getLogger(TableGroupCache.class);
-    // tableGroup <-> Table
+    // tableGroup -> lock
     private ConcurrentHashMap<String, Lock>   TableGroupCacheLocks = new ConcurrentHashMap<String, Lock>();
-    private ConcurrentHashMap<String, String> TableGroupCache      = new ConcurrentHashMap<String, String>(); // tableGroup -> Table
-    private ConcurrentHashMap<String, String> TableGroupInverted   = new ConcurrentHashMap<String, String>(); // Table -> tableGroup
+    // tableGroup -> Table
+    private ConcurrentHashMap<String, String> TableGroupCache      = new ConcurrentHashMap<String, String>();
+    // Table -> tableGroup
+    private ConcurrentHashMap<String, String> TableGroupInverted   = new ConcurrentHashMap<String, String>();
     private final ObTableClient               tableClient;
 
     public TableGroupCache(ObTableClient tableClient) {

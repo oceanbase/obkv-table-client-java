@@ -145,12 +145,10 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
-                        if (ObGlobal.obVsnMajor() >= 4) {
-                            TableEntry tableEntry = client.getOrRefreshTableEntry(indexTableName,
-                                false);
-                            client.refreshTableLocationByTabletId(indexTableName,
-                                client.getTabletIdByPartId(tableEntry, partIdWithIndex.getLeft()));
-                        }
+                        TableEntry tableEntry = client
+                            .getOrRefreshTableEntry(indexTableName, false);
+                        client.refreshTableLocationByTabletId(indexTableName,
+                            client.getTabletIdByPartId(tableEntry, partIdWithIndex.getLeft()));
 
                         subObTable = client.getTableWithPartId(indexTableName,
                             partIdWithIndex.getRight().getTabletId(), route).getObTable();
@@ -162,8 +160,6 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     result = subObTable.execute(request);
                     if (result != null && result.getPcode() == Pcodes.OB_TABLE_API_MOVE) {
                         ObTableApiMove moveResponse = (ObTableApiMove) result;
-                        client.getRouteTableRefresher().addTableIfAbsent(indexTableName, true);
-                        client.getRouteTableRefresher().triggerRefreshTable();
                         subObTable = client.getTable(moveResponse);
                         result = subObTable.execute(request);
                         if (result instanceof ObTableApiMove) {

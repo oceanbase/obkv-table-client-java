@@ -522,8 +522,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 ObPayload result = subObTable.execute(tableLsOpRequest);
                 if (result != null && result.getPcode() == Pcodes.OB_TABLE_API_MOVE) {
                     ObTableApiMove moveResponse = (ObTableApiMove) result;
-                    obTableClient.getRouteTableRefresher().addTableIfAbsent(realTableName, true);
-                    obTableClient.getRouteTableRefresher().triggerRefreshTable();
                     subObTable = obTableClient.getTable(moveResponse);
                     result = subObTable.execute(tableLsOpRequest);
                     if (result instanceof ObTableApiMove) {
@@ -555,7 +553,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     }
                 } else if (ex instanceof ObTableException
                         && ((ObTableException) ex).isNeedRefreshTableEntry()) {
-                    needRefreshTableEntry = true;
                     if (obTableClient.isRetryOnChangeMasterTimes()
                             && (tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
                         if (ex instanceof ObTableNeedFetchMetaException) {
