@@ -21,6 +21,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.ObSimplePayload;
 import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.ObVString;
 import io.netty.buffer.ByteBuf;
+import static com.alipay.oceanbase.rpc.protocol.payload.impl.ObTableObjType.ObTableInvalidType;
 
 public class ObObj implements ObSimplePayload {
 
@@ -28,6 +29,8 @@ public class ObObj implements ObSimplePayload {
     private static ObObj MIN_OBJECT;
     private static long  MAX_OBJECT_VALUE = -2L;
     private static long  MIN_OBJECT_VALUE = -3L;
+    private int encodeSizeCache = -1; // use for cache encodeSize to avoid calculate repeatedly
+    private ObTableObjType tableObjTypeCache = ObTableInvalidType;
 
     static {
         MAX_OBJECT = new ObObj(ObObjType.ObExtendType.getDefaultObjMeta(), MAX_OBJECT_VALUE);
@@ -49,6 +52,23 @@ public class ObObj implements ObSimplePayload {
         this.meta = meta;
         setValue(value);
     }
+
+    public int getEncodeSizeCache() {
+        return encodeSizeCache;
+    }
+
+    public void setEncodeSizeCache(int encodeSizeCache) {
+        this.encodeSizeCache = encodeSizeCache;
+    }
+
+    public ObTableObjType getTableObjType() {
+        return tableObjTypeCache;
+    }
+
+    public void setTableObjType(ObTableObjType tableObjType) {
+        this.tableObjTypeCache = tableObjType;
+    }
+
 
     // 1. 序列化 meta
     private ObObjMeta meta;

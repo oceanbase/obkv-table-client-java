@@ -217,19 +217,25 @@ public enum ObTableObjType {
     }
 
     public static ObTableObjType getTableObjType(ObObj obj) {
-        ObObjType objType = obj.getMeta().getType();
-        ObCollationType objCsType = obj.getMeta().getCsType();
-        ObTableObjType tableObjType = objTableTypeMap.get(objType);
-        if (objType == ObObjType.ObVarcharType && objCsType == ObCollationType.CS_TYPE_BINARY) {
-            tableObjType = ObTableObjType.ObTableVarbinaryType;
-        } else if (objType == ObObjType.ObExtendType) {
-            if (obj.isMinObj()) {
-                tableObjType =  ObTableObjType.ObTableMinType;
-            } else if (obj.isMaxObj()) {
-                tableObjType = ObTableObjType.ObTableMaxType;
+        ObTableObjType tableObjType = null;
+        if (obj.getTableObjType() == ObTableInvalidType) {
+            ObObjType objType = obj.getMeta().getType();
+            ObCollationType objCsType = obj.getMeta().getCsType();
+            tableObjType = objTableTypeMap.get(objType);
+            if (objType == ObObjType.ObVarcharType && objCsType == ObCollationType.CS_TYPE_BINARY) {
+                tableObjType = ObTableObjType.ObTableVarbinaryType;
+            } else if (objType == ObObjType.ObExtendType) {
+                if (obj.isMinObj()) {
+                    tableObjType =  ObTableObjType.ObTableMinType;
+                } else if (obj.isMaxObj()) {
+                    tableObjType = ObTableObjType.ObTableMaxType;
+                }
+            } else if (tableObjType == null) {
+                throw new IllegalArgumentException("Cannot get ObTableObjType, invalid ob obj type: " + objType);
             }
-        } else if (tableObjType == null) {
-            throw new IllegalArgumentException("Cannot get ObTableObjType, invalid ob obj type: " + objType);
+            obj.setTableObjType(tableObjType);
+        } else {
+            tableObjType = obj.getTableObjType();
         }
 
         return tableObjType;
@@ -305,8 +311,15 @@ public enum ObTableObjType {
     }
 
     public int getEncodedSize(ObObj obj) {
-        ObObjType objType = obj.getMeta().getType();
-        return DEFAULT_TABLE_OBJ_TYPE_SIZE + objType.getEncodedSize(obj.getValue());
+        int encodeSize = 0;
+        if (obj.getEncodeSizeCache() == -1) {
+            ObObjType objType = obj.getMeta().getType();
+            encodeSize = DEFAULT_TABLE_OBJ_TYPE_SIZE + objType.getEncodedSize(obj.getValue());
+            obj.setEncodeSizeCache(encodeSize);
+        } else {
+            encodeSize = obj.getEncodeSizeCache();
+        }
+        return encodeSize;
     }
 
     public byte[] encodeWithMeta(ObObj obj) {
