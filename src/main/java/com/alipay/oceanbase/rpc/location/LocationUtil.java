@@ -681,13 +681,13 @@ public class LocationUtil {
                                 // fetch first range part
                                 if (null != tableEntry.getPartitionInfo().getFirstPartDesc()) {
                                     ObPartFuncType obPartFuncType = tableEntry.getPartitionInfo()
-                                            .getFirstPartDesc().getPartFuncType();
+                                        .getFirstPartDesc().getPartFuncType();
                                     fetchFirstPart(connection, tableEntry, obPartFuncType);
                                 }
                                 // fetch sub range part
                                 if (null != tableEntry.getPartitionInfo().getSubPartDesc()) {
                                     ObPartFuncType subPartFuncType = tableEntry.getPartitionInfo()
-                                            .getSubPartDesc().getPartFuncType();
+                                        .getSubPartDesc().getPartFuncType();
                                     fetchSubPart(connection, tableEntry, subPartFuncType);
                                 }
                             }
@@ -700,9 +700,9 @@ public class LocationUtil {
                                 // set existing partitionEntry
                                 // and check partitionEntry to remove nonexistent tablet pairs
                                 Map<Long, Long> partTabletMap = tableEntry.getPartitionInfo()
-                                        .getPartTabletIdMap();
+                                    .getPartTabletIdMap();
                                 ObPartitionEntry obPartitionEntry = oldTableEntry
-                                        .getPartitionEntry();
+                                    .getPartitionEntry();
                                 obPartitionEntry.removeNonExistentTablet(partTabletMap);
                                 tableEntry.setPartitionEntry(obPartitionEntry);
                             } else {
@@ -716,7 +716,7 @@ public class LocationUtil {
                         if (!initialized) {
                             if (BOOT.isInfoEnabled()) {
                                 BOOT.info("get table entry from remote, entry={}",
-                                        JSON.toJSON(tableEntry));
+                                    JSON.toJSON(tableEntry));
                             }
                         } else {
                             if (logger.isInfoEnabled()) {
@@ -728,10 +728,12 @@ public class LocationUtil {
                 } catch (SQLException e) {
                     // cannot execute sql, maybe some of the observers have been killed
                     RUNTIME.error(LCD.convert("01-00010"), key, e.getMessage());
-                    throw new ObTableEntryRefreshException("fail to get partition location entry from remote", e, true);
+                    throw new ObTableEntryRefreshException(
+                        "fail to get partition location entry from remote", e, true);
                 } catch (ObTableSchemaVersionMismatchException e) {
-                    logger.warn("getTableEntryFromRemote retry because of mismatched schema_version, retryTimes: "
-                                    + retryTimes);
+                    logger
+                        .warn("getTableEntryFromRemote retry because of mismatched schema_version, retryTimes: "
+                              + retryTimes);
                     if (retryTimes >= 3) {
                         throw e;
                     }
@@ -745,7 +747,7 @@ public class LocationUtil {
                 } catch (Exception e) {
                     RUNTIME.error(LCD.convert("01-00009"), key, e);
                     throw new ObTableEntryRefreshException(format(
-                            "fail to get table entry from remote, key=%s", key), e);
+                        "fail to get table entry from remote, key=%s", key), e);
                 }
             } // end while
         } finally {

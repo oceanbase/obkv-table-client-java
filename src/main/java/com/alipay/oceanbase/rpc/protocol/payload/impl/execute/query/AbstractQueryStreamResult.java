@@ -17,7 +17,6 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
-import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.exception.*;
@@ -150,7 +149,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         client.refreshTableLocationByTabletId(indexTableName,
                             client.getTabletIdByPartId(tableEntry, partIdWithIndex.getLeft()));
 
-                        subObTable = client.getTableWithPartId(indexTableName,
+                        subObTable = client.getTableParamWithPartId(indexTableName,
                             partIdWithIndex.getRight().getTabletId(), route).getObTable();
                     }
                 }
@@ -244,7 +243,6 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                             client.eraseTableGroupFromCache(tableName);
                         }
                         if (((ObTableException) e).isNeedRefreshTableEntry()) {
-                            needRefreshTableEntry = true;
                             if (client.isRetryOnChangeMasterTimes()
                                 && (tryTimes - 1) < client.getRuntimeRetryTimes()) {
                                 // tablet not exists, refresh table entry
@@ -397,7 +395,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
             }
 
             ObBorderFlag borderFlag = range.getBorderFlag();
-            List<ObTableParam> params = client.getTables(indexTableName,
+            List<ObTableParam> params = client.getTableParams(indexTableName,
                     tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd());
 
             if (tableQuery.getScanOrder() == ObScanOrder.Reverse) {

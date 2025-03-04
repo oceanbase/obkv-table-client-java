@@ -175,4 +175,13 @@ public class ObTableSingleOp extends AbstractPayload {
         }
         return rowkeyObjs;
     }
+
+    public List<String> getRowKeyNames() {
+        List<String> rowKeyNames;
+        if (singleOpType == ObTableOperationType.SCAN || singleOpType == ObTableOperationType.CHECK_AND_INSERT_UP) {
+            throw new IllegalArgumentException("can not get rowKey name from this type of operations, type: " + singleOpType);
+        }
+        rowKeyNames = entities.get(0).getRowKeyNames();
+        return rowKeyNames;
+    }
 }

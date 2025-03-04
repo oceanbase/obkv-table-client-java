@@ -47,7 +47,7 @@ public class ObTableTest extends ObTableClientTestBase {
             obTableClient.close();
             throw new ObTableException("ODP Mode does not support this test");
         } else {
-            obTable = obTableClient.getTable("test_varchar_table", new Object[] { "abc" })
+            obTable = obTableClient.getTableParam("test_varchar_table", new Object[] { "abc" })
                 .getObTable();
             client = obTable;
         }

@@ -1,3 +1,20 @@
+/*-
+ * #%L
+ * com.oceanbase:obkv-table-client
+ * %%
+ * Copyright (C) 2021 - 2025 OceanBase
+ * %%
+ * OBKV Table Client Framework is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * #L%
+ */
+
 package com.alipay.oceanbase.rpc.location.model;
 
 import com.alibaba.fastjson.JSON;
@@ -31,21 +48,21 @@ import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
 import static java.lang.String.format;
 
 public class TableRoute {
-    private static final Logger logger              = getLogger(TableRoute.class);
-    private Lock                refreshMetadataLock = new ReentrantLock();
+    private static final Logger logger                 = getLogger(TableRoute.class);
+    private Lock                refreshTableRosterLock = new ReentrantLock();
     private final ObTableClient tableClient;
-    private long                clusterVersion      = -1;
+    private long                clusterVersion         = -1;
     private volatile long       lastRefreshMetadataTimestamp;
-    private ObUserAuth          sysUA               = null;                       // user and password to access route table
-    private ConfigServerInfo    configServerInfo    = null;                       // rslist and IDC
-    private TableLocations      tableLocations      = null;                       // map[tableName, TableEntry]
-    private TableLocations      odpTableLocations   = null;                       // for parition handle
-    private IndexLocations      indexLocations      = null;                       // global index location
-    private TableGroupCache     tableGroupCache     = null;
-    private TableRoster         tableRoster         = new TableRoster();          // table mean connection pool here
-    private ServerRoster        serverRoster        = new ServerRoster();         // all servers which contain current tenant
-    private OdpInfo             odpInfo             = null;
-    private RouteTableRefresher routeRefresher      = null;
+    private ObUserAuth          sysUA                  = null;                       // user and password to access route table
+    private ConfigServerInfo    configServerInfo       = null;                       // rslist and IDC
+    private TableLocations      tableLocations         = null;                       // map[tableName, TableEntry]
+    private TableLocations      odpTableLocations      = null;                       // for parition handle
+    private IndexLocations      indexLocations         = null;                       // global index location
+    private TableGroupCache     tableGroupCache        = null;
+    private TableRoster         tableRoster            = new TableRoster();          // table mean connection pool here
+    private ServerRoster        serverRoster           = new ServerRoster();         // all servers which contain current tenant
+    private OdpInfo             odpInfo                = null;
+    private RouteTableRefresher routeRefresher         = null;
 
     public TableRoute(ObTableClient tableClient, ObUserAuth sysUA) {
         this.tableClient = tableClient;
@@ -265,13 +282,13 @@ public class TableRoute {
 
     /**
      * refresh all ob server synchronized just in case rslist has changed, it will not refresh if last refresh time is 1 min ago
-     * <p>
+     * @param forceRenew flag to force refresh the rsList if changes happen
      * 1. cannot find table from tables, need refresh tables
      * 2. server list refresh failed: {see com.alipay.oceanbase.obproxy.resource.ObServerStateProcessor#MAX_REFRESH_FAILURE}
      *
      * @throws Exception if fail
      */
-    public void checkRsListChanged(boolean forceRenew) throws Exception {
+    public void refreshTableRosterIfChanged(boolean forceRenew) throws Exception {
         tableClient.checkStatus();
         if (!forceRenew
             && System.currentTimeMillis() - lastRefreshMetadataTimestamp < tableClient
@@ -283,8 +300,8 @@ public class TableRoute {
                     configServerInfo.getParamURL());
             return;
         }
-        boolean acquired = refreshMetadataLock.tryLock(tableClient.getMetadataRefreshLockTimeout(),
-            TimeUnit.MILLISECONDS);
+        boolean acquired = refreshTableRosterLock.tryLock(
+            tableClient.getMetadataRefreshLockTimeout(), TimeUnit.MILLISECONDS);
         if (!acquired) {
             String errMsg = "try to lock rsList refreshing timeout " + " refresh timeout: "
                             + tableClient.getMetadataRefreshLockTimeout() + ".";
@@ -319,7 +336,7 @@ public class TableRoute {
                 }
             }
         } finally {
-            refreshMetadataLock.unlock();
+            refreshTableRosterLock.unlock();
         }
     }
 
@@ -364,13 +381,6 @@ public class TableRoute {
         lastRefreshMetadataTimestamp = System.currentTimeMillis();
     }
 
-    /**
-     * only used by routeRefresher to add new observer in the background
-     * */
-    public void refreshRoster(List<ObServerAddr> rsList) throws Exception {
-        syncRefreshRoster(rsList);
-    }
-
     /*------------------------------------------------------------------------Single Operation Routing------------------------------------------------------------------------*/
 
     /**
@@ -378,13 +388,7 @@ public class TableRoute {
      * like part_num, part_level, etc.
      * */
     public TableEntry refreshMeta(String tableName) throws Exception {
-        try {
-            return tableLocations.refreshMeta(tableName, serverRoster, sysUA);
-        } catch (ObTableEntryRefreshException e) {
-            checkRsListChanged(false);
-            // if fail to refresh table entry, the refreshMetaTimeMills will not update
-            return tableLocations.refreshMeta(tableName, serverRoster, sysUA);
-        }
+        return tableLocations.refreshMeta(tableName, serverRoster, sysUA);
     }
 
     /**
@@ -395,17 +399,11 @@ public class TableRoute {
         try {
             return tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
                 serverRoster, sysUA);
-        } catch (ObTableEntryRefreshException e) {
-            logger.warn("refresh partition location meet entry refresh exception, tableName: {}",
-                tableName);
-            checkRsListChanged(false);
-            return tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
-                serverRoster, sysUA);
         } catch (ObTableSchemaVersionMismatchException e) {
             // schema version mismatched with the current tableEntry, need to refresh tableEntry meta first
             logger.warn("refresh partition location meet schema version mismatched, tableName: {}",
                 tableName);
-            tableLocations.refreshMeta(tableName, serverRoster, sysUA);
+            refreshMeta(tableName);
             return tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
                 serverRoster, sysUA);
         } catch (ObTableGetException e) {
@@ -429,77 +427,41 @@ public class TableRoute {
         return odpTableLocations.refreshODPMeta(tableName, forceRefresh, odpInfo.getObTable());
     }
 
-    public ObTableParam getTableParam(String tableName, Object[] rowkey) throws Exception {
-        ObServerRoute route = tableClient.getRoute(false);
-        return getTableParam(tableName, rowkey, route);
-    }
-
-    public ObTableParam getTableParam(String tableName, Object[] rowkey, ObServerRoute route)
-                                                                                             throws Exception {
-        TableEntry tableEntry = getTableEntry(tableName);
-        if (tableEntry == null) {
-            logger.error("tableEntry is null, tableName: {}", tableName);
-            throw new ObTableEntryRefreshException("tableEntry is null, tableName: " + tableName);
-        }
-        Row row = new Row();
-        if (tableEntry.isPartitionTable()) {
-            List<String> curTableRowKeyNames = new ArrayList<String>();
-            Map<String, Integer> tableRowKeyEle = tableClient.getRowKeyElement(tableName);
-            if (tableRowKeyEle != null) {
-                curTableRowKeyNames = new ArrayList<String>(tableRowKeyEle.keySet());
-            }
-            if (curTableRowKeyNames.isEmpty()) {
-                throw new IllegalArgumentException("Please make sure add row key elements");
-            }
-
-            // match the correct key to its row key
-            for (int i = 0; i < rowkey.length; ++i) {
-                if (i < curTableRowKeyNames.size()) {
-                    row.add(curTableRowKeyNames.get(i), rowkey[i]);
-                } else { // the rowKey element in the table only contain partition key(s) or the input row key has redundant elements
-                    break;
-                }
-            }
-        }
-        long partId = getPartId(tableEntry, row);
-        if (tableClient.isOdpMode()) {
-            return getODPTableInternal(tableEntry, partId);
-        } else {
-            return getTableInternal(tableName, tableEntry, partId, route);
-        }
-    }
-
     /**
      * get TableParam by tableName and rowkey
-     * work for ocpMode and odpMode both
+     * work for both OcpMode and OdpMode
      * @param tableName tableName
      * @param rowkey row key or partition key names and values
      * @return ObTableParam tableParam
      * */
     public ObTableParam getTableParam(String tableName, Row rowkey) throws Exception {
+        ObServerRoute route = tableClient.getRoute(false);
+        return getTableParamWithRoute(tableName, rowkey, route);
+    }
+
+    public ObTableParam getTableParamWithRoute(String tableName, Row rowkey, ObServerRoute route)
+                                                                                                 throws Exception {
         TableEntry tableEntry = getTableEntry(tableName);
         if (tableEntry == null) {
             logger.error("tableEntry is null, tableName: {}", tableName);
             throw new ObTableEntryRefreshException("tableEntry is null, tableName: " + tableName);
         }
-
         long partId = getPartId(tableEntry, rowkey);
         if (tableClient.isOdpMode()) {
             return getODPTableInternal(tableEntry, partId);
         } else {
-            ObServerRoute route = tableClient.getRoute(false);
             return getTableInternal(tableName, tableEntry, partId, route);
         }
     }
 
     /**
      * get TableParam by tableName and rowkeys in batch
-     * work for ocpMode and odpMode both
+     * work for both OcpMode and OdpMode
      * @param tableName tableName
      * @param rowkeys list of row key or partition key names and values
      * @return ObTableParam tableParam
      * */
-    public List<ObTableParam> geTableParams(String tableName, List<Row> rowkeys) throws Exception {
+    public List<ObTableParam> getTableParams(String tableName, List<Row> rowkeys) throws Exception {
         TableEntry tableEntry = getTableEntry(tableName);
         if (tableEntry == null) {
             logger.error("tableEntry is null, tableName: {}", tableName);
@@ -622,27 +584,25 @@ public class TableRoute {
         ObTable obTable = tableRoster.getTable(addr);
         while ((obTable == null) && retryTimes < 2) {
             ++retryTimes;
-            if (obTable == null) {
-                // need to refresh table roster to ensure the current roster is the latest
-                checkRsListChanged(true);
-                // the addr is wrong, need to refresh location
-                if (logger.isInfoEnabled()) {
-                    logger.info("Cannot get ObTable by addr {}, refreshing metadata.", addr);
-                }
-                // refresh tablet location based on the latest roster, in case that some of the observers hase been killed
-                // and used the old location
-                tableEntry = tableLocations.refreshPartitionLocation(tableEntry, tableName,
-                    tabletId, serverRoster, sysUA);
-                obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
-                replica = getPartitionLocation(obPartitionLocationInfo, route);
-
-                if (replica == null) {
-                    RUNTIME.error("Cannot get replica by tabletId: " + tabletId);
-                    throw new ObTableGetException("Cannot get replica by tabletId: " + tabletId);
-                }
-                addr = replica.getAddr();
-                obTable = tableRoster.getTable(addr);
+            // need to refresh table roster to ensure the current roster is the latest
+            refreshTableRosterIfChanged(true);
+            // the addr is wrong, need to refresh location
+            if (logger.isInfoEnabled()) {
+                logger.info("Cannot get ObTable by addr {}, refreshing metadata.", addr);
             }
+            // refresh tablet location based on the latest roster, in case that some of the observers hase been killed
+            // and used the old location
+            tableEntry = tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
+                serverRoster, sysUA);
+            obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
+            replica = getPartitionLocation(obPartitionLocationInfo, route);
+
+            if (replica == null) {
+                RUNTIME.error("Cannot get replica by tabletId: " + tabletId);
+                throw new ObTableGetException("Cannot get replica by tabletId: " + tabletId);
+            }
+            addr = replica.getAddr();
+            obTable = tableRoster.getTable(addr);
         }
         if (obTable == null) {
             RUNTIME.error("cannot get table by addr: " + addr);
@@ -806,7 +766,8 @@ public class TableRoute {
     }
 
     /**
-     * 根据 start-end 获取 tablet ids 和 addrs
+     * get TableParams by start-end range in this table
+     * work for both OcpMode and OdpMode
      * @param tableName table want to get
      * @param query query
      * @param start start key
@@ -819,6 +780,11 @@ public class TableRoute {
     public List<ObTableParam> getTableParams(String tableName, ObTableQuery query, Object[] start,
                                              boolean startInclusive, Object[] end,
                                              boolean endInclusive) throws Exception {
+
+        if (tableClient.isOdpMode()) {
+            return getODPTablesInternal(tableName, query.getScanRangeColumns(), start,
+                startInclusive, end, endInclusive);
+        }
         return getTablesInternal(tableName, query.getScanRangeColumns(), start, startInclusive,
             end, endInclusive, tableClient.getRoute(false));
     }
@@ -839,7 +805,7 @@ public class TableRoute {
             }
         }
         // 2. get replica location
-        // partIdWithReplicaList -> List<pair<logicId(partition id in 3.x), replica>>
+        // partIdWithReplicaList -> List<pair<logicId, replica>>
         Row startRow = new Row();
         Row endRow = new Row();
         // ensure the format of column names and values if the current table is a table with partition
@@ -876,7 +842,7 @@ public class TableRoute {
             while (obTable == null && retryTimes < 2) {
                 ++retryTimes;
                 // need to refresh table roster to ensure the current roster is the latest
-                checkRsListChanged(true);
+                refreshTableRosterIfChanged(true);
                 // the addr is wrong, need to refresh location
                 if (logger.isInfoEnabled()) {
                     logger.info("Cannot get ObTable by addr {}, refreshing metadata.", addr);
@@ -912,6 +878,64 @@ public class TableRoute {
         return params;
     }
 
+    public List<ObTableParam> getODPTablesInternal(String tableName, List<String> scanRangeColumns,
+                                                   Object[] start, boolean startInclusive,
+                                                   Object[] end, boolean endInclusive)
+                                                                                      throws Exception {
+        if (start.length != end.length) {
+            throw new IllegalArgumentException("length of start key and end key is not equal");
+        }
+        List<ObTableParam> obTableParams = new ArrayList<ObTableParam>();
+        TableEntry odpTableEntry = getTableEntry(tableName);
+
+        if (scanRangeColumns == null || scanRangeColumns.isEmpty()) {
+            Map<String, Integer> tableEntryRowKeyElement = tableClient.getRowKeyElement(tableName);
+            if (tableEntryRowKeyElement != null) {
+                scanRangeColumns = new ArrayList<String>(tableEntryRowKeyElement.keySet());
+            }
+        }
+        // 2. get replica location
+        // partIdWithReplicaList -> List<pair<logicId, replica>>
+        Row startRow = new Row();
+        Row endRow = new Row();
+        // ensure the format of column names and values if the current table is a table with partition
+        if (odpTableEntry.isPartitionTable()
+            && odpTableEntry.getPartitionInfo().getLevel() != ObPartitionLevel.LEVEL_ZERO) {
+            if ((scanRangeColumns == null || scanRangeColumns.isEmpty()) && start.length == 1
+                && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj() && end.length == 1
+                && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
+                // for getPartition to query all partitions
+                scanRangeColumns = new ArrayList<String>(Collections.nCopies(start.length,
+                    "partition"));
+            }
+            // scanRangeColumn may be longer than start/end in prefix scanning situation
+            if (scanRangeColumns == null || scanRangeColumns.size() < start.length) {
+                throw new IllegalArgumentException(
+                    "length of key and scan range columns do not match, please use addRowKeyElement or set scan range columns");
+            }
+            for (int i = 0; i < start.length; i++) {
+                startRow.add(scanRangeColumns.get(i), start[i]);
+                endRow.add(scanRangeColumns.get(i), end[i]);
+            }
+        }
+
+        List<Long> partIds = getPartIds(odpTableEntry, startRow, startInclusive, endRow,
+            endInclusive);
+        for (Long partId : partIds) {
+            ObTable obTable = odpInfo.getObTable();
+            ObTableParam param = new ObTableParam(obTable);
+            param.setPartId(partId);
+            long tabletId = getTabletIdByPartId(odpTableEntry, partId);
+            param.setLsId(odpTableEntry.getPartitionEntry().getLsId(tabletId));
+            param.setTableId(odpTableEntry.getTableId());
+            // real partition(tablet) id
+            param.setPartitionId(tabletId);
+            obTableParams.add(param);
+        }
+
+        return obTableParams;
+    }
+
     /**
      * 根据 start-end 获取 partition id 和 addr
      * @param tableEntry
@@ -942,7 +966,7 @@ public class TableRoute {
         return replicas;
     }
 
-    // get partIds (logic ids) for table
+    // get partIds for table
     private List<Long> getPartIds(TableEntry tableEntry, Row startRow,
                                                 boolean startIncluded, Row endRow,
                                                 boolean endIncluded)
@@ -966,14 +990,14 @@ public class TableRoute {
     }
 
     /*
-     * Get logicId(partition id in 3.x) from giving range
+     * Get logicId from giving range
      */
     private List<Long> getPartIdsForLevelTwo(TableEntry tableEntry, Row startRow,
                                              boolean startIncluded, Row endRow, boolean endIncluded)
                                                                                                     throws Exception {
         if (tableEntry.getPartitionInfo().getLevel() != ObPartitionLevel.LEVEL_TWO) {
-            RUNTIME.error("getPartitionsForLevelTwo need ObPartitionLevel LEVEL_TWO");
-            throw new Exception("getPartitionsForLevelTwo need ObPartitionLevel LEVEL_TWO");
+            RUNTIME.error("getPartIdsForLevelTwo need ObPartitionLevel LEVEL_TWO");
+            throw new Exception("getPartIdsForLevelTwo need ObPartitionLevel LEVEL_TWO");
         }
 
         List<Long> partIds1 = tableEntry.getPartitionInfo().getFirstPartDesc()

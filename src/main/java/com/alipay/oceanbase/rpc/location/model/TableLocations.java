@@ -1,3 +1,20 @@
+/*-
+ * #%L
+ * com.oceanbase:obkv-table-client
+ * %%
+ * Copyright (C) 2021 - 2025 OceanBase
+ * %%
+ * OBKV Table Client Framework is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * #L%
+ */
+
 package com.alipay.oceanbase.rpc.location.model;
 
 import com.alibaba.fastjson.JSON;
@@ -116,8 +133,12 @@ public class TableLocations {
                     if (tableEntryRefreshContinuousFailureCount.incrementAndGet() > tableEntryRefreshContinuousFailureCeiling) {
                         logger.error(LCD.convert("01-00019"),
                             tableEntryRefreshContinuousFailureCeiling);
+                        tableClient.syncRefreshMetadata(false);
                         tableEntryRefreshContinuousFailureCount.set(0);
-                        throw e; // syncRefreshMetadata in TableRoute
+                    } else if (e.isConnectInactive()) {
+                        // getMetaRefreshConnection failed, maybe the server is down, so we need to refresh metadata directly
+                        tableClient.syncRefreshMetadata(false);
+                        tableEntryRefreshContinuousFailureCount.set(0);
                     }
                 } catch (Throwable t) {
                     RUNTIME.error("refresh table meta meet exception", t);
@@ -131,10 +152,9 @@ public class TableLocations {
                         "refresh table entry has tried {}-times failure and will sync refresh metadata",
                         refreshTryTimes);
             }
-            throw new ObTableEntryRefreshException(
-                "refresh TableEntry meet exception, retryTimes: " + refreshTryTimes
-                        + " failure count: " + tableEntryRefreshContinuousFailureCount.get());
-            // syncRefreshMetadata in TableRoute
+            tableClient.syncRefreshMetadata(false);
+            tableEntryRefreshContinuousFailureCount.set(0);
+            return refreshTableEntry(tableEntry, tableName, serverRoster, sysUA);
         } finally {
             lock.unlock();
         }
@@ -177,7 +197,7 @@ public class TableLocations {
                             RUNTIME
                                 .error("partition table must add row key element name for table: "
                                        + tableName + " with table entry key: " + tableEntryKey);
-                            throw new ObTableException(
+                            throw new FeatureNotSupportedException(
                                 "partition table must add row key element name for table: "
                                         + tableName + " with table entry key: " + tableEntryKey);
                         }
@@ -187,17 +207,20 @@ public class TableLocations {
         } catch (ObTableNotExistException e) {
             RUNTIME.error("refreshTableEntry meet exception", e);
             throw e;
-        } catch (ObTableException e) {
-            RUNTIME.error("refreshTableEntry meet exception", e);
-            throw e;
         } catch (FeatureNotSupportedException e) {
             RUNTIME.error("refreshTableEntry meet exception", e);
             throw e;
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00020"), tableEntryKey, tableEntry, e);
-            throw new ObTableEntryRefreshException(String.format(
-                "failed to get table entry key=%s original tableEntry=%s ", tableEntryKey,
-                tableEntry), e);
+            if (e instanceof ObTableEntryRefreshException) {
+                throw new ObTableEntryRefreshException(String.format(
+                    "failed to get table entry key=%s original tableEntry=%s ", tableEntryKey,
+                    tableEntry), e, ((ObTableEntryRefreshException) e).isConnectInactive());
+            } else {
+                throw new ObTableEntryRefreshException(String.format(
+                    "failed to get table entry key=%s original tableEntry=%s ", tableEntryKey,
+                    tableEntry), e);
+            }
         }
         // prepare the table entry for weak read.
         tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
@@ -268,8 +291,12 @@ public class TableLocations {
                     if (tableEntryRefreshContinuousFailureCount.incrementAndGet() > tableEntryRefreshContinuousFailureCeiling) {
                         logger.error(LCD.convert("01-00019"),
                             tableEntryRefreshContinuousFailureCeiling);
+                        tableClient.syncRefreshMetadata(false);
                         tableEntryRefreshContinuousFailureCount.set(0);
-                        throw e; // syncRefreshMetadata in TableRoute
+                    } else if (e.isConnectInactive()) {
+                        // getMetaRefreshConnection failed, maybe the server is down, so we need to refresh metadata directly
+                        tableClient.syncRefreshMetadata(false);
+                        tableEntryRefreshContinuousFailureCount.set(0);
                     }
                 } catch (Throwable t) {
                     RUNTIME.error("refresh partition location meet exception", t);

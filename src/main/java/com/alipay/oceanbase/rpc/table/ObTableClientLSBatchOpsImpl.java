@@ -17,7 +17,6 @@
 
 package com.alipay.oceanbase.rpc.table;
 
-import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.exception.*;
@@ -351,14 +350,26 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         return results;
     }
 
-    private Object[] calculateRowKey(ObTableSingleOp operation) {
-        List<ObObj> rowKeyObject = operation.getRowkeyObjs();
-        int rowKeySize = rowKeyObject.size();
-        Object[] rowKey = new Object[rowKeySize];
-        for (int j = 0; j < rowKeySize; j++) {
-            rowKey[j] = rowKeyObject.get(j).getValue();
+    private List<Row> calculateRowKey(List<ObPair<Integer, ObTableSingleOp>> operations) {
+        List<Row> rowKeys = new ArrayList<>();
+        for (ObPair<Integer, ObTableSingleOp> pair : operations) {
+            Row rowKey = new Row();
+            ObTableSingleOp operation = pair.getRight();
+            List<ObObj> rowKeyObject = operation.getRowkeyObjs();
+            List<String> rowKeyNames = operation.getRowKeyNames();
+            int rowKeySize = rowKeyObject.size();
+            if (rowKeySize != rowKeyNames.size()) {
+                throw new ObTableUnexpectedException("the length of rowKey value and rowKey name of the No." +
+                        pair.getLeft() + " operation is not matched");
+            }
+            for (int j = 0; j < rowKeySize; j++) {
+                Object rowKeyObj = rowKeyObject.get(j).getValue();
+                String rowKeyName = rowKeyNames.get(j);
+                rowKey.add(rowKeyName, rowKeyObj);
+            }
+            rowKeys.add(rowKey);
         }
-        return rowKey;
+        return rowKeys;
     }
 
     private List<ObPair<Integer, ObTableSingleOp>> extractOperations(Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperationsMap) {
@@ -385,15 +396,17 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             return lsOperationsMap;
         }
 
-        for (int i = 0; i < operationsWithIndex.size(); i++) {
-            ObTableSingleOp operation = operationsWithIndex.get(i).getRight();
-            Object[] rowKey = calculateRowKey(operation);
-
-            String real_tableName = tableName;
-            if (this.entityType == ObTableEntityType.HKV && obTableClient.isTableGroupName(tableName)) {
-                real_tableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
-            }
-            ObTableParam tableParam = obTableClient.getTable(real_tableName, rowKey);
+        List<Row> rowkeys = calculateRowKey(operationsWithIndex);
+        if (rowkeys.size() != operationsWithIndex.size()) {
+            throw new ObTableUnexpectedException("the length of rowKeys and operations is not matched.");
+        }
+        String real_tableName = tableName;
+        if (this.entityType == ObTableEntityType.HKV && obTableClient.isTableGroupName(tableName)) {
+            real_tableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
+        }
+        List<ObTableParam> params = obTableClient.getTableParams(real_tableName, rowkeys);
+        for (int i = 0; i < params.size(); i++) {
+            ObTableParam tableParam = params.get(i);
             long lsId = tableParam.getLsId();
 
             Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperations
@@ -516,7 +529,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         }
                         TableEntry entry = obTableClient.getOrRefreshTableEntry(realTableName, false);
                         obTableClient.refreshTableLocationByTabletId(realTableName, obTableClient.getTabletIdByPartId(entry, originPartId));
-                        subObTable = obTableClient.getTableWithPartId(realTableName, originPartId, route).getObTable();
+                        subObTable = obTableClient.getTableParamWithPartId(realTableName, originPartId, route).getObTable();
                     }
                 }
                 ObPayload result = subObTable.execute(tableLsOpRequest);
@@ -527,7 +540,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     if (result instanceof ObTableApiMove) {
                         ObTableApiMove move = (ObTableApiMove) result;
                         logger.warn("The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. " +
-                                "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move .getReplica().getServer().ipToString());
+                                "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move.getReplica().getServer().ipToString());
                         throw new ObTableRoutingWrongException();
                     }
                 }
@@ -536,9 +549,15 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 break;
             } catch (Exception ex) {
                 if (obTableClient.isOdpMode()) {
-                    logger.warn("meet exception when execute ls batch in odp mode." +
-                            "tablename: {}, errMsg: {}", realTableName, ex.getMessage());
-                    throw ex;
+                    // if exceptions need to retry, retry to timeout
+                    if (ex instanceof ObTableException && ((ObTableException) ex).isNeedRetryServerError()) {
+                        logger.warn("meet need retry exception when execute ls batch in odp mode." +
+                                "tableName: {}, errMsg: {}", realTableName, ex.getMessage());
+                    } else {
+                        logger.warn("meet exception when execute ls batch in odp mode." +
+                                "tablename: {}, errMsg: {}", realTableName, ex.getMessage());
+                        throw ex;
+                    }
                 } else if (ex instanceof ObTableReplicaNotReadableException) {
                     if ((tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
                         logger.warn("tablename:{} ls id:{} retry when replica not readable: {}",
@@ -553,8 +572,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     }
                 } else if (ex instanceof ObTableException
                         && ((ObTableException) ex).isNeedRefreshTableEntry()) {
-                    if (obTableClient.isRetryOnChangeMasterTimes()
-                            && (tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
+                    // if exceptions need to retry, retry to timeout
+                    if (obTableClient.isRetryOnChangeMasterTimes()) {
                         if (ex instanceof ObTableNeedFetchMetaException) {
                             obTableClient.getOrRefreshTableEntry(realTableName, true);
                             throw ex;
@@ -679,7 +698,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 } catch (Exception e) {
                     if (shouldRetry(e)) {
                         retryCount++;
-                        errCode = ((ObTableNeedFetchMetaException)e).getErrorCode();
+                        errCode = ((ObTableException) e).getErrorCode();
                         errMsg = e.getMessage();
                         List<ObPair<Integer, ObTableSingleOp>> failedOperations = extractOperations(currentEntry.getValue());
                         currentPartitions = prepareOperations(failedOperations);

@@ -19,7 +19,6 @@ package com.alipay.oceanbase.rpc.table;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.ObTableClientTestBase;
-import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
 import org.junit.Before;
@@ -76,7 +75,7 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
             assertEquals(TEST_CONNECTION_POOL_SIZE, obTableClient.getOdpTable()
                 .getObTableConnectionPoolSize());
         } else {
-            ObTableParam param = obTableClient.getTableWithRoute("test_varchar_table",
+            ObTableParam param = obTableClient.getTableParamWithRoute("test_varchar_table",
                 new String[] { "abc" }, obTableClient.getRoute(false));
             int poolSize = param.getObTable().getObTableConnectionPoolSize();
             assertEquals(TEST_CONNECTION_POOL_SIZE, poolSize);
@@ -108,7 +107,7 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
             assertEquals(TEST_NETTY_WAIT_INTERVAL, obTableClient.getOdpTable()
                 .getNettyBlockingWaitInterval());
         } else {
-            ObTableParam param = obTableClient.getTableWithRoute("test_varchar_table",
+            ObTableParam param = obTableClient.getTableParamWithRoute("test_varchar_table",
                 new String[] { "abc" }, obTableClient.getRoute(false));
             int lowWatermark = param.getObTable().getNettyBufferLowWatermark();
             int highWatermark = param.getObTable().getNettyBufferHighWatermark();
@@ -130,7 +129,7 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
         if (obTableClient.isOdpMode()) {
             // do nothing
         } else {
-            ObTableParam param = obTableClient.getTableWithRoute("test_varchar_table",
+            ObTableParam param = obTableClient.getTableParamWithRoute("test_varchar_table",
                 new String[] { "abc" }, obTableClient.getRoute(false));
             int lowWatermark = param.getObTable().getNettyBufferLowWatermark();
             int highWatermark = param.getObTable().getNettyBufferHighWatermark();

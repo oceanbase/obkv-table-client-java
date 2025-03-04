@@ -44,7 +44,7 @@ public class RouteTableRefresher {
      * */
     private void doRsListCheck() {
         try {
-            tableRoute.checkRsListChanged(false);
+            tableRoute.refreshTableRosterIfChanged(false);
         } catch (Exception e) {
             logger.warn("RouteTableRefresher::doExpandRsListCheck fail, error message: {}",
                 e.getMessage());
