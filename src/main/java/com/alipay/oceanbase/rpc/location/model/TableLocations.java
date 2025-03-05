@@ -59,6 +59,10 @@ public class TableLocations {
         return locations.get(tableName);
     }
 
+    public Map<String, TableEntry> getLocations() {
+        return locations;
+    }
+
     public Lock getRefreshLock(String tableName) {
         Lock tempLock = new ReentrantLock();
         Lock lock = locks.putIfAbsent(tableName, tempLock);
@@ -127,6 +131,9 @@ public class TableLocations {
             for (int i = 0; i < refreshTryTimes; ++i) {
                 try {
                     return refreshTableEntry(tableEntry, tableName, serverRoster, sysUA);
+                } catch (ObTableNotExistException e) {
+                    RUNTIME.error("refresh table meta meet exception", e);
+                    throw e;
                 } catch (ObTableEntryRefreshException e) {
                     RUNTIME.error("refresh table meta meet exception", e);
                     // maybe the observers have changed if keep failing, need to refresh roster

@@ -96,7 +96,13 @@ public class LocationUtil {
 
     private static final String PROXY_PART_INFO_SQL                      = "SELECT /*+READ_CONSISTENCY(WEAK)*/ part_level, part_num, part_type, part_space, part_expr, "
                                                                            + "part_range_type, sub_part_num, sub_part_type, sub_part_space, sub_part_range_type, sub_part_expr, "
-                                                                           + "part_key_name, part_key_type, part_key_idx, part_key_extra, part_key_collation_type ? "
+                                                                           + "part_key_name, part_key_type, part_key_idx, part_key_extra, part_key_collation_type "
+                                                                           + "FROM oceanbase.__all_virtual_proxy_partition_info "
+                                                                           + "WHERE tenant_name = ? and table_id = ? group by part_key_name order by part_key_name LIMIT ?;";
+
+    private static final String PROXY_PART_INFO_SQL_V2                   = "SELECT /*+READ_CONSISTENCY(WEAK)*/ part_level, part_num, part_type, part_space, part_expr, "
+                                                                           + "part_range_type, sub_part_num, sub_part_type, sub_part_space, sub_part_range_type, sub_part_expr, "
+                                                                           + "part_key_name, part_key_type, part_key_idx, part_key_extra, part_key_collation_type, schema_version "
                                                                            + "FROM oceanbase.__all_virtual_proxy_partition_info "
                                                                            + "WHERE tenant_name = ? and table_id = ? group by part_key_name order by part_key_name LIMIT ?;";
     @Deprecated
@@ -108,7 +114,7 @@ public class LocationUtil {
 
     private static final String PROXY_DUMMY_LOCATION_SQL                 = "SELECT /*+READ_CONSISTENCY(WEAK)*/ A.tablet_id as tablet_id, A.svr_ip as svr_ip, A.sql_port as sql_port, "
                                                                            + "A.table_id as table_id, A.role as role, A.replica_num as replica_num, A.part_num as part_num, B.svr_port as svr_port, B.status as status, B.stop_time as stop_time "
-                                                                           + ", A.spare1 as replica_type "
+                                                                           + ", A.spare1 as replica_type, A.schema_version as schema_version "
                                                                            + "FROM oceanbase.__all_virtual_proxy_schema A inner join oceanbase.__all_server B on A.svr_ip = B.svr_ip and A.sql_port = B.inner_port "
                                                                            + "WHERE tenant_name = ? and database_name=? and table_name = ?";
 
@@ -155,11 +161,19 @@ public class LocationUtil {
                                                                            + "    AND A.database_name = ? "
                                                                            + "    AND A.table_name = ?;";
 
-    private static final String PROXY_FIRST_PARTITION_SQL                = "SELECT /*+READ_CONSISTENCY(WEAK)*/ part_id, part_name, tablet_id, high_bound_val, sub_part_num ? "
+    private static final String PROXY_FIRST_PARTITION_SQL                = "SELECT /*+READ_CONSISTENCY(WEAK)*/ part_id, part_name, tablet_id, high_bound_val, sub_part_num "
                                                                            + "FROM oceanbase.__all_virtual_proxy_partition "
                                                                            + "WHERE tenant_name = ? and table_id = ? LIMIT ?;";
 
-    private static final String PROXY_SUB_PARTITION_SQL                  = "SELECT /*+READ_CONSISTENCY(WEAK)*/ sub_part_id, part_name, tablet_id, high_bound_val ? "
+    private static final String PROXY_FIRST_PARTITION_SQL_V2             = "SELECT /*+READ_CONSISTENCY(WEAK)*/ part_id, part_name, tablet_id, high_bound_val, sub_part_num, schema_version "
+                                                                           + "FROM oceanbase.__all_virtual_proxy_partition "
+                                                                           + "WHERE tenant_name = ? and table_id = ? LIMIT ?;";
+
+    private static final String PROXY_SUB_PARTITION_SQL                  = "SELECT /*+READ_CONSISTENCY(WEAK)*/ sub_part_id, part_name, tablet_id, high_bound_val "
+                                                                           + "FROM oceanbase.__all_virtual_proxy_sub_partition "
+                                                                           + "WHERE tenant_name = ? and table_id = ? LIMIT ?;";
+
+    private static final String PROXY_SUB_PARTITION_SQL_V2               = "SELECT /*+READ_CONSISTENCY(WEAK)*/ sub_part_id, part_name, tablet_id, high_bound_val, schema_version "
                                                                            + "FROM oceanbase.__all_virtual_proxy_sub_partition "
                                                                            + "WHERE tenant_name = ? and table_id = ? LIMIT ?;";
 
@@ -1025,15 +1039,14 @@ public class LocationUtil {
         PreparedStatement ps = null;
         ResultSet rs = null;
         try {
-            ps = connection.prepareStatement(PROXY_FIRST_PARTITION_SQL);
             if (ObGlobal.isSchemaVersionSupport()) {
-                ps.setString(1, ", schema_version");
+                ps = connection.prepareStatement(PROXY_FIRST_PARTITION_SQL_V2);
             } else {
-                ps.setString(1, "");
+                ps = connection.prepareStatement(PROXY_FIRST_PARTITION_SQL);
             }
-            ps.setString(2, key.getTenantName());
-            ps.setLong(3, tableEntry.getTableId());
-            ps.setInt(4, Integer.MAX_VALUE);
+            ps.setString(1, key.getTenantName());
+            ps.setLong(2, tableEntry.getTableId());
+            ps.setInt(3, Integer.MAX_VALUE);
 
             rs = ps.executeQuery();
             if (obPartFuncType.isRangePart()) {
@@ -1102,15 +1115,14 @@ public class LocationUtil {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         try {
-            pstmt = connection.prepareStatement(PROXY_SUB_PARTITION_SQL);
             if (ObGlobal.isSchemaVersionSupport()) {
-                pstmt.setString(1, ", schema_version");
+                pstmt = connection.prepareStatement(PROXY_SUB_PARTITION_SQL_V2);
             } else {
-                pstmt.setString(1, "");
+                pstmt = connection.prepareStatement(PROXY_SUB_PARTITION_SQL);
             }
-            pstmt.setString(2, key.getTenantName());
-            pstmt.setLong(3, tableEntry.getTableId());
-            pstmt.setInt(4, Integer.MAX_VALUE);
+            pstmt.setString(1, key.getTenantName());
+            pstmt.setLong(2, tableEntry.getTableId());
+            pstmt.setInt(3, Integer.MAX_VALUE);
 
             rs = pstmt.executeQuery();
             if (subPartFuncType.isRangePart()) {
@@ -1390,15 +1402,14 @@ public class LocationUtil {
         ResultSet rs = null;
         ObPartitionInfo info = null;
         try {
-            pstmt = connection.prepareStatement(PROXY_PART_INFO_SQL);
             if (ObGlobal.isSchemaVersionSupport()) {
-                pstmt.setString(1, ", schema_version");
+                pstmt = connection.prepareStatement(PROXY_PART_INFO_SQL_V2);
             } else {
-                pstmt.setString(1, "");
+                pstmt = connection.prepareStatement(PROXY_PART_INFO_SQL);
             }
-            pstmt.setString(2, tableEntry.getTableEntryKey().getTenantName());
-            pstmt.setLong(3, tableEntry.getTableId());
-            pstmt.setLong(4, Long.MAX_VALUE);
+            pstmt.setString(1, tableEntry.getTableEntryKey().getTenantName());
+            pstmt.setLong(2, tableEntry.getTableId());
+            pstmt.setLong(3, Long.MAX_VALUE);
 
             rs = pstmt.executeQuery();
             info = parsePartitionInfo(rs, tableEntry);

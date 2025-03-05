@@ -35,6 +35,9 @@ public class TableRoster {
     private String database;
     private Properties properties = new Properties();
     private Map<String, Object> tableConfigs = new HashMap<>();
+    /*
+     * ServerAddr(all) -> ObTableConnection
+     */
     private volatile ConcurrentHashMap<ObServerAddr, ObTable> tables = new ConcurrentHashMap<ObServerAddr, ObTable>();
 
     public void setTenantName(String tenantName) {
@@ -61,6 +64,7 @@ public class TableRoster {
     public ObTable getTable(ObServerAddr addr) {
         return tables.get(addr);
     }
+    public ConcurrentHashMap<ObServerAddr, ObTable> getTables() { return tables; }
     public boolean containsKey(ObServerAddr addr) {
         return tables.containsKey(addr);
     }
@@ -106,25 +110,6 @@ public class TableRoster {
             }
         }
         return newServers;
-    }
-
-    public void expandTables(ReplicaLocation newLocation) throws Exception {
-        ObServerAddr addr = newLocation.getAddr();
-        ObServerInfo info = newLocation.getInfo();
-        if (!info.isActive()) {
-            logger.warn("will not refresh location {} because status is {} stop time {}",
-                    addr.toString(), info.getStatus(), info.getStopTime());
-            return;
-        }
-
-        ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort()) //
-                .setLoginInfo(tenantName, userName, password, database) //
-                .setProperties(properties).setConfigs(tableConfigs).build();
-        ObTable oldObTable = tables.putIfAbsent(addr, obTable);
-        logger.warn("add new table addr, {}", addr.toString());
-        if (oldObTable != null) { // maybe create two ob table concurrently, close current ob table
-            obTable.close();
-        }
     }
 
     public void closeRoster() throws ObTableCloseException {

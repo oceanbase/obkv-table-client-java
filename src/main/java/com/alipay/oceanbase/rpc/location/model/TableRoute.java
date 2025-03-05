@@ -48,21 +48,21 @@ import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
 import static java.lang.String.format;
 
 public class TableRoute {
-    private static final Logger logger                 = getLogger(TableRoute.class);
-    private Lock                refreshTableRosterLock = new ReentrantLock();
-    private final ObTableClient tableClient;
-    private long                clusterVersion         = -1;
-    private volatile long       lastRefreshMetadataTimestamp;
-    private ObUserAuth          sysUA                  = null;                       // user and password to access route table
-    private ConfigServerInfo    configServerInfo       = null;                       // rslist and IDC
-    private TableLocations      tableLocations         = null;                       // map[tableName, TableEntry]
-    private TableLocations      odpTableLocations      = null;                       // for parition handle
-    private IndexLocations      indexLocations         = null;                       // global index location
-    private TableGroupCache     tableGroupCache        = null;
-    private TableRoster         tableRoster            = new TableRoster();          // table mean connection pool here
-    private ServerRoster        serverRoster           = new ServerRoster();         // all servers which contain current tenant
-    private OdpInfo             odpInfo                = null;
-    private RouteTableRefresher routeRefresher         = null;
+    private static final Logger       logger                 = getLogger(TableRoute.class);
+    private final ObTableClient       tableClient;
+    private final ObUserAuth          sysUA;                                               // user and password to access route table
+    private final ServerRoster        serverRoster           = new ServerRoster();         // all servers which contain current tenant
+    private long                      clusterVersion         = -1;
+    private volatile long             lastRefreshMetadataTimestamp;
+    private volatile ConfigServerInfo configServerInfo       = new ConfigServerInfo();     // rslist and IDC
+    private volatile TableRoster      tableRoster            = new TableRoster();          // table mean connection pool here
+    private Lock                      refreshTableRosterLock = new ReentrantLock();
+    private TableLocations            tableLocations         = null;                       // map[tableName, TableEntry]
+    private TableLocations            odpTableLocations      = null;                       // for parition handle
+    private IndexLocations            indexLocations         = null;                       // global index location
+    private TableGroupCache           tableGroupCache        = null;
+    private OdpInfo                   odpInfo                = null;
+    private RouteTableRefresher       routeRefresher         = null;
 
     public TableRoute(ObTableClient tableClient, ObUserAuth sysUA) {
         this.tableClient = tableClient;
@@ -108,6 +108,22 @@ public class TableRoute {
      * */
     public ObTable getTable(ObServerAddr addr) {
         return tableRoster.getTable(addr);
+    }
+
+    public TableRoster getTableRoster() {
+        return tableRoster;
+    }
+
+    public ServerRoster getServerRoster() {
+        return serverRoster;
+    }
+
+    public ConfigServerInfo getConfigServerInfo() {
+        return configServerInfo;
+    }
+
+    public Map<String, TableEntry> getTableLocations() {
+        return tableLocations.getLocations();
     }
 
     public void buildOdpInfo(String odpAddr, int odpPort) throws Exception {

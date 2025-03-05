@@ -177,25 +177,17 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                 break;
             } catch (Exception e) {
                 if (client.isOdpMode()) {
-                    if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
-                        if (e instanceof ObTableException) {
-                            logger
-                                .warn(
-                                    "tablename:{} stream query execute while meet Exception needing retry, errorCode: {}, errorMsg: {}, try times {}",
-                                    indexTableName, ((ObTableException) e).getErrorCode(),
-                                    e.getMessage(), tryTimes);
-                        } else if (e instanceof IllegalArgumentException) {
-                            logger
-                                .warn(
-                                    "tablename:{} stream query execute while meet Exception needing retry, try times {}, errorMsg: {}",
-                                    indexTableName, tryTimes, e.getMessage());
-                        } else {
-                            logger
-                                .warn(
-                                    "tablename:{} stream query execute while meet Exception needing retry, try times {}",
-                                    indexTableName, tryTimes, e);
-                        }
+                    // if exceptions need to retry, retry to timeout
+                    if (e instanceof ObTableException
+                        && ((ObTableException) e).isNeedRetryServerError()) {
+                        logger
+                            .warn(
+                                "tablename:{} stream query execute while meet Exception needing retry, errorCode: {}, errorMsg: {}, try times {}",
+                                indexTableName, ((ObTableException) e).getErrorCode(),
+                                e.getMessage(), tryTimes);
                     } else {
+                        logger.warn("tablename:{} stream query execute while meet Exception",
+                            indexTableName, e);
                         throw e;
                     }
                 } else {
@@ -216,22 +208,14 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                             throw e;
                         }
                     } else if (e instanceof ObTableGlobalIndexRouteException) {
-                        if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
-                            logger
-                                .warn(
-                                    "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, retry times {}",
-                                    indexTableName, partIdWithIndex.getLeft(),
-                                    ((ObTableException) e).getErrorCode(), tryTimes, e);
-                            indexTableName = client.getIndexTableName(tableName,
-                                tableQuery.getIndexName(), tableQuery.getScanRangeColumns(), true);
-                        } else {
-                            logger
-                                .warn(
-                                    "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, reach max retry times {}",
-                                    indexTableName, partIdWithIndex.getLeft(),
-                                    ((ObTableException) e).getErrorCode(), tryTimes, e);
-                            throw e;
-                        }
+                        // retry to timeout
+                        logger
+                            .warn(
+                                "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, retry times {}",
+                                indexTableName, partIdWithIndex.getLeft(),
+                                ((ObTableException) e).getErrorCode(), tryTimes, e);
+                        indexTableName = client.getIndexTableName(tableName,
+                            tableQuery.getIndexName(), tableQuery.getScanRangeColumns(), true);
                     } else if (e instanceof ObTableException) {
                         if ((((ObTableException) e).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode || ((ObTableException) e)
                             .getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode)
@@ -243,8 +227,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                             client.eraseTableGroupFromCache(tableName);
                         }
                         if (((ObTableException) e).isNeedRefreshTableEntry()) {
-                            if (client.isRetryOnChangeMasterTimes()
-                                && (tryTimes - 1) < client.getRuntimeRetryTimes()) {
+                            if (client.isRetryOnChangeMasterTimes()) {
                                 // tablet not exists, refresh table entry
                                 if (e instanceof ObTableNeedFetchMetaException) {
                                     client.getOrRefreshTableEntry(indexTableName, true);

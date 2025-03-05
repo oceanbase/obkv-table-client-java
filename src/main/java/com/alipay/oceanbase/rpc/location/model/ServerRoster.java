@@ -145,6 +145,7 @@ public class ServerRoster {
             turn = new AtomicInteger(0);
         }
         ObServerAddr addr = avaliableList.get(idx % avaliableList.size());
+        addr.recordAccess();
         return addr;
     }
 

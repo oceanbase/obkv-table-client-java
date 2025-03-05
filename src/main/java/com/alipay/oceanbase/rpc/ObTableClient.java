@@ -57,7 +57,6 @@ import static com.alipay.oceanbase.rpc.location.model.ObServerRoute.STRONG_READ;
 import static com.alipay.oceanbase.rpc.property.Property.*;
 import static com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType.*;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
-import static java.lang.String.format;
 
 public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private static final Logger                               logger                                  = getLogger(ObTableClient.class);
@@ -85,28 +84,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                                                                           Constants.PROXY_SYS_USER_NAME,
                                                                                                           "");
 
-    private volatile OcpModel                                 ocpModel                                = new OcpModel();
-
     private volatile TableRoute                               tableRoute                              = null;
 
-    /*
-     * ServerAddr(all) -> ObTableConnection
-     */
-    private volatile ConcurrentHashMap<ObServerAddr, ObTable> tableRoster                             = null;
-
-    /*
-     * current tenant server address order by priority desc
-     * <p>
-     * be careful about concurrency when change the element
-     */
-    private final ServerRoster                                serverRoster                            = new ServerRoster();
-
     private volatile RunningMode                              runningMode                             = RunningMode.NORMAL;
-
-    /*
-     * TableName -> TableEntry
-     */
-    private Map<String, TableEntry>                           tableLocations                          = new ConcurrentHashMap<String, TableEntry>();
 
     /*
      * TableName -> rowKey element
@@ -192,10 +172,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             BOOT.info("ObTableClient is closed");
             statusLock.unlock();
         }
-    }
-
-    public Map<String, TableEntry> getTableLocations() {
-        return tableLocations;
     }
 
     /*
@@ -524,9 +500,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     if (ex instanceof ObTableReplicaNotReadableException) {
                         if (tableParam != null && (tryTimes - 1) < runtimeRetryTimes) {
                             logger.warn("retry when replica not readable: {}", ex.getMessage());
-                            if (!odpMode) {
-                                route.addToBlackList(tableParam.getObTable().getIp());
-                            }
+                            route.addToBlackList(tableParam.getObTable().getIp());
                         } else {
                             logger.warn("exhaust retry when replica not readable: {}",
                                 ex.getMessage());
@@ -535,6 +509,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         }
                     } else if (ex instanceof ObTableException
                             && (((ObTableException) ex).isNeedRefreshTableEntry() || ((ObTableException) ex).isNeedRetryServerError())) {
+                        if (ex instanceof ObTableNotExistException) {
+                            String logMessage = String.format(
+                                    "exhaust retry while meet TableNotExist Exception, table name: %s, errorCode: %d",
+                                    tableName,
+                                    ((ObTableException) ex).getErrorCode()
+                            );
+                            logger.warn(logMessage, ex);
+                            throw ex;
+                        }
                         if (retryOnChangeMasterTimes) {
                             if (ex instanceof ObTableNeedFetchMetaException) {
                                 tableRoute.refreshMeta(tableName);
@@ -557,7 +540,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             );
                             logger.warn(logMessage, ex);
                             calculateContinuousFailure(tableName, ex.getMessage());
-                            throw new ObTableRetryExhaustedException(logMessage, ex);
+                            throw ex;
                         }
                     } else {
                         String logMessage = String.format(
@@ -567,7 +550,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         );
                         logger.warn(logMessage, ex);
                         calculateContinuousFailure(tableName, ex.getMessage());
-                        throw new ObTableRetryExhaustedException(logMessage, ex);
+                        throw ex;
                     }
                 }
             }
@@ -815,6 +798,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     public void setRpcExecuteTimeout(int rpcExecuteTimeout) {
         this.properties.put(RPC_EXECUTE_TIMEOUT.getKey(), String.valueOf(rpcExecuteTimeout));
         this.rpcExecuteTimeout = rpcExecuteTimeout;
+        ConcurrentHashMap<ObServerAddr, ObTable> tableRoster = tableRoute.getTableRoster().getTables();
         if (null != tableRoster) {
             for (ObTable obTable : tableRoster.values()) {
                 if (obTable != null) {
@@ -966,6 +950,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         addr.setSvrPort(moveResponse.getReplica().getServer().getPort());
         logger.info("get new server ip {}, port {} from move response ", addr.getIp(), addr.getSvrPort());
 
+        ConcurrentHashMap<ObServerAddr, ObTable> tableRoster = tableRoute.getTableRoster().getTables();
         for (Map.Entry<ObServerAddr, ObTable> entry: tableRoster.entrySet()){
             if (Objects.equals(entry.getKey().getIp(), addr.getIp()) && Objects.equals(entry.getKey().getSvrPort(), addr.getSvrPort())){
                 return entry.getValue();
@@ -977,6 +962,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     public ObTable addTable(ObServerAddr addr){
 
+        ConcurrentHashMap<ObServerAddr, ObTable> tableRoster = tableRoute.getTableRoster().getTables();
         try {
             logger.info("server from response not exist in route cache, server ip {}, port {} , execute add Table.", addr.getIp(), addr.getSvrPort());
             ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort()) //
@@ -2626,6 +2612,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (getReadConsistency().isStrong()) {
             return STRONG_READ;
         }
+        ServerRoster serverRoster = tableRoute.getServerRoster();
         return new ObServerRoute(ObReadConsistency.WEAK, obRoutePolicy, serverRoster
             .getServerLdcLocation().isLdcUsed());
     }
@@ -2641,6 +2628,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         } else {
             return STRONG_READ;
         }
+    }
+
+    public TableRoute getTableRoute() {
+        return tableRoute;
     }
 
     public void setOdpAddr(String odpAddr) {
@@ -2665,10 +2656,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     @Override
     public String toString() {
+        ConcurrentHashMap<ObServerAddr, ObTable> tableRoster = tableRoute.getTableRoster().getTables();
+        ServerRoster serverRoster = tableRoute.getServerRoster();
+        Map<String, TableEntry> tableLocations = tableRoute.getTableLocations();
+        ConfigServerInfo configServerInfo = tableRoute.getConfigServerInfo();
         return "ObTableClient {\n serverRoster = " + serverRoster.getMembers()
                + ", \n serverIdc = " + serverRoster.getServerLdcLocation()
                + ", \n tableLocations = " + tableLocations + ", \n tableRoster = " + tableRoster
-               + ", \n ocpModel = " + ocpModel + "\n}\n";
+               + ", \n ocpModel = " + configServerInfo + "\n}\n";
     }
 
     public ConcurrentHashMap<String, String> getTableGroupInverted() {

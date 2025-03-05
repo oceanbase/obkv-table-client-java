@@ -76,4 +76,12 @@ public class ConfigServerInfo {
     public void addIdc2Region(String idc, String region) {
         idc2Region.put(idc, region);
     }
+
+    /*
+     * To string.
+     */
+    @Override
+    public String toString() {
+        return "OcpModel{" + "obServerAddrs=" + rsList + ", idc2Region=" + idc2Region + '}';
+    }
 }
