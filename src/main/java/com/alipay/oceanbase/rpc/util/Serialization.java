@@ -444,7 +444,7 @@ public class Serialization {
         if (l < 0) {
             return 10;
         }
-        if (l == 0) {
+        if (l == 0 || l == 1 /* opt for version header */) {
             return 1;
         }
         // 计算有效位数，然后除以7向上取整
@@ -460,7 +460,7 @@ public class Serialization {
         if (l < 0) {
             return 5;
         }
-        if (l == 0) {
+        if (l == 0 || l == 1 /* opt for version header */) {
             return 1;
         }
         // 计算有效位数，然后除以7向上取整
@@ -848,15 +848,13 @@ public class Serialization {
             str = "";
         byte[] data = str.getBytes(charset);
         int dataLen = data.length;
-        int strLen = getNeedBytes(dataLen);
-        byte[] ret = new byte[strLen + dataLen + 1];
+        byte[] dataLenBytes = encodeVi32(dataLen);
+        byte[] ret = new byte[dataLenBytes.length + dataLen + 1];
         int index = 0;
-        for (byte b : encodeVi32(dataLen)) {
-            ret[index++] = b;
-        }
-        for (byte b : data) {
-            ret[index++] = b;
-        }
+        System.arraycopy(dataLenBytes, 0, ret, index, dataLenBytes.length);
+        index += dataLenBytes.length;
+        System.arraycopy(data, 0, ret, index, dataLen);
+        index += dataLen;
         ret[index] = 0;
         return ret;
     }
@@ -1008,15 +1006,15 @@ public class Serialization {
      * @return output data buffer
      */
     public static byte[] encodeObUniVersionHeader(long version, long payloadLen) {
-        int versionBytes = Serialization.getNeedBytes(version);
-        int payloadLenBytes = Serialization.getNeedBytes(payloadLen);
-        byte[] bytes = new byte[versionBytes + payloadLenBytes];
+        byte[] versionBytes = Serialization.encodeVi64(version);
+        byte[] payloadBytes = Serialization.encodeVi64(payloadLen);
+        byte[] bytes = new byte[versionBytes.length + payloadBytes.length];
         int idx = 0;
-        int len = versionBytes;
-        System.arraycopy(Serialization.encodeVi64(version), 0, bytes, idx, len);
-        idx += versionBytes;
-        len = payloadLenBytes;
-        System.arraycopy(Serialization.encodeVi64(payloadLen), 0, bytes, idx, len);
+        int len = versionBytes.length;
+        System.arraycopy(versionBytes, 0, bytes, idx, len);
+        idx += len;
+        len = payloadBytes.length;
+        System.arraycopy(payloadBytes, 0, bytes, idx, len);
 
         return bytes;
     }

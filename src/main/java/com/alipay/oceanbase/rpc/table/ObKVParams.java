@@ -54,13 +54,13 @@ public class ObKVParams extends AbstractPayload {
         int idx = 0;
 
         // 0. encode header
-        int headerLen = (int) getObUniVersionHeaderLength(getVersion(), getPayloadContentSize());
-        System.arraycopy(encodeObUniVersionHeader(getVersion(), getPayloadContentSize()), 0, bytes,
-            idx, headerLen);
-        idx += headerLen;
+        byte[] headerBytes = encodeObUniVersionHeader(getVersion(), getPayloadContentSize());
+        System.arraycopy(headerBytes, 0, bytes,
+            idx, headerBytes.length);
+        idx += headerBytes.length;
 
-        int len = (int) obKVParamsBase.getPayloadContentSize();
-        System.arraycopy(obKVParamsBase.encode(), 0, bytes, idx, len);
+        byte[] obKVParamsBaseBytes = obKVParamsBase.encode();
+        System.arraycopy(obKVParamsBaseBytes, 0, bytes, idx, obKVParamsBaseBytes.length);
 
         return bytes;
     }

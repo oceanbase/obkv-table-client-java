@@ -52,25 +52,25 @@ public class ObTableSingleOp extends AbstractPayload {
 
         // 2. encode op flag
         long flag = singleOpFlag.getValue();
-        int len = Serialization.getNeedBytes(flag);
-        System.arraycopy(Serialization.encodeVi64(flag), 0, bytes, idx, len);
-        idx += len;
+        byte[] singleOpFlagLenBytes = Serialization.encodeVi64(flag);
+        System.arraycopy(singleOpFlagLenBytes, 0, bytes, idx, singleOpFlagLenBytes.length);
+        idx += singleOpFlagLenBytes.length;
 
         // 3. encode single op query
         if (ObTableOperationType.needEncodeQuery(singleOpType)) {
-            len = (int) query.getPayloadSize();
-            System.arraycopy(query.encode(), 0, bytes, idx, len);
-            idx += len;
+            byte[] queryBytes = query.encode();
+            System.arraycopy(queryBytes, 0, bytes, idx, queryBytes.length);
+            idx += queryBytes.length;
         }
 
         // 4. encode entities
-        len = Serialization.getNeedBytes(entities.size());
-        System.arraycopy(Serialization.encodeVi64(entities.size()), 0, bytes, idx, len);
-        idx += len;
+        byte[] entitiesSizeBytes = Serialization.encodeVi64(entities.size());
+        System.arraycopy(entitiesSizeBytes, 0, bytes, idx, entitiesSizeBytes.length);
+        idx += entitiesSizeBytes.length;
         for (ObTableSingleOpEntity entity : entities) {
-            len = (int) entity.getPayloadSize();
-            System.arraycopy(entity.encode(), 0, bytes, idx, len);
-            idx += len;
+            byte[] entityBytes = entity.encode();
+            System.arraycopy(entityBytes, 0, bytes, idx, entityBytes.length);
+            idx += entityBytes.length;
         }
 
         return bytes;

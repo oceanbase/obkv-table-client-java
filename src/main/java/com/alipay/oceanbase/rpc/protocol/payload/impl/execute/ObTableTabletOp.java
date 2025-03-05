@@ -57,18 +57,18 @@ public class ObTableTabletOp extends AbstractPayload {
         idx += 8;
 
         // 2. encode option flag
-        int len = Serialization.getNeedBytes(optionFlag.getValue());
-        System.arraycopy(Serialization.encodeVi64(optionFlag.getValue()), 0, bytes, idx, len);
-        idx += len;
+        byte[] optionFlagLenBytes = Serialization.encodeVi64(optionFlag.getValue());
+        System.arraycopy(optionFlagLenBytes, 0, bytes, idx, optionFlagLenBytes.length);
+        idx += optionFlagLenBytes.length;
 
         // 4. encode Operation
-        len = Serialization.getNeedBytes(singleOperations.size());
-        System.arraycopy(Serialization.encodeVi64(singleOperations.size()), 0, bytes, idx, len);
-        idx += len;
+        byte[] singleOperationsLenBytes = Serialization.encodeVi64(singleOperations.size());
+        System.arraycopy(singleOperationsLenBytes, 0, bytes, idx, singleOperationsLenBytes.length);
+        idx += singleOperationsLenBytes.length;
         for (ObTableSingleOp singleOperation : singleOperations) {
-            len = (int) singleOperation.getPayloadSize();
-            System.arraycopy(singleOperation.encode(), 0, bytes, idx, len);
-            idx += len;
+            byte[] singleOperationLenBytes = singleOperation.encode();
+            System.arraycopy(singleOperationLenBytes, 0, bytes, idx, singleOperationLenBytes.length);
+            idx += singleOperationLenBytes.length;
         }
 
         return bytes;

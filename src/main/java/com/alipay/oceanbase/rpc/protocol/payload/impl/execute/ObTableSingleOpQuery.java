@@ -48,60 +48,57 @@ public class ObTableSingleOpQuery extends ObTableQuery {
         idx = encodeHeader(bytes, idx);
 
         // 1. encode index name
-        int len =  Serialization.getNeedBytes(indexName);
-        System.arraycopy(Serialization.encodeVString(indexName), 0, bytes, idx, len);
-        idx += len;
+        byte[] indexNameBytes =  Serialization.encodeVString(indexName);
+        System.arraycopy(indexNameBytes, 0, bytes, idx, indexNameBytes.length);
+        idx += indexNameBytes.length;
 
         // 2. encode scan ranges columns
-        len = Serialization.getNeedBytes(scanRangeBitLen);
-        System.arraycopy(Serialization.encodeVi64(scanRangeBitLen), 0, bytes, idx, len);
-        idx += len;
+        byte[] scanRangeBitLenBytes = Serialization.encodeVi64(scanRangeBitLen);
+        System.arraycopy(scanRangeBitLenBytes, 0, bytes, idx, scanRangeBitLenBytes.length);
+        idx += scanRangeBitLenBytes.length;
         for (byte b : scanRangeBitMap) {
             System.arraycopy(Serialization.encodeI8(b), 0, bytes, idx, 1);
             idx += 1;
         }
 
         // 3. encode scan ranges
-        len = Serialization.getNeedBytes(keyRanges.size());
-        System.arraycopy(Serialization.encodeVi64(keyRanges.size()), 0, bytes, idx, len);
-        idx += len;
+        byte[] keyRangesBytes = Serialization.encodeVi64(keyRanges.size());
+        System.arraycopy(keyRangesBytes, 0, bytes, idx, keyRangesBytes.length);
+        idx += keyRangesBytes.length;
         for (ObNewRange range : keyRanges) {
-            len =  ObTableSerialUtil.getEncodedSize(range);
-            System.arraycopy(ObTableSerialUtil.encode(range), 0, bytes, idx, len);
-            idx += len;
+            byte[] rangeBytes =  ObTableSerialUtil.encode(range);
+            System.arraycopy(rangeBytes, 0, bytes, idx, rangeBytes.length);
+            idx += rangeBytes.length;
         }
 
         // 4. encode filter string
-        len =  Serialization.getNeedBytes(filterString);
-        System.arraycopy(Serialization.encodeVString(filterString), 0, bytes, idx, len);
-        idx += len;
+        byte[] filterStringBytes =  Serialization.encodeVString(filterString);
+        System.arraycopy(filterStringBytes, 0, bytes, idx, filterStringBytes.length);
+        idx += filterStringBytes.length;
 
         // encode HBase Batch Get required
         if (isHbaseQuery && ObGlobal.isHBaseBatchGetSupport()) {
-            len = Serialization.getNeedBytes(selectColumns.size());
-            System.arraycopy(Serialization.encodeVi64(selectColumns.size()), 0, bytes, idx, len);
-            idx += len;
+            byte[] selectColumnsLenByets = Serialization.encodeVi64(selectColumns.size());
+            System.arraycopy(selectColumnsLenByets, 0, bytes, idx, selectColumnsLenByets.length);
+            idx += selectColumnsLenByets.length;
             for (String selectColumn : selectColumns) {
-                len = Serialization.getNeedBytes(selectColumn);
-                System.arraycopy(Serialization.encodeVString(selectColumn), 0, bytes, idx, len);
-                idx += len;
+                byte[] selectColumnLenBytes = Serialization.encodeVString(selectColumn);
+                System.arraycopy(selectColumnLenBytes, 0, bytes, idx, selectColumnLenBytes.length);
+                idx += selectColumnLenBytes.length;
             }
 
             System.arraycopy(Serialization.encodeI8(scanOrder.getByteValue()), 0, bytes, idx, 1);
             idx += 1;
 
-            len = (int) hTableFilter.getPayloadSize();
-            System.arraycopy(hTableFilter.encode(), 0, bytes, idx, len);
-            idx += len;
+            byte[] hTableFilterLenBytes = hTableFilter.encode();
+            System.arraycopy(hTableFilterLenBytes, 0, bytes, idx, hTableFilterLenBytes.length);
+            idx += hTableFilterLenBytes.length;
 
             if (obKVParams != null) {
-                len = (int) obKVParams.getPayloadSize();
-                System.arraycopy(obKVParams.encode(), 0, bytes, idx, len);
-                idx += len;
+                byte[] obKVParamsBytes = obKVParams.encode();
+                System.arraycopy(obKVParamsBytes, 0, bytes, idx, obKVParamsBytes.length);
             } else {
-                len = HTABLE_DUMMY_BYTES.length;
-                System.arraycopy(HTABLE_DUMMY_BYTES, 0, bytes, idx, len);
-                idx += len;
+                System.arraycopy(HTABLE_DUMMY_BYTES, 0, bytes, idx, HTABLE_DUMMY_BYTES.length);
             }
         }
         return bytes;

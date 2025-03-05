@@ -111,17 +111,19 @@ public class ObHBaseParams extends ObKVParamsBase {
         byte[] b = new byte[] { (byte) pType.ordinal() };
         System.arraycopy(b, 0, bytes, idx, 1);
         idx += 1;
-        System.arraycopy(Serialization.encodeVi32(caching), 0, bytes, idx,
-            Serialization.getNeedBytes(caching));
-        idx += Serialization.getNeedBytes(caching);
-        System.arraycopy(Serialization.encodeVi32(callTimeout), 0, bytes, idx,
-            Serialization.getNeedBytes(callTimeout));
-        idx += Serialization.getNeedBytes(callTimeout);
+        byte[] tmpBytes = Serialization.encodeVi32(caching);
+        System.arraycopy(tmpBytes, 0, bytes, idx,
+                tmpBytes.length);
+        idx += tmpBytes.length;
+        tmpBytes = Serialization.encodeVi32(callTimeout);
+        System.arraycopy(tmpBytes, 0, bytes, idx, tmpBytes.length);
+        idx += tmpBytes.length;
         System.arraycopy(booleansToByteArray(), 0, bytes, idx, 1);
         idx += 1;
-        System.arraycopy(Serialization.encodeVString(hbaseVersion), 0, bytes, idx,
-            Serialization.getNeedBytes(hbaseVersion));
-        idx += Serialization.getNeedBytes(hbaseVersion);
+        tmpBytes = Serialization.encodeVString(hbaseVersion);
+        System.arraycopy(tmpBytes, 0, bytes, idx,
+                tmpBytes.length);
+        idx += tmpBytes.length;
 
         return bytes;
     }

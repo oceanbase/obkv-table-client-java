@@ -56,33 +56,33 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         idx = encodeHeader(bytes, idx);
 
         // 1. encode rowKey bitmap
-        int len = Serialization.getNeedBytes(rowKeyBitLen);
-        System.arraycopy(Serialization.encodeVi64(rowKeyBitLen), 0, bytes, idx, len);
-        idx += len;
+        byte[] tmpBytes = Serialization.encodeVi64(rowKeyBitLen);
+        System.arraycopy(tmpBytes, 0, bytes, idx, tmpBytes.length);
+        idx += tmpBytes.length;
         for (byte b : rowKeyBitMap) {
             System.arraycopy(Serialization.encodeI8(b), 0, bytes, idx, 1);
             idx += 1;
         }
 
         // 2. encode rowkey
-        len = Serialization.getNeedBytes(rowkey.size());
-        System.arraycopy(Serialization.encodeVi64(rowkey.size()), 0, bytes, idx, len);
-        idx += len;
+        tmpBytes = Serialization.encodeVi64(rowkey.size());
+        System.arraycopy(tmpBytes, 0, bytes, idx, tmpBytes.length);
+        idx += tmpBytes.length;
         for (ObObj obj : rowkey) {
-            len =  ObTableSerialUtil.getEncodedSize(obj);
-            System.arraycopy(ObTableSerialUtil.encode(obj), 0, bytes, idx, len);
-            idx += len;
+            tmpBytes =  ObTableSerialUtil.encode(obj);
+            System.arraycopy(tmpBytes, 0, bytes, idx, tmpBytes.length);
+            idx += tmpBytes.length;
         }
 
         // 3. encode property bitmap
         if (ignoreEncodePropertiesColumnNames) {
-            len = Serialization.getNeedBytes(0L);
-            System.arraycopy(Serialization.encodeVi64(0L), 0, bytes, idx, len);
-            idx += len;
+            tmpBytes = Serialization.encodeVi64(0L);
+            System.arraycopy(tmpBytes, 0, bytes, idx, tmpBytes.length);
+            idx += tmpBytes.length;
         } else {
-            len = Serialization.getNeedBytes(propertiesBitLen);
-            System.arraycopy(Serialization.encodeVi64(propertiesBitLen), 0, bytes, idx, len);
-            idx += len;
+            tmpBytes = Serialization.encodeVi64(propertiesBitLen);
+            System.arraycopy(tmpBytes, 0, bytes, idx, tmpBytes.length);
+            idx += tmpBytes.length;
             for (byte b : propertiesBitMap) {
                 System.arraycopy(Serialization.encodeI8(b), 0, bytes, idx, 1);
                 idx += 1;
@@ -90,13 +90,13 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         }
 
         // 4. encode properties values
-        len = Serialization.getNeedBytes(propertiesValues.size());
-        System.arraycopy(Serialization.encodeVi64(propertiesValues.size()), 0, bytes, idx, len);
-        idx += len;
+        tmpBytes = Serialization.encodeVi64(propertiesValues.size());
+        System.arraycopy(tmpBytes, 0, bytes, idx, tmpBytes.length);
+        idx += tmpBytes.length;
         for (ObObj obj : propertiesValues) {
-            len =  ObTableSerialUtil.getEncodedSize(obj);
-            System.arraycopy(ObTableSerialUtil.encode(obj), 0, bytes, idx, len);
-            idx += len;
+            tmpBytes = ObTableSerialUtil.encode(obj);
+            System.arraycopy(tmpBytes, 0, bytes, idx, tmpBytes.length);
+            idx += tmpBytes.length;
         }
 
         return bytes;

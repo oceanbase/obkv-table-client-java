@@ -72,9 +72,8 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
         idx++;
 
         // 4. encode lsOperation
-        int len = (int) lsOperation.getPayloadSize();
-        System.arraycopy(lsOperation.encode(), 0, bytes, idx, len);
-        idx += len;
+        byte[] lsOpBytes = lsOperation.encode();
+        System.arraycopy(lsOpBytes, 0, bytes, idx, lsOpBytes.length);
 
         return bytes;
     }
