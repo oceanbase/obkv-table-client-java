@@ -204,9 +204,10 @@ public class TableLocations {
                             RUNTIME
                                 .error("partition table must add row key element name for table: "
                                        + tableName + " with table entry key: " + tableEntryKey);
-                            throw new FeatureNotSupportedException(
+                            throw new ObTableUnexpectedException(
                                 "partition table must add row key element name for table: "
-                                        + tableName + " with table entry key: " + tableEntryKey);
+                                        + tableName + ", failed to get table entry key="
+                                        + tableEntryKey);
                         }
                 }
                 tableEntry.prepare();
@@ -214,7 +215,7 @@ public class TableLocations {
         } catch (ObTableNotExistException e) {
             RUNTIME.error("refreshTableEntry meet exception", e);
             throw e;
-        } catch (FeatureNotSupportedException e) {
+        } catch (ObTableUnexpectedException e) {
             RUNTIME.error("refreshTableEntry meet exception", e);
             throw e;
         } catch (Exception e) {
@@ -411,7 +412,7 @@ public class TableLocations {
                                 } else {
                                     RUNTIME.error("partition table must has row key element key ="
                                                   + key);
-                                    throw new ObTableException(
+                                    throw new ObTableUnexpectedException(
                                         "partition table must has row key element key =" + key);
                                 }
                         }
