@@ -112,8 +112,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     private int                                               odpPort                                 = 2883;
 
-    private ObTable                                           odpTable                                = null;
-
 
     private Long                                              clientId;
     private Map<String, Object>                               TableConfigs                            = new HashMap<>();
@@ -164,9 +162,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             closed = true;
             if (tableRoute != null) {
                 tableRoute.close();
-            }
-            if (odpTable != null) {
-                odpTable.close();
+                ObTable odpTable = tableRoute.getOdpTable();
+                if (odpTable != null) {
+                    odpTable.close();
+                }
             }
         } finally {
             BOOT.info("ObTableClient is closed");
@@ -373,7 +372,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     public ObTable getOdpTable() {
-        return this.odpTable;
+        if (tableRoute != null) {
+            return tableRoute.getOdpTable();
+        }
+        return null;
     }
 
     private abstract class TableExecuteCallback<T> {
@@ -464,6 +466,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObTableParam tableParam = null;
             try {
                 if (odpMode) {
+                    ObTable odpTable = tableRoute.getOdpTable();
                     tableParam = new ObTableParam(odpTable);
                 } else {
                     Row rowKey = transformToRow(tableName, callback.getRowKey());
@@ -654,6 +657,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObTableParam tableParam = null;
             try {
                 if (odpMode) {
+                    ObTable odpTable = tableRoute.getOdpTable();
                     tableParam = new ObTableParam(odpTable);
                 } else {
                     if (null != callback.getRowKey()) {
@@ -837,9 +841,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     }
                 }
             }
-        }
-        if (null != odpTable) {
-            odpTable.setObTableExecuteTimeout(rpcExecuteTimeout);
+            ObTable odpTable = tableRoute.getOdpTable();
+            if (null != odpTable) {
+                odpTable.setObTableExecuteTimeout(rpcExecuteTimeout);
+            }
         }
     }
 

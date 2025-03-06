@@ -104,6 +104,13 @@ public class TableRoute {
     }
 
     /**
+     * get ODP ObTable Connection
+     * */
+    public ObTable getOdpTable() {
+        return odpInfo.getObTable();
+    }
+
+    /**
      * get ObTable Connection by server address
      * */
     public ObTable getTable(ObServerAddr addr) {
