@@ -569,6 +569,14 @@ public class Serialization {
         return ret;
     }
 
+    public static void encodeVi32(int i, ByteBuf buf) {
+        while (i < 0 || i > OB_MAX_V1B) {
+            buf.writeByte((byte) (i | 0x80));
+            i >>>= 7;
+        }
+        buf.writeByte((byte) (i & 0x7f));
+    }
+
     /**
      * Encode vi32.
      * @param buf encoded buf
@@ -704,6 +712,9 @@ public class Serialization {
      * @param str input data
      */
     public static void encodeVString(ObByteBuf buf, String str) {
+        if (str == null) {
+            str = "";
+        }
         encodeVString(buf, str, StandardCharsets.UTF_8);
     }
 

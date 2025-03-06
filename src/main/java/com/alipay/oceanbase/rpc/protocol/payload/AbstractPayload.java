@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload;
 
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -182,6 +183,10 @@ public abstract class AbstractPayload implements ObPayload {
             idx, versionHeaderBytes.length);
         idx += versionHeaderBytes.length;
         return idx;
+    }
+
+    protected void encodeHeader(ObByteBuf buf) {
+        encodeObUniVersionHeader(buf, getVersion(), getPayloadContentSize());
     }
 
 }
