@@ -21,6 +21,7 @@ import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.FeatureNotSupportedException;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
+import com.alipay.oceanbase.rpc.exception.ObTableNotExistException;
 import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.Row;
@@ -222,9 +223,23 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                     indexTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName,
                         false);
                 }
-                ObTableParam table = obTableClient.getTableParamWithPartId(indexTableName,
-                    getPartId(), obTableClient.getRoute(false));
-                partitionObTables.put(table.getPartId(), new ObPair<>(table.getPartId(), table));
+                try {
+                    ObTableParam table = obTableClient.getTableParamWithPartId(indexTableName,
+                            getPartId(), obTableClient.getRoute(false));
+                    partitionObTables.put(table.getPartId(), new ObPair<>(table.getPartId(), table));
+                } catch (ObTableNotExistException e) {
+                    if (this.entityType == ObTableEntityType.HKV
+                            && obTableClient.isTableGroupName(tableName)
+                            && obTableClient.getTableGroupInverted().get(indexTableName) != null) {
+                        // if it is HKV and is tableGroup request, TableNotExist and tableGroup cache not empty mean that the table cached had been dropped
+                        // not to refresh tableGroup cache
+                        obTableClient.eraseTableGroupFromCache(tableName);
+                        indexTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, true);
+                        ObTableParam table = obTableClient.getTableParamWithPartId(indexTableName,
+                                getPartId(), obTableClient.getRoute(false));
+                        partitionObTables.put(table.getPartId(), new ObPair<>(table.getPartId(), table));
+                    }
+                }
             }
         }
 

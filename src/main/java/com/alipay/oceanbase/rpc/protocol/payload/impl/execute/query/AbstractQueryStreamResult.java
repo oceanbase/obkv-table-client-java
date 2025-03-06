@@ -225,6 +225,9 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                             && client.getTableGroupInverted().get(indexTableName) != null) {
                             // table not exists && hbase mode && table group exists , three condition both
                             client.eraseTableGroupFromCache(tableName);
+                            // try to get new tableGroup cache
+                            indexTableName = client.tryGetTableNameFromTableGroupCache(tableName,
+                                true);
                         }
                         if (((ObTableException) e).isNeedRefreshTableEntry()) {
                             if (client.isRetryOnChangeMasterTimes()) {

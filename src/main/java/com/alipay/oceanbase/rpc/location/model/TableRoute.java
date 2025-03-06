@@ -582,6 +582,11 @@ public class TableRoute {
         long tabletId = getTabletIdByPartId(tableEntry, partId);
         ObPartitionLocationInfo obPartitionLocationInfo = null;
         obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
+        if (obPartitionLocationInfo.getPartitionLocation() == null) {
+            throw new ObTableNotExistException(
+                "partition location is null after refresh, table: { " + tableName
+                        + " } may not exist");
+        }
         replica = getPartitionLocation(obPartitionLocationInfo, route);
         /**
          * Normally, getOrRefreshPartitionInfo makes sure that a thread only continues if it finds the leader
@@ -983,6 +988,9 @@ public class TableRoute {
         for (Long partId : partIds) {
             long tabletId = getTabletIdByPartId(tableEntry, partId);
             ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
+            if (locationInfo.getPartitionLocation() == null) {
+                throw new ObTableNotExistException("partition location is null after refresh, table: { " + tableName + " } may not exist");
+            }
             replicas.add(new ObPair<>(partId, getPartitionLocation(locationInfo, route)));
         }
 

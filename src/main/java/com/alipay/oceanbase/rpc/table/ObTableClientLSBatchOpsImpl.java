@@ -400,11 +400,27 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         if (rowkeys.size() != operationsWithIndex.size()) {
             throw new ObTableUnexpectedException("the length of rowKeys and operations is not matched.");
         }
-        String real_tableName = tableName;
+        String realTableName = tableName;
         if (this.entityType == ObTableEntityType.HKV && obTableClient.isTableGroupName(tableName)) {
-            real_tableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
+            realTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
         }
-        List<ObTableParam> params = obTableClient.getTableParams(real_tableName, rowkeys);
+        List<ObTableParam> params = null;
+        try {
+            params = obTableClient.getTableParams(realTableName, rowkeys);
+        } catch (ObTableNotExistException e) {
+            logger.warn("LSBatch meet TableNotExist Exception, realTableName: {}, errMsg: {}", realTableName, e.getMessage());
+            // if it is HKV and is tableGroup request, TableNotExist and tableGroup cache not empty mean that the table cached had been dropped
+            // not to refresh tableGroup cache
+            if (this.entityType == ObTableEntityType.HKV
+                    && obTableClient.isTableGroupName(tableName)
+                    && obTableClient.getTableGroupInverted().get(realTableName) != null) {
+                obTableClient.eraseTableGroupFromCache(tableName);
+                realTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, true);
+                params = obTableClient.getTableParams(realTableName, rowkeys);
+            } else {
+                throw e;
+            }
+        }
         for (int i = 0; i < params.size(); i++) {
             ObTableParam tableParam = params.get(i);
             long lsId = tableParam.getLsId();
@@ -494,7 +510,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
        tableLsOpRequest.setTimeout(operationTimeout);
 
         ObTableLSOpResult subLSOpResult;
-        boolean needRefreshTableEntry = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
         Set<String> failedServerList = null;
@@ -570,25 +585,37 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         logger.warn("exhaust retry when replica not readable: {}", ex.getMessage());
                         throw ex;
                     }
-                } else if (ex instanceof ObTableException
-                        && ((ObTableException) ex).isNeedRefreshTableEntry()) {
-                    // if exceptions need to retry, retry to timeout
-                    if (obTableClient.isRetryOnChangeMasterTimes()) {
-                        if (ex instanceof ObTableNeedFetchMetaException) {
-                            obTableClient.getOrRefreshTableEntry(realTableName, true);
-                            throw ex;
+                } else if (ex instanceof ObTableException) {
+                    if (((ObTableException) ex).isNeedRefreshTableEntry()) {
+                        if (((ObTableException) ex).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode
+                                && obTableClient.isTableGroupName(tableName)
+                                && obTableClient.getTableGroupInverted().get(realTableName) != null) {
+                            // TABLE_NOT_EXIST + tableName is tableGroup + TableGroup cache is not empty
+                            // means tableGroupName cache need to refresh
+                            obTableClient.eraseTableGroupFromCache(tableName);
+                            realTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, true);
+                        }
+                        // if exceptions need to retry, retry to timeout
+                        if (obTableClient.isRetryOnChangeMasterTimes()) {
+                            if (ex instanceof ObTableNeedFetchMetaException) {
+                                obTableClient.getOrRefreshTableEntry(realTableName, true);
+                                throw ex;
+                            }
+                        } else {
+                            String logMessage = String.format(
+                                    "exhaust retry while meet NeedRefresh Exception, table name: %s, ls id: %d, batch ops refresh table, retry times: %d, errorCode: %d",
+                                    realTableName,
+                                    lsId,
+                                    obTableClient.getRuntimeRetryTimes(),
+                                    ((ObTableException) ex).getErrorCode()
+                            );
+                            logger.warn(logMessage, ex);
+                            obTableClient.calculateContinuousFailure(realTableName, ex.getMessage());
+                            throw new ObTableRetryExhaustedException(logMessage, ex);
                         }
                     } else {
-                        String logMessage = String.format(
-                                "exhaust retry while meet NeedRefresh Exception, table name: %s, ls id: %d, batch ops refresh table, retry times: %d, errorCode: %d",
-                                realTableName,
-                                lsId,
-                                obTableClient.getRuntimeRetryTimes(),
-                                ((ObTableException) ex).getErrorCode()
-                        );
-                        logger.warn(logMessage, ex);
                         obTableClient.calculateContinuousFailure(realTableName, ex.getMessage());
-                        throw new ObTableRetryExhaustedException(logMessage, ex);
+                        throw ex;
                     }
                 } else {
                     obTableClient.calculateContinuousFailure(realTableName, ex.getMessage());

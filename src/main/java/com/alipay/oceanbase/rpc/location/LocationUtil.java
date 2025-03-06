@@ -385,6 +385,9 @@ public class LocationUtil {
         } catch (ObTableSchemaVersionMismatchException e) {
             RUNTIME.error("callTableEntryRefresh meet schema version mismatched exception", e);
             throw e;
+        } catch (FeatureNotSupportedException e) {
+            RUNTIME.error("callTableEntryRefresh meet feature not supported exception", e);
+            throw e;
         } catch (Exception e) {
             if (!initialized) {
                 BOOT.error(LCD.convert("01-00007"), url, key, e);
@@ -611,6 +614,8 @@ public class LocationUtil {
             } else {
                 throw new ObTableEntryRefreshException("fail to get ob version from remote");
             }
+        } catch (FeatureNotSupportedException e) {
+            throw e;
         } catch (Exception e) {
             throw new ObTableEntryRefreshException("fail to get ob version from remote", e);
         } finally {
@@ -656,9 +661,8 @@ public class LocationUtil {
         int tenantId = -1;
         int retryTimes = 0;
         long sleepTime = 100L;
-        boolean success = false;
         try {
-            while (!success && retryTimes < 3) {
+            while (true) {
                 try {
                     if (retryTimes > 0) {
                         // wait 100 ms for server refreshing
@@ -706,36 +710,19 @@ public class LocationUtil {
                                 }
                             }
                         }
-
-                        if (tableEntry.getPartitionNum() <= TABLE_ENTRY_LOCATION_REFRESH_THRESHOLD) {
-                            getTableEntryLocationFromRemote(connection, key, tableEntry);
-                        } else {
-                            // TODO: get all replica for all tablets
-                            ObPartitionEntry obPartitionEntry = null;
-                            if (oldTableEntry != null) {
-                                Map<Long, Long> newPartTabletMap = tableEntry.getPartitionInfo()
-                                    .getPartTabletIdMap();
-                                // if the old table is non-partitioned table
-                                if (newPartTabletMap == null) {
-                                    // set the old partitionEntry if current table is non-partitioned table
-                                    if (!tableEntry.isPartitionTable()) {
-                                        obPartitionEntry = oldTableEntry.getPartitionEntry();
-                                    } else {
-                                        // set a new partitionEntry if current table is partitioned table
-                                        obPartitionEntry = new ObPartitionEntry();
-                                    }
-                                } else {
-                                    // set existing partitionEntry
-                                    // and check partitionEntry to remove nonexistent tablet pairs
-                                    obPartitionEntry = oldTableEntry.getPartitionEntry();
-                                    obPartitionEntry.removeNonExistentTablet(newPartTabletMap);
-                                }
-                            } else {
-                                // only set empty partitionEntry
-                                obPartitionEntry = new ObPartitionEntry();
+                        // set partition locations
+                        if (oldTableEntry == null) {
+                            if (!key.getTableName().equals(Constants.ALL_DUMMY_TABLE)) {
+                                // first get a new tableEntry, fetch locations for the tablets in this table
+                                // accelerate the execution process to avoid the slow-start problem when fetch new tablets afterward
+                                getTableEntryLocationFromRemote(connection, key, tableEntry);
                             }
-                            tableEntry.setPartitionEntry(obPartitionEntry);
+                        } else {
+                            // get tablet locations from the old tableEntry
+                            // and remove useless tablet location based on the new tableEntry
+                            resetPartitionEntryByNewMeta(tableEntry, oldTableEntry);
                         }
+
                         tableEntry.setRefreshMetaTimeMills(System.currentTimeMillis());
 
                         if (!initialized) {
@@ -749,7 +736,7 @@ public class LocationUtil {
                             }
                         }
                     }
-                    success = true;
+                    return tableEntry;
                 } catch (SQLException e) {
                     // cannot execute sql, maybe some of the observers have been killed
                     RUNTIME.error(LCD.convert("01-00010"), key, e.getMessage());
@@ -787,7 +774,6 @@ public class LocationUtil {
                 // ignore
             }
         }
-        return tableEntry;
     }
 
     // Note: This code is applicable only for refreshing locations based on tablet ID in version 4.x
@@ -795,6 +781,27 @@ public class LocationUtil {
         String sql = null;
         sql = PROXY_LOCATION_SQL_PARTITION_BY_TABLETID;
         return sql;
+    }
+
+    private static void resetPartitionEntryByNewMeta(TableEntry tableEntry, TableEntry oldTableEntry) {
+        ObPartitionEntry obPartitionEntry = null;
+        Map<Long, Long> newPartTabletMap = tableEntry.getPartitionInfo().getPartTabletIdMap();
+        // if the current table is non-partitioned table
+        if (newPartTabletMap == null) {
+            if (!oldTableEntry.isPartitionTable()) {
+                // set the old partitionEntry if old table is non-partitioned table
+                obPartitionEntry = oldTableEntry.getPartitionEntry();
+            } else {
+                // set a new partitionEntry if current table is partitioned table
+                obPartitionEntry = new ObPartitionEntry();
+            }
+        } else {
+            // set existing partitionEntry
+            // and check partitionEntry to remove nonexistent tablet pairs
+            obPartitionEntry = oldTableEntry.getPartitionEntry();
+            obPartitionEntry.removeNonExistentTablet(newPartTabletMap);
+        }
+        tableEntry.setPartitionEntry(obPartitionEntry);
     }
 
     private static String genLocationSQLByOffset(TableEntry tableEntry, int offset, int size) {
@@ -885,7 +892,7 @@ public class LocationUtil {
     }
 
     /*
-     * Get table entry location from remote.
+     * Get tablets' locations from remote, at most 300 tablets on default, controlled by MAX_TABLET_NUMS_EPOCH.
      */
     public static TableEntry getTableEntryLocationFromRemote(Connection connection,
                                                              TableEntryKey key,
@@ -914,6 +921,11 @@ public class LocationUtil {
                 RUNTIME.error(LCD.convert("01-00010"), key, partitionNum, tableEntry, e);
                 throw new ObTableEntryRefreshException(
                     "fail to get partition location entry from remote", e, true);
+            } catch (ObTableSchemaVersionMismatchException e) {
+                RUNTIME.error(
+                    "schema version mismatched, tableEntry's schema_version: {}, tableName: {}",
+                    tableEntry.getSchemaVersion(), key.getTableName());
+                throw e;
             } catch (Exception e) {
                 RUNTIME.error(LCD.convert("01-00010"), key, partitionNum, tableEntry, e);
                 throw new ObTablePartitionLocationRefreshException(format(
@@ -1292,9 +1304,8 @@ public class LocationUtil {
             }
             location.addReplicaLocation(replica);
 
-            if (location.getLeader() != null
-                && partitionLocationInfo.initialized.compareAndSet(false, true)) {
-                partitionLocationInfo.initializationLatch.countDown();
+            if (location.getLeader() != null) {
+                partitionLocationInfo.initialized.compareAndSet(false, true);
             } else if (rs.isLast() && location.getLeader() == null) {
                 partitionLocationInfo.initializationLatch.countDown();
                 RUNTIME.error(LCD.convert("01-00028"), partitionId, partitionEntry, tableEntry);
@@ -1306,10 +1317,14 @@ public class LocationUtil {
                     partitionId, partitionEntry, tableEntry));
             }
         }
+        partitionLocationInfo.initializationLatch.countDown();
 
         return partitionEntry;
     }
 
+    /**
+     * get all tablets' locations from the tableEntry
+     * */
     private static ObPartitionEntry getPartitionLocationFromResultSet(TableEntry tableEntry,
                                                                       ResultSet rs,
                                                                       ObPartitionEntry partitionEntry)
@@ -1319,9 +1334,17 @@ public class LocationUtil {
             throw new IllegalArgumentException("partitionEntry: " + partitionEntry
                                                + " tableEntry: " + tableEntry);
         }
-        Map<Long, ObPartitionLocation> partitionLocation = partitionEntry.getPartitionLocation();
+        long schemaVersion = tableEntry.getSchemaVersion();
         Map<Long, Long> tabletLsIdMap = partitionEntry.getTabletLsIdMap();
         while (rs.next()) {
+            if (ObGlobal.isSchemaVersionSupport()) {
+                long curSchemaVersion = rs.getLong("schema_version");
+                if (schemaVersion != curSchemaVersion) {
+                    throw new ObTableSchemaVersionMismatchException(
+                        "Schema version mismatched, need to retry, tableName: { "
+                                + tableEntry.getTableEntryKey().getTableName() + " }.");
+                }
+            }
             ReplicaLocation replica = buildReplicaLocation(rs);
             long partitionId;
             partitionId = rs.getLong("tablet_id");
