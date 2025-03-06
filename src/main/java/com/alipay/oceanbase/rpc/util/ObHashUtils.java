@@ -132,7 +132,7 @@ public class ObHashUtils {
             }
         } else if (ObTimestampType.getValue() == typeValue) {
             return ObHashUtils.timeStampHash((Timestamp) value, hashCode);
-        } else if (ObDateTimeType.getValue() == typeValue) {
+        } else if (ObDateTimeType.getValue() == typeValue || ObMySQLDateTimeType.getValue() == typeValue) {
             return ObHashUtils.dateTimeHash((java.util.Date) value, hashCode);
         } else if (ObDateType.getValue() == typeValue) {
             return ObHashUtils.dateHash((Date) value, hashCode);

@@ -178,10 +178,13 @@ public class ObTableSingleOp extends AbstractPayload {
 
     public List<String> getRowKeyNames() {
         List<String> rowKeyNames;
-        if (singleOpType == ObTableOperationType.SCAN || singleOpType == ObTableOperationType.CHECK_AND_INSERT_UP) {
+        if (singleOpType == ObTableOperationType.SCAN) {
             throw new IllegalArgumentException("can not get rowKey name from this type of operations, type: " + singleOpType);
+        } else if (singleOpType == ObTableOperationType.CHECK_AND_INSERT_UP) {
+            rowKeyNames = query.getScanRangeColumns();
+        } else {
+            rowKeyNames = entities.get(0).getRowKeyNames();
         }
-        rowKeyNames = entities.get(0).getRowKeyNames();
         return rowKeyNames;
     }
 }

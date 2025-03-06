@@ -1689,7 +1689,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                     .setFilter(compareVal(ObCompareOp.EQ, "c4", 200L)).execute();
             } catch (Exception e) {
                 Assert.assertTrue(e instanceof ObTableException);
-                Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
+                Assert.assertEquals(ResultCodes.OB_KV_COLUMN_TYPE_NOT_MATCH.errorCode,
                     ((ObTableException) e).getErrorCode());
             }
 

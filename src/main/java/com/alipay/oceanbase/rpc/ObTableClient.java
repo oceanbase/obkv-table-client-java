@@ -543,11 +543,19 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             throw ex;
                         }
                     } else {
-                        String logMessage = String.format(
-                                "exhaust retry while meet NeedRefresh Exception, table name: %s, batch ops refresh table, errorCode: %d",
-                                tableName,
-                                ((ObTableException) ex).getErrorCode()
-                        );
+                        String logMessage;
+                        if (ex instanceof ObTableException) {
+                            logMessage = String.format(
+                                    "exhaust retry while meet Exception, table name: %s, batch ops refresh table, errorCode: %d",
+                                    tableName,
+                                    ((ObTableException) ex).getErrorCode()
+                            );
+                        } else {
+                            logMessage = String.format(
+                                    "exhaust retry while meet Exception, table name: %s, batch ops refresh table",
+                                    tableName
+                            );
+                        }
                         logger.warn(logMessage, ex);
                         calculateContinuousFailure(tableName, ex.getMessage());
                         throw ex;
@@ -701,6 +709,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         }
                     } else if (ex instanceof ObTableException
                             && (((ObTableException) ex).isNeedRefreshTableEntry() || ((ObTableException) ex).isNeedRetryServerError())) {
+                        if (ex instanceof ObTableNotExistException) {
+                            String logMessage = String.format(
+                                    "exhaust retry while meet TableNotExist Exception, table name: %s, errorCode: %d",
+                                    tableName,
+                                    ((ObTableException) ex).getErrorCode()
+                            );
+                            logger.warn(logMessage, ex);
+                            throw ex;
+                        }
                         if (retryOnChangeMasterTimes) {
                             if (ex instanceof ObTableNeedFetchMetaException) {
                                 tableRoute.refreshMeta(tableName);
@@ -726,8 +743,21 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             throw new ObTableRetryExhaustedException(logMessage, ex);
                         }
                     } else {
+                        String logMessage;
+                        if (ex instanceof ObTableException) {
+                            logMessage = String.format(
+                                    "exhaust retry while meet Exception, table name: %s, batch ops refresh table, errorCode: %d",
+                                    tableName,
+                                    ((ObTableException) ex).getErrorCode()
+                            );
+                        } else {
+                            logMessage = String.format(
+                                    "exhaust retry while meet Exception, table name: %s, batch ops refresh table",
+                                    tableName
+                            );
+                        }
+                        logger.warn(logMessage, ex);
                         calculateContinuousFailure(tableName, ex.getMessage());
-                        RUNTIME.error("execute while meet exception", ex);
                         throw ex;
                     }
                 }
