@@ -107,7 +107,7 @@ public class TableRoute {
      * get ODP ObTable Connection
      * */
     public ObTable getOdpTable() {
-        return odpInfo.getObTable();
+        return odpInfo == null ? null : odpInfo.getObTable();
     }
 
     /**
