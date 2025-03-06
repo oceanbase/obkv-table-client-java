@@ -130,21 +130,24 @@ public class ObHTableFilter extends AbstractPayload {
      */
     @Override
     public long getPayloadContentSize() {
-        long contentSize = 0;
-        contentSize += 1; // isValid
+        if (this.payLoadContentSize == -1) {
+            long contentSize = 0;
+            contentSize += 1; // isValid
 
-        contentSize += Serialization.getNeedBytes(selectColumnQualifier.size());
-        for (ObBytesString q : selectColumnQualifier) {
-            contentSize += Serialization.getNeedBytes(q);
+            contentSize += Serialization.getNeedBytes(selectColumnQualifier.size());
+            for (ObBytesString q : selectColumnQualifier) {
+                contentSize += Serialization.getNeedBytes(q);
+            }
+
+            contentSize += Serialization.getNeedBytes(minStamp);
+            contentSize += Serialization.getNeedBytes(maxStamp);
+            contentSize += Serialization.getNeedBytes(maxVersions);
+            contentSize += Serialization.getNeedBytes(limitPerRowPerCf);
+            contentSize += Serialization.getNeedBytes(offsetPerRowPerCf);
+            contentSize += Serialization.getNeedBytes(filterString);
+            this.payLoadContentSize = contentSize;
         }
-
-        contentSize += Serialization.getNeedBytes(minStamp);
-        contentSize += Serialization.getNeedBytes(maxStamp);
-        contentSize += Serialization.getNeedBytes(maxVersions);
-        contentSize += Serialization.getNeedBytes(limitPerRowPerCf);
-        contentSize += Serialization.getNeedBytes(offsetPerRowPerCf);
-        contentSize += Serialization.getNeedBytes(filterString);
-        return contentSize;
+        return this.payLoadContentSize;
     }
 
     /*

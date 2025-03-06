@@ -162,29 +162,32 @@ public class ObTableSingleOpEntity extends AbstractPayload {
      */
     @Override
     public long getPayloadContentSize() {
-        long payloadContentSize = 0;
+        if (this.payLoadContentSize == -1) {
+            long payloadContentSize = 0;
 
-        payloadContentSize += Serialization.getNeedBytes(rowKeyBitLen);
-        payloadContentSize += rowKeyBitMap.length;
+            payloadContentSize += Serialization.getNeedBytes(rowKeyBitLen);
+            payloadContentSize += rowKeyBitMap.length;
 
-        payloadContentSize += Serialization.getNeedBytes(rowkey.size());
-        for (ObObj obj : rowkey) {
-            payloadContentSize += ObTableSerialUtil.getEncodedSize(obj);
+            payloadContentSize += Serialization.getNeedBytes(rowkey.size());
+            for (ObObj obj : rowkey) {
+                payloadContentSize += ObTableSerialUtil.getEncodedSize(obj);
+            }
+
+            if (ignoreEncodePropertiesColumnNames) {
+                payloadContentSize += Serialization.getNeedBytes(0L);
+            } else {
+                payloadContentSize += Serialization.getNeedBytes(propertiesBitLen);
+                payloadContentSize += propertiesBitMap.length;
+            }
+
+            payloadContentSize += Serialization.getNeedBytes(propertiesValues.size());
+            for (ObObj obj : propertiesValues) {
+                payloadContentSize += ObTableSerialUtil.getEncodedSize(obj);
+            }
+            this.payLoadContentSize = payloadContentSize;
         }
 
-        if (ignoreEncodePropertiesColumnNames) {
-            payloadContentSize += Serialization.getNeedBytes(0L);
-        } else {
-            payloadContentSize += Serialization.getNeedBytes(propertiesBitLen);
-            payloadContentSize += propertiesBitMap.length;
-        }
-
-        payloadContentSize += Serialization.getNeedBytes(propertiesValues.size());
-        for (ObObj obj : propertiesValues) {
-            payloadContentSize += ObTableSerialUtil.getEncodedSize(obj);
-        }
-
-        return payloadContentSize;
+        return this.payLoadContentSize;
     }
 
     public static boolean areArraysSameLengthOrBothNull(Object[] a, Object[] b) {
