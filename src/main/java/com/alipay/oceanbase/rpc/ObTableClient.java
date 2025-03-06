@@ -828,11 +828,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     public void setRpcExecuteTimeout(int rpcExecuteTimeout) {
         this.properties.put(RPC_EXECUTE_TIMEOUT.getKey(), String.valueOf(rpcExecuteTimeout));
         this.rpcExecuteTimeout = rpcExecuteTimeout;
-        ConcurrentHashMap<ObServerAddr, ObTable> tableRoster = tableRoute.getTableRoster().getTables();
-        if (null != tableRoster) {
-            for (ObTable obTable : tableRoster.values()) {
-                if (obTable != null) {
-                    obTable.setObTableExecuteTimeout(rpcExecuteTimeout);
+        if (tableRoute != null) {
+            ConcurrentHashMap<ObServerAddr, ObTable> tableRoster = tableRoute.getTableRoster().getTables();
+            if (null != tableRoster) {
+                for (ObTable obTable : tableRoster.values()) {
+                    if (obTable != null) {
+                        obTable.setObTableExecuteTimeout(rpcExecuteTimeout);
+                    }
                 }
             }
         }

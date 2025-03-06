@@ -710,20 +710,31 @@ public class LocationUtil {
                         if (tableEntry.getPartitionNum() <= TABLE_ENTRY_LOCATION_REFRESH_THRESHOLD) {
                             getTableEntryLocationFromRemote(connection, key, tableEntry);
                         } else {
+                            // TODO: get all replica for all tablets
+                            ObPartitionEntry obPartitionEntry = null;
                             if (oldTableEntry != null) {
-                                // set existing partitionEntry
-                                // and check partitionEntry to remove nonexistent tablet pairs
-                                Map<Long, Long> partTabletMap = tableEntry.getPartitionInfo()
+                                Map<Long, Long> newPartTabletMap = tableEntry.getPartitionInfo()
                                     .getPartTabletIdMap();
-                                ObPartitionEntry obPartitionEntry = oldTableEntry
-                                    .getPartitionEntry();
-                                obPartitionEntry.removeNonExistentTablet(partTabletMap);
-                                tableEntry.setPartitionEntry(obPartitionEntry);
+                                // if the old table is non-partitioned table
+                                if (newPartTabletMap == null) {
+                                    // set the old partitionEntry if current table is non-partitioned table
+                                    if (!tableEntry.isPartitionTable()) {
+                                        obPartitionEntry = oldTableEntry.getPartitionEntry();
+                                    } else {
+                                        // set a new partitionEntry if current table is partitioned table
+                                        obPartitionEntry = new ObPartitionEntry();
+                                    }
+                                } else {
+                                    // set existing partitionEntry
+                                    // and check partitionEntry to remove nonexistent tablet pairs
+                                    obPartitionEntry = oldTableEntry.getPartitionEntry();
+                                    obPartitionEntry.removeNonExistentTablet(newPartTabletMap);
+                                }
                             } else {
                                 // only set empty partitionEntry
-                                ObPartitionEntry partitionEntry = new ObPartitionEntry();
-                                tableEntry.setPartitionEntry(partitionEntry);
+                                obPartitionEntry = new ObPartitionEntry();
                             }
+                            tableEntry.setPartitionEntry(obPartitionEntry);
                         }
                         tableEntry.setRefreshMetaTimeMills(System.currentTimeMillis());
 
