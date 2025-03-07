@@ -657,6 +657,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObTableParam tableParam = null;
             try {
                 if (odpMode) {
+                    if (null == callback.getRowKey() && null == callback.getQuery()) {
+                        throw new ObTableException("RowKey or scan range is null");
+                    }
                     ObTable odpTable = tableRoute.getOdpTable();
                     tableParam = new ObTableParam(odpTable);
                 } else {
