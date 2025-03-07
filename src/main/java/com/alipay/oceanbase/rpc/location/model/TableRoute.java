@@ -252,57 +252,6 @@ public class TableRoute {
         routeRefresher.start();
     }
 
-    public String getIndexTableName(final String tableName, final String indexName,
-                                    List<String> scanRangeColumns, boolean forceRefreshIndexInfo)
-                                                                                                 throws Exception {
-        String indexTableName = tableName;
-        if (indexName != null && !indexName.isEmpty() && !indexName.equalsIgnoreCase("PRIMARY")) {
-            String tmpTableName = constructIndexTableName(tableName, indexName);
-            if (tmpTableName == null) {
-                throw new ObTableException("index table name is null");
-            }
-            ObIndexInfo indexInfo = indexLocations.getOrRefreshIndexInfo(tmpTableName,
-                forceRefreshIndexInfo, serverRoster, sysUA);
-            if (indexInfo == null) {
-                throw new ObTableException("index info is null, indexTableName:" + tmpTableName);
-            }
-            if (indexInfo.getIndexType().isGlobalIndex()) {
-                indexTableName = tmpTableName;
-                if (scanRangeColumns.isEmpty()) {
-                    throw new ObTableException(
-                        "query by global index need add all index keys in order, indexTableName:"
-                                + indexTableName);
-                } else {
-                    tableClient.addRowKeyElement(indexTableName,
-                        scanRangeColumns.toArray(new String[scanRangeColumns.size()]));
-                }
-            }
-        }
-        return indexTableName;
-    }
-
-    public String constructIndexTableName(String tableName, String indexName) throws Exception {
-        // construct index table name
-        TableEntry entry = getTableEntry(tableName);
-        Long dataTableId = null;
-        try {
-            if (entry == null) {
-                ObServerAddr addr = serverRoster.getServer(tableClient
-                    .getServerAddressPriorityTimeout());
-                dataTableId = getTableIdFromRemote(addr, sysUA,
-                    tableClient.getTableEntryAcquireConnectTimeout(),
-                    tableClient.getTableEntryAcquireSocketTimeout(), tableClient.getTenantName(),
-                    tableClient.getDatabase(), tableName);
-            } else {
-                dataTableId = entry.getTableId();
-            }
-        } catch (Exception e) {
-            RUNTIME.error("get index table name exception", e);
-            throw e;
-        }
-        return "__idx_" + dataTableId + "_" + indexName;
-    }
-
     /**
      * refresh all ob server synchronized just in case rslist has changed, it will not refresh if last refresh time is 1 min ago
      * @param forceRenew flag to force refresh the rsList if changes happen
@@ -405,6 +354,60 @@ public class TableRoute {
     }
 
     /*------------------------------------------------------------------------Single Operation Routing------------------------------------------------------------------------*/
+
+    /**
+     * get global index table name by the index and the table name
+     * */
+    public String getIndexTableName(final String tableName, final String indexName,
+                                    List<String> scanRangeColumns, boolean forceRefreshIndexInfo)
+                                                                                                 throws Exception {
+        String indexTableName = tableName;
+        if (indexName != null && !indexName.isEmpty() && !indexName.equalsIgnoreCase("PRIMARY")) {
+            String tmpTableName = constructIndexTableName(tableName, indexName);
+            if (tmpTableName == null) {
+                throw new ObTableException("index table name is null");
+            }
+            ObIndexInfo indexInfo = indexLocations.getOrRefreshIndexInfo(tmpTableName,
+                forceRefreshIndexInfo, serverRoster, sysUA);
+            if (indexInfo == null) {
+                throw new ObTableException("index info is null, indexTableName:" + tmpTableName);
+            }
+            if (indexInfo.getIndexType().isGlobalIndex()) {
+                indexTableName = tmpTableName;
+                if (scanRangeColumns.isEmpty()) {
+                    throw new ObTableException(
+                        "query by global index need add all index keys in order, indexTableName:"
+                                + indexTableName);
+                } else {
+                    tableClient.addRowKeyElement(indexTableName,
+                        scanRangeColumns.toArray(new String[scanRangeColumns.size()]));
+                }
+            }
+        }
+        return indexTableName;
+    }
+
+    private String constructIndexTableName(String tableName, String indexName) throws Exception {
+        // construct index table name
+        TableEntry entry = getTableEntry(tableName);
+        Long dataTableId = null;
+        try {
+            if (entry == null) {
+                ObServerAddr addr = serverRoster.getServer(tableClient
+                    .getServerAddressPriorityTimeout());
+                dataTableId = getTableIdFromRemote(addr, sysUA,
+                    tableClient.getTableEntryAcquireConnectTimeout(),
+                    tableClient.getTableEntryAcquireSocketTimeout(), tableClient.getTenantName(),
+                    tableClient.getDatabase(), tableName);
+            } else {
+                dataTableId = entry.getTableId();
+            }
+        } catch (Exception e) {
+            RUNTIME.error("get index table name exception", e);
+            throw e;
+        }
+        return "__idx_" + dataTableId + "_" + indexName;
+    }
 
     /**
      * refresh the specific table's tablet meta information,
@@ -618,7 +621,7 @@ public class TableRoute {
             if (logger.isInfoEnabled()) {
                 logger.info("Cannot get ObTable by addr {}, refreshing metadata.", addr);
             }
-            // refresh tablet location based on the latest roster, in case that some of the observers hase been killed
+            // refresh tablet location based on the latest roster, in case that some of the observers have been killed
             // and used the old location
             tableEntry = tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
                 serverRoster, sysUA);

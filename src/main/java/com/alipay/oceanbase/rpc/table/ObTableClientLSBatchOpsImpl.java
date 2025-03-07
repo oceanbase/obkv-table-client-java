@@ -603,7 +603,25 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                             }
                         } else {
                             String logMessage = String.format(
-                                    "exhaust retry while meet NeedRefresh Exception, table name: %s, ls id: %d, batch ops refresh table, retry times: %d, errorCode: %d",
+                                    "retry is disabled while meet NeedRefresh Exception, table name: %s, ls id: %d, batch ops refresh table, retry times: %d, errorCode: %d",
+                                    realTableName,
+                                    lsId,
+                                    obTableClient.getRuntimeRetryTimes(),
+                                    ((ObTableException) ex).getErrorCode()
+                            );
+                            logger.warn(logMessage, ex);
+                            obTableClient.calculateContinuousFailure(realTableName, ex.getMessage());
+                            throw new ObTableRetryExhaustedException(logMessage, ex);
+                        }
+                    } else if (((ObTableException) ex).isNeedRetryServerError()) {
+                        if (obTableClient.isRetryOnChangeMasterTimes()) {
+                            logger.warn(
+                                    "execute while meet server error, need to retry, errorCode: {}, ls id: {}, errorMsg: {}, try times {}",
+                                    ((ObTableException) ex).getErrorCode(), lsId, ex.getMessage(),
+                                    tryTimes);
+                        } else {
+                            String logMessage = String.format(
+                                    "retry is disabled while meet NeedRefresh Exception, table name: %s, ls id: %d, batch ops refresh table, retry times: %d, errorCode: %d",
                                     realTableName,
                                     lsId,
                                     obTableClient.getRuntimeRetryTimes(),

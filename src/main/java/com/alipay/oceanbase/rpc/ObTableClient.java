@@ -532,7 +532,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                         "execute while meet server error, need to retry, errorCode: {} , errorMsg: {}, try times {}",
                                         ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                         tryTimes);
-                                calculateContinuousFailure(tableName, ex.getMessage());
                             }
                         } else {
                             String logMessage = String.format(
@@ -736,7 +735,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                         "execute while meet server error, need to retry, errorCode: {} , errorMsg: {}, try times {}",
                                         ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                         tryTimes);
-                                calculateContinuousFailure(tableName, ex.getMessage());
                             }
                         } else {
                             String logMessage = String.format(

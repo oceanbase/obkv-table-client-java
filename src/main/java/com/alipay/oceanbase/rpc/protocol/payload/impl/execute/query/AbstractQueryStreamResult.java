@@ -239,7 +239,23 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                             } else {
                                 String logMessage = String
                                     .format(
-                                        "exhaust retry while meet NeedRefresh Exception, table name: %s, batch ops refresh table, errorCode: %d",
+                                        "retry is disabled while meet NeedRefresh Exception, table name: %s, errorCode: %d",
+                                        indexTableName, ((ObTableException) e).getErrorCode());
+                                logger.warn(logMessage, e);
+                                client.calculateContinuousFailure(indexTableName, e.getMessage());
+                                throw new ObTableRetryExhaustedException(logMessage, e);
+                            }
+                        } else if (((ObTableException) e).isNeedRetryServerError()) {
+                            if (client.isRetryOnChangeMasterTimes()) {
+                                logger
+                                    .warn(
+                                        "execute while meet server error, need to retry, errorCode: {}, tableName: {}, errorMsg: {}, try times {}",
+                                        ((ObTableException) e).getErrorCode(), indexTableName,
+                                        e.getMessage(), tryTimes);
+                            } else {
+                                String logMessage = String
+                                    .format(
+                                        "retry is disabled while meet NeedRefresh Exception, table name: %s, errorCode: %d",
                                         indexTableName, ((ObTableException) e).getErrorCode());
                                 logger.warn(logMessage, e);
                                 client.calculateContinuousFailure(indexTableName, e.getMessage());

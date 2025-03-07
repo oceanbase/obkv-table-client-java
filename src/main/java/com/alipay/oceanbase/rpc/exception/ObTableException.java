@@ -86,18 +86,10 @@ public class ObTableException extends RuntimeException {
     }
 
     public boolean isNeedRetryServerError() {
-        checkIfNeedRetry();
-        return needRetryServerError;
-    }
-
-    private void checkIfNeedRetry() {
-        if (errorCode == -1) {
-            return;
-        }
-        needRetryServerError = errorCode == ResultCodes.OB_TRY_LOCK_ROW_CONFLICT.errorCode
-                               || errorCode == ResultCodes.OB_TRANSACTION_SET_VIOLATION.errorCode
-                               || errorCode == ResultCodes.OB_SCHEMA_EAGAIN.errorCode
-                               || errorCode == ResultCodes.OB_TIMEOUT.errorCode;
+        return errorCode == ResultCodes.OB_TRY_LOCK_ROW_CONFLICT.errorCode
+               || errorCode == ResultCodes.OB_TRANSACTION_SET_VIOLATION.errorCode
+               || errorCode == ResultCodes.OB_SCHEMA_EAGAIN.errorCode
+               || errorCode == ResultCodes.OB_TIMEOUT.errorCode;
     }
 
 }
