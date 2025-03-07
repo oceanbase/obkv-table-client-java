@@ -382,15 +382,9 @@ public enum ObTableObjType {
     }
 
     public int getEncodedSizeWithMeta(ObObj obj) {
-        int encodeSize = 0;
-        if (obj.getEncodeSizeCache() == -1) {
-            ObObjType objType = obj.getMeta().getType();
-            encodeSize = DEFAULT_TABLE_OBJ_META_SIZE + objType.getEncodedSize(obj.getValue());
-            obj.setEncodeSizeCache(encodeSize);
-        } else {
-            encodeSize = obj.getEncodeSizeCache();
-        }
-        return encodeSize;
+        ObObjType objType = getObjType(this);
+        int len = DEFAULT_TABLE_OBJ_META_SIZE + objType.getEncodedSize(obj.getValue());
+        return len;
     }
 
     public void decodeWithUtf8(ByteBuf buf, ObObj obj) {
