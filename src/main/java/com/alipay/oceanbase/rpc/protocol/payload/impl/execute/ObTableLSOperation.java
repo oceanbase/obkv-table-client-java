@@ -47,6 +47,7 @@ public class ObTableLSOperation extends AbstractPayload {
 
     private static final int      LS_ID_SIZE       = 8;
     private static final long     INVALID_LS_ID    = -1;
+    private boolean isHbase = false;
 
     /*
     OB_UNIS_DEF_SERIALIZE(ObTableLSOp,
@@ -131,18 +132,25 @@ public class ObTableLSOperation extends AbstractPayload {
 
         // 3. encode table id
         Serialization.encodeVi64(buf, tableId);
+        if (isHbase) {
+            buf.writeBytes(StaticHbaseColumns.RowkeyColumSize);
+            buf.writeBytes(StaticHbaseColumns.getKQTBytes());
+            buf.writeBytes(StaticHbaseColumns.VColumSize);
+            buf.writeBytes(StaticHbaseColumns.getVBytes());
+        } else {
+            // 4. encode rowKey names
+            Serialization.encodeVi64(buf, rowKeyNames.size());
+            for (String rowKeyName : rowKeyNames) {
+                Serialization.encodeVString(buf, rowKeyName);
+            }
 
-        // 4. encode rowKey names
-        Serialization.encodeVi64(buf, rowKeyNames.size());
-        for (String rowKeyName : rowKeyNames) {
-            Serialization.encodeVString(buf, rowKeyName);
+            // 5. encode properties names
+            Serialization.encodeVi64(buf, propertiesNames.size());
+            for (String propertyName : propertiesNames) {
+                Serialization.encodeVString(buf, propertyName);
+            }
         }
 
-        // 5. encode properties names
-        Serialization.encodeVi64(buf, propertiesNames.size());
-        for (String propertyName : propertiesNames) {
-            Serialization.encodeVString(buf, propertyName);
-        }
 
         // 6. encode option flag
         Serialization.encodeVi64(buf, optionFlag.getValue());
@@ -212,16 +220,23 @@ public class ObTableLSOperation extends AbstractPayload {
             for (ObTableTabletOp operation : tabletOperations) {
                 payloadContentSize += operation.getPayloadSize();
             }
+            if (isHbase) {
+                payloadContentSize += StaticHbaseColumns.RowkeyColumSize.length;
+                payloadContentSize += StaticHbaseColumns.getKQTBytes().length;
+                payloadContentSize += StaticHbaseColumns.VColumSize.length;
+                payloadContentSize += StaticHbaseColumns.getVBytes().length;
+            } else {
+                payloadContentSize += Serialization.getNeedBytes(rowKeyNames.size());
+                for (String rowKeyName : rowKeyNames) {
+                    payloadContentSize += Serialization.getNeedBytes(rowKeyName);
+                }
 
-            payloadContentSize += Serialization.getNeedBytes(rowKeyNames.size());
-            for (String rowKeyName : rowKeyNames) {
-                payloadContentSize += Serialization.getNeedBytes(rowKeyName);
+                payloadContentSize += Serialization.getNeedBytes(propertiesNames.size());
+                for (String propertyName : propertiesNames) {
+                    payloadContentSize += Serialization.getNeedBytes(propertyName);
+                }
             }
 
-            payloadContentSize += Serialization.getNeedBytes(propertiesNames.size());
-            for (String propertyName : propertiesNames) {
-                payloadContentSize += Serialization.getNeedBytes(propertyName);
-            }
 
             this.payLoadContentSize = payloadContentSize + LS_ID_SIZE + Serialization.getNeedBytes(optionFlag.getValue())
                     +  Serialization.getNeedBytes(tableName) + Serialization.getNeedBytes(tableId);
@@ -368,10 +383,18 @@ public class ObTableLSOperation extends AbstractPayload {
     }
 
     public void prepare() {
-        this.collectColumnNamesIdxMap();
-        this.beforeOption();
-        this.prepareOption();
-        this.prepareColumnNamesBitMap();
+        if (isHbase) {
+            this.rowKeyNames.add("K");
+            this.rowKeyNames.add("Q");
+            this.rowKeyNames.add("T");
+            this.propertiesNames.add("V");
+            this.setIsSamePropertiesNames(true);
+        } else {
+            this.collectColumnNamesIdxMap();
+            this.beforeOption();
+            this.prepareOption();
+            this.prepareColumnNamesBitMap();
+        }
     }
 
     public long getLsId() {
@@ -380,6 +403,14 @@ public class ObTableLSOperation extends AbstractPayload {
 
     public void setTableName(String tableName) {
         this.tableName = tableName;
+    }
+
+    public boolean isHbase() {
+        return isHbase;
+    }
+
+    public void setHbase(boolean hbase) {
+        isHbase = hbase;
     }
 
 }

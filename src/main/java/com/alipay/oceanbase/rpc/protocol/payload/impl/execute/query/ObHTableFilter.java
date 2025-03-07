@@ -105,22 +105,26 @@ public class ObHTableFilter extends AbstractPayload {
     public void encode(ObByteBuf buf) {
         // 0. encode header
         encodeObUniVersionHeader(buf, getVersion(), getPayloadContentSize());
+        if (!isValid) {
+            Serialization.encodeI8(buf, (byte) 0);
+            byte[] dummy = new byte[20];
+            buf.writeBytes(dummy);
+        } else {
+            // 1. encode
+            Serialization.encodeI8(buf, isValid ? (byte) 1 : (byte) 0);
+            Serialization.encodeVi64(buf, selectColumnQualifier.size());
 
-        // 1. encode
-        Serialization.encodeI8(buf, isValid ? (byte) 1 : (byte) 0);
+            for (ObBytesString q : selectColumnQualifier) {
+                Serialization.encodeBytesString(buf, q);
+            }
 
-        Serialization.encodeVi64(buf, selectColumnQualifier.size());
-
-        for (ObBytesString q : selectColumnQualifier) {
-            Serialization.encodeBytesString(buf, q);
+            Serialization.encodeVi64(buf, minStamp);
+            Serialization.encodeVi64(buf, maxStamp);
+            Serialization.encodeVi32(buf, maxVersions);
+            Serialization.encodeVi32(buf, limitPerRowPerCf);
+            Serialization.encodeVi32(buf, offsetPerRowPerCf);
+            Serialization.encodeBytesString(buf, filterString);
         }
-
-        Serialization.encodeVi64(buf, minStamp);
-        Serialization.encodeVi64(buf, maxStamp);
-        Serialization.encodeVi32(buf, maxVersions);
-        Serialization.encodeVi32(buf, limitPerRowPerCf);
-        Serialization.encodeVi32(buf, offsetPerRowPerCf);
-        Serialization.encodeBytesString(buf, filterString);
     }
 
     /*
@@ -155,18 +159,20 @@ public class ObHTableFilter extends AbstractPayload {
         if (this.payLoadContentSize == -1) {
             long contentSize = 0;
             contentSize += 1; // isValid
-
-            contentSize += Serialization.getNeedBytes(selectColumnQualifier.size());
-            for (ObBytesString q : selectColumnQualifier) {
-                contentSize += Serialization.getNeedBytes(q);
+            if (!isValid) {
+                contentSize += 20; // dummy
+            } else {
+                contentSize += Serialization.getNeedBytes(selectColumnQualifier.size()); // 1
+                for (ObBytesString q : selectColumnQualifier) {
+                    contentSize += Serialization.getNeedBytes(q);
+                }
+                contentSize += Serialization.getNeedBytes(minStamp); // 1
+                contentSize += Serialization.getNeedBytes(maxStamp); // 9
+                contentSize += Serialization.getNeedBytes(maxVersions); // 1
+                contentSize += Serialization.getNeedBytes(limitPerRowPerCf); // 5
+                contentSize += Serialization.getNeedBytes(offsetPerRowPerCf); // 1
+                contentSize += Serialization.getNeedBytes(filterString); // 2
             }
-
-            contentSize += Serialization.getNeedBytes(minStamp);
-            contentSize += Serialization.getNeedBytes(maxStamp);
-            contentSize += Serialization.getNeedBytes(maxVersions);
-            contentSize += Serialization.getNeedBytes(limitPerRowPerCf);
-            contentSize += Serialization.getNeedBytes(offsetPerRowPerCf);
-            contentSize += Serialization.getNeedBytes(filterString);
             this.payLoadContentSize = contentSize;
         }
         return this.payLoadContentSize;

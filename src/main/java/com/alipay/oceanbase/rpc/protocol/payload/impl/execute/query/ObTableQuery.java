@@ -153,90 +153,89 @@ public class ObTableQuery extends AbstractPayload {
         int idx = 0;
 
         // 0. encode header
-        int headerLen = (int) getObUniVersionHeaderLength(getVersion(), getPayloadContentSize());
-        System.arraycopy(encodeObUniVersionHeader(getVersion(), getPayloadContentSize()), 0, bytes,
-            idx, headerLen);
-        idx += headerLen;
+        byte[] headerBytes = encodeObUniVersionHeader(getVersion(), getPayloadContentSize());
+        System.arraycopy(headerBytes, 0, bytes,
+            idx, headerBytes.length);
+        idx += headerBytes.length;
 
         // 1. encode
-        int len = Serialization.getNeedBytes(keyRanges.size());
-        System.arraycopy(Serialization.encodeVi64(keyRanges.size()), 0, bytes, idx, len);
-        idx += len;
+        byte[] keyRangesByte = Serialization.encodeVi64(keyRanges.size());
+        System.arraycopy(keyRangesByte, 0, bytes, idx, keyRangesByte.length);
+        idx += keyRangesByte.length;
         for (ObNewRange keyRange : keyRanges) {
-            len = keyRange.getEncodedSize();
-            System.arraycopy(keyRange.encode(), 0, bytes, idx, len);
-            idx += len;
+            byte[] keyRangeBytes = keyRange.encode();
+            System.arraycopy(keyRangeBytes, 0, bytes, idx, keyRangeBytes.length);
+            idx += keyRangeBytes.length;
         }
 
-        len = Serialization.getNeedBytes(selectColumns.size());
-        System.arraycopy(Serialization.encodeVi64(selectColumns.size()), 0, bytes, idx, len);
-        idx += len;
+        byte[] selectColumnsBytes = Serialization.encodeVi64(selectColumns.size());
+        System.arraycopy(selectColumnsBytes, 0, bytes, idx, selectColumnsBytes.length);
+        idx += selectColumnsBytes.length;
         for (String selectColumn : selectColumns) {
-            len = Serialization.getNeedBytes(selectColumn);
-            System.arraycopy(Serialization.encodeVString(selectColumn), 0, bytes, idx, len);
-            idx += len;
+            byte[] selectColumnBytes = Serialization.encodeVString(selectColumn);
+            System.arraycopy(selectColumnBytes, 0, bytes, idx, selectColumnBytes.length);
+            idx += selectColumnBytes.length;
         }
 
-        len = Serialization.getNeedBytes(filterString);
-        System.arraycopy(Serialization.encodeVString(filterString), 0, bytes, idx, len);
-        idx += len;
+        byte[] filterStringBytes = Serialization.encodeVString(filterString);
+        System.arraycopy(filterStringBytes, 0, bytes, idx, filterStringBytes.length);
+        idx += filterStringBytes.length;
 
-        len = Serialization.getNeedBytes(limit);
-        System.arraycopy(Serialization.encodeVi32(limit), 0, bytes, idx, len);
-        idx += len;
-        len = Serialization.getNeedBytes(offset);
-        System.arraycopy(Serialization.encodeVi32(offset), 0, bytes, idx, len);
-        idx += len;
+        byte[] limitBytes = Serialization.encodeVi32(limit);
+        System.arraycopy(limitBytes, 0, bytes, idx, limitBytes.length);
+        idx += limitBytes.length;
+        byte[] offsetBytes = Serialization.encodeVi32(offset);
+        System.arraycopy(offsetBytes, 0, bytes, idx, offsetBytes.length);
+        idx += offsetBytes.length;
         System.arraycopy(Serialization.encodeI8(scanOrder.getByteValue()), 0, bytes, idx, 1);
         idx += 1;
 
-        len = Serialization.getNeedBytes(indexName);
-        System.arraycopy(Serialization.encodeVString(indexName), 0, bytes, idx, len);
-        idx += len;
+        byte[] indexNameBytes = Serialization.encodeVString(indexName);
+        System.arraycopy(indexNameBytes, 0, bytes, idx, indexNameBytes.length);
+        idx += indexNameBytes.length;
 
-        len = Serialization.getNeedBytes(batchSize);
-        System.arraycopy(Serialization.encodeVi32(batchSize), 0, bytes, idx, len);
-        idx += len;
-        len = Serialization.getNeedBytes(maxResultSize);
-        System.arraycopy(Serialization.encodeVi64(maxResultSize), 0, bytes, idx, len);
-        idx += len;
+        byte[] batchSizeBytes = Serialization.encodeVi32(batchSize);
+        System.arraycopy(batchSizeBytes, 0, bytes, idx, batchSizeBytes.length);
+        idx += batchSizeBytes.length;
+        byte[] maxResultSizeBytes = Serialization.encodeVi64(maxResultSize);
+        System.arraycopy(maxResultSizeBytes, 0, bytes, idx, maxResultSizeBytes.length);
+        idx += maxResultSizeBytes.length;
 
         if (isHbaseQuery) {
-            len = (int) hTableFilter.getPayloadSize();
-            System.arraycopy(hTableFilter.encode(), 0, bytes, idx, len);
+            byte[] hTableFilterBytes = hTableFilter.encode();
+            System.arraycopy(hTableFilterBytes, 0, bytes, idx, hTableFilterBytes.length);
+            idx += hTableFilterBytes.length;
         } else {
-            len = HTABLE_DUMMY_BYTES.length;
-            System.arraycopy(HTABLE_DUMMY_BYTES, 0, bytes, idx, len);
+            System.arraycopy(HTABLE_DUMMY_BYTES, 0, bytes, idx, HTABLE_DUMMY_BYTES.length);
+            idx += HTABLE_DUMMY_BYTES.length;
         }
-        idx += len;
 
-        len = Serialization.getNeedBytes(scanRangeColumns.size());
-        System.arraycopy(Serialization.encodeVi64(scanRangeColumns.size()), 0, bytes, idx, len);
-        idx += len;
+        byte[] scanRangeColumnsBytes = Serialization.encodeVi64(scanRangeColumns.size());
+        System.arraycopy(scanRangeColumnsBytes, 0, bytes, idx, scanRangeColumnsBytes.length);
+        idx += scanRangeColumnsBytes.length;
         for (String keyRangeColumn : scanRangeColumns) {
-            len = Serialization.getNeedBytes(keyRangeColumn);
-            System.arraycopy(Serialization.encodeVString(keyRangeColumn), 0, bytes, idx, len);
-            idx += len;
+            byte[] keyRangeColumnBytes = Serialization.encodeVString(keyRangeColumn);
+            System.arraycopy(keyRangeColumnBytes, 0, bytes, idx, keyRangeColumnBytes.length);
+            idx += keyRangeColumnBytes.length;
         }
 
         //Aggregation
-        len = Serialization.getNeedBytes(aggregations.size());
-        System.arraycopy(Serialization.encodeVi64(aggregations.size()), 0, bytes, idx, len);
-        idx += len;
+        byte[] aggregationsSizeBytes = Serialization.encodeVi64(aggregations.size());
+        System.arraycopy(aggregationsSizeBytes, 0, bytes, idx, aggregationsSizeBytes.length);
+        idx += aggregationsSizeBytes.length;
         for (ObTableAggregationSingle obTableAggregationSingle : aggregations) {
-            len = (int) obTableAggregationSingle.getPayloadSize();
-            System.arraycopy(obTableAggregationSingle.encode(), 0, bytes, idx, len);
-            idx += len;
+            byte[] obTableAggregationSingleBytes = obTableAggregationSingle.encode();
+            System.arraycopy(obTableAggregationSingleBytes, 0, bytes, idx, obTableAggregationSingleBytes.length);
+            idx += obTableAggregationSingleBytes.length;
         }
 
         if (obKVParams != null) { // hbaseQuery or FTSQuery will use obKVParams
-            len = (int) obKVParams.getPayloadSize();
-            System.arraycopy(obKVParams.encode(), 0, bytes, idx, len);
-            idx += len;
+            byte[] obKVParamsBytes = obKVParams.encode();
+            System.arraycopy(obKVParamsBytes, 0, bytes, idx, obKVParamsBytes.length);
+            idx += obKVParamsBytes.length;
         } else {
-            len = HTABLE_DUMMY_BYTES.length;
-            System.arraycopy(HTABLE_DUMMY_BYTES, 0, bytes, idx, len);
-            idx += len;
+            System.arraycopy(HTABLE_DUMMY_BYTES, 0, bytes, idx, HTABLE_DUMMY_BYTES.length);
+            idx += HTABLE_DUMMY_BYTES.length;
         }
 
         return bytes;
@@ -312,44 +311,47 @@ public class ObTableQuery extends AbstractPayload {
      */
     @Override
     public long getPayloadContentSize() {
-        long contentSize = 0;
-        contentSize += Serialization.getNeedBytes(keyRanges.size());
-        for (ObNewRange obNewRange : keyRanges) {
-            contentSize += obNewRange.getEncodedSize();
-        }
-        contentSize += Serialization.getNeedBytes(selectColumns.size());
-        for (String selectColumn : selectColumns) {
-            contentSize += Serialization.getNeedBytes(selectColumn);
-        }
-        contentSize += Serialization.getNeedBytes(filterString);
-        contentSize += Serialization.getNeedBytes(limit);
-        contentSize += Serialization.getNeedBytes(offset);
-        contentSize += 1; // scanOrder
-        contentSize += Serialization.getNeedBytes(indexName);
+        if (this.payLoadContentSize == -1) {
+            long contentSize = 0;
+            contentSize += Serialization.getNeedBytes(keyRanges.size());
+            for (ObNewRange obNewRange : keyRanges) {
+                contentSize += obNewRange.getEncodedSize();
+            }
+            contentSize += Serialization.getNeedBytes(selectColumns.size());
+            for (String selectColumn : selectColumns) {
+                contentSize += Serialization.getNeedBytes(selectColumn);
+            }
+            contentSize += Serialization.getNeedBytes(filterString);
+            contentSize += Serialization.getNeedBytes(limit);
+            contentSize += Serialization.getNeedBytes(offset);
+            contentSize += 1; // scanOrder
+            contentSize += Serialization.getNeedBytes(indexName);
 
-        contentSize += Serialization.getNeedBytes(batchSize);
-        contentSize += Serialization.getNeedBytes(maxResultSize);
+            contentSize += Serialization.getNeedBytes(batchSize);
+            contentSize += Serialization.getNeedBytes(maxResultSize);
 
-        if (isHbaseQuery) {
-            contentSize += hTableFilter.getPayloadSize();
-        } else {
-            contentSize += HTABLE_DUMMY_BYTES.length;
-        }
-        if (obKVParams != null) {
-            contentSize += obKVParams.getPayloadSize();
-        } else {
-            contentSize += HTABLE_DUMMY_BYTES.length;
-        }
-        contentSize += Serialization.getNeedBytes(scanRangeColumns.size());
-        for (String scanRangeColumn : scanRangeColumns) {
-            contentSize += Serialization.getNeedBytes(scanRangeColumn);
-        }
+            if (isHbaseQuery) {
+                contentSize += hTableFilter.getPayloadSize();
+            } else {
+                contentSize += HTABLE_DUMMY_BYTES.length;
+            }
+            if (obKVParams != null) {
+                contentSize += obKVParams.getPayloadSize();
+            } else {
+                contentSize += HTABLE_DUMMY_BYTES.length;
+            }
+            contentSize += Serialization.getNeedBytes(scanRangeColumns.size());
+            for (String scanRangeColumn : scanRangeColumns) {
+                contentSize += Serialization.getNeedBytes(scanRangeColumn);
+            }
 
-        contentSize += Serialization.getNeedBytes(aggregations.size());
-        for (ObTableAggregationSingle obTableAggregationSingle : aggregations) {
-            contentSize += obTableAggregationSingle.getPayloadSize();
+            contentSize += Serialization.getNeedBytes(aggregations.size());
+            for (ObTableAggregationSingle obTableAggregationSingle : aggregations) {
+                contentSize += obTableAggregationSingle.getPayloadSize();
+            }
+            this.payLoadContentSize = contentSize;
         }
-        return contentSize;
+        return this.payLoadContentSize;
     }
 
     /*

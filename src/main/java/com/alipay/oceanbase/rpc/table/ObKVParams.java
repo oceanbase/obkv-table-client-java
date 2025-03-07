@@ -84,6 +84,9 @@ public class ObKVParams extends AbstractPayload {
 
     @Override
     public long getPayloadContentSize() {
+        if (this.payLoadContentSize == -1) {
+            this.payLoadContentSize = obKVParamsBase.getPayloadContentSize();
+        }
         return obKVParamsBase.getPayloadContentSize();
     }
 }

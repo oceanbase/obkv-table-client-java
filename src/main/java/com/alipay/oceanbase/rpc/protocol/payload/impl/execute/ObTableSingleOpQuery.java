@@ -20,16 +20,103 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObTableSerialUtil;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilter;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObScanOrder;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.*;
+import com.alipay.oceanbase.rpc.table.ObHBaseParams;
 import com.alipay.oceanbase.rpc.table.ObKVParams;
 import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
 import java.util.*;
+
+class StaticObHTableFilter {
+    public static ObHTableFilter hFilter = new ObHTableFilter();
+    public static byte[] HFilterBytes = null;
+    static {
+        hFilter.setMaxVersions(1);
+        HFilterBytes = hFilter.encode();
+    }
+
+    public static byte[] getHfilterBytes() {
+        if (HFilterBytes == null) {
+            hFilter.setMaxVersions(1);
+            HFilterBytes = hFilter.encode();
+        }
+        return HFilterBytes;
+    }
+}
+
+class StaticObKvParams {
+    public static ObKVParams kvParams = new ObKVParams();
+    public static ObHBaseParams hBaseParams = new ObHBaseParams();
+    public static byte[] kvParamBytes = null;
+    static {
+        kvParams.setObParamsBase(hBaseParams);
+        kvParamBytes = kvParams.encode();
+    }
+    public static byte[] getkvParamBytes() {
+        if (kvParamBytes == null) {
+            kvParams.setObParamsBase(hBaseParams);
+            kvParamBytes = kvParams.encode();
+        }
+        return kvParamBytes;
+    }
+
+}
+
+class StaticHbaseColumns {
+    public static byte[] selectColumnSize = Serialization.encodeVi64(4L);
+    public static byte[] RowkeyColumSize = Serialization.encodeVi64(3L);
+    public static byte[] VColumSize = Serialization.encodeVi64(1L);
+    public static byte[] KQTVBytes = null;
+    public static byte[] KQTBytes = null;
+    public static byte[] VBytes = null;
+    public static byte[] getKQTVBytes() {
+        if (KQTVBytes == null) {
+            byte[] K = Serialization.encodeVString("K");
+            byte[] Q = Serialization.encodeVString("Q");
+            byte[] T = Serialization.encodeVString("T");
+            byte[] V = Serialization.encodeVString("V");
+            KQTVBytes = new byte[K.length + Q.length + T.length + V.length];
+            ObByteBuf buf = new ObByteBuf(KQTVBytes);
+            buf.writeBytes(K);
+            buf.writeBytes(Q);
+            buf.writeBytes(T);
+            buf.writeBytes(V);
+        }
+        return KQTVBytes;
+    }
+    public static byte[] getKQTBytes() {
+        if (KQTBytes == null) {
+            byte[] K = Serialization.encodeVString("K");
+            byte[] Q = Serialization.encodeVString("Q");
+            byte[] T = Serialization.encodeVString("T");
+            KQTBytes = new byte[K.length + Q.length + T.length];
+            ObByteBuf buf = new ObByteBuf(KQTBytes);
+            buf.writeBytes(K);
+            buf.writeBytes(Q);
+            buf.writeBytes(T);
+        }
+        return KQTBytes;
+    }
+    public static byte[] getVBytes() {
+        if (VBytes == null) {
+            byte[] V = Serialization.encodeVString("V");
+            VBytes = new byte[V.length];
+            ObByteBuf buf = new ObByteBuf(VBytes);
+            buf.writeBytes(V);
+        }
+        return VBytes;
+    }
+}
+
+class StaticIndexName {
+    public static byte[] indexName = Serialization.encodeVString("PRIMARY");
+}
+
+class StaticEmptyStr {
+    public static byte[] EmptyStr = Serialization.encodeVString("");
+}
 
 public class ObTableSingleOpQuery extends ObTableQuery {
     private List<String> scanRangeColumns = new ArrayList<>();
@@ -110,13 +197,20 @@ public class ObTableSingleOpQuery extends ObTableQuery {
         encodeHeader(buf);
 
         // 1. encode index name
-        Serialization.encodeVString(buf, indexName);
+//        Serialization.encodeVString(buf, indexName);
+        buf.writeBytes(StaticIndexName.indexName);
 
         // 2. encode scan ranges columns
-        Serialization.encodeVi64(buf, scanRangeBitLen);
-        for (byte b : scanRangeBitMap) {
-            Serialization.encodeI8(buf, b);
+        if (isHbaseQuery && ObGlobal.isHBaseBatchGetSupport()) {
+            Serialization.encodeVi64(buf, 3L);
+            Serialization.encodeI8(buf, (byte) 0);
+        } else {
+            Serialization.encodeVi64(buf, scanRangeBitLen);
+            for (byte b : scanRangeBitMap) {
+                Serialization.encodeI8(buf, b);
+            }
         }
+
 
         // 3. encode scan ranges
         Serialization.encodeVi64(buf, keyRanges.size());
@@ -125,20 +219,20 @@ public class ObTableSingleOpQuery extends ObTableQuery {
         }
 
         // 4. encode filter string
-        Serialization.encodeVString(buf, filterString);
+//        Serialization.encodeVString(buf, filterString);
+        buf.writeBytes(StaticEmptyStr.EmptyStr);
 
         // encode HBase Batch Get required
         if (isHbaseQuery && ObGlobal.isHBaseBatchGetSupport()) {
-            Serialization.encodeVi64(buf, selectColumns.size());
-            for (String selectColumn : selectColumns) {
-                Serialization.encodeVString(buf, selectColumn);
-            }
+            buf.writeBytes(StaticHbaseColumns.selectColumnSize);
+            buf.writeBytes(StaticHbaseColumns.getKQTVBytes());
             Serialization.encodeI8(buf, scanOrder.getByteValue());
 
-            hTableFilter.encode(buf);
+            buf.writeBytes(StaticObHTableFilter.getHfilterBytes());
 
             if (obKVParams != null) {
-                obKVParams.encode(buf);
+//                obKVParams.encode(buf);
+                buf.writeBytes(StaticObKvParams.getkvParamBytes());
             } else {
                 buf.writeBytes(HTABLE_DUMMY_BYTES);
             }
@@ -191,33 +285,37 @@ public class ObTableSingleOpQuery extends ObTableQuery {
     public long getPayloadContentSize() {
         if (this.payLoadContentSize == -1) {
             long payloadContentSize = 0;
+            if (isHbaseQuery && ObGlobal.isHBaseBatchGetSupport()) {
+                payloadContentSize += Serialization.getNeedBytes(3L);
+                payloadContentSize += 1;
+            } else {
+                payloadContentSize += Serialization.getNeedBytes(scanRangeBitLen);
+                payloadContentSize += scanRangeBitMap.length;
+            }
 
-            payloadContentSize += Serialization.getNeedBytes(scanRangeBitLen);
-            payloadContentSize += scanRangeBitMap.length;
 
             payloadContentSize += Serialization.getNeedBytes(keyRanges.size());
             for (ObNewRange range : keyRanges) {
                 payloadContentSize += ObTableSerialUtil.getEncodedSize(range);
             }
 
-            payloadContentSize += Serialization.getNeedBytes(indexName);
-            payloadContentSize += Serialization.getNeedBytes(filterString);
+            payloadContentSize += StaticIndexName.indexName.length;
+            payloadContentSize += StaticEmptyStr.EmptyStr.length;
 
             // calculate part required by HBase Batch Get
             if (isHbaseQuery && ObGlobal.isHBaseBatchGetSupport()) {
-                payloadContentSize += Serialization.getNeedBytes(selectColumns.size());
-                for (String selectColumn : selectColumns) {
-                    payloadContentSize += Serialization.getNeedBytes(selectColumn);
-                }
+                payloadContentSize += StaticHbaseColumns.selectColumnSize.length;
+                payloadContentSize += StaticHbaseColumns.getKQTVBytes().length;
                 payloadContentSize += 1; // scanOrder
 
                 if (isHbaseQuery) {
-                    payloadContentSize += hTableFilter.getPayloadSize();
+                    payloadContentSize += StaticObHTableFilter.getHfilterBytes().length;
                 } else {
                     payloadContentSize += HTABLE_DUMMY_BYTES.length;
                 }
                 if (isHbaseQuery && obKVParams != null) {
-                    payloadContentSize += obKVParams.getPayloadSize();
+//                    payloadContentSize += obKVParams.getPayloadSize();
+                    payloadContentSize += StaticObKvParams.getkvParamBytes().length;
                 } else {
                     payloadContentSize += HTABLE_DUMMY_BYTES.length;
                 }

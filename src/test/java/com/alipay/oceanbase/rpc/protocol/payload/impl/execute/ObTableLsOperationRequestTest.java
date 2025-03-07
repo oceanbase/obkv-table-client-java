@@ -33,7 +33,7 @@ import static com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOper
 import static com.alipay.oceanbase.rpc.table.ObKVParamsBase.paramType.HBase;
 
 public class ObTableLsOperationRequestTest {
-    private int lsOpReqSize = 100;
+    private int lsOpReqSize = 200;
     private int tabletOpSize = 10;
     private int singleOpSize = 100;
     private static final Random random = new Random();
@@ -187,4 +187,15 @@ public class ObTableLsOperationRequestTest {
 
         return range;
     }
+
+//    @Test
+//    public void testOHTableFilter() {
+//        ObHTableFilter hTableFilter = new ObHTableFilter();
+//        hTableFilter.setMaxVersions(1);
+//        byte[] htableBytes = hTableFilter.encode();
+//        for (int i = 0; i < htableBytes.length; i++) {
+//            System.out.println(htableBytes[i]);
+//        }
+//        System.out.println(htableBytes.length);
+//    }
 }

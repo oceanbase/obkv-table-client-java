@@ -42,8 +42,16 @@ public class ObTableSingleOpEntity extends AbstractPayload {
     private List<ObObj> propertiesValues = new ArrayList<>();
 
     private boolean ignoreEncodePropertiesColumnNames = false;
-
+    private boolean isHbase = false;
     public ObTableSingleOpEntity() {}
+
+    public boolean isHbase() {
+        return isHbase;
+    }
+
+    public void setHbase(boolean hbase) {
+        isHbase = hbase;
+    }
 
     /*
      * Encode.
@@ -108,10 +116,16 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         encodeHeader(buf);
 
         // 1. encode rowKey bitmap
-        Serialization.encodeVi64(buf, rowKeyBitLen);
-        for (byte b : rowKeyBitMap) {
-            Serialization.encodeI8(buf, b);
+        if (isHbase) {
+            Serialization.encodeVi64(buf, 3L);
+            Serialization.encodeI8(buf, (byte) 0b00000111);
+        } else {
+            Serialization.encodeVi64(buf, rowKeyBitLen);
+            for (byte b : rowKeyBitMap) {
+                Serialization.encodeI8(buf, b);
+            }
         }
+
 
         // 2. encode rowkey
         Serialization.encodeVi64(buf, rowkey.size());
@@ -122,6 +136,9 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         // 3. encode property bitmap
         if (ignoreEncodePropertiesColumnNames) {
             Serialization.encodeVi64(buf,0L);
+        } else if (isHbase) {
+            Serialization.encodeVi64(buf, 1);
+            Serialization.encodeI8(buf, (byte) 0b00000001);
         } else {
             Serialization.encodeVi64(buf, propertiesBitLen);
             for (byte b : propertiesBitMap) {
@@ -198,9 +215,13 @@ public class ObTableSingleOpEntity extends AbstractPayload {
     public long getPayloadContentSize() {
         if (this.payLoadContentSize == -1) {
             long payloadContentSize = 0;
-
-            payloadContentSize += Serialization.getNeedBytes(rowKeyBitLen);
-            payloadContentSize += rowKeyBitMap.length;
+            if (isHbase) {
+                payloadContentSize += Serialization.getNeedBytes(3L);
+                payloadContentSize += 1;
+            } else {
+                payloadContentSize += Serialization.getNeedBytes(rowKeyBitLen);
+                payloadContentSize += rowKeyBitMap.length;
+            }
 
             payloadContentSize += Serialization.getNeedBytes(rowkey.size());
             for (ObObj obj : rowkey) {
@@ -209,6 +230,9 @@ public class ObTableSingleOpEntity extends AbstractPayload {
 
             if (ignoreEncodePropertiesColumnNames) {
                 payloadContentSize += Serialization.getNeedBytes(0L);
+            } else if (isHbase) {
+                payloadContentSize += Serialization.getNeedBytes(1L);
+                payloadContentSize += 1;
             } else {
                 payloadContentSize += Serialization.getNeedBytes(propertiesBitLen);
                 payloadContentSize += propertiesBitMap.length;

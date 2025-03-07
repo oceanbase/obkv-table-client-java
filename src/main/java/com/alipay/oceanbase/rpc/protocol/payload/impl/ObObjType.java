@@ -26,6 +26,15 @@ import java.sql.Timestamp;
 import java.time.*;
 import java.util.*;
 
+class ObObjMetaPool {
+    public static ObObjMeta varchrObjMeta = null;
+    static {
+        varchrObjMeta = new ObObjMeta(ObObjType.ObVarcharType, ObCollationLevel.CS_LEVEL_EXPLICIT,
+                ObCollationType.CS_TYPE_UTF8MB4_GENERAL_CI, (byte) 10);
+    }
+}
+
+
 public enum ObObjType {
 
     ObNullType(0) {
