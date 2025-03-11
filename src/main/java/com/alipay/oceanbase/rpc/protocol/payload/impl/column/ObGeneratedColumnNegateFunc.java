@@ -71,23 +71,24 @@ public class ObGeneratedColumnNegateFunc implements ObGeneratedColumnSimpleFunc 
      */
     @Override
     public Object evalValue(ObCollationType collationType, Object... refs)
-            throws IllegalArgumentException {
+                                                                          throws IllegalArgumentException {
         if (refs == null || refs.length == 0) {
             throw new IllegalArgumentException("Input references cannot be null or empty");
         }
         Object ref = refs[0];
         if (ref instanceof Long) {
-            return -(Long)ref;
+            return -(Long) ref;
         } else if (ref instanceof Integer) {
             Integer value = (Integer) ref;
             if (value == Integer.MIN_VALUE) {
-                throw new IllegalArgumentException("The currently provided parameter is the " +
-                        "minimum value of the Integer type, and its negation will cause an overflow.");
+                throw new IllegalArgumentException(
+                    "The currently provided parameter is the "
+                            + "minimum value of the Integer type, and its negation will cause an overflow.");
             }
             return -(Integer) value;
         } else {
-            throw new IllegalArgumentException("Object [" + ref + "] can not evaluate by" +
-                    " ObGeneratedColumnNegateFunc");
+            throw new IllegalArgumentException("Object [" + ref + "] can not evaluate by"
+                                               + " ObGeneratedColumnNegateFunc");
         }
     }
 }

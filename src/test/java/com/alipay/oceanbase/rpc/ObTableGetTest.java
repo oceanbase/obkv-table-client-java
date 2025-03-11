@@ -1,3 +1,20 @@
+/*-
+ * #%L
+ * com.oceanbase:obkv-table-client
+ * %%
+ * Copyright (C) 2021 - 2025 OceanBase
+ * %%
+ * OBKV Table Client Framework is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * #L%
+ */
+
 package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.exception.ObTableException;
@@ -40,9 +57,9 @@ public class ObTableGetTest {
     public void testSingleGet1() throws Exception {
         // expect empty result
         Get get = client.get(tableName);
-        Map<String, Object> res = get.setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
-                                    .select("c1", "c2")
-                                    .execute();
+        Map<String, Object> res = get
+            .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val"))).select("c1", "c2")
+            .execute();
         Assert.assertNotNull(res);
         Assert.assertEquals(null, res.get("c1"));
     }
@@ -52,44 +69,43 @@ public class ObTableGetTest {
     public void testSingleGet2() throws Exception {
         try {
             // insert
-            client.insertOrUpdate(tableName).setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
-                    .addMutateColVal(colVal("c3", "c3_val"))
-                    .execute();
+            client.insertOrUpdate(tableName)
+                .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
+                .addMutateColVal(colVal("c3", "c3_val")).execute();
 
             // select c1,c2
-            Map<String, Object> res = client.get(tableName).setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
-                    .select("c1", "c2")
-                    .execute();
+            Map<String, Object> res = client.get(tableName)
+                .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val"))).select("c1", "c2")
+                .execute();
             Assert.assertNotNull(res);
             Assert.assertEquals("c1_val", res.get("c1"));
             Assert.assertEquals("c2_val", res.get("c2"));
 
             // get with empty select columns
-            res = client.get(tableName).setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
-                    .execute();
+            res = client.get(tableName)
+                .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val"))).execute();
             Assert.assertNotNull(res);
             Assert.assertEquals("c1_val", res.get("c1"));
             Assert.assertEquals("c2_val", res.get("c2"));
 
             // select c1
-            res = client.get(tableName).setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
-                    .select("c1")
-                    .execute();
+            res = client.get(tableName)
+                .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val"))).select("c1")
+                .execute();
             Assert.assertNotNull(res);
             Assert.assertEquals("c1_val", res.get("c1"));
             Assert.assertEquals(null, res.get("c2"));
 
             // select c2
-            res = client.get(tableName).setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
-                    .select("c2")
-                    .execute();
+            res = client.get(tableName)
+                .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val"))).select("c2")
+                .execute();
             Assert.assertNotNull(res);
             Assert.assertEquals("c2_val", res.get("c2"));
             Assert.assertEquals(null, res.get("c1"));
         } finally {
-            client.delete(tableName)
-                    .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
-                    .execute();
+            client.delete(tableName).setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
+                .execute();
         }
     }
 
@@ -146,8 +162,8 @@ public class ObTableGetTest {
     public void testBatchGet1() throws Exception {
         // expect empty result
         BatchOperation batch = client.batchOperation(tableName);
-        Get get = client.get(tableName).setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
-                .select("c1", "c2");
+        Get get = client.get(tableName)
+            .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val"))).select("c1", "c2");
         batch.addOperation(get);
         BatchOperationResult res = batch.execute();
         Assert.assertNotNull(res);
@@ -160,14 +176,14 @@ public class ObTableGetTest {
     public void testBatchGet2() throws Exception {
         try {
             // insert
-            client.insertOrUpdate(tableName).setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
-                    .addMutateColVal(colVal("c3", "c3_val"))
-                    .execute();
+            client.insertOrUpdate(tableName)
+                .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
+                .addMutateColVal(colVal("c3", "c3_val")).execute();
 
             // select c1,c2
             BatchOperation batch1 = client.batchOperation(tableName);
-            Get get = client.get(tableName).setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
-                    .select("c1", "c2");
+            Get get = client.get(tableName)
+                .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val"))).select("c1", "c2");
             batch1.addOperation(get);
             BatchOperationResult res = batch1.execute();
             Assert.assertNotNull(res);
@@ -175,18 +191,18 @@ public class ObTableGetTest {
             Assert.assertEquals("c2_val", res.get(0).getOperationRow().get("c2"));
 
             // get with empty select columns（has bug in observer）
-//            BatchOperation batch2 = client.batchOperation(tableName);
-//            get = client.get(tableName).setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")));
-//            batch2.addOperation(get);
-//            res = batch2.execute();
-//            Assert.assertNotNull(res);
-//            Assert.assertEquals("c1_val", res.get(0).getOperationRow().get("c1"));
-//            Assert.assertEquals("c2_val", res.get(0).getOperationRow().get("c2"));
+            //            BatchOperation batch2 = client.batchOperation(tableName);
+            //            get = client.get(tableName).setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")));
+            //            batch2.addOperation(get);
+            //            res = batch2.execute();
+            //            Assert.assertNotNull(res);
+            //            Assert.assertEquals("c1_val", res.get(0).getOperationRow().get("c1"));
+            //            Assert.assertEquals("c2_val", res.get(0).getOperationRow().get("c2"));
 
             // select c1
             BatchOperation batch3 = client.batchOperation(tableName);
-            get = client.get(tableName).setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
-                    .select("c1");
+            get = client.get(tableName)
+                .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val"))).select("c1");
             batch3.addOperation(get);
             res = batch3.execute();
             Assert.assertNotNull(res);
@@ -195,17 +211,16 @@ public class ObTableGetTest {
 
             // select c2
             BatchOperation batch4 = client.batchOperation(tableName);
-            get = client.get(tableName).setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
-                    .select("c2");
+            get = client.get(tableName)
+                .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val"))).select("c2");
             batch4.addOperation(get);
             res = batch4.execute();
             Assert.assertNotNull(res);
             Assert.assertEquals("c2_val", res.get(0).getOperationRow().get("c2"));
             Assert.assertEquals(null, res.get(0).getOperationRow().get("c1"));
         } finally {
-            client.delete(tableName)
-                    .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
-                    .execute();
+            client.delete(tableName).setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
+                .execute();
         }
     }
 

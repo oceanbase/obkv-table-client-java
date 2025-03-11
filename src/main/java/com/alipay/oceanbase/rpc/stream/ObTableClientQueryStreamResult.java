@@ -44,8 +44,8 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
 
     protected ObTableQueryResult referToNewPartition(ObPair<Long, ObTableParam> partIdWithObTable)
                                                                                                   throws Exception {
-        long partitionId = client.getServerCapacity().isSupportDistributedExecute() ?
-                INVALID_TABLET_ID : partIdWithObTable.getRight().getPartitionId();
+        long partitionId = client.getServerCapacity().isSupportDistributedExecute() ? INVALID_TABLET_ID
+            : partIdWithObTable.getRight().getPartitionId();
         ObTableQueryRequest request = new ObTableQueryRequest();
         request.setTableName(tableName);
         request.setTableQuery(tableQuery);

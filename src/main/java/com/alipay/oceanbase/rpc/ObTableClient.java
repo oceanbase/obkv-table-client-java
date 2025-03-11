@@ -433,7 +433,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (odpMode) {
             try {
                 odpTable = new ObTable.Builder(odpAddr, odpPort) //
-                    .setLoginInfo(tenantName, fullUserName, password, database) //
+                    .setLoginInfo(tenantName, fullUserName, password, database, getClientType(runningMode)) //
                     .setProperties(getProperties()).setConfigs(TableConfigs).build();
             } catch (Exception e) {
                 logger
@@ -486,7 +486,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             // 应急可以直接observer切主
             try {
                 ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort()) //
-                    .setLoginInfo(tenantName, userName, password, database) //
+                    .setLoginInfo(tenantName, userName, password, database, getClientType(runningMode)) //
                     .setProperties(getProperties()).setConfigs(TableConfigs).build();
                 tableRoster.put(addr, obTable);
                 servers.add(addr);
@@ -997,7 +997,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 }
 
                 ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort()) //
-                    .setLoginInfo(tenantName, userName, password, database) //
+                    .setLoginInfo(tenantName, userName, password, database, getClientType(runningMode)) //
                     .setProperties(getProperties()).setConfigs(getTableConfigs())
                     .build();
                 ObTable oldObTable = tableRoster.putIfAbsent(addr, obTable); // not control concurrency
@@ -1968,7 +1968,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         try {
             logger.info("server from response not exist in route cache, server ip {}, port {} , execute add Table.", addr.getIp(), addr.getSvrPort());
             ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort()) //
-                    .setLoginInfo(tenantName, userName, password, database) //
+                    .setLoginInfo(tenantName, userName, password, database, getClientType(runningMode)) //
                     .setProperties(getProperties()).build();
             tableRoster.put(addr, obTable);
             return obTable;
@@ -4276,6 +4276,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     public enum RunningMode {
         NORMAL, HBASE;
+    }
+
+    private ObTableClientType getClientType(RunningMode runningMode) {
+        return runningMode == RunningMode.HBASE ? ObTableClientType.JAVA_HBASE_CLIENT : ObTableClientType.JAVA_TABLE_CLIENT;
     }
 
     /**

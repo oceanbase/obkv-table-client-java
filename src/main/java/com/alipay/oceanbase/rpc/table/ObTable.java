@@ -67,6 +67,8 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     
     private Map<String, Object> configs;
 
+    private ObTableClientType clientType;
+
     private volatile boolean      initialized = false;
     private volatile boolean      closed      = false;
     private boolean enableRerouting = true;              // only used for init packet factory
@@ -589,6 +591,14 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     public void setConfigs(Map<String, Object> configs) {
         this.configs = configs; 
     }
+
+    public void setClientType(ObTableClientType clientType) {
+        this.clientType = clientType;
+    }
+
+    public ObTableClientType getClientType() {
+        return this.clientType;
+    }
     
     public Map<String, Object> getConfigs() {
         return this.configs;
@@ -654,6 +664,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         private String     userName;
         private String     password;
         private String     database;
+        ObTableClientType clientType;
 
         private Properties properties = new Properties();
         
@@ -671,11 +682,12 @@ public class ObTable extends AbstractObTable implements Lifecycle {
          * Set login info.
          */
         public Builder setLoginInfo(String tenantName, String userName, String password,
-                                    String database) {
+                                    String database, ObTableClientType clientType) {
             this.tenantName = tenantName;
             this.userName = userName;
             this.password = password;
             this.database = database;
+            this.clientType = clientType;
             return this;
         }
 
@@ -713,6 +725,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             obTable.setDatabase(database);
             obTable.setProperties(properties);
             obTable.setConfigs(tableConfigs);
+            obTable.setClientType(clientType);
 
             obTable.init();
 
