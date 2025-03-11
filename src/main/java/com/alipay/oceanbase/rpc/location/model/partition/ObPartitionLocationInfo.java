@@ -31,9 +31,9 @@ public class ObPartitionLocationInfo {
     public ReentrantReadWriteLock rwLock              = new ReentrantReadWriteLock();
     public AtomicBoolean          initialized         = new AtomicBoolean(false);
     public final CountDownLatch   initializationLatch = new CountDownLatch(1);
-    
-    public ReentrantLock refreshLock = new ReentrantLock();
-    
+
+    public ReentrantLock          refreshLock         = new ReentrantLock();
+
     public ObPartitionLocation getPartitionLocation() {
         rwLock.readLock().lock();
         try {

@@ -30,17 +30,18 @@ public class ObGeneratedColumnNegateFuncTest {
         ObGeneratedColumnSimpleFunc func = new ObGeneratedColumnNegateFunc("K");
         Assert.assertEquals(-1L, func.evalValue(ObCollationType.CS_TYPE_INVALID, 1L));
         Assert.assertEquals(-11L, func.evalValue(ObCollationType.CS_TYPE_INVALID, 11L));
-        Assert.assertEquals(-111,
-                func.evalValue(ObCollationType.CS_TYPE_INVALID, 111));
-        Assert.assertEquals(1111L,
-                func.evalValue(ObCollationType.CS_TYPE_INVALID, -1111L));
-        Assert.assertEquals(11111L,
-                func.evalValue(ObCollationType.CS_TYPE_INVALID, -11111L));
+        Assert.assertEquals(-111, func.evalValue(ObCollationType.CS_TYPE_INVALID, 111));
+        Assert.assertEquals(1111L, func.evalValue(ObCollationType.CS_TYPE_INVALID, -1111L));
+        Assert.assertEquals(11111L, func.evalValue(ObCollationType.CS_TYPE_INVALID, -11111L));
         try {
             func.evalValue(ObCollationType.CS_TYPE_INVALID, Integer.MIN_VALUE);
         } catch (Exception e) {
-            Assert.assertTrue(e.getMessage().contains("The currently provided parameter is the " +
-                    "minimum value of the Integer type, and its negation will cause an overflow."));
+            Assert
+                .assertTrue(e
+                    .getMessage()
+                    .contains(
+                        "The currently provided parameter is the "
+                                + "minimum value of the Integer type, and its negation will cause an overflow."));
         }
         List<String> refColumns = new ArrayList<String>();
         refColumns.add("K");

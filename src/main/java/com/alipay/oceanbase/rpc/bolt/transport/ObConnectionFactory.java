@@ -40,7 +40,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ObConnectionFactory implements ConnectionFactory {
 
-    private static final Logger         logger      = LoggerFactory.getLogger(ObConnectionFactory.class);
+    private static final Logger         logger      = LoggerFactory
+                                                        .getLogger(ObConnectionFactory.class);
 
     private static final EventLoopGroup workerGroup = NettyEventLoopUtil.newEventLoopGroup(Runtime
                                                         .getRuntime().availableProcessors() + 1,
