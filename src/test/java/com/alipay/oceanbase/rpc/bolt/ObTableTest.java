@@ -20,6 +20,7 @@ package com.alipay.oceanbase.rpc.bolt;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.table.ObTable;
+import com.alipay.oceanbase.rpc.table.ObTableClientType;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -59,7 +60,8 @@ public class ObTableTest extends ObTableClientTestBase {
         ObTableException obTableException = null;
         try {
             new ObTable.Builder(obTable.getIp(), obTable.getPort()) //
-                .setLoginInfo(obTable.getTenantName(), obTable.getUserName(), "11", "test") //
+                .setLoginInfo(obTable.getTenantName(), obTable.getUserName(), "11", "test",
+                    ObTableClientType.JAVA_TABLE_CLIENT) //
                 .build();
         } catch (ObTableException ex) {
             obTableException = ex;
@@ -72,7 +74,8 @@ public class ObTableTest extends ObTableClientTestBase {
         obTableException = null;
         try {
             new ObTable.Builder(obTable.getIp(), obTable.getPort()) //
-                .setLoginInfo(obTable.getTenantName(), "root1", "11", "test") //
+                .setLoginInfo(obTable.getTenantName(), "root1", "11", "test",
+                    ObTableClientType.JAVA_TABLE_CLIENT) //
                 .build();
             obTable.get("test_varchar_table", "1", new String[] { "c2" });
         } catch (ObTableException ex) {

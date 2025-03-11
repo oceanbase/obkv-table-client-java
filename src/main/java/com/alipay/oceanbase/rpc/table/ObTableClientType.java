@@ -17,20 +17,16 @@
 
 package com.alipay.oceanbase.rpc.table;
 
-public class ObTableServerCapacity {
-    private static final int DISTRIBUTED_EXECUTE = 1 << 0;
-    private static final int CAPACITY_MAX        = 1 << 31;
-    private int              flags               = 0;
+public enum ObTableClientType {
+    INVALID(0), LIB_TABLE_CLIENT(1), JAVA_TABLE_CLIENT(2), JAVA_HBASE_CLIENT(3), MAX(15);
 
-    public int getFlags() {
-        return flags;
+    ObTableClientType(int value) {
+        this.value = value;
     }
 
-    public void setFlags(int flags) {
-        this.flags = flags;
-    }
+    private final int value;
 
-    public boolean isSupportDistributedExecute() {
-        return (flags & DISTRIBUTED_EXECUTE) != 0;
+    public int getValue() {
+        return value;
     }
 }

@@ -47,7 +47,7 @@ public class ObTableQueryAndMutateFlag {
             flags &= ~FLAG_IS_ROLLBACK_WHEN_CHECK_FAILED;
         }
     }
-    
+
     public void setIsUserSpecifiedT(boolean isUserSpecifiedT) {
         if (isUserSpecifiedT) {
             flags |= FLAG_IS_USER_SPECIFIED_T;
@@ -71,7 +71,7 @@ public class ObTableQueryAndMutateFlag {
     public boolean isRollbackWhenCheckFailed() {
         return (flags & FLAG_IS_ROLLBACK_WHEN_CHECK_FAILED) != 0;
     }
-    
+
     public boolean isUserSpecifiedT() {
         return (flags & FLAG_IS_USER_SPECIFIED_T) != 0;
     }
