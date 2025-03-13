@@ -62,6 +62,7 @@ import static com.alipay.oceanbase.rpc.location.model.ObServerRoute.STRONG_READ;
 import static com.alipay.oceanbase.rpc.location.model.TableEntry.HBASE_ROW_KEY_ELEMENT;
 import static com.alipay.oceanbase.rpc.location.model.partition.ObPartIdCalculator.*;
 import static com.alipay.oceanbase.rpc.property.Property.*;
+import static com.alipay.oceanbase.rpc.protocol.payload.Constants.INVALID_TABLET_ID;
 import static com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType.*;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
 import static java.lang.String.format;
@@ -3763,7 +3764,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         }
 
                         // Check if partIdMapObTable size is greater than 1
-                        if (partIdMapObTable.size() > 1 && !getServerCapacity().isSupportDistributedExecute()) {
+                        boolean isDistributedExecuteSupported = getServerCapacity().isSupportDistributedExecute();
+                        if (partIdMapObTable.size() > 1 && !isDistributedExecuteSupported) {
                             throw new ObTablePartitionConsistentException(
                                     "query and mutate must be a atomic operation");
                         }
@@ -3771,7 +3773,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         Map.Entry<Long, ObTableParam> entry = partIdMapObTable.entrySet().iterator().next();
                         ObTableParam tableParam = entry.getValue();
                         request.setTableId(tableParam.getTableId());
-                        request.setPartitionId(tableParam.getPartitionId());
+                        long partitionId = isDistributedExecuteSupported ? INVALID_TABLET_ID : tableParam.getPartitionId();
+                        request.setPartitionId(partitionId);
                         request.setTimeout(tableParam.getObTable().getObTableOperationTimeout());
                         ObTable obTable = tableParam.getObTable();
 
