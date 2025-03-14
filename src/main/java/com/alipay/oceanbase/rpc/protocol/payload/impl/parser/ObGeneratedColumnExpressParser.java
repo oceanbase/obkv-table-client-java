@@ -18,10 +18,7 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl.parser;
 
 import com.alipay.oceanbase.rpc.exception.GenerateColumnParseException;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObGeneratedColumnNegateFunc;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObGeneratedColumnReferFunc;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObGeneratedColumnSimpleFunc;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObGeneratedColumnSubStrFunc;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.column.*;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -60,6 +57,8 @@ public class ObGeneratedColumnExpressParser {
                                 lexer.nextToken();
                                 listParameters(subStr);
                                 return subStr;
+                            case ABS:
+                                return handleAbsFunction();
                             default:
                                 throw new GenerateColumnParseException("");
                         }
@@ -78,6 +77,49 @@ public class ObGeneratedColumnExpressParser {
             default:
                 throw new GenerateColumnParseException("ERROR. token :  " + lexer.token()
                                                        + ", pos : " + lexer.pos());
+        }
+    }
+
+    private ObGeneratedColumnSimpleFunc handleAbsFunction() throws GenerateColumnParseException {
+        lexer.nextToken(); // Consume LPAREN
+
+        // handle abs(T) or abs(`T`)
+        if (lexer.token() == IDENTIFIER) {
+            String refColumn = lexer.stringVal();
+            lexer.nextToken(); // Consume the identifier
+
+            // check next token is RPAREN or not
+            if (lexer.token() != RPAREN) {
+                throw new GenerateColumnParseException(
+                    "Expected closing parenthesis after ABS argument");
+            }
+            lexer.nextToken(); // Consume RPAREN
+            return new ObGeneratedColumnAbsFunc(refColumn);
+        } else if (lexer.token() == BACKTICK) { // abs(`T`)
+            lexer.nextToken(); // Consume BACKTICK
+            if (lexer.token() == IDENTIFIER) {
+                String refColumn = lexer.stringVal();
+                lexer.nextToken(); // Consume the identifier
+
+                if (lexer.token() != BACKTICK) {
+                    throw new GenerateColumnParseException(
+                        "Expected closing backtick after identifier");
+                }
+                lexer.nextToken(); // Consume BACKTICK
+
+                if (lexer.token() != RPAREN) {
+                    throw new GenerateColumnParseException(
+                        "Expected closing parenthesis after ABS argument");
+                }
+                lexer.nextToken(); // Consume RPAREN
+                return new ObGeneratedColumnAbsFunc(refColumn);
+            } else {
+                throw new GenerateColumnParseException(
+                    "Invalid argument for ABS function: expected IDENTIFIER after backtick");
+            }
+        } else {
+            throw new GenerateColumnParseException(
+                "Invalid argument for ABS function: expected IDENTIFIER or BACKTICK enclosed identifier");
         }
     }
 
