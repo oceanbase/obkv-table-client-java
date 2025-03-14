@@ -30,7 +30,8 @@ public enum ObTableOperationType {
     TTL(9), // observer internal type, not used by client
     CHECK_AND_INSERT_UP(10), PUT(11), // override row
     TRIGGER(12), // internal op type
-    INVALID(15);
+    REDIS(13), // not used
+    QUERY_AND_MUTATE(14), CHECK_AND_MUTATE(15), INVALID(16);
 
     private int                                       value;
     private static Map<Integer, ObTableOperationType> map             = new HashMap<Integer, ObTableOperationType>();
@@ -46,6 +47,10 @@ public enum ObTableOperationType {
                                                                           false, // TTL
                                                                           true, // CHECK_AND_INSERT_UP
                                                                           false, // PUT
+                                                                          false, // TRIGGER
+                                                                          false, // REDIS
+                                                                          true, // QUERY_AND_MUTATE,
+                                                                          true, // CHECK_AND_MUTATE,
                                                                           false // INVALID
                                                                           );
 
