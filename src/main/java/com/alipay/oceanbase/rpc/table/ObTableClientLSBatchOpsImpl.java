@@ -230,21 +230,25 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
         ObTableSingleOp singleOp = new ObTableSingleOp();
         ObTableQuery obTableQuery = queryAndMutate.getQuery();
-        Delete delete = (Delete) queryAndMutate.getMutation();
-        ObTableSingleOpQuery singleOpQuery = ObTableSingleOpQuery.getInstance(obTableQuery.getIndexName(),
-                obTableQuery.getKeyRanges(), obTableQuery.getSelectColumns(),
-                obTableQuery.getScanOrder(), obTableQuery.isHbaseQuery(),
-                obTableQuery.gethTableFilter(), obTableQuery.getObKVParams(),
-                obTableQuery.getFilterString());
+        if (queryAndMutate.getMutation() instanceof Delete) {
+            Delete delete = (Delete) queryAndMutate.getMutation();
+            ObTableSingleOpQuery singleOpQuery = ObTableSingleOpQuery.getInstance(obTableQuery.getIndexName(),
+                    obTableQuery.getKeyRanges(), obTableQuery.getSelectColumns(),
+                    obTableQuery.getScanOrder(), obTableQuery.isHbaseQuery(),
+                    obTableQuery.gethTableFilter(), obTableQuery.getObKVParams(),
+                    obTableQuery.getFilterString());
             singleOp.setQuery(singleOpQuery);
-        singleOp.setQuery(singleOpQuery);
-        singleOp.setSingleOpType(ObTableOperationType.QUERY_AND_MUTATE);
-        String[] rowKeyNames = delete.getRowKey().getColumns();
-        Object[] rowKeyValues = delete.getRowKey().getValues();
-        ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKeyValues,
-            null, null);
-        singleOp.addEntity(entity);
-        addOperation(singleOp);
+            singleOp.setQuery(singleOpQuery);
+            singleOp.setSingleOpType(ObTableOperationType.QUERY_AND_MUTATE);
+            String[] rowKeyNames = delete.getRowKey().getColumns();
+            Object[] rowKeyValues = delete.getRowKey().getValues();
+            ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKeyValues,
+                    null, null);
+            singleOp.addEntity(entity);
+            addOperation(singleOp);
+        } else {
+            throw new ObTableException("invalid operation type " + queryAndMutate.getMutation().getOperationType());
+        }
     }
 
     public void addOperation(Mutation mutation) throws Exception {
