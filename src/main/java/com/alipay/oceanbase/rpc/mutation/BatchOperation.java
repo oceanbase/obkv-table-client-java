@@ -26,6 +26,9 @@ import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutate;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
+import com.alipay.oceanbase.rpc.queryandmutate.QueryAndMutate;
 import com.alipay.oceanbase.rpc.table.ObTableClientLSBatchOpsImpl;
 import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
@@ -107,6 +110,12 @@ public class BatchOperation {
             lastType = ObTableOperationType.GET;
         }
         this.operations.addAll(Arrays.asList(queries));
+        return this;
+    }
+
+    public BatchOperation addOperation(QueryAndMutate qm) {
+        lastType = ObTableOperationType.QUERY_AND_MUTATE;
+        this.operations.add(qm);
         return this;
     }
 
@@ -336,6 +345,9 @@ public class BatchOperation {
                 } else if (operation instanceof TableQuery) {
                     TableQuery query = (TableQuery) operation;
                     batchOps.addOperation(query);
+                } else if (operation instanceof QueryAndMutate) {
+                    QueryAndMutate qm = (QueryAndMutate) operation;
+                    batchOps.addOperation(qm);
                 } else {
                     throw new IllegalArgumentException(
                         "The operations in batch must be all checkAndInsUp or all non-checkAndInsUp");
