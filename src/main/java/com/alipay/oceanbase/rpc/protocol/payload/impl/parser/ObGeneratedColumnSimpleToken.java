@@ -19,7 +19,7 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.parser;
 
 public enum ObGeneratedColumnSimpleToken {
 
-    COMMA(","), LPAREN("("), RPAREN(")"), SUB("-"), PLUS("+"), LITERAL_HEX, LITERAL_FLOAT, LITERAL_INT, IDENTIFIER, ERROR, EOF;
+    COMMA(","), LPAREN("("), RPAREN(")"), SUB("-"), PLUS("+"), BACKTICK("`"), LITERAL_HEX, LITERAL_FLOAT, LITERAL_INT, IDENTIFIER, ERROR, EOF;
 
     public final String name;
 

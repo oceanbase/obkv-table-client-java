@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum ObGeneratedColumnFuncName {
-    UNKNOWN("unknown"), SUB_STR("substr");
+    UNKNOWN("unknown"), SUB_STR("substr"), ABS("abs");
 
     public final String name;
 
