@@ -300,7 +300,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         Object[] rowKeyValues = get.getRowKey().getValues();
         String[] propertiesNames = get.getSelectColumns();
         ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKeyValues,
-                propertiesNames, null);
+            propertiesNames, null);
         ObTableSingleOp singleOp = new ObTableSingleOp();
         singleOp.setSingleOpType(ObTableOperationType.GET);
         singleOp.addEntity(entity);
@@ -344,8 +344,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 }
             } else {
                 results.add(ExceptionUtil.convertToObTableException(result.getExecuteHost(),
-                        result.getExecutePort(), result.getSequence(), result.getUniqueId(), errCode,
-                        result.getHeader().getErrMsg()));
+                    result.getExecutePort(), result.getSequence(), result.getUniqueId(), errCode,
+                    result.getHeader().getErrMsg()));
             }
         }
         return results;
@@ -393,16 +393,33 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             if (this.entityType == ObTableEntityType.HKV && obTableClient.isTableGroupName(tableName)) {
                 real_tableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
             }
-            ObPair<Long, ObTableParam>  tableObPair= obTableClient.getTable(real_tableName, rowKey,
-                    false, false, obTableClient.getRoute(false));
-            long lsId = tableObPair.getRight().getLsId();
+            ObPair<Long, ObTableParam> tableObPair = null;
+            long lsId = INVALID_LS_ID;
+            try {
+                tableObPair = obTableClient.getTable(real_tableName, rowKey,
+                        false, false, obTableClient.getRoute(false));
+                lsId = tableObPair.getRight().getLsId();
+            } catch (ObTableNotExistException e) {
+                if (this.entityType == ObTableEntityType.HKV
+                        && obTableClient.isTableGroupName(tableName)
+                        && obTableClient.getTableGroupInverted().get(real_tableName) != null) {
+                    obTableClient.eraseTableGroupFromCache(tableName);
+                    real_tableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, true);
+                    tableObPair = obTableClient.getTable(real_tableName, rowKey,
+                            false, false, obTableClient.getRoute(false));
+                    lsId = tableObPair.getRight().getLsId();
+                } else {
+                    throw e;
+                }
+            }
 
             Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperations
                     = lsOperationsMap.computeIfAbsent(lsId, k -> new HashMap<>());
             // if ls id not exists
 
+            ObPair<Long, ObTableParam> finalTableObPair = tableObPair;
             ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>> singleOperations =
-                    tabletOperations.computeIfAbsent(tableObPair.getLeft(), k -> new ObPair<>(tableObPair.getRight(), new ArrayList<>()));
+                    tabletOperations.computeIfAbsent(tableObPair.getLeft(), k -> new ObPair<>(finalTableObPair.getRight(), new ArrayList<>()));
             // if tablet id not exists
             singleOperations.getRight().add(operationsWithIndex.get(i));
         }
@@ -565,6 +582,14 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 } else if (ex instanceof ObTableException
                         && ((ObTableException) ex).isNeedRefreshTableEntry()) {
                     needRefreshTableEntry = true;
+                    if (((ObTableException) ex).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode
+                            && obTableClient.isTableGroupName(tableName)
+                            && obTableClient.getTableGroupInverted().get(realTableName) != null) {
+                        // TABLE_NOT_EXIST + tableName is tableGroup + TableGroup cache is not empty
+                        // means tableGroupName cache need to refresh
+                        obTableClient.eraseTableGroupFromCache(tableName);
+                        realTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, true);
+                    }
                     if (obTableClient.isRetryOnChangeMasterTimes()
                             && (tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
                         if (ex instanceof ObTableNeedFetchAllException) {
