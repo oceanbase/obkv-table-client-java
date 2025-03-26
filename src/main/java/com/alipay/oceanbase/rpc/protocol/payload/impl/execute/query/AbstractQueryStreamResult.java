@@ -71,8 +71,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     private ObReadConsistency                                                  readConsistency     = ObReadConsistency.STRONG;
     // ObRowKey objs: [startKey, MIN_OBJECT, MIN_OBJECT]
     public List<ObObj>                                                         currentStartKey;
-    protected ObTableClient          client;
-    
+    protected ObTableClient                                                    client;
+
     /*
      * Get pcode.
      */
@@ -146,8 +146,10 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                             route.setBlackList(failedServerList);
                         }
                         if (ObGlobal.obVsnMajor() >= 4) {
-                            TableEntry tableEntry = client.getOrRefreshTableEntry(indexTableName, false, false, false);
-                            client.refreshTableLocationByTabletId(tableEntry, indexTableName, client.getTabletIdByPartId(tableEntry, partIdWithIndex.getLeft()));
+                            TableEntry tableEntry = client.getOrRefreshTableEntry(indexTableName,
+                                false, false, false);
+                            client.refreshTableLocationByTabletId(tableEntry, indexTableName,
+                                client.getTabletIdByPartId(tableEntry, partIdWithIndex.getLeft()));
                         }
 
                         subObTable = client
@@ -239,12 +241,15 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         }
                     } else if (e instanceof ObTableException) {
                         if ((((ObTableException) e).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode || ((ObTableException) e)
-                            .getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode)
+                            .getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode || ((ObTableException) e)
+                                .getErrorCode() == ResultCodes.OB_SCHEMA_ERROR.errorCode)
                             && ((request instanceof ObTableQueryAsyncRequest && ((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery().isHbaseQuery())
                             || (request instanceof ObTableQueryRequest && ((ObTableQueryRequest) request).getTableQuery().isHbaseQuery()))
                             && client.getTableGroupInverted().get(indexTableName) != null) {
                             // table not exists && hbase mode && table group exists , three condition both
                             client.eraseTableGroupFromCache(tableName);
+                            indexTableName = client.tryGetTableNameFromTableGroupCache(tableName,
+                                true);
                         }
                         if (((ObTableException) e).isNeedRefreshTableEntry()) {
                             needRefreshTableEntry = true;
@@ -256,11 +261,10 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                     throw e;
                                 }
                             } else {
-                                String logMessage = String.format(
+                                String logMessage = String
+                                    .format(
                                         "exhaust retry while meet NeedRefresh Exception, table name: %s, batch ops refresh table, errorCode: %d",
-                                        indexTableName,
-                                        ((ObTableException) e).getErrorCode()
-                                );
+                                        indexTableName, ((ObTableException) e).getErrorCode());
                                 logger.warn(logMessage, e);
                                 client.calculateContinuousFailure(indexTableName, e.getMessage());
                                 throw new ObTableRetryExhaustedException(logMessage, e);
@@ -434,7 +438,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         }
 
         if (closed) {
-            throw new IllegalStateException("table " + indexTableName + " query stream result is closed");
+            throw new IllegalStateException("table " + indexTableName
+                                            + " query stream result is closed");
         }
     }
 
@@ -565,7 +570,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         if (tableQuery.getBatchSize() == -1) {
             if (!expectant.isEmpty()) {
                 Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
-                        .iterator();
+                    .iterator();
                 int retryTimes = 0;
                 while (it.hasNext()) {
                     Map.Entry<Long, ObPair<Long, ObTableParam>> entry = it.next();
@@ -579,10 +584,11 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                             retryTimes++;
                             if (retryTimes > client.getRuntimeRetryTimes()) {
                                 RUNTIME.error("Fail to get refresh table entry response after {}",
-                                        retryTimes);
+                                    retryTimes);
                                 throw new ObTableRetryExhaustedException(
-                                        "Fail to get refresh table entry response after " + retryTimes +
-                                                "errorCode:" + ((ObTableNeedFetchAllException) e).getErrorCode());
+                                    "Fail to get refresh table entry response after " + retryTimes
+                                            + "errorCode:"
+                                            + ((ObTableNeedFetchAllException) e).getErrorCode());
 
                             }
                         } else {

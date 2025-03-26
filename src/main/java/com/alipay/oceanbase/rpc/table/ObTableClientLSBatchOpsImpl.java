@@ -582,7 +582,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 } else if (ex instanceof ObTableException
                         && ((ObTableException) ex).isNeedRefreshTableEntry()) {
                     needRefreshTableEntry = true;
-                    if (((ObTableException) ex).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode
+                    if ((((ObTableException) ex).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode ||
+                            ((ObTableException) ex).getErrorCode() == ResultCodes.OB_SCHEMA_ERROR.errorCode)
                             && obTableClient.isTableGroupName(tableName)
                             && obTableClient.getTableGroupInverted().get(realTableName) != null) {
                         // TABLE_NOT_EXIST + tableName is tableGroup + TableGroup cache is not empty
