@@ -195,6 +195,7 @@ public class ObTableRemoting extends BaseRemoting {
     private boolean needFetchAll(int errorCode, int pcode) {
         return errorCode == ResultCodes.OB_SCHEMA_ERROR.errorCode
                || errorCode == ResultCodes.OB_TABLE_NOT_EXIST.errorCode
+               || errorCode == ResultCodes.OB_ERR_UNKNOWN_TABLE.errorCode
                || errorCode == ResultCodes.OB_TABLET_NOT_EXIST.errorCode
                || errorCode == ResultCodes.OB_LS_NOT_EXIST.errorCode
                || errorCode == ResultCodes.OB_MAPPING_BETWEEN_TABLET_AND_LS_NOT_EXIST.errorCode
