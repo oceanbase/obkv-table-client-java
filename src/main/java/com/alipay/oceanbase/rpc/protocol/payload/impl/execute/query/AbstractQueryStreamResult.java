@@ -240,16 +240,21 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                             throw e;
                         }
                     } else if (e instanceof ObTableException) {
-                        if ((((ObTableException) e).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode || ((ObTableException) e)
-                            .getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode || ((ObTableException) e)
-                                .getErrorCode() == ResultCodes.OB_SCHEMA_ERROR.errorCode)
-                            && ((request instanceof ObTableQueryAsyncRequest && ((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery().isHbaseQuery())
-                            || (request instanceof ObTableQueryRequest && ((ObTableQueryRequest) request).getTableQuery().isHbaseQuery()))
+                        if ((((ObTableException) e).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode
+                             || ((ObTableException) e).getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode || ((ObTableException) e)
+                            .getErrorCode() == ResultCodes.OB_SCHEMA_ERROR.errorCode)
+                            && ((request instanceof ObTableQueryAsyncRequest && ((ObTableQueryAsyncRequest) request)
+                                .getObTableQueryRequest().getTableQuery().isHbaseQuery()) || (request instanceof ObTableQueryRequest && ((ObTableQueryRequest) request)
+                                .getTableQuery().isHbaseQuery()))
                             && client.getTableGroupInverted().get(indexTableName) != null) {
                             // table not exists && hbase mode && table group exists , three condition both
                             client.eraseTableGroupFromCache(tableName);
-                            indexTableName = client.tryGetTableNameFromTableGroupCache(tableName,
-                                true);
+                            String newIndexTableName = client.tryGetTableNameFromTableGroupCache(tableName, true);
+                            if (indexTableName.equalsIgnoreCase(newIndexTableName)) {
+                                throw new ObTableNotExistException("multi column-family operations contain not existed table name", ResultCodes.OB_ERR_UNKNOWN_TABLE.errorCode);
+                            } else {
+                                indexTableName = newIndexTableName;
+                            }
                         }
                         if (((ObTableException) e).isNeedRefreshTableEntry()) {
                             needRefreshTableEntry = true;

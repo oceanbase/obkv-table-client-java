@@ -589,7 +589,12 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         // TABLE_NOT_EXIST + tableName is tableGroup + TableGroup cache is not empty
                         // means tableGroupName cache need to refresh
                         obTableClient.eraseTableGroupFromCache(tableName);
-                        realTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, true);
+                        String newRealTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, true);
+                        if (realTableName.equalsIgnoreCase(newRealTableName)) {
+                            throw new ObTableNotExistException("multi column-family operations contain not existed table name", ResultCodes.OB_ERR_UNKNOWN_TABLE.errorCode);
+                        } else {
+                            realTableName = newRealTableName;
+                        }
                     }
                     if (obTableClient.isRetryOnChangeMasterTimes()
                             && (tryTimes - 1) < obTableClient.getRuntimeRetryTimes()) {
