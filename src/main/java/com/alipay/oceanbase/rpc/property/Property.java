@@ -102,7 +102,7 @@ public enum Property {
 
     RUNTIME_MAX_WAIT("runtime.max.wait", 5000L, "单次执行超时时间会在超时时间内重试"),
 
-    RUNTIME_BATCH_MAX_WAIT("runtime.batch.max.wait", 5000L, "批量执行请求的超时时间"),
+    RUNTIME_BATCH_MAX_WAIT("runtime.batch.max.wait", 10000L, "批量执行请求的超时时间"),
 
     // [ObTableClient][LOG]
     SLOW_QUERY_MONITOR_THRESHOLD("slow.query.monitor.threshold", -1L, "记录到 MONITOR 日志中的慢操作的运行时间阈值"),

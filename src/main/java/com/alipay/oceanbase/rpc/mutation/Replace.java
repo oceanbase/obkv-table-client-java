@@ -127,8 +127,7 @@ public class Replace extends Mutation<Replace> {
         if (null == getQuery()) {
             // simple replace, without filter
             return new MutationResult(((ObTableClient) getClient()).replaceWithResult(
-                getTableName(), getRowKey(), getKeyRanges(), columns.toArray(new String[0]),
-                values.toArray()));
+                getTableName(), getRowKey(), columns.toArray(new String[0]), values.toArray()));
         } else {
             throw new ObTableException("Replace with query(filter) is not supported yet");
         }

@@ -24,6 +24,7 @@ import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.filter.*;
 import com.alipay.oceanbase.rpc.location.model.ObServerAddr;
 import com.alipay.oceanbase.rpc.location.model.ServerRoster;
+import com.alipay.oceanbase.rpc.location.model.TableRoute;
 import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.mutation.result.*;
 import com.alipay.oceanbase.rpc.property.Property;
@@ -84,10 +85,11 @@ public class ObTableClientTest extends ObTableClientTestBase {
     }
 
     private long getMaxAccessTime(ObTableClient client) throws Exception {
-        Class clientClass = client.getClass();
-        Field field = clientClass.getDeclaredField("serverRoster");
+        TableRoute tableRoute = client.getTableRoute();
+        Class routeClass = tableRoute.getClass();
+        Field field = routeClass.getDeclaredField("serverRoster");
         field.setAccessible(true);
-        ServerRoster serverRoster = (ServerRoster) field.get(client);
+        ServerRoster serverRoster = (ServerRoster) field.get(tableRoute);
         long resTime = 0;
         for (ObServerAddr addr : serverRoster.getMembers()) {
             resTime = Math.max(resTime, addr.getLastAccessTime());
@@ -1676,7 +1678,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                 Assert.assertTrue(false);
             } catch (Exception e) {
                 Assert.assertTrue(e instanceof ObTableException);
-                Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
+                Assert.assertEquals(ResultCodes.OB_KV_COLUMN_TYPE_NOT_MATCH.errorCode,
                     ((ObTableException) e).getErrorCode());
             }
             // increment non-integer column with filter
@@ -1687,7 +1689,7 @@ public class ObTableClientTest extends ObTableClientTestBase {
                     .setFilter(compareVal(ObCompareOp.EQ, "c4", 200L)).execute();
             } catch (Exception e) {
                 Assert.assertTrue(e instanceof ObTableException);
-                Assert.assertEquals(ResultCodes.OB_NOT_SUPPORTED.errorCode,
+                Assert.assertEquals(ResultCodes.OB_KV_COLUMN_TYPE_NOT_MATCH.errorCode,
                     ((ObTableException) e).getErrorCode());
             }
 

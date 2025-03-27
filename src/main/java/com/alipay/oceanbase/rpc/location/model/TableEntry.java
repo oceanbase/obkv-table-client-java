@@ -44,10 +44,12 @@ public class TableEntry {
     private Long                             tableId               = Constants.OB_INVALID_ID;
     private Long                             partitionNum          = Constants.OB_INVALID_ID; //for dummy entry, it is one
     private Long                             replicaNum            = Constants.OB_INVALID_ID;
+    private Long                             schemaVersion         = Constants.OB_INVALID_ID; // schema_version, to ensure atomicity of meta information in version above 4352
     private ObPartitionInfo                  partitionInfo         = null;
-    private volatile long                    refreshTimeMills;
-    private volatile long                    refreshAllTimeMills;
-    private volatile long                    odpRefreshTimeMills;
+    // this create time is the creation time of this odp tableEntry in odp server
+    private volatile long                    odpMetaCreateTimeMills;
+    private volatile long                    refreshMetaTimeMills;
+    private volatile long                    refreshPartLocationTimeMills;
     private Map<String, Integer>             rowKeyElement         = null;
 
     // table location
@@ -89,11 +91,21 @@ public class TableEntry {
     }
 
     /*
+     * Get schema version
+     * */
+    public Long getSchemaVersion() { return schemaVersion; }
+
+    /*
      * Set partition num.
      */
     public void setPartitionNum(Long partitionNum) {
         this.partitionNum = partitionNum;
     }
+
+    /*
+    * Set schema version
+    * */
+    public void setSchemaVersion(Long schemaVersion) { this.schemaVersion = schemaVersion; }
 
     /*
      * Get replica num.
@@ -149,37 +161,43 @@ public class TableEntry {
     /*
      * Get refresh time mills.
      */
-    public long getRefreshTimeMills() {
-        return refreshTimeMills;
+    public long getRefreshMetaTimeMills() {
+        return refreshMetaTimeMills;
     }
 
     /*
      * Get refresh time mills.
      */
-    public long getRefreshAllTimeMills() {
-        return refreshAllTimeMills;
+    public long getRefreshPartLocationTimeMills() {
+        return refreshPartLocationTimeMills;
     }
 
-    public long getOdpRefreshTimeMills() {
-        return odpRefreshTimeMills;
+    /*
+     * Get odp creation time mills.
+     */
+    public long getODPMetaCreateTimeMills() {
+        return odpMetaCreateTimeMills;
     }
 
     /*
      * Set refresh time mills.
      */
-    public void setRefreshTimeMills(long refreshTimeMills) {
-        this.refreshTimeMills = refreshTimeMills;
+    public void setRefreshMetaTimeMills(long refreshMetaTimeMills) {
+        this.refreshMetaTimeMills = refreshMetaTimeMills;
     }
 
     /*
      * Set refresh all time mills.
      */
-    public void setRefreshAllTimeMills(long refreshAllTimeMills) {
-        this.refreshAllTimeMills = refreshAllTimeMills;
+    public void setRefreshPartLocationTimeMills(long refreshPartLocationTimeMills) {
+        this.refreshPartLocationTimeMills = refreshPartLocationTimeMills;
     }
 
-    public void setOdpRefreshTimeMills(long odpRefreshTimeMills) {
-        this.odpRefreshTimeMills = odpRefreshTimeMills;
+    /*
+     * Set odp creation time mills.
+     */
+    public void setODPMetaCreateTimeMills(long odpMetaCreateTimeMills) {
+        this.odpMetaCreateTimeMills = odpMetaCreateTimeMills;
     }
 
     public Map<String, Integer> getRowKeyElement() {
@@ -265,8 +283,8 @@ public class TableEntry {
     public String toString() {
         return "TableEntry{" + "tableId=" + tableId + ", partitionNum=" + partitionNum
                + ", replicaNum=" + replicaNum + ", partitionInfo=" + partitionInfo
-               + ", refreshTimeMills=" + refreshTimeMills + ", refreshAllTimeMills="
-               + refreshAllTimeMills + ", rowKeyElement=" + rowKeyElement + ", tableLocation="
+               + ", refreshMetaTimeMills=" + refreshMetaTimeMills + ", refreshPartLocationTimeMills="
+               + refreshPartLocationTimeMills + ", rowKeyElement=" + rowKeyElement + ", tableLocation="
                + tableLocation + ", tableEntryKey=" + tableEntryKey + ", partitionEntry="
                + partitionEntry + '}';
     }

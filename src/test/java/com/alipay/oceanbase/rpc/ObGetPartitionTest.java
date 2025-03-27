@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.*;
 import static com.alipay.oceanbase.rpc.util.ObTableClientTestUtil.cleanTable;
 import static com.alipay.oceanbase.rpc.util.ObTableClientTestUtil.generateRandomStringByUUID;
+
 public class ObGetPartitionTest {
 
     public ObTableClient        client;
@@ -55,63 +56,59 @@ public class ObGetPartitionTest {
         this.client = obTableClient;
         Connection connection = ObTableClientTestUtil.getConnection();
         Statement statement = connection.createStatement();
-        statement.execute("CREATE TABLE IF NOT EXISTS `test_mutation` (\n" +
-                "    `c1` bigint NOT NULL,\n" +
-                "    `c2` varchar(20) NOT NULL,\n" +
-                "    `c3` varbinary(1024) DEFAULT NULL,\n" +
-                "    `c4` bigint DEFAULT NULL,\n" +
-                "    PRIMARY KEY(`c1`, `c2`)) partition by range columns (`c1`) (\n" +
-                "          PARTITION p0 VALUES LESS THAN (300),\n" +
-                "          PARTITION p1 VALUES LESS THAN (1000),\n" +
-                "          PARTITION p2 VALUES LESS THAN MAXVALUE);");
-        statement.execute("CREATE TABLE IF NOT EXISTS `test_blob_table` (\n" +
-                "    `c1` varchar(20) NOT NULL,\n" +
-                "    `c2` blob DEFAULT NULL,\n" +
-                "    PRIMARY KEY (`c1`)\n" +
-                "    );");
-        statement.execute("CREATE TABLE IF NOT EXISTS `testSubStrKey` (\n" +
-                "                    `K` varbinary(1024),\n" +
-                "                    `Q` varbinary(256),\n" +
-                "                    `T` bigint,\n" +
-                "                    `V` varbinary(1024),\n" +
-                "                    K_PREFIX varbinary(1024) generated always as (substring(`K`, 1, 4)),\n" +
-                "                    PRIMARY KEY(`K`, `Q`, `T`)\n" +
-                "                ) partition by key(K_PREFIX) partitions 15;");
-        statement.execute("CREATE TABLE IF NOT EXISTS `testPartitionKeyComplex` (\n" +
-                "        `c0` tinyint NOT NULL,\n" +
-                "        `c1` int NOT NULL,\n" +
-                "        `c2` bigint NOT NULL,\n" +
-                "        `c3` varbinary(1024) NOT NULL,\n" +
-                "        `c4` varchar(1024) NOT NULL,\n" +
-                "        `c5` varchar(1024) NOT NULL,\n" +
-                "        `c6` varchar(20) default NULL,\n" +
-                "    PRIMARY KEY (`c0`, `c1`, `c2`, `c3`, `c4`, `c5`)\n" +
-                "    ) DEFAULT CHARSET = utf8mb4 ROW_FORMAT = DYNAMIC COMPRESSION = 'lz4_1.0' REPLICA_NUM = 3 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 10\n" +
-                "    partition by key(`c0`, `c1`, `c2`, `c3`, `c4`) subpartition by key(`c5`) subpartitions 4 partitions 16;");
-        statement.execute("CREATE TABLE IF NOT EXISTS `testRange` (\n" +
-                "        `c1` int NOT NULL,\n" +
-                "        `c2` varchar(20) NOT NULL,\n" +
-                "        `c3` varbinary(1024) DEFAULT NULL,\n" +
-                "        `c4` bigint DEFAULT NULL,\n" +
-                "        PRIMARY KEY(`c1`, `c2`)) partition by range columns (`c1`, `c2`) (\n" +
-                "              PARTITION p0 VALUES LESS THAN (300, 't'),\n" +
-                "              PARTITION p1 VALUES LESS THAN (1000, 'T'),\n" +
-                "              PARTITION p2 VALUES LESS THAN (MAXVALUE, MAXVALUE));");
-        statement.execute("CREATE TABLE IF NOT EXISTS `testHash`(\n" +
-                "        `K` bigint,\n" +
-                "        `Q` varbinary(256),\n" +
-                "        `T` bigint,\n" +
-                "        `V` varbinary(1024),\n" +
-                "        INDEX i1(`K`, `V`) local,\n" +
-                "        PRIMARY KEY(`K`, `Q`, `T`)\n" +
-                "    ) partition by hash(`K`) partitions 16;");
-        statement.execute("CREATE TABLE IF NOT EXISTS `testKey` (\n" +
-                "        `K` varbinary(1024),\n" +
-                "        `Q` varbinary(256),\n" +
-                "        `T` bigint,\n" +
-                "        `V` varbinary(1024),\n" +
-                "        PRIMARY KEY(`K`, `Q`, `T`)\n" +
-                "    ) partition by key(K) partitions 15;");
+        statement.execute("CREATE TABLE IF NOT EXISTS `test_mutation` (\n"
+                          + "    `c1` bigint NOT NULL,\n" + "    `c2` varchar(20) NOT NULL,\n"
+                          + "    `c3` varbinary(1024) DEFAULT NULL,\n"
+                          + "    `c4` bigint DEFAULT NULL,\n"
+                          + "    PRIMARY KEY(`c1`, `c2`)) partition by range columns (`c1`) (\n"
+                          + "          PARTITION p0 VALUES LESS THAN (300),\n"
+                          + "          PARTITION p1 VALUES LESS THAN (1000),\n"
+                          + "          PARTITION p2 VALUES LESS THAN MAXVALUE);");
+        statement.execute("CREATE TABLE IF NOT EXISTS `test_blob_table` (\n"
+                          + "    `c1` varchar(20) NOT NULL,\n" + "    `c2` blob DEFAULT NULL,\n"
+                          + "    PRIMARY KEY (`c1`)\n" + "    );");
+        statement
+            .execute("CREATE TABLE IF NOT EXISTS `testSubStrKey` (\n"
+                     + "                    `K` varbinary(1024),\n"
+                     + "                    `Q` varbinary(256),\n"
+                     + "                    `T` bigint,\n"
+                     + "                    `V` varbinary(1024),\n"
+                     + "                    K_PREFIX varbinary(1024) generated always as (substring(`K`, 1, 4)),\n"
+                     + "                    PRIMARY KEY(`K`, `Q`, `T`)\n"
+                     + "                ) partition by key(K_PREFIX) partitions 15;");
+        statement
+            .execute("CREATE TABLE IF NOT EXISTS `testPartitionKeyComplex` (\n"
+                     + "        `c0` tinyint NOT NULL,\n"
+                     + "        `c1` int NOT NULL,\n"
+                     + "        `c2` bigint NOT NULL,\n"
+                     + "        `c3` varbinary(1024) NOT NULL,\n"
+                     + "        `c4` varchar(1024) NOT NULL,\n"
+                     + "        `c5` varchar(1024) NOT NULL,\n"
+                     + "        `c6` varchar(20) default NULL,\n"
+                     + "    PRIMARY KEY (`c0`, `c1`, `c2`, `c3`, `c4`, `c5`)\n"
+                     + "    ) DEFAULT CHARSET = utf8mb4 ROW_FORMAT = DYNAMIC COMPRESSION = 'lz4_1.0' REPLICA_NUM = 3 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 10\n"
+                     + "    partition by key(`c0`, `c1`, `c2`, `c3`, `c4`) subpartition by key(`c5`) subpartitions 4 partitions 16;");
+        statement
+            .execute("CREATE TABLE IF NOT EXISTS `testRange` (\n"
+                     + "        `c1` int NOT NULL,\n"
+                     + "        `c2` varchar(20) NOT NULL,\n"
+                     + "        `c3` varbinary(1024) DEFAULT NULL,\n"
+                     + "        `c4` bigint DEFAULT NULL,\n"
+                     + "        PRIMARY KEY(`c1`, `c2`)) partition by range columns (`c1`, `c2`) (\n"
+                     + "              PARTITION p0 VALUES LESS THAN (300, 't'),\n"
+                     + "              PARTITION p1 VALUES LESS THAN (1000, 'T'),\n"
+                     + "              PARTITION p2 VALUES LESS THAN (MAXVALUE, MAXVALUE));");
+        statement.execute("CREATE TABLE IF NOT EXISTS `testHash`(\n" + "        `K` bigint,\n"
+                          + "        `Q` varbinary(256),\n" + "        `T` bigint,\n"
+                          + "        `V` varbinary(1024),\n"
+                          + "        INDEX i1(`K`, `V`) local,\n"
+                          + "        PRIMARY KEY(`K`, `Q`, `T`)\n"
+                          + "    ) partition by hash(`K`) partitions 16;");
+        statement.execute("CREATE TABLE IF NOT EXISTS `testKey` (\n"
+                          + "        `K` varbinary(1024),\n" + "        `Q` varbinary(256),\n"
+                          + "        `T` bigint,\n" + "        `V` varbinary(1024),\n"
+                          + "        PRIMARY KEY(`K`, `Q`, `T`)\n"
+                          + "    ) partition by key(K) partitions 15;");
         cleanTable(TABLE_NAME);
         cleanTable(TABLE_NAME1);
         cleanTable(TABLE_NAME2);
@@ -339,7 +336,7 @@ public class ObGetPartitionTest {
 
     @Test
     public void testGetPartitionWithRowKeyValues() throws Exception {
-        client.addRowKeyElement("test_mutation", new String[] {"c1", "c2" } );
+        client.addRowKeyElement("test_mutation", new String[] { "c1", "c2" });
         Object values[][] = { { 1L, "c2_val", "c3_val", 100L }, { 400L, "c2_val", "c3_val", 100L },
                 { 1001L, "c2_val", "c3_val", 100L } };
         int rowCnt = values.length;
@@ -363,7 +360,8 @@ public class ObGetPartitionTest {
                 row(colVal("c1", 1L), colVal("c2", "c2_val")), false);
             Assert.assertNotNull(partition.getPartitionId());
             // test get partition with partition key
-            Partition partition_prefix = client.getPartition(TABLE_NAME, row(colVal("c1", 1L)), false);
+            Partition partition_prefix = client.getPartition(TABLE_NAME, row(colVal("c1", 1L)),
+                false);
             Assert.assertEquals(partition.getPartitionId(), partition_prefix.getPartitionId());
 
         } catch (Exception e) {
@@ -556,7 +554,7 @@ public class ObGetPartitionTest {
                                   + "(c0, c1, c2, c3, c4, c5, c6) values (" + c0 + "," + c1 + ","
                                   + c2 + ",'" + c3 + "','" + c4 + "','" + c5 + "'," + "'value')");
                 Partition partition = client.getPartition(
-                        TABLE_NAME6,
+                    TABLE_NAME6,
                     row(colVal("c0", c0), colVal("c1", c1), colVal("c2", c2), colVal("c3", c3),
                         colVal("c4", c4), colVal("c5", c5)), false);
                 System.out.println(partition.toString());

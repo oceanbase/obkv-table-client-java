@@ -62,8 +62,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class ODPGetPartitionMetaTest {
-    public ObTableClient client;
-    private static final String TABLE_NAME = "test_tinyint_table";
+    public ObTableClient        client;
+    private static final String TABLE_NAME  = "test_tinyint_table";
     private static final String TABLE_NAME1 = "testKey";
     private static final String TABLE_NAME2 = "testHash";
     private static final String TABLE_NAME3 = "testRange";
@@ -78,80 +78,79 @@ public class ODPGetPartitionMetaTest {
         this.client = obTableClient;
         Connection connection = ObTableClientTestUtil.getConnection();
         Statement statement = connection.createStatement();
-        statement.execute("CREATE TABLE IF NOT EXISTS `test_tinyint_table` (\n" +
-                "        `c1` varchar(20) NOT NULL,\n" +
-                "        `c2` tinyint(4) DEFAULT NULL,\n" +
-                "        PRIMARY KEY (`c1`)\n" +
-                "      );");
-        statement.execute("CREATE TABLE IF NOT EXISTS `testKey` (\n" +
-                "        `K` varbinary(1024),\n" +
-                "        `Q` varbinary(256),\n" +
-                "        `T` bigint,\n" +
-                "        `V` varbinary(1024),\n" +
-                "        PRIMARY KEY(`K`, `Q`, `T`)\n" +
-                "    ) partition by key(K) partitions 15;");
-        statement.execute("CREATE TABLE IF NOT EXISTS `testHash`(\n" +
-                "        `K` bigint,\n" +
-                "        `Q` varbinary(256),\n" +
-                "        `T` bigint,\n" +
-                "        `V` varbinary(1024),\n" +
-                "        INDEX i1(`K`, `V`) local,\n" +
-                "        PRIMARY KEY(`K`, `Q`, `T`)\n" +
-                "    ) partition by hash(`K`) partitions 16;");
-        statement.execute("CREATE TABLE IF NOT EXISTS `testRange` (\n" +
-                "                `c1` int NOT NULL,\n" +
-                "                `c2` varchar(20) NOT NULL,\n" +
-                "                `c3` varbinary(1024) DEFAULT NULL,\n" +
-                "                `c4` bigint DEFAULT NULL,\n" +
-                "                PRIMARY KEY(`c1`, `c2`)) partition by range columns (`c1`, `c2`) (\n" +
-                "                      PARTITION p0 VALUES LESS THAN (300, 't'),\n" +
-                "                      PARTITION p1 VALUES LESS THAN (1000, 'T'),\n" +
-                "                      PARTITION p2 VALUES LESS THAN (MAXVALUE, MAXVALUE));");
-        statement.execute("CREATE TABLE IF NOT EXISTS `testPartitionKeyComplex` (\n" +
-                "        `c0` tinyint NOT NULL,\n" +
-                "        `c1` int NOT NULL,\n" +
-                "        `c2` bigint NOT NULL,\n" +
-                "        `c3` varbinary(1024) NOT NULL,\n" +
-                "        `c4` varchar(1024) NOT NULL,\n" +
-                "        `c5` varchar(1024) NOT NULL,\n" +
-                "        `c6` varchar(20) default NULL,\n" +
-                "    PRIMARY KEY (`c0`, `c1`, `c2`, `c3`, `c4`, `c5`)\n" +
-                "    ) DEFAULT CHARSET = utf8mb4 ROW_FORMAT = DYNAMIC COMPRESSION = 'lz4_1.0' REPLICA_NUM = 3 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 10\n" +
-                "    partition by key(`c0`, `c1`, `c2`, `c3`, `c4`) subpartition by key(`c5`) subpartitions 4 partitions 16;");
-        statement.execute("CREATE TABLE IF NOT EXISTS `testPartitionRangeComplex` (\n" +
-                "       `c1` int NOT NULL,\n" +
-                "       `c2` bigint NOT NULL,\n" +
-                "       `c3` varbinary(1024) NOT NULL,\n" +
-                "       `c4` varchar(1024) NOT NULL,\n" +
-                "       `c5` varchar(20) default NULL,\n" +
-                "    PRIMARY KEY (`c1`, `c2`, `c3`, `c4`)\n" +
-                "    ) DEFAULT CHARSET = utf8mb4 ROW_FORMAT = DYNAMIC COMPRESSION = 'lz4_1.0' REPLICA_NUM = 3 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 10\n" +
-                "    partition by range(`c1`) subpartition by range columns (`c2`, `c3`, `c4`) (\n" +
-                "    PARTITION p0 VALUES LESS THAN (500)\n" +
-                "    (\n" +
-                "       SUBPARTITION p0sp0 VALUES LESS THAN (500, 't', 't'),\n" +
-                "       SUBPARTITION p0sp1 VALUES LESS THAN (1000, 'T', 'T'),\n" +
-                "       SUBPARTITION p0sp2 VALUES LESS THAN (MAXVALUE, MAXVALUE, MAXVALUE)\n" +
-                "    ),\n" +
-                "    PARTITION p1 VALUES LESS THAN (1000)\n" +
-                "    (\n" +
-                "       SUBPARTITION p1sp0 VALUES LESS THAN (500, 't', 't'),\n" +
-                "       SUBPARTITION p1sp1 VALUES LESS THAN (1000, 'T', 'T'),\n" +
-                "       SUBPARTITION p1sp2 VALUES LESS THAN (MAXVALUE, MAXVALUE, MAXVALUE)\n" +
-                "    ),\n" +
-                "    PARTITION p2 VALUES LESS THAN MAXVALUE\n" +
-                "    (\n" +
-                "       SUBPARTITION p2sp0 VALUES LESS THAN (500, 't', 't'),\n" +
-                "       SUBPARTITION p2sp1 VALUES LESS THAN (1000, 'T', 'T'),\n" +
-                "       SUBPARTITION p2sp2 VALUES LESS THAN (MAXVALUE, MAXVALUE, MAXVALUE)\n" +
-                "    ));");
-        statement.execute("CREATE TABLE IF NOT EXISTS `test_auto_increment_rowkey` ("
-                        + "`c1` int auto_increment,"
-                        + "`c2` int NOT NULL,"
-                        + "`c3` int DEFAULT NULL,"
-                        + "`c4` varchar(255) DEFAULT NULL,"
-                        + "PRIMARY KEY(`c1`, `c2`)) partition by range columns(`c2`)"
-                        + "(PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (1000));");
+        statement.execute("CREATE TABLE IF NOT EXISTS `test_tinyint_table` (\n"
+                          + "        `c1` varchar(20) NOT NULL,\n"
+                          + "        `c2` tinyint(4) DEFAULT NULL,\n"
+                          + "        PRIMARY KEY (`c1`)\n" + "      );");
+        statement.execute("CREATE TABLE IF NOT EXISTS `testKey` (\n"
+                          + "        `K` varbinary(1024),\n" + "        `Q` varbinary(256),\n"
+                          + "        `T` bigint,\n" + "        `V` varbinary(1024),\n"
+                          + "        PRIMARY KEY(`K`, `Q`, `T`)\n"
+                          + "    ) partition by key(K) partitions 15;");
+        statement.execute("CREATE TABLE IF NOT EXISTS `testHash`(\n" + "        `K` bigint,\n"
+                          + "        `Q` varbinary(256),\n" + "        `T` bigint,\n"
+                          + "        `V` varbinary(1024),\n"
+                          + "        INDEX i1(`K`, `V`) local,\n"
+                          + "        PRIMARY KEY(`K`, `Q`, `T`)\n"
+                          + "    ) partition by hash(`K`) partitions 16;");
+        statement
+            .execute("CREATE TABLE IF NOT EXISTS `testRange` (\n"
+                     + "                `c1` int NOT NULL,\n"
+                     + "                `c2` varchar(20) NOT NULL,\n"
+                     + "                `c3` varbinary(1024) DEFAULT NULL,\n"
+                     + "                `c4` bigint DEFAULT NULL,\n"
+                     + "                PRIMARY KEY(`c1`, `c2`)) partition by range columns (`c1`, `c2`) (\n"
+                     + "                      PARTITION p0 VALUES LESS THAN (300, 't'),\n"
+                     + "                      PARTITION p1 VALUES LESS THAN (1000, 'T'),\n"
+                     + "                      PARTITION p2 VALUES LESS THAN (MAXVALUE, MAXVALUE));");
+        statement
+            .execute("CREATE TABLE IF NOT EXISTS `testPartitionKeyComplex` (\n"
+                     + "        `c0` tinyint NOT NULL,\n"
+                     + "        `c1` int NOT NULL,\n"
+                     + "        `c2` bigint NOT NULL,\n"
+                     + "        `c3` varbinary(1024) NOT NULL,\n"
+                     + "        `c4` varchar(1024) NOT NULL,\n"
+                     + "        `c5` varchar(1024) NOT NULL,\n"
+                     + "        `c6` varchar(20) default NULL,\n"
+                     + "    PRIMARY KEY (`c0`, `c1`, `c2`, `c3`, `c4`, `c5`)\n"
+                     + "    ) DEFAULT CHARSET = utf8mb4 ROW_FORMAT = DYNAMIC COMPRESSION = 'lz4_1.0' REPLICA_NUM = 3 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 10\n"
+                     + "    partition by key(`c0`, `c1`, `c2`, `c3`, `c4`) subpartition by key(`c5`) subpartitions 4 partitions 16;");
+        statement
+            .execute("CREATE TABLE IF NOT EXISTS `testPartitionRangeComplex` (\n"
+                     + "       `c1` int NOT NULL,\n"
+                     + "       `c2` bigint NOT NULL,\n"
+                     + "       `c3` varbinary(1024) NOT NULL,\n"
+                     + "       `c4` varchar(1024) NOT NULL,\n"
+                     + "       `c5` varchar(20) default NULL,\n"
+                     + "    PRIMARY KEY (`c1`, `c2`, `c3`, `c4`)\n"
+                     + "    ) DEFAULT CHARSET = utf8mb4 ROW_FORMAT = DYNAMIC COMPRESSION = 'lz4_1.0' REPLICA_NUM = 3 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 10\n"
+                     + "    partition by range(`c1`) subpartition by range columns (`c2`, `c3`, `c4`) (\n"
+                     + "    PARTITION p0 VALUES LESS THAN (500)\n"
+                     + "    (\n"
+                     + "       SUBPARTITION p0sp0 VALUES LESS THAN (500, 't', 't'),\n"
+                     + "       SUBPARTITION p0sp1 VALUES LESS THAN (1000, 'T', 'T'),\n"
+                     + "       SUBPARTITION p0sp2 VALUES LESS THAN (MAXVALUE, MAXVALUE, MAXVALUE)\n"
+                     + "    ),\n"
+                     + "    PARTITION p1 VALUES LESS THAN (1000)\n"
+                     + "    (\n"
+                     + "       SUBPARTITION p1sp0 VALUES LESS THAN (500, 't', 't'),\n"
+                     + "       SUBPARTITION p1sp1 VALUES LESS THAN (1000, 'T', 'T'),\n"
+                     + "       SUBPARTITION p1sp2 VALUES LESS THAN (MAXVALUE, MAXVALUE, MAXVALUE)\n"
+                     + "    ),\n"
+                     + "    PARTITION p2 VALUES LESS THAN MAXVALUE\n"
+                     + "    (\n"
+                     + "       SUBPARTITION p2sp0 VALUES LESS THAN (500, 't', 't'),\n"
+                     + "       SUBPARTITION p2sp1 VALUES LESS THAN (1000, 'T', 'T'),\n"
+                     + "       SUBPARTITION p2sp2 VALUES LESS THAN (MAXVALUE, MAXVALUE, MAXVALUE)\n"
+                     + "    ));");
+        statement
+            .execute("CREATE TABLE IF NOT EXISTS `test_auto_increment_rowkey` ("
+                     + "`c1` int auto_increment,"
+                     + "`c2` int NOT NULL,"
+                     + "`c3` int DEFAULT NULL,"
+                     + "`c4` varchar(255) DEFAULT NULL,"
+                     + "PRIMARY KEY(`c1`, `c2`)) partition by range columns(`c2`)"
+                     + "(PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (1000));");
         cleanTable(TABLE_NAME);
         cleanTable(TABLE_NAME1);
         cleanTable(TABLE_NAME2);
@@ -195,7 +194,8 @@ public class ODPGetPartitionMetaTest {
             Long lastPartId = -1L;
             for (int i = 0; i < rowCnt; i++) {
                 Object[] curRow = values[i];
-                Partition partition = client.getPartition(TABLE_NAME, row(colVal("c1", curRow[0])), false);
+                Partition partition = client.getPartition(TABLE_NAME, row(colVal("c1", curRow[0])),
+                    false);
                 if (lastPartId == -1L) {
                     lastPartId = partition.getPartitionId();
                 } else {
@@ -308,7 +308,8 @@ public class ODPGetPartitionMetaTest {
             // test get the partition with only partition key with only partition key
             Partition first_partition = client.getPartition(TABLE_NAME2,
                 row(colVal("K", 1), colVal("Q", "Q_val1"), colVal("T", 1L)), false);
-            Partition part_key_partition = client.getPartition(TABLE_NAME2, row(colVal("K", 1)), false);
+            Partition part_key_partition = client.getPartition(TABLE_NAME2, row(colVal("K", 1)),
+                false);
             Assert.assertEquals(first_partition.getPartitionId(),
                 part_key_partition.getPartitionId());
         } catch (Exception e) {
@@ -342,9 +343,10 @@ public class ODPGetPartitionMetaTest {
     @Test
     public void testOneLevelRangePartition() throws Exception {
         BatchOperation batchOperation = client.batchOperation(TABLE_NAME3);
-        Object values[][] = { { "ah", "c2_val1", 1L, "c3_val1" }, { "bw", "c2_val1", 101L, "c3_val1" },
-                { "ht", "c2_val1", 501L, "c3_val1" }, { "tw", "c2_val1", 901L, "c3_val1" },
-                { "xy", "c2_val1", 1001L, "c3_val1" }, { "zw", "c2_val1", 1501L, "c3_val1" } };
+        Object values[][] = { { "ah", "c2_val1", 1L, "c3_val1" },
+                { "bw", "c2_val1", 101L, "c3_val1" }, { "ht", "c2_val1", 501L, "c3_val1" },
+                { "tw", "c2_val1", 901L, "c3_val1" }, { "xy", "c2_val1", 1001L, "c3_val1" },
+                { "zw", "c2_val1", 1501L, "c3_val1" } };
         int rowCnt = values.length;
 
         try {
@@ -352,7 +354,8 @@ public class ODPGetPartitionMetaTest {
             for (int i = 0; i < rowCnt; i++) {
                 Object[] curRow = values[i];
                 InsertOrUpdate insertOrUpdate = new InsertOrUpdate();
-                insertOrUpdate.setRowKey(row(colVal("K", curRow[0]), colVal("Q", curRow[1]), colVal("T", curRow[2])));
+                insertOrUpdate.setRowKey(row(colVal("K", curRow[0]), colVal("Q", curRow[1]),
+                    colVal("T", curRow[2])));
                 insertOrUpdate.addMutateRow(row(colVal("V", curRow[3])));
                 batchOperation.addOperation(insertOrUpdate);
             }
@@ -371,11 +374,10 @@ public class ODPGetPartitionMetaTest {
                 first_partition.getPartitionId());
             // test get the second partition
             Partition sec_partition = client.getPartition(TABLE_NAME3,
-                    row(colVal("K", "ah"), colVal("Q", "bw"), colVal("T", 1L)), false);
+                row(colVal("K", "ah"), colVal("Q", "bw"), colVal("T", 1L)), false);
             Assert.assertEquals(partitions.get(1).getPartitionId(), sec_partition.getPartitionId());
             // test get the same partition with the first partition key
-            Partition partition1 = client.getPartition(TABLE_NAME3,
-                    row(colVal("K", "B")), false);
+            Partition partition1 = client.getPartition(TABLE_NAME3, row(colVal("K", "B")), false);
             Assert.assertEquals(first_partition.getPartitionId(), partition1.getPartitionId());
         } catch (Exception e) {
             e.printStackTrace();
@@ -383,7 +385,8 @@ public class ODPGetPartitionMetaTest {
         } finally {
             for (int j = 0; j < rowCnt; j++) {
                 Delete delete = client.delete(TABLE_NAME3);
-                delete.setRowKey(row(colVal("K", values[j][0]), colVal("Q", values[j][1]), colVal("T", values[j][2])));
+                delete.setRowKey(row(colVal("K", values[j][0]), colVal("Q", values[j][1]),
+                    colVal("T", values[j][2])));
                 MutationResult res = delete.execute();
                 Assert.assertEquals(1, res.getAffectedRows());
             }
@@ -422,7 +425,7 @@ public class ODPGetPartitionMetaTest {
                                   + "(c0, c1, c2, c3, c4, c5, c6) values (" + c0 + "," + c1 + ","
                                   + c2 + ",'" + c3 + "','" + c4 + "','" + c5 + "'," + "'value')");
                 Partition partition = client.getPartition(
-                        TABLE_NAME4,
+                    TABLE_NAME4,
                     row(colVal("c0", c0), colVal("c1", c1), colVal("c2", c2), colVal("c3", c3),
                         colVal("c4", c4), colVal("c5", c5)), false);
                 Assert.assertNotNull(partition);
@@ -484,10 +487,11 @@ public class ODPGetPartitionMetaTest {
                 String c4 = generateRandomStringByUUID(5) + c3 + generateRandomStringByUUID(5);
 
                 // use sql to insert data
-                statement.execute("insert into " + TABLE_NAME5 + "(c1, c2, c3, c4, c5) values (" + c1
-                                  + "," + c2 + ",'" + c3 + "','" + c4 + "'," + "'value')");
+                statement.execute("insert into " + TABLE_NAME5 + "(c1, c2, c3, c4, c5) values ("
+                                  + c1 + "," + c2 + ",'" + c3 + "','" + c4 + "'," + "'value')");
                 Partition partition = client.getPartition(TABLE_NAME5,
-                    row(colVal("c1", c1), colVal("c2", c2), colVal("c3", c3), colVal("c4", c4)), false);
+                    row(colVal("c1", c1), colVal("c2", c2), colVal("c3", c3), colVal("c4", c4)),
+                    false);
                 Assert.assertNotNull(partition);
                 System.out.println(partition.toString());
                 // test scan range with partition
@@ -593,9 +597,10 @@ public class ODPGetPartitionMetaTest {
     public void testReFetchPartitionMeta() throws Exception {
         String table_name = TABLE_NAME3;
         BatchOperation batchOperation = client.batchOperation(table_name);
-        Object values[][] = { { "ah", "c2_val1", 1L, "c3_val1" }, { "bw", "c2_val1", 101L, "c3_val1" },
-                { "ht", "c2_val1", 501L, "c3_val1" }, { "tw", "c2_val1", 901L, "c3_val1" },
-                { "xy", "c2_val1", 1001L, "c3_val1" }, { "zw", "c2_val1", 1501L, "c3_val1" } };
+        Object values[][] = { { "ah", "c2_val1", 1L, "c3_val1" },
+                { "bw", "c2_val1", 101L, "c3_val1" }, { "ht", "c2_val1", 501L, "c3_val1" },
+                { "tw", "c2_val1", 901L, "c3_val1" }, { "xy", "c2_val1", 1001L, "c3_val1" },
+                { "zw", "c2_val1", 1501L, "c3_val1" } };
         int rowCnt = values.length;
         try {
             MutationResult resultSet = client.insertOrUpdate(TABLE_NAME3)
