@@ -1664,12 +1664,130 @@ public enum ObObjType {
         public Comparable parseToComparable(Object o, ObCollationType ct) {
             throw new FeatureNotSupportedException("ObBitType is not supported .");
         }
-    };
+    },
     /*
     ObEnumType(36)
     ObSetType(37)
-      ObMaxType                    // invalid type, or count of obj type
+    ...
     */
+    ObMySQLDateType(52) {
+        /*
+         * Encode.
+         */
+        @Override
+        public byte[] encode(Object obj) {
+            return Serialization.encodeVi32((int) ((Date) obj).getTime());
+        }
+
+        /*
+         * Decode.
+         */
+        @Override
+        public Object decode(ByteBuf buf, ObCollationType type) {
+            return new Date(Serialization.decodeVi32(buf) * 1000L);
+        }
+
+        /*
+         * Get encoded size.
+         */
+        @Override
+        public int getEncodedSize(Object obj) {
+            return Serialization.getNeedBytes((int) ((Date) obj).getTime());
+        }
+
+        /*
+         * Get default obj meta.
+         */
+        @Override
+        public ObObjMeta getDefaultObjMeta() {
+            return new ObObjMeta(this, ObCollationLevel.CS_LEVEL_NUMERIC,
+                    ObCollationType.CS_TYPE_BINARY, (byte) 10);
+        }
+
+        /*
+         * Parse to comparable.
+         */
+        @Override
+        public Date parseToComparable(Object o, ObCollationType ct)
+                throws IllegalArgumentException,
+                FeatureNotSupportedException {
+
+            if (o instanceof Date) {
+                return (Date) o;
+            }
+
+            if (o instanceof String) {
+                return TimeUtils.strToDate((String) o);
+            }
+
+            if (o instanceof ObVString) {
+                return TimeUtils.strToDate(((ObVString) o).getStringVal());
+            }
+
+            if (o instanceof Long) {
+                return new Date((Long) o);
+            }
+
+            throw new IllegalArgumentException("ObMySQLDateType can not parseToComparable argument:" + o);
+        }
+    },
+    ObMySQLDateTimeType(53) {
+        /*
+         * Encode.
+         */
+        @Override
+        public byte[] encode(Object obj) {
+            // Date do not have timezone, when we use getTime, system will recognize it as our system timezone and transform it into UTC Time, which will changed the time.
+            // We should add back the lose part.
+            long targetTs = ((Date) obj).getTime()
+                    + OffsetDateTime.now().getOffset().getTotalSeconds() * 1000L;
+            return Serialization.encodeVi64(targetTs * 1000L);
+        }
+
+        /*
+         * Decode.
+         */
+        @Override
+        public Object decode(ByteBuf buf, ObCollationType type) {
+            return new Date(Serialization.decodeVi64(buf) / 1000L
+                    - OffsetDateTime.now().getOffset().getTotalSeconds() * 1000L);
+        }
+
+        /*
+         * Get encoded size.
+         */
+        @Override
+        public int getEncodedSize(Object obj) {
+            return Serialization.getNeedBytes(((Date) obj).getTime() * 1000L);
+        }
+
+        /*
+         * Get default obj meta.
+         */
+        @Override
+        public ObObjMeta getDefaultObjMeta() {
+            // scale set into 6 means microSecond
+            return new ObObjMeta(this, ObCollationLevel.CS_LEVEL_NUMERIC,
+                    ObCollationType.CS_TYPE_BINARY, (byte) 6);
+        }
+
+        /*
+         * Parse to comparable.
+         */
+        @Override
+        public Date parseToComparable(Object o, ObCollationType ct)
+                                                                   throws IllegalArgumentException,
+                FeatureNotSupportedException {
+            if (o instanceof String) {
+                return TimeUtils.strToDate((String) o);
+            }
+            return (Date) o;
+        }
+    };
+    /*
+        ObMaxType                    // invalid type, or count of obj type
+    */
+
     private int                            value;
     private static Map<Integer, ObObjType> map = new HashMap<Integer, ObObjType>();
 

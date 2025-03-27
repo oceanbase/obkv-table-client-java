@@ -925,9 +925,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      *
      * @throws Exception if fail
      */
-    public void syncRefreshMetadata() throws Exception {
+    public void syncRefreshMetadata(boolean forceRenew) throws Exception {
 
-        if (System.currentTimeMillis() - lastRefreshMetadataTimestamp < metadataRefreshInterval) {
+        if (!forceRenew && System.currentTimeMillis() - lastRefreshMetadataTimestamp < metadataRefreshInterval) {
             logger
                 .warn(
                     "try to lock metadata refreshing, it has refresh  at: {}, dataSourceName: {}, url: {}",
@@ -948,7 +948,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         try {
 
-            if (System.currentTimeMillis() - lastRefreshMetadataTimestamp < metadataRefreshInterval) {
+            if (!forceRenew && System.currentTimeMillis() - lastRefreshMetadataTimestamp < metadataRefreshInterval) {
                 logger.warn("it has refresh metadata at: {}, dataSourceName: {}, url: {}",
                     lastRefreshMetadataTimestamp, dataSourceName, paramURL);
                 return;
@@ -1142,19 +1142,41 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 logger.info("index info is not exist, create new index info, indexTableName: {}",
                     indexTableName);
                 int serverSize = serverRoster.getMembers().size();
-                int refreshTryTimes = tableEntryRefreshTryTimes > serverSize ? serverSize
-                    : tableEntryRefreshTryTimes;
+                int refreshTryTimes = Math.min(tableEntryRefreshTryTimes, serverSize);
                 for (int i = 0; i < refreshTryTimes; i++) {
-                    ObServerAddr serverAddr = serverRoster.getServer(serverAddressPriorityTimeout,
-                        serverAddressCachingTimeout);
-                    indexInfo = getIndexInfoFromRemote(serverAddr, sysUA,
-                        tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
-                        indexTableName);
-                    if (indexInfo != null) {
-                        indexinfos.put(indexTableName, indexInfo);
-                    } else {
-                        RUNTIME.error("get index info from remote is null, indexTableName: {}",
-                            indexTableName);
+                    try {
+                        ObServerAddr serverAddr = serverRoster.getServer(serverAddressPriorityTimeout,
+                                serverAddressCachingTimeout);
+                        if (serverAddr.isExpired(serverAddressCachingTimeout)) {
+                            syncRefreshMetadata(false);
+                        }
+                        indexInfo = getIndexInfoFromRemote(serverAddr, sysUA,
+                                tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
+                                indexTableName);
+                        if (indexInfo != null) {
+                            indexinfos.put(indexTableName, indexInfo);
+                            break;
+                        } else {
+                            RUNTIME.error("get index info from remote is null, indexTableName: {}",
+                                    indexTableName);
+                        }
+                    } catch (ObTableServerCacheExpiredException e) {
+                        RUNTIME.error("get index info from remote meet exception", e);
+                        syncRefreshMetadata(false);
+                    } catch (ObTableEntryRefreshException e) {
+                        RUNTIME.error("get index info from remote meet exception", e);
+                        if (tableEntryRefreshContinuousFailureCount.incrementAndGet() > tableEntryRefreshContinuousFailureCeiling) {
+                            logger.error(LCD.convert("01-00019"),
+                                    tableEntryRefreshContinuousFailureCeiling);
+                            syncRefreshMetadata(false);
+                            tableEntryRefreshContinuousFailureCount.set(0);
+                        } else if (e.isConnectInactive()) {
+                            syncRefreshMetadata(false);
+                            tableEntryRefreshContinuousFailureCount.set(0);
+                        }
+                    } catch (Throwable t) {
+                        RUNTIME.error("getOrRefreshTableEntry meet exception", t);
+                        throw t;
                     }
                 }
                 return indexInfo;
@@ -1296,7 +1318,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         if (logger.isInfoEnabled()) {
                             logger.info("server addr is expired and it will refresh metadata.");
                         }
-                        syncRefreshMetadata();
+                        syncRefreshMetadata(false);
                         tableEntryRefreshContinuousFailureCount.set(0);
                     } catch (ObTableEntryRefreshException e) {
                         RUNTIME.error("getOrRefreshTableEntry meet exception", e);
@@ -1308,7 +1330,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         if (tableEntryRefreshContinuousFailureCount.incrementAndGet() > tableEntryRefreshContinuousFailureCeiling) {
                             logger.error(LCD.convert("01-00019"),
                                 tableEntryRefreshContinuousFailureCeiling);
-                            syncRefreshMetadata();
+                            syncRefreshMetadata(false);
+                            tableEntryRefreshContinuousFailureCount.set(0);
+                        } else if (e.isConnectInactive()) {
+                            // getMetaRefreshConnection failed, maybe the server is down, so we need to refresh metadata directly
+                            syncRefreshMetadata(false);
                             tableEntryRefreshContinuousFailureCount.set(0);
                         }
                     } catch (Throwable t) {
@@ -1323,7 +1349,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             "refresh table entry has tried {}-times failure and will sync refresh metadata",
                             refreshTryTimes);
                 }
-                syncRefreshMetadata();
+                syncRefreshMetadata(false);
                 return refreshTableEntry(tableEntry, tableName);
             }
             return tableEntry;
@@ -1344,7 +1370,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return refreshTableEntry(tableEntry, tableName, false);
     }
 
-    public TableEntry refreshTableLocationByTabletId(TableEntry tableEntry, String tableName, Long tabletId) throws ObTableAuthException {
+    public TableEntry refreshTableLocationByTabletId(TableEntry tableEntry, String tableName, Long tabletId) throws Exception {
         TableEntryKey tableEntryKey = new TableEntryKey(clusterName, tenantName, database, tableName);
         try {
             if (tableEntry == null) {
@@ -1381,31 +1407,56 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 if (currentTime - lastRefreshTime < tableEntryRefreshIntervalCeiling) {
                     return tableEntry;
                 }
-
-                tableEntry = loadTableEntryLocationWithPriority(
-                        serverRoster,
-                        tableEntryKey,
-                        tableEntry,
-                        tabletId,
-                        tableEntryAcquireConnectTimeout,
-                        tableEntryAcquireSocketTimeout,
-                        serverAddressPriorityTimeout,
-                        serverAddressCachingTimeout,
-                        sysUA,
-                        !getServerCapacity().isSupportDistributedExecute() /* withLsId */
-                );
-
-                tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
-
+                for (int i = 0; i < tableEntryRefreshTryTimes; i++) {
+                    try {
+                        tableEntry = loadTableEntryLocationWithPriority(
+                                serverRoster,
+                                tableEntryKey,
+                                tableEntry,
+                                tabletId,
+                                tableEntryAcquireConnectTimeout,
+                                tableEntryAcquireSocketTimeout,
+                                serverAddressPriorityTimeout,
+                                serverAddressCachingTimeout,
+                                sysUA,
+                                !getServerCapacity().isSupportDistributedExecute() /* withLsId */
+                        );
+                        tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
+                        break;
+                        
+                    } catch (ObTableNotExistException e) {
+                        RUNTIME.error("RefreshTableEntry encountered an exception", e);
+                        throw e;
+                    } catch (ObTableServerCacheExpiredException e) {
+                        RUNTIME.warn("RefreshTableEntry encountered an exception", e);
+                        syncRefreshMetadata(false);
+                        tableEntryRefreshContinuousFailureCount.set(0);
+                    } catch (ObTableEntryRefreshException e) {
+                        RUNTIME.error("getOrRefreshTableEntry meet exception", e);
+                        // if the problem is the lack of row key name, throw directly
+                        if (tableRowKeyElement.get(tableName) == null) {
+                            throw e;
+                        }
+                        if (tableEntryRefreshContinuousFailureCount.incrementAndGet() > tableEntryRefreshContinuousFailureCeiling) {
+                            logger.error(LCD.convert("01-00019"),
+                                    tableEntryRefreshContinuousFailureCeiling);
+                            syncRefreshMetadata(false);
+                            tableEntryRefreshContinuousFailureCount.set(0);
+                        } else if (e.isConnectInactive()) {
+                            // getMetaRefreshConnection failed, maybe the server is down, so we need to refresh metadata directly
+                            syncRefreshMetadata(false);
+                            tableEntryRefreshContinuousFailureCount.set(0);
+                        }
+                    } catch (Throwable t) {
+                        RUNTIME.error("getOrRefreshTableEntry meet exception", t);
+                        throw t;
+                    }
+                }
             } finally {
                 if (acquired) {
                     lock.unlock();
                 }
             }
-
-        } catch (ObTableNotExistException | ObTableServerCacheExpiredException e) {
-            RUNTIME.error("RefreshTableEntry encountered an exception", e);
-            throw e;
         } catch (Exception e) {
             String errorMsg = String.format("Failed to get table entry. Key=%s, TabletId=%d, message=%s",
                     tableEntryKey, tabletId, e.getMessage());
@@ -1485,9 +1536,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             throw e;
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00020"), tableEntryKey, tableEntry, e);
-            throw new ObTableEntryRefreshException(String.format(
-                "failed to get table entry key=%s original tableEntry=%s ", tableEntryKey,
-                tableEntry), e);
+            if (e instanceof ObTableEntryRefreshException) {
+                throw new ObTableEntryRefreshException(String.format(
+                        "failed to get table entry key=%s original tableEntry=%s ", tableEntryKey,
+                        tableEntry), e, ((ObTableEntryRefreshException) e).isConnectInactive());
+            } else {
+                throw new ObTableEntryRefreshException(String.format(
+                        "failed to get table entry key=%s original tableEntry=%s ", tableEntryKey,
+                        tableEntry), e);
+            }
         }
         tableLocations.put(tableName, tableEntry);
         if (fetchAll) {
@@ -1989,37 +2046,48 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             RUNTIME.error("Cannot get replica by partId: " + partId);
             throw new ObTableGetException("Cannot get replica by partId: " + partId);
         }
+        int retryTimes = 0;
         ObServerAddr addr = replica.getAddr();
         ObTable obTable = tableRoster.get(addr);
         boolean addrExpired = addr.isExpired(serverAddressCachingTimeout);
-        if (obTable == null || addrExpired) {
-            if (obTable == null) {
-                logger.warn("Cannot get ObTable by addr {}, refreshing metadata.", addr);
-                syncRefreshMetadata();
-            }
-            if (addr.isExpired(serverAddressCachingTimeout)) {
+        while ((obTable == null || addrExpired) && retryTimes < 2) {
+            ++retryTimes;
+            if (addrExpired) {
                 logger.info("Server addr {} is expired, refreshing tableEntry.", addr);
                 if (ObGlobal.obVsnMajor() >= 4) {
                     refreshTableLocationByTabletId(tableEntry, tableName, tabletId);
                 } else {
                     tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
                 }
+                addrExpired = addr.isExpired(serverAddressCachingTimeout);
             }
-
-            if (ObGlobal.obVsnMajor() >= 4) {
-                obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
-                replica = getPartitionLocation(obPartitionLocationInfo, route);
-            } else {
-                replica = getPartitionReplica(tableEntry, partitionId, route).getRight();
-            }
-
-            addr = replica.getAddr();
-            obTable = tableRoster.get(addr);
-
             if (obTable == null) {
-                RUNTIME.error("Cannot get table by addr: " + addr);
-                throw new ObTableGetException("Cannot get table by addr: " + addr);
+                // need to refresh table roster to ensure the current roster is the latest
+                syncRefreshMetadata(true);
+                // the addr is wrong, need to refresh location
+                if (logger.isInfoEnabled()) {
+                    logger.info("Cannot get ObTable by addr {}, refreshing metadata.", addr);
+                }
+                // refresh tablet location based on the latest roster, in case that some of the observers hase been killed
+                // and used the old location
+                tableEntry = refreshTableLocationByTabletId(tableEntry, tableName, tabletId);
+                if (ObGlobal.obVsnMajor() >= 4) {
+                    obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
+                    replica = getPartitionLocation(obPartitionLocationInfo, route);
+                } else {
+                    replica = getPartitionReplica(tableEntry, partitionId, route).getRight();
+                }
+                if (replica == null) {
+                    RUNTIME.error("Cannot get replica by partId: " + partId);
+                    throw new ObTableGetException("Cannot get replica by partId: " + partId);
+                }
+                addr = replica.getAddr();
+                obTable = tableRoster.get(addr);
             }
+        }
+        if (obTable == null) {
+            RUNTIME.error("cannot get table by addr: " + addr);
+            throw new ObTableGetException("obTable is null, addr is: " + addr.getIp() + ":" + addr.getSvrPort());
         }
         ObTableParam param = createTableParam(obTable, tableEntry, obPartitionLocationInfo, partId, tabletId);
         if (ObGlobal.obVsnMajor() >= 4) {
@@ -2284,12 +2352,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ReplicaLocation replica = partIdWithReplica.getRight();
             ObServerAddr addr = replica.getAddr();
             ObTable obTable = tableRoster.get(addr);
+            int retryTimes = 0;
             boolean addrExpired = addr.isExpired(serverAddressCachingTimeout);
-            if (addrExpired || obTable == null) {
-                if (obTable == null) {
-                        logger.warn("Cannot get ObTable by addr {}, refreshing metadata.", addr);
-                    syncRefreshMetadata();
-                }
+            while ((obTable == null || addrExpired) && retryTimes < 2) {
+                ++retryTimes;
                 if (addrExpired) {
                     logger.info("Server addr {} is expired, refreshing tableEntry.", addr);
                     if (ObGlobal.obVsnMajor() >= 4) {
@@ -2297,20 +2363,35 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     } else {
                         tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
                     }
+                    addrExpired = addr.isExpired(serverAddressCachingTimeout);
                 }
-                if (ObGlobal.obVsnMajor() >= 4) {
-                    ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
-                    replica = getPartitionLocation(locationInfo, route);
-                } else {
-                    replica = getPartitionLocation(tableEntry, partId, route);
+                if (obTable == null) {
+                    // need to refresh table roster to ensure the current roster is the latest
+                    syncRefreshMetadata(true);
+                    // the addr is wrong, need to refresh location
+                    if (logger.isInfoEnabled()) {
+                        logger.info("Cannot get ObTable by addr {}, refreshing metadata.", addr);
+                    }
+                    // refresh tablet location based on the latest roster, in case that some of the observers hase been killed
+                    // and used the old location
+                    tableEntry = refreshTableLocationByTabletId(tableEntry, tableName, tabletId);
+                    if (ObGlobal.obVsnMajor() >= 4) {
+                        ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
+                        replica = getPartitionLocation(locationInfo, route);
+                    } else {
+                        replica = getPartitionLocation(tableEntry, partId, route);
+                    }
+                    if (replica == null) {
+                        RUNTIME.error("Cannot get replica by partId: " + partId);
+                        throw new ObTableGetException("Cannot get replica by partId: " + partId);
+                    }
+                    addr = replica.getAddr();
+                    obTable = tableRoster.get(addr);
                 }
-                addr = replica.getAddr();
-                obTable = tableRoster.get(addr);
             }
-
             if (obTable == null) {
                 RUNTIME.error("cannot get table by addr: " + addr);
-                throw new ObTableGetException("cannot get table by addr: " + addr);
+                throw new ObTableGetException("obTable is null, addr is: " + addr.getIp() + ":" + addr.getSvrPort());
             }
 
             ObTableParam param = new ObTableParam(obTable);
@@ -2454,7 +2535,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     if (logger.isInfoEnabled()) {
                         logger.info("server addr is expired and it will refresh metadata.");
                     }
-                    syncRefreshMetadata();
+                    syncRefreshMetadata(false);
                 } catch (Throwable t) {
                     RUNTIME.error("getOrRefreshTableName from TableGroup meet exception", t);
                     throw t;

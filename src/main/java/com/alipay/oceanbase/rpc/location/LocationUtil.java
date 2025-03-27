@@ -60,6 +60,7 @@ public class LocationUtil {
                                                                                         .getLogger(LocationUtil.class);
     static {
         ParserConfig.getGlobalInstance().setSafeMode(true);
+        loadJdbcDriver();
     }
 
     private static final String OB_VERSION_SQL                                      = "SELECT /*+READ_CONSISTENCY(WEAK)*/ OB_VERSION() AS CLUSTER_VERSION;";
@@ -325,13 +326,15 @@ public class LocationUtil {
      */
     private static Connection getMetaRefreshConnection(String url, ObUserAuth sysUA)
                                                                                     throws ObTableEntryRefreshException {
-        loadJdbcDriver();
 
         try {
             return DriverManager.getConnection(url, sysUA.getUserName(), sysUA.getPassword());
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00005"), e.getMessage(), e);
-            throw new ObTableEntryRefreshException("fail to connect meta server", e);
+            // Since the JDBC connection fails here, it is likely that the server has crashed or scaling down.   
+            // Therefore, we need to set the Inactive flag of the ObTableEntryRefreshException to true.   
+            // This allows the upper-layer retry mechanism to catch this exception and immediately refresh the metadata.
+            throw new ObTableEntryRefreshException("fail to connect meta server", e, true /* connect inactive */);
         }
     }
 
@@ -339,8 +342,8 @@ public class LocationUtil {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             return;
-        } catch (ClassNotFoundException e) {
-            RUNTIME.info("Class 'com.mysql.cj.jdbc.Driver' not found, "
+        } catch (ClassNotFoundException ignored) {
+            RUNTIME.debug("Class 'com.mysql.cj.jdbc.Driver' not found, "
                          + "try to load legacy driver class 'com.mysql.jdbc.Driver'");
         }
 
@@ -430,9 +433,15 @@ public class LocationUtil {
             } else {
                 RUNTIME.error(LCD.convert("01-00007"), url, key, e);
             }
-            throw new ObTableEntryRefreshException(format(
-                "fail to refresh table entry from remote url=%s, key=%s, message=%s", url, key,
-                e.getMessage()), e);
+            if (e instanceof ObTableEntryRefreshException) {
+                throw new ObTableEntryRefreshException(format(
+                        "fail to refresh table entry from remote url=%s, key=%s, message=%s", url, key,
+                        e.getMessage()), e, ((ObTableEntryRefreshException) e).isConnectInactive());
+            } else {
+                throw new ObTableEntryRefreshException(format(
+                        "fail to refresh table entry from remote url=%s, key=%s, message=%s", url, key,
+                        e.getMessage()), e.getCause());
+            }
         } finally {
             try {
                 if (null != connection) {
@@ -571,6 +580,10 @@ public class LocationUtil {
             RUNTIME.error("callTableEntryNameWithPriority meet exception", e);
             serverRoster.downgradePriority(addr);
             throw e;
+        } catch (ObTableEntryRefreshException e) {
+            RUNTIME.error("callTableEntryNameWithPriority meet exception", e);
+            throw new ObTableEntryRefreshException(format(
+                "fail to get table name from remote url=%s, key=%s", url, key), e, e.isConnectInactive());
         } catch (Exception e) {
             throw new ObTableNotExistException(format(
                 "fail to get table name from remote url=%s, key=%s", url, key), e);
@@ -797,12 +810,19 @@ public class LocationUtil {
                     }
                 }
             }
+        } catch (SQLException e) {
+            // cannot execute sql, maybe some of the observers have been killed
+            RUNTIME.error(LCD.convert("01-00010"), key, e.getMessage());
+            throw new ObTableEntryRefreshException("fail to get partition location entry from remote", e, true);
         } catch (ObTableNotExistException e) {
             // avoid to refresh meta for ObTableNotExistException
             RUNTIME.error("getTableEntryFromRemote meet exception", e);
             throw e;
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00009"), key, e);
+            if (e instanceof ObTableEntryRefreshException) {
+                throw e;
+            }
             throw new ObTableEntryRefreshException(format(
                 "fail to get table entry from remote, key=%s", key), e);
         } finally {
@@ -924,6 +944,10 @@ public class LocationUtil {
             rs = ps.executeQuery();
             getPartitionLocationFromResultSetByTablet(tableEntry, rs, partitionEntry, tabletId,
                 withLsId);
+        } catch (SQLException e) {
+            // cannot execute sql, maybe some of the observers have been killed
+            RUNTIME.error(LCD.convert("01-00010"), key, tableEntry, e.getMessage());
+            throw new ObTableEntryRefreshException("fail to get partition location entry from remote", e, true);
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00010"), key, tableEntry, e);
             throw new ObTablePartitionLocationRefreshException(format(
@@ -973,6 +997,9 @@ public class LocationUtil {
                 }
                 rs = ps.executeQuery();
                 partitionEntry = getPartitionLocationFromResultSet(tableEntry, rs, partitionEntry);
+            } catch (SQLException e) {
+                RUNTIME.error(LCD.convert("01-00010"), key, partitionNum, tableEntry, e);
+                throw new ObTableEntryRefreshException("fail to get partition location entry from remote", e, true);
             } catch (Exception e) {
                 RUNTIME.error(LCD.convert("01-00010"), key, partitionNum, tableEntry, e);
                 throw new ObTablePartitionLocationRefreshException(format(
@@ -1019,8 +1046,13 @@ public class LocationUtil {
                                                        + " table_id from remote");
             }
         } catch (Exception e) {
-            throw new ObTableEntryRefreshException("fail to get " + tableName
-                                                   + " table_id from remote", e);
+            if (e instanceof ObTableEntryRefreshException) {
+                throw new ObTableEntryRefreshException(format(
+                    "fail to get " + tableName + " table_id from remote", e), e, ((ObTableEntryRefreshException) e).isConnectInactive());
+            } else {
+                throw new ObTableEntryRefreshException(format(
+                    "fail to get " + tableName + " table_id from remote", e), e);
+            }
         } finally {
             try {
                 if (null != rs) {
@@ -1058,10 +1090,18 @@ public class LocationUtil {
             } else {
                 throw new ObTableEntryRefreshException("index is not exist");
             }
+        } catch (SQLException e) {
+            // cannot execute sql, maybe some of the observers have been killed
+            RUNTIME.error(LCD.convert("01-00010"), indexTableName, e.getMessage());
+            throw new ObTableEntryRefreshException("fail to get index info from remote", e, true);
         } catch (Exception e) {
-            throw new ObTableEntryRefreshException(format(
-                "fail to get index info from remote, indexTableName: %s, error message: %s",
-                indexTableName, e.getMessage()), e);
+            if (e instanceof ObTableEntryRefreshException) {
+                throw new ObTableEntryRefreshException(format(
+                        "fail to get index info from remote, indexTableName: %s, error message: %s", indexTableName, e.getMessage()), e, ((ObTableEntryRefreshException) e).isConnectInactive());
+            } else {
+                throw new ObTableEntryRefreshException(format(
+                        "fail to get index info from remote, indexTableName: %s, error message: %s", indexTableName, e.getMessage()), e);
+            }
         } finally {
             try {
                 if (null != rs) {
@@ -1079,7 +1119,8 @@ public class LocationUtil {
 
     private static void fetchFirstPart(Connection connection, TableEntry tableEntry,
                                        ObPartFuncType obPartFuncType)
-                                                                     throws ObTablePartitionInfoRefreshException {
+                                                                     throws ObTablePartitionInfoRefreshException,
+                                                                            SQLException {
         String tableName = "";
         TableEntryKey key = tableEntry.getTableEntryKey();
         if (key != null) {
@@ -1127,6 +1168,8 @@ public class LocationUtil {
                 tableEntry.getPartitionInfo().setPartTabletIdMap(
                     parseFirstPartKeyHash(rs, tableEntry));
             }
+        } catch (SQLException e) {
+            throw e;
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00011"), tableEntry, obPartFuncType, e);
 
@@ -1149,7 +1192,8 @@ public class LocationUtil {
 
     private static void fetchSubPart(Connection connection, TableEntry tableEntry,
                                      ObPartFuncType subPartFuncType)
-                                                                    throws ObTablePartitionInfoRefreshException {
+                                                                    throws ObTablePartitionInfoRefreshException,
+                                                                           SQLException {
         String tableName = "";
         TableEntryKey key = tableEntry.getTableEntryKey();
         if (key != null) {
@@ -1196,6 +1240,8 @@ public class LocationUtil {
                 tableEntry.getPartitionInfo().setPartTabletIdMap(
                     parseSubPartKeyHash(rs, tableEntry));
             }
+        } catch (SQLException e) {
+            throw e;
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00012"), tableEntry, subPartFuncType, e);
             throw new ObTablePartitionInfoRefreshException(format(
@@ -1476,7 +1522,8 @@ public class LocationUtil {
     }
 
     private static void fetchPartitionInfo(Connection connection, TableEntry tableEntry)
-                                                                                        throws ObTablePartitionInfoRefreshException {
+                                                                                        throws ObTablePartitionInfoRefreshException,
+                                                                                               SQLException {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         ObPartitionInfo info = null;
@@ -1499,6 +1546,8 @@ public class LocationUtil {
                 logger.info("get part info from remote info:{}", JSON.toJSON(info));
             }
             tableEntry.setPartitionInfo(info);
+        } catch (SQLException e) {
+            throw e;
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00014"), tableEntry);
             RUNTIME.error("fail to get part info from remote");
