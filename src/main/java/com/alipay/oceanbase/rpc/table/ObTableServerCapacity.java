@@ -17,6 +17,8 @@
 
 package com.alipay.oceanbase.rpc.table;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
+
 public class ObTableServerCapacity {
     private static final int DISTRIBUTED_EXECUTE = 1 << 0;
     private static final int CAPACITY_MAX        = 1 << 31;
@@ -31,6 +33,6 @@ public class ObTableServerCapacity {
     }
 
     public boolean isSupportDistributedExecute() {
-        return (flags & DISTRIBUTED_EXECUTE) != 0;
+        return (flags & DISTRIBUTED_EXECUTE) != 0 && ObGlobal.isDistributedExecSupport();
     }
 }
