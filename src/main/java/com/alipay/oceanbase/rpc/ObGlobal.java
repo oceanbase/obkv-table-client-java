@@ -105,6 +105,10 @@ public class ObGlobal {
                || OB_VERSION >= OB_VERSION_4_3_5_0;
     }
 
+    public static boolean isDistributedExecSupport() {
+        return OB_VERSION >= OB_VERSION_4_3_5_2;
+    }
+
     public static boolean isCellTTLSupport() {
         return OB_VERSION >= OB_VERSION_4_3_5_1;
     }
@@ -120,6 +124,8 @@ public class ObGlobal {
     public static final long OB_VERSION_4_3_5_0 = calcVersion(4, (short) 3, (byte) 5, (byte) 0);
 
     public static final long OB_VERSION_4_3_5_1 = calcVersion(4, (short) 3, (byte) 5, (byte) 1);
+
+    public static final long OB_VERSION_4_3_5_2 = calcVersion(4, (short) 3, (byte) 5, (byte) 2);
 
     public static long       OB_VERSION         = calcVersion(0, (short) 0, (byte) 0, (byte) 0);
 }
