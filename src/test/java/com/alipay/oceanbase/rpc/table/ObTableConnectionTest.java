@@ -19,7 +19,6 @@ package com.alipay.oceanbase.rpc.table;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.ObTableClientTestBase;
-import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
 import org.junit.Before;
@@ -76,9 +75,9 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
             assertEquals(TEST_CONNECTION_POOL_SIZE, obTableClient.getOdpTable()
                 .getObTableConnectionPoolSize());
         } else {
-            ObPair<Long, ObTableParam> obPair = obTableClient.getTable("test_varchar_table",
-                new String[] { "abc" }, false, false, obTableClient.getRoute(false));
-            int poolSize = obPair.getRight().getObTable().getObTableConnectionPoolSize();
+            ObTableParam param = obTableClient.getTableParamWithRoute("test_varchar_table",
+                new String[] { "abc" }, obTableClient.getRoute(false));
+            int poolSize = param.getObTable().getObTableConnectionPoolSize();
             assertEquals(TEST_CONNECTION_POOL_SIZE, poolSize);
         }
     }
@@ -108,11 +107,11 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
             assertEquals(TEST_NETTY_WAIT_INTERVAL, obTableClient.getOdpTable()
                 .getNettyBlockingWaitInterval());
         } else {
-            ObPair<Long, ObTableParam> obPair = obTableClient.getTable("test_varchar_table",
-                new String[] { "abc" }, false, false, obTableClient.getRoute(false));
-            int lowWatermark = obPair.getRight().getObTable().getNettyBufferLowWatermark();
-            int highWatermark = obPair.getRight().getObTable().getNettyBufferHighWatermark();
-            int waitInterval = obPair.getRight().getObTable().getNettyBlockingWaitInterval();
+            ObTableParam param = obTableClient.getTableParamWithRoute("test_varchar_table",
+                new String[] { "abc" }, obTableClient.getRoute(false));
+            int lowWatermark = param.getObTable().getNettyBufferLowWatermark();
+            int highWatermark = param.getObTable().getNettyBufferHighWatermark();
+            int waitInterval = param.getObTable().getNettyBlockingWaitInterval();
 
             assertEquals(TEST_NETTY_LOW_WATERMARK, lowWatermark);
             assertEquals(TEST_NETTY_HIGH_WATERMARK, highWatermark);
@@ -130,11 +129,11 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
         if (obTableClient.isOdpMode()) {
             // do nothing
         } else {
-            ObPair<Long, ObTableParam> obPair = obTableClient.getTable("test_varchar_table",
-                new String[] { "abc" }, false, false, obTableClient.getRoute(false));
-            int lowWatermark = obPair.getRight().getObTable().getNettyBufferLowWatermark();
-            int highWatermark = obPair.getRight().getObTable().getNettyBufferHighWatermark();
-            int waitInterval = obPair.getRight().getObTable().getNettyBlockingWaitInterval();
+            ObTableParam param = obTableClient.getTableParamWithRoute("test_varchar_table",
+                new String[] { "abc" }, obTableClient.getRoute(false));
+            int lowWatermark = param.getObTable().getNettyBufferLowWatermark();
+            int highWatermark = param.getObTable().getNettyBufferHighWatermark();
+            int waitInterval = param.getObTable().getNettyBlockingWaitInterval();
 
             assertEquals(Property.NETTY_BUFFER_LOW_WATERMARK.getDefaultInt(), lowWatermark);
             assertEquals(Property.NETTY_BUFFER_HIGH_WATERMARK.getDefaultInt(), highWatermark);

@@ -1,3 +1,20 @@
+/*-
+ * #%L
+ * com.oceanbase:obkv-table-client
+ * %%
+ * Copyright (C) 2021 - 2025 OceanBase
+ * %%
+ * OBKV Table Client Framework is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * #L%
+ */
+
 package com.alipay.oceanbase.rpc.get;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
@@ -8,10 +25,10 @@ import com.alipay.oceanbase.rpc.table.api.Table;
 import java.util.Map;
 
 public class Get {
-    private Table           client;
-    private String          tableName;
-    protected Row           rowKey;
-    protected String[]  selectColumns;
+    private Table      client;
+    private String     tableName;
+    protected Row      rowKey;
+    protected String[] selectColumns;
 
     public Get() {
         tableName = null;
@@ -58,6 +75,6 @@ public class Get {
         if (client == null) {
             throw new IllegalArgumentException("client is null");
         }
-        return ((ObTableClient)client).get(tableName, rowKey, selectColumns);
+        return ((ObTableClient) client).get(tableName, rowKey, selectColumns);
     }
 }
