@@ -19,8 +19,11 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
+import com.alipay.oceanbase.rpc.table.ObTableClientLSBatchOpsImpl;
 import com.alipay.oceanbase.rpc.util.Serialization;
+import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
 import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
 
 import java.util.*;
 
@@ -46,7 +49,8 @@ public class ObTableLSOperation extends AbstractPayload {
 
     private static final int      LS_ID_SIZE       = 8;
     private static final long     INVALID_LS_ID    = -1;
-
+    private static final Logger logger                  = TableClientLoggerFactory
+            .getLogger(ObTableLSOperation.class);
     /*
     OB_UNIS_DEF_SERIALIZE(ObTableLSOp,
                       ls_id_,
@@ -327,10 +331,27 @@ public class ObTableLSOperation extends AbstractPayload {
     }
 
     public void prepare() {
+        // monitor each call time
+        long collectColumnNamesIdxMapStart = System.currentTimeMillis();
         this.collectColumnNamesIdxMap();
+        if (logger.isDebugEnabled()) {
+            logger.debug("[latency] collectColumnNamesIdxMap cost: {} ms", System.currentTimeMillis() - collectColumnNamesIdxMapStart);
+        }
+        long beforeOptionStart = System.currentTimeMillis();
         this.beforeOption();
+        if (logger.isDebugEnabled()) {
+            logger.debug("[latency] beforeOption cost: {} ms", System.currentTimeMillis() - beforeOptionStart);
+        }
+        long prepareOptionStart = System.currentTimeMillis();
         this.prepareOption();
+        if (logger.isDebugEnabled()) {
+            logger.debug("[latency] prepareOption cost: {} ms", System.currentTimeMillis() - prepareOptionStart);
+        }
+        long prepareColumnNamesBitMapStart = System.currentTimeMillis();
         this.prepareColumnNamesBitMap();
+        if (logger.isDebugEnabled()) {
+            logger.debug("[latency] prepareColumnNamesBitMap cost: {} ms", System.currentTimeMillis() - prepareColumnNamesBitMapStart);
+        }
     }
 
     public long getLsId() {

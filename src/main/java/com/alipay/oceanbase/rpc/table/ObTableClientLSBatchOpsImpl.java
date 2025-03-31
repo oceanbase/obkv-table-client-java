@@ -448,6 +448,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         boolean isFirstEntry = true;
         // list ( index list for tablet op 1, index list for tablet op 2, ...)
         List<List<ObPair<Integer, ObTableSingleOp>>> lsOperationWithIndexList = new ArrayList<>();
+        long addTabletOperationStart = System.currentTimeMillis();
         for (final Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperation : tabletOperationsMap.entrySet()) {
             ObTableParam tableParam = tabletOperation.getValue().getLeft();
             long tabletId = tableParam.getPartitionId();
@@ -470,6 +471,10 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 subObTable = tableParam.getObTable();
                 isFirstEntry = false;
             }
+        }
+        long addTabletOperationEnd = System.currentTimeMillis();
+        if (logger.isDebugEnabled()) {
+            logger.debug("[latency] add tablet operation cost: {} ms", addTabletOperationEnd - addTabletOperationStart);
         }
 
         // Since we only have one tablet operation
@@ -730,7 +735,12 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         } else {
             obTableOperationResults = new ObTableSingleOpResult[batchOperation.size()];
         }
+        long prepareTimeStart = System.currentTimeMillis();
         Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> lsOperations = partitionPrepare();
+        long prepareTimeEnd = System.currentTimeMillis();
+        if (logger.isDebugEnabled()) {
+            logger.debug("[latency] partitionPrepare ost: " + (prepareTimeEnd - prepareTimeStart) + "ms");
+        }
         long getTableTime = System.currentTimeMillis();
         final Map<Object, Object> context = ThreadLocalMap.getContextMap();
         final int maxRetries = obTableClient.getRuntimeRetryTimes();

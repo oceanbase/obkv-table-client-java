@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.mutation;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
+import com.alipay.oceanbase.rpc.bolt.transport.ObTableRemoting;
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.exception.FeatureNotSupportedException;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
@@ -31,6 +32,8 @@ import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.ObGlobal;
+import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,7 +51,7 @@ public class BatchOperation {
     ObTableOperationType        lastType         = ObTableOperationType.INVALID;
     boolean                     isSameType       = true;
     protected ObTableEntityType entityType       = ObTableEntityType.KV;
-
+    private static final Logger logger = TableClientLoggerFactory.getLogger(BatchOperation.class);
     /*
      * default constructor
      */
@@ -304,6 +307,7 @@ public class BatchOperation {
         if (client instanceof ObTableClient) {
             batchOps = new ObTableClientLSBatchOpsImpl(tableName, (ObTableClient) client);
             batchOps.setEntityType(entityType);
+            long addOperationStart = System.currentTimeMillis();
             for (Object operation : operations) {
                 if (operation instanceof CheckAndInsUp) {
                     checkAndInsUpCnt++;
@@ -340,6 +344,10 @@ public class BatchOperation {
                     throw new IllegalArgumentException(
                         "The operations in batch must be all checkAndInsUp or all non-checkAndInsUp");
                 }
+            }
+            long addOperationEnd = System.currentTimeMillis();
+            if (logger.isDebugEnabled()) {
+                logger.debug("[latency] addOperation cost: " + (addOperationEnd - addOperationStart) + "ms");
             }
         } else {
             throw new IllegalArgumentException(

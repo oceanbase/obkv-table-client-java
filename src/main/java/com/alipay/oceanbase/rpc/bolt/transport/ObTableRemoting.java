@@ -72,10 +72,13 @@ public class ObTableRemoting extends BaseRemoting {
         }
 
         ObTablePacket obRequest = this.getCommandFactory().createRequestCommand(request);
-
+        long startTime = System.currentTimeMillis();
         ObTablePacket response = (ObTablePacket) super.invokeSync(conn.getConnection(), obRequest,
             timeoutMillis);
-
+        long endTime = System.currentTimeMillis();
+        if (logger.isDebugEnabled()) {
+            logger.debug("[latency] invokeSync cost {}ms", endTime - startTime);
+        }
         if (response == null) {
             String errMessage = TraceUtil.formatTraceMessage(conn, request, "get null response");
             logger.warn(errMessage);
