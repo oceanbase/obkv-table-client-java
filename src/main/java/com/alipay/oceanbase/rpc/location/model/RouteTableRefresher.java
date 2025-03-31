@@ -97,7 +97,7 @@ public class RouteTableRefresher {
     public void close() {
         try {
             scheduler.shutdown();
-            // wait at most 5 seconds to close the scheduler
+            // wait at most 1 seconds to close the scheduler
             if (!scheduler.awaitTermination(1, TimeUnit.SECONDS)) {
                 scheduler.shutdownNow();
             }

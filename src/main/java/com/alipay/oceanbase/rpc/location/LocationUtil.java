@@ -2249,10 +2249,10 @@ public class LocationUtil {
             readTimeout, retryTimes, retryInternal);
 
         if (ocpResponse != null) {
-            HashMap<String, String> idc2Region = configServer.getIdc2Region();
-            idc2Region.clear();
             OcpResponseData ocpResponseData = ocpResponse.getData();
             if (ocpResponseData != null && ocpResponseData.getIDCList() != null) {
+                HashMap<String, String> idc2Region = configServer.getIdc2Region();
+                idc2Region.clear();
                 for (OcpResponseDataIDC idcRegion : ocpResponseData.getIDCList()) {
                     configServer.addIdc2Region(idcRegion.getIdc(), idcRegion.getRegion());
                 }
