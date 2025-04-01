@@ -182,27 +182,9 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                 break;
             } catch (Exception e) {
                 if (client.isOdpMode()) {
-                    if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
-                        if (e instanceof ObTableException) {
-                            logger
-                                .warn(
-                                    "tablename:{} stream query execute while meet Exception needing retry, errorCode: {}, errorMsg: {}, try times {}",
-                                    indexTableName, ((ObTableException) e).getErrorCode(),
-                                    e.getMessage(), tryTimes);
-                        } else if (e instanceof IllegalArgumentException) {
-                            logger
-                                .warn(
-                                    "tablename:{} stream query execute while meet Exception needing retry, try times {}, errorMsg: {}",
-                                    indexTableName, tryTimes, e.getMessage());
-                        } else {
-                            logger
-                                .warn(
-                                    "tablename:{} stream query execute while meet Exception needing retry, try times {}",
-                                    indexTableName, tryTimes, e);
-                        }
-                    } else {
-                        throw e;
-                    }
+                    logger.warn("meet exception when execute in odp mode." +
+                            "tablename: {}, errMsg: {}", indexTableName, e.getMessage());
+                    throw e;
                 } else {
                     if (e instanceof ObTableReplicaNotReadableException) {
                         if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
