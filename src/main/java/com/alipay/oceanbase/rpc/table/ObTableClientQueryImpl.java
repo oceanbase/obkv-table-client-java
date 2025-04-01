@@ -48,7 +48,9 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     private final ObTableClient                   obTableClient;
     private Map<Long, ObPair<Long, ObTableParam>> partitionObTables;
 
-    private Row                                   rowKey;           // only used by BatchOperation
+    private Row                                   rowKey;             // only used by BatchOperation
+
+    private boolean                               allowDistributeScan;
 
     /*
      * Add aggregation.
@@ -286,6 +288,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             @Override
             ObTableClientQueryAsyncStreamResult execute() throws Exception {
                 ObTableClientQueryAsyncStreamResult obTableClientQueryAsyncStreamResult = new ObTableClientQueryAsyncStreamResult();
+                obTableClientQueryAsyncStreamResult.setAllowDistributeScan(allowDistributeScan);
                 setCommonParams2Result(obTableClientQueryAsyncStreamResult);
                 obTableClientQueryAsyncStreamResult.setClient(obTableClient);
                 obTableClientQueryAsyncStreamResult.init();
@@ -426,5 +429,9 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
     public Long getPartId() {
         return getObTableQuery().getPartId();
+    }
+
+    public void setAllowDistributeScan(boolean allowDistributeScan) {
+        this.allowDistributeScan = allowDistributeScan;
     }
 }
