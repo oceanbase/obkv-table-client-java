@@ -40,12 +40,13 @@ import static com.alipay.oceanbase.rpc.constant.Constants.INVALID_TABLET_ID;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.RUNTIME;
 
 public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResult {
-    private static final Logger      logger         = LoggerFactory
-                                                        .getLogger(ObTableClientQueryStreamResult.class);
-    private boolean                  isEnd          = true;
-    private long                     sessionId      = Constants.OB_INVALID_ID;
-    private ObTableQueryAsyncRequest asyncRequest   = new ObTableQueryAsyncRequest();
-    private ObTableConnection        prevConnection = null;
+    private static final Logger      logger              = LoggerFactory
+                                                             .getLogger(ObTableClientQueryStreamResult.class);
+    private boolean                  isEnd               = true;
+    private long                     sessionId           = Constants.OB_INVALID_ID;
+    private ObTableQueryAsyncRequest asyncRequest        = new ObTableQueryAsyncRequest();
+    private ObTableConnection        prevConnection      = null;
+    private boolean                  allowDistributeScan = true;                                              // false when partition scan
 
     @Override
     public void init() throws Exception {
@@ -113,8 +114,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                                                                                                        throws Exception {
         ObTableParam obTableParam = partIdWithObTable.getRight();
         ObTableQueryRequest queryRequest = asyncRequest.getObTableQueryRequest();
-        long partitionId = client.getServerCapacity().isSupportDistributedExecute() ? INVALID_TABLET_ID
-            : obTableParam.getPartitionId();
+        long partitionId = isDistributeScan() ? INVALID_TABLET_ID : obTableParam.getPartitionId();
         // refresh request info
         queryRequest.setPartitionId(partitionId);
         queryRequest.setTableId(obTableParam.getTableId());
@@ -141,8 +141,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         ObTableQueryRequest queryRequest = asyncRequest.getObTableQueryRequest();
 
         // refresh request info
-        long partitionId = client.getServerCapacity().isSupportDistributedExecute() ? INVALID_TABLET_ID
-            : obTableParam.getPartitionId();
+        long partitionId = isDistributeScan() ? INVALID_TABLET_ID : obTableParam.getPartitionId();
         queryRequest.setPartitionId(partitionId);
         queryRequest.setTableId(obTableParam.getTableId());
 
@@ -162,8 +161,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         ObTableQueryRequest queryRequest = asyncRequest.getObTableQueryRequest();
 
         // refresh request info
-        long partitionId = client.getServerCapacity().isSupportDistributedExecute() ? INVALID_TABLET_ID
-            : obTableParam.getPartitionId();
+        long partitionId = isDistributeScan() ? INVALID_TABLET_ID : obTableParam.getPartitionId();
         queryRequest.setPartitionId(partitionId);
         queryRequest.setTableId(obTableParam.getTableId());
 
@@ -200,8 +198,8 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             ObTableQueryRequest queryRequest = asyncRequest.getObTableQueryRequest();
 
             // refresh request info
-            long partitionId = client.getServerCapacity().isSupportDistributedExecute() ? INVALID_TABLET_ID
-                : obTableParam.getPartitionId();
+            long partitionId = isDistributeScan() ? INVALID_TABLET_ID : obTableParam
+                .getPartitionId();
             queryRequest.setPartitionId(partitionId);
             queryRequest.setTableId(obTableParam.getTableId());
 
@@ -403,5 +401,13 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
 
     public void setEnd(boolean end) {
         isEnd = end;
+    }
+
+    private boolean isDistributeScan() {
+        return allowDistributeScan && client.getServerCapacity().isSupportDistributedExecute();
+    }
+
+    public void setAllowDistributeScan(boolean allowDistributeScan) {
+        this.allowDistributeScan = allowDistributeScan;
     }
 }

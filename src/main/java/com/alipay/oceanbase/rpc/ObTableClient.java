@@ -3777,7 +3777,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(tableName,
                     ((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery(), this);
             tableQuery.setEntityType(request.getEntityType());
-            return new ObClusterTableQuery(tableQuery).asyncExecuteInternal();
+            ObClusterTableQuery clusterTableQuery = new ObClusterTableQuery(tableQuery);
+            clusterTableQuery.setAllowDistributeScan(((ObTableQueryAsyncRequest) request).isAllowDistributeScan());
+            return clusterTableQuery.asyncExecuteInternal();
         } else if (request instanceof ObTableBatchOperationRequest) {
             ObTableClientBatchOpsImpl batchOps = new ObTableClientBatchOpsImpl(
                     request.getTableName(),
