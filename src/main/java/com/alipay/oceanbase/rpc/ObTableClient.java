@@ -4293,7 +4293,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     private ObTableClientType getClientType(RunningMode runningMode) {
-        return runningMode == RunningMode.HBASE ? ObTableClientType.JAVA_HBASE_CLIENT : ObTableClientType.JAVA_TABLE_CLIENT;
+        if (ObGlobal.isDistributedExecSupport()) {
+            return runningMode == RunningMode.HBASE ? ObTableClientType.JAVA_HBASE_CLIENT : ObTableClientType.JAVA_TABLE_CLIENT;
+        } else {
+            return ObTableClientType.JAVA_TABLE_CLIENT;
+        }
     }
 
     /**
