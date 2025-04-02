@@ -645,21 +645,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 return t;
             } catch (Exception ex) {
                 if (odpMode) {
-                    if ((tryTimes - 1) < runtimeRetryTimes) {
-                        if (ex instanceof ObTableException) {
-                            logger
-                                .warn(
-                                    "execute while meet Exception, errorCode: {} , errorMsg: {}, try times {}",
-                                    ((ObTableException) ex).getErrorCode(), ex.getMessage(),
-                                    tryTimes);
-                        } else {
-                            logger.warn("execute while meet Exception, errorMsg: {}, try times {}",
-                                ex.getMessage(), tryTimes);
-                        }
-                    } else {
-                        RUNTIME.error("retry failed with exception", ex);
-                        throw ex;
-                    }
+                    logger.warn("meet exception when execute in odp mode." +
+                            "tablename: {}, errMsg: {}", tableName, ex.getMessage());
+                    throw ex;
                 } else {
                     if (ex instanceof ObTableReplicaNotReadableException) {
                         if (obPair != null && (tryTimes - 1) < runtimeRetryTimes) {
@@ -821,21 +809,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             } catch (Exception ex) {
                 RUNTIME.error("execute while meet exception", ex);
                 if (odpMode) {
-                    if ((tryTimes - 1) < runtimeRetryTimes) {
-                        if (ex instanceof ObTableException) {
-                            logger.warn(
-                                    "execute while meet Exception, errorCode: {} , errorMsg: {}, try times {}",
-                                    ((ObTableException) ex).getErrorCode(), ex.getMessage(),
-                                    tryTimes);
-                        } else {
-                            logger.warn(
-                                "execute while meet Exception, exception: {}, try times {}", ex,
-                                tryTimes);
-                        }
-                    } else {
-                        RUNTIME.error("retry failed with exception", ex);
-                        throw ex;
-                    }
+                    logger.warn("meet exception when execute in odp mode." +
+                            "tablename: {}, errMsg: {}", tableName, ex.getMessage());
+                    throw ex;
                 } else {
                     if (ex instanceof ObTableReplicaNotReadableException) {
                         if (obPair != null && (tryTimes - 1) < runtimeRetryTimes) {
