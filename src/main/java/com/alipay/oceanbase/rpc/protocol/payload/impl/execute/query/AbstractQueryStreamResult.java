@@ -247,7 +247,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                 .getTableQuery().isHbaseQuery()))
                             && client.getTableGroupInverted().get(indexTableName) != null) {
                             // table not exists && hbase mode && table group exists , three condition both
-                            client.eraseTableGroupFromCache(tableName);
+                            client.eraseTableGroupFromCache(client.getTableGroupInverted().get(
+                                indexTableName));
                         }
                         if (((ObTableException) e).isNeedRefreshTableEntry()) {
                             needRefreshTableEntry = true;
