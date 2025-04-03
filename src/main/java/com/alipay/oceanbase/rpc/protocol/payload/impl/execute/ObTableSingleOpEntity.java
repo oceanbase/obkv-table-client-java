@@ -22,6 +22,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjMeta;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObTableSerialUtil;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -41,8 +42,16 @@ public class ObTableSingleOpEntity extends AbstractPayload {
     private List<ObObj> propertiesValues = new ArrayList<>();
 
     private boolean ignoreEncodePropertiesColumnNames = false;
-
+    private boolean isHbase = false;
     public ObTableSingleOpEntity() {}
+
+    public boolean isHbase() {
+        return isHbase;
+    }
+
+    public void setHbase(boolean hbase) {
+        isHbase = hbase;
+    }
 
     /*
      * Encode.
@@ -56,33 +65,33 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         idx = encodeHeader(bytes, idx);
 
         // 1. encode rowKey bitmap
-        int len = Serialization.getNeedBytes(rowKeyBitLen);
-        System.arraycopy(Serialization.encodeVi64(rowKeyBitLen), 0, bytes, idx, len);
-        idx += len;
+        byte[] tmpBytes = Serialization.encodeVi64(rowKeyBitLen);
+        System.arraycopy(tmpBytes, 0, bytes, idx, tmpBytes.length);
+        idx += tmpBytes.length;
         for (byte b : rowKeyBitMap) {
             System.arraycopy(Serialization.encodeI8(b), 0, bytes, idx, 1);
             idx += 1;
         }
 
         // 2. encode rowkey
-        len = Serialization.getNeedBytes(rowkey.size());
-        System.arraycopy(Serialization.encodeVi64(rowkey.size()), 0, bytes, idx, len);
-        idx += len;
+        tmpBytes = Serialization.encodeVi64(rowkey.size());
+        System.arraycopy(tmpBytes, 0, bytes, idx, tmpBytes.length);
+        idx += tmpBytes.length;
         for (ObObj obj : rowkey) {
-            len =  ObTableSerialUtil.getEncodedSize(obj);
-            System.arraycopy(ObTableSerialUtil.encode(obj), 0, bytes, idx, len);
-            idx += len;
+            tmpBytes =  ObTableSerialUtil.encode(obj);
+            System.arraycopy(tmpBytes, 0, bytes, idx, tmpBytes.length);
+            idx += tmpBytes.length;
         }
 
         // 3. encode property bitmap
         if (ignoreEncodePropertiesColumnNames) {
-            len = Serialization.getNeedBytes(0L);
-            System.arraycopy(Serialization.encodeVi64(0L), 0, bytes, idx, len);
-            idx += len;
+            tmpBytes = Serialization.encodeVi64(0L);
+            System.arraycopy(tmpBytes, 0, bytes, idx, tmpBytes.length);
+            idx += tmpBytes.length;
         } else {
-            len = Serialization.getNeedBytes(propertiesBitLen);
-            System.arraycopy(Serialization.encodeVi64(propertiesBitLen), 0, bytes, idx, len);
-            idx += len;
+            tmpBytes = Serialization.encodeVi64(propertiesBitLen);
+            System.arraycopy(tmpBytes, 0, bytes, idx, tmpBytes.length);
+            idx += tmpBytes.length;
             for (byte b : propertiesBitMap) {
                 System.arraycopy(Serialization.encodeI8(b), 0, bytes, idx, 1);
                 idx += 1;
@@ -90,16 +99,58 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         }
 
         // 4. encode properties values
-        len = Serialization.getNeedBytes(propertiesValues.size());
-        System.arraycopy(Serialization.encodeVi64(propertiesValues.size()), 0, bytes, idx, len);
-        idx += len;
+        tmpBytes = Serialization.encodeVi64(propertiesValues.size());
+        System.arraycopy(tmpBytes, 0, bytes, idx, tmpBytes.length);
+        idx += tmpBytes.length;
         for (ObObj obj : propertiesValues) {
-            len =  ObTableSerialUtil.getEncodedSize(obj);
-            System.arraycopy(ObTableSerialUtil.encode(obj), 0, bytes, idx, len);
-            idx += len;
+            tmpBytes = ObTableSerialUtil.encode(obj);
+            System.arraycopy(tmpBytes, 0, bytes, idx, tmpBytes.length);
+            idx += tmpBytes.length;
         }
 
         return bytes;
+    }
+
+    public void encode(ObByteBuf buf) {
+        // 0. encode header
+        encodeHeader(buf);
+
+        // 1. encode rowKey bitmap
+        if (isHbase) {
+            Serialization.encodeVi64(buf, 3L);
+            Serialization.encodeI8(buf, (byte) 0b00000111);
+        } else {
+            Serialization.encodeVi64(buf, rowKeyBitLen);
+            for (byte b : rowKeyBitMap) {
+                Serialization.encodeI8(buf, b);
+            }
+        }
+
+
+        // 2. encode rowkey
+        Serialization.encodeVi64(buf, rowkey.size());
+        for (ObObj obj : rowkey) {
+            ObTableSerialUtil.encode(buf, obj);
+        }
+
+        // 3. encode property bitmap
+        if (ignoreEncodePropertiesColumnNames) {
+            Serialization.encodeVi64(buf,0L);
+        } else if (isHbase) {
+            Serialization.encodeVi64(buf, 1);
+            Serialization.encodeI8(buf, (byte) 0b00000001);
+        } else {
+            Serialization.encodeVi64(buf, propertiesBitLen);
+            for (byte b : propertiesBitMap) {
+                Serialization.encodeI8(buf, b);
+            }
+        }
+
+        // 4. encode properties values
+        Serialization.encodeVi64(buf, propertiesValues.size());
+        for (ObObj obj : propertiesValues) {
+            ObTableSerialUtil.encode(buf, obj);
+        }
     }
 
     private byte[] parseBitMap(long bitLen, List<String> aggColumnNames, List<String> columnNames, ByteBuf buf) {
@@ -162,29 +213,39 @@ public class ObTableSingleOpEntity extends AbstractPayload {
      */
     @Override
     public long getPayloadContentSize() {
-        long payloadContentSize = 0;
+        if (this.payLoadContentSize == -1) {
+            long payloadContentSize = 0;
+            if (isHbase) {
+                payloadContentSize += Serialization.getNeedBytes(3L);
+                payloadContentSize += 1;
+            } else {
+                payloadContentSize += Serialization.getNeedBytes(rowKeyBitLen);
+                payloadContentSize += rowKeyBitMap.length;
+            }
 
-        payloadContentSize += Serialization.getNeedBytes(rowKeyBitLen);
-        payloadContentSize += rowKeyBitMap.length;
+            payloadContentSize += Serialization.getNeedBytes(rowkey.size());
+            for (ObObj obj : rowkey) {
+                payloadContentSize += ObTableSerialUtil.getEncodedSize(obj);
+            }
 
-        payloadContentSize += Serialization.getNeedBytes(rowkey.size());
-        for (ObObj obj : rowkey) {
-            payloadContentSize += ObTableSerialUtil.getEncodedSize(obj);
+            if (ignoreEncodePropertiesColumnNames) {
+                payloadContentSize += Serialization.getNeedBytes(0L);
+            } else if (isHbase) {
+                payloadContentSize += Serialization.getNeedBytes(1L);
+                payloadContentSize += 1;
+            } else {
+                payloadContentSize += Serialization.getNeedBytes(propertiesBitLen);
+                payloadContentSize += propertiesBitMap.length;
+            }
+
+            payloadContentSize += Serialization.getNeedBytes(propertiesValues.size());
+            for (ObObj obj : propertiesValues) {
+                payloadContentSize += ObTableSerialUtil.getEncodedSize(obj);
+            }
+            this.payLoadContentSize = payloadContentSize;
         }
 
-        if (ignoreEncodePropertiesColumnNames) {
-            payloadContentSize += Serialization.getNeedBytes(0L);
-        } else {
-            payloadContentSize += Serialization.getNeedBytes(propertiesBitLen);
-            payloadContentSize += propertiesBitMap.length;
-        }
-
-        payloadContentSize += Serialization.getNeedBytes(propertiesValues.size());
-        for (ObObj obj : propertiesValues) {
-            payloadContentSize += ObTableSerialUtil.getEncodedSize(obj);
-        }
-
-        return payloadContentSize;
+        return this.payLoadContentSize;
     }
 
     public static boolean areArraysSameLengthOrBothNull(Object[] a, Object[] b) {

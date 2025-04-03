@@ -441,15 +441,14 @@ public class Serialization {
      * @return bytes need for serialize long data
      */
     public static int getNeedBytes(long l) {
-        if (l < 0)
+        if (l < 0) {
             return 10;
-        int needBytes = 0;
-        for (long max : OB_MAX) {
-            needBytes++;
-            if (l <= max)
-                break;
         }
-        return needBytes;
+        if (l == 0 || l == 1 /* opt for version header */) {
+            return 1;
+        }
+        // 计算有效位数，然后除以7向上取整
+        return (Long.SIZE - Long.numberOfLeadingZeros(l) + 6) / 7;
     }
 
     /**
@@ -458,15 +457,14 @@ public class Serialization {
      * @return bytes need for serialize int data
      */
     public static int getNeedBytes(int l) {
-        if (l < 0)
+        if (l < 0) {
             return 5;
-        int needBytes = 0;
-        for (long max : OB_MAX) {
-            needBytes++;
-            if (l <= max)
-                break;
         }
-        return needBytes;
+        if (l == 0 || l == 1 /* opt for version header */) {
+            return 1;
+        }
+        // 计算有效位数，然后除以7向上取整
+        return (Integer.SIZE - Integer.numberOfLeadingZeros(l) + 6) / 7;
     }
 
     /**
@@ -569,6 +567,14 @@ public class Serialization {
         }
         ret[index] = (byte) (i & 0x7f);
         return ret;
+    }
+
+    public static void encodeVi32(int i, ByteBuf buf) {
+        while (i < 0 || i > OB_MAX_V1B) {
+            buf.writeByte((byte) (i | 0x80));
+            i >>>= 7;
+        }
+        buf.writeByte((byte) (i & 0x7f));
     }
 
     /**
@@ -706,6 +712,9 @@ public class Serialization {
      * @param str input data
      */
     public static void encodeVString(ObByteBuf buf, String str) {
+        if (str == null) {
+            str = "";
+        }
         encodeVString(buf, str, StandardCharsets.UTF_8);
     }
 
@@ -850,15 +859,13 @@ public class Serialization {
             str = "";
         byte[] data = str.getBytes(charset);
         int dataLen = data.length;
-        int strLen = getNeedBytes(dataLen);
-        byte[] ret = new byte[strLen + dataLen + 1];
+        byte[] dataLenBytes = encodeVi32(dataLen);
+        byte[] ret = new byte[dataLenBytes.length + dataLen + 1];
         int index = 0;
-        for (byte b : encodeVi32(dataLen)) {
-            ret[index++] = b;
-        }
-        for (byte b : data) {
-            ret[index++] = b;
-        }
+        System.arraycopy(dataLenBytes, 0, ret, index, dataLenBytes.length);
+        index += dataLenBytes.length;
+        System.arraycopy(data, 0, ret, index, dataLen);
+        index += dataLen;
         ret[index] = 0;
         return ret;
     }
@@ -1010,14 +1017,15 @@ public class Serialization {
      * @return output data buffer
      */
     public static byte[] encodeObUniVersionHeader(long version, long payloadLen) {
-        byte[] bytes = new byte[(int) getObUniVersionHeaderLength(version, payloadLen)];
+        byte[] versionBytes = Serialization.encodeVi64(version);
+        byte[] payloadBytes = Serialization.encodeVi64(payloadLen);
+        byte[] bytes = new byte[versionBytes.length + payloadBytes.length];
         int idx = 0;
-
-        int len = Serialization.getNeedBytes(version);
-        System.arraycopy(Serialization.encodeVi64(version), 0, bytes, idx, len);
+        int len = versionBytes.length;
+        System.arraycopy(versionBytes, 0, bytes, idx, len);
         idx += len;
-        len = Serialization.getNeedBytes(payloadLen);
-        System.arraycopy(Serialization.encodeVi64(payloadLen), 0, bytes, idx, len);
+        len = payloadBytes.length;
+        System.arraycopy(payloadBytes, 0, bytes, idx, len);
 
         return bytes;
     }
