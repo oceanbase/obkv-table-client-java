@@ -40,7 +40,7 @@ public class ObTableQueryAsyncRequest extends ObTableAbstractOperationRequest {
     private long                 querySessionId;
     private ObQueryOperationType queryType = ObQueryOperationType.QUERY_START;
 
-    private boolean              allowDistributeScan;
+    private boolean              allowDistributeScan = true;
 
     /**
      * Get pcode.

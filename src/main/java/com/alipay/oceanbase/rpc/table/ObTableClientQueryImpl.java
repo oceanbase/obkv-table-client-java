@@ -50,7 +50,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
     private Row                                   rowKey;             // only used by BatchOperation
 
-    private boolean                               allowDistributeScan;
+    private boolean                               allowDistributeScan = true;
 
     /*
      * Add aggregation.
