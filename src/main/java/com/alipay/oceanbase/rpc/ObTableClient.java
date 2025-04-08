@@ -433,8 +433,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         if (odpMode) {
             try {
+                ObTableClientType clientType = runningMode == RunningMode.HBASE ? ObTableClientType.JAVA_HBASE_CLIENT : ObTableClientType.JAVA_TABLE_CLIENT;
                 odpTable = new ObTable.Builder(odpAddr, odpPort) //
-                    .setLoginInfo(tenantName, fullUserName, password, database, getClientType(runningMode)) //
+                    .setLoginInfo(tenantName, fullUserName, password, database, clientType) //
                     .setProperties(getProperties()).setConfigs(TableConfigs).build();
             } catch (Exception e) {
                 logger
