@@ -1384,6 +1384,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 }
                 for (int i = 0; i < tableEntryRefreshTryTimes; i++) {
                     try {
+                        long startTime = System.currentTimeMillis();
                         tableEntry = loadTableEntryLocationWithPriority(
                                 serverRoster,
                                 tableEntryKey,
@@ -1395,6 +1396,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                 serverAddressCachingTimeout,
                                 sysUA
                         );
+                        long cost = System.currentTimeMillis() - startTime;
+                        if (cost > 1000) {
+                            System.out.println("[latency monitor]refreshTableLocationByTabletId loadTableEntryLocationWithPriority cost " + cost + "ms");
+                        }
                         tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
                         break;
                         

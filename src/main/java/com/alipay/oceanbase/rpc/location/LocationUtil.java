@@ -902,8 +902,20 @@ public class LocationUtil {
             ps.setString(3, key.getTenantName());
             ps.setString(4, key.getDatabaseName());
             ps.setString(5, key.getTableName());
+            long startTime = System.currentTimeMillis();
             rs = ps.executeQuery();
+            long endTime = System.currentTimeMillis();
+            long cost = endTime - startTime;
+            if (cost > 1000) {
+                System.out.println("[latency monitor] getTableEntryLocationFromRemote executeQuery cost " + cost + "ms");
+            }
+            startTime = System.currentTimeMillis();
             getPartitionLocationFromResultSetByTablet(tableEntry, rs, partitionEntry, tabletId);
+            endTime = System.currentTimeMillis();
+            cost = endTime - startTime;
+            if (cost > 1000) {
+                System.out.println("[latency monitor] getPartitionLocationFromResultSetByTablet cost " + cost + "ms");
+            }
         } catch (SQLException e) {
             // cannot execute sql, maybe some of the observers have been killed
             RUNTIME.error(LCD.convert("01-00010"), key, tableEntry, e.getMessage());
