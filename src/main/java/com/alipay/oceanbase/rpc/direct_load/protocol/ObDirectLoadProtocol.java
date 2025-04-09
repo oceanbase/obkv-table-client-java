@@ -43,4 +43,6 @@ public interface ObDirectLoadProtocol {
 
     ObDirectLoadHeartBeatRpc getHeartBeatRpc(ObDirectLoadTraceId traceId);
 
+    ObDirectLoadDetachRpc getDetachRpc(ObDirectLoadTraceId traceId) throws ObDirectLoadException;
+
 }

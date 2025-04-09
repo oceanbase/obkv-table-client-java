@@ -22,7 +22,7 @@ import java.util.Map;
 
 public enum ObTableDirectLoadOperationType {
 
-    BEGIN(0), COMMIT(1), ABORT(2), GET_STATUS(3), INSERT(4), HEART_BEAT(5), MAX_TYPE(6);
+    BEGIN(0), COMMIT(1), ABORT(2), GET_STATUS(3), INSERT(4), HEART_BEAT(5), DETACH(6), MAX_TYPE(7);
 
     private final int                                                 value;
     private static final Map<Integer, ObTableDirectLoadOperationType> map = new HashMap<Integer, ObTableDirectLoadOperationType>();
