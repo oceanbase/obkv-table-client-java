@@ -20,6 +20,7 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Credentialable;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.ObBytesString;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
@@ -39,7 +40,6 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
     protected ObTableEntityType       entityType       = ObTableEntityType.KV;
     protected ObTableConsistencyLevel consistencyLevel = ObTableConsistencyLevel.STRONG;
     private ObTableLSOperation        lsOperation      = null;
-
     /*
      * Get pcode.
      */
@@ -53,31 +53,27 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
      */
     @Override
     public byte[] encode() {
-        byte[] bytes = new byte[(int) getPayloadSize()];
-        int idx = 0;
+        ObByteBuf buf = new ObByteBuf((int) getPayloadSize());
 
-        // 0. encode  ObTableLSOpRequest header
-        idx = encodeHeader(bytes, idx);
+        // 0. encode ObTableLSOpRequest header
+        encodeHeader(buf);
 
         // 1. encode credential
-        byte[] strbytes = Serialization.encodeBytesString(credential);
-        System.arraycopy(strbytes, 0, bytes, idx, strbytes.length);
-        idx += strbytes.length;
+        Serialization.encodeBytesString(buf, credential);
 
         // 2. encode entity_type
-        System.arraycopy(Serialization.encodeI8(entityType.getByteValue()), 0, bytes, idx, 1);
-        idx++;
+        Serialization.encodeI8(buf, entityType.getByteValue());
 
-        // 3. encode consistencyLevel level
-        System.arraycopy(Serialization.encodeI8(consistencyLevel.getByteValue()), 0, bytes, idx, 1);
-        idx++;
+        // 3. encode consistencyLevel
+        Serialization.encodeI8(buf, consistencyLevel.getByteValue());
 
         // 4. encode lsOperation
-        int len = (int) lsOperation.getPayloadSize();
-        System.arraycopy(lsOperation.encode(), 0, bytes, idx, len);
-        idx += len;
-
-        return bytes;
+        lsOperation.encode(buf);
+        if (buf.pos != buf.bytes.length) {
+            throw new IllegalArgumentException("error in encode lsOperationRequest (" +
+                    "pos:" + buf.pos + ", buf.capacity:" + buf.bytes.length + ")");
+        }
+        return buf.bytes;
     }
 
     /*
@@ -100,8 +96,11 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
      */
     @Override
     public long getPayloadContentSize() {
-        return lsOperation.getPayloadSize() + Serialization.getNeedBytes(credential) + 1 // entityType
-               + 1; // consistencyLevel
+        if (payLoadContentSize == -1) {
+            payLoadContentSize = lsOperation.getPayloadSize() + Serialization.getNeedBytes(credential) + 1 // entityType
+                    + 1; // consistencyLevel
+        }
+        return payLoadContentSize;
     }
 
     /*

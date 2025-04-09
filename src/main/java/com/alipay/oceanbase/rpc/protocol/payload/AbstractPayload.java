@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload;
 
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -44,6 +45,7 @@ public abstract class AbstractPayload implements ObPayload {
     private long                       version   = 1;
     protected long                     timeout   = RPC_OPERATION_TIMEOUT.getDefaultLong();
     protected int                      groupId   = 0;
+    protected long                     payLoadContentSize = -1;
 
     /*
      * Get pcode.
@@ -176,11 +178,15 @@ public abstract class AbstractPayload implements ObPayload {
      * encode unis header
      */
     protected int encodeHeader(byte[] bytes, int idx) {
-        int headerLen = (int) getObUniVersionHeaderLength(getVersion(), getPayloadContentSize());
-        System.arraycopy(encodeObUniVersionHeader(getVersion(), getPayloadContentSize()), 0, bytes,
-            idx, headerLen);
-        idx += headerLen;
+        byte[] versionHeaderBytes = encodeObUniVersionHeader(getVersion(), getPayloadContentSize());
+        System.arraycopy(versionHeaderBytes, 0, bytes,
+            idx, versionHeaderBytes.length);
+        idx += versionHeaderBytes.length;
         return idx;
+    }
+
+    protected void encodeHeader(ObByteBuf buf) {
+        encodeObUniVersionHeader(buf, getVersion(), getPayloadContentSize());
     }
 
 }

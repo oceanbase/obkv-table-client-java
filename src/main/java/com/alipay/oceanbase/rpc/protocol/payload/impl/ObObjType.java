@@ -19,15 +19,21 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl;
 
 import com.alipay.oceanbase.rpc.exception.FeatureNotSupportedException;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
-import com.alipay.oceanbase.rpc.util.ObBytesString;
-import com.alipay.oceanbase.rpc.util.ObVString;
-import com.alipay.oceanbase.rpc.util.Serialization;
-import com.alipay.oceanbase.rpc.util.TimeUtils;
+import com.alipay.oceanbase.rpc.util.*;
 import io.netty.buffer.ByteBuf;
 
 import java.sql.Timestamp;
 import java.time.*;
 import java.util.*;
+
+class ObObjMetaPool {
+    public static ObObjMeta varchrObjMeta = null;
+    static {
+        varchrObjMeta = new ObObjMeta(ObObjType.ObVarcharType, ObCollationLevel.CS_LEVEL_EXPLICIT,
+                ObCollationType.CS_TYPE_UTF8MB4_GENERAL_CI, (byte) 10);
+    }
+}
+
 
 public enum ObObjType {
 
@@ -38,6 +44,11 @@ public enum ObObjType {
         @Override
         public byte[] encode(Object obj) {
             return new byte[0];
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            buf.writeBytes(new byte[0]);
         }
 
         /*
@@ -90,6 +101,15 @@ public enum ObObjType {
             }
         }
 
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            if (obj instanceof Boolean) {
+                buf.writeByte((Boolean) obj ? (byte) 1 : (byte) 0 );
+            } else {
+                buf.writeByte((Byte) obj);
+            }
+        }
+
         /*
          * Decode.
          */
@@ -139,6 +159,11 @@ public enum ObObjType {
         @Override
         public byte[] encode(Object obj) {
             return Serialization.encodeVi32(((Number) obj).intValue());
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            Serialization.encodeVi32(buf, ((Number) obj).intValue());
         }
 
         /*
@@ -195,7 +220,12 @@ public enum ObObjType {
             return Serialization.encodeVi32(((Number) obj).intValue());
         }
 
-        /*
+       @Override
+       public void encode(ObByteBuf buf, Object obj) {
+           Serialization.encodeVi32(buf, ((Number) obj).intValue());
+       }
+
+           /*
          * Decode.
          */
         @Override
@@ -237,6 +267,11 @@ public enum ObObjType {
         @Override
         public byte[] encode(Object obj) {
             return Serialization.encodeVi32(((Number) obj).intValue());
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            Serialization.encodeVi32(buf, ((Number) obj).intValue());
         }
 
         /*
@@ -291,6 +326,11 @@ public enum ObObjType {
             return Serialization.encodeVi64(((Number) obj).longValue());
         }
 
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            Serialization.encodeVi64(buf, ((Number) obj).longValue());
+        }
+
         /*
          * Decode.
          */
@@ -334,6 +374,11 @@ public enum ObObjType {
         @Override
         public byte[] encode(Object obj) {
             return new byte[] { (Byte) obj };
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            buf.writeByte((Byte) obj);
         }
 
         /*
@@ -386,6 +431,11 @@ public enum ObObjType {
         @Override
         public byte[] encode(Object obj) {
             return Serialization.encodeVi32(((Number) obj).intValue());
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            Serialization.encodeVi32(buf, ((Number) obj).intValue());
         }
 
         /*
@@ -442,6 +492,11 @@ public enum ObObjType {
             return Serialization.encodeVi32(((Number) obj).intValue());
         }
 
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            Serialization.encodeVi32(buf, ((Number) obj).intValue());
+        }
+
         /*
          * Decode.
          */
@@ -494,6 +549,11 @@ public enum ObObjType {
         @Override
         public byte[] encode(Object obj) {
             return Serialization.encodeVi32(((Number) obj).intValue());
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            Serialization.encodeVi32(buf, ((Number) obj).intValue());
         }
 
         /*
@@ -550,6 +610,11 @@ public enum ObObjType {
             return Serialization.encodeVi64(((Number) obj).longValue());
         }
 
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            Serialization.encodeVi64(buf, ((Number) obj).longValue());
+        }
+
         /*
          * Decode.
          */
@@ -594,6 +659,11 @@ public enum ObObjType {
         @Override
         public byte[] encode(Object obj) {
             return Serialization.encodeFloat(((Float) obj));
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            Serialization.encodeFloat(buf, ((Float) obj));
         }
 
         /*
@@ -651,6 +721,11 @@ public enum ObObjType {
         @Override
         public byte[] encode(Object obj) {
             return Serialization.encodeDouble((Double) obj);
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            Serialization.encodeDouble(buf, (Double) obj);
         }
 
         /*
@@ -712,6 +787,11 @@ public enum ObObjType {
             return new byte[0];
         }
 
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            buf.writeBytes(new byte[0]);
+        }
+
         /*
          * Decode.
          */
@@ -755,6 +835,11 @@ public enum ObObjType {
         @Override
         public byte[] encode(Object obj) {
             return new byte[0];
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            buf.writeBytes(new byte[0]);
         }
 
         /*
@@ -803,6 +888,11 @@ public enum ObObjType {
             return new byte[0];
         }
 
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            buf.writeBytes(new byte[0]);
+        }
+
         /*
          * Decode.
          */
@@ -846,6 +936,11 @@ public enum ObObjType {
         @Override
         public byte[] encode(Object obj) {
             return new byte[0];
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            buf.writeBytes(new byte[0]);
         }
 
         /*
@@ -897,6 +992,13 @@ public enum ObObjType {
             long targetTs = ((Date) obj).getTime()
                             + OffsetDateTime.now().getOffset().getTotalSeconds() * 1000L;
             return Serialization.encodeVi64(targetTs * 1000L);
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            long targetTs = ((Date) obj).getTime()
+                    + OffsetDateTime.now().getOffset().getTotalSeconds() * 1000L;
+            Serialization.encodeVi64(buf,targetTs * 1000L);
         }
 
         /*
@@ -953,6 +1055,14 @@ public enum ObObjType {
             return Serialization.encodeVi64(timeInMicroseconds);
         }
 
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            long timeInMicroseconds = ((Timestamp)obj).getTime() * 1_000;
+            int nanoSeconds = ((Timestamp)obj).getNanos() % 1_000_000;
+            timeInMicroseconds += nanoSeconds / 1_000;
+            Serialization.encodeVi64(buf, timeInMicroseconds);
+        }
+
         /*
          * Decode.
          */
@@ -1003,6 +1113,11 @@ public enum ObObjType {
         @Override
         public byte[] encode(Object obj) {
             return Serialization.encodeVi32((int) ((Date) obj).getTime());
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            Serialization.encodeVi32(buf, (int) ((Date) obj).getTime());
         }
 
         /*
@@ -1067,6 +1182,11 @@ public enum ObObjType {
             return Serialization.encodeVi64((int) ((Date) obj).getTime());
         }
 
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            Serialization.encodeVi64(buf, (int) ((Date) obj).getTime());
+        }
+
         /*
          * Decode.
          */
@@ -1110,6 +1230,11 @@ public enum ObObjType {
         @Override
         public byte[] encode(Object obj) {
             return new byte[] { (Byte) obj };
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            buf.writeByte((Byte) obj);
         }
 
         /*
@@ -1161,6 +1286,18 @@ public enum ObObjType {
                 return ((ObVString) obj).getEncodeBytes();
             } else {
                 return Serialization.encodeVString((String) obj);
+            }
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            if (obj instanceof byte[]) {
+                ObBytesString bytesString = new ObBytesString((byte[]) obj);
+                Serialization.encodeBytesString(buf, bytesString);
+            } else if (obj instanceof ObVString) {
+                buf.writeBytes(((ObVString) obj).getEncodeBytes());
+            } else {
+                Serialization.encodeVString(buf, (String) obj);
             }
         }
 
@@ -1219,6 +1356,11 @@ public enum ObObjType {
             return Serialization.encodeVString((String) obj);
         }
 
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            Serialization.encodeVString(buf, (String) obj);
+        }
+
         /*
          * Decode.
          */
@@ -1274,6 +1416,11 @@ public enum ObObjType {
             return new byte[0];
         }
 
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            buf.writeBytes(new byte[0]);
+        }
+
         /*
          * Decode.
          */
@@ -1319,6 +1466,11 @@ public enum ObObjType {
         @Override
         public byte[] encode(Object obj) {
             return Serialization.encodeVi64((Long) obj);
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            Serialization.encodeVi64(buf, (Long) obj);
         }
 
         /*
@@ -1369,6 +1521,11 @@ public enum ObObjType {
             return new byte[0];
         }
 
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            buf.writeBytes(new byte[0]);
+        }
+
         /*
          * Decode.
          */
@@ -1415,7 +1572,12 @@ public enum ObObjType {
             return Serialization.encodeVString((String) obj);
         }
 
-        /*
+       @Override
+       public void encode(ObByteBuf buf, Object obj) {
+           Serialization.encodeVString(buf, (String) obj);
+       }
+
+           /*
          * Decode.
          */
         @Override
@@ -1468,6 +1630,11 @@ public enum ObObjType {
         public byte[] encode(Object obj) {
             // ObTextType use string to encode
             return Serialization.encodeVString((String) obj);
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            Serialization.encodeVString(buf, (String) obj);
         }
 
         /*
@@ -1524,6 +1691,11 @@ public enum ObObjType {
             return Serialization.encodeVString((String) obj);
         }
 
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            Serialization.encodeVString(buf, (String) obj);
+        }
+
         /*
          * Decode.
          */
@@ -1574,6 +1746,11 @@ public enum ObObjType {
         public byte[] encode(Object obj) {
             // ObLongTextType use string to encode
             return Serialization.encodeVString((String) obj);
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            Serialization.encodeVString(buf, (String) obj);
         }
 
         /*
@@ -1629,6 +1806,11 @@ public enum ObObjType {
             return Serialization.encodeVi64(((Number) obj).longValue());
         }
 
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            Serialization.encodeVi64(buf, ((Number) obj).longValue());
+        }
+
         /*
          * Decode.
          */
@@ -1677,6 +1859,11 @@ public enum ObObjType {
         @Override
         public byte[] encode(Object obj) {
             return Serialization.encodeVi32((int) ((Date) obj).getTime());
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            Serialization.encodeVi32(buf, (int) ((Date) obj).getTime());
         }
 
         /*
@@ -1742,6 +1929,15 @@ public enum ObObjType {
             long targetTs = ((Date) obj).getTime()
                     + OffsetDateTime.now().getOffset().getTotalSeconds() * 1000L;
             return Serialization.encodeVi64(targetTs * 1000L);
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, Object obj) {
+            // Date do not have timezone, when we use getTime, system will recognize it as our system timezone and transform it into UTC Time, which will changed the time.
+            // We should add back the lose part.
+            long targetTs = ((Date) obj).getTime()
+                    + OffsetDateTime.now().getOffset().getTotalSeconds() * 1000L;
+            Serialization.encodeVi64(buf,targetTs * 1000L);
         }
 
         /*
@@ -1870,6 +2066,8 @@ public enum ObObjType {
     }
 
     public abstract byte[] encode(Object obj);
+
+    public abstract void encode(ObByteBuf buf, Object obj);
 
     public abstract Object decode(ByteBuf buf, ObCollationType type);
 

@@ -22,16 +22,30 @@ import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.ObVString;
 import io.netty.buffer.ByteBuf;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class ObObj implements ObSimplePayload {
 
     private static ObObj MAX_OBJECT;
     private static ObObj MIN_OBJECT;
+    private static ObObj NULL_OBJECT;
     private static long  MAX_OBJECT_VALUE = -2L;
     private static long  MIN_OBJECT_VALUE = -3L;
 
     static {
         MAX_OBJECT = new ObObj(ObObjType.ObExtendType.getDefaultObjMeta(), MAX_OBJECT_VALUE);
         MIN_OBJECT = new ObObj(ObObjType.ObExtendType.getDefaultObjMeta(), MIN_OBJECT_VALUE);
+        NULL_OBJECT = new ObObj(ObObjType.ObNullType.getDefaultObjMeta(), null);
+    }
+    private static final int OBJ_POOL_SIZE = 100000;
+    private static final AtomicInteger CURRENT_INDEX = new AtomicInteger(0);
+    private static final ConcurrentLinkedQueue<ObObj> OBJ_POOL = new ConcurrentLinkedQueue<>();
+    static {
+        // 初始化对象池
+        for (int i = 0; i < OBJ_POOL_SIZE; i++) {
+            OBJ_POOL.offer(new ObObj());
+        }
     }
 
     /*
@@ -158,13 +172,32 @@ public class ObObj implements ObSimplePayload {
      * Get instance.
      */
     public static ObObj getInstance(Object value) {
-        ObObjMeta meta = ObObjType.defaultObjMeta(value);
-        if (value instanceof ObObj) {
-            return new ObObj(meta, ((ObObj) value).getValue());
+        ObObjType type = ObObjType.valueOfType(value);
+        ObObjMeta meta = null;
+        if (type == ObObjType.ObVarcharType) {
+            meta = ObObjMetaPool.varchrObjMeta;
         } else {
-            return new ObObj(meta, value);
+            meta = ObObjType.defaultObjMeta(value);
         }
+        ObObj obj = OBJ_POOL.poll();
+        if (obj == null) {
+            // 如果池为空，创建新对象
+            obj = new ObObj();
+        }
+        // 初始化对象
+        obj.setMeta(meta);
+        if (value instanceof ObObj) {
+            obj.setValue(((ObObj) value).getValue());
+        } else {
+            obj.setValue(value);
+        }
+        return obj;
     }
+
+    public static ObObj getNullObject() {
+       return NULL_OBJECT;
+    }
+
 
     /*
      * Get max.
