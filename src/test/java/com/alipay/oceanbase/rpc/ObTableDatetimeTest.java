@@ -77,7 +77,8 @@ public class ObTableDatetimeTest {
             Row rk = row(colVal("c1", 1L), colVal("c2", date), colVal("c3", 1L));
             client.insertOrUpdate(tableName).setRowKey(rk).addMutateColVal(colVal("c4", "c4_val"))
                 .execute();
-            Map<String, Object> res = client.get(tableName).setRowKey(rk).select("c4").execute();
+            Map<String, Object> res = client.get(tableName).setRowKey(rk).select("c4")
+                    .execute();
             Assert.assertEquals("c4_val", res.get("c4"));
 
             client.delete(tableName).setRowKey(rk).execute();
@@ -99,9 +100,9 @@ public class ObTableDatetimeTest {
             Row rk2 = row(colVal("c1", 1L), colVal("c2", date2), colVal("c3", 1L));
             BatchOperation batch = client.batchOperation(tableName);
             InsertOrUpdate insUp1 = client.insertOrUpdate(tableName).setRowKey(rk1)
-                .addMutateColVal(colVal("c4", "c4_val"));
+                    .addMutateColVal(colVal("c4", "c4_val"));
             InsertOrUpdate insUp2 = client.insertOrUpdate(tableName).setRowKey(rk2)
-                .addMutateColVal(colVal("c4", "c4_val"));
+                    .addMutateColVal(colVal("c4", "c4_val"));
             batch.addOperation(insUp1, insUp2);
             BatchOperationResult res = batch.execute();
             Assert.assertNotNull(res);
