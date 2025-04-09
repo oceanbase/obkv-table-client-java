@@ -176,6 +176,7 @@ public class ObDirectLoadConnection {
 
     private void initProtocol() throws ObDirectLoadException {
         // 构造一个连接, 获取版本号
+        long obVersion = 0;
         ObTable table = null;
         synchronized (connectionFactory) { // 防止并发访问ObGlobal.OB_VERSION
             ObGlobal.OB_VERSION = 0;
@@ -191,8 +192,9 @@ public class ObDirectLoadConnection {
             } catch (Exception e) {
                 throw new ObDirectLoadException(e);
             }
+            obVersion = ObGlobal.OB_VERSION;
         }
-        this.protocol = ObDirectLoadProtocolFactory.getProtocol(traceId, ObGlobal.OB_VERSION);
+        this.protocol = ObDirectLoadProtocolFactory.getProtocol(traceId, obVersion);
         this.protocol.init();
         table.close();
     }
