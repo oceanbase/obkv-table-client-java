@@ -36,6 +36,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
+import com.alipay.oceanbase.rpc.queryandmutate.QueryAndMutate;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.MonitorUtil;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
@@ -49,6 +50,15 @@ import java.util.concurrent.TimeUnit;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.LCD;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.RUNTIME;
 import static com.alipay.oceanbase.rpc.protocol.payload.Constants.*;
+
+class BatchIdxOperationPairList extends ArrayList<ObPair<Integer, ObTableSingleOp>> {
+};
+
+class TabletOperationsMap extends HashMap<Long, ObPair<ObTableParam, BatchIdxOperationPairList>> {
+};
+
+class LsOperationsMap extends HashMap<Long, TabletOperationsMap> {
+};
 
 public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
@@ -216,6 +226,31 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         addOperation(singleOp);
     }
 
+    public void addOperation(QueryAndMutate queryAndMutate) {
+
+        ObTableSingleOp singleOp = new ObTableSingleOp();
+        ObTableQuery obTableQuery = queryAndMutate.getQuery();
+        if (queryAndMutate.getMutation() instanceof Delete) {
+            Delete delete = (Delete) queryAndMutate.getMutation();
+            ObTableSingleOpQuery singleOpQuery = ObTableSingleOpQuery.getInstance(obTableQuery.getIndexName(),
+                    obTableQuery.getKeyRanges(), obTableQuery.getSelectColumns(),
+                    obTableQuery.getScanOrder(), obTableQuery.isHbaseQuery(),
+                    obTableQuery.gethTableFilter(), obTableQuery.getObKVParams(),
+                    obTableQuery.getFilterString());
+            singleOp.setQuery(singleOpQuery);
+            singleOp.setQuery(singleOpQuery);
+            singleOp.setSingleOpType(ObTableOperationType.QUERY_AND_MUTATE);
+            String[] rowKeyNames = delete.getRowKey().getColumns();
+            Object[] rowKeyValues = delete.getRowKey().getValues();
+            ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKeyValues,
+                    null, null);
+            singleOp.addEntity(entity);
+            addOperation(singleOp);
+        } else {
+            throw new ObTableException("invalid operation type " + queryAndMutate.getMutation().getOperationType());
+        }
+    }
+
     public void addOperation(Mutation mutation) throws Exception {
         // entity
         String[] rowKeyNames = null;
@@ -289,6 +324,12 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         ObTableSingleOp singleOp = new ObTableSingleOp();
         singleOp.setSingleOpType(type);
         singleOp.addEntity(entity);
+        if (ObTableClient.RunningMode.HBASE == obTableClient.getRunningMode()) {
+            long ts = (long) ObTableClient.getRowKeyValue(mutation, 2);
+            if (ts != -Long.MAX_VALUE) {
+                singleOp.setIsUserSpecifiedT(true);
+            }
+        }
         addOperation(singleOp);
     }
 
@@ -300,7 +341,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         Object[] rowKeyValues = get.getRowKey().getValues();
         String[] propertiesNames = get.getSelectColumns();
         ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKeyValues,
-                propertiesNames, null);
+            propertiesNames, null);
         ObTableSingleOp singleOp = new ObTableSingleOp();
         singleOp.setSingleOpType(ObTableOperationType.GET);
         singleOp.addEntity(entity);
@@ -344,8 +385,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 }
             } else {
                 results.add(ExceptionUtil.convertToObTableException(result.getExecuteHost(),
-                        result.getExecutePort(), result.getSequence(), result.getUniqueId(), errCode,
-                        result.getHeader().getErrMsg()));
+                    result.getExecutePort(), result.getSequence(), result.getUniqueId(), errCode,
+                    result.getHeader().getErrMsg()));
             }
         }
         return results;
@@ -361,30 +402,59 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         return rowKey;
     }
 
-    private List<ObPair<Integer, ObTableSingleOp>> extractOperations(Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperationsMap) {
-        List<ObPair<Integer, ObTableSingleOp>> operationsWithIndex = new ArrayList<>();
-        for (ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>> pair : tabletOperationsMap.values()) {
+    private BatchIdxOperationPairList extractOperations(TabletOperationsMap tabletOperationsMap) {
+        BatchIdxOperationPairList operationsWithIndex = new BatchIdxOperationPairList();
+        for (ObPair<ObTableParam, BatchIdxOperationPairList> pair : tabletOperationsMap.values()) {
             operationsWithIndex.addAll(pair.getRight());
         }
         return operationsWithIndex;
     }
 
-    public Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> prepareOperations(List<ObPair<Integer, ObTableSingleOp>> operationsWithIndex) throws Exception {
-        Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> lsOperationsMap = new HashMap<>();
+    public LsOperationsMap prepareOperations(BatchIdxOperationPairList operationsWithIndex) throws Exception {
+        LsOperationsMap lsOperationsMap = new LsOperationsMap();
 
         if (obTableClient.isOdpMode()) {
-            Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperationsMap = new HashMap<>();
-            ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>> obTableOperations =
-                    new ObPair<>(new ObTableParam(obTableClient.getOdpTable()),
-                            new ArrayList<ObPair<Integer, ObTableSingleOp>>());
-            for (int i = 0; i < operationsWithIndex.size(); i++) {
-                obTableOperations.getRight().add(operationsWithIndex.get(i));
-            }
+            TabletOperationsMap tabletOperationsMap = new TabletOperationsMap();
+            ObPair<ObTableParam, BatchIdxOperationPairList> obTableOperations =
+                    new ObPair<>(new ObTableParam(obTableClient.getOdpTable()), operationsWithIndex);
             tabletOperationsMap.put(INVALID_TABLET_ID, obTableOperations);
             lsOperationsMap.put(INVALID_LS_ID, tabletOperationsMap);
             return lsOperationsMap;
+        } else if (!obTableClient.getServerCapacity().isSupportDistributedExecute()) {
+            return prepareByEachOperation(lsOperationsMap, operationsWithIndex);
+        } else {
+            return prepareByFirstOperation(lsOperationsMap, operationsWithIndex);
         }
+    }
 
+    private LsOperationsMap prepareByFirstOperation(LsOperationsMap lsOperationsMap,
+                        BatchIdxOperationPairList operationsWithIndex) throws Exception {
+        if (operationsWithIndex.isEmpty()) {
+            throw new IllegalArgumentException("batch operations is empty");
+        } else {
+            String real_tableName = tableName;
+            // 1. get the ObTableParam of the first op
+            ObTableSingleOp operation = operationsWithIndex.get(0).getRight();
+            Object[] rowKey = calculateRowKey(operation);
+            if (this.entityType == ObTableEntityType.HKV && obTableClient.isTableGroupName(tableName)) {
+                real_tableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
+            }
+            ObPair<Long, ObTableParam>  tableObPair= obTableClient.getTable(real_tableName, rowKey,
+                    false, false, obTableClient.getRoute(false));
+            ObTableParam obTableParam = tableObPair.getRight();
+            // 2. construct the TabletOperationsMap with invalid tabletId
+            TabletOperationsMap tabletOperationsMap = new TabletOperationsMap();
+            ObPair<ObTableParam, BatchIdxOperationPairList> obTableOperations =
+                    new ObPair<>(obTableParam, operationsWithIndex);
+            tabletOperationsMap.put(INVALID_TABLET_ID, obTableOperations);
+            // 3. construct the LsOperationsMap with invalid lsId
+            lsOperationsMap.put(INVALID_LS_ID, tabletOperationsMap);
+            return lsOperationsMap;
+        }
+    }
+
+    private LsOperationsMap prepareByEachOperation(LsOperationsMap lsOperationsMap,
+                         BatchIdxOperationPairList operationsWithIndex) throws Exception {
         for (int i = 0; i < operationsWithIndex.size(); i++) {
             ObTableSingleOp operation = operationsWithIndex.get(i).getRight();
             Object[] rowKey = calculateRowKey(operation);
@@ -397,23 +467,20 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     false, false, obTableClient.getRoute(false));
             long lsId = tableObPair.getRight().getLsId();
 
-            Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperations
-                    = lsOperationsMap.computeIfAbsent(lsId, k -> new HashMap<>());
-            // if ls id not exists
-
-            ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>> singleOperations =
-                    tabletOperations.computeIfAbsent(tableObPair.getLeft(), k -> new ObPair<>(tableObPair.getRight(), new ArrayList<>()));
+            TabletOperationsMap tabletOperations
+                    = lsOperationsMap.computeIfAbsent(lsId, k -> new TabletOperationsMap());
+            ObPair<ObTableParam, BatchIdxOperationPairList> singleOperations =
+                    tabletOperations.computeIfAbsent(tableObPair.getLeft(), k -> new ObPair<>(tableObPair.getRight(), new BatchIdxOperationPairList()));
             // if tablet id not exists
             singleOperations.getRight().add(operationsWithIndex.get(i));
         }
-
         return lsOperationsMap;
     }
 
-    public Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> partitionPrepare()
+    public LsOperationsMap partitionPrepare()
             throws Exception {
         List<ObTableSingleOp> operations = getSingleOperations();
-        List<ObPair<Integer, ObTableSingleOp>> operationsWithIndex = new LinkedList<>();
+        BatchIdxOperationPairList operationsWithIndex = new BatchIdxOperationPairList();
         for (int i = 0; i < operations.size(); i++) {
             operationsWithIndex.add(new ObPair<>(i, operations.get(i)));
         }
@@ -424,10 +491,10 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
      * Partition execute.
      */
     public void partitionExecute(ObTableSingleOpResult[] results,
-                                 Map.Entry<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> lsOperation)
+                                 Map.Entry<Long, TabletOperationsMap> lsOperation)
             throws Exception {
         long lsId = lsOperation.getKey();
-        Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperationsMap = lsOperation.getValue();
+        TabletOperationsMap tabletOperationsMap = lsOperation.getValue();
         if (tabletOperationsMap.isEmpty()) {
             logger.warn("the size of tablet operations in ls operation is zero");
             throw new ObTableUnexpectedException("the size of tablet operations in ls operation is zero");
@@ -448,9 +515,10 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         boolean isFirstEntry = true;
         // list ( index list for tablet op 1, index list for tablet op 2, ...)
         List<List<ObPair<Integer, ObTableSingleOp>>> lsOperationWithIndexList = new ArrayList<>();
-        for (final Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>> tabletOperation : tabletOperationsMap.entrySet()) {
+        for (final Map.Entry<Long, ObPair<ObTableParam, BatchIdxOperationPairList>> tabletOperation : tabletOperationsMap.entrySet()) {
             ObTableParam tableParam = tabletOperation.getValue().getLeft();
-            long tabletId = tableParam.getPartitionId();
+            long tabletId = obTableClient.getServerCapacity().isSupportDistributedExecute() ?
+                    INVALID_TABLET_ID : tableParam.getPartitionId();
             List<ObPair<Integer, ObTableSingleOp>> tabletOperationWithIndexList = tabletOperation.getValue().getRight();
             lsOperationWithIndexList.add(tabletOperationWithIndexList);
             List<ObTableSingleOp> singleOps = new ArrayList<>();
@@ -671,30 +739,30 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         return throwable instanceof ObTableNeedFetchAllException;
     }
 
-    private void executeWithRetries(
-            ObTableSingleOpResult[] results,
-            Map.Entry<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> entry,
-            int maxRetries) throws Exception {
+    private void executeWithRetries(ObTableSingleOpResult[] results,
+                                    Map.Entry<Long, TabletOperationsMap> entry, int maxRetries)
+                                                                                               throws Exception {
 
         int retryCount = 0;
         boolean success = false;
-        
-        Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> currentPartitions = new HashMap<>();
+
+        LsOperationsMap currentPartitions = new LsOperationsMap();
         currentPartitions.put(entry.getKey(), entry.getValue());
         int errCode = ResultCodes.OB_SUCCESS.errorCode;
         String errMsg = null;
         while (retryCount <= maxRetries && !success) {
             boolean allPartitionsSuccess = true;
 
-            for (Map.Entry<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> currentEntry : currentPartitions.entrySet()) {
+            for (Map.Entry<Long, TabletOperationsMap> currentEntry : currentPartitions.entrySet()) {
                 try {
                     partitionExecute(results, currentEntry);
                 } catch (Exception e) {
                     if (shouldRetry(e)) {
                         retryCount++;
-                        errCode = ((ObTableNeedFetchAllException)e).getErrorCode();
+                        errCode = ((ObTableNeedFetchAllException) e).getErrorCode();
                         errMsg = e.getMessage();
-                        List<ObPair<Integer, ObTableSingleOp>> failedOperations = extractOperations(currentEntry.getValue());
+                        BatchIdxOperationPairList failedOperations = extractOperations(currentEntry
+                            .getValue());
                         currentPartitions = prepareOperations(failedOperations);
                         allPartitionsSuccess = false;
                         break;
@@ -710,8 +778,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         }
 
         if (!success) {
-            errMsg = "Failed to execute operation after retrying " + maxRetries + " times. Last error Msg:" +
-                    "[errCode="+ errCode +"] " + errMsg;
+            errMsg = "Failed to execute operation after retrying " + maxRetries
+                     + " times. Last error Msg:" + "[errCode=" + errCode + "] " + errMsg;
             throw new ObTableUnexpectedException(errMsg);
         }
     }
@@ -730,7 +798,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         } else {
             obTableOperationResults = new ObTableSingleOpResult[batchOperation.size()];
         }
-        Map<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> lsOperations = partitionPrepare();
+        LsOperationsMap lsOperations = partitionPrepare();
         long getTableTime = System.currentTimeMillis();
         final Map<Object, Object> context = ThreadLocalMap.getContextMap();
         final int maxRetries = obTableClient.getRuntimeRetryTimes();
@@ -739,8 +807,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             // execute sub-batch operation in parallel
             final ConcurrentTaskExecutor executor = new ConcurrentTaskExecutor(executorService,
                 lsOperations.size());
-            for (final Map.Entry<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> entry : lsOperations
-                .entrySet()) {
+            for (final Map.Entry<Long, TabletOperationsMap> entry : lsOperations.entrySet()) {
                 ObTableSingleOpResult[] finalObTableOperationResults = obTableOperationResults;
                 executor.execute(new ConcurrentTask() {
                     /*
@@ -797,8 +864,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
         } else {
             // Execute sub-batch operation one by one
-            for (final Map.Entry<Long, Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableSingleOp>>>>> entry : lsOperations
-                .entrySet()) {
+            for (final Map.Entry<Long, TabletOperationsMap> entry : lsOperations.entrySet()) {
                 executeWithRetries(obTableOperationResults, entry, maxRetries);
             }
         }

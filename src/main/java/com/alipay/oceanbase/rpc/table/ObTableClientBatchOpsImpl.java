@@ -361,8 +361,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                             obTableClient.refreshTableLocationByTabletId(entry, tableName, partId);
                         }
                         ObTableParam newParam = obTableClient.getTableWithPartId(tableName, partId,
-                                false, obTableClient.isTableEntryRefreshIntervalWait(), needFetchAllRouteInfo, route)
-                                .getRight();
+                            false, obTableClient.isTableEntryRefreshIntervalWait(),
+                            needFetchAllRouteInfo, route).getRight();
                         subObTable = newParam.getObTable();
                         subRequest.setPartitionId(newParam.getPartitionId());
                     }
@@ -418,12 +418,11 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                             throw ex;
                         }
                     } else {
-                        String logMessage = String.format(
+                        String logMessage = String
+                            .format(
                                 "exhaust retry while meet NeedRefresh Exception, table name: %s, batch ops refresh table, retry times: %d, errorCode: %d",
-                                tableName,
-                                obTableClient.getRuntimeRetryTimes(),
-                                ((ObTableException) ex).getErrorCode()
-                        );
+                                tableName, obTableClient.getRuntimeRetryTimes(),
+                                ((ObTableException) ex).getErrorCode());
                         logger.warn(logMessage, ex);
                         obTableClient.calculateContinuousFailure(tableName, ex.getMessage());
                         throw new ObTableRetryExhaustedException(logMessage, ex);

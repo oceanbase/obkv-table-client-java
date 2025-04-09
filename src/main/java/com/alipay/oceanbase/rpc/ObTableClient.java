@@ -62,6 +62,7 @@ import static com.alipay.oceanbase.rpc.location.model.ObServerRoute.STRONG_READ;
 import static com.alipay.oceanbase.rpc.location.model.TableEntry.HBASE_ROW_KEY_ELEMENT;
 import static com.alipay.oceanbase.rpc.location.model.partition.ObPartIdCalculator.*;
 import static com.alipay.oceanbase.rpc.property.Property.*;
+import static com.alipay.oceanbase.rpc.protocol.payload.Constants.INVALID_TABLET_ID;
 import static com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType.*;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
 import static java.lang.String.format;
@@ -433,7 +434,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (odpMode) {
             try {
                 odpTable = new ObTable.Builder(odpAddr, odpPort) //
-                    .setLoginInfo(tenantName, fullUserName, password, database) //
+                    .setLoginInfo(tenantName, fullUserName, password, database, getClientType(runningMode)) //
                     .setProperties(getProperties()).setConfigs(TableConfigs).build();
             } catch (Exception e) {
                 logger
@@ -486,7 +487,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             // 应急可以直接observer切主
             try {
                 ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort()) //
-                    .setLoginInfo(tenantName, userName, password, database) //
+                    .setLoginInfo(tenantName, userName, password, database, getClientType(runningMode)) //
                     .setProperties(getProperties()).setConfigs(TableConfigs).build();
                 tableRoster.put(addr, obTable);
                 servers.add(addr);
@@ -973,7 +974,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 }
 
                 ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort()) //
-                    .setLoginInfo(tenantName, userName, password, database) //
+                    .setLoginInfo(tenantName, userName, password, database, getClientType(runningMode)) //
                     .setProperties(getProperties()).setConfigs(getTableConfigs())
                     .build();
                 ObTable oldObTable = tableRoster.putIfAbsent(addr, obTable); // not control concurrency
@@ -1393,7 +1394,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                 tableEntryAcquireSocketTimeout,
                                 serverAddressPriorityTimeout,
                                 serverAddressCachingTimeout,
-                                sysUA
+                                sysUA,
+                                !getServerCapacity().isSupportDistributedExecute() /* withLsId */
                         );
                         tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
                         break;
@@ -1829,7 +1831,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
         }
 
-        if (partIdMapObTable.size() > 1) {
+        if (partIdMapObTable.size() > 1 && !getServerCapacity().isSupportDistributedExecute()) {
             throw new ObTablePartitionConsistentException(
                     "query and mutate must be a atomic operation");
         } else if (partIdMapObTable.size() < 1) {
@@ -1944,7 +1946,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         try {
             logger.info("server from response not exist in route cache, server ip {}, port {} , execute add Table.", addr.getIp(), addr.getSvrPort());
             ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort()) //
-                    .setLoginInfo(tenantName, userName, password, database) //
+                    .setLoginInfo(tenantName, userName, password, database, getClientType(runningMode)) //
                     .setProperties(getProperties()).build();
             tableRoster.put(addr, obTable);
             return obTable;
@@ -3696,7 +3698,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         operations.addTableOperation(operation);
 
         ObTableQueryAndMutate queryAndMutate = buildObTableQueryAndMutate(obTableQuery, operations);
-
+        if (runningMode == RunningMode.HBASE) {
+            if (operation.getEntity() != null || operation.getEntity().getRowKeySize() != 3) {
+                throw new IllegalArgumentException("rowkey size is not 3");
+            }
+            long ts = (long)operation.getEntity().getRowKeyValue(2).getValue();
+            if (ts != -Long.MAX_VALUE) {
+                queryAndMutate.setIsUserSpecifiedT(true);
+            }
+        }
         ObTableQueryAndMutateRequest request = buildObTableQueryAndMutateRequest(queryAndMutate,
             tableName);
 
@@ -3743,7 +3753,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(tableName,
                     ((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery(), this);
             tableQuery.setEntityType(request.getEntityType());
-            return new ObClusterTableQuery(tableQuery).asyncExecuteInternal();
+            ObClusterTableQuery clusterTableQuery = new ObClusterTableQuery(tableQuery);
+            clusterTableQuery.setAllowDistributeScan(((ObTableQueryAsyncRequest) request).isAllowDistributeScan());
+            return clusterTableQuery.asyncExecuteInternal();
         } else if (request instanceof ObTableBatchOperationRequest) {
             ObTableClientBatchOpsImpl batchOps = new ObTableClientBatchOpsImpl(
                     request.getTableName(),
@@ -3819,7 +3831,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         }
 
                         // Check if partIdMapObTable size is greater than 1
-                        if (partIdMapObTable.size() > 1) {
+                        boolean isDistributedExecuteSupported = getServerCapacity().isSupportDistributedExecute();
+                        if (partIdMapObTable.size() > 1 && !isDistributedExecuteSupported) {
                             throw new ObTablePartitionConsistentException(
                                     "query and mutate must be a atomic operation");
                         }
@@ -3827,7 +3840,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         Map.Entry<Long, ObTableParam> entry = partIdMapObTable.entrySet().iterator().next();
                         ObTableParam tableParam = entry.getValue();
                         request.setTableId(tableParam.getTableId());
-                        request.setPartitionId(tableParam.getPartitionId());
+                        long partitionId = isDistributedExecuteSupported ? INVALID_TABLET_ID : tableParam.getPartitionId();
+                        request.setPartitionId(partitionId);
                         request.setTimeout(tableParam.getObTable().getObTableOperationTimeout());
                         ObTable obTable = tableParam.getObTable();
 
@@ -4254,6 +4268,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         NORMAL, HBASE;
     }
 
+    private ObTableClientType getClientType(RunningMode runningMode) {
+        if (ObGlobal.isDistributedExecSupport()) {
+            return runningMode == RunningMode.HBASE ? ObTableClientType.JAVA_HBASE_CLIENT : ObTableClientType.JAVA_TABLE_CLIENT;
+        } else {
+            return ObTableClientType.JAVA_TABLE_CLIENT;
+        }
+    }
+
     /**
      * Get read consistency.
      * @return read consistency level.
@@ -4299,6 +4321,22 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             return getReadRoute();
         } else {
             return STRONG_READ;
+        }
+    }
+
+    public ObTableServerCapacity getServerCapacity() {
+        if (isOdpMode()) {
+            if (odpTable == null) {
+                throw new IllegalStateException("client is not initialized and obTable is empty");
+            }
+            return odpTable.getServerCapacity();
+        } else {
+            if (tableRoster == null || tableRoster.isEmpty()) {
+                throw new IllegalStateException("client is not initialized and obTable is empty");
+            }
+            Iterator<ObTable> iterator = tableRoster.values().iterator();
+            ObTable firstObTable = iterator.next();
+            return firstObTable.getServerCapacity();
         }
     }
 
@@ -4576,5 +4614,18 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
 
         return endKeys;
+    }
+    public static void setRowKeyValue(Mutation mutation, int index, Object value) {
+        if (mutation.getRowKeyValues() == null || (index < 0 || mutation.getRowKeyValues().size() <= index)) {
+            throw new IllegalArgumentException("rowkey is null or index is out of range");
+        }
+        ((ObObj) mutation.getRowKeyValues().get(index)).setValue(value);
+    }
+
+    public static Object getRowKeyValue(Mutation mutation, int index) {
+        if (mutation.getRowKeyValues() == null || (index < 0 || index >= mutation.getRowKeyValues().size())) {
+            throw new IllegalArgumentException("rowkey is null or index is out of range");
+        }
+        return ((ObObj) mutation.getRowKeyValues().get(index)).getValue();
     }
 }

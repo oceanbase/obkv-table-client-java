@@ -1,3 +1,20 @@
+/*-
+ * #%L
+ * com.oceanbase:obkv-table-client
+ * %%
+ * Copyright (C) 2021 - 2025 OceanBase
+ * %%
+ * OBKV Table Client Framework is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * #L%
+ */
+
 package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.exception.ObTableException;
@@ -58,12 +75,9 @@ public class ObTableDatetimeTest {
         Date date = sdf.parse(dateString);
         try {
             Row rk = row(colVal("c1", 1L), colVal("c2", date), colVal("c3", 1L));
-            client.insertOrUpdate(tableName).setRowKey(rk)
-                    .addMutateColVal(colVal("c4", "c4_val"))
-                    .execute();
-            Map<String, Object> res = client.get(tableName)
-                    .setRowKey(rk)
-                    .select("c4")
+            client.insertOrUpdate(tableName).setRowKey(rk).addMutateColVal(colVal("c4", "c4_val"))
+                .execute();
+            Map<String, Object> res = client.get(tableName).setRowKey(rk).select("c4")
                     .execute();
             Assert.assertEquals("c4_val", res.get("c4"));
 
@@ -110,15 +124,13 @@ public class ObTableDatetimeTest {
         Date date = sdf.parse(dateString);
         try {
             Row rk = row(colVal("c1", 1L), colVal("c2", date), colVal("c3", 1L));
-            client.insertOrUpdate(tableName).setRowKey(rk)
-                    .addMutateColVal(colVal("c4", "c4_val"))
-                    .execute();
+            client.insertOrUpdate(tableName).setRowKey(rk).addMutateColVal(colVal("c4", "c4_val"))
+                .execute();
 
-            QueryResultSet res = client.query(tableName)
-                    .select("c4")
-                    .setScanRangeColumns("c1", "c2", "c3")
-                    .addScanRange(new Object[]{1L, date, 1L}, new Object[]{1L, date, 1L})
-                    .execute();
+            QueryResultSet res = client.query(tableName).select("c4")
+                .setScanRangeColumns("c1", "c2", "c3")
+                .addScanRange(new Object[] { 1L, date, 1L }, new Object[] { 1L, date, 1L })
+                .execute();
             Assert.assertTrue(res.next());
             Assert.assertEquals("c4_val", res.getRow().get("c4"));
 
@@ -136,16 +148,12 @@ public class ObTableDatetimeTest {
         Date date = sdf.parse(dateString);
         try {
             Row rk = row(colVal("c1", 1L), colVal("c2", date), colVal("c3", 1L));
-            client.insertOrUpdate(tableName).setRowKey(rk)
-                    .addMutateColVal(colVal("c4", "c4_val"))
-                    .execute();
+            client.insertOrUpdate(tableName).setRowKey(rk).addMutateColVal(colVal("c4", "c4_val"))
+                .execute();
 
-            QueryResultSet res = client.query(tableName)
-                    .indexName("idx_c2")
-                    .select("c4")
-                    .setScanRangeColumns("c1", "c2")
-                    .addScanRange(new Object[]{1L, date}, new Object[]{1L, date})
-                    .execute();
+            QueryResultSet res = client.query(tableName).indexName("idx_c2").select("c4")
+                .setScanRangeColumns("c1", "c2")
+                .addScanRange(new Object[] { 1L, date }, new Object[] { 1L, date }).execute();
             Assert.assertTrue(res.next());
             Assert.assertEquals("c4_val", res.getRow().get("c4"));
 

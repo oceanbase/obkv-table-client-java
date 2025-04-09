@@ -15,19 +15,18 @@
  * #L%
  */
 
-package com.alipay.oceanbase.rpc.protocol.payload.impl.parser;
+package com.alipay.oceanbase.rpc.table;
 
-public enum ObGeneratedColumnSimpleToken {
+public enum ObTableClientType {
+    INVALID(0), LIB_TABLE_CLIENT(1), JAVA_TABLE_CLIENT(2), JAVA_HBASE_CLIENT(3), MAX(15);
 
-    COMMA(","), LPAREN("("), RPAREN(")"), SUB("-"), PLUS("+"), BACKTICK("`"), LITERAL_HEX, LITERAL_FLOAT, LITERAL_INT, IDENTIFIER, ERROR, EOF;
-
-    public final String name;
-
-    ObGeneratedColumnSimpleToken() {
-        this(null);
+    ObTableClientType(int value) {
+        this.value = value;
     }
 
-    ObGeneratedColumnSimpleToken(String name) {
-        this.name = name;
+    private final int value;
+
+    public int getValue() {
+        return value;
     }
 }

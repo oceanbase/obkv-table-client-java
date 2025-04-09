@@ -36,15 +36,17 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.alipay.oceanbase.rpc.constant.Constants.INVALID_TABLET_ID;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.RUNTIME;
 
 public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResult {
-    private static final Logger      logger         = LoggerFactory
-                                                        .getLogger(ObTableClientQueryStreamResult.class);
-    private boolean                  isEnd          = true;
-    private long                     sessionId      = Constants.OB_INVALID_ID;
-    private ObTableQueryAsyncRequest asyncRequest   = new ObTableQueryAsyncRequest();
-    private ObTableConnection        prevConnection = null;
+    private static final Logger      logger              = LoggerFactory
+                                                             .getLogger(ObTableClientQueryStreamResult.class);
+    private boolean                  isEnd               = true;
+    private long                     sessionId           = Constants.OB_INVALID_ID;
+    private ObTableQueryAsyncRequest asyncRequest        = new ObTableQueryAsyncRequest();
+    private ObTableConnection        prevConnection      = null;
+    private boolean                  allowDistributeScan = true;                                              // false when partition scan
 
     @Override
     public void init() throws Exception {
@@ -78,7 +80,8 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchAllException) {
                         setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
-                            .getTableQuery(), client.getPhyTableNameFromTableGroup(entityType, tableName)));
+                            .getTableQuery(), client.getPhyTableNameFromTableGroup(entityType,
+                            tableName)));
                         it = expectant.entrySet().iterator();
                         retryTimes++;
                         if (retryTimes > maxRetries) {
@@ -86,7 +89,8 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                                 retryTimes);
                             throw new ObTableRetryExhaustedException(
                                 "Fail to get refresh table entry response after " + retryTimes
-                                + "errorCode:" + ((ObTableNeedFetchAllException) e).getErrorCode());
+                                        + "errorCode:"
+                                        + ((ObTableNeedFetchAllException) e).getErrorCode());
 
                         }
                     } else {
@@ -110,9 +114,9 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                                                                                                        throws Exception {
         ObTableParam obTableParam = partIdWithObTable.getRight();
         ObTableQueryRequest queryRequest = asyncRequest.getObTableQueryRequest();
-
+        long partitionId = isDistributeScan() ? INVALID_TABLET_ID : obTableParam.getPartitionId();
         // refresh request info
-        queryRequest.setPartitionId(obTableParam.getPartitionId());
+        queryRequest.setPartitionId(partitionId);
         queryRequest.setTableId(obTableParam.getTableId());
         if (operationTimeout > 0) {
             asyncRequest.setTimeout(operationTimeout);
@@ -137,7 +141,8 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         ObTableQueryRequest queryRequest = asyncRequest.getObTableQueryRequest();
 
         // refresh request info
-        queryRequest.setPartitionId(obTableParam.getPartitionId());
+        long partitionId = isDistributeScan() ? INVALID_TABLET_ID : obTableParam.getPartitionId();
+        queryRequest.setPartitionId(partitionId);
         queryRequest.setTableId(obTableParam.getTableId());
 
         // refresh async query request
@@ -156,7 +161,8 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         ObTableQueryRequest queryRequest = asyncRequest.getObTableQueryRequest();
 
         // refresh request info
-        queryRequest.setPartitionId(obTableParam.getPartitionId());
+        long partitionId = isDistributeScan() ? INVALID_TABLET_ID : obTableParam.getPartitionId();
+        queryRequest.setPartitionId(partitionId);
         queryRequest.setTableId(obTableParam.getTableId());
 
         // set end async query
@@ -184,7 +190,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
     public void renewLease() throws Exception {
         if (!isEnd() && !expectant.isEmpty()) {
             Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
-                    .iterator();
+                .iterator();
             Map.Entry<Long, ObPair<Long, ObTableParam>> lastEntry = it.next();
             ObPair<Long, ObTableParam> partIdWithObTable = lastEntry.getValue();
             // try access new partition, async will not remove useless expectant
@@ -192,7 +198,9 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             ObTableQueryRequest queryRequest = asyncRequest.getObTableQueryRequest();
 
             // refresh request info
-            queryRequest.setPartitionId(obTableParam.getPartitionId());
+            long partitionId = isDistributeScan() ? INVALID_TABLET_ID : obTableParam
+                .getPartitionId();
+            queryRequest.setPartitionId(partitionId);
             queryRequest.setTableId(obTableParam.getTableId());
 
             // refresh async query request
@@ -226,20 +234,23 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                     referToLastStreamResult(lastEntry.getValue());
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchAllException) {
-                        String realTableName = client.getPhyTableNameFromTableGroup(entityType, tableName);
-                        TableEntry entry = client.getOrRefreshTableEntry(realTableName, false, false, false);
+                        String realTableName = client.getPhyTableNameFromTableGroup(entityType,
+                            tableName);
+                        TableEntry entry = client.getOrRefreshTableEntry(realTableName, false,
+                            false, false);
                         // Calculate the next partition only when the range partition is affected by a split, based on the keys already scanned.
                         if (ObGlobal.obVsnMajor() >= 4
-                                && entry.isPartitionTable()
-                                && entry.getPartitionInfo().getFirstPartDesc().getPartFuncType().isRangePart()) {
+                            && entry.isPartitionTable()
+                            && entry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
+                                .isRangePart()) {
                             this.asyncRequest.getObTableQueryRequest().getTableQuery()
-                                    .adjustStartKey(currentStartKey);
-                            setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
-                                    .getTableQuery(), realTableName));
+                                .adjustStartKey(currentStartKey);
+                            setExpectant(refreshPartition(this.asyncRequest
+                                .getObTableQueryRequest().getTableQuery(), realTableName));
                             setEnd(true);
                         } else {
-                            setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
-                                    .getTableQuery(), realTableName));
+                            setExpectant(refreshPartition(this.asyncRequest
+                                .getObTableQueryRequest().getTableQuery(), realTableName));
                         }
                     } else {
                         throw e;
@@ -267,15 +278,18 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                     referToNewPartition(entry.getValue());
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchAllException) {
-                        String realTableName = client.getPhyTableNameFromTableGroup(entityType, tableName);
-                        TableEntry tableEntry = client.getOrRefreshTableEntry(realTableName, false, false, false);
+                        String realTableName = client.getPhyTableNameFromTableGroup(entityType,
+                            tableName);
+                        TableEntry tableEntry = client.getOrRefreshTableEntry(realTableName, false,
+                            false, false);
                         if (ObGlobal.obVsnMajor() >= 4
                             && tableEntry.isPartitionTable()
-                            && tableEntry.getPartitionInfo().getFirstPartDesc().getPartFuncType().isRangePart()) {
+                            && tableEntry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
+                                .isRangePart()) {
                             this.asyncRequest.getObTableQueryRequest().getTableQuery()
-                                    .adjustStartKey(currentStartKey);
-                            setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
-                                    .getTableQuery(), realTableName));
+                                .adjustStartKey(currentStartKey);
+                            setExpectant(refreshPartition(this.asyncRequest
+                                .getObTableQueryRequest().getTableQuery(), realTableName));
                         }
                         it = expectant.entrySet().iterator();
                         retryTimes++;
@@ -380,12 +394,20 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             closeLastStreamResult(lastEntry.getValue());
         }
     }
-    
+
     public boolean isEnd() {
         return isEnd;
     }
 
     public void setEnd(boolean end) {
         isEnd = end;
+    }
+
+    private boolean isDistributeScan() {
+        return allowDistributeScan && client.getServerCapacity().isSupportDistributedExecute();
+    }
+
+    public void setAllowDistributeScan(boolean allowDistributeScan) {
+        this.allowDistributeScan = allowDistributeScan;
     }
 }

@@ -147,6 +147,7 @@ public class ObTableConnection {
     private void login() throws Exception {
         final long start = System.currentTimeMillis();
         ObTableLoginRequest request = new ObTableLoginRequest();
+        request.setClientType((byte) obTable.getClientType().getValue());
         request.setTenantName(obTable.getTenantName());
         request.setUserName(obTable.getUserName());
         request.setDatabaseName(obTable.getDatabase());
@@ -171,6 +172,7 @@ public class ObTableConnection {
                 if (result != null && result.getCredential() != null
                     && result.getCredential().length() > 0) {
                     credential = result.getCredential();
+                    obTable.setServerCapacity(result.getServerCapabilities());
                     tenantId = result.getTenantId();
                     // Set version if missing
                     if (ObGlobal.obVsnMajor() == 0) {
@@ -259,7 +261,8 @@ public class ObTableConnection {
         } catch (ObTableServerConnectException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new ObTableConnectionStatusException("check status failed, cause: " + ex.getMessage(), ex);
+            throw new ObTableConnectionStatusException("check status failed, cause: "
+                                                       + ex.getMessage(), ex);
         }
     }
 

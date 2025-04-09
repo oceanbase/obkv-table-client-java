@@ -39,13 +39,18 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.alipay.oceanbase.rpc.protocol.payload.Constants.INVALID_TABLET_ID;
+import static com.alipay.oceanbase.rpc.protocol.payload.Constants.OB_INVALID_ID;
+
 public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
     private String                                tableName;
     private final ObTableClient                   obTableClient;
     private Map<Long, ObPair<Long, ObTableParam>> partitionObTables;
 
-    private Row                                   rowKey;           // only used by BatchOperation
+    private Row                                   rowKey;             // only used by BatchOperation
+
+    private boolean                               allowDistributeScan = true;
 
     /*
      * Add aggregation.
@@ -133,12 +138,13 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             throw new IllegalArgumentException("table name is null");
         } else if (tableQuery.isFTSQuery()) {
             if (!ObGlobal.isFtsQuerySupport()) {
-                throw new FeatureNotSupportedException("full text query is not supported in "+ObGlobal.obVsnString());
+                throw new FeatureNotSupportedException("full text query is not supported in "
+                                                       + ObGlobal.obVsnString());
             }
             if (tableQuery.getIndexName() == null || tableQuery.getIndexName().isEmpty()
-                    || tableQuery.getIndexName().equalsIgnoreCase("primary")) {
+                || tableQuery.getIndexName().equalsIgnoreCase("primary")) {
                 throw new IllegalArgumentException(
-                        "use fulltext search but specified index name is not fulltext index");
+                    "use fulltext search but specified index name is not fulltext index");
             }
         }
     }
@@ -176,7 +182,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         if (obTableClient.isOdpMode()) {
             if (tableQuery.getScanRangeColumns().isEmpty()) {
                 if (tableQuery.getIndexName() != null
-                    && !tableQuery.getIndexName().equalsIgnoreCase("primary") && !tableQuery.isFTSQuery()) {
+                    && !tableQuery.getIndexName().equalsIgnoreCase("primary")
+                    && !tableQuery.isFTSQuery()) {
                     throw new ObTableException("key range columns must be specified when use index");
                 }
             }
@@ -184,23 +191,24 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                 String realTableName = tableName;
                 try {
                     if (this.entityType == ObTableEntityType.HKV
-                            && obTableClient.isTableGroupName(tableName)) {
-                        indexTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName,
-                                false);
+                        && obTableClient.isTableGroupName(tableName)) {
+                        indexTableName = obTableClient.tryGetTableNameFromTableGroupCache(
+                            tableName, false);
                         realTableName = indexTableName;
                     }
                     ObPair<Long, ObTableParam> odpTable = obTableClient.getODPTableWithPartId(
-                            realTableName, getPartId(), false);
+                        realTableName, getPartId(), false);
                     partitionObTables.put(odpTable.getLeft(), odpTable);
                 } catch (Exception e) {
                     if (e instanceof ObTableException) {
                         if (((ObTableException) e).getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode) {
                             // current ODP version does not support get partition meta information
-                            throw new FeatureNotSupportedException("current ODP version does not support query with part id", e);
+                            throw new FeatureNotSupportedException(
+                                "current ODP version does not support query with part id", e);
                         } else if (((ObTableException) e).getErrorCode() == ResultCodes.OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
                             // retry one time with force-renew flag
-                            ObPair<Long, ObTableParam> odpTable = obTableClient.getODPTableWithPartId(
-                                    realTableName, getPartId(), true);
+                            ObPair<Long, ObTableParam> odpTable = obTableClient
+                                .getODPTableWithPartId(realTableName, getPartId(), true);
                             partitionObTables.put(odpTable.getLeft(), odpTable);
                         } else {
                             throw e;
@@ -211,7 +219,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                 }
             } else {
                 partitionObTables.put(0L, new ObPair<Long, ObTableParam>(0L, new ObTableParam(
-                        obTableClient.getOdpTable())));
+                    obTableClient.getOdpTable())));
             }
         } else {
             if (getPartId() == null) {
@@ -280,12 +288,48 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             @Override
             ObTableClientQueryAsyncStreamResult execute() throws Exception {
                 ObTableClientQueryAsyncStreamResult obTableClientQueryAsyncStreamResult = new ObTableClientQueryAsyncStreamResult();
+                obTableClientQueryAsyncStreamResult.setAllowDistributeScan(allowDistributeScan);
                 setCommonParams2Result(obTableClientQueryAsyncStreamResult);
                 obTableClientQueryAsyncStreamResult.setClient(obTableClient);
                 obTableClientQueryAsyncStreamResult.init();
                 return obTableClientQueryAsyncStreamResult;
             }
         });
+    }
+
+    public Map<Long, ObPair<Long, ObTableParam>> initFirstPartition(ObTableQuery tableQuery, String tableName) throws Exception {
+        Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new LinkedHashMap<>();
+        String indexName = tableQuery.getIndexName();
+
+        if (!this.obTableClient.isOdpMode()) {
+            indexTableName = obTableClient.getIndexTableName(tableName, indexName, tableQuery.getScanRangeColumns(), false);
+        }
+
+        if (tableQuery.getKeyRanges().isEmpty()) {
+            throw new IllegalArgumentException("query ranges is empty");
+        } else {
+            ObNewRange range = tableQuery.getKeyRanges().get(0);
+            ObRowKey startKey = range.getStartKey();
+            int startKeySize = startKey.getObjs().size();
+            Object[] start = new Object[startKeySize];
+
+            for (int i = 0; i < startKeySize; i++) {
+                start[i] = startKey.getObj(i).isMinObj() || startKey.getObj(i).isMaxObj() ?
+                        startKey.getObj(i) : startKey.getObj(i).getValue();
+            }
+
+            if (this.entityType == ObTableEntityType.HKV && obTableClient.isTableGroupName(tableName)) {
+                indexTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
+            }
+            ObBorderFlag borderFlag = range.getBorderFlag();
+            // pairs -> List<Pair<logicId, param>>
+            List<ObPair<Long, ObTableParam>> pairs = this.obTableClient.getTables(indexTableName, tableQuery, start,
+                    borderFlag.isInclusiveStart(), start, borderFlag.isInclusiveEnd(), false, false);
+
+            partitionObTables.put(INVALID_TABLET_ID, pairs.get(0));
+        }
+
+        return partitionObTables;
     }
 
     public Map<Long, ObPair<Long, ObTableParam>> initPartitions(ObTableQuery tableQuery, String tableName) throws Exception {
@@ -338,7 +382,11 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
      * Init partition tables involved in this query
      */
     public void initPartitions() throws Exception {
-        this.partitionObTables = initPartitions(tableQuery, tableName);
+        if (obTableClient.getServerCapacity().isSupportDistributedExecute()) {
+            this.partitionObTables = initFirstPartition(tableQuery, tableName);
+        } else {
+            this.partitionObTables = initPartitions(tableQuery, tableName);
+        }
     }
 
     /*
@@ -381,5 +429,9 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
     public Long getPartId() {
         return getObTableQuery().getPartId();
+    }
+
+    public void setAllowDistributeScan(boolean allowDistributeScan) {
+        this.allowDistributeScan = allowDistributeScan;
     }
 }

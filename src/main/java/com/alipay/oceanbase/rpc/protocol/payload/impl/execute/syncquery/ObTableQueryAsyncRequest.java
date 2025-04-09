@@ -40,6 +40,8 @@ public class ObTableQueryAsyncRequest extends ObTableAbstractOperationRequest {
     private long                 querySessionId;
     private ObQueryOperationType queryType = ObQueryOperationType.QUERY_START;
 
+    private boolean              allowDistributeScan = true;
+
     /**
      * Get pcode.
      */
@@ -122,6 +124,14 @@ public class ObTableQueryAsyncRequest extends ObTableAbstractOperationRequest {
 
     public void setObTableQueryRequest(ObTableQueryRequest obTableQueryRequest) {
         this.obTableQueryRequest = obTableQueryRequest;
+    }
+
+    public void setAllowDistributeScan(boolean allowDistributeScan) {
+        this.allowDistributeScan = allowDistributeScan;
+    }
+
+    public boolean isAllowDistributeScan() {
+        return allowDistributeScan;
     }
 
 }

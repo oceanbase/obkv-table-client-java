@@ -15,19 +15,24 @@
  * #L%
  */
 
-package com.alipay.oceanbase.rpc.protocol.payload.impl.parser;
+package com.alipay.oceanbase.rpc.table;
 
-public enum ObGeneratedColumnSimpleToken {
+import com.alipay.oceanbase.rpc.ObGlobal;
 
-    COMMA(","), LPAREN("("), RPAREN(")"), SUB("-"), PLUS("+"), BACKTICK("`"), LITERAL_HEX, LITERAL_FLOAT, LITERAL_INT, IDENTIFIER, ERROR, EOF;
+public class ObTableServerCapacity {
+    private static final int DISTRIBUTED_EXECUTE = 1 << 0;
+    private static final int CAPACITY_MAX        = 1 << 31;
+    private int              flags               = 0;
 
-    public final String name;
-
-    ObGeneratedColumnSimpleToken() {
-        this(null);
+    public int getFlags() {
+        return flags;
     }
 
-    ObGeneratedColumnSimpleToken(String name) {
-        this.name = name;
+    public void setFlags(int flags) {
+        this.flags = flags;
+    }
+
+    public boolean isSupportDistributedExecute() {
+        return (flags & DISTRIBUTED_EXECUTE) != 0 && ObGlobal.isDistributedExecSupport();
     }
 }

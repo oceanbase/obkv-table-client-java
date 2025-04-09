@@ -270,4 +270,8 @@ public class ObClusterTableQuery extends AbstractTableQuery {
         tableClientQuery.setSearchText(searchText);
         return this;
     }
+
+    public void setAllowDistributeScan(boolean allowDistributeScan) {
+        tableClientQuery.setAllowDistributeScan(allowDistributeScan);
+    }
 }

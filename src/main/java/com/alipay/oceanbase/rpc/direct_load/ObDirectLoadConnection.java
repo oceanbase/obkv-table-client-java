@@ -32,6 +32,7 @@ import com.alipay.oceanbase.rpc.direct_load.util.ObDirectLoadUtil;
 import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.table.ObTable;
+import com.alipay.oceanbase.rpc.table.ObTableClientType;
 
 public class ObDirectLoadConnection {
 
@@ -187,8 +188,8 @@ public class ObDirectLoadConnection {
                 properties.setProperty(Property.RPC_CONNECT_TIMEOUT.getKey(),
                     String.valueOf(connectTimeout));
                 table = new ObTable.Builder(ip, port)
-                    .setLoginInfo(tenantName, userName, password, databaseName)
-                    .setProperties(properties).build();
+                    .setLoginInfo(tenantName, userName, password, databaseName,
+                        ObTableClientType.JAVA_TABLE_CLIENT).setProperties(properties).build();
             } catch (Exception e) {
                 throw new ObDirectLoadException(e);
             }
@@ -399,8 +400,8 @@ public class ObDirectLoadConnection {
                 for (int i = 0; i < tables.length; ++i) {
                     tables[i] = new ObTable.Builder(connection.ip, connection.port)
                         .setLoginInfo(connection.tenantName, connection.userName,
-                            connection.password, connection.databaseName).setProperties(properties)
-                        .build();
+                            connection.password, connection.databaseName,
+                            ObTableClientType.JAVA_TABLE_CLIENT).setProperties(properties).build();
                 }
             } catch (Exception e) {
                 throw new ObDirectLoadException(e);

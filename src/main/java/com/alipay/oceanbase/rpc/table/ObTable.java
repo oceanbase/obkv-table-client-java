@@ -62,8 +62,12 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     private ConnectionFactory     connectionFactory;
     private ObTableRemoting       realClient;
     private ObTableConnectionPool connectionPool;
+
+    private ObTableServerCapacity serverCapacity = new ObTableServerCapacity();
     
     private Map<String, Object> configs;
+
+    private ObTableClientType clientType;
 
     private volatile boolean      initialized = false;
     private volatile boolean      closed      = false;
@@ -515,6 +519,20 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     }
 
     /*
+     * Get server capacity.
+     */
+    public ObTableServerCapacity getServerCapacity() {
+        return serverCapacity;
+    }
+
+    /*
+     * Set server capacity.
+     */
+    public void setServerCapacity(int flags) {
+        serverCapacity.setFlags(flags);
+    }
+
+    /*
      * Get tenant name.
      */
     public String getTenantName() {
@@ -572,6 +590,14 @@ public class ObTable extends AbstractObTable implements Lifecycle {
 
     public void setConfigs(Map<String, Object> configs) {
         this.configs = configs; 
+    }
+
+    public void setClientType(ObTableClientType clientType) {
+        this.clientType = clientType;
+    }
+
+    public ObTableClientType getClientType() {
+        return this.clientType;
     }
     
     public Map<String, Object> getConfigs() {
@@ -638,6 +664,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         private String     userName;
         private String     password;
         private String     database;
+        ObTableClientType clientType;
 
         private Properties properties = new Properties();
         
@@ -655,11 +682,12 @@ public class ObTable extends AbstractObTable implements Lifecycle {
          * Set login info.
          */
         public Builder setLoginInfo(String tenantName, String userName, String password,
-                                    String database) {
+                                    String database, ObTableClientType clientType) {
             this.tenantName = tenantName;
             this.userName = userName;
             this.password = password;
             this.database = database;
+            this.clientType = clientType;
             return this;
         }
 
@@ -697,6 +725,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             obTable.setDatabase(database);
             obTable.setProperties(properties);
             obTable.setConfigs(tableConfigs);
+            obTable.setClientType(clientType);
 
             obTable.init();
 
