@@ -43,6 +43,7 @@ public class ObDirectLoadStatementExecutor {
     private static final int                   FAIL          = 6;
     private static final int                   ABORT         = 7;
     private AtomicInteger                      stateFlag     = new AtomicInteger(NONE);
+    private boolean                            isDetached    = false;
 
     private final ObDirectLoadStatement        statement;
     private final ObDirectLoadTraceId          traceId;
@@ -86,6 +87,10 @@ public class ObDirectLoadStatementExecutor {
 
     public ObAddr getSvrAddr() {
         return svrAddr;
+    }
+
+    public boolean isDetached() {
+        return isDetached;
     }
 
     public String toString() {
@@ -134,6 +139,28 @@ public class ObDirectLoadStatementExecutor {
         return task;
     }
 
+    public synchronized void detach() throws ObDirectLoadException {
+        logger.info("statement call detach");
+        checkState(LOADING, COMMITTING, "detach");
+        if (isDetached) {
+            logger.debug("statement already is detached");
+        } else {
+            ObDirectLoadStatementPromiseTask task = new ObDirectLoadStatementDetachTask(statement,
+                this);
+            task.run();
+            if (!task.isDone()) {
+                logger.warn("statement detach task unexpected not done");
+                throw new ObDirectLoadUnexpectedException(
+                    "statement detach task unexpected not done");
+            }
+            if (!task.isSuccess()) {
+                throw task.cause();
+            }
+            isDetached = true;
+            logger.debug("statement detach successful");
+        }
+    }
+
     public ObDirectLoadStatementExecutionId getExecutionId() throws ObDirectLoadException {
         checkState(LOADING, "getExecutionId");
         ObDirectLoadStatementExecutionId executionId = new ObDirectLoadStatementExecutionId(
@@ -155,9 +182,15 @@ public class ObDirectLoadStatementExecutor {
         svrAddr = executionId.getSvrAddr();
     }
 
-    public synchronized void close() {
+    public void close() {
         // 如果begin还在执行, 等待begin结束
-        if (beginFuture != null && !beginFuture.isDone()) {
+        ObDirectLoadStatementFuture beginFuture = null;
+        synchronized (this) {
+            if (this.beginFuture != null && !this.beginFuture.isDone()) {
+                beginFuture = this.beginFuture;
+            }
+        }
+        if (beginFuture != null) {
             logger.info("statement close wait begin");
             try {
                 beginFuture.await();
@@ -165,9 +198,14 @@ public class ObDirectLoadStatementExecutor {
                 logger.warn("statement wait begin failed");
             }
         }
-        beginFuture = null;
         // 如果commit还在执行, 等待commit结束
-        if (commitFuture != null && !commitFuture.isDone()) {
+        ObDirectLoadStatementFuture commitFuture = null;
+        synchronized (this) {
+            if (this.commitFuture != null && !this.commitFuture.isDone()) {
+                commitFuture = this.commitFuture;
+            }
+        }
+        if (commitFuture != null) {
             logger.info("statement close wait commit");
             try {
                 commitFuture.await();
@@ -175,39 +213,43 @@ public class ObDirectLoadStatementExecutor {
                 logger.warn("statement wait commit failed");
             }
         }
-        commitFuture = null;
         // 如果heart beat还在执行, 取消heart beat
-        if (heartBeatTask != null && !heartBeatTask.isDone()) {
-            logger.info("statement close wait heart beat");
-            final boolean canceled = heartBeatTask.cancel();
-            if (!canceled) {
-                try {
-                    heartBeatTask.await();
-                } catch (ObDirectLoadInterruptedException e) {
-                    logger.warn("statement wait heart beat failed");
+        ObDirectLoadStatementHeartBeatTask heartBeatTask = null;
+        synchronized (this) {
+            if (this.heartBeatTask != null && !this.heartBeatTask.isDone()) {
+                final boolean canceled = this.heartBeatTask.cancel();
+                if (!canceled) {
+                    heartBeatTask = this.heartBeatTask;
                 }
             }
         }
-        heartBeatTask = null;
+        if (heartBeatTask != null) {
+            logger.info("statement close wait heart beat");
+            try {
+                heartBeatTask.await();
+            } catch (ObDirectLoadInterruptedException e) {
+                logger.warn("statement wait heart beat failed");
+            }
+        }
         // 退出任务
         abortIfNeed();
+        ObDirectLoadStatementFuture abortFuture = null;
+        synchronized (this) {
+            if (this.abortFuture != null && !this.abortFuture.isDone()) {
+                abortFuture = this.abortFuture;
+            }
+        }
         if (abortFuture != null) {
+            logger.info("statement close wait abort");
             try {
-                if (!abortFuture.isDone()) {
-                    logger.info("statement close wait abort");
-                    abortFuture.await();
-                }
-                if (!abortFuture.isSuccess()) {
-                    throw abortFuture.cause();
-                }
-                logger.info("statement abort successful");
+                abortFuture.await();
             } catch (ObDirectLoadException e) {
                 logger.warn("statement abort failed", e);
             }
         }
     }
 
-    private void abortIfNeed() {
+    private synchronized void abortIfNeed() {
         logger.debug("statement abort if need");
         if (abortFuture != null) {
             logger.debug("statement in abort");
@@ -247,6 +289,8 @@ public class ObDirectLoadStatementExecutor {
                 logger.debug("statement no need abort because " + reason);
                 setState(ABORT);
             }
+        } else if (isDetached) {
+            logger.debug("statement no need abort because is detached");
         } else {
             abort();
         }
@@ -471,9 +515,7 @@ public class ObDirectLoadStatementExecutor {
             }
             executor.cause = cause;
             logger.warn("statement begin failed", cause);
-            synchronized (executor) {
-                executor.abortIfNeed();
-            }
+            executor.abortIfNeed();
         }
 
         void clear() {
@@ -508,9 +550,7 @@ public class ObDirectLoadStatementExecutor {
             }
             executor.cause = cause;
             logger.warn("statement commit failed", cause);
-            synchronized (executor) {
-                executor.abortIfNeed();
-            }
+            executor.abortIfNeed();
         }
 
     };
@@ -559,9 +599,7 @@ public class ObDirectLoadStatementExecutor {
             }
             executor.cause = cause;
             logger.warn("statement heart beat failed", cause);
-            synchronized (executor) {
-                executor.abortIfNeed();
-            }
+            executor.abortIfNeed();
         }
 
     };
