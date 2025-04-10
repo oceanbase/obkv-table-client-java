@@ -1433,6 +1433,9 @@ public class LocationUtil {
         Long tableId = null;
         Long schemaVersion = null;
         List<ReplicaLocation> replicaLocations = new ArrayList<ReplicaLocation>(3);
+        if (!rs.isBeforeFirst()) {
+            logger.error("[table not exist test] cannot find any location for this tenant, tenantName: {}, tableName: {}, databaseName: {}", key.getTenantName(), key.getTableName(), key.getDatabaseName());
+        }
         while (rs.next()) {
             ReplicaLocation replica = buildReplicaLocation(rs);
             tableId = rs.getLong("table_id");
