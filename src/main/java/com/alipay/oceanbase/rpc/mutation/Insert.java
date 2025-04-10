@@ -153,8 +153,7 @@ public class Insert extends Mutation<Insert> {
         if (null == getQuery()) {
             // simple Insert, without filter
             return new MutationResult(((ObTableClient) getClient()).insertWithResult(
-                getTableName(), getRowKey(), getKeyRanges(), columns.toArray(new String[0]),
-                values.toArray()));
+                getTableName(), getRowKey(), columns.toArray(new String[0]), values.toArray()));
         } else {
             if (checkMutationWithFilter()) {
                 // QueryAndInsert
@@ -162,7 +161,7 @@ public class Insert extends Mutation<Insert> {
                     ObTableOperationType.INSERT, getRowKeyValues().toArray(),
                     columns.toArray(new String[0]), values.toArray());
                 return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(
-                    getQuery(), getRowKey(), getKeyRanges(), operation, true));
+                    getQuery(), getRowKey(), operation, true));
             } else {
                 throw new ObTableUnexpectedException("should set filter and scan range both");
             }

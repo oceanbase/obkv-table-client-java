@@ -18,7 +18,7 @@
 package com.alipay.oceanbase.rpc.exception;
 
 public class ObTableEntryRefreshException extends ObTableException {
-    
+
     private boolean connectInactive = false;
 
     /*
@@ -54,7 +54,7 @@ public class ObTableEntryRefreshException extends ObTableException {
     public ObTableEntryRefreshException(String message, Throwable cause) {
         super(message, cause);
     }
-    
+
     public ObTableEntryRefreshException(String message, Throwable cause, boolean connectInactive) {
         super(message, cause);
         this.connectInactive = connectInactive;
@@ -63,6 +63,7 @@ public class ObTableEntryRefreshException extends ObTableException {
     public boolean isConnectInactive() {
         return connectInactive;
     }
+
     /*
      * Ob table entry refresh exception.
      */

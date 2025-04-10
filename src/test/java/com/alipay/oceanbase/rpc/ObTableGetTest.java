@@ -228,8 +228,8 @@ public class ObTableGetTest {
     @Test
     public void testBatchGet3() throws Exception {
         // not set rowKey
-        ObTableException thrown = assertThrows(
-                ObTableException.class,
+        IllegalArgumentException thrown = assertThrows(
+                IllegalArgumentException.class,
                 () -> {
                     Get get = client.get(tableName).select("c1", "c2");
                     client.batchOperation(tableName).addOperation(get).execute();

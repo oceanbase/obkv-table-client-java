@@ -179,4 +179,20 @@ public class ObTableSingleOp extends AbstractPayload {
         }
         return rowkeyObjs;
     }
+
+    public List<String> getRowKeyNames() {
+        List<String> rowKeyNames;
+        if (singleOpType == ObTableOperationType.SCAN) {
+            if (query.isHbaseQuery()) {
+                rowKeyNames = entities.get(0).getRowKeyNames();
+            } else {
+                throw new IllegalArgumentException("can not get rowKey name from this type of operations, type: " + singleOpType);
+            }
+        } else if (singleOpType == ObTableOperationType.CHECK_AND_INSERT_UP) {
+            rowKeyNames = query.getScanRangeColumns();
+        } else {
+            rowKeyNames = entities.get(0).getRowKeyNames();
+        }
+        return rowKeyNames;
+    }
 }

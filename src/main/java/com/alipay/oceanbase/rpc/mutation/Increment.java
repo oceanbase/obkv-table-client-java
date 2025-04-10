@@ -132,15 +132,15 @@ public class Increment extends Mutation<Increment> {
         if (null == getQuery()) {
             // simple increment, without filter
             return new MutationResult(((ObTableClient) getClient()).incrementWithResult(
-                getTableName(), getRowKey(), getKeyRanges(), columns.toArray(new String[0]),
-                values.toArray(), withResult));
+                getTableName(), getRowKey(), columns.toArray(new String[0]), values.toArray(),
+                withResult));
         } else {
             // QueryAndIncrement
             ObTableOperation operation = ObTableOperation.getInstance(
                 ObTableOperationType.INCREMENT, new Object[] {}, columns.toArray(new String[0]),
                 values.toArray());
             return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(getQuery(),
-                getRowKey(), getKeyRanges(), operation, withResult));
+                getRowKey(), operation, withResult));
         }
     }
 }

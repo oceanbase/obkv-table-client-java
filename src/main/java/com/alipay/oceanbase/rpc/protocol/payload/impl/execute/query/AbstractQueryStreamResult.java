@@ -20,6 +20,7 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
+import com.alipay.oceanbase.rpc.bolt.transport.TransportCodes;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.model.ObReadConsistency;
 import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
@@ -115,7 +116,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                                                                        throws Exception {
         ObPayload result;
         ObTable subObTable = partIdWithIndex.getRight().getObTable();
-        boolean needRefreshTableEntry = false;
+        boolean needRefreshPartitionLocation = false;
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
         Set<String> failedServerList = null;
@@ -145,17 +146,15 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
-                        if (ObGlobal.obVsnMajor() >= 4) {
+                        if (needRefreshPartitionLocation) {
+                            // refresh partition
                             TableEntry tableEntry = client.getOrRefreshTableEntry(indexTableName,
-                                false, false, false);
-                            client.refreshTableLocationByTabletId(tableEntry, indexTableName,
+                                false);
+                            client.refreshTableLocationByTabletId(indexTableName,
                                 client.getTabletIdByPartId(tableEntry, partIdWithIndex.getLeft()));
+                            subObTable = client.getTableParamWithPartId(indexTableName,
+                                partIdWithIndex.getRight().getTabletId(), route).getObTable();
                         }
-
-                        subObTable = client
-                            .getTableWithPartId(indexTableName, partIdWithIndex.getLeft(),
-                                needRefreshTableEntry, client.isTableEntryRefreshIntervalWait(),
-                                false, route).getRight().getObTable();
                     }
                 }
                 if (client.isOdpMode()) {
@@ -164,8 +163,6 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     result = subObTable.execute(request);
                     if (result != null && result.getPcode() == Pcodes.OB_TABLE_API_MOVE) {
                         ObTableApiMove moveResponse = (ObTableApiMove) result;
-                        client.getRouteTableRefresher().addTableIfAbsent(indexTableName, true);
-                        client.getRouteTableRefresher().triggerRefreshTable();
                         subObTable = client.getTable(moveResponse);
                         result = subObTable.execute(request);
                         if (result instanceof ObTableApiMove) {
@@ -184,12 +181,23 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                 break;
             } catch (Exception e) {
                 if (client.isOdpMode()) {
-                    logger.warn("meet exception when execute in odp mode." +
-                            "tablename: {}, errMsg: {}", indexTableName, e.getMessage());
-                    throw e;
+                    // if exceptions need to retry, retry to timeout
+                    if (e instanceof ObTableException
+                        && ((ObTableException) e).isNeedRetryServerError()) {
+                        logger
+                            .warn(
+                                "tablename:{} stream query execute while meet Exception in odp mode needing retry, errorCode: {}, errorMsg: {}, try times {}",
+                                indexTableName, ((ObTableException) e).getErrorCode(),
+                                e.getMessage(), tryTimes);
+                    } else {
+                        logger.warn("meet exception when execute in odp mode." +
+                                "tablename: {}, errMsg: {}", indexTableName, e.getMessage());
+                        throw e;
+                    }
                 } else {
+                    needRefreshPartitionLocation = true;
                     if (e instanceof ObTableReplicaNotReadableException) {
-                        if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
+                        if (System.currentTimeMillis() - startExecute < client.getRuntimeMaxWait()) {
                             logger.warn(
                                 "tablename:{} partition id:{} retry when replica not readable: {}",
                                 indexTableName, partIdWithIndex.getLeft(), e.getMessage(), e);
@@ -200,57 +208,90 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         } else {
                             logger
                                 .warn(
-                                    "tablename:{} partition id:{} exhaust retry when replica not readable: {}",
+                                    "tablename:{} partition id:{} execute retry to timeout when replica not readable: {}",
                                     indexTableName, partIdWithIndex.getLeft(), e.getMessage(), e);
                             throw e;
                         }
                     } else if (e instanceof ObTableGlobalIndexRouteException) {
-                        if ((tryTimes - 1) < client.getRuntimeRetryTimes()) {
+                        // retry to timeout
+                        if (System.currentTimeMillis() - startExecute < client.getRuntimeMaxWait()) {
                             logger
-                                .warn(
-                                    "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, retry times {}",
-                                    indexTableName, partIdWithIndex.getLeft(),
-                                    ((ObTableException) e).getErrorCode(), tryTimes, e);
+                                    .warn(
+                                            "meet global index route exception: indexTableName:{} partition id:{}, errorCode: {}, retry times {}",
+                                            indexTableName, partIdWithIndex.getLeft(),
+                                            ((ObTableException) e).getErrorCode(), tryTimes, e);
                             indexTableName = client.getIndexTableName(tableName,
-                                tableQuery.getIndexName(), tableQuery.getScanRangeColumns(), true);
+                                    tableQuery.getIndexName(), tableQuery.getScanRangeColumns(), true);
                         } else {
                             logger
-                                .warn(
-                                    "meet global index route expcetion: indexTableName:{} partition id:{}, errorCode: {}, reach max retry times {}",
-                                    indexTableName, partIdWithIndex.getLeft(),
-                                    ((ObTableException) e).getErrorCode(), tryTimes, e);
+                                    .warn(
+                                            "meet global index route exception: indexTableName:{} partition id:{}, errorCode: {}, retry to timeout, retry times {}",
+                                            indexTableName, partIdWithIndex.getLeft(),
+                                            ((ObTableException) e).getErrorCode(), tryTimes, e);
                             throw e;
                         }
                     } else if (e instanceof ObTableException) {
-                        if ((((ObTableException) e).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode || ((ObTableException) e)
-                            .getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode)
+                        if ((((ObTableException) e).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode
+                             || ((ObTableException) e).getErrorCode() == ResultCodes.OB_NOT_SUPPORTED.errorCode
+                                || ((ObTableException) e).getErrorCode() == ResultCodes.OB_SCHEMA_ERROR.errorCode)
                             && ((request instanceof ObTableQueryAsyncRequest && ((ObTableQueryAsyncRequest) request)
                                 .getObTableQueryRequest().getTableQuery().isHbaseQuery()) || (request instanceof ObTableQueryRequest && ((ObTableQueryRequest) request)
                                 .getTableQuery().isHbaseQuery()))
                             && client.getTableGroupInverted().get(indexTableName) != null) {
                             // table not exists && hbase mode && table group exists , three condition both
-                            client.eraseTableGroupFromCache(client.getTableGroupInverted().get(
-                                indexTableName));
+                            client.eraseTableGroupFromCache(tableName);
+                            // try to get new tableGroup cache
+                            indexTableName = client.tryGetTableNameFromTableGroupCache(tableName,
+                                true);
                         }
                         if (((ObTableException) e).isNeedRefreshTableEntry()) {
-                            needRefreshTableEntry = true;
-                            if (client.isRetryOnChangeMasterTimes()
-                                && (tryTimes - 1) < client.getRuntimeRetryTimes()) {
+                            if (client.isRetryOnChangeMasterTimes()) {
                                 // tablet not exists, refresh table entry
-                                if (e instanceof ObTableNeedFetchAllException) {
-                                    client.getOrRefreshTableEntry(indexTableName, true, true, true);
+                                // if the error is error like LS_NOT_EXIST, for refreshing the correct ls_id, need to erase tableEntry cached to fetch a new one
+                                // if the tableEntry is not cached in this client, tableEntry will refresh meta information and its tablet-ls information
+                                // if the server has the capacity to distribute ls request, no need to refresh ls_id and so tablet location
+                                if (e instanceof ObTableNeedFetchMetaException) {
+                                    client.getOrRefreshTableEntry(indexTableName, true);
+                                    if (((ObTableNeedFetchMetaException) e).isNeedRefreshMetaAndLocation()
+                                        && !client.getServerCapacity().isSupportDistributedExecute()) {
+                                        long tabletId = partIdWithIndex.getRight().getTabletId();
+                                        client.refreshTableLocationByTabletId(indexTableName,
+                                            tabletId);
+                                    }
                                     throw e;
                                 }
                             } else {
                                 String logMessage = String
                                     .format(
-                                        "exhaust retry while meet NeedRefresh Exception, table name: %s, batch ops refresh table, errorCode: %d",
+                                        "retry is disabled while meet NeedRefresh Exception, table name: %s, errorCode: %d",
+                                        indexTableName, ((ObTableException) e).getErrorCode());
+                                logger.warn(logMessage, e);
+                                client.calculateContinuousFailure(indexTableName, e.getMessage());
+                                throw new ObTableRetryExhaustedException(logMessage, e);
+                            }
+                        } else if (((ObTableException) e).isNeedRetryServerError()) {
+                            // retry server errors, no need to refresh partition location
+                            needRefreshPartitionLocation = false;
+                            if (client.isRetryOnChangeMasterTimes()) {
+                                logger
+                                    .warn(
+                                        "execute while meet server error, need to retry, errorCode: {}, tableName: {}, errorMsg: {}, try times {}",
+                                        ((ObTableException) e).getErrorCode(), indexTableName,
+                                        e.getMessage(), tryTimes);
+                            } else {
+                                String logMessage = String
+                                    .format(
+                                        "retry is disabled while meet NeedRefresh Exception, table name: %s, errorCode: %d",
                                         indexTableName, ((ObTableException) e).getErrorCode());
                                 logger.warn(logMessage, e);
                                 client.calculateContinuousFailure(indexTableName, e.getMessage());
                                 throw new ObTableRetryExhaustedException(logMessage, e);
                             }
                         } else {
+                            if (e instanceof ObTableTransportException
+                                && ((ObTableTransportException) e).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
+                                client.syncRefreshMetadata(true);
+                            }
                             client.calculateContinuousFailure(indexTableName, e.getMessage());
                             throw e;
                         }
@@ -325,7 +366,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     break;
 
                 } catch (Exception e) {
-                    if (e instanceof ObTableNeedFetchAllException) {
+                    if (e instanceof ObTableNeedFetchMetaException) {
                         setExpectant(refreshPartition(tableQuery, tableName));
                         // Reset the iterator to start over  
                         it = expectant.entrySet().iterator();
@@ -386,17 +427,17 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
             }
 
             ObBorderFlag borderFlag = range.getBorderFlag();
-            List<ObPair<Long, ObTableParam>> pairs = client.getTables(indexTableName,
-                    tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(),
-                    false, false);
+            List<ObTableParam> params = client.getTableParams(indexTableName,
+                    tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd());
 
             if (tableQuery.getScanOrder() == ObScanOrder.Reverse) {
-                for (int i = pairs.size() - 1; i >= 0; i--) {
-                    partitionObTables.put(pairs.get(i).getLeft(), pairs.get(i));
+                for (int i = params.size() - 1; i >= 0; i--) {
+                    ObTableParam param = params.get(i);
+                    partitionObTables.put(param.getPartId(), new ObPair<>(param.getPartId(), param));
                 }
             } else {
-                for (ObPair<Long, ObTableParam> pair : pairs) {
-                    partitionObTables.put(pair.getLeft(), pair);
+                for (ObTableParam param : params) {
+                    partitionObTables.put(param.getPartId(), new ObPair<>(param.getPartId(), param));
                 }
             }
         }
@@ -553,23 +594,25 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                 Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
                     .iterator();
                 int retryTimes = 0;
+                long startExecute = System.currentTimeMillis();
                 while (it.hasNext()) {
                     Map.Entry<Long, ObPair<Long, ObTableParam>> entry = it.next();
                     try {
                         // try access new partition, async will not remove useless expectant
                         referToNewPartition(entry.getValue());
                     } catch (Exception e) {
-                        if (e instanceof ObTableNeedFetchAllException) {
+                        if (e instanceof ObTableNeedFetchMetaException) {
                             setExpectant(refreshPartition(tableQuery, tableName));
                             it = expectant.entrySet().iterator();
                             retryTimes++;
-                            if (retryTimes > client.getRuntimeRetryTimes()) {
+                            long costMillis = System.currentTimeMillis() - startExecute;
+                            if (costMillis > client.getRuntimeMaxWait()) {
                                 RUNTIME.error("Fail to get refresh table entry response after {}",
                                     retryTimes);
-                                throw new ObTableRetryExhaustedException(
+                                throw new ObTableTimeoutExcetion(
                                     "Fail to get refresh table entry response after " + retryTimes
                                             + "errorCode:"
-                                            + ((ObTableNeedFetchAllException) e).getErrorCode());
+                                            + ((ObTableNeedFetchMetaException) e).getErrorCode());
 
                             }
                         } else {

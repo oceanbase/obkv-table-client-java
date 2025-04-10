@@ -17,10 +17,12 @@
 
 package com.alipay.oceanbase.rpc.exception;
 
+import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
+
 public class ObTableException extends RuntimeException {
 
-    private int     errorCode;
-    private boolean needRefreshTableEntry;
+    private int     errorCode             = -1;
+    private boolean needRefreshTableEntry = false;
 
     /*
      * Ob table exception.
@@ -80,6 +82,12 @@ public class ObTableException extends RuntimeException {
      */
     public boolean isNeedRefreshTableEntry() {
         return needRefreshTableEntry;
+    }
+
+    public boolean isNeedRetryServerError() {
+        return errorCode == ResultCodes.OB_TRY_LOCK_ROW_CONFLICT.errorCode
+               || errorCode == ResultCodes.OB_TRANSACTION_SET_VIOLATION.errorCode
+               || errorCode == ResultCodes.OB_SCHEMA_EAGAIN.errorCode;
     }
 
 }

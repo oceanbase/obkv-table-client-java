@@ -17,45 +17,47 @@
 
 package com.alipay.oceanbase.rpc.exception;
 
-public class ObTableNeedFetchAllException extends ObTableException {
+import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
+
+public class ObTableNeedFetchMetaException extends ObTableException {
     /*
      * Ob table routing wrong exception.
      */
-    public ObTableNeedFetchAllException() {
+    public ObTableNeedFetchMetaException() {
     }
 
     /*
      * Ob table routing wrong exception with error code.
      */
-    public ObTableNeedFetchAllException(int errorCode) {
+    public ObTableNeedFetchMetaException(int errorCode) {
         super(errorCode);
     }
 
     /*
      * Ob table routing wrong exception with message and error code.
      */
-    public ObTableNeedFetchAllException(String message, int errorCode) {
+    public ObTableNeedFetchMetaException(String message, int errorCode) {
         super(message, errorCode);
     }
 
     /*
      * Ob table routing wrong exception with message.
      */
-    public ObTableNeedFetchAllException(String message) {
+    public ObTableNeedFetchMetaException(String message) {
         super(message);
     }
 
     /*
      * Ob table routing wrong exception with message and cause.
      */
-    public ObTableNeedFetchAllException(String message, Throwable cause) {
+    public ObTableNeedFetchMetaException(String message, Throwable cause) {
         super(message, cause);
     }
 
     /*
      * Ob table routing wrong exception with cause.
      */
-    public ObTableNeedFetchAllException(Throwable cause) {
+    public ObTableNeedFetchMetaException(Throwable cause) {
         super(cause);
     }
 
@@ -64,5 +66,13 @@ public class ObTableNeedFetchAllException extends ObTableException {
      */
     public boolean isNeedRefreshTableEntry() {
         return true;
+    }
+
+    public boolean isNeedRefreshMetaAndLocation() {
+        return getErrorCode() == ResultCodes.OB_LS_NOT_EXIST.errorCode // need to refresh the whole tablets in this ls
+               || getErrorCode() == ResultCodes.OB_SNAPSHOT_DISCARDED.errorCode // fetch a wrong ls tablets, need to refetch locations
+               || getErrorCode() == ResultCodes.OB_TABLET_NOT_EXIST.errorCode
+               || getErrorCode() == ResultCodes.OB_ERR_OPERATION_ON_RECYCLE_OBJECT.errorCode // table has been drop and recreated
+               || getErrorCode() == ResultCodes.OB_MAPPING_BETWEEN_TABLET_AND_LS_NOT_EXIST.errorCode;
     }
 }

@@ -21,22 +21,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum ObIndexType {
-    IndexTypeIsNot(0),
-    IndexTypeNormalLocal(1),
-    IndexTypeUniqueLocal(2),
-    IndexTypeNormalGlobal(3),
-    IndexTypeUniqueGlobal(4),
-    IndexTypePrimary(5),
-    IndexTypeDomainCtxcat(6),
-    IndexTypeNormalGlobalLocalStorage(7),
-    IndexTypeUniqueGlobalLocalStorage(8),
-    IndexTypeSpatialLocal(10),
-    IndexTypeSpatialGlobal(11),
-    IndexTypeSpatialGlobalLocalStorage(12),
-    IndexTypeRowkeyDocIdLocal(13),
-    IndexTypeDocIdRowkeyLocal(14),
-    IndexTypeFtsIndexLocal(15),
-    IndexTypeFtsDocWordLocal(16),
+    IndexTypeIsNot(0), IndexTypeNormalLocal(1), IndexTypeUniqueLocal(2), IndexTypeNormalGlobal(3), IndexTypeUniqueGlobal(
+                                                                                                                         4), IndexTypePrimary(
+                                                                                                                                              5), IndexTypeDomainCtxcat(
+                                                                                                                                                                        6), IndexTypeNormalGlobalLocalStorage(
+                                                                                                                                                                                                              7), IndexTypeUniqueGlobalLocalStorage(
+                                                                                                                                                                                                                                                    8), IndexTypeSpatialLocal(
+                                                                                                                                                                                                                                                                              10), IndexTypeSpatialGlobal(
+                                                                                                                                                                                                                                                                                                          11), IndexTypeSpatialGlobalLocalStorage(
+                                                                                                                                                                                                                                                                                                                                                  12), IndexTypeRowkeyDocIdLocal(
+                                                                                                                                                                                                                                                                                                                                                                                 13), IndexTypeDocIdRowkeyLocal(
+                                                                                                                                                                                                                                                                                                                                                                                                                14), IndexTypeFtsIndexLocal(
+                                                                                                                                                                                                                                                                                                                                                                                                                                            15), IndexTypeFtsDocWordLocal(
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                          16),
     /*
     IndexTypeDocIdRowkeyGlobal(17),
     IndexTypeFtsIndexGlobal(18),

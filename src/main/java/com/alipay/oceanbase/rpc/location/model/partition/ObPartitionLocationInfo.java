@@ -22,11 +22,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static com.alipay.oceanbase.rpc.protocol.payload.Constants.OB_INVALID_ID;
+import static com.alipay.oceanbase.rpc.protocol.payload.Constants.INVALID_LS_ID;
 
 public class ObPartitionLocationInfo {
     private ObPartitionLocation   partitionLocation   = null;
-    private Long                  tabletLsId          = OB_INVALID_ID;
+    private Long                  tabletLsId          = INVALID_LS_ID;
     private Long                  lastUpdateTime      = 0L;
     public ReentrantReadWriteLock rwLock              = new ReentrantReadWriteLock();
     public AtomicBoolean          initialized         = new AtomicBoolean(false);

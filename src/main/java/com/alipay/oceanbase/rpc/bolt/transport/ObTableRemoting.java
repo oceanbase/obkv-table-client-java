@@ -125,11 +125,11 @@ public class ObTableRemoting extends BaseRemoting {
             if (!conn.getObTable().isEnableRerouting() && response.getHeader().isRoutingWrong()) {
                 String errMessage = TraceUtil.formatTraceMessage(conn, request,
                     "routed to the wrong server: [error code:" + resultCode.getRcode() + "]"
-                            + response.getMessage());
+                            + resultCode.getErrMsg());
                 logger.debug(errMessage);
-                if (needFetchAll(resultCode.getRcode(), resultCode.getPcode())) {
-                    throw new ObTableNeedFetchAllException(errMessage, resultCode.getRcode());
-                } else if (needFetchPartial(resultCode.getRcode())) {
+                if (needFetchMeta(resultCode.getRcode(), resultCode.getPcode())) {
+                    throw new ObTableNeedFetchMetaException(errMessage, resultCode.getRcode());
+                } else if (needFetchPartitionLocation(resultCode.getRcode())) {
                     throw new ObTableRoutingWrongException(errMessage, resultCode.getRcode());
                 } else {
                     // Encountered an unexpected RoutingWrong error code, 
@@ -137,18 +137,18 @@ public class ObTableRemoting extends BaseRemoting {
                     // Attempting a full refresh here
                     // and delegating to the upper-level call to determine whether to throw the exception to the user based on the retry result.
                     logger.warn("get unexpected error code: {}", errMessage);
-                    throw new ObTableNeedFetchAllException(errMessage, resultCode.getRcode());
+                    throw new ObTableNeedFetchMetaException(errMessage, resultCode.getRcode());
                 }
             }
             if (resultCode.getRcode() != 0
                 && response.getHeader().getPcode() != Pcodes.OB_TABLE_API_MOVE) {
                 String errMessage = TraceUtil.formatTraceMessage(conn, request,
                     "routed to the wrong server:  [error code:" + resultCode.getRcode() + "]"
-                            + response.getMessage());
+                            + resultCode.getErrMsg());
                 logger.debug(errMessage);
-                if (needFetchAll(resultCode.getRcode(), resultCode.getPcode())) {
-                    throw new ObTableNeedFetchAllException(errMessage, resultCode.getRcode());
-                } else if (needFetchPartial(resultCode.getRcode())) {
+                if (needFetchMeta(resultCode.getRcode(), resultCode.getPcode())) {
+                    throw new ObTableNeedFetchMetaException(errMessage, resultCode.getRcode());
+                } else if (needFetchPartitionLocation(resultCode.getRcode())) {
                     throw new ObTableRoutingWrongException(errMessage, resultCode.getRcode());
                 } else {
                     logger.warn(errMessage);
@@ -192,7 +192,7 @@ public class ObTableRemoting extends BaseRemoting {
     }
 
     // schema changed
-    private boolean needFetchAll(int errorCode, int pcode) {
+    private boolean needFetchMeta(int errorCode, int pcode) {
         return errorCode == ResultCodes.OB_SCHEMA_ERROR.errorCode
                || errorCode == ResultCodes.OB_TABLE_NOT_EXIST.errorCode
                || errorCode == ResultCodes.OB_TABLET_NOT_EXIST.errorCode
@@ -202,10 +202,11 @@ public class ObTableRemoting extends BaseRemoting {
                || errorCode == ResultCodes.OB_SCHEMA_EAGAIN.errorCode
                || errorCode == ResultCodes.OB_ERR_WAIT_REMOTE_SCHEMA_REFRESH.errorCode
                || errorCode == ResultCodes.OB_GTS_NOT_READY.errorCode
+               || errorCode == ResultCodes.OB_ERR_OPERATION_ON_RECYCLE_OBJECT.errorCode
                || (pcode == Pcodes.OB_TABLE_API_LS_EXECUTE && errorCode == ResultCodes.OB_NOT_MASTER.errorCode);
     }
 
-    private boolean needFetchPartial(int errorCode) {
+    private boolean needFetchPartitionLocation(int errorCode) {
         return errorCode == ResultCodes.OB_LOCATION_LEADER_NOT_EXIST.errorCode
                || errorCode == ResultCodes.OB_NOT_MASTER.errorCode
                || errorCode == ResultCodes.OB_RS_NOT_MASTER.errorCode

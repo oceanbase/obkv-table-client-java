@@ -153,14 +153,14 @@ public class Put extends Mutation<Put> {
         if (null == getQuery()) {
             // simple Put, without filter
             return new MutationResult(((ObTableClient) getClient()).putWithResult(getTableName(),
-                getRowKey(), getKeyRanges(), columns.toArray(new String[0]), values.toArray()));
+                getRowKey(), columns.toArray(new String[0]), values.toArray()));
         } else {
             if (checkMutationWithFilter()) {
                 // QueryAndPut
                 ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.PUT,
                     getRowKeyValues().toArray(), columns.toArray(new String[0]), values.toArray());
                 return new MutationResult(((ObTableClient) getClient()).mutationWithFilter(
-                    getQuery(), getRowKey(), getKeyRanges(), operation, true));
+                    getQuery(), getRowKey(), operation, true));
             } else {
                 throw new ObTableUnexpectedException("should set filter and scan range both");
             }

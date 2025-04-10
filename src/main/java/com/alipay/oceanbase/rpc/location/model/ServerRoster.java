@@ -17,16 +17,19 @@
 
 package com.alipay.oceanbase.rpc.location.model;
 
-import com.alipay.oceanbase.rpc.exception.ObTableServerCacheExpiredException;
+import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.alipay.oceanbase.rpc.util.RandomUtil.getRandomNum;
-
 public class ServerRoster {
+
+    private static final Logger                  logger      = TableClientLoggerFactory
+                                                                 .getLogger(ServerRoster.class);
 
     private AtomicInteger                        maxPriority = new AtomicInteger(0);
 
@@ -34,6 +37,7 @@ public class ServerRoster {
                                                                  new ArrayList<ObServerAddr>());
 
     private AtomicReference<ObServerLdcLocation> serverLdc   = new AtomicReference<ObServerLdcLocation>();
+    private AtomicLong                           turn        = new AtomicLong(0);
 
     /*
      * Reset.
@@ -126,20 +130,22 @@ public class ServerRoster {
      * @param cachingTimeout
      * @return
      */
-    public ObServerAddr getServer(long priorityTimeout, long cachingTimeout) {
+    public ObServerAddr getServer(long priorityTimeout) {
         long gradeTime = System.currentTimeMillis();
-        List<ObServerAddr> randomList = new ArrayList<ObServerAddr>();
+        List<ObServerAddr> avaliableList = new ArrayList<ObServerAddr>();
         int maxPriority = getMaxPriority();
         for (ObServerAddr obServerAddr : getMembers()) {
             if (obServerAddr.getPriority().get() == maxPriority || //max priority
                 gradeTime - obServerAddr.getGrantPriorityTime() > priorityTimeout) { //last grant priority timeout
-                randomList.add(obServerAddr);
+                avaliableList.add(obServerAddr);
             }
         }
-        ObServerAddr addr = randomList.get(getRandomNum(0, randomList.size()));
-        if (addr.isExpired(cachingTimeout)) {
-            throw new ObTableServerCacheExpiredException("server addr is expired : " + addr);
+        // round-robin get server address
+        long idx = turn.getAndIncrement();
+        if (idx == Integer.MAX_VALUE) {
+            turn.set(0);
         }
+        ObServerAddr addr = avaliableList.get((int) (idx % avaliableList.size()));
         addr.recordAccess();
         return addr;
     }
