@@ -1452,6 +1452,7 @@ public class LocationUtil {
         }
         TableLocation tableLocation = new TableLocation();
         tableLocation.setReplicaLocations(replicaLocations);
+        logger.info("refresh meta get new schema_version: {}", schemaVersion);
         if (!replicaLocations.isEmpty()) {
             entry.setTableId(tableId);
             entry.setTableLocation(tableLocation);

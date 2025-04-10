@@ -329,7 +329,10 @@ public class TableLocations {
                     throw e;
                 } catch (ObTableSchemaVersionMismatchException e) {
                     RUNTIME.error(
-                        "refresh partition location meet schema_version mismatched exception", e);
+                        "refresh partition location meet schema_version mismatched exception, tryTimes: {}", i, e);
+                    if (i >= retryTimes - 1) {
+                        throw e;
+                    }
                     long schemaVersion = tableEntry.getSchemaVersion();
                     // sleep over waiting interval of refreshing meta to refresh meta
                     long interval = System.currentTimeMillis()
@@ -340,7 +343,7 @@ public class TableLocations {
                     tableEntry = locations.get(tableName);
                     // if schema_version has been updated, directly retry
                     if (schemaVersion == tableEntry.getSchemaVersion()) {
-                        refreshMeta(tableName, serverRoster, sysUA);
+                        tableEntry = refreshMeta(tableName, serverRoster, sysUA);
                     }
                 } catch (ObTableEntryRefreshException e) {
                     RUNTIME.error("refresh partition location meet entry refresh exception", e);
@@ -453,7 +456,10 @@ public class TableLocations {
                     throw e;
                 } catch (ObTableSchemaVersionMismatchException e) {
                     RUNTIME.error(
-                        "refresh location in batch meet schema_version mismatched exception", e);
+                        "refresh location in batch meet schema_version mismatched exception, tryTimes: {}", i, e);
+                    if (i >= retryTimes - 1) {
+                        throw e;
+                    }
                     long schemaVersion = tableEntry.getSchemaVersion();
                     // sleep over waiting interval of refreshing meta to refresh meta
                     long interval = System.currentTimeMillis()
@@ -464,7 +470,7 @@ public class TableLocations {
                     tableEntry = locations.get(tableName);
                     // if schema_version has been updated, directly retry
                     if (schemaVersion == tableEntry.getSchemaVersion()) {
-                        refreshMeta(tableName, serverRoster, sysUA);
+                        tableEntry = refreshMeta(tableName, serverRoster, sysUA);
                     }
                 } catch (ObTableEntryRefreshException e) {
                     RUNTIME.error("refresh location in batch meet entry refresh exception", e);
