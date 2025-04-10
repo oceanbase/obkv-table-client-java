@@ -29,6 +29,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObBorderFlag
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.table.ObTable;
+import com.alipay.oceanbase.rpc.table.ObTableClientType;
 import com.alipay.oceanbase.rpc.table.ObTableParam;
 import com.alipay.oceanbase.rpc.table.ObTableServerCapacity;
 import com.alipay.oceanbase.rpc.util.StringUtil;
@@ -170,11 +171,12 @@ public class TableRoute {
         }
     }
 
-    public void buildOdpInfo(String odpAddr, int odpPort) throws Exception {
+    public void buildOdpInfo(String odpAddr, int odpPort, ObTableClientType clientType)
+                                                                                       throws Exception {
         this.odpInfo = new OdpInfo(odpAddr, odpPort);
         this.odpInfo.buildOdpTable(tableClient.getTenantName(), tableClient.getFullUserName(),
-            tableClient.getPassword(), tableClient.getDatabase(), tableClient.getProperties(),
-            tableClient.getTableConfigs());
+            tableClient.getPassword(), tableClient.getDatabase(), clientType,
+            tableClient.getProperties(), tableClient.getTableConfigs());
     }
 
     /**
@@ -193,7 +195,8 @@ public class TableRoute {
      * tableRoster stores all observer connection belongs to the current tenant
      * serverRoster stores all observer address and LDC information for weak-reading
      * */
-    public void initRoster(TableEntryKey rootServerKey, boolean initialized) throws Exception {
+    public void initRoster(TableEntryKey rootServerKey, boolean initialized,
+                           ObTableClient.RunningMode runningMode) throws Exception {
         List<ObServerAddr> servers = new ArrayList<ObServerAddr>();
         ConcurrentHashMap<ObServerAddr, ObTable> addr2Table = new ConcurrentHashMap<ObServerAddr, ObTable>();
         List<ObServerAddr> rsList = configServerInfo.getRsList();
@@ -255,7 +258,8 @@ public class TableRoute {
                 ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort())
                     //
                     .setLoginInfo(tableClient.getTenantName(), tableClient.getUserName(),
-                        tableClient.getPassword(), tableClient.getDatabase())
+                        tableClient.getPassword(), tableClient.getDatabase(),
+                        tableClient.getClientType(runningMode))
                     //
                     .setProperties(tableClient.getProperties())
                     .setConfigs(tableClient.getTableConfigs()).build();
@@ -279,7 +283,8 @@ public class TableRoute {
             JSON.toJSON(servers));
         this.tableRoster = TableRoster.getInstanceOf(tableClient.getTenantName(),
             tableClient.getUserName(), tableClient.getPassword(), tableClient.getDatabase(),
-            tableClient.getProperties(), tableClient.getTableConfigs());
+            tableClient.getClientType(runningMode), tableClient.getProperties(),
+            tableClient.getTableConfigs());
         this.tableRoster.setTables(addr2Table);
         this.serverRoster.reset(servers);
 

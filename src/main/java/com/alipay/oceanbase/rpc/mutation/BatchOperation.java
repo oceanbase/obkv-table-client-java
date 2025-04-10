@@ -374,7 +374,7 @@ public class BatchOperation {
         if (rowKey == null || rowKey.size() != 3) {
             throw new IllegalArgumentException("hbase rowkey length must be 3");
         } else {
-            long ts = (long)ObTableClient.getRowKeyValue(mutation, 2);
+            long ts = (long) ObTableClient.getRowKeyValue(mutation, 2);
             ObTableClient.setRowKeyValue(mutation, 2, -ts);
         }
     }

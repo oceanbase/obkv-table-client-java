@@ -35,6 +35,7 @@ public class TableRoster {
     private String database;
     private Properties properties = new Properties();
     private Map<String, Object> tableConfigs = new HashMap<>();
+    private ObTableClientType clientType;
     /*
      * ServerAddr(all) -> ObTableConnection
      */
@@ -54,6 +55,9 @@ public class TableRoster {
     }
     public void setTables(ConcurrentHashMap<ObServerAddr, ObTable> tables) {
         this.tables = tables;
+    }
+    public void setClientType(ObTableClientType clientType) {
+        this.clientType = clientType;
     }
     public void setProperties(Properties properties) {
         this.properties = properties;
@@ -90,7 +94,7 @@ public class TableRoster {
             }
 
             ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort()) //
-                    .setLoginInfo(tenantName, userName, password, database) //
+                    .setLoginInfo(tenantName, userName, password, database, clientType) //
                     .setProperties(properties).setConfigs(tableConfigs).build();
             ObTable oldObTable = tables.putIfAbsent(addr, obTable);
             logger.warn("add new table addr, {}", addr.toString());
@@ -141,12 +145,13 @@ public class TableRoster {
     }
 
     public static TableRoster getInstanceOf(String tenantName, String userName, String password, String database,
-                                     Properties properties, Map<String, Object> tableConfigs) {
+                                            ObTableClientType clientType, Properties properties, Map<String, Object> tableConfigs) {
         TableRoster tableRoster = new TableRoster();
         tableRoster.setTenantName(tenantName);
         tableRoster.setUserName(userName);
         tableRoster.setPassword(password);
         tableRoster.setDatabase(database);
+        tableRoster.setClientType(clientType);
         tableRoster.setProperties(properties);
         tableRoster.setTableConfigs(tableConfigs);
         return tableRoster;

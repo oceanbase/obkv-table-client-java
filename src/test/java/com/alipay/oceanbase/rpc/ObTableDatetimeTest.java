@@ -77,8 +77,7 @@ public class ObTableDatetimeTest {
             Row rk = row(colVal("c1", 1L), colVal("c2", date), colVal("c3", 1L));
             client.insertOrUpdate(tableName).setRowKey(rk).addMutateColVal(colVal("c4", "c4_val"))
                 .execute();
-            Map<String, Object> res = client.get(tableName).setRowKey(rk).select("c4")
-                    .execute();
+            Map<String, Object> res = client.get(tableName).setRowKey(rk).select("c4").execute();
             Assert.assertEquals("c4_val", res.get("c4"));
 
             client.delete(tableName).setRowKey(rk).execute();

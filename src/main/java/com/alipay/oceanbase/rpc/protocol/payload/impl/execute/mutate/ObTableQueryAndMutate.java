@@ -164,7 +164,7 @@ public class ObTableQueryAndMutate extends AbstractPayload {
     public void setIsCheckNoExists(boolean isCheckNoExists) {
         queryAndMutateFlag.setIsCheckNotExists(isCheckNoExists);
     }
-    
+
     public void setIsUserSpecifiedT(boolean isUserSpecifiedT) {
         queryAndMutateFlag.setIsUserSpecifiedT(isUserSpecifiedT);
     }

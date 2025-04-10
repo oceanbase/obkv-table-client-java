@@ -41,11 +41,11 @@ public class OdpInfo {
     }
 
     public void buildOdpTable(String tenantName, String fullUserName, String password,
-                              String database, Properties properties,
+                              String database, ObTableClientType clientType, Properties properties,
                               Map<String, Object> tableConfigs) throws Exception {
         this.obTable = new ObTable.Builder(addr, port)
-            .setLoginInfo(tenantName, fullUserName, password, database).setProperties(properties)
-            .setConfigs(tableConfigs).build();
+            .setLoginInfo(tenantName, fullUserName, password, database, clientType)
+            .setProperties(properties).setConfigs(tableConfigs).build();
     }
 
     public ObTable getObTable() {

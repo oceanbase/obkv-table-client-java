@@ -50,7 +50,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     private final ObTableClient                   obTableClient;
     private Map<Long, ObPair<Long, ObTableParam>> partitionObTables;
 
-    private Row                                   rowKey;             // only used by BatchOperation
+    private Row                                   rowKey;                    // only used by BatchOperation
 
     private boolean                               allowDistributeScan = true;
 

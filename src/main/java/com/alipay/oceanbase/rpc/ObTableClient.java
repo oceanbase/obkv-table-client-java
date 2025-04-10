@@ -377,7 +377,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         // build tableRoster and ServerRoster
         TableEntryKey rootServerKey = new TableEntryKey(clusterName, tenantName,
                 OCEANBASE_DATABASE, ALL_DUMMY_TABLE);
-        tableRoute.initRoster(rootServerKey, initialized);
+        tableRoute.initRoster(rootServerKey, initialized, runningMode);
         // create background refresh-checker task
         tableRoute.launchRouteRefresher();
     }
@@ -2718,7 +2718,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         NORMAL, HBASE;
     }
 
-    private ObTableClientType getClientType(RunningMode runningMode) {
+    public ObTableClientType getClientType(RunningMode runningMode) {
         if (ObGlobal.isDistributedExecSupport()) {
             return runningMode == RunningMode.HBASE ? ObTableClientType.JAVA_HBASE_CLIENT : ObTableClientType.JAVA_TABLE_CLIENT;
         } else {

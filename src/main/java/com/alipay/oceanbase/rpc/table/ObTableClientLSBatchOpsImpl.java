@@ -233,22 +233,23 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         ObTableQuery obTableQuery = queryAndMutate.getQuery();
         if (queryAndMutate.getMutation() instanceof Delete) {
             Delete delete = (Delete) queryAndMutate.getMutation();
-            ObTableSingleOpQuery singleOpQuery = ObTableSingleOpQuery.getInstance(obTableQuery.getIndexName(),
-                    obTableQuery.getKeyRanges(), obTableQuery.getSelectColumns(),
-                    obTableQuery.getScanOrder(), obTableQuery.isHbaseQuery(),
-                    obTableQuery.gethTableFilter(), obTableQuery.getObKVParams(),
-                    obTableQuery.getFilterString());
+            ObTableSingleOpQuery singleOpQuery = ObTableSingleOpQuery.getInstance(
+                obTableQuery.getIndexName(), obTableQuery.getKeyRanges(),
+                obTableQuery.getSelectColumns(), obTableQuery.getScanOrder(),
+                obTableQuery.isHbaseQuery(), obTableQuery.gethTableFilter(),
+                obTableQuery.getObKVParams(), obTableQuery.getFilterString());
             singleOp.setQuery(singleOpQuery);
             singleOp.setQuery(singleOpQuery);
             singleOp.setSingleOpType(ObTableOperationType.QUERY_AND_MUTATE);
             String[] rowKeyNames = delete.getRowKey().getColumns();
             Object[] rowKeyValues = delete.getRowKey().getValues();
-            ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKeyValues,
-                    null, null);
+            ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames,
+                rowKeyValues, null, null);
             singleOp.addEntity(entity);
             addOperation(singleOp);
         } else {
-            throw new ObTableException("invalid operation type " + queryAndMutate.getMutation().getOperationType());
+            throw new ObTableException("invalid operation type "
+                                       + queryAndMutate.getMutation().getOperationType());
         }
     }
 
@@ -400,8 +401,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         List<String> rowKeyNames = operation.getRowKeyNames();
         int rowKeySize = rowKeyObject.size();
         if (rowKeySize != rowKeyNames.size()) {
-            throw new ObTableUnexpectedException("the length of rowKey value and rowKey name of the No." +
-                    operationPair.getLeft() + " operation is not matched");
+            throw new ObTableUnexpectedException(
+                "the length of rowKey value and rowKey name of the No." + operationPair.getLeft()
+                        + " operation is not matched");
         }
         for (int j = 0; j < rowKeySize; j++) {
             Object rowKeyObj = rowKeyObject.get(j).getValue();
@@ -820,8 +822,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     }
 
     private void executeWithRetries(ObTableSingleOpResult[] results,
-                                    Map.Entry<Long, TabletOperationsMap> entry)
-                                                                                               throws Exception {
+                                    Map.Entry<Long, TabletOperationsMap> entry) throws Exception {
 
         int retryCount = 0;
         boolean success = false;
@@ -859,8 +860,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             }
         }
         if (!success) {
-            errMsg = "Failed to execute operation after retrying " + retryCount + " times. Last error Msg:" +
-                    "[errCode="+ errCode +"] " + errMsg;
+            errMsg = "Failed to execute operation after retrying " + retryCount
+                     + " times. Last error Msg:" + "[errCode=" + errCode + "] " + errMsg;
             throw new ObTableUnexpectedException(errMsg);
         }
     }
