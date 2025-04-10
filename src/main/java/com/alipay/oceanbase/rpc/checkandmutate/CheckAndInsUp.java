@@ -109,7 +109,7 @@ public class CheckAndInsUp {
         ObTableOperation operation = ObTableOperation.getInstance(ObTableOperationType.INSERT_OR_UPDATE,
                 insUp.getRowKey().getValues(), insUp.getColumns(), insUp.getValues());
 
-        return new MutationResult(((ObTableClient)client).mutationWithFilter(query, rowKey, ranges, operation,
+        return new MutationResult(((ObTableClient)client).mutationWithFilter(query, rowKey, operation,
                 false, true, checkExists, rollbackWhenCheckFailed));
     }
 }

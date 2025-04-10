@@ -1,8 +1,8 @@
 /*-
  * #%L
- * OBKV Table Client Framework
+ * com.oceanbase:obkv-table-client
  * %%
- * Copyright (C) 2021 OceanBase
+ * Copyright (C) 2021 - 2025 OceanBase
  * %%
  * OBKV Table Client Framework is licensed under Mulan PSL v2.
  * You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -20,38 +20,43 @@ package com.alipay.oceanbase.rpc.location.model;
 import java.util.HashMap;
 import java.util.List;
 
-public class OcpModel {
-
-    private List<ObServerAddr>      obServerAddrs;
+public class ConfigServerInfo {
+    private String                  paramURL;
+    private String                  localFile;                                 // read from local file
+    private List<ObServerAddr>      rsList;
     private long                    clusterId  = -1;
     private HashMap<String, String> idc2Region = new HashMap<String, String>();
 
-    /*
-     * Get ob server addrs.
-     */
-    public List<ObServerAddr> getObServerAddrs() {
-        return obServerAddrs;
+    public void setRsList(List<ObServerAddr> rsList) {
+        this.rsList = rsList;
     }
 
-    /*
-     * Set ob server addrs.
-     */
-    public void setObServerAddrs(List<ObServerAddr> obServerAddrs) {
-        this.obServerAddrs = obServerAddrs;
-    }
-
-    /*
-     * Get cluster id.
-     */
-    public long getClusterId() {
-        return clusterId;
-    }
-
-    /*
-     * Set cluster id.
-     */
     public void setClusterId(long clusterId) {
         this.clusterId = clusterId;
+    }
+
+    public void setParamURL(String paramURL) {
+        this.paramURL = paramURL;
+    }
+
+    public void setLocalFile(String localFile) {
+        this.localFile = localFile;
+    }
+
+    public String getParamURL() {
+        return this.paramURL;
+    }
+
+    public String getLocalFile() {
+        return this.localFile;
+    }
+
+    public long getClusterId() {
+        return this.clusterId;
+    }
+
+    public List<ObServerAddr> getRsList() {
+        return this.rsList;
     }
 
     /*
@@ -77,6 +82,6 @@ public class OcpModel {
      */
     @Override
     public String toString() {
-        return "OcpModel{" + "obServerAddrs=" + obServerAddrs + ", idc2Region=" + idc2Region + '}';
+        return "OcpModel{" + "obServerAddrs=" + rsList + ", idc2Region=" + idc2Region + '}';
     }
 }
