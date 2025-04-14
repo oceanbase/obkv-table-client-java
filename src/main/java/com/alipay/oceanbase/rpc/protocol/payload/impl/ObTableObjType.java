@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl;
 
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -67,6 +68,11 @@ public enum ObTableObjType {
         }
 
         @Override
+        public void encode(ObByteBuf buf, ObObj obj) {
+            encodeWithMeta(buf, obj);
+        }
+
+        @Override
         public void decode(ByteBuf buf, ObObj obj) {
             decodeWithMeta(buf, obj);
         }
@@ -81,6 +87,11 @@ public enum ObTableObjType {
         @Override
         public byte[] encode(ObObj obj) {
             return encodeWithMeta(obj);
+        }
+
+        @Override
+        public void encode(ObByteBuf buf, ObObj obj) {
+            encodeWithMeta(buf, obj);
         }
 
         @Override
@@ -103,6 +114,10 @@ public enum ObTableObjType {
             return bytes;
         }
 
+        public void encode(ObByteBuf buf, ObObj obj) {
+            Serialization.encodeI8(buf, this.getValue());
+        }
+
         public void decode(ByteBuf buf, ObObj obj) {
             ObObjType objType = getObjType(this);
             ObObjMeta objMeta = objType.getDefaultObjMeta();
@@ -122,6 +137,10 @@ public enum ObTableObjType {
             System.arraycopy(Serialization.encodeI8(this.getValue()), 0, bytes, idx, 1);
             idx += 1;
             return bytes;
+        }
+
+        public void encode(ObByteBuf buf, ObObj obj) {
+            Serialization.encodeI8(buf, this.getValue());
         }
 
         public void decode(ByteBuf buf, ObObj obj) {
@@ -303,6 +322,13 @@ public enum ObTableObjType {
         return bytes;
     }
 
+    public void encode(ObByteBuf buf, ObObj obj) {
+        ObObjType objType = obj.getMeta().getType();
+        Serialization.encodeI8(buf, this.getValue());
+
+        objType.encode(buf, obj.getValue());
+    }
+
     public void decode(ByteBuf buf, ObObj obj) {
         ObObjType objType = getObjType(this);
         ObObjMeta objMeta = objType.getDefaultObjMeta();
@@ -335,6 +361,20 @@ public enum ObTableObjType {
         idx += valueBytes.length;
 
         return bytes;
+    }
+
+    public void encodeWithMeta(ObByteBuf buf, ObObj obj) {
+        ObObjType objType = obj.getMeta().getType();
+
+        Serialization.encodeI8(buf, this.getValue());
+
+        Serialization.encodeI8(buf, obj.getMeta().getCsLevel().getByteValue());
+
+        Serialization.encodeI8(buf, obj.getMeta().getCsType().getByteValue());
+
+        Serialization.encodeI8(buf, obj.getMeta().getScale());
+
+        objType.encode(buf, obj.getValue());
     }
 
     public void decodeWithMeta(ByteBuf buf, ObObj obj) {

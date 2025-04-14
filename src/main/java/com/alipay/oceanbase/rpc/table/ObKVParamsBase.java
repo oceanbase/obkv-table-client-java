@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.table;
 
 import com.alipay.oceanbase.rpc.direct_load.protocol.payload.ObTableLoadClientStatus;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import io.netty.buffer.ByteBuf;
 
 import java.util.HashMap;
@@ -58,6 +59,8 @@ public abstract class ObKVParamsBase {
     public byte[] encode() {
         return null;
     }
+
+    public void encode(ObByteBuf buf) { }
 
     public Object decode(ByteBuf buf) {
         return null;
