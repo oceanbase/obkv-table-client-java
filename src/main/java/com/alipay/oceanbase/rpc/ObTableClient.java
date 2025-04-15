@@ -433,10 +433,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         if (odpMode) {
             try {
-                ObTableClientType clientType = runningMode == RunningMode.HBASE ? ObTableClientType.JAVA_HBASE_CLIENT : ObTableClientType.JAVA_TABLE_CLIENT;
                 odpTable = new ObTable.Builder(odpAddr, odpPort) //
-                    .setLoginInfo(tenantName, fullUserName, password, database, clientType) //
+                    .setLoginInfo(tenantName, fullUserName, password, database, ObTableClientType.JAVA_TABLE_CLIENT) //
                     .setProperties(getProperties()).setConfigs(TableConfigs).build();
+                // Observer version has been obtained at this point
+                if (ObGlobal.isDistributedExecSupport() && runningMode == RunningMode.HBASE) { // support distributed execute, login again
+                    odpTable = new ObTable.Builder(odpAddr, odpPort) //
+                            .setLoginInfo(tenantName, fullUserName, password, database, ObTableClientType.JAVA_HBASE_CLIENT) //
+                            .setProperties(getProperties()).setConfigs(TableConfigs).build();
+                }
             } catch (Exception e) {
                 logger
                     .warn(
