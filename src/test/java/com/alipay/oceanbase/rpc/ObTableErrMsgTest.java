@@ -137,7 +137,7 @@ public class ObTableErrMsgTest {
         );
 
         System.out.println(thrown.getMessage());
-        assertTrue(thrown.getMessage().contains("[-4157][OB_OPERATE_OVERFLOW][DATETIME value is out of range in 'c3']"));
+        assertTrue(thrown.getMessage().contains("[-4157][OB_OPERATE_OVERFLOW][MYSQL_DATETIME value is out of range in 'c3']"));
     }
 
     /**

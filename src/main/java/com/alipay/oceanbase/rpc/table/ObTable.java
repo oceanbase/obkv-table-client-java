@@ -35,6 +35,7 @@ import com.alipay.remoting.ConnectionEventHandler;
 import com.alipay.remoting.config.switches.GlobalSwitch;
 import com.alipay.remoting.connection.ConnectionFactory;
 import com.alipay.remoting.exception.RemotingException;
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +43,9 @@ import java.net.ConnectException;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
@@ -117,6 +120,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             }
             if (connectionPool != null) {
                 connectionPool.close();
+                connectionPool = null;
             }
             closed = true;
         } finally {
@@ -433,7 +437,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                 } else if (ex instanceof ObTableTenantNotInServerException) {
                     String errMessage = TraceUtil.formatTraceMessage(connection, request,
                             "meet ObTableTenantNotInServerException and has relogined, need to refresh route");
-                    throw new ObTableNeedFetchAllException(errMessage, ex.getErrorCode());
+                    throw new ObTableNeedFetchMetaException(errMessage, ex.getErrorCode());
                 } else {
                     throw ex;
                 }
@@ -633,6 +637,14 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     }
 
     /*
+    * get current number of the connections in the pool
+    * */
+    @VisibleForTesting
+    public int getConnectionNum() {
+        return connectionPool.getConnectionNum();
+    }
+
+    /*
      * Get connection.
      */
     public ObTableConnection getConnection() throws Exception {
@@ -745,50 +757,104 @@ public class ObTable extends AbstractObTable implements Lifecycle {
      * (3) ObTableConnection is shared and thread-safe, granted by underlying library.
      */
     private static class ObTableConnectionPool {
-        private final int                    obTableConnectionPoolSize;
-        private ObTable                      obTable;
-        private volatile ObTableConnection[] connectionPool;
+        private final int                                     obTableConnectionPoolSize;
+        private ObTable                                       obTable;
+        private volatile AtomicReference<ObTableConnection[]> connectionPool;
         // round-robin scheduling
-        private AtomicLong                   turn = new AtomicLong(0);
-        private final ScheduledExecutorService cleanerExecutor = Executors.newScheduledThreadPool(1);
+        private AtomicLong                                    turn = new AtomicLong(0);
+        private boolean                                       shouldStopExpand = false;
+        private ScheduledFuture<?>                            expandTaskFuture = null;
+        private ScheduledFuture<?>                            checkAndReconnectFuture = null;
+        private final ScheduledExecutorService                scheduleExecutor = Executors.newScheduledThreadPool(2);
         /*
          * Ob table connection pool.
          */
         public ObTableConnectionPool(ObTable obTable, int connectionPoolSize) {
             this.obTable = obTable;
             this.obTableConnectionPoolSize = connectionPoolSize;
-            connectionPool = new ObTableConnection[connectionPoolSize];
         }
         
         /*
          * Init.
          */
         public void init() throws Exception {
-            for (int i = 0; i < obTableConnectionPoolSize; i++) {
-                connectionPool[i] = new ObTableConnection(obTable);
-                if (i == 0) {
-                    connectionPool[i].enableLoginWithConfigs();
-                }
-                connectionPool[i].init();
-                
-            }
-            this.cleanerExecutor.scheduleAtFixedRate(this::checkAndReconnect, 0, 1, TimeUnit.MINUTES);
+            // only create at most 2 connections for use
+            // expand other connections (if needed) in the background
+            connectionPool = new AtomicReference<ObTableConnection[]>();
+            ObTableConnection[] curConnectionPool = new ObTableConnection[1];
+            curConnectionPool[0] = new ObTableConnection(obTable);
+            curConnectionPool[0].enableLoginWithConfigs();
+            curConnectionPool[0].init();
+
+            connectionPool.set(curConnectionPool);
+            // check connection pool size and expand every 3 seconds
+            this.expandTaskFuture = this.scheduleExecutor.scheduleAtFixedRate(this::checkAndExpandPool, 0, 3, TimeUnit.SECONDS);
+            // check connection expiration and reconnect every minute
+            this.checkAndReconnectFuture = this.scheduleExecutor.scheduleAtFixedRate(this::checkAndReconnect, 1, 1, TimeUnit.MINUTES);
         }
 
         /*
          * Get connection.
          */
         public ObTableConnection getConnection() {
-            int round = (int) (turn.getAndIncrement() % obTableConnectionPoolSize);
-            for (int i = 0; i < obTableConnectionPoolSize; i++) {
-                int idx = (round + i) % obTableConnectionPoolSize;
-                if (!connectionPool[idx].isExpired()) {
-                    return connectionPool[idx];
+            ObTableConnection[] connections = connectionPool.get();
+            long nextTurn = turn.getAndIncrement();
+            if (nextTurn == Long.MAX_VALUE) {
+                turn.set(0);
+            }
+            int round = (int) (nextTurn % connections.length);
+            for (int i = 0; i < connections.length; i++) {
+                int idx = (round + i) % connections.length;
+                if (!connections[idx].isExpired()) {
+                    return connections[idx];
                 }
             }
             return null;
         }
-        
+
+        /**
+         * This method check the current size of this connection pool
+         * and create new connections if the current size of pool does not reach the argument.
+         * This method will not impact the connections in use and create a reasonable number of connections.
+         * */
+        private void checkAndExpandPool() {
+            if (obTableConnectionPoolSize == 1 || shouldStopExpand) {
+                // stop the background task if pools reach the setting
+                this.expandTaskFuture.cancel(false);
+                return;
+            }
+            ObTableConnection[] curConnections = connectionPool.get();
+            if (curConnections.length < obTableConnectionPoolSize) {
+                int diffSize = obTableConnectionPoolSize - curConnections.length;
+                // limit expand size not too big to ensure the instant availability of connections
+                int expandSize = Math.min(diffSize, 10);
+                List<ObTableConnection> tmpConnections = new ArrayList<>();
+                for (int i = 0; i < expandSize; ++i) {
+                    try {
+                        ObTableConnection tmpConnection = new ObTableConnection(obTable);
+                        tmpConnection.init();
+                        tmpConnections.add(tmpConnection);
+                    } catch (Exception e) {
+                        log.warn("fail to init new connection, exception: {}", e.getMessage());
+                    }
+                }
+                if (tmpConnections.isEmpty()) {
+                    return;
+                }
+                ObTableConnection[] newConnections = tmpConnections.toArray(new ObTableConnection[0]);
+                ObTableConnection[] finalConnections;
+                do {
+                    // maybe some connections in pool have been set as expired
+                    // the size of current pool would not change
+                    curConnections = connectionPool.get();
+                    finalConnections = new ObTableConnection[curConnections.length + newConnections.length];
+                    System.arraycopy(curConnections, 0, finalConnections, 0, curConnections.length);
+                    System.arraycopy(newConnections, 0, finalConnections, curConnections.length, newConnections.length);
+                } while (!connectionPool.compareAndSet(curConnections, finalConnections));
+            } else if (curConnections.length == obTableConnectionPoolSize) {
+                shouldStopExpand = true;
+            }
+        }
         
         /**
          * This method checks all connections in the connection pool for expiration,  
@@ -801,17 +867,19 @@ public class ObTable extends AbstractObTable implements Lifecycle {
          * 4. Attempt to reconnect the marked connections.
          **/
         private void checkAndReconnect() {
-            // do nothing when there is only 1 connection
             if (obTableConnectionPoolSize == 1) {
+                // stop the task when there is only 1 connection
+                checkAndReconnectFuture.cancel(false);
                 return;
             }
 
             // Iterate over the connection pool to identify connections that have expired
             List<Integer> expiredConnIds = new ArrayList<>();
+            ObTableConnection[] connections = connectionPool.get();
             long num = turn.get();
-            for (int i = 1; i <= obTableConnectionPoolSize; ++i) {
-                int idx = (int) ((i + num) % obTableConnectionPoolSize);
-                if (connectionPool[idx].checkExpired()) {
+            for (int i = 1; i <= connections.length; ++i) {
+                int idx = (int) ((i + num) % connections.length);
+                if (connections[idx].checkExpired()) {
                     expiredConnIds.add(idx);
                 }
             }
@@ -820,7 +888,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             int needReconnectCount = (int) Math.ceil(expiredConnIds.size() / 3.0);
             for (int i = 0; i < needReconnectCount; i++) {
                 int idx = expiredConnIds.get(i);
-                connectionPool[idx].setExpired(true);
+                connections[idx].setExpired(true);
             }
 
             // Sleep for a predefined timeout period before attempting reconnection
@@ -835,13 +903,13 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                 int idx = expiredConnIds.get(i);
                 try {
                     if (i == 0) {
-                        connectionPool[idx].enableLoginWithConfigs();
+                        connections[idx].enableLoginWithConfigs();
                     }
-                    connectionPool[idx].reConnectAndLogin("expired");
+                    connections[idx].reConnectAndLogin("expired");
                 } catch (Exception e) {
-                    log.warn("ObTableConnectionPool::checkAndReconnect reconnect fail {}. {}", connectionPool[idx].getConnection().getUrl(), e.getMessage());
+                    log.warn("ObTableConnectionPool::checkAndReconnect reconnect fail {}. {}", connections[idx].getConnection().getUrl(), e.getMessage());
                 } finally {
-                    connectionPool[idx].setExpired(false);
+                    connections[idx].setExpired(false);
                 }
             }
         }
@@ -850,16 +918,30 @@ public class ObTable extends AbstractObTable implements Lifecycle {
          * Close.
          */
         public void close() {
-            this.cleanerExecutor.shutdown();
+            try {
+                scheduleExecutor.shutdown();
+                if (!scheduleExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
+                    scheduleExecutor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                scheduleExecutor.shutdownNow();
+            }
             if (connectionPool == null) {
                 return;
             }
-            for (int i = 0; i < connectionPool.length; i++) {
-                if (connectionPool[i] != null) {
-                    connectionPool[i].close();
-                    connectionPool[i] = null;
+            ObTableConnection[] connections = connectionPool.get();
+            for (int i = 0; i < connections.length; i++) {
+                if (connections[i] != null) {
+                    connections[i].close();
+                    connections[i] = null;
                 }
             }
+            connectionPool = null;
+        }
+
+        @VisibleForTesting
+        public int getConnectionNum() {
+            return connectionPool.get().length;
         }
     }
 

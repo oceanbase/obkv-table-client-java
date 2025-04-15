@@ -139,8 +139,8 @@ public class InsertOrUpdate extends Mutation<InsertOrUpdate> {
         if (null == getQuery()) {
             // simple InsertOrUpdate, without filter
             return new MutationResult(((ObTableClient) getClient()).insertOrUpdateWithResult(
-                getTableName(), getRowKey(), getKeyRanges(), columns.toArray(new String[0]),
-                values.toArray(), usePut));
+                getTableName(), getRowKey(), columns.toArray(new String[0]), values.toArray(),
+                usePut));
         } else {
             throw new ObTableException("InsertOrUpdate with query(filter) is not supported yet");
         }

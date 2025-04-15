@@ -70,16 +70,25 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
 
         // execute request
         ObTableQueryResult result = null;
-        for (int i = 0; i < client.getRuntimeRetryTimes(); i++) {
+        int tryTimes = 0;
+        long startExecute = System.currentTimeMillis();
+        while (true) {
+            long costMillis = System.currentTimeMillis() - startExecute;
+            if (costMillis > client.getRuntimeMaxWait()) {
+                logger.error("tableName: {} has tried " + tryTimes + " times and it has waited " + costMillis +
+                        " ms which execeeds runtime max wait timeout " + client.getRuntimeMaxWait() + " ms", tableName);
+                throw new ObTableRetryExhaustedException("query timeout and retried " + tryTimes + " times");
+            }
+            tryTimes++;
             try {
-                 result = (ObTableQueryResult) commonExecute(this.client, logger,
+                result = (ObTableQueryResult) commonExecute(this.client, logger,
                         partIdWithIndex, request, connectionRef);
                 break;
             } catch (ObTableServerCacheExpiredException e) {
                 client.syncRefreshMetadata(false);
             }  catch (ObTableEntryRefreshException e) {
                 if (e.isConnectInactive()) {
-                    client.syncRefreshMetadata(false);
+                    client.syncRefreshMetadata(true);
                 } else {
                     throw e;
                 }
@@ -88,7 +97,7 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
             }
         }
         if (result == null) {
-            throw new ObTableRetryExhaustedException("exhaust retry times " + client.getRuntimeRetryTimes());
+            throw new ObTableRetryExhaustedException("query timeout and retried " + tryTimes + " times");
         }
         
         cacheStreamNext(partIdWithIndex, checkObTableQueryResult(result));

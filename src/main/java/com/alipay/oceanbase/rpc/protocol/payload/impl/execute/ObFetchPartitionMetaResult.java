@@ -215,12 +215,12 @@ public class ObFetchPartitionMetaResult extends AbstractPayload {
             // data from PROXY_LOCATION_SQL_PARTITION_V4/PROXY_LOCATION_SQL_PARTITION
             partitionEntry.setTabletLsIdMap(tabletLsIdMap);
         }
-        tableEntry.setRefreshTimeMills(System.currentTimeMillis());
         tableEntry.setPartitionEntry(partitionEntry);
         tableEntry.setTableId(tableId);
         tableEntry.setPartitionNum(partitionNum);
         tableEntry.setPartitionInfo(partitionInfo);
-        tableEntry.setOdpRefreshTimeMills(createTime);
+        tableEntry.setRefreshMetaTimeMills(System.currentTimeMillis());
+        tableEntry.setODPMetaCreateTimeMills(createTime);
         tableEntry.prepare();
 
         return this;

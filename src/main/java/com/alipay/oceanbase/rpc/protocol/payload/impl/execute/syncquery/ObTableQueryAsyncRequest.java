@@ -38,7 +38,7 @@ import io.netty.buffer.ByteBuf;
 public class ObTableQueryAsyncRequest extends ObTableAbstractOperationRequest {
     private ObTableQueryRequest  obTableQueryRequest;
     private long                 querySessionId;
-    private ObQueryOperationType queryType = ObQueryOperationType.QUERY_START;
+    private ObQueryOperationType queryType           = ObQueryOperationType.QUERY_START;
 
     private boolean              allowDistributeScan = true;
 
