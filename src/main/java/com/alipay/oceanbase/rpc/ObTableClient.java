@@ -1690,6 +1690,21 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      *
+     * @param tableName table want to get for user compatible
+     * @param rowKey row key
+     * @param refresh whether to refresh
+     * @param waitForRefresh whether wait for refresh
+     * @param needFetchAll whether need fetch all
+     * @return ObPair of partId and table
+     * @throws Exception exception
+     */
+    public ObPair<Long, ObTableParam> getTable(String tableName, Object[] rowKey,
+                                                             boolean refresh, boolean waitForRefresh, boolean needFetchAll)
+            throws Exception {
+        return getTableBySingleRowKey(tableName, rowKey, refresh, waitForRefresh, needFetchAll);
+    }
+    /**
+     *
      * @param tableName table want to get
      * @param rowKey row key
      * @param refresh whether to refresh
@@ -1703,6 +1718,27 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         ObServerRoute route = getRoute(false);
         return getTable(tableName, rowKey, refresh, waitForRefresh, route);
     }
+
+    /**
+     *
+     * @param tableName table want to get for user compatible
+     * @param rowKey row key
+     * @param refresh whether to refresh
+     * @param waitForRefresh whether wait for refresh
+     * @param route ObServer route
+     * @return ObPair of partId and table
+     * @throws Exception exception
+     */
+    public ObPair<Long, ObTableParam> getTable(String tableName,
+                                                                      Object[] rowKey,
+                                                                      boolean refresh,
+                                                                      boolean waitForRefresh,
+                                                                      boolean needFetchAll,
+                                                                      ObServerRoute route) throws Exception {
+        
+        return getTableBySingleRowKeyWithRoute(tableName, rowKey, refresh, waitForRefresh, needFetchAll, route);
+    }
+
 
     /**
      *
