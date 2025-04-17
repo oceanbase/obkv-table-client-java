@@ -334,11 +334,14 @@ public class TableLocations {
                         throw e;
                     }
                     long schemaVersion = tableEntry.getSchemaVersion();
+                    logger.warn("[latency monitor] old schema_version is: {}", schemaVersion);
+                    tableEntry = locations.get(tableName);
                     // sleep over waiting interval of refreshing meta to refresh meta
                     long interval = System.currentTimeMillis()
                                     - tableEntry.getRefreshMetaTimeMills();
-                    if (interval > 300) {
-                        Thread.sleep(interval - 300);
+                    logger.warn("[latency monitor] interval is: {}", interval);
+                    if (interval < 300) {
+                        Thread.sleep(300 - interval);
                     }
                     tableEntry = locations.get(tableName);
                     // if schema_version has been updated, directly retry
@@ -461,11 +464,14 @@ public class TableLocations {
                         throw e;
                     }
                     long schemaVersion = tableEntry.getSchemaVersion();
+                    logger.warn("[latency monitor] old schema_version is: {}", schemaVersion);
+                    tableEntry = locations.get(tableName);
                     // sleep over waiting interval of refreshing meta to refresh meta
                     long interval = System.currentTimeMillis()
                                     - tableEntry.getRefreshMetaTimeMills();
-                    if (interval > 300) {
-                        Thread.sleep(interval - 300);
+                    logger.warn("[latency monitor] interval is: {}", interval);
+                    if (interval < 300) {
+                        Thread.sleep(300 - interval);
                     }
                     tableEntry = locations.get(tableName);
                     // if schema_version has been updated, directly retry

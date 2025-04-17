@@ -656,7 +656,6 @@ public class TableRoute {
 
     public ObTableParam getTableParamWithRoute(String tableName, Row rowkey, ObServerRoute route)
                                                                                                  throws Exception {
-        logger.info("[latency monitor] start to execute getTableParamWithRoute");
         TableEntry tableEntry = getTableEntry(tableName);
         if (tableEntry == null) {
             logger.error("tableEntry is null, tableName: {}", tableName);
@@ -815,7 +814,6 @@ public class TableRoute {
             tableEntry = refreshPartitionLocation(tableName, tabletId, tableEntry);
             obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
             replica = getPartitionLocation(obPartitionLocationInfo, route);
-            logger.warn("[latency monitor] new replica location, {}:{}", replica.getAddr().getIp(), replica.getAddr().getSvrPort());
 
             if (replica == null) {
                 RUNTIME.error("Cannot get replica by tabletId: " + tabletId);
