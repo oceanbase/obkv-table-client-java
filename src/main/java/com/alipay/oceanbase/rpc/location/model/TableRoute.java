@@ -64,7 +64,7 @@ public class TableRoute {
     private OdpInfo                   odpInfo                = null;
     private RouteTableRefresher       routeRefresher         = null;
 
-    public Lock                       refreshTableRosterLock = new ReentrantLock();
+    public final Lock                 refreshTableRosterLock = new ReentrantLock();
 
     public TableRoute(ObTableClient tableClient, ObUserAuth sysUA) {
         this.tableClient = tableClient;
@@ -656,6 +656,7 @@ public class TableRoute {
 
     public ObTableParam getTableParamWithRoute(String tableName, Row rowkey, ObServerRoute route)
                                                                                                  throws Exception {
+        logger.info("[latency monitor] start to execute getTableParamWithRoute");
         TableEntry tableEntry = getTableEntry(tableName);
         if (tableEntry == null) {
             logger.error("tableEntry is null, tableName: {}", tableName);
@@ -807,13 +808,14 @@ public class TableRoute {
             tableClient.syncRefreshMetadata(true);
             // the addr is wrong, need to refresh location
             if (logger.isInfoEnabled()) {
-                logger.info("Cannot get ObTable by addr {}, refreshing metadata.", addr);
+                logger.info("Cannot get ObTable by addr {}, refreshing metadata, tryTimes: {}.", addr, retryTimes);
             }
             // refresh tablet location based on the latest roster, in case that some of the observers have been killed
             // and used the old location
             tableEntry = refreshPartitionLocation(tableName, tabletId, tableEntry);
             obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
             replica = getPartitionLocation(obPartitionLocationInfo, route);
+            logger.warn("[latency monitor] new replica location, {}:{}", replica.getAddr().getIp(), replica.getAddr().getSvrPort());
 
             if (replica == null) {
                 RUNTIME.error("Cannot get replica by tabletId: " + tabletId);
