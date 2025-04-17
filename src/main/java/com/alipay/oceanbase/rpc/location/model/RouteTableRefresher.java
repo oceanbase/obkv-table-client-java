@@ -44,6 +44,7 @@ public class RouteTableRefresher {
      * */
     private void doRsListCheck() {
         try {
+            logger.info("[latency monitor] background refresher start");
             TableRoute tableRoute = tableClient.getTableRoute();
             ConfigServerInfo configServer = tableRoute.getConfigServerInfo();
             List<ObServerAddr> oldRsList = configServer.getRsList();
@@ -52,6 +53,7 @@ public class RouteTableRefresher {
                 tableClient.getRsListAcquireConnectTimeout(),
                 tableClient.getRsListAcquireReadTimeout(), tableClient.getRsListAcquireTryTimes(),
                 tableClient.getRsListAcquireRetryInterval());
+            logger.info("[latency monitor] finish loadRsListForConfigServerInfo");
             List<ObServerAddr> newRsList = newConfigServer.getRsList();
             boolean needRefresh = false;
             if (oldRsList.size() != newRsList.size()) {
@@ -71,6 +73,7 @@ public class RouteTableRefresher {
                     }
                 }
             }
+            logger.info("[latency monitor] finish needRefresh checking, needRefresh: {}", needRefresh);
             if (needRefresh) {
                 newConfigServer = LocationUtil.refreshIDC2RegionMapFroConfigServerInfo(
                     newConfigServer, tableClient.getParamURL(),
@@ -81,6 +84,7 @@ public class RouteTableRefresher {
                 tableRoute.setConfigServerInfo(newConfigServer);
                 tableRoute.refreshRosterByRsList(newRsList);
             }
+            logger.info("[latency monitor] finish doRsListCheck");
         } catch (Exception e) {
             logger.warn("RouteTableRefresher::doRsListCheck fail", e);
         }

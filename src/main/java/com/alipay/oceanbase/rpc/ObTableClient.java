@@ -95,7 +95,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                                                                           Constants.PROXY_SYS_USER_NAME,
                                                                                                           "");
 
-    private TableRoute                                        tableRoute                              = null;
+    private volatile TableRoute                                        tableRoute                              = null;
 
     private volatile RunningMode                              runningMode                             = RunningMode.NORMAL;
 
@@ -880,6 +880,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
         try {
             // double check timestamp
+            if (System.currentTimeMillis() - lastRefreshMetadataTimestamp < 5000L) {
+                logger
+                        .warn(
+                                "have to wait for more than 5 seconds to refresh metadata, it has refreshed at: {}",
+                                lastRefreshMetadataTimestamp);
+                return;
+            }
             if (!forceRenew
                     && System.currentTimeMillis() - lastRefreshMetadataTimestamp < metadataRefreshInterval) {
                 logger
