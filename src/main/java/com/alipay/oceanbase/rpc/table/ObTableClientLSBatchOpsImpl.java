@@ -480,7 +480,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
     private LsOperationsMap prepareByEachOperation(LsOperationsMap lsOperationsMap,
                          BatchIdxOperationPairList operationsWithIndex) throws Exception {
-        logger.info("[latency monitor] start to execute prepareByEachOperation");
         for (int i = 0; i < operationsWithIndex.size(); i++) {
             ObPair<Integer, ObTableSingleOp> operation = operationsWithIndex.get(i);
             Row rowKey = calculateRowKey(operation);
@@ -731,7 +730,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     } else {
                         if (ex instanceof ObTableTransportException &&
                                 ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
-                            logger.warn("[latency monitor] meet BOLT_TIMEOUT, need to syncRefreshMetadata, tryTimes: {}", tryTimes);
                             obTableClient.syncRefreshMetadata(true);
                         }
                         obTableClient.calculateContinuousFailure(realTableName, ex.getMessage());
