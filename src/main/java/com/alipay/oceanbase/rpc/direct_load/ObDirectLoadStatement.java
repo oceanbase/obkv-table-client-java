@@ -279,6 +279,16 @@ public class ObDirectLoadStatement {
         executor.write(bucket);
     }
 
+    public void detach() throws ObDirectLoadException {
+        try {
+            checkStatus();
+            executor.detach();
+        } catch (ObDirectLoadException e) {
+            logger.warn("statement detach failed", e);
+            throw e;
+        }
+    }
+
     public ObDirectLoadStatementExecutionId getExecutionId() throws ObDirectLoadException {
         checkStatus();
         return executor.getExecutionId();
