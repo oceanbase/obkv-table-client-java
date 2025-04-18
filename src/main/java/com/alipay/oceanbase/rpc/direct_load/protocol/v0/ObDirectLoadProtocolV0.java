@@ -28,8 +28,8 @@ import com.alipay.oceanbase.rpc.direct_load.protocol.payload.*;
 
 public class ObDirectLoadProtocolV0 implements ObDirectLoadProtocol {
 
-    public static final long         OB_VERSION_4_2_5_4 = ObGlobal.calcVersion(4, (short) 2,
-                                                            (byte) 5, (byte) 4);
+    public static final long         OB_VERSION_4_2_5_3 = ObGlobal.calcVersion(4, (short) 2,
+                                                            (byte) 5, (byte) 3);
     public static final long         OB_VERSION_4_3_0_0 = ObGlobal.calcVersion(4, (short) 3,
                                                             (byte) 0, (byte) 0);
 
@@ -115,14 +115,14 @@ public class ObDirectLoadProtocolV0 implements ObDirectLoadProtocol {
     public ObDirectLoadDetachRpc getDetachRpc(ObDirectLoadTraceId traceId)
                                                                           throws ObDirectLoadException {
         if (obVersion < OB_VERSION_4_3_0_0) {
-            if (obVersion < OB_VERSION_4_2_5_4) {
+            if (obVersion < OB_VERSION_4_2_5_3) {
                 logger.warn("detach in ob version " + ObGlobal.getObVsnString(obVersion)
                             + "is not supported, minimum version required is "
-                            + ObGlobal.getObVsnString(OB_VERSION_4_2_5_4));
+                            + ObGlobal.getObVsnString(OB_VERSION_4_2_5_3));
                 throw new ObDirectLoadNotSupportedException(
                     "detach in ob version " + ObGlobal.getObVsnString(obVersion)
                             + " is not supported, minimum version required is "
-                            + ObGlobal.getObVsnString(OB_VERSION_4_2_5_4));
+                            + ObGlobal.getObVsnString(OB_VERSION_4_2_5_3));
             }
         } else {
             logger.warn("detach in ob version " + ObGlobal.getObVsnString(obVersion)
