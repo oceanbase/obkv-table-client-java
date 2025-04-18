@@ -314,9 +314,7 @@ public class TableLocations {
             }
             logger.warn("[latency monitor] do refresh table location lock, tableName: {}", tableName);
             boolean success = false;
-            int serverSize = serverRoster.getMembers().size();
-            int retryTimes = Math.min(tableEntryRefreshTryTimes, serverSize);
-            for (int i = 0; !success && i < retryTimes; ++i) {
+            for (int i = 0; !success && i < tableEntryRefreshTryTimes; ++i) {
                 try {
                     tableEntry = loadTableEntryLocationWithPriority(serverRoster, tableEntryKey,
                         tableEntry, tabletId, tableClient.getTableEntryAcquireConnectTimeout(),
@@ -330,7 +328,7 @@ public class TableLocations {
                 } catch (ObTableSchemaVersionMismatchException e) {
                     RUNTIME.error(
                         "refresh partition location meet schema_version mismatched exception, tryTimes: {}", i, e);
-                    if (i >= retryTimes - 1) {
+                    if (i >= tableEntryRefreshTryTimes - 1) {
                         throw e;
                     }
                     long schemaVersion = tableEntry.getSchemaVersion();
@@ -357,15 +355,11 @@ public class TableLocations {
                         tableClient.syncRefreshMetadata(false);
                         tableEntryRefreshContinuousFailureCount.set(0);
                         serverRoster = tableClient.getTableRoute().getServerRoster();
-                        retryTimes = Math.min(tableEntryRefreshTryTimes, serverRoster.getMembers()
-                            .size());
                     } else if (e.isConnectInactive()) {
                         // getMetaRefreshConnection failed, maybe the server is down, so we need to refresh metadata directly
                         tableClient.syncRefreshMetadata(true);
                         tableEntryRefreshContinuousFailureCount.set(0);
                         serverRoster = tableClient.getTableRoute().getServerRoster();
-                        retryTimes = Math.min(tableEntryRefreshTryTimes, serverRoster.getMembers()
-                            .size());
                     }
                 } catch (Throwable t) {
                     RUNTIME.error("refresh partition location meet exception", t);
@@ -443,9 +437,7 @@ public class TableLocations {
             }
             logger.warn("[latency monitor] do refresh tablet locations in batch lock, tableName: {}", tableName);
             boolean success = false;
-            int serverSize = serverRoster.getMembers().size();
-            int retryTimes = Math.min(tableEntryRefreshTryTimes, serverSize);
-            for (int i = 0; !success && i < retryTimes; ++i) {
+            for (int i = 0; !success && i < tableEntryRefreshTryTimes; ++i) {
                 try {
                     tableEntry = loadTableEntryLocationInBatchWithPriority(serverRoster,
                         tableEntryKey, tableEntry,
@@ -460,7 +452,7 @@ public class TableLocations {
                 } catch (ObTableSchemaVersionMismatchException e) {
                     RUNTIME.error(
                         "refresh location in batch meet schema_version mismatched exception, tryTimes: {}", i, e);
-                    if (i >= retryTimes - 1) {
+                    if (i >= tableEntryRefreshTryTimes - 1) {
                         throw e;
                     }
                     long schemaVersion = tableEntry.getSchemaVersion();
@@ -487,15 +479,11 @@ public class TableLocations {
                         tableClient.syncRefreshMetadata(false);
                         tableEntryRefreshContinuousFailureCount.set(0);
                         serverRoster = tableClient.getTableRoute().getServerRoster();
-                        retryTimes = Math.min(tableEntryRefreshTryTimes, serverRoster.getMembers()
-                            .size());
                     } else if (e.isConnectInactive()) {
                         // getMetaRefreshConnection failed, maybe the server is down, so we need to refresh metadata directly
                         tableClient.syncRefreshMetadata(true);
                         tableEntryRefreshContinuousFailureCount.set(0);
                         serverRoster = tableClient.getTableRoute().getServerRoster();
-                        retryTimes = Math.min(tableEntryRefreshTryTimes, serverRoster.getMembers()
-                            .size());
                     }
                 } catch (Throwable t) {
                     RUNTIME.error("refresh location in batch meet exception", t);
