@@ -152,6 +152,9 @@ public class TableRoute {
 
     @VisibleForTesting
     public ObTable getFirstObTable() {
+        if (tableClient.isOdpMode()) {
+            return odpInfo.getObTable();
+        }
         return tableRoster.getTables().entrySet().iterator().next().getValue();
     }
 
