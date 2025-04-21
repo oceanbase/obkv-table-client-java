@@ -195,6 +195,8 @@ public class ObTableConnection {
                 // no need to retry when the username or password is wrong.
                 if (e instanceof ObTableAuthException) {
                     throw new ObTableLoginException(errMessage, e);
+                } else if (e instanceof FeatureNotSupportedException) {
+                    throw e;
                 }
             }
         }

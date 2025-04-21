@@ -2525,7 +2525,8 @@ public class LocationUtil {
         }
     }
 
-    public static void parseObVerionFromLogin(String serverVersion) {
+    public static void parseObVerionFromLogin(String serverVersion)
+                                                                   throws FeatureNotSupportedException {
         Pattern pattern;
         if (serverVersion.startsWith("OceanBase_CE")) {
             // serverVersion in CE is like "OceanBase_CE 4.0.0.0"
@@ -2540,6 +2541,10 @@ public class LocationUtil {
                 (short) Integer.parseInt(matcher.group(2)),
                 (byte) Integer.parseInt(matcher.group(3)),
                 (byte) Integer.parseInt(matcher.group(4)));
+            if (ObGlobal.obVsnMajor() < 4) {
+                throw new FeatureNotSupportedException(
+                        "The current client version supports only server version greater than or equal to 4.0.0.0");
+            }
         }
     }
 }
