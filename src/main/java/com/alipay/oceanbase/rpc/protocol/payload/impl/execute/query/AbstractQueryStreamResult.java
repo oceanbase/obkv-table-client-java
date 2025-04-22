@@ -291,6 +291,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                             if (e instanceof ObTableTransportException
                                 && ((ObTableTransportException) e).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
                                 client.syncRefreshMetadata(true);
+                                long tabletId = partIdWithIndex.getRight().getTabletId();
+                                client.refreshTableLocationByTabletId(indexTableName, tabletId);
                             }
                             client.calculateContinuousFailure(indexTableName, e.getMessage());
                             throw e;

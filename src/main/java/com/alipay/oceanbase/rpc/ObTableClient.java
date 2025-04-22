@@ -572,6 +572,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         if (ex instanceof ObTableTransportException &&
                                 ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
                             syncRefreshMetadata(true);
+                            TableEntry entry = tableRoute.getTableEntry(tableName);
+                            long partId = tableRoute.getPartId(entry, rowKey);
+                            long tabletId = tableRoute.getTabletIdByPartId(entry, partId);
+                            tableRoute.refreshPartitionLocation(tableName, tabletId, entry);
                         }
                         String logMessage;
                         if (ex instanceof ObTableException) {
@@ -786,6 +790,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         if (ex instanceof ObTableTransportException &&
                                 ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
                             syncRefreshMetadata(true);
+                            TableEntry entry = tableRoute.getTableEntry(tableName);
+                            long partId = tableRoute.getPartId(entry, callback.getRowKey());
+                            long tabletId = tableRoute.getTabletIdByPartId(entry, partId);
+                            tableRoute.refreshPartitionLocation(tableName, tabletId, entry);
                         }
                         String logMessage;
                         if (ex instanceof ObTableException) {

@@ -676,7 +676,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     }
                 } else if (ex instanceof ObTableException) {
                     if (((ObTableException) ex).isNeedRefreshTableEntry()) {
-                        logger.warn("meet need refresh exception, errCode: {}, ls id: {}", ((ObTableException) ex).getErrorCode(), lsId);
+                        logger.warn("meet need refresh exception, errCode: {}, ls id: {}, errMsg: {}", ((ObTableException) ex).getErrorCode(), lsId, ex.getMessage());
                         if ((((ObTableException) ex).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode ||
                                 ((ObTableException) ex).getErrorCode() == ResultCodes.OB_SCHEMA_ERROR.errorCode)
                                 && obTableClient.isTableGroupName(tableName)
@@ -731,6 +731,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         if (ex instanceof ObTableTransportException &&
                                 ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
                             obTableClient.syncRefreshMetadata(true);
+                            obTableClient.refreshTabletLocationBatch(realTableName);
                         }
                         obTableClient.calculateContinuousFailure(realTableName, ex.getMessage());
                         throw ex;
