@@ -534,7 +534,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     public void partitionExecute(ObTableSingleOpResult[] results,
                                  Map.Entry<Long, TabletOperationsMap> lsOperation)
             throws Exception {
-        logger.info("[latency monitor] start to execute partitionExecute");
         long lsId = lsOperation.getKey();
         TabletOperationsMap tabletOperationsMap = lsOperation.getValue();
         if (tabletOperationsMap.isEmpty()) {
@@ -635,6 +634,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         }
                     }
                 }
+                logger.warn("[latency monitor] ls_id: {}, tryTimes: {}", lsId, tryTimes);
                 ObPayload result = subObTable.execute(tableLsOpRequest);
                 if (result != null && result.getPcode() == Pcodes.OB_TABLE_API_MOVE) {
                     ObTableApiMove moveResponse = (ObTableApiMove) result;
