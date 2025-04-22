@@ -17,6 +17,8 @@
 
 package com.alipay.oceanbase.rpc.location.model;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
+import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.table.*;
 
 import java.util.Map;
@@ -41,11 +43,17 @@ public class OdpInfo {
     }
 
     public void buildOdpTable(String tenantName, String fullUserName, String password,
-                              String database, ObTableClientType clientType, Properties properties,
+                              String database, ObTableClient.RunningMode runningMode, Properties properties,
                               Map<String, Object> tableConfigs) throws Exception {
-        this.obTable = new ObTable.Builder(addr, port)
-            .setLoginInfo(tenantName, fullUserName, password, database, clientType)
-            .setProperties(properties).setConfigs(tableConfigs).build();
+
+        this.obTable = new ObTable.Builder(addr, port) //
+                .setLoginInfo(tenantName, fullUserName, password, database, ObTableClientType.JAVA_TABLE_CLIENT) //
+                .setProperties(properties).setConfigs(tableConfigs).build();
+        if (ObGlobal.isDistributedExecSupport() && runningMode == ObTableClient.RunningMode.HBASE) { // support distributed execute, login again
+            this.obTable = new ObTable.Builder(addr, port)
+                    .setLoginInfo(tenantName, fullUserName, password, database, ObTableClientType.JAVA_HBASE_CLIENT)
+                    .setProperties(properties).setConfigs(tableConfigs).build();
+        }
     }
 
     public ObTable getObTable() {

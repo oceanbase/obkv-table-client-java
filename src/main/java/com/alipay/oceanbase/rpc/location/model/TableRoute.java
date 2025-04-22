@@ -174,11 +174,11 @@ public class TableRoute {
         }
     }
 
-    public void buildOdpInfo(String odpAddr, int odpPort, ObTableClientType clientType)
+    public void buildOdpInfo(String odpAddr, int odpPort, ObTableClient.RunningMode runningMode)
                                                                                        throws Exception {
         this.odpInfo = new OdpInfo(odpAddr, odpPort);
         this.odpInfo.buildOdpTable(tableClient.getTenantName(), tableClient.getFullUserName(),
-            tableClient.getPassword(), tableClient.getDatabase(), clientType,
+            tableClient.getPassword(), tableClient.getDatabase(), runningMode,
             tableClient.getProperties(), tableClient.getTableConfigs());
     }
 

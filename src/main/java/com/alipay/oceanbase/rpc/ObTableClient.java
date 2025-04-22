@@ -18,7 +18,6 @@
 package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.bolt.transport.TransportCodes;
-import com.alibaba.fastjson.JSON;
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.constant.Constants;
 import com.alipay.oceanbase.rpc.exception.*;
@@ -53,21 +52,16 @@ import org.slf4j.Logger;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.alipay.oceanbase.rpc.constant.Constants.*;
-import static com.alipay.oceanbase.rpc.location.LocationUtil.*;
 import static com.alipay.oceanbase.rpc.location.model.ObServerRoute.STRONG_READ;
-import static com.alipay.oceanbase.rpc.location.model.TableEntry.HBASE_ROW_KEY_ELEMENT;
-import static com.alipay.oceanbase.rpc.location.model.partition.ObPartIdCalculator.*;
 import static com.alipay.oceanbase.rpc.property.Property.*;
 import static com.alipay.oceanbase.rpc.protocol.payload.Constants.INVALID_TABLET_ID;
 import static com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType.*;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
-import static java.lang.String.format;
 
 public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private static final Logger                               logger                                  = getLogger(ObTableClient.class);
@@ -353,15 +347,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         if (odpMode) {
             try {
-                odpTable = new ObTable.Builder(odpAddr, odpPort) //
-                    .setLoginInfo(tenantName, fullUserName, password, database, ObTableClientType.JAVA_TABLE_CLIENT) //
-                    .setProperties(getProperties()).setConfigs(TableConfigs).build();
-                // Observer version has been obtained at this point
-                if (ObGlobal.isDistributedExecSupport() && runningMode == RunningMode.HBASE) { // support distributed execute, login again
-                    odpTable = new ObTable.Builder(odpAddr, odpPort) //
-                            .setLoginInfo(tenantName, fullUserName, password, database, ObTableClientType.JAVA_HBASE_CLIENT) //
-                            .setProperties(getProperties()).setConfigs(TableConfigs).build();
-                }
+                tableRoute.buildOdpInfo(odpAddr, odpPort, runningMode);
             } catch (Exception e) {
                 logger
                     .warn(
