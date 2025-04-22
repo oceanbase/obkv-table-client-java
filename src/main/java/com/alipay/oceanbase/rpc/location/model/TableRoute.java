@@ -528,93 +528,49 @@ public class TableRoute {
     public TableEntry refreshPartitionLocation(String tableName, long tabletId, TableEntry entry)
                                                                                                  throws Exception {
         TableEntry tableEntry = entry == null ? tableLocations.getTableEntry(tableName) : entry;
-        long runtimeMaxWait = tableClient.getRuntimeMaxWait();
-        int retryTimes = 0;
-        long start = System.currentTimeMillis();
-        while (true) {
-            long costMillis = System.currentTimeMillis() - start;
-            if (costMillis > runtimeMaxWait) {
-                throw new ObTableTimeoutExcetion("it has tried " + retryTimes
-                                                 + " times and it has waited " + costMillis
-                                                 + "/ms which exceeds response timeout "
-                                                 + runtimeMaxWait + "/ms");
-            }
-            try {
-                return tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
-                    serverRoster, sysUA);
-            } catch (ObTableSchemaVersionMismatchException e) {
-                logger.warn(
-                    "refresh partition location meet schema version mismatched, tableName: {}",
+        try {
+            return tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
+                serverRoster, sysUA);
+        } catch (ObTableGetException e) {
+            logger
+                .warn(
+                    "refresh partition location meets tableEntry not initialized exception, tableName: {}",
                     tableName);
-                throw e;
-            } catch (ObTableTryLockTimeoutException e) {
-                // if try lock timeout, need to retry
-                logger.warn("wait to try lock to timeout when refresh table meta, tryTimes: {}",
-                    retryTimes, e);
-                retryTimes++;
-            } catch (ObTableGetException e) {
-                logger
-                    .warn(
-                        "refresh partition location meets tableEntry not initialized exception, tableName: {}",
-                        tableName);
-                if (e.getMessage().contains("Need to fetch meta")) {
-                    tableEntry = refreshMeta(tableName);
-                    return tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
+            if (e.getMessage().contains("Need to fetch meta")) {
+                tableEntry = refreshMeta(tableName);
+                return tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
                         serverRoster, sysUA);
-                }
-                throw e;
-            } catch (Throwable t) {
-                logger.error(
-                    "refresh partition location meets exception, tableName: {}, error message: {}",
-                    tableName, t.getMessage());
-                throw t;
             }
+            throw e;
+        } catch (Throwable t) {
+            logger.error(
+                "refresh partition location meets exception, tableName: {}, error message: {}",
+                tableName, t.getMessage());
+            throw t;
         }
     }
 
     public TableEntry refreshTabletLocationBatch(String tableName) throws Exception {
         TableEntry tableEntry = tableLocations.getTableEntry(tableName);
-        long runtimeMaxWait = tableClient.getRuntimeMaxWait();
-        int retryTimes = 0;
-        long start = System.currentTimeMillis();
-        while (true) {
-            long costMillis = System.currentTimeMillis() - start;
-            if (costMillis > runtimeMaxWait) {
-                throw new ObTableTimeoutExcetion("it has tried " + retryTimes
-                                                 + " times and it has waited " + costMillis
-                                                 + "/ms which exceeds response timeout "
-                                                 + runtimeMaxWait + "/ms");
-            }
-            try {
+        try {
+            return tableLocations.refreshTabletLocationBatch(tableEntry, tableName,
+                serverRoster, sysUA);
+        } catch (ObTableGetException e) {
+            logger
+                .warn(
+                    "refresh location in batch meets tableEntry not initialized exception, tableName: {}",
+                    tableName);
+            if (e.getMessage().contains("Need to fetch meta")) {
+                tableEntry = refreshMeta(tableName);
                 return tableLocations.refreshTabletLocationBatch(tableEntry, tableName,
                     serverRoster, sysUA);
-            } catch (ObTableSchemaVersionMismatchException e) {
-                logger.warn(
-                    "refresh location in batch meet schema version mismatched, tableName: {}",
-                    tableName);
-                throw e;
-            } catch (ObTableTryLockTimeoutException e) {
-                // if try lock timeout, need to retry
-                logger.warn("wait to try lock to timeout when refresh table meta, tryTimes: {}",
-                    retryTimes, e);
-                retryTimes++;
-            } catch (ObTableGetException e) {
-                logger
-                    .warn(
-                        "refresh location in batch meets tableEntry not initialized exception, tableName: {}",
-                        tableName);
-                if (e.getMessage().contains("Need to fetch meta")) {
-                    tableEntry = refreshMeta(tableName);
-                    return tableLocations.refreshTabletLocationBatch(tableEntry, tableName,
-                        serverRoster, sysUA);
-                }
-                throw e;
-            } catch (Throwable t) {
-                logger.error(
+            }
+            throw e;
+        } catch (Throwable t) {
+            logger.error(
                     "refresh location in batch meets exception, tableName: {}, error message: {}",
                     tableName, t.getMessage());
-                throw t;
-            }
+            throw t;
         }
     }
 
@@ -622,27 +578,7 @@ public class TableRoute {
      * get or refresh table meta information in odp mode
      * */
     public TableEntry refreshODPMeta(String tableName, boolean forceRefresh) throws Exception {
-        long runtimeMaxWait = tableClient.getRuntimeMaxWait();
-        int retryTime = 0;
-        long start = System.currentTimeMillis();
-        while (true) {
-            long costMillis = System.currentTimeMillis() - start;
-            if (costMillis > runtimeMaxWait) {
-                throw new ObTableTimeoutExcetion("it has tried " + retryTime
-                                                 + " times and it has waited " + costMillis
-                                                 + "/ms which exceeds response timeout "
-                                                 + runtimeMaxWait + "/ms");
-            }
-            try {
-                return odpTableLocations.refreshODPMeta(tableName, forceRefresh,
-                    odpInfo.getObTable());
-            } catch (ObTableTryLockTimeoutException e) {
-                // if try lock timeout, need to retry
-                logger.warn("wait to try lock to timeout when refresh table meta, tryTimes: {}",
-                    retryTime, e);
-                retryTime++;
-            }
-        }
+        return odpTableLocations.refreshODPMeta(tableName, forceRefresh, odpInfo.getObTable());
     }
 
     /**

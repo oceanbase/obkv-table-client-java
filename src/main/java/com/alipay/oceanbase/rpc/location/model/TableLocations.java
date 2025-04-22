@@ -92,7 +92,7 @@ public class TableLocations {
      */
     public TableEntry refreshMeta(String tableName, ServerRoster serverRoster,
                                   final ObUserAuth sysUA) throws Exception {
-        int tableEntryRefreshTryTimes = tableClient.getTableEntryRefreshTryTimes();
+        long runtimeMaxWait = tableClient.getRuntimeMaxWait();
         int tableEntryRefreshContinuousFailureCeiling = tableClient
             .getTableEntryRefreshContinuousFailureCeiling();
         long tableEntryRefreshLockTimeout = tableClient.getTableEntryRefreshLockTimeout();
@@ -113,36 +113,55 @@ public class TableLocations {
                 return tableEntry;
             }
         }
-        Lock lock = getMetaRefreshLock(tableName);
-        logger.warn("[latency monitor] try to acquire refresh table meta lock, tableName: {}", tableName);
-        boolean acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
-        if (!acquired) {
-            String errMsg = "try to lock tableEntry refreshing timeout, tableName:" + tableName
-                            + " , timeout:" + tableEntryRefreshLockTimeout + ".";
-            RUNTIME.error(errMsg);
-            logger.warn("[latency monitor] fail to acquire refresh table meta lock, tableName: {}", tableName);
-            throw new ObTableTryLockTimeoutException(errMsg);
-        }
         long start = System.currentTimeMillis();
+        Lock lock = getMetaRefreshLock(tableName);
+        boolean acquired = false;
         try {
-            logger.warn("[latency monitor] success to acquire refresh table meta lock, tableName: {}", tableName);
-            tableEntry = locations.get(tableName);
-            if (tableEntry != null) {
-                long current = System.currentTimeMillis();
-                long fetchMetaInterval = current - tableEntry.getRefreshMetaTimeMills();
-                // if refreshed within 100 ms, do not refresh
-                if (fetchMetaInterval < refreshMetaInterval) {
-                    logger
-                        .info(
-                            "punish table entry {} : table entry refresh time {} punish interval {} current time {}.",
-                            tableName, tableEntry.getRefreshMetaTimeMills(), refreshMetaInterval,
-                            current);
-                    return tableEntry;
+            int tryTimes = 0;
+            long startExecute = System.currentTimeMillis();
+            while (true) {
+                long costMillis = System.currentTimeMillis() - startExecute;
+                if (costMillis > runtimeMaxWait) {
+                    logger.error("table name: {} it has tried " + tryTimes
+                            + " times to refresh table meta and it has waited " + costMillis + " ms"
+                            + " which exceeds runtime max wait timeout "
+                            + runtimeMaxWait + " ms", tableName);
+                    throw new ObTableTimeoutExcetion("it has tried " + tryTimes
+                            + " times and it has waited " + costMillis
+                            + "ms which exceeds runtime max wait timeout "
+                            + runtimeMaxWait + " ms");
                 }
-            }
-            for (int i = 0; i < tableEntryRefreshTryTimes; ++i) {
+                tryTimes++;
                 try {
+                    logger.warn("[latency monitor] try to acquire refresh table meta lock, tableName: {}", tableName);
+                    acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
+                    if (!acquired) {
+                        String errMsg = "try to lock tableEntry refreshing timeout, tableName:" + tableName
+                                + " , timeout:" + tableEntryRefreshLockTimeout + ".";
+                        RUNTIME.warn(errMsg);
+                        logger.warn("[latency monitor] fail to acquire refresh table meta lock, tableName: {}", tableName);
+                        throw new ObTableTryLockTimeoutException(errMsg);
+                    }
+                    logger.warn("[latency monitor] success to acquire refresh table meta lock, tableName: {}", tableName);
+                    tableEntry = locations.get(tableName);
+                    if (tableEntry != null) {
+                        long current = System.currentTimeMillis();
+                        long fetchMetaInterval = current - tableEntry.getRefreshMetaTimeMills();
+                        // if refreshed within 100 ms, do not refresh
+                        if (fetchMetaInterval < refreshMetaInterval) {
+                            logger
+                                    .info(
+                                            "punish table entry {} : table entry refresh time {} punish interval {} current time {}.",
+                                            tableName, tableEntry.getRefreshMetaTimeMills(), refreshMetaInterval,
+                                            current);
+                            return tableEntry;
+                        }
+                    }
                     return refreshTableEntry(tableEntry, tableName, serverRoster, sysUA);
+                } catch (ObTableTryLockTimeoutException e) {
+                    // if try lock timeout, need to retry
+                    RUNTIME.warn("wait to try lock to timeout when refresh table meta, tryTimes: {}",
+                            tryTimes, e);
                 } catch (ObTableNotExistException e) {
                     RUNTIME.error("refresh table meta meet exception", e);
                     throw e;
@@ -151,7 +170,7 @@ public class TableLocations {
                     // maybe the observers have changed if keep failing, need to refresh roster
                     if (tableEntryRefreshContinuousFailureCount.incrementAndGet() > tableEntryRefreshContinuousFailureCeiling) {
                         logger.error(LCD.convert("01-00019"),
-                            tableEntryRefreshContinuousFailureCeiling);
+                                tableEntryRefreshContinuousFailureCeiling);
                         tableClient.syncRefreshMetadata(false);
                         tableEntryRefreshContinuousFailureCount.set(0);
                         serverRoster = tableClient.getTableRoute().getServerRoster();
@@ -165,18 +184,12 @@ public class TableLocations {
                     RUNTIME.error("refresh table meta meet exception", t);
                     throw t;
                 }
-            }
-            // maybe the retry time is too small, need to instantly refresh roster
-            logger.info(
-                "refresh table entry has tried {}-times failure and will sync refresh metadata",
-                    tableEntryRefreshTryTimes);
-            tableClient.syncRefreshMetadata(false);
-            tableEntryRefreshContinuousFailureCount.set(0);
-            serverRoster = tableClient.getTableRoute().getServerRoster();
-            return refreshTableEntry(tableEntry, tableName, serverRoster, sysUA);
+            } // end while
         } finally {
             logger.warn("[latency monitor] unlock refresh table meta lock, tableName: {}, execute time: {}", tableName, System.currentTimeMillis() - start);
-            lock.unlock();
+            if (acquired) {
+                lock.unlock();
+            }
         }
     }
 
@@ -272,7 +285,7 @@ public class TableLocations {
             tabletId);
         int tableEntryRefreshContinuousFailureCeiling = tableClient
             .getTableEntryRefreshContinuousFailureCeiling();
-        int tableEntryRefreshTryTimes = tableClient.getTableEntryRefreshTryTimes();
+        long runtimeMaxWait = tableClient.getRuntimeMaxWait();
         long tableEntryRefreshLockTimeout = tableClient.getTableEntryRefreshLockTimeout();
         long lastRefreshTime = locationInfo.getLastUpdateTime();
         long tableEntryRefreshInterval = 100L;
@@ -286,51 +299,67 @@ public class TableLocations {
             return tableEntry;
         }
         Lock lock = locationInfo.refreshLock;
+        boolean acquired = false;
         logger.warn("[latency monitor] try to acquire refresh table location lock, tableName: {}", tableName);
-        boolean acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
-        if (!acquired) {
-            String errMsg = "try to lock tablet location refreshing timeout " + " ,tableName:"
-                            + tableName + " , timeout:" + tableEntryRefreshLockTimeout + ".";
-            RUNTIME.error(errMsg);
-            throw new ObTableTryLockTimeoutException(errMsg);
-        }
         long start = System.currentTimeMillis();
         try {
-            logger.warn("[latency monitor] success acquire refresh table location lock, tableName: {}", tableName);
-            lastRefreshTime = locationInfo.getLastUpdateTime();
-            currentTime = System.currentTimeMillis();
-            if (currentTime - lastRefreshTime < tableEntryRefreshInterval) {
-                logger
-                    .info(
-                        "punish table entry {}, last partition location refresh time {}, punish interval {}, current time {}.",
-                        tableName, lastRefreshTime, tableEntryRefreshInterval, currentTime);
-                return tableEntry;
-            }
-            logger.warn("[latency monitor] do refresh table location lock, tableName: {}", tableName);
-            boolean success = false;
-            for (int i = 0; !success && i < tableEntryRefreshTryTimes; ++i) {
+            int tryTimes = 0;
+            long startExecute = System.currentTimeMillis();
+            while (true) {
+                long costMillis = System.currentTimeMillis() - startExecute;
+                if (costMillis > runtimeMaxWait) {
+                    logger.error("table name: {} it has tried " + tryTimes
+                            + " times to refresh tablet location and it has waited " + costMillis + " ms"
+                            + " which exceeds runtime max wait timeout "
+                            + runtimeMaxWait + " ms", tableName);
+                    throw new ObTableTimeoutExcetion("it has tried " + tryTimes
+                            + " times and it has waited " + costMillis
+                            + "ms which exceeds runtime max wait timeout "
+                            + runtimeMaxWait + " ms");
+                }
+                tryTimes++;
                 try {
+                    acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
+                    if (!acquired) {
+                        String errMsg = "try to lock tablet location refreshing timeout " + " ,tableName:"
+                                + tableName + " , timeout:" + tableEntryRefreshLockTimeout + ".";
+                        RUNTIME.warn(errMsg);
+                        throw new ObTableTryLockTimeoutException(errMsg);
+                    }
+                    logger.warn("[latency monitor] success acquire refresh table location lock, tableName: {}", tableName);
+                    locationInfo = tableEntry.getPartitionEntry().getPartitionInfo(tabletId);
+                    lastRefreshTime = locationInfo.getLastUpdateTime();
+                    currentTime = System.currentTimeMillis();
+                    if (currentTime - lastRefreshTime < tableEntryRefreshInterval) {
+                        logger
+                                .info(
+                                        "punish table entry {}, last partition location refresh time {}, punish interval {}, current time {}.",
+                                        tableName, lastRefreshTime, tableEntryRefreshInterval, currentTime);
+                        return tableEntry;
+                    }
+                    logger.warn("[latency monitor] do refresh table location lock, tableName: {}", tableName);
                     tableEntry = loadTableEntryLocationWithPriority(serverRoster, tableEntryKey,
-                        tableEntry, tabletId, tableClient.getTableEntryAcquireConnectTimeout(),
-                        tableClient.getTableEntryAcquireSocketTimeout(),
-                        tableClient.getServerAddressPriorityTimeout(), sysUA, !tableClient
-                            .getServerCapacity().isSupportDistributedExecute() /* withLsId */);
-                    success = true;
+                            tableEntry, tabletId, tableClient.getTableEntryAcquireConnectTimeout(),
+                            tableClient.getTableEntryAcquireSocketTimeout(),
+                            tableClient.getServerAddressPriorityTimeout(), sysUA, !tableClient
+                                    .getServerCapacity().isSupportDistributedExecute() /* withLsId */);
+                    break;
+                } catch (ObTableTryLockTimeoutException e) {
+                    // if try lock timeout, need to retry
+                    RUNTIME.warn("wait to try lock to timeout when refresh table meta, tryTimes: {}",
+                            tryTimes, e);
                 } catch (ObTableNotExistException e) {
                     RUNTIME.error("refresh partition location meet table not existed exception", e);
                     throw e;
                 } catch (ObTableSchemaVersionMismatchException e) {
                     RUNTIME.error(
-                        "refresh partition location meet schema_version mismatched exception, tryTimes: {}", i, e);
-                    if (i >= tableEntryRefreshTryTimes - 1) {
-                        throw e;
-                    }
+                            "refresh partition location meet schema_version mismatched exception, tryTimes: {}", tryTimes, e);
                     long schemaVersion = tableEntry.getSchemaVersion();
                     logger.warn("[latency monitor] old schema_version is: {}", schemaVersion);
                     tableEntry = locations.get(tableName);
                     // sleep over waiting interval of refreshing meta to refresh meta
                     long interval = System.currentTimeMillis()
-                                    - tableEntry.getRefreshMetaTimeMills();
+                            - tableEntry.getRefreshMetaTimeMills();
                     logger.warn("[latency monitor] interval is: {}", interval);
                     if (interval < 100) {
                         Thread.sleep(100 - interval);
@@ -341,11 +370,11 @@ public class TableLocations {
                         tableEntry = refreshMeta(tableName, serverRoster, sysUA);
                     }
                 } catch (ObTableEntryRefreshException e) {
-                    RUNTIME.error("refresh partition location meet entry refresh exception", e);
+                    RUNTIME.error("refresh partition location meet entry refresh exception, tryTimes: {}", tryTimes, e);
                     // maybe the observers have changed if keep failing, need to refresh roster
                     if (tableEntryRefreshContinuousFailureCount.incrementAndGet() > tableEntryRefreshContinuousFailureCeiling) {
                         logger.error(LCD.convert("01-00019"),
-                            tableEntryRefreshContinuousFailureCeiling);
+                                tableEntryRefreshContinuousFailureCeiling);
                         tableClient.syncRefreshMetadata(false);
                         tableEntryRefreshContinuousFailureCount.set(0);
                         serverRoster = tableClient.getTableRoute().getServerRoster();
@@ -359,14 +388,7 @@ public class TableLocations {
                     RUNTIME.error("refresh partition location meet exception", t);
                     throw t;
                 }
-            }
-            if (!success) {
-                String errorMsg = String.format(
-                    "Failed to refresh tablet location. Key=%s, TabletId=%d", tableEntryKey,
-                    tabletId);
-                RUNTIME.error(LCD.convert("01-00020"), tableEntryKey, tableEntry);
-                throw new ObTableEntryRefreshException(errorMsg);
-            }
+            } // end while
             tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
             locations.put(tableName, tableEntry);
             tableEntryRefreshContinuousFailureCount.set(0);
@@ -374,9 +396,11 @@ public class TableLocations {
         } finally {
             logger
                 .warn(
-                    "[latency monitor] finish refresh table location lock, tableName: {}, execute time: {}",
-                    tableName, System.currentTimeMillis() - start);
-            lock.unlock();
+                        "[latency monitor] finish refresh table location lock, tableName: {}, execute time: {}",
+                        tableName, System.currentTimeMillis() - start);
+            if (acquired) {
+                lock.unlock();
+            }
         }
     }
 
@@ -394,7 +418,7 @@ public class TableLocations {
         }
         int tableEntryRefreshContinuousFailureCeiling = tableClient
             .getTableEntryRefreshContinuousFailureCeiling();
-        int tableEntryRefreshTryTimes = tableClient.getTableEntryRefreshTryTimes();
+        long runtimeMaxWait = tableClient.getRuntimeMaxWait();
         long tableEntryRefreshLockTimeout = tableClient.getTableEntryRefreshLockTimeout();
         long lastRefreshTime = tableEntry.getPartitionEntry().getLastRefreshAllTime();
         long tableEntryRefreshInterval = 100L;
@@ -408,53 +432,67 @@ public class TableLocations {
             return tableEntry;
         }
         Lock lock = getLocationBatchRefreshLock(tableName);
+        boolean acquired = false;
         logger.warn("[latency monitor] try to acquire refresh tablet locations in batch lock, tableName: {}", tableName);
-        boolean acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
-        if (!acquired) {
-            logger.warn("[latency monitor] fail to acquire refresh tablet locations in batch lock, tableName: {}", tableName);
-            String errMsg = "try to lock locations refreshing in batch timeout " + " ,tableName:"
-                            + tableName + " , timeout:" + tableEntryRefreshLockTimeout + ".";
-            RUNTIME.error(errMsg);
-            throw new ObTableTryLockTimeoutException(errMsg);
-        }
         long start = System.currentTimeMillis();
         try {
-            logger.warn("[latency monitor] success to acquire refresh tablet locations in batch lock, tableName: {}", tableName);
-            lastRefreshTime = tableEntry.getPartitionEntry().getLastRefreshAllTime();
-            currentTime = System.currentTimeMillis();
-            if (currentTime - lastRefreshTime < tableEntryRefreshInterval) {
-                logger
-                    .info(
-                        "punish table entry {}, last batch location refresh time {}, punish interval {}, current time {}.",
-                        tableName, lastRefreshTime, tableEntryRefreshInterval, currentTime);
-                return tableEntry;
-            }
-            logger.warn("[latency monitor] do refresh tablet locations in batch lock, tableName: {}", tableName);
-            boolean success = false;
-            for (int i = 0; !success && i < tableEntryRefreshTryTimes; ++i) {
+            int tryTimes = 0;
+            long startExecute = System.currentTimeMillis();
+            while (true) {
+                long costMillis = System.currentTimeMillis() - startExecute;
+                if (costMillis > runtimeMaxWait) {
+                    logger.error("table name: {} it has tried " + tryTimes
+                            + " times to refresh tablet location in batch and it has waited " + costMillis + " ms"
+                            + " which exceeds runtime max wait timeout "
+                            + runtimeMaxWait + " ms", tableName);
+                    throw new ObTableTimeoutExcetion("it has tried " + tryTimes
+                            + " times and it has waited " + costMillis
+                            + "ms which exceeds runtime max wait timeout "
+                            + runtimeMaxWait + " ms");
+                }
+                tryTimes++;
                 try {
+                    acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
+                    if (!acquired) {
+                        logger.warn("[latency monitor] fail to acquire refresh tablet locations in batch lock, tableName: {}", tableName);
+                        String errMsg = "try to lock locations refreshing in batch timeout " + " ,tableName:"
+                                + tableName + " , timeout:" + tableEntryRefreshLockTimeout + ".";
+                        RUNTIME.warn(errMsg);
+                        throw new ObTableTryLockTimeoutException(errMsg);
+                    }
+                    logger.warn("[latency monitor] success to acquire refresh tablet locations in batch lock, tableName: {}", tableName);
+                    lastRefreshTime = tableEntry.getPartitionEntry().getLastRefreshAllTime();
+                    currentTime = System.currentTimeMillis();
+                    if (currentTime - lastRefreshTime < tableEntryRefreshInterval) {
+                        logger
+                                .info(
+                                        "punish table entry {}, last batch location refresh time {}, punish interval {}, current time {}.",
+                                        tableName, lastRefreshTime, tableEntryRefreshInterval, currentTime);
+                        return tableEntry;
+                    }
+                    logger.warn("[latency monitor] do refresh tablet locations in batch lock, tableName: {}", tableName);
                     tableEntry = loadTableEntryLocationInBatchWithPriority(serverRoster,
-                        tableEntryKey, tableEntry,
-                        tableClient.getTableEntryAcquireConnectTimeout(),
-                        tableClient.getTableEntryAcquireSocketTimeout(),
-                        tableClient.getServerAddressPriorityTimeout(), sysUA, !tableClient
-                            .getServerCapacity().isSupportDistributedExecute() /* withLsId */);
-                    success = true;
+                            tableEntryKey, tableEntry,
+                            tableClient.getTableEntryAcquireConnectTimeout(),
+                            tableClient.getTableEntryAcquireSocketTimeout(),
+                            tableClient.getServerAddressPriorityTimeout(), sysUA, !tableClient
+                                    .getServerCapacity().isSupportDistributedExecute() /* withLsId */);
+                    break;
+                } catch (ObTableTryLockTimeoutException e) {
+                    // if try lock timeout, need to retry
+                    RUNTIME.warn("wait to try lock to timeout when refresh table meta, tryTimes: {}",
+                            tryTimes, e);
                 } catch (ObTableNotExistException e) {
                     RUNTIME.error("refresh location in batch meet table not existed exception", e);
                     throw e;
                 } catch (ObTableSchemaVersionMismatchException e) {
                     RUNTIME.error(
-                        "refresh location in batch meet schema_version mismatched exception, tryTimes: {}", i, e);
-                    if (i >= tableEntryRefreshTryTimes - 1) {
-                        throw e;
-                    }
+                            "refresh location in batch meet schema_version mismatched exception, tryTimes: {}", tryTimes, e);
                     long schemaVersion = tableEntry.getSchemaVersion();
                     logger.warn("[latency monitor] old schema_version is: {}", schemaVersion);
                     tableEntry = locations.get(tableName);
                     // sleep over waiting interval of refreshing meta to refresh meta
-                    long interval = System.currentTimeMillis()
-                                    - tableEntry.getRefreshMetaTimeMills();
+                    long interval = System.currentTimeMillis() - tableEntry.getRefreshMetaTimeMills();
                     logger.warn("[latency monitor] interval is: {}", interval);
                     if (interval < 100) {
                         Thread.sleep(100 - interval);
@@ -469,7 +507,7 @@ public class TableLocations {
                     // maybe the observers have changed if keep failing, need to refresh roster
                     if (tableEntryRefreshContinuousFailureCount.incrementAndGet() > tableEntryRefreshContinuousFailureCeiling) {
                         logger.error(LCD.convert("01-00019"),
-                            tableEntryRefreshContinuousFailureCeiling);
+                                tableEntryRefreshContinuousFailureCeiling);
                         tableClient.syncRefreshMetadata(false);
                         tableEntryRefreshContinuousFailureCount.set(0);
                         serverRoster = tableClient.getTableRoute().getServerRoster();
@@ -483,22 +521,17 @@ public class TableLocations {
                     RUNTIME.error("refresh location in batch meet exception", t);
                     throw t;
                 }
-            }
-            if (!success) {
-                String errorMsg = String.format(
-                    "Failed to refresh tablet locations in batch. Key=%s", tableEntryKey);
-                RUNTIME.error(LCD.convert("01-00020"), tableEntryKey, tableEntry);
-                throw new ObTableEntryRefreshException(errorMsg);
-            }
+            } // end while
             tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
             locations.put(tableName, tableEntry);
             tableEntryRefreshContinuousFailureCount.set(0);
             return tableEntry;
         } finally {
             logger.warn("[latency monitor] unlock refresh tablet locations in batch lock, tableName: {}, execute time: {}", tableName, System.currentTimeMillis() - start);
-            lock.unlock();
+            if (acquired) {
+                lock.unlock();
+            }
         }
-
     }
 
     /**
@@ -514,6 +547,7 @@ public class TableLocations {
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
         }
+        long runtimeMaxWait = tableClient.getRuntimeMaxWait();
         long reFetchInterval = tableClient.getTableEntryRefreshIntervalCeiling();
         TableEntry odpTableEntry = locations.get(tableName);
         long lastOdpCreateTimeMills = -1;
@@ -527,48 +561,60 @@ public class TableLocations {
             lastOdpCreateTimeMills = odpTableEntry.getODPMetaCreateTimeMills();
         }
         Lock lock = getMetaRefreshLock(tableName);
-        // attempt lock the refreshing action, avoiding concurrent refreshing
-        // use the time-out mechanism, avoiding the rpc hanging up
-        boolean acquired = lock.tryLock(tableClient.getODPTableEntryRefreshLockTimeout(),
-            TimeUnit.MILLISECONDS);
-        if (!acquired) {
-            String errMsg = "try to lock odpTable-entry refreshing timeout " + " ,tableName:"
-                            + tableName + " , timeout:"
-                            + tableClient.getODPTableEntryRefreshLockTimeout() + ".";
-            RUNTIME.error(errMsg);
-            throw new ObTableTryLockTimeoutException(errMsg);
-        }
+        boolean acquired = false;
+        boolean forceRenew = forceRefresh;
         try {
-            if (locations.get(tableName) != null) {
-                odpTableEntry = locations.get(tableName);
-                long interval = System.currentTimeMillis()
-                                - odpTableEntry.getRefreshMetaTimeMills();
-                // do not fetch partition meta if and only if the refresh interval is less than 0.5 seconds
-                // and no need to fore renew
-                if (interval < reFetchInterval) {
-                    if (!forceRefresh) {
-                        return odpTableEntry;
-                    }
-                    Thread.sleep(reFetchInterval - interval);
-                }
-            }
-            boolean forceRenew = forceRefresh;
-            int tableEntryRefreshTryTimes = tableClient.getTableEntryRefreshTryTimes();
-            int retryTime = 0;
-
+            int tryTimes = 0;
+            long startExecute = System.currentTimeMillis();
             while (true) {
+                long costMillis = System.currentTimeMillis() - startExecute;
+                if (costMillis > runtimeMaxWait) {
+                    logger.error("table name: {} it has tried " + tryTimes
+                            + " times to refresh odp table meta and it has waited " + costMillis + " ms"
+                            + " which exceeds runtime max wait timeout "
+                            + runtimeMaxWait + " ms", tableName);
+                    throw new ObTableTimeoutExcetion("it has tried " + tryTimes
+                            + " times and it has waited " + costMillis
+                            + "ms which exceeds runtime max wait timeout "
+                            + runtimeMaxWait + " ms");
+                }
+                tryTimes++;
                 try {
+                    // attempt lock the refreshing action, avoiding concurrent refreshing
+                    // use the time-out mechanism, avoiding the rpc hanging up
+                    acquired = lock.tryLock(tableClient.getODPTableEntryRefreshLockTimeout(),
+                            TimeUnit.MILLISECONDS);
+                    if (!acquired) {
+                        String errMsg = "try to lock odpTable-entry refreshing timeout " + " ,tableName:"
+                                + tableName + " , timeout:"
+                                + tableClient.getODPTableEntryRefreshLockTimeout() + ".";
+                        RUNTIME.warn(errMsg);
+                        throw new ObTableTryLockTimeoutException(errMsg);
+                    }
+                    if (locations.get(tableName) != null) {
+                        odpTableEntry = locations.get(tableName);
+                        long interval = System.currentTimeMillis()
+                                - odpTableEntry.getRefreshMetaTimeMills();
+                        // do not fetch partition meta if and only if the refresh interval is less than 0.5 seconds
+                        // and no need to fore renew
+                        if (interval < reFetchInterval) {
+                            if (!forceRefresh) {
+                                return odpTableEntry;
+                            }
+                            Thread.sleep(reFetchInterval - interval);
+                        }
+                    }
                     ObFetchPartitionMetaRequest request = ObFetchPartitionMetaRequest.getInstance(
-                        ObFetchPartitionMetaType.GET_PARTITION_META.getIndex(), tableName,
-                        tableClient.getClusterName(), tableClient.getTenantName(),
-                        tableClient.getDatabase(), forceRenew,
-                        odpTable.getObTableOperationTimeout()); // TODO: timeout setting need to be verified
+                            ObFetchPartitionMetaType.GET_PARTITION_META.getIndex(), tableName,
+                            tableClient.getClusterName(), tableClient.getTenantName(),
+                            tableClient.getDatabase(), forceRenew,
+                            odpTable.getObTableOperationTimeout());
                     ObPayload result = odpTable.execute(request);
                     checkODPPartitionMetaResult(lastOdpCreateTimeMills, request, result);
                     ObFetchPartitionMetaResult obFetchPartitionMetaResult = (ObFetchPartitionMetaResult) result;
                     odpTableEntry = obFetchPartitionMetaResult.getTableEntry();
                     TableEntryKey key = new TableEntryKey(tableClient.getClusterName(),
-                        tableClient.getTenantName(), tableClient.getDatabase(), tableName);
+                            tableClient.getTenantName(), tableClient.getDatabase(), tableName);
                     odpTableEntry.setTableEntryKey(key);
                     if (odpTableEntry.isPartitionTable()) {
                         switch (tableClient.getRunningMode()) {
@@ -578,19 +624,22 @@ public class TableLocations {
                                 break;
                             case NORMAL:
                                 Map<String, Integer> rowKeyElement = tableClient
-                                    .getRowKeyElement(tableName);
+                                        .getRowKeyElement(tableName);
                                 if (rowKeyElement != null) {
                                     odpTableEntry.setRowKeyElement(rowKeyElement);
                                 } else {
                                     RUNTIME.error("partition table must has row key element key ="
-                                                  + key);
+                                            + key);
                                     throw new ObTableUnexpectedException(
-                                        "partition table must has row key element key =" + key);
+                                            "partition table must has row key element key =" + key);
                                 }
                         }
                     }
                     locations.put(tableName, odpTableEntry);
-                    return odpTableEntry;
+                } catch (ObTableTryLockTimeoutException e) {
+                    // if try lock timeout, need to retry
+                    RUNTIME.warn("wait to try lock to timeout when refresh table meta, tryTimes: {}",
+                            tryTimes, e);
                 } catch (ObTableException ex) {
                     if (tableClient.getRowKeyElement(tableName) == null) {
                         // if the error is missing row key element, directly throw
@@ -602,33 +651,29 @@ public class TableLocations {
                             throw ex;
                         }
                         RUNTIME
-                            .warn(
-                                "meet exception while refreshing ODP table meta, need to retry. TableName: {}, exception: {}",
-                                tableName, ex.getMessage());
+                                .warn(
+                                        "meet exception while refreshing ODP table meta, need to retry. TableName: {}, exception: {}",
+                                        tableName, ex.getMessage());
                         forceRenew = true; // force ODP to fetch the latest partition meta
-                        retryTime++;
-                        if (retryTime >= tableEntryRefreshTryTimes) {
-                            throw new ObTableRetryExhaustedException(
-                                "meet exception while refreshing ODP table meta and "
-                                        + "exhaust retry, tableName: " + tableName, ex);
-                        }
                     } else {
                         RUNTIME
-                            .error(
-                                "meet exception while refreshing ODP table meta. TableName: {}, exception: {}",
-                                tableName, ex.getMessage());
+                                .error(
+                                        "meet exception while refreshing ODP table meta. TableName: {}, exception: {}",
+                                        tableName, ex.getMessage());
                         throw ex;
                     }
                 } catch (Exception ex) {
                     RUNTIME
-                        .error(
-                            "meet exception while refreshing ODP table meta. TableName: {}, exception: {}",
-                            tableName, ex.getMessage());
+                            .error(
+                                    "meet exception while refreshing ODP table meta. TableName: {}, exception: {}",
+                                    tableName, ex.getMessage());
                     throw ex;
                 }
-            }
+            } // end while
         } finally {
-            lock.unlock();
+            if (acquired) {
+                lock.unlock();
+            }
         }
     }
 

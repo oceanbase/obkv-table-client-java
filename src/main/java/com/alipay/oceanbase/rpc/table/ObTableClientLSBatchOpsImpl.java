@@ -611,7 +611,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 throw new ObTableTimeoutExcetion("it has tried " + tryTimes
                         + " times and it has waited " + costMillis
                         + "ms which exceeds runtime max wait timeout "
-                        + obTableClient.getRuntimeMaxWait() + "ms");
+                        + obTableClient.getRuntimeMaxWait() + " ms");
             }
             tryTimes++;
             try {
