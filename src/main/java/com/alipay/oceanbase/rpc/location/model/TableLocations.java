@@ -96,7 +96,7 @@ public class TableLocations {
         int tableEntryRefreshContinuousFailureCeiling = tableClient
             .getTableEntryRefreshContinuousFailureCeiling();
         long tableEntryRefreshLockTimeout = tableClient.getTableEntryRefreshLockTimeout();
-        long refreshMetaInterval = 300L;
+        long refreshMetaInterval = 100L;
 
         TableEntry tableEntry = locations.get(tableName);
         // avoid bad contention in high concurrent situation
@@ -275,7 +275,7 @@ public class TableLocations {
         int tableEntryRefreshTryTimes = tableClient.getTableEntryRefreshTryTimes();
         long tableEntryRefreshLockTimeout = tableClient.getTableEntryRefreshLockTimeout();
         long lastRefreshTime = locationInfo.getLastUpdateTime();
-        long tableEntryRefreshInterval = 300L;
+        long tableEntryRefreshInterval = 100L;
         long currentTime = System.currentTimeMillis();
         // do not refresh tablet location if refreshed within 300 milliseconds
         if (currentTime - lastRefreshTime < tableEntryRefreshInterval) {
@@ -332,8 +332,8 @@ public class TableLocations {
                     long interval = System.currentTimeMillis()
                                     - tableEntry.getRefreshMetaTimeMills();
                     logger.warn("[latency monitor] interval is: {}", interval);
-                    if (interval < 300) {
-                        Thread.sleep(300 - interval);
+                    if (interval < 100) {
+                        Thread.sleep(100 - interval);
                     }
                     tableEntry = locations.get(tableName);
                     // if schema_version has been updated, directly retry
@@ -397,7 +397,7 @@ public class TableLocations {
         int tableEntryRefreshTryTimes = tableClient.getTableEntryRefreshTryTimes();
         long tableEntryRefreshLockTimeout = tableClient.getTableEntryRefreshLockTimeout();
         long lastRefreshTime = tableEntry.getPartitionEntry().getLastRefreshAllTime();
-        long tableEntryRefreshInterval = 300L;
+        long tableEntryRefreshInterval = 100L;
         long currentTime = System.currentTimeMillis();
         // do not refresh tablet location if refreshed within 300 milliseconds
         if (currentTime - lastRefreshTime < tableEntryRefreshInterval) {
@@ -456,8 +456,8 @@ public class TableLocations {
                     long interval = System.currentTimeMillis()
                                     - tableEntry.getRefreshMetaTimeMills();
                     logger.warn("[latency monitor] interval is: {}", interval);
-                    if (interval < 300) {
-                        Thread.sleep(300 - interval);
+                    if (interval < 100) {
+                        Thread.sleep(100 - interval);
                     }
                     tableEntry = locations.get(tableName);
                     // if schema_version has been updated, directly retry

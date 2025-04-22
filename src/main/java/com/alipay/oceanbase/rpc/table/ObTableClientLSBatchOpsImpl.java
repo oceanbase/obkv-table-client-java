@@ -833,6 +833,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         int errCode = ResultCodes.OB_SUCCESS.errorCode;
         String errMsg = null;
         int maxRetryTimes = obTableClient.getRuntimeRetryTimes();
+        // cannot use runTimeWait to retry to timeout
+        // because in huge-partitioned table situation, if refresh all tablets' locations
+        // it's hard to complete refreshing within time limit
         while (retryCount < maxRetryTimes && !success) {
             boolean allPartitionsSuccess = true;
 
