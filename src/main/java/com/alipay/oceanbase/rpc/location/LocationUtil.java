@@ -931,6 +931,7 @@ public class LocationUtil {
                     if (rs.wasNull()) {
                         continue;
                     }
+                    logger.warn("[latency monitor] refresh batch location, lsId: {}, tabletId: {}", lsId, tabletId);
                     tabletLsMap.put(tabletId, lsId);
                     ObPartitionLocationInfo partitionLocationInfo = partitionEntry
                         .getPartitionInfo(tabletId);
@@ -1018,6 +1019,7 @@ public class LocationUtil {
             // only if the server has no distribution capacity and this table is partitioned table,
             // the process of fetching lsId need to be separated with the process of fetch tablets location
             // because __all_virtual_tablet_to_ls makes severe impact on performance
+            logger.warn("[latency monitor] refresh batch location, withLsId, {}", withLsId);
             if (withLsId) {
                 getTabletLsId(connection, tableEntry, tablets, tenantId);
             }

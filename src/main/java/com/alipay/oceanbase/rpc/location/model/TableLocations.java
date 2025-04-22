@@ -140,9 +140,7 @@ public class TableLocations {
                     return tableEntry;
                 }
             }
-            int serverSize = serverRoster.getMembers().size();
-            int refreshTryTimes = Math.min(tableEntryRefreshTryTimes, serverSize);
-            for (int i = 0; i < refreshTryTimes; ++i) {
+            for (int i = 0; i < tableEntryRefreshTryTimes; ++i) {
                 try {
                     return refreshTableEntry(tableEntry, tableName, serverRoster, sysUA);
                 } catch (ObTableNotExistException e) {
@@ -157,15 +155,11 @@ public class TableLocations {
                         tableClient.syncRefreshMetadata(false);
                         tableEntryRefreshContinuousFailureCount.set(0);
                         serverRoster = tableClient.getTableRoute().getServerRoster();
-                        refreshTryTimes = Math.min(tableEntryRefreshTryTimes, serverRoster
-                            .getMembers().size());
                     } else if (e.isConnectInactive()) {
                         // getMetaRefreshConnection failed, maybe the server is down, so we need to refresh metadata directly
                         tableClient.syncRefreshMetadata(true);
                         tableEntryRefreshContinuousFailureCount.set(0);
                         serverRoster = tableClient.getTableRoute().getServerRoster();
-                        refreshTryTimes = Math.min(tableEntryRefreshTryTimes, serverRoster
-                            .getMembers().size());
                     }
                 } catch (Throwable t) {
                     RUNTIME.error("refresh table meta meet exception", t);
@@ -175,7 +169,7 @@ public class TableLocations {
             // maybe the retry time is too small, need to instantly refresh roster
             logger.info(
                 "refresh table entry has tried {}-times failure and will sync refresh metadata",
-                refreshTryTimes);
+                    tableEntryRefreshTryTimes);
             tableClient.syncRefreshMetadata(false);
             tableEntryRefreshContinuousFailureCount.set(0);
             serverRoster = tableClient.getTableRoute().getServerRoster();
