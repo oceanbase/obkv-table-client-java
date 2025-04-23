@@ -827,17 +827,23 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                                     Map.Entry<Long, TabletOperationsMap> entry) throws Exception {
 
         int retryCount = 0;
-        boolean success = false;
 
         LsOperationsMap currentPartitions = new LsOperationsMap();
         currentPartitions.put(entry.getKey(), entry.getValue());
         int errCode = ResultCodes.OB_SUCCESS.errorCode;
         String errMsg = null;
-        int maxRetryTimes = obTableClient.getRuntimeRetryTimes();
-        // cannot use runTimeWait to retry to timeout
-        // because in huge-partitioned table situation, if refresh all tablets' locations
-        // it's hard to complete refreshing within time limit
-        while (retryCount < maxRetryTimes && !success) {
+        long runTimeMaxWait = obTableClient.getRuntimeMaxWait();
+        long startExecute = System.currentTimeMillis();
+        while (true) {
+            long costMillis = System.currentTimeMillis() - startExecute;
+            if (costMillis > runTimeMaxWait) {
+                errMsg = tableName + " failed to execute operation after retrying " + retryCount
+                        + " times and it has waited" +  costMillis + " ms"
+                        + " which exceeds runtime max wait timeout " + runTimeMaxWait
+                        + " ms. Last error Msg:" + "[errCode=" + errCode + "] " + errMsg;
+                logger.error(errMsg);
+                throw new ObTableUnexpectedException(errMsg);
+            }
             boolean allPartitionsSuccess = true;
 
             for (Map.Entry<Long, TabletOperationsMap> currentEntry : currentPartitions.entrySet()) {
@@ -861,13 +867,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             }
 
             if (allPartitionsSuccess) {
-                success = true;
+                break;
             }
-        }
-        if (!success) {
-            errMsg = "Failed to execute operation after retrying " + retryCount
-                     + " times. Last error Msg:" + "[errCode=" + errCode + "] " + errMsg;
-            throw new ObTableUnexpectedException(errMsg);
         }
     }
 

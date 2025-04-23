@@ -95,8 +95,12 @@ public class TableLocations {
         long runtimeMaxWait = tableClient.getRuntimeMaxWait();
         int tableEntryRefreshContinuousFailureCeiling = tableClient
             .getTableEntryRefreshContinuousFailureCeiling();
+        long tableEntryRefreshIntervalBase = tableClient.getTableEntryRefreshIntervalBase();
+        long tableEntryRefreshIntervalCeiling = tableClient.getTableEntryRefreshIntervalCeiling();
         long tableEntryRefreshLockTimeout = tableClient.getTableEntryRefreshLockTimeout();
-        long refreshMetaInterval = 100L;
+        long refreshMetaInterval = (long) (tableEntryRefreshIntervalBase * Math.pow(2,
+                -serverRoster.getMaxPriority()));
+        refreshMetaInterval = Math.min(refreshMetaInterval, tableEntryRefreshIntervalCeiling);
 
         TableEntry tableEntry = locations.get(tableName);
         // avoid bad contention in high concurrent situation
@@ -288,7 +292,7 @@ public class TableLocations {
         long runtimeMaxWait = tableClient.getRuntimeMaxWait();
         long tableEntryRefreshLockTimeout = tableClient.getTableEntryRefreshLockTimeout();
         long lastRefreshTime = locationInfo.getLastUpdateTime();
-        long tableEntryRefreshInterval = 100L;
+        long tableEntryRefreshInterval = tableClient.getTableEntryRefreshIntervalCeiling();
         long currentTime = System.currentTimeMillis();
         // do not refresh tablet location if refreshed within 300 milliseconds
         if (currentTime - lastRefreshTime < tableEntryRefreshInterval) {
@@ -421,14 +425,18 @@ public class TableLocations {
         long runtimeMaxWait = tableClient.getRuntimeMaxWait();
         long tableEntryRefreshLockTimeout = tableClient.getTableEntryRefreshLockTimeout();
         long lastRefreshTime = tableEntry.getPartitionEntry().getLastRefreshAllTime();
-        long tableEntryRefreshInterval = 100L;
+        long tableEntryRefreshIntervalBase = tableClient.getTableEntryRefreshIntervalBase();
+        long tableEntryRefreshIntervalCeiling = tableClient.getTableEntryRefreshIntervalCeiling();
+        long refreshBatchTabletInterval = (long) (tableEntryRefreshIntervalBase * Math.pow(2,
+                -serverRoster.getMaxPriority()));
+        refreshBatchTabletInterval = Math.min(refreshBatchTabletInterval, tableEntryRefreshIntervalCeiling);
         long currentTime = System.currentTimeMillis();
         // do not refresh tablet location if refreshed within 300 milliseconds
-        if (currentTime - lastRefreshTime < tableEntryRefreshInterval) {
+        if (currentTime - lastRefreshTime < refreshBatchTabletInterval) {
             logger
                 .info(
                     "punish table entry {}, last batch location refresh time {}, punish interval {}, current time {}.",
-                    tableName, lastRefreshTime, tableEntryRefreshInterval, currentTime);
+                    tableName, lastRefreshTime, refreshBatchTabletInterval, currentTime);
             return tableEntry;
         }
         Lock lock = getLocationBatchRefreshLock(tableName);
@@ -463,11 +471,11 @@ public class TableLocations {
                     logger.warn("[latency monitor] success to acquire refresh tablet locations in batch lock, tableName: {}", tableName);
                     lastRefreshTime = tableEntry.getPartitionEntry().getLastRefreshAllTime();
                     currentTime = System.currentTimeMillis();
-                    if (currentTime - lastRefreshTime < tableEntryRefreshInterval) {
+                    if (currentTime - lastRefreshTime < refreshBatchTabletInterval) {
                         logger
                                 .info(
                                         "punish table entry {}, last batch location refresh time {}, punish interval {}, current time {}.",
-                                        tableName, lastRefreshTime, tableEntryRefreshInterval, currentTime);
+                                        tableName, lastRefreshTime, refreshBatchTabletInterval, currentTime);
                         return tableEntry;
                     }
                     logger.warn("[latency monitor] do refresh tablet locations in batch lock, tableName: {}", tableName);

@@ -541,14 +541,23 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
 
     private void executeWithRetries(ObTableOperationResult[] results, Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> entry) throws Exception {
         int retryCount = 0;
-        boolean success = false;
 
         Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> currentPartitions = new HashMap<>();
         currentPartitions.put(entry.getKey(), entry.getValue());
         int errCode = ResultCodes.OB_SUCCESS.errorCode;
         String errMsg = null;
-        int maxRetryTimes = obTableClient.getRuntimeRetryTimes();
-        while (retryCount < maxRetryTimes && !success) {
+        long runTimeMaxWait = obTableClient.getRuntimeMaxWait();
+        long startExecute = System.currentTimeMillis();
+        while (true) {
+            long costMillis = System.currentTimeMillis() - startExecute;
+            if (costMillis > runTimeMaxWait) {
+                errMsg = tableName + " failed to execute operation after retrying " + retryCount
+                        + " times and it has waited" +  costMillis + " ms"
+                        + " which exceeds runtime max wait timeout " + runTimeMaxWait
+                        + " ms. Last error Msg:" + "[errCode=" + errCode + "] " + errMsg;
+                logger.error(errMsg);
+                throw new ObTableUnexpectedException(errMsg);
+            }
             boolean allPartitionsSuccess = true;
             for (Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> currentEntry : currentPartitions.entrySet()) {
                 try {
@@ -569,14 +578,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             }
 
             if (allPartitionsSuccess) {
-                success = true;
+                break;
             }
-        }
-
-        if (!success) {
-            errMsg = "Failed to execute operation after retrying " + retryCount + " times. Last error Msg:" +
-                    "[errCode="+ errCode +"] " + errMsg;
-            throw new ObTableUnexpectedException(errMsg);
         }
     }
 
