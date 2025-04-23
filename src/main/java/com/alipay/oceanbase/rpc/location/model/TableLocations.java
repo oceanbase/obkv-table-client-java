@@ -138,7 +138,9 @@ public class TableLocations {
                 tryTimes++;
                 try {
                     logger.warn("[latency monitor] try to acquire refresh table meta lock, tableName: {}", tableName);
-                    acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
+                    if (!acquired) {
+                        acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
+                    }
                     if (!acquired) {
                         String errMsg = "try to lock tableEntry refreshing timeout, tableName:" + tableName
                                 + " , timeout:" + tableEntryRefreshLockTimeout + ".";
@@ -323,7 +325,9 @@ public class TableLocations {
                 }
                 tryTimes++;
                 try {
-                    acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
+                    if (!acquired) {
+                        acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
+                    }
                     if (!acquired) {
                         String errMsg = "try to lock tablet location refreshing timeout " + " ,tableName:"
                                 + tableName + " , timeout:" + tableEntryRefreshLockTimeout + ".";
@@ -460,7 +464,9 @@ public class TableLocations {
                 }
                 tryTimes++;
                 try {
-                    acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
+                    if (!acquired) {
+                        acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
+                    }
                     if (!acquired) {
                         logger.warn("[latency monitor] fail to acquire refresh tablet locations in batch lock, tableName: {}", tableName);
                         String errMsg = "try to lock locations refreshing in batch timeout " + " ,tableName:"

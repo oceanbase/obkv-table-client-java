@@ -634,7 +634,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         }
                     }
                 }
-                logger.warn("[latency monitor] ls_id: {}, tryTimes: {}", lsId, tryTimes);
+                logger.warn("[latency monitor] ls_id: {}, tryTimes: {}, ip:port is: {}:{}", lsId, tryTimes, subObTable.getIp(), subObTable.getPort());
                 ObPayload result = subObTable.execute(tableLsOpRequest);
                 if (result != null && result.getPcode() == Pcodes.OB_TABLE_API_MOVE) {
                     ObTableApiMove moveResponse = (ObTableApiMove) result;

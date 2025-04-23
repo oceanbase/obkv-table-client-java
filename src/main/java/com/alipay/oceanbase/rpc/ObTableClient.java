@@ -485,6 +485,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     }
                     tableParam = getTableParamWithRoute(tableName, rowKey, route);
                 }
+                logger.warn("[latency monitor] tableParm obTable ip:port is {}:{}", tableParam.getObTable().getIp(), tableParam.getObTable().getPort());
                 T t = callback.execute(tableParam);
                 resetExecuteContinuousFailureCount(tableName);
                 return t;
@@ -700,6 +701,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         throw new ObTableException("RowKey or scan range is null");
                     }
                 }
+                logger.warn("[latency monitor] tableParm obTable ip:port is {}:{}", tableParam.getObTable().getIp(), tableParam.getObTable().getPort());
                 T t = callback.execute(tableParam);
                 resetExecuteContinuousFailureCount(tableName);
                 return t;
