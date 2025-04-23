@@ -293,6 +293,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                 client.syncRefreshMetadata(true);
                                 long tabletId = partIdWithIndex.getRight().getTabletId();
                                 client.refreshTableLocationByTabletId(indexTableName, tabletId);
+                                subObTable.setDirty();
                             }
                             client.calculateContinuousFailure(indexTableName, e.getMessage());
                             throw e;

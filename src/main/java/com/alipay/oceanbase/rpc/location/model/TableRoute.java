@@ -29,7 +29,6 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObBorderFlag
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.table.ObTable;
-import com.alipay.oceanbase.rpc.table.ObTableClientType;
 import com.alipay.oceanbase.rpc.table.ObTableParam;
 import com.alipay.oceanbase.rpc.table.ObTableServerCapacity;
 import com.alipay.oceanbase.rpc.util.StringUtil;
@@ -532,8 +531,10 @@ public class TableRoute {
                                                                                                  throws Exception {
         TableEntry tableEntry = entry == null ? tableLocations.getTableEntry(tableName) : entry;
         try {
-            return tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
+            tableEntry = tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
                 serverRoster, sysUA);
+            validCachedObTableStatus(tableName, tableEntry, tabletId, tableClient.getRoute(false));
+            return tableEntry;
         } catch (ObTableGetException e) {
             logger
                 .warn(
@@ -541,8 +542,10 @@ public class TableRoute {
                     tableName);
             if (e.getMessage().contains("Need to fetch meta")) {
                 tableEntry = refreshMeta(tableName);
-                return tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
+                tableEntry = tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
                         serverRoster, sysUA);
+                validCachedObTableStatus(tableName, tableEntry, tabletId, tableClient.getRoute(false));
+                return tableEntry;
             }
             throw e;
         } catch (Throwable t) {
@@ -556,8 +559,13 @@ public class TableRoute {
     public TableEntry refreshTabletLocationBatch(String tableName) throws Exception {
         TableEntry tableEntry = tableLocations.getTableEntry(tableName);
         try {
-            return tableLocations.refreshTabletLocationBatch(tableEntry, tableName,
+            tableEntry = tableLocations.refreshTabletLocationBatch(tableEntry, tableName,
                 serverRoster, sysUA);
+            Long[] tablets = getTabletsFromTableEntry(tableEntry);
+            for (long tablet : tablets) {
+                validCachedObTableStatus(tableName, tableEntry, tablet, tableClient.getRoute(false));
+            }
+            return tableEntry;
         } catch (ObTableGetException e) {
             logger
                 .warn(
@@ -565,8 +573,13 @@ public class TableRoute {
                     tableName);
             if (e.getMessage().contains("Need to fetch meta")) {
                 tableEntry = refreshMeta(tableName);
-                return tableLocations.refreshTabletLocationBatch(tableEntry, tableName,
+                tableEntry = tableLocations.refreshTabletLocationBatch(tableEntry, tableName,
                     serverRoster, sysUA);
+                Long[] tablets = getTabletsFromTableEntry(tableEntry);
+                for (long tablet : tablets) {
+                    validCachedObTableStatus(tableName, tableEntry, tablet, tableClient.getRoute(false));
+                }
+                return tableEntry;
             }
             throw e;
         } catch (Throwable t) {
@@ -584,6 +597,31 @@ public class TableRoute {
         return odpTableLocations.refreshODPMeta(tableName, forceRefresh, odpInfo.getObTable());
     }
 
+    private Long[] getTabletsFromTableEntry(TableEntry tableEntry) {
+        Long[] tablets = null;
+        if (tableEntry.isPartitionTable()) {
+            tablets = tableEntry.getPartitionInfo().getPartTabletIdMap().values()
+                    .toArray(new Long[0]);
+        } else {
+            tablets = new Long[1];
+        }
+        return tablets;
+    }
+
+    private void validCachedObTableStatus(String tableName, TableEntry tableEntry, long tabletId, ObServerRoute route) throws Exception {
+        ObPartitionLocationInfo obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
+        if (obPartitionLocationInfo.getPartitionLocation() == null) {
+            throw new ObTableNotExistException(
+                    "partition location is null after refresh, table: { " + tableName
+                            + " } may not exist");
+        }
+        ReplicaLocation replica = getPartitionLocation(obPartitionLocationInfo, route);
+        ObServerAddr addr = replica.getAddr();
+        ObTable obTable = tableRoster.getTable(addr);
+        if (obTable != null) {
+            obTable.setValid();
+        }
+    }
     /**
      * get TableParam by tableName and rowkey
      * work for both OcpMode and OdpMode

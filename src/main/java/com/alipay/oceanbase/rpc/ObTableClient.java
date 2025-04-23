@@ -556,14 +556,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             throw ex;
                         }
                     } else {
-                        if (ex instanceof ObTableTransportException &&
-                                ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
-                            syncRefreshMetadata(true);
-                            TableEntry entry = tableRoute.getTableEntry(tableName);
-                            long partId = tableRoute.getPartId(entry, rowKey);
-                            long tabletId = tableRoute.getTabletIdByPartId(entry, partId);
-                            tableRoute.refreshPartitionLocation(tableName, tabletId, entry);
-                        }
                         String logMessage;
                         if (ex instanceof ObTableException) {
                             logMessage = String.format(
@@ -578,6 +570,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             );
                         }
                         logger.warn(logMessage, ex);
+                        if (ex instanceof ObTableTransportException &&
+                                ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
+                            syncRefreshMetadata(true);
+                            TableEntry entry = tableRoute.getTableEntry(tableName);
+                            long partId = tableRoute.getPartId(entry, rowKey);
+                            long tabletId = tableRoute.getTabletIdByPartId(entry, partId);
+                            tableRoute.refreshPartitionLocation(tableName, tabletId, entry);
+                            tableParam.getObTable().setDirty();
+                        }
                         calculateContinuousFailure(tableName, ex.getMessage());
                         throw ex;
                     }
@@ -775,14 +776,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             throw new ObTableRetryExhaustedException(logMessage, ex);
                         }
                     } else {
-                        if (ex instanceof ObTableTransportException &&
-                                ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
-                            syncRefreshMetadata(true);
-                            TableEntry entry = tableRoute.getTableEntry(tableName);
-                            long partId = tableRoute.getPartId(entry, callback.getRowKey());
-                            long tabletId = tableRoute.getTabletIdByPartId(entry, partId);
-                            tableRoute.refreshPartitionLocation(tableName, tabletId, entry);
-                        }
                         String logMessage;
                         if (ex instanceof ObTableException) {
                             logMessage = String.format(
@@ -797,6 +790,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             );
                         }
                         logger.warn(logMessage, ex);
+                        if (ex instanceof ObTableTransportException &&
+                                ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
+                            syncRefreshMetadata(true);
+                            TableEntry entry = tableRoute.getTableEntry(tableName);
+                            long partId = tableRoute.getPartId(entry, callback.getRowKey());
+                            long tabletId = tableRoute.getTabletIdByPartId(entry, partId);
+                            tableRoute.refreshPartitionLocation(tableName, tabletId, entry);
+                            tableParam.getObTable().setDirty();
+                        }
                         calculateContinuousFailure(tableName, ex.getMessage());
                         throw ex;
                     }

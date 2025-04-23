@@ -77,6 +77,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     private boolean enableRerouting = true;              // only used for init packet factory
 
     private ReentrantLock         statusLock  = new ReentrantLock();
+    private AtomicBoolean         valid       = new AtomicBoolean(true);
 
     /*
      * Init.
@@ -185,6 +186,22 @@ public class ObTable extends AbstractObTable implements Lifecycle {
 
     public boolean isEnableRerouting(){
         return enableRerouting;
+    }
+
+    // flag this obTable is valid and available
+    public void setValid() {
+        log.warn("[latency monitor] set ip:port {}:{} as valid", ip, port);
+        valid.compareAndSet(false, true);
+    }
+
+    // flag this obTable is invalid and unavailable
+    public void setDirty() {
+        log.warn("[latency monitor] set ip:port {}:{} as dirty", ip, port);
+        valid.compareAndSet(true, false);
+    }
+
+    public boolean isValid() {
+        return valid.get();
     }
 
     /*
@@ -396,6 +413,10 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     public ObPayload execute(final ObPayload request) throws RemotingException,
                                                      InterruptedException {
 
+        if (!isValid()) {
+            log.warn("[latency monitor] The server is not available, server address: " + ip + ":" + port);
+            throw new ObTableServerConnectException("The server is not available, server address: " + ip + ":" + port);
+        }
         ObTableConnection connection = null;
         try {
             connection = getConnection();
