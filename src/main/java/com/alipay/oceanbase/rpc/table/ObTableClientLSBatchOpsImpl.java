@@ -745,6 +745,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         }
 
         long endExecute = System.currentTimeMillis();
+        logger.warn("[latency monitor] finish partitionExecute using: {}", endExecute - startExecute);
 
         if (subLSOpResult == null) {
             String logMessage = String.format(
@@ -832,13 +833,13 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         currentPartitions.put(entry.getKey(), entry.getValue());
         int errCode = ResultCodes.OB_SUCCESS.errorCode;
         String errMsg = null;
-        long runTimeMaxWait = obTableClient.getRuntimeMaxWait();
+        long runTimeMaxWait = obTableClient.getRuntimeBatchMaxWait();
         long startExecute = System.currentTimeMillis();
         while (true) {
             long costMillis = System.currentTimeMillis() - startExecute;
             if (costMillis > runTimeMaxWait) {
                 errMsg = tableName + " failed to execute operation after retrying " + retryCount
-                        + " times and it has waited" +  costMillis + " ms"
+                        + " times and it has waited " +  costMillis + " ms"
                         + " which exceeds runtime max wait timeout " + runTimeMaxWait
                         + " ms. Last error Msg:" + "[errCode=" + errCode + "] " + errMsg;
                 logger.error(errMsg);
@@ -851,6 +852,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     partitionExecute(results, currentEntry);
                 } catch (Exception e) {
                     if (shouldRetry(e)) {
+                        long start = System.currentTimeMillis();
                         logger.warn("ls batch meet should retry exception", e);
                         retryCount++;
                         errCode = ((ObTableNeedFetchMetaException) e).getErrorCode();
@@ -859,6 +861,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                             .getValue());
                         currentPartitions = prepareOperations(failedOperations);
                         allPartitionsSuccess = false;
+                        logger.warn("[latency monitor] finish ls batch retry prepare using: {}", System.currentTimeMillis() - start);
                         break;
                     } else {
                         throw e;

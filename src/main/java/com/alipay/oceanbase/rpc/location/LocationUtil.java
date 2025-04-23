@@ -931,7 +931,6 @@ public class LocationUtil {
                     if (rs.wasNull()) {
                         continue;
                     }
-                    logger.warn("[latency monitor] refresh batch location, lsId: {}, tabletId: {}", lsId, tabletId);
                     tabletLsMap.put(tabletId, lsId);
                     ObPartitionLocationInfo partitionLocationInfo = partitionEntry
                         .getPartitionInfo(tabletId);

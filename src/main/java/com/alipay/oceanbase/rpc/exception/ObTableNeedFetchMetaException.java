@@ -73,6 +73,7 @@ public class ObTableNeedFetchMetaException extends ObTableException {
                || getErrorCode() == ResultCodes.OB_SNAPSHOT_DISCARDED.errorCode // fetch a wrong ls tablets, need to refetch locations
                || getErrorCode() == ResultCodes.OB_TABLET_NOT_EXIST.errorCode
                || getErrorCode() == ResultCodes.OB_ERR_OPERATION_ON_RECYCLE_OBJECT.errorCode // table has been drop and recreated
-               || getErrorCode() == ResultCodes.OB_MAPPING_BETWEEN_TABLET_AND_LS_NOT_EXIST.errorCode;
+               || getErrorCode() == ResultCodes.OB_MAPPING_BETWEEN_TABLET_AND_LS_NOT_EXIST.errorCode
+               || getErrorCode() == ResultCodes.OB_SCHEMA_ERROR.errorCode; // drop table
     }
 }
