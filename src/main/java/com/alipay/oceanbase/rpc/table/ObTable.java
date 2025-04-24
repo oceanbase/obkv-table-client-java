@@ -478,6 +478,10 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                                            AtomicReference<ObTableConnection> connectionRef)
                                                                                             throws RemotingException,
                                                                                             InterruptedException {
+        if (!isValid()) {
+            log.warn("[latency monitor] The server is not available, server address: " + ip + ":" + port);
+            throw new ObTableServerConnectException("The server is not available, server address: " + ip + ":" + port);
+        }
         ObTableConnection connection;
         try {
             if (connectionRef.get() == null) {

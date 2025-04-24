@@ -21,8 +21,8 @@ import com.alipay.oceanbase.rpc.location.model.ObReadConsistency;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
 import org.slf4j.Logger;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ThreadLocalMap {
 
@@ -112,7 +112,7 @@ public class ThreadLocalMap {
 
     private static class MapThreadLocal extends ThreadLocal<Map<Object, Object>> {
         protected Map<Object, Object> initialValue() {
-            return new HashMap<Object, Object>() {
+            return new ConcurrentHashMap<Object, Object>() {
 
                 private static final long serialVersionUID = 3637958959138295593L;
 
