@@ -142,7 +142,7 @@ public class ServerRoster {
         }
         // round-robin get server address
         long idx = turn.getAndIncrement();
-        if (idx == Integer.MAX_VALUE) {
+        if (idx == Long.MAX_VALUE) {
             turn.set(0);
         }
         ObServerAddr addr = avaliableList.get((int) (idx % avaliableList.size()));

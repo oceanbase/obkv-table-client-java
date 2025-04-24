@@ -1492,16 +1492,10 @@ public class LocationUtil {
         while (rs.next()) {
             if (ObGlobal.isSchemaVersionSupport()) {
                 long curSchemaVersion = rs.getLong("schema_version");
-                if (schemaVersion != curSchemaVersion) {
-                    logger
-                        .warn(
-                            "getPartitionLocationFromResultSetByTablet schema_version does not match for table: {}, exist version: {}, new version: {}",
-                            tableEntry.getTableEntryKey().getTableName(), schemaVersion,
-                            curSchemaVersion);
-                    throw new ObTableSchemaVersionMismatchException(
-                        "Schema version mismatched, need to retry, tableName: { "
-                                + tableEntry.getTableEntryKey().getTableName() + " }.");
-                }
+                String errMsg = "getPartitionLocationFromResultSetByTablet schema_version does not match for table: " + tableEntry.getTableEntryKey().getTableName()
+                        + ", exist version: " + schemaVersion
+                        + ", new version: " + curSchemaVersion;
+                checkSchemaVersionMatch(schemaVersion, curSchemaVersion, errMsg);
             }
             ReplicaLocation replica = buildReplicaLocation(rs);
             long partitionId = rs.getLong("tablet_id");
@@ -1575,16 +1569,10 @@ public class LocationUtil {
         while (rs.next()) {
             if (ObGlobal.isSchemaVersionSupport()) {
                 long curSchemaVersion = rs.getLong("schema_version");
-                if (schemaVersion != curSchemaVersion) {
-                    logger
-                        .warn(
-                            "getPartitionLocationFromResultSet schema_version does not match for table: {}, exist version: {}, new version: {}",
-                            tableEntry.getTableEntryKey().getTableName(), schemaVersion,
-                            curSchemaVersion);
-                    throw new ObTableSchemaVersionMismatchException(
-                        "Schema version mismatched, need to retry, tableName: { "
-                                + tableEntry.getTableEntryKey().getTableName() + " }.");
-                }
+                String errMsg = "getPartitionLocationFromResultSet schema_version does not match for table: " +  tableEntry.getTableEntryKey().getTableName()
+                                + ", exist version: " + schemaVersion
+                                + ", new version: " + curSchemaVersion;
+                checkSchemaVersionMatch(schemaVersion, curSchemaVersion, errMsg);
             }
             ReplicaLocation replica = buildReplicaLocation(rs);
             long partitionId;
@@ -1728,16 +1716,10 @@ public class LocationUtil {
         while (rs.next()) {
             if (ObGlobal.isSchemaVersionSupport()) {
                 long curSchemaVersion = rs.getLong("schema_version");
-                if (schemaVersion != curSchemaVersion) {
-                    logger
-                        .warn(
-                            "parsePartitionInfo schema_version does not match for table: {}, exist version: {}, new version: {}",
-                            tableEntry.getTableEntryKey().getTableName(), schemaVersion,
-                            curSchemaVersion);
-                    throw new ObTableSchemaVersionMismatchException(
-                        "Schema version mismatched, need to retry, tableName: "
-                                + tableEntry.getTableEntryKey().getTableName() + ".");
-                }
+                String errMsg = "parsePartitionInfo schema_version does not match for table: " + tableEntry.getTableEntryKey().getTableName()
+                                + ", exist version: " + schemaVersion
+                                + ", new version: " + curSchemaVersion;
+                checkSchemaVersionMatch(schemaVersion, curSchemaVersion, errMsg);
             }
             // get part info for the first loop
             if (isFirstRow) {
@@ -2002,16 +1984,11 @@ public class LocationUtil {
         while (rs.next()) {
             if (ObGlobal.isSchemaVersionSupport()) {
                 long curSchemaVersion = rs.getLong("schema_version");
-                if (schemaVersion != curSchemaVersion) {
-                    logger
-                        .warn(
-                            "parseKeyHashPart schema_version does not match for table: {}, is sub part:{}, exist version: {}, new version: {}",
-                            tableEntry.getTableEntryKey().getTableName(), isSubPart, schemaVersion,
-                            curSchemaVersion);
-                    throw new ObTableSchemaVersionMismatchException(
-                        "Schema version mismatched, need to retry, tableName: { "
-                                + tableEntry.getTableEntryKey().getTableName() + " }.");
-                }
+                String errMsg = "parseKeyHashPart schema_version does not match for table: " + tableEntry.getTableEntryKey().getTableName()
+                                + ", is sub part: " + isSubPart
+                                + ", exist version: " + schemaVersion
+                                + ", new version: " + curSchemaVersion;
+                checkSchemaVersionMatch(schemaVersion, curSchemaVersion, errMsg);
             }
             ObPartDesc subPartDesc = tableEntry.getPartitionInfo().getSubPartDesc();
             if (null != subPartDesc) {
@@ -2068,16 +2045,11 @@ public class LocationUtil {
         while (rs.next()) {
             if (ObGlobal.isSchemaVersionSupport()) {
                 long curSchemaVersion = rs.getLong("schema_version");
-                if (schemaVersion != curSchemaVersion) {
-                    logger
-                        .warn(
-                            "parseRangePart schema_version does not match for table: {}, is sub part: {}, exist version: {}, new version: {}",
-                            tableEntry.getTableEntryKey().getTableName(), isSubPart, schemaVersion,
-                            curSchemaVersion);
-                    throw new ObTableSchemaVersionMismatchException(
-                        "Schema version mismatched, need to retry, tableName: { "
-                                + tableEntry.getTableEntryKey().getTableName() + " }.");
-                }
+                String errMsg = "parseRangePart schema_version does not match for table: " + tableEntry.getTableEntryKey().getTableName()
+                                + ", is sub part: " + isSubPart
+                                + ", exist version: " + schemaVersion
+                                + ", new version: " + curSchemaVersion;
+                checkSchemaVersionMatch(schemaVersion, curSchemaVersion, errMsg);
             }
             if (null != subRangePartDesc && !isSubPart && subRangePartDesc.getPartNum() == 0) {
                 // client only support template partition table
@@ -2171,16 +2143,10 @@ public class LocationUtil {
         while (rs.next()) {
             if (ObGlobal.isSchemaVersionSupport()) {
                 long curSchemaVersion = rs.getLong("schema_version");
-                if (schemaVersion != curSchemaVersion) {
-                    logger
-                        .warn(
-                            "parseListPartSets schema_version does not match for table: {}, exist version: {}, new version: {}",
-                            tableEntry.getTableEntryKey().getTableName(), schemaVersion,
-                            curSchemaVersion);
-                    throw new ObTableSchemaVersionMismatchException(
-                        "Schema version mismatched, need to retry, tableName: { "
-                                + tableEntry.getTableEntryKey().getTableName() + " }.");
-                }
+                String errMsg = "parseListPartSets schema_version does not match for table: " + tableEntry.getTableEntryKey().getTableName()
+                                + ", exist version: " + schemaVersion
+                                + ", new version: " + curSchemaVersion;
+                checkSchemaVersionMatch(schemaVersion, curSchemaVersion, errMsg);
             }
             String[] setArray = parseListPartSetsCommon(rs, tableEntry);
             ObPartitionKey key = null;
@@ -2207,6 +2173,13 @@ public class LocationUtil {
         tableEntry.getPartitionInfo().setPartTabletIdMap(partTabletIdMap);
 
         return sets;
+    }
+
+    private static void checkSchemaVersionMatch(long expect, long actual, String errMsg) throws ObTableSchemaVersionMismatchException {
+        if (expect != actual) {
+            logger.warn(errMsg);
+            throw new ObTableSchemaVersionMismatchException(errMsg);
+        }
     }
 
     public static ConfigServerInfo loadRsListForConfigServerInfo(ConfigServerInfo configServer,
