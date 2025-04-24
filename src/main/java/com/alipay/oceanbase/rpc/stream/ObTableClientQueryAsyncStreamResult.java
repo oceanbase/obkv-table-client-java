@@ -51,7 +51,6 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         if (initialized) {
             return;
         }
-        int maxRetries = client.getTableEntryRefreshTryTimes();
         // init request
         ObTableQueryRequest request = new ObTableQueryRequest();
         request.setTableName(tableName);
@@ -69,6 +68,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
                 .iterator();
             int retryTimes = 0;
+            long startExecute = System.currentTimeMillis();
             while (it.hasNext()) {
                 Map.Entry<Long, ObPair<Long, ObTableParam>> firstEntry = it.next();
                 try {
@@ -82,10 +82,11 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                             tableName)));
                         it = expectant.entrySet().iterator();
                         retryTimes++;
-                        if (retryTimes > maxRetries) {
+                        long costMillis = System.currentTimeMillis() - startExecute;
+                        if (costMillis > client.getRuntimeMaxWait()) {
                             RUNTIME.error("Fail to get refresh table entry response after {}",
                                 retryTimes);
-                            throw new ObTableRetryExhaustedException(
+                            throw new ObTableTimeoutExcetion(
                                 "Fail to get refresh table entry response after " + retryTimes
                                         + "errorCode:"
                                         + ((ObTableNeedFetchMetaException) e).getErrorCode());
@@ -264,6 +265,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
                 .iterator();
             int retryTimes = 0;
+            long startExecute = System.currentTimeMillis();
             while (it.hasNext()) {
                 Map.Entry<Long, ObPair<Long, ObTableParam>> entry = it.next();
                 try {
@@ -284,10 +286,11 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                         }
                         it = expectant.entrySet().iterator();
                         retryTimes++;
-                        if (retryTimes > client.getTableEntryRefreshTryTimes()) {
+                        long costMillis = System.currentTimeMillis() - startExecute;
+                        if (costMillis > client.getRuntimeMaxWait()) {
                             RUNTIME.error("Fail to get refresh table entry response after {}",
                                 retryTimes);
-                            throw new ObTableRetryExhaustedException(
+                            throw new ObTableTimeoutExcetion(
                                 "Fail to get refresh table entry response after " + retryTimes);
                         }
                         continue;

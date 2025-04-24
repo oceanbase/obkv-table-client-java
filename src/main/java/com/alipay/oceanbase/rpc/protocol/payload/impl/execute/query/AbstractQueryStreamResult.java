@@ -17,7 +17,6 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
-import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.bolt.transport.TransportCodes;

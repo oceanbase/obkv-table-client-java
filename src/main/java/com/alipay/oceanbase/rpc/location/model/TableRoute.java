@@ -159,7 +159,7 @@ public class TableRoute {
 
     public ObTableServerCapacity getServerCapacity() {
         if (tableClient.isOdpMode()) {
-            if (odpInfo.getObTable() == null) {
+            if (odpInfo == null || odpInfo.getObTable() == null) {
                 throw new IllegalStateException("client is not initialized and obTable is empty");
             }
             return odpInfo.getObTable().getServerCapacity();

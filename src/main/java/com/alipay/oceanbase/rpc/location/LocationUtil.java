@@ -1493,8 +1493,8 @@ public class LocationUtil {
             if (ObGlobal.isSchemaVersionSupport()) {
                 long curSchemaVersion = rs.getLong("schema_version");
                 String errMsg = "getPartitionLocationFromResultSetByTablet schema_version does not match for table: " + tableEntry.getTableEntryKey().getTableName()
-                        + ", exist version: " + schemaVersion
-                        + ", new version: " + curSchemaVersion;
+                                + ", exist version: " + schemaVersion
+                                + ", new version: " + curSchemaVersion;
                 checkSchemaVersionMatch(schemaVersion, curSchemaVersion, errMsg);
             }
             ReplicaLocation replica = buildReplicaLocation(rs);
