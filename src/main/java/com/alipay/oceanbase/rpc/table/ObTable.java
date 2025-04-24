@@ -424,8 +424,10 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             connection.checkStatus();
         } catch (ConnectException ex) {
             // cannot connect to ob server, need refresh table location
+            setDirty();
             throw new ObTableServerConnectException(ex);
         } catch (ObTableServerConnectException ex) {
+            setDirty();
             throw ex;
         } catch (Exception ex) {
             throw new ObTableConnectionStatusException("check status failed, cause: " + ex.getMessage(), ex);
@@ -488,8 +490,10 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             connection.checkStatus();
         } catch (ConnectException ex) {
             // Cannot connect to ob server, need refresh table location
+            setDirty();
             throw new ObTableServerConnectException(ex);
         } catch (ObTableServerConnectException ex) {
+            setDirty();
             throw ex;
         } catch (Exception ex) {
             throw new ObTableConnectionStatusException("check status failed, cause: " + ex.getMessage(), ex);
