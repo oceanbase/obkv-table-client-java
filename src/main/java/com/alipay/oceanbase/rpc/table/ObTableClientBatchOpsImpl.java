@@ -456,6 +456,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                             && ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
                             obTableClient.syncRefreshMetadata(true);
                             obTableClient.refreshTableLocationByTabletId(tableName, partId);
+                            subObTable.setDirty();
                         }
                         obTableClient.calculateContinuousFailure(tableName, ex.getMessage());
                         throw ex;

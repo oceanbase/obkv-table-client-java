@@ -850,7 +850,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     public void syncRefreshMetadata(boolean forceRenew) throws Exception {// do not refresh within 5 seconds even if forceRenew
         checkStatus();
         long lastRefreshMetadataTimestamp = tableRoute.getLastRefreshMetadataTimestamp();
-        if (System.currentTimeMillis() - lastRefreshMetadataTimestamp < 5000L) {
+        if (System.currentTimeMillis() - lastRefreshMetadataTimestamp < tableEntryRefreshLockTimeout) {
             logger
                     .warn(
                             "have to wait for more than 5 seconds to refresh metadata, it has refreshed at: {}",
@@ -878,7 +878,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
         try {
             // double check timestamp
-            if (System.currentTimeMillis() - lastRefreshMetadataTimestamp < 5000L) {
+            if (System.currentTimeMillis() - lastRefreshMetadataTimestamp < tableEntryRefreshLockTimeout) {
                 logger
                         .warn(
                                 "have to wait for more than 5 seconds to refresh metadata, it has refreshed at: {}",
