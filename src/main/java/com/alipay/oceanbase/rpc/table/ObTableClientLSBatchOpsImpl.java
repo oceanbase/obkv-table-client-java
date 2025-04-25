@@ -633,7 +633,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         }
                     }
                 }
-                logger.warn("[latency monitor] ls_id: {}, tryTimes: {}, ip:port is: {}:{}", lsId, tryTimes, subObTable.getIp(), subObTable.getPort());
                 ObPayload result = subObTable.execute(tableLsOpRequest);
                 if (result != null && result.getPcode() == Pcodes.OB_TABLE_API_MOVE) {
                     ObTableApiMove moveResponse = (ObTableApiMove) result;
@@ -729,6 +728,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     } else {
                         if (ex instanceof ObTableTransportException &&
                                 ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
+                            logger.debug("ls batch meet transport timeout, obTable ip:port is {}:{}",
+                                    subObTable.getIp(), subObTable.getPort());
                             obTableClient.syncRefreshMetadata(true);
                             obTableClient.refreshTabletLocationBatch(realTableName);
                             subObTable.setDirty();
@@ -745,7 +746,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         }
 
         long endExecute = System.currentTimeMillis();
-        logger.warn("[latency monitor] finish partitionExecute using: {}", endExecute - startExecute);
 
         if (subLSOpResult == null) {
             String logMessage = String.format(
@@ -852,8 +852,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     partitionExecute(results, currentEntry);
                 } catch (Exception e) {
                     if (shouldRetry(e)) {
-                        long start = System.currentTimeMillis();
-                        logger.warn("ls batch meet should retry exception", e);
                         retryCount++;
                         errCode = ((ObTableNeedFetchMetaException) e).getErrorCode();
                         errMsg = e.getMessage();
@@ -861,7 +859,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                             .getValue());
                         currentPartitions = prepareOperations(failedOperations);
                         allPartitionsSuccess = false;
-                        logger.warn("[latency monitor] finish ls batch retry prepare using: {}", System.currentTimeMillis() - start);
                         break;
                     } else {
                         throw e;

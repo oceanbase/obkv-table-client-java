@@ -117,7 +117,6 @@ public class TableLocations {
                 return tableEntry;
             }
         }
-        long start = System.currentTimeMillis();
         Lock lock = getMetaRefreshLock(tableName);
         boolean acquired = false;
         try {
@@ -137,7 +136,6 @@ public class TableLocations {
                 }
                 tryTimes++;
                 try {
-                    logger.warn("[latency monitor] try to acquire refresh table meta lock, tableName: {}", tableName);
                     if (!acquired) {
                         acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
                     }
@@ -145,10 +143,9 @@ public class TableLocations {
                         String errMsg = "try to lock tableEntry refreshing timeout, tableName:" + tableName
                                 + " , timeout:" + tableEntryRefreshLockTimeout + ".";
                         RUNTIME.warn(errMsg);
-                        logger.warn("[latency monitor] fail to acquire refresh table meta lock, tableName: {}", tableName);
                         throw new ObTableTryLockTimeoutException(errMsg);
                     }
-                    logger.warn("[latency monitor] success to acquire refresh table meta lock, tableName: {}", tableName);
+                    logger.debug("success to acquire refresh table meta lock, tableName: {}", tableName);
                     tableEntry = locations.get(tableName);
                     if (tableEntry != null) {
                         long current = System.currentTimeMillis();
@@ -192,7 +189,6 @@ public class TableLocations {
                 }
             } // end while
         } finally {
-            logger.warn("[latency monitor] unlock refresh table meta lock, tableName: {}, execute time: {}", tableName, System.currentTimeMillis() - start);
             if (acquired) {
                 lock.unlock();
             }
@@ -214,7 +210,6 @@ public class TableLocations {
         TableEntryKey tableEntryKey = new TableEntryKey(tableClient.getClusterName(),
             tableClient.getTenantName(), tableClient.getDatabase(), tableName);
         try {
-            long start = System.currentTimeMillis();
             // tableEntry will point to a new object, the old tableEntry will be gc by jvm
             tableEntry = loadTableEntryWithPriority(serverRoster, //
                 tableEntry, //
@@ -223,7 +218,6 @@ public class TableLocations {
                 tableClient.getTableEntryAcquireSocketTimeout(),//
                 tableClient.getServerAddressPriorityTimeout(), sysUA, !tableClient
                     .getServerCapacity().isSupportDistributedExecute());
-            logger.warn("[latency monitor] finish loadTableEntryWithPriority in refresh meta, execute time: {}", System.currentTimeMillis() - start);
             if (tableEntry.isPartitionTable()) {
                 switch (tableClient.getRunningMode()) {
                     case HBASE:
@@ -306,8 +300,6 @@ public class TableLocations {
         }
         Lock lock = locationInfo.refreshLock;
         boolean acquired = false;
-        logger.warn("[latency monitor] try to acquire refresh table location lock, tableName: {}", tableName);
-        long start = System.currentTimeMillis();
         try {
             int tryTimes = 0;
             long startExecute = System.currentTimeMillis();
@@ -334,7 +326,7 @@ public class TableLocations {
                         RUNTIME.warn(errMsg);
                         throw new ObTableTryLockTimeoutException(errMsg);
                     }
-                    logger.warn("[latency monitor] success acquire refresh table location lock, tableName: {}", tableName);
+                    logger.debug("success acquire refresh table location lock, tableName: {}", tableName);
                     locationInfo = tableEntry.getPartitionEntry().getPartitionInfo(tabletId);
                     lastRefreshTime = locationInfo.getLastUpdateTime();
                     currentTime = System.currentTimeMillis();
@@ -345,7 +337,6 @@ public class TableLocations {
                                         tableName, lastRefreshTime, tableEntryRefreshInterval, currentTime);
                         return tableEntry;
                     }
-                    logger.warn("[latency monitor] do refresh table location lock, tableName: {}", tableName);
                     tableEntry = loadTableEntryLocationWithPriority(serverRoster, tableEntryKey,
                             tableEntry, tabletId, tableClient.getTableEntryAcquireConnectTimeout(),
                             tableClient.getTableEntryAcquireSocketTimeout(),
@@ -363,12 +354,12 @@ public class TableLocations {
                     RUNTIME.error(
                             "refresh partition location meet schema_version mismatched exception, tryTimes: {}", tryTimes, e);
                     long schemaVersion = tableEntry.getSchemaVersion();
-                    logger.warn("[latency monitor] old schema_version is: {}", schemaVersion);
+                    logger.debug(
+                            "schema_version mismatch when refreshing tablet location, old schema_version is: {}", schemaVersion);
                     tableEntry = locations.get(tableName);
                     // sleep over waiting interval of refreshing meta to refresh meta
                     long interval = System.currentTimeMillis()
                             - tableEntry.getRefreshMetaTimeMills();
-                    logger.warn("[latency monitor] interval is: {}", interval);
                     if (interval < 100) {
                         Thread.sleep(100 - interval);
                     }
@@ -402,10 +393,6 @@ public class TableLocations {
             tableEntryRefreshContinuousFailureCount.set(0);
             return tableEntry;
         } finally {
-            logger
-                .warn(
-                        "[latency monitor] finish refresh table location lock, tableName: {}, execute time: {}",
-                        tableName, System.currentTimeMillis() - start);
             if (acquired) {
                 lock.unlock();
             }
@@ -445,8 +432,6 @@ public class TableLocations {
         }
         Lock lock = getLocationBatchRefreshLock(tableName);
         boolean acquired = false;
-        logger.warn("[latency monitor] try to acquire refresh tablet locations in batch lock, tableName: {}", tableName);
-        long start = System.currentTimeMillis();
         try {
             int tryTimes = 0;
             long startExecute = System.currentTimeMillis();
@@ -468,13 +453,12 @@ public class TableLocations {
                         acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
                     }
                     if (!acquired) {
-                        logger.warn("[latency monitor] fail to acquire refresh tablet locations in batch lock, tableName: {}", tableName);
                         String errMsg = "try to lock locations refreshing in batch timeout " + " ,tableName:"
                                 + tableName + " , timeout:" + tableEntryRefreshLockTimeout + ".";
                         RUNTIME.warn(errMsg);
                         throw new ObTableTryLockTimeoutException(errMsg);
                     }
-                    logger.warn("[latency monitor] success to acquire refresh tablet locations in batch lock, tableName: {}", tableName);
+                    logger.debug("success to acquire refresh tablet locations in batch lock, tableName: {}", tableName);
                     lastRefreshTime = tableEntry.getPartitionEntry().getLastRefreshAllTime();
                     currentTime = System.currentTimeMillis();
                     if (currentTime - lastRefreshTime < refreshBatchTabletInterval) {
@@ -484,7 +468,6 @@ public class TableLocations {
                                         tableName, lastRefreshTime, refreshBatchTabletInterval, currentTime);
                         return tableEntry;
                     }
-                    logger.warn("[latency monitor] do refresh tablet locations in batch lock, tableName: {}", tableName);
                     tableEntry = loadTableEntryLocationInBatchWithPriority(serverRoster,
                             tableEntryKey, tableEntry,
                             tableClient.getTableEntryAcquireConnectTimeout(),
@@ -503,11 +486,11 @@ public class TableLocations {
                     RUNTIME.error(
                             "refresh location in batch meet schema_version mismatched exception, tryTimes: {}", tryTimes, e);
                     long schemaVersion = tableEntry.getSchemaVersion();
-                    logger.warn("[latency monitor] old schema_version is: {}", schemaVersion);
+                    logger.debug(
+                            "schema_version mismatch when refreshing tablet locations in batch, old schema_version is: {}", schemaVersion);
                     tableEntry = locations.get(tableName);
                     // sleep over waiting interval of refreshing meta to refresh meta
                     long interval = System.currentTimeMillis() - tableEntry.getRefreshMetaTimeMills();
-                    logger.warn("[latency monitor] interval is: {}", interval);
                     if (interval < 100) {
                         Thread.sleep(100 - interval);
                     }
@@ -541,7 +524,6 @@ public class TableLocations {
             tableEntryRefreshContinuousFailureCount.set(0);
             return tableEntry;
         } finally {
-            logger.warn("[latency monitor] unlock refresh tablet locations in batch lock, tableName: {}, execute time: {}", tableName, System.currentTimeMillis() - start);
             if (acquired) {
                 lock.unlock();
             }

@@ -390,7 +390,6 @@ public class TableRoute {
                 allDummyKey, newRsList);
             throw new ObTableUnexpectedException("all rs servers are not available");
         }
-        logger.warn("[latency monitor] after loadTableEntryRandomly");
 
         // 1. get tenant server address to renew ObTable roster
         List<ReplicaLocation> replicaLocations = tableEntry.getTableLocation()
@@ -398,7 +397,6 @@ public class TableRoute {
         // update new ob table and get new server address
         List<ObServerAddr> servers = tableRoster.refreshTablesAndGetNewServers(replicaLocations);
         serverRoster.reset(servers);
-        logger.warn("[latency monitor] after refreshTablesAndGetNewServers");
 
         // 2. Get Server LDC info for weak read consistency.
         success = false;
@@ -427,7 +425,6 @@ public class TableRoute {
                 allDummyKey.getTenantName(), JSON.toJSON(serverRoster));
             throw new ObTableUnexpectedException("all tenant servers are not available");
         }
-        logger.warn("[latency monitor] after getServerLdc");
 
         // 3. reset Server LDC location.
         String regionFromOcp = configServerInfo.getIdc2Region(tableClient.getCurrentIDC());
@@ -751,7 +748,6 @@ public class TableRoute {
                                           ObServerRoute route) throws Exception {
         ReplicaLocation replica = null;
         long tabletId = getTabletIdByPartId(tableEntry, partId);
-        logger.warn("[latency monitor] tablet id: {}", tabletId);
         ObPartitionLocationInfo obPartitionLocationInfo = null;
         obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
         if (obPartitionLocationInfo.getPartitionLocation() == null) {

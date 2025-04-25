@@ -417,10 +417,7 @@ public class LocationUtil {
         Connection connection = null;
         TableEntry entry;
         try {
-            long start = System.currentTimeMillis();
             connection = getMetaRefreshConnection(url, sysUA);
-            logger.warn("[latency monitor] time to build JDBC connection: {}",
-                System.currentTimeMillis() - start);
             entry = callback.execute(connection);
         } catch (ObTableNotExistException e) {
             // avoid to refresh meta for ObTableNotExistException
@@ -735,7 +732,6 @@ public class LocationUtil {
         int tenantId = -1;
         int retryTimes = 0;
         long sleepTime = 100L;
-        long start = System.currentTimeMillis();
         try {
             while (true) {
                 try {
@@ -854,8 +850,6 @@ public class LocationUtil {
                 }
             } // end while
         } finally {
-            logger.warn("[latency monitor] finish get table entry from remote, execute time: {}",
-                System.currentTimeMillis() - start);
             try {
                 if (null != rs) {
                     rs.close();
@@ -1006,7 +1000,6 @@ public class LocationUtil {
                                                                                      ObTableEntryRefreshException,
                                                                                      ObTableSchemaVersionMismatchException {
         try {
-            long start = System.currentTimeMillis();
             int tenantId = checkTenantExistFromRemote(connection, key);
             Long[] tablets = null;
             if (tableEntry.isPartitionTable()) {
@@ -1018,12 +1011,10 @@ public class LocationUtil {
             // only if the server has no distribution capacity and this table is partitioned table,
             // the process of fetching lsId need to be separated with the process of fetch tablets location
             // because __all_virtual_tablet_to_ls makes severe impact on performance
-            logger.warn("[latency monitor] refresh batch location, withLsId, {}", withLsId);
+            logger.debug("refresh batch location, withLsId, {}", withLsId);
             if (withLsId) {
                 getTabletLsId(connection, tableEntry, tablets, tenantId);
             }
-            logger.warn("[latency monitor] finish get tablet locations in batch, execute time: {}",
-                System.currentTimeMillis() - start);
         } catch (SQLException e) {
             // cannot execute sql, maybe some of the observers have been killed
             RUNTIME.error(LCD.convert("01-00010"), key, tableEntry, e.getMessage());
@@ -1456,7 +1447,7 @@ public class LocationUtil {
         }
         TableLocation tableLocation = new TableLocation();
         tableLocation.setReplicaLocations(replicaLocations);
-        logger.info("refresh meta get new schema_version: {}", schemaVersion);
+        logger.debug("refresh meta get new schema_version: {}", schemaVersion);
         if (!replicaLocations.isEmpty()) {
             entry.setTableId(tableId);
             entry.setTableLocation(tableLocation);
