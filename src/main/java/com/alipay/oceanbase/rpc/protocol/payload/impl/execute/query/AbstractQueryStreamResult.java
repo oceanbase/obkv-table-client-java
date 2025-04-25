@@ -250,10 +250,9 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                 // if the tableEntry is not cached in this client, tableEntry will refresh meta information and its tablet-ls information
                                 // if the server has the capacity to distribute ls request, no need to refresh ls_id and so tablet location
                                 if (e instanceof ObTableNeedFetchMetaException) {
-                                    client.getOrRefreshTableEntry(indexTableName, true);
-                                    if (((ObTableNeedFetchMetaException) e).isNeedRefreshMetaAndLocation()
-                                        && !client.getServerCapacity().isSupportDistributedExecute()) {
-                                        long tabletId = partIdWithIndex.getRight().getTabletId();
+                                    TableEntry tableEntry = client.getOrRefreshTableEntry(indexTableName, true);
+                                    if (((ObTableNeedFetchMetaException) e).isNeedRefreshMetaAndLocation()) {
+                                        long tabletId = client.getTabletIdByPartId(tableEntry, partIdWithIndex.getLeft());
                                         client.refreshTableLocationByTabletId(indexTableName,
                                             tabletId);
                                     }
@@ -369,6 +368,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
 
                 } catch (Exception e) {
                     if (e instanceof ObTableNeedFetchMetaException) {
+                        // TODO: need to skip over the partitions that have been scanned
                         setExpectant(refreshPartition(tableQuery, tableName));
                         // Reset the iterator to start over  
                         it = expectant.entrySet().iterator();
@@ -536,6 +536,13 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                                                               String tableName)
                                                                                                throws Exception;
 
+
+    private void resetCachedResult() {
+        cacheRows.clear();
+        cacheProperties.clear();
+        partitionLastResult.clear();
+    }
+
     protected void cacheResultRows(ObTableQueryResult tableQueryResult) {
         cacheRows.addAll(tableQueryResult.getPropertiesRows());
         cacheProperties = tableQueryResult.getPropertiesNames();
@@ -604,6 +611,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         referToNewPartition(entry.getValue());
                     } catch (Exception e) {
                         if (e instanceof ObTableNeedFetchMetaException) {
+                            resetCachedResult();
                             setExpectant(refreshPartition(tableQuery, tableName));
                             it = expectant.entrySet().iterator();
                             retryTimes++;

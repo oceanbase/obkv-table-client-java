@@ -603,7 +603,7 @@ public class TableRoute {
             tablets = tableEntry.getPartitionInfo().getPartTabletIdMap().values()
                     .toArray(new Long[0]);
         } else {
-            tablets = new Long[1];
+            tablets = new Long[]{0L};
         }
         return tablets;
     }

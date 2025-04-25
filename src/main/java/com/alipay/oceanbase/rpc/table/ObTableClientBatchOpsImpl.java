@@ -267,7 +267,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             ObTableParam tableParam = obTableClient.getTableParamWithRoute(
                     tableName, row, obTableClient.getRoute(batchOperation.isReadOnly()));
             ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>> obTableOperations = partitionOperationsMap
-                    .computeIfAbsent(tableParam.getTabletId(), k -> new ObPair<>(
+                    .computeIfAbsent(tableParam.getPartId(), k -> new ObPair<>(
                             tableParam, new ArrayList<>()));
             obTableOperations.getRight().add(new ObPair<>(i, operation));
         }
@@ -420,7 +420,11 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         if (obTableClient.isRetryOnChangeMasterTimes()) {
                             if (ex instanceof ObTableNeedFetchMetaException) {
                                 // refresh table info
-                                obTableClient.getOrRefreshTableEntry(tableName, true);
+                                TableEntry entry = obTableClient.getOrRefreshTableEntry(tableName, true);
+                                if (((ObTableNeedFetchMetaException) ex).isNeedRefreshMetaAndLocation()) {
+                                    long tabletId = obTableClient.getTabletIdByPartId(entry, originPartId);
+                                    obTableClient.refreshTableLocationByTabletId(tableName, tabletId);
+                                }
                                 throw ex;
                             }
                         } else {
