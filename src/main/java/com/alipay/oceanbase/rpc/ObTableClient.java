@@ -46,7 +46,6 @@ import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.*;
 import com.alipay.remoting.util.StringUtils;
-import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -494,7 +493,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     // about routing problems, ODP will retry on their side
                     if (ex instanceof ObTableException) {
                         // errors needed to retry will retry until timeout
-                        if (((ObTableException) ex).isNeedRetryServerError()) {
+                        if (((ObTableException) ex).isNeedRetryError()) {
                             logger.warn(
                                     "execute while meet server error in odp mode, need to retry, errorCode: {} , errorMsg: {}, try times {}",
                                     ((ObTableException) ex).getErrorCode(), ex.getMessage(),
@@ -516,13 +515,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             logger.warn("retry when replica not readable: {}", ex.getMessage());
                             route.addToBlackList(tableParam.getObTable().getIp());
                         } else {
-                            logger.warn("retry to timeout when replica not readable: {}",
-                                ex.getMessage());
+                            logger.warn("timeout, cause replica is not readable, tryTimes={}", tryTimes);
                             RUNTIME.error("replica not readable", ex);
                             throw ex;
                         }
                     } else if (ex instanceof ObTableException
-                            && (((ObTableException) ex).isNeedRefreshTableEntry() || ((ObTableException) ex).isNeedRetryServerError())) {
+                            && (((ObTableException) ex).isNeedRefreshTableEntry() || ((ObTableException) ex).isNeedRetryError())) {
                         if (ex instanceof ObTableNotExistException) {
                             String logMessage = String.format(
                                     "exhaust retry while meet TableNotExist Exception, table name: %s, errorCode: %d",
@@ -537,7 +535,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                 tableRoute.refreshMeta(tableName);
                                 // reset failure count while fetch all route info
                                 this.resetExecuteContinuousFailureCount(tableName);
-                            } else if (((ObTableException) ex).isNeedRetryServerError()) {
+                            } else if (((ObTableException) ex).isNeedRetryError()) {
                                 // retry server errors, no need to refresh partition location
                                 needRefreshPartitionLocation = false;
                                 logger.warn(
@@ -712,7 +710,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     // about routing problems, ODP will retry on their side
                     if (ex instanceof ObTableException) {
                         // errors needed to retry will retry until timeout
-                        if (((ObTableException) ex).isNeedRetryServerError()) {
+                        if (((ObTableException) ex).isNeedRetryError()) {
                             logger.warn(
                                     "execute while meet server error in odp mode, need to retry, errorCode: {} , errorMsg: {}, try times {}",
                                     ((ObTableException) ex).getErrorCode(), ex.getMessage(),
@@ -734,12 +732,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             logger.warn("retry when replica not readable: {}", ex.getMessage());
                             route.addToBlackList(tableParam.getObTable().getIp());
                         } else {
-                            logger.warn("retry to timeout when replica not readable: {}", ex.getMessage());
+                            logger.warn("timeout, cause replica is not readable, tryTimes={}", tryTimes);
                             RUNTIME.error("replica not readable", ex);
                             throw ex;
                         }
                     } else if (ex instanceof ObTableException
-                            && (((ObTableException) ex).isNeedRefreshTableEntry() || ((ObTableException) ex).isNeedRetryServerError())) {
+                            && (((ObTableException) ex).isNeedRefreshTableEntry() || ((ObTableException) ex).isNeedRetryError())) {
                         if (ex instanceof ObTableNotExistException) {
                             String logMessage = String.format(
                                     "exhaust retry while meet TableNotExist Exception, table name: %s, errorCode: %d",
@@ -757,7 +755,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                 tableRoute.refreshMeta(tableName);
                                 // reset failure count while fetch all route info
                                 this.resetExecuteContinuousFailureCount(tableName);
-                            } else if (((ObTableException) ex).isNeedRetryServerError()) {
+                            } else if (((ObTableException) ex).isNeedRetryError()) {
                                 // retry server errors, no need to refresh partition location
                                 needRefreshPartitionLocation = false;
                                 logger.warn(
@@ -841,23 +839,23 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * refresh all ob server synchronized just in case rslist has changed, it will not refresh if last refresh time is 1 min ago
-     * @param forceRenew flag to force refresh the rsList if changes happen
+     * @param forceRefresh flag to force refresh the rsList if changes happen
      * 1. cannot find table from tables, need refresh tables
      * 2. server list refresh failed: {see com.alipay.oceanbase.obproxy.resource.ObServerStateProcessor#MAX_REFRESH_FAILURE}
      *
      * @throws Exception if fail
      */
-    public void syncRefreshMetadata(boolean forceRenew) throws Exception {// do not refresh within 5 seconds even if forceRenew
+    public void syncRefreshMetadata(boolean forceRefresh) throws Exception {// do not refresh within 5 seconds even if forceRenew
         checkStatus();
         long lastRefreshMetadataTimestamp = tableRoute.getLastRefreshMetadataTimestamp();
         if (System.currentTimeMillis() - lastRefreshMetadataTimestamp < tableEntryRefreshLockTimeout) {
             logger
                     .warn(
-                            "have to wait for more than 5 seconds to refresh metadata, it has refreshed at: {}",
-                            lastRefreshMetadataTimestamp);
+                            "have to wait for more than {} seconds to refresh metadata, it has refreshed at: {}",
+                            tableEntryRefreshLockTimeout, lastRefreshMetadataTimestamp);
             return;
         }
-        if (!forceRenew
+        if (!forceRefresh
                 && System.currentTimeMillis() - lastRefreshMetadataTimestamp < metadataRefreshInterval) {
             logger
                     .warn(
@@ -878,14 +876,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
         try {
             // double check timestamp
+            lastRefreshMetadataTimestamp = tableRoute.getLastRefreshMetadataTimestamp();
             if (System.currentTimeMillis() - lastRefreshMetadataTimestamp < tableEntryRefreshLockTimeout) {
                 logger
                         .warn(
-                                "have to wait for more than 5 seconds to refresh metadata, it has refreshed at: {}",
-                                lastRefreshMetadataTimestamp);
+                                "have to wait for more than {} seconds to refresh metadata, it has refreshed at: {}",
+                                tableEntryRefreshLockTimeout, lastRefreshMetadataTimestamp);
                 return;
             }
-            if (!forceRenew
+            if (!forceRefresh
                     && System.currentTimeMillis() - lastRefreshMetadataTimestamp < metadataRefreshInterval) {
                 logger
                         .warn(
@@ -1041,7 +1040,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /**
-     * 根据 start-end 获取 partition ids 和 addrs
+     * get partition ids and addrs by start-end range
      * @param tableName table want to get
      * @param query query
      * @param start start key
@@ -2292,7 +2291,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     } catch (Exception ex) {
                         tryTimes++;
                         if (ex instanceof ObTableException &&
-                                (((ObTableException) ex).isNeedRefreshTableEntry() || ((ObTableException) ex).isNeedRetryServerError())) {
+                                (((ObTableException) ex).isNeedRefreshTableEntry() || ((ObTableException) ex).isNeedRetryError())) {
                             logger.warn(
                                     "tablename:{} partition id:{} batch ops refresh table while meet ObTableMasterChangeException, errorCode: {}",
                                     request.getTableName(), request.getPartitionId(), ((ObTableException) ex).getErrorCode(), ex);
@@ -2808,8 +2807,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return this.currentIDC;
     }
 
-    @VisibleForTesting
+    /**
+     * only use in test whether the background thread works normally to expand connection pool
+     * */
     public int getConnectionNum() {
+        checkStatus();
         ObTable randomTable = tableRoute.getFirstObTable();
         return randomTable.getConnectionNum();
     }

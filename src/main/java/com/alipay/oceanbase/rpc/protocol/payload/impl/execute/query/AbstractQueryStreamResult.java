@@ -182,7 +182,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                 if (client.isOdpMode()) {
                     // if exceptions need to retry, retry to timeout
                     if (e instanceof ObTableException
-                        && ((ObTableException) e).isNeedRetryServerError()) {
+                        && ((ObTableException) e).isNeedRetryError()) {
                         logger
                             .warn(
                                 "tablename:{} stream query execute while meet Exception in odp mode needing retry, errorCode: {}, errorMsg: {}, try times {}",
@@ -268,7 +268,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                 client.calculateContinuousFailure(indexTableName, e.getMessage());
                                 throw new ObTableRetryExhaustedException(logMessage, e);
                             }
-                        } else if (((ObTableException) e).isNeedRetryServerError()) {
+                        } else if (((ObTableException) e).isNeedRetryError()) {
                             // retry server errors, no need to refresh partition location
                             needRefreshPartitionLocation = false;
                             if (client.isRetryOnChangeMasterTimes()) {

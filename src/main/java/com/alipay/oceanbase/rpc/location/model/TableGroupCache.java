@@ -103,7 +103,7 @@ public class TableGroupCache {
     }
 
     /**
-     * 根据 tableGroup 获取其中一个tableName
+     * get the first table's name in the tableGroup
      * physicalTableName Complete table from table group
      * @param physicalTableName
      * @param tableGroupName

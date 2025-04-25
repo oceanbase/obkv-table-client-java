@@ -17,7 +17,6 @@
 
 package com.alipay.oceanbase.rpc.table;
 
-import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.TransportCodes;
 import com.alipay.oceanbase.rpc.exception.*;
@@ -392,7 +391,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 if (obTableClient.isOdpMode()) {
                     // if exceptions need to retry, retry to timeout
                     if (ex instanceof ObTableException
-                        && ((ObTableException) ex).isNeedRetryServerError()) {
+                        && ((ObTableException) ex).isNeedRetryError()) {
                         logger.warn(
                             "meet need retry exception when execute normal batch in odp mode."
                                     + "tableName: {}, errMsg: {}", tableName, ex.getMessage());
@@ -433,7 +432,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                             obTableClient.calculateContinuousFailure(tableName, ex.getMessage());
                             throw new ObTableRetryExhaustedException(logMessage, ex);
                         }
-                    } else if (((ObTableException) ex).isNeedRetryServerError()) {
+                    } else if (((ObTableException) ex).isNeedRetryError()) {
                         // retry server errors, no need to refresh partition location
                         needRefreshPartitionLocation = false;
                         if (obTableClient.isRetryOnChangeMasterTimes()) {
