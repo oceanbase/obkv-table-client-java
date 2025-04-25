@@ -484,7 +484,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     }
                     tableParam = getTableParamWithRoute(tableName, rowKey, route);
                 }
-                logger.warn("[latency monitor] tableParm obTable ip:port is {}:{}", tableParam.getObTable().getIp(), tableParam.getObTable().getPort());
+                logger.debug("tableName: {}, tableParam obTable ip:port is {}:{}",
+                        tableName, tableParam.getObTable().getIp(), tableParam.getObTable().getPort());
                 T t = callback.execute(tableParam);
                 resetExecuteContinuousFailureCount(tableName);
                 return t;
@@ -570,6 +571,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         logger.warn(logMessage, ex);
                         if (ex instanceof ObTableTransportException &&
                                 ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
+                            logger.debug("client execute meet transport timeout, obTable ip:port is {}:{}",
+                                    tableParam.getObTable().getIp(), tableParam.getObTable().getPort());
                             syncRefreshMetadata(true);
                             TableEntry entry = tableRoute.getTableEntry(tableName);
                             long partId = tableRoute.getPartId(entry, rowKey);
@@ -700,7 +703,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         throw new ObTableException("RowKey or scan range is null");
                     }
                 }
-                logger.warn("[latency monitor] tableParm obTable ip:port is {}:{}", tableParam.getObTable().getIp(), tableParam.getObTable().getPort());
+                logger.debug("tableName: {}, tableParam obTable ip:port is {}:{}",
+                        tableName, tableParam.getObTable().getIp(), tableParam.getObTable().getPort());
                 T t = callback.execute(tableParam);
                 resetExecuteContinuousFailureCount(tableName);
                 return t;
@@ -790,6 +794,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         logger.warn(logMessage, ex);
                         if (ex instanceof ObTableTransportException &&
                                 ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
+                            logger.debug("client execute meet transport timeout, obTable ip:port is {}:{}",
+                                    tableParam.getObTable().getIp(), tableParam.getObTable().getPort());
                             syncRefreshMetadata(true);
                             TableEntry entry = tableRoute.getTableEntry(tableName);
                             long partId = tableRoute.getPartId(entry, callback.getRowKey());

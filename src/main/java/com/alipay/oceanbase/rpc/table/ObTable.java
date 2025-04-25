@@ -190,13 +190,13 @@ public class ObTable extends AbstractObTable implements Lifecycle {
 
     // flag this obTable is valid and available
     public void setValid() {
-        log.warn("[latency monitor] set ip:port {}:{} as valid", ip, port);
+        log.debug("set ip:port {}:{} as valid", ip, port);
         valid.compareAndSet(false, true);
     }
 
     // flag this obTable is invalid and unavailable
     public void setDirty() {
-        log.warn("[latency monitor] set ip:port {}:{} as dirty", ip, port);
+        log.debug("set ip:port {}:{} as dirty", ip, port);
         valid.compareAndSet(true, false);
     }
 
@@ -414,7 +414,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                                                      InterruptedException {
 
         if (!isValid()) {
-            log.warn("[latency monitor] The server is not available, server address: " + ip + ":" + port);
+            log.debug("The server is not available, server address: " + ip + ":" + port);
             throw new ObTableServerConnectException("The server is not available, server address: " + ip + ":" + port);
         }
         ObTableConnection connection = null;
@@ -479,7 +479,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                                                                                             throws RemotingException,
                                                                                             InterruptedException {
         if (!isValid()) {
-            log.warn("[latency monitor] The server is not available, server address: " + ip + ":" + port);
+            log.debug("The server is not available, server address: " + ip + ":" + port);
             throw new ObTableServerConnectException("The server is not available, server address: " + ip + ":" + port);
         }
         ObTableConnection connection;

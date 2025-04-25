@@ -288,6 +288,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         } else {
                             if (e instanceof ObTableTransportException
                                 && ((ObTableTransportException) e).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
+                                logger.debug("query meet transport timeout, obTable ip:port is {}:{}",
+                                        subObTable.getIp(), subObTable.getPort());
                                 client.syncRefreshMetadata(true);
                                 long tabletId = partIdWithIndex.getRight().getTabletId();
                                 client.refreshTableLocationByTabletId(indexTableName, tabletId);
@@ -535,7 +537,6 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     protected abstract Map<Long, ObPair<Long, ObTableParam>> refreshPartition(ObTableQuery tableQuery,
                                                                               String tableName)
                                                                                                throws Exception;
-
 
     private void resetCachedResult() {
         cacheRows.clear();
