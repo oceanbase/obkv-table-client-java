@@ -195,6 +195,8 @@ public class ObTableConnection {
                 // no need to retry when the username or password is wrong.
                 if (e instanceof ObTableAuthException) {
                     throw new ObTableLoginException(errMessage, e);
+                } else if (e instanceof FeatureNotSupportedException) {
+                    throw e;
                 }
             }
         }
@@ -230,6 +232,7 @@ public class ObTableConnection {
             reconnect("Check connection is null");
         }
         if (connection.getChannel() == null || !connection.getChannel().isActive()) {
+            LOGGER.warn("[latency monitor] need to reconnect server: {}:{}", obTable.getIp(), obTable.getPort());
             reconnect("Check connection failed for address: " + connection.getUrl());
         }
         if (!connection.getChannel().isWritable()) {

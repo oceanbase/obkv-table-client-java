@@ -25,7 +25,7 @@ import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHead
 public class ObHBaseParams extends ObKVParamsBase {
     int                      caching                    = -1;     // limit the number of for each rpc call
     int                      callTimeout                = -1;     // scannerLeasePeriodTimeout in hbase, client rpc timeout
-    boolean                  allowPartialResults        = false;   // whether allow partial row return or not
+    boolean                  allowPartialResults        = false;  // whether allow partial row return or not
     boolean                  isCacheBlock               = false;  // whether enable server block cache and row cache or not
     boolean                  checkExistenceOnly         = false;  // check the existence only
     String                   hbaseVersion               = "1.3.6";

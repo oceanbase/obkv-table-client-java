@@ -105,6 +105,10 @@ public class ObGlobal {
                || OB_VERSION >= OB_VERSION_4_3_5_0;
     }
 
+    public static boolean isSchemaVersionSupport() {
+        return OB_VERSION >= OB_VERSION_4_3_5_2;
+    }
+
     public static boolean isDistributedExecSupport() {
         return OB_VERSION >= OB_VERSION_4_3_5_2;
     }

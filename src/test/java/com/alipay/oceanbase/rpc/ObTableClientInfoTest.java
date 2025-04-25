@@ -28,12 +28,10 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import static com.alipay.oceanbase.rpc.property.Property.RUNTIME_RETRY_TIMES;
-import static org.junit.Assert.assertEquals;
 
 public class ObTableClientInfoTest {
     public ObTableClient[] clients;
@@ -66,7 +64,7 @@ public class ObTableClientInfoTest {
     }
 
     @Test
-    public void test_conncetion() throws Exception {
+    public void testConnection() throws Exception {
         String tenantName = ObTableClientTestUtil.getTenantName(); // mysql
         String userName = ObTableClientTestUtil.getUserName(); // root
         for (int i = 0; i < clientCnt; i++) {

@@ -301,6 +301,20 @@ public abstract class AbstractObTableClient extends AbstractTable {
     }
 
     /*
+     * Get odp table entry refresh lock timeout.
+     */
+    public long getODPTableEntryRefreshLockTimeout() {
+        return ODPTableEntryRefreshLockTimeout;
+    }
+
+    /*
+     * Set odp table entry refresh lock timeout.
+     */
+    public void setODPTableEntryRefreshLockTimeout(long ODPTableEntryRefreshLockTimeout) {
+        this.ODPTableEntryRefreshLockTimeout = ODPTableEntryRefreshLockTimeout;
+    }
+
+    /*
      * Get table entry refresh continuous failure ceiling.
      */
     public int getTableEntryRefreshContinuousFailureCeiling() {

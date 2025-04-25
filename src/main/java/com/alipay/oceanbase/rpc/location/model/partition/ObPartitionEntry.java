@@ -18,24 +18,62 @@
 package com.alipay.oceanbase.rpc.location.model.partition;
 
 import com.alipay.oceanbase.rpc.location.model.ObServerLdcLocation;
+import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.getLogger;
+
 
 public class ObPartitionEntry {
-    private Map<Long, ObPartitionLocation> partitionLocation = new HashMap<Long, ObPartitionLocation>();
+    private static final Logger                              logger               = getLogger(ObPartitionEntry.class);
+
+    private volatile  Long                                   lastRefreshAllTime   = 0L;
+
+    private Map<Long, ObPartitionLocation>                   partitionLocation    = new HashMap<Long, ObPartitionLocation>();
 
     // mapping from tablet id to ls id, and the part id to tablet id mapping is in ObPartitionInfo
-    private Map<Long, Long> tabletLsIdMap = new HashMap<>();
+    private Map<Long, Long>                                  tabletLsIdMap        = new HashMap<>();
     
     // tabelt id -> (PartitionLocation, LsId)
-    private ConcurrentHashMap<Long, ObPartitionLocationInfo> partitionInfos = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Long, ObPartitionLocationInfo> partitionInfos       = new ConcurrentHashMap<>();
 
 
     public ObPartitionLocationInfo getPartitionInfo(long tabletId) {
         return partitionInfos.computeIfAbsent(tabletId, id -> new ObPartitionLocationInfo());
+    }
+
+    public void removeNonExistentTablet(Map<Long, Long> partTabletMap) {
+        List<Long> tablets = new ArrayList<>();
+        for (Map.Entry<Long, ObPartitionLocationInfo> entry : partitionInfos.entrySet()) {
+            if (!partTabletMap.containsValue(entry.getKey())) {
+                tablets.add(entry.getKey());
+                partitionInfos.remove(entry.getKey());
+                tabletLsIdMap.remove(entry.getKey());
+            }
+        }
+    }
+
+    public void removePartitionLocationInfoByLsId(long lsId) {
+        int cnt = 0;
+        for (Map.Entry<Long, ObPartitionLocationInfo> entry : partitionInfos.entrySet()) {
+            if (entry.getValue().getTabletLsId() == lsId) {
+                ++cnt;
+                partitionInfos.remove(entry.getKey());
+            }
+        }
+    }
+
+    public long getLastRefreshAllTime() {
+        return lastRefreshAllTime;
+    }
+
+    public void setLastRefreshAllTime(long time) {
+        lastRefreshAllTime = time;
     }
     
     public Map<Long, ObPartitionLocation> getPartitionLocation() {
