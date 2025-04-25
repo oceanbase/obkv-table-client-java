@@ -95,19 +95,15 @@ public class TableLocations {
         long runtimeMaxWait = tableClient.getRuntimeMaxWait();
         int tableEntryRefreshContinuousFailureCeiling = tableClient
             .getTableEntryRefreshContinuousFailureCeiling();
-        long tableEntryRefreshIntervalBase = tableClient.getTableEntryRefreshIntervalBase();
-        long tableEntryRefreshIntervalCeiling = tableClient.getTableEntryRefreshIntervalCeiling();
         long tableEntryRefreshLockTimeout = tableClient.getTableEntryRefreshLockTimeout();
-        long refreshMetaInterval = (long) (tableEntryRefreshIntervalBase * Math.pow(2,
-                -serverRoster.getMaxPriority()));
-        refreshMetaInterval = Math.min(refreshMetaInterval, tableEntryRefreshIntervalCeiling);
+        long refreshMetaInterval = getTableLevelRefreshInterval(serverRoster);
 
         TableEntry tableEntry = locations.get(tableName);
         // avoid bad contention in high concurrent situation
         if (tableEntry != null) {
             long current = System.currentTimeMillis();
             long fetchMetaInterval = current - tableEntry.getRefreshMetaTimeMills();
-            // if refreshed within 3 seconds, do not refresh
+            // if refreshed within refreshMetaInterval, do not refresh
             if (fetchMetaInterval < refreshMetaInterval) {
                 logger
                     .info(
@@ -150,7 +146,7 @@ public class TableLocations {
                     if (tableEntry != null) {
                         long current = System.currentTimeMillis();
                         long fetchMetaInterval = current - tableEntry.getRefreshMetaTimeMills();
-                        // if refreshed within 100 ms, do not refresh
+                        // if refreshed within refreshMetaInterval, do not refresh
                         if (fetchMetaInterval < refreshMetaInterval) {
                             logger
                                     .info(
@@ -283,6 +279,7 @@ public class TableLocations {
         }
         ObPartitionLocationInfo locationInfo = tableEntry.getPartitionEntry().getPartitionInfo(
             tabletId);
+        long refreshMetaInterval = getTableLevelRefreshInterval(serverRoster);
         int tableEntryRefreshContinuousFailureCeiling = tableClient
             .getTableEntryRefreshContinuousFailureCeiling();
         long runtimeMaxWait = tableClient.getRuntimeMaxWait();
@@ -358,10 +355,9 @@ public class TableLocations {
                             "schema_version mismatch when refreshing tablet location, old schema_version is: {}", schemaVersion);
                     tableEntry = locations.get(tableName);
                     // sleep over waiting interval of refreshing meta to refresh meta
-                    long interval = System.currentTimeMillis()
-                            - tableEntry.getRefreshMetaTimeMills();
-                    if (interval < 100) {
-                        Thread.sleep(100 - interval);
+                    long interval = System.currentTimeMillis() - tableEntry.getRefreshMetaTimeMills();
+                    if (interval < refreshMetaInterval) {
+                        Thread.sleep(refreshMetaInterval - interval);
                     }
                     tableEntry = locations.get(tableName);
                     // if schema_version has been updated, directly retry
@@ -416,13 +412,9 @@ public class TableLocations {
         long runtimeMaxWait = tableClient.getRuntimeMaxWait();
         long tableEntryRefreshLockTimeout = tableClient.getTableEntryRefreshLockTimeout();
         long lastRefreshTime = tableEntry.getPartitionEntry().getLastRefreshAllTime();
-        long tableEntryRefreshIntervalBase = tableClient.getTableEntryRefreshIntervalBase();
-        long tableEntryRefreshIntervalCeiling = tableClient.getTableEntryRefreshIntervalCeiling();
-        long refreshBatchTabletInterval = (long) (tableEntryRefreshIntervalBase * Math.pow(2,
-                -serverRoster.getMaxPriority()));
-        refreshBatchTabletInterval = Math.min(refreshBatchTabletInterval, tableEntryRefreshIntervalCeiling);
+        long refreshBatchTabletInterval = getTableLevelRefreshInterval(serverRoster);
         long currentTime = System.currentTimeMillis();
-        // do not refresh tablet location if refreshed within 300 milliseconds
+        // do not refresh tablet location if refreshed within refreshBatchTabletInterval
         if (currentTime - lastRefreshTime < refreshBatchTabletInterval) {
             logger
                 .info(
@@ -491,8 +483,8 @@ public class TableLocations {
                     tableEntry = locations.get(tableName);
                     // sleep over waiting interval of refreshing meta to refresh meta
                     long interval = System.currentTimeMillis() - tableEntry.getRefreshMetaTimeMills();
-                    if (interval < 100) {
-                        Thread.sleep(100 - interval);
+                    if (interval < refreshBatchTabletInterval) {
+                        Thread.sleep(refreshBatchTabletInterval - interval);
                     }
                     tableEntry = locations.get(tableName);
                     // if schema_version has been updated, directly retry
@@ -528,6 +520,15 @@ public class TableLocations {
                 lock.unlock();
             }
         }
+    }
+
+    private long getTableLevelRefreshInterval(ServerRoster serverRoster) {
+        long tableEntryRefreshIntervalBase = tableClient.getTableEntryRefreshIntervalBase();
+        long tableEntryRefreshIntervalCeiling = tableClient.getTableEntryRefreshIntervalCeiling();
+        long refreshInterval = (long) (tableEntryRefreshIntervalBase * Math.pow(2,
+                -serverRoster.getMaxPriority()));
+        refreshInterval = Math.min(refreshInterval, tableEntryRefreshIntervalCeiling);
+        return refreshInterval;
     }
 
     /**
