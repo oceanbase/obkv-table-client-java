@@ -628,6 +628,10 @@ public class LocationUtil {
             while (rs.next()) {
                 realTableName = rs.getString("table_name");
             }
+        } catch (SQLException e) {
+            RUNTIME.error("getTableNameByGroupNameFromRemote meet SQL exception", e);
+            throw new ObTableEntryRefreshException(format("fail to get table name from remote, key=%s",
+                    key), e, true);
         } catch (ObTableNotExistException e) {
             // avoid to refresh meta for ObTableNotExistException
             RUNTIME.error("getTableNameByGroupNameFromRemote meet exception", e);
@@ -672,7 +676,8 @@ public class LocationUtil {
 
     private static void getObVersionFromRemote(final Connection connection)
                                                                            throws ObTableEntryRefreshException,
-                                                                           FeatureNotSupportedException {
+                                                                           FeatureNotSupportedException,
+                                                                           SQLException {
         PreparedStatement ps = null;
         ResultSet rs = null;
         try {
@@ -684,6 +689,8 @@ public class LocationUtil {
             } else {
                 throw new ObTableEntryRefreshException("fail to get ob version from remote");
             }
+        } catch (SQLException e) {
+            throw e;
         } catch (FeatureNotSupportedException e) {
             throw e;
         } catch (Exception e) {
@@ -704,7 +711,8 @@ public class LocationUtil {
 
     // check tenant exist or not
     private static int checkTenantExistFromRemote(final Connection connection, TableEntryKey key)
-                                                                     throws ObTableEntryRefreshException {
+                                                                     throws ObTableEntryRefreshException,
+                                                                            SQLException {
         try (PreparedStatement ps = connection.prepareStatement(OB_TENANT_EXIST_SQL)) {
             ps.setString(1, key.getTenantName());
             try (ResultSet rs = ps.executeQuery()) {
@@ -713,9 +721,13 @@ public class LocationUtil {
                 } else {
                     return rs.getInt("tenant_id");
                 }
+            } catch(SQLException e) {
+                throw e;
             } catch (Exception e) {
                 throw new ObTableEntryRefreshException("fail to get tenant id from remote", e);
             }
+        } catch (SQLException e) {
+            throw e;
         } catch (Exception e) {
             throw new ObTableEntryRefreshException("fail to get tenant id from remote", e);
         }
