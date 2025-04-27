@@ -79,6 +79,8 @@ public class ObTableQuery extends AbstractPayload {
 
     protected ObKVParams obKVParams = null;
 
+    protected ObTableQueryFlag flag = new ObTableQueryFlag(0);
+
     public void adjustStartKey(List<ObObj> key) throws IllegalArgumentException {
         List<ObNewRange> keyRanges = getKeyRanges();
         for (ObNewRange range : keyRanges) {
@@ -239,6 +241,10 @@ public class ObTableQuery extends AbstractPayload {
             idx += len;
         }
 
+        len = Serialization.getNeedBytes(flag.getValue());
+        System.arraycopy(Serialization.encodeVi64(flag.getValue()), 0, bytes, idx, len);
+        idx += len;
+
         return bytes;
     }
 
@@ -304,6 +310,10 @@ public class ObTableQuery extends AbstractPayload {
             obKVParams = new ObKVParams();
             this.obKVParams.decode(buf);
         }
+
+        long tmpFlag = Serialization.decodeVi64(buf);
+        this.flag.setValue(tmpFlag);
+
         return this;
     }
 
@@ -349,6 +359,9 @@ public class ObTableQuery extends AbstractPayload {
         for (ObTableAggregationSingle obTableAggregationSingle : aggregations) {
             contentSize += obTableAggregationSingle.getPayloadSize();
         }
+
+        contentSize += Serialization.getNeedBytes(flag.getValue());
+
         return contentSize;
     }
 
@@ -579,4 +592,16 @@ public class ObTableQuery extends AbstractPayload {
     }
 
     public boolean isFTSQuery() { return isFTSQuery; }
+
+    public ObTableQueryFlag getFlag() {
+        return flag;
+    }
+
+    public void setFlag(ObTableQueryFlag flag) {
+        this.flag = flag;
+    }
+
+    public void setHotOnly(boolean hotOnly) {
+        this.flag.setHotOnly(hotOnly);
+    }
 }
