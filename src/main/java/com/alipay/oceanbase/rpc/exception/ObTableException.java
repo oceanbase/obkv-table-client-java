@@ -87,7 +87,8 @@ public class ObTableException extends RuntimeException {
     public boolean isNeedRetryError() {
         return errorCode == ResultCodes.OB_TRY_LOCK_ROW_CONFLICT.errorCode
                || errorCode == ResultCodes.OB_TRANSACTION_SET_VIOLATION.errorCode
-               || errorCode == ResultCodes.OB_SCHEMA_EAGAIN.errorCode;
+               || errorCode == ResultCodes.OB_SCHEMA_EAGAIN.errorCode
+               || errorCode == ResultCodes.OB_TRANS_TIMEOUT.errorCode;
     }
 
 }
