@@ -75,8 +75,9 @@ public class ExceptionUtil {
                                                         + "]" + "[" + resultCodes.name() + "]"
                                                         + "[" + errMsg + "]" + "[" + server + "]"
                                                         + "[" + trace + "]", resultCodes.errorCode);
-        } else if (resultCodes.errorCode == OB_TENANT_NOT_IN_SERVER.errorCode) {
-            return new ObTableTenantNotInServerException("["
+        } else if (resultCodes.errorCode == OB_TENANT_NOT_IN_SERVER.errorCode
+                    || resultCodes.errorCode == OB_ERR_BAD_DATABASE.errorCode) {
+            return new ObTableNeedToReloginException("["
                                                          + String.valueOf(resultCodes.errorCode)
                                                          + "]" + "[" + resultCodes.name() + "]"
                                                          + "[" + errMsg + "]" + "[" + server + "]"

@@ -455,9 +455,9 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                 }
                 payload = realClient.invokeSync(connection, request, obTableExecuteTimeout);
             } catch (ObTableException ex) {
-                if (ex instanceof ObTableTenantNotInServerException && retryTimes < 2) {
+                if (ex instanceof ObTableNeedToReloginException && retryTimes < 2) {
                     needReconnect = true;
-                } else if (ex instanceof ObTableTenantNotInServerException) {
+                } else if (ex instanceof ObTableNeedToReloginException) {
                     String errMessage = TraceUtil.formatTraceMessage(connection, request,
                             "meet ObTableTenantNotInServerException and has relogined, need to refresh route");
                     throw new ObTableNeedFetchMetaException(errMessage, ex.getErrorCode());

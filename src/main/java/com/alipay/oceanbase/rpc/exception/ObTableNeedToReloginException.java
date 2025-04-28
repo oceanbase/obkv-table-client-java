@@ -17,46 +17,46 @@
 
 package com.alipay.oceanbase.rpc.exception;
 
-public class ObTableTenantNotInServerException extends ObTableException {
+public class ObTableNeedToReloginException extends ObTableException {
 
     /*
      * Ob table tenant not in server exception.
      */
-    public ObTableTenantNotInServerException() {
+    public ObTableNeedToReloginException() {
     }
 
     /*
      * Ob table tenant not in server exception.
      */
-    public ObTableTenantNotInServerException(int errorCode) {
+    public ObTableNeedToReloginException(int errorCode) {
         super(errorCode);
     }
 
     /*
      * Ob table tenant not in server exception.
      */
-    public ObTableTenantNotInServerException(String message, int errorCode) {
+    public ObTableNeedToReloginException(String message, int errorCode) {
         super(message, errorCode);
     }
 
     /*
      * Ob table tenant not in server exception.
      */
-    public ObTableTenantNotInServerException(String message) {
+    public ObTableNeedToReloginException(String message) {
         super(message);
     }
 
     /*
      * Ob table tenant not in server exception.
      */
-    public ObTableTenantNotInServerException(String message, Throwable cause) {
+    public ObTableNeedToReloginException(String message, Throwable cause) {
         super(message, cause);
     }
 
     /*
      * Ob table tenant not in server exception.
      */
-    public ObTableTenantNotInServerException(Throwable cause) {
+    public ObTableNeedToReloginException(Throwable cause) {
         super(cause);
     }
 
