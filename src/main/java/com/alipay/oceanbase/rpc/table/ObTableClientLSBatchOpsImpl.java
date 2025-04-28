@@ -204,8 +204,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         }
         Object[] rowKey = query.getRowKey().getValues();
         String[] propertiesNames = query.getSelectColumns().toArray(new String[0]);
-        ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKey,
-            propertiesNames, null);
+        ObTableSingleOpEntity entity = null;
         if (propertiesNames.length == 0) {
             needAllProp = true;
         }
@@ -219,7 +218,14 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 obTableQuery.getObKVParams(), obTableQuery.getFilterString());
             singleOp.setQuery(singleOpQuery);
             singleOp.setSingleOpType(ObTableOperationType.SCAN);
+            entity = new ObTableSingleOpEntity();
+            entity.setHbase(true);
+            entity.addRowKeyValue("K", obTableQuery.getKeyRanges().get(0).getStartKey().getObj(0));
+            entity.addRowKeyValue("Q", ObObj.getNullObject());
+            entity.addRowKeyValue("T", ObObj.getNullObject());
         } else {
+            entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKey,
+                    propertiesNames, null);
             singleOp.setSingleOpType(ObTableOperationType.GET);
         }
         singleOp.addEntity(entity);
@@ -322,6 +328,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
         ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(rowKeyNames, rowKeyValues,
             propertiesNames, propertiesValues);
+        entity.setHbase(entityType == ObTableEntityType.HKV);
         ObTableSingleOp singleOp = new ObTableSingleOp();
         singleOp.setSingleOpType(type);
         singleOp.addEntity(entity);
@@ -542,6 +549,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
         ObTableLSOpRequest tableLsOpRequest = new ObTableLSOpRequest();
         ObTableLSOperation tableLsOp = new ObTableLSOperation();
+        tableLsOp.setHbase(entityType == ObTableEntityType.HKV);
         tableLsOp.setLsId(lsId);
         tableLsOp.setReturnOneResult(returnOneResult);
         tableLsOp.setNeedAllProp(needAllProp);

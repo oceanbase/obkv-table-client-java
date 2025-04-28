@@ -20,6 +20,7 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl;
 import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObBorderFlag;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -32,6 +33,10 @@ public class ObTableSerialUtil {
 
     static public byte[] encode(ObObj obj) {
         return getTableObjType(obj).encode(obj);
+    }
+
+    static public void encode(ObByteBuf buf, ObObj obj) {
+        getTableObjType(obj).encode(buf, obj);
     }
 
     static public void decode(ByteBuf buf, ObObj obj) {
@@ -122,6 +127,35 @@ public class ObTableSerialUtil {
         }
 
         return bytes;
+    }
+
+    static public void encode(ObByteBuf buf, ObNewRange range) {
+        long tableId = range.getTableId();
+        Serialization.encodeVi64(buf, tableId);
+
+        Serialization.encodeI8(buf, range.getBorderFlag().getValue());
+
+        ObRowKey startKey = range.getStartKey();
+        long rowkeySize = startKey.getObjCount();
+        Serialization.encodeVi64(buf, rowkeySize);
+        for (int i = 0; i < rowkeySize; i++) {
+            ObObj obObj = startKey.getObj(i);
+            ObTableSerialUtil.encode(buf, obObj);
+        }
+
+        ObRowKey endKey = range.getEndKey();
+        rowkeySize = endKey.getObjCount();
+        Serialization.encodeVi64(buf, rowkeySize);
+        for (int i = 0; i < rowkeySize; i++) {
+            ObObj obObj = endKey.getObj(i);
+            ObTableSerialUtil.encode(buf, obObj);
+        }
+
+        if (ObGlobal.obVsnMajor() >= 4) {
+            long flag = range.getFlag();
+            Serialization.encodeVi64(buf, flag);
+        }
+
     }
 
     static public void decode(ByteBuf buf, ObNewRange range) {

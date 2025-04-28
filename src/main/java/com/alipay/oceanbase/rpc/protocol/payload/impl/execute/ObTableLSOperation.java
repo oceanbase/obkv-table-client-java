@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -46,6 +47,7 @@ public class ObTableLSOperation extends AbstractPayload {
 
     private static final int      LS_ID_SIZE       = 8;
     private static final long     INVALID_LS_ID    = -1;
+    private boolean isHbase = false;
 
     /*
     OB_UNIS_DEF_SERIALIZE(ObTableLSOp,
@@ -70,51 +72,94 @@ public class ObTableLSOperation extends AbstractPayload {
         idx += 8;
 
         // 2. encode table name
-        int len =  Serialization.getNeedBytes(tableName);
-        System.arraycopy(Serialization.encodeVString(tableName), 0, bytes, idx, len);
-        idx += len;
+        byte[] tableNameBytes = Serialization.encodeVString(tableName);
+        System.arraycopy(tableNameBytes, 0, bytes, idx, tableNameBytes.length);
+        idx += tableNameBytes.length;
 
         // 3. encode table id
-        len = Serialization.getNeedBytes(tableId);
-        System.arraycopy(Serialization.encodeVi64(tableId), 0, bytes, idx, len);
-        idx += len;
+        byte[] tableIdBytes = Serialization.encodeVi64(tableId);
+        System.arraycopy(tableIdBytes, 0, bytes, idx, tableIdBytes.length);
+        idx += tableIdBytes.length;
 
         // 4. encode rowKey names
-        len = Serialization.getNeedBytes(rowKeyNames.size());
-        System.arraycopy(Serialization.encodeVi64(rowKeyNames.size()), 0, bytes, idx, len);
-        idx += len;
+        byte[] rowKeyNameLenBytes = Serialization.encodeVi64(rowKeyNames.size());
+        System.arraycopy(rowKeyNameLenBytes, 0, bytes, idx, rowKeyNameLenBytes.length);
+        idx += rowKeyNameLenBytes.length;
         for (String rowKeyName : rowKeyNames) {
-            len =  Serialization.getNeedBytes(rowKeyName);
-            System.arraycopy(Serialization.encodeVString(rowKeyName), 0, bytes, idx, len);
-            idx += len;
+            byte[] rowKeyNameBytes =  Serialization.encodeVString(rowKeyName);
+            System.arraycopy(rowKeyNameBytes, 0, bytes, idx, rowKeyNameBytes.length);
+            idx += rowKeyNameBytes.length;
         }
 
         // 5. encode properties names
-        len = Serialization.getNeedBytes(propertiesNames.size());
-        System.arraycopy(Serialization.encodeVi64(propertiesNames.size()), 0, bytes, idx, len);
-        idx += len;
+        byte[] propertiesNamesLenBytes = Serialization.encodeVi64(propertiesNames.size());
+        System.arraycopy(propertiesNamesLenBytes, 0, bytes, idx, propertiesNamesLenBytes.length);
+        idx += propertiesNamesLenBytes.length;
         for (String propertyName : propertiesNames) {
-            len =  Serialization.getNeedBytes(propertyName);
-            System.arraycopy(Serialization.encodeVString(propertyName), 0, bytes, idx, len);
-            idx += len;
+            byte[] propertyNameByte = Serialization.encodeVString(propertyName);
+            System.arraycopy(propertyNameByte, 0, bytes, idx, propertyNameByte.length);
+            idx += propertyNameByte.length;
         }
 
         // 6. encode option flag
-        len = Serialization.getNeedBytes(optionFlag.getValue());
-        System.arraycopy(Serialization.encodeVi64(optionFlag.getValue()), 0, bytes, idx, len);
-        idx += len;
+        byte[] optionFlagBytes = Serialization.encodeVi64(optionFlag.getValue());
+        System.arraycopy(optionFlagBytes, 0, bytes, idx, optionFlagBytes.length);
+        idx += optionFlagBytes.length;
 
         // 7. encode Operation
-        len = Serialization.getNeedBytes(tabletOperations.size());
-        System.arraycopy(Serialization.encodeVi64(tabletOperations.size()), 0, bytes, idx, len);
-        idx += len;
+        byte[] tabletOperationsLenBytes = Serialization.encodeVi64(tabletOperations.size());
+        System.arraycopy(tabletOperationsLenBytes, 0, bytes, idx, tabletOperationsLenBytes.length);
+        idx += tabletOperationsLenBytes.length;
         for (ObTableTabletOp tabletOperation : tabletOperations) {
-            len = (int) tabletOperation.getPayloadSize();
-            System.arraycopy(tabletOperation.encode(), 0, bytes, idx, len);
-            idx += len;
+            byte[] tabletOperationBytes = tabletOperation.encode();
+            System.arraycopy(tabletOperationBytes, 0, bytes, idx, tabletOperationBytes.length);
+            idx += tabletOperationBytes.length;
         }
 
         return bytes;
+    }
+
+    public void encode(ObByteBuf buf) {
+
+        // 0. encode header
+        encodeHeader(buf);
+
+        // 1. encode ls id
+        Serialization.encodeI64(buf, lsId);
+
+        // 2. encode table name
+        Serialization.encodeVString(buf, tableName);
+
+        // 3. encode table id
+        Serialization.encodeVi64(buf, tableId);
+        if (isHbase) {
+            buf.writeBytes(StaticHbaseColumns.RowkeyColumSize);
+            buf.writeBytes(StaticHbaseColumns.getKQTBytes());
+            buf.writeBytes(StaticHbaseColumns.VColumSize);
+            buf.writeBytes(StaticHbaseColumns.getVBytes());
+        } else {
+            // 4. encode rowKey names
+            Serialization.encodeVi64(buf, rowKeyNames.size());
+            for (String rowKeyName : rowKeyNames) {
+                Serialization.encodeVString(buf, rowKeyName);
+            }
+
+            // 5. encode properties names
+            Serialization.encodeVi64(buf, propertiesNames.size());
+            for (String propertyName : propertiesNames) {
+                Serialization.encodeVString(buf, propertyName);
+            }
+        }
+
+
+        // 6. encode option flag
+        Serialization.encodeVi64(buf, optionFlag.getValue());
+
+        // 7. encode Operation
+        Serialization.encodeVi64(buf, tabletOperations.size());
+        for (ObTableTabletOp tabletOperation : tabletOperations) {
+            tabletOperation.encode(buf);
+        }
     }
 
     /*
@@ -169,24 +214,35 @@ public class ObTableLSOperation extends AbstractPayload {
      */
     @Override
     public long getPayloadContentSize() {
-        long payloadContentSize = 0;
-        payloadContentSize += Serialization.getNeedBytes(tabletOperations.size());
-        for (ObTableTabletOp operation : tabletOperations) {
-            payloadContentSize += operation.getPayloadSize();
-        }
+        if (this.payLoadContentSize == -1) {
+            long payloadContentSize = 0;
+            payloadContentSize += Serialization.getNeedBytes(tabletOperations.size());
+            for (ObTableTabletOp operation : tabletOperations) {
+                payloadContentSize += operation.getPayloadSize();
+            }
+            if (isHbase) {
+                payloadContentSize += StaticHbaseColumns.RowkeyColumSize.length;
+                payloadContentSize += StaticHbaseColumns.getKQTBytes().length;
+                payloadContentSize += StaticHbaseColumns.VColumSize.length;
+                payloadContentSize += StaticHbaseColumns.getVBytes().length;
+            } else {
+                payloadContentSize += Serialization.getNeedBytes(rowKeyNames.size());
+                for (String rowKeyName : rowKeyNames) {
+                    payloadContentSize += Serialization.getNeedBytes(rowKeyName);
+                }
 
-        payloadContentSize += Serialization.getNeedBytes(rowKeyNames.size());
-        for (String rowKeyName : rowKeyNames) {
-            payloadContentSize += Serialization.getNeedBytes(rowKeyName);
-        }
+                payloadContentSize += Serialization.getNeedBytes(propertiesNames.size());
+                for (String propertyName : propertiesNames) {
+                    payloadContentSize += Serialization.getNeedBytes(propertyName);
+                }
+            }
 
-        payloadContentSize += Serialization.getNeedBytes(propertiesNames.size());
-        for (String propertyName : propertiesNames) {
-            payloadContentSize += Serialization.getNeedBytes(propertyName);
-        }
 
-        return payloadContentSize + LS_ID_SIZE + Serialization.getNeedBytes(optionFlag.getValue())
-                +  Serialization.getNeedBytes(tableName) + Serialization.getNeedBytes(tableId);
+            this.payLoadContentSize = payloadContentSize + LS_ID_SIZE + Serialization.getNeedBytes(optionFlag.getValue())
+                    +  Serialization.getNeedBytes(tableName) + Serialization.getNeedBytes(tableId);
+        }
+        return this.payLoadContentSize;
+
     }
 
     /*
@@ -327,10 +383,18 @@ public class ObTableLSOperation extends AbstractPayload {
     }
 
     public void prepare() {
-        this.collectColumnNamesIdxMap();
-        this.beforeOption();
-        this.prepareOption();
-        this.prepareColumnNamesBitMap();
+        if (isHbase) {
+            this.rowKeyNames.add("K");
+            this.rowKeyNames.add("Q");
+            this.rowKeyNames.add("T");
+            this.propertiesNames.add("V");
+            this.setIsSamePropertiesNames(true);
+        } else {
+            this.collectColumnNamesIdxMap();
+            this.beforeOption();
+            this.prepareOption();
+            this.prepareColumnNamesBitMap();
+        }
     }
 
     public long getLsId() {
@@ -339,6 +403,14 @@ public class ObTableLSOperation extends AbstractPayload {
 
     public void setTableName(String tableName) {
         this.tableName = tableName;
+    }
+
+    public boolean isHbase() {
+        return isHbase;
+    }
+
+    public void setHbase(boolean hbase) {
+        isHbase = hbase;
     }
 
 }
