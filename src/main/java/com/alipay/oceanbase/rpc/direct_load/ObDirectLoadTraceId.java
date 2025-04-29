@@ -20,6 +20,12 @@ package com.alipay.oceanbase.rpc.direct_load;
 import java.net.InetAddress;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
+import com.alipay.oceanbase.rpc.util.Serialization;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
 public class ObDirectLoadTraceId {
 
     private final long uniqueId;
@@ -30,16 +36,46 @@ public class ObDirectLoadTraceId {
         this.sequence = sequence;
     }
 
-    public String toString() {
-        return String.format("Y%X-%016X", uniqueId, sequence);
-    }
-
     public long getUniqueId() {
         return uniqueId;
     }
 
     public long getSequence() {
         return sequence;
+    }
+
+    public String toString() {
+        return String.format("Y%X-%016X", uniqueId, sequence);
+    }
+
+    public byte[] encode() {
+        int needBytes = (int) getEncodedSize();
+        ObByteBuf buf = new ObByteBuf(needBytes);
+        encode(buf);
+        return buf.bytes;
+    }
+
+    public void encode(ObByteBuf buf) {
+        Serialization.encodeVi64(buf, uniqueId);
+        Serialization.encodeVi64(buf, sequence);
+    }
+
+    public static ObDirectLoadTraceId decode(ByteBuf buf) {
+        long uniqueId = Serialization.decodeVi64(buf);
+        long sequence = Serialization.decodeVi64(buf);
+        return new ObDirectLoadTraceId(uniqueId, sequence);
+    }
+
+    public static ObDirectLoadTraceId decode(byte[] bytes) {
+        ByteBuf buf = Unpooled.wrappedBuffer(bytes);
+        return decode(buf);
+    }
+
+    public int getEncodedSize() {
+        int len = 0;
+        len += Serialization.getNeedBytes(uniqueId);
+        len += Serialization.getNeedBytes(sequence);
+        return len;
     }
 
     public static final ObDirectLoadTraceId DEFAULT_TRACE_ID;

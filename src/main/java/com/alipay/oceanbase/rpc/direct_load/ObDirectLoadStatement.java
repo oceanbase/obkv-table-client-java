@@ -55,9 +55,9 @@ public class ObDirectLoadStatement {
     private ObDirectLoadStatementExecutor      executor             = null;
     private long                               startQueryTimeMillis = 0;
 
-    ObDirectLoadStatement(ObDirectLoadConnection connection) {
+    ObDirectLoadStatement(ObDirectLoadConnection connection, ObDirectLoadTraceId traceId) {
         this.connection = connection;
-        this.traceId = ObDirectLoadTraceId.generateTraceId();
+        this.traceId = traceId;
         this.logger = ObDirectLoadLogger.getLogger(this.traceId);
     }
 
@@ -88,6 +88,9 @@ public class ObDirectLoadStatement {
         obTablePool = new ObDirectLoadConnection.ObTablePool(connection, logger, queryTimeout);
         obTablePool.init();
         executor = new ObDirectLoadStatementExecutor(this);
+        if (builder.executionId != null) {
+            executor.resume(builder.executionId);
+        }
         startQueryTimeMillis = System.currentTimeMillis();
         isInited = true;
         logger.info("statement init successful, args:" + builder);
@@ -294,6 +297,7 @@ public class ObDirectLoadStatement {
         return executor.getExecutionId();
     }
 
+    @Deprecated
     public void resume(ObDirectLoadStatementExecutionId executionId) throws ObDirectLoadException {
         if (executionId == null || !executionId.isValid()) {
             logger.warn("Param 'executionId' must not be null or invalid, value:" + executionId);
@@ -306,20 +310,23 @@ public class ObDirectLoadStatement {
 
     public static final class Builder {
 
-        private final ObDirectLoadConnection connection;
+        private final ObDirectLoadConnection     connection;
 
-        private String                       tableName         = null;
-        private String[]                     columnNames       = null;
-        private String[]                     partitionNames    = null;
-        private ObLoadDupActionType          dupAction         = ObLoadDupActionType.INVALID_MODE;
+        private String                           tableName         = null;
+        private String[]                         columnNames       = null;
+        private String[]                         partitionNames    = null;
+        private ObLoadDupActionType              dupAction         = ObLoadDupActionType.INVALID_MODE;
 
-        private int                          parallel          = 0;
-        private long                         queryTimeout      = 0;
+        private int                              parallel          = 0;
+        private long                             queryTimeout      = 0;
 
-        private long                         maxErrorRowCount  = 0;
-        private String                       loadMethod        = "full";
+        private long                             maxErrorRowCount  = 0;
+        private String                           loadMethod        = "full";
 
-        private static final long            MAX_QUERY_TIMEOUT = Integer.MAX_VALUE;
+        private ObDirectLoadTraceId              traceId           = null;
+        private ObDirectLoadStatementExecutionId executionId       = null;
+
+        private static final long                MAX_QUERY_TIMEOUT = Integer.MAX_VALUE;
 
         Builder(ObDirectLoadConnection connection) {
             this.connection = connection;
@@ -365,12 +372,22 @@ public class ObDirectLoadStatement {
             return this;
         }
 
+        public Builder setExecutionId(ObDirectLoadStatementExecutionId executionId) {
+            this.traceId = executionId.getTraceId();
+            this.executionId = executionId;
+            return this;
+        }
+
+        public ObDirectLoadTraceId getTraceId() {
+            return traceId;
+        }
+
         public String toString() {
             return String
                 .format(
-                    "{tableName:%s, columnNames:%s, partitionNames:%s, dupAction:%s, parallel:%d, queryTimeout:%d, maxErrorRowCount:%d, loadMethod:%s}",
+                    "{tableName:%s, columnNames:%s, partitionNames:%s, dupAction:%s, parallel:%d, queryTimeout:%d, maxErrorRowCount:%d, loadMethod:%s, executionId:%s}",
                     tableName, Arrays.toString(columnNames), Arrays.toString(partitionNames),
-                    dupAction, parallel, queryTimeout, maxErrorRowCount, loadMethod);
+                    dupAction, parallel, queryTimeout, maxErrorRowCount, loadMethod, executionId);
         }
 
         public ObDirectLoadStatement build() throws ObDirectLoadException {

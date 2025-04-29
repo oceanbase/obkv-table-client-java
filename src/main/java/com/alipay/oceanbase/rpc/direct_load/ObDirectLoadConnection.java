@@ -231,7 +231,8 @@ public class ObDirectLoadConnection {
         }
     }
 
-    public synchronized ObDirectLoadStatement createStatement() throws ObDirectLoadException {
+    public synchronized ObDirectLoadStatement createStatement(ObDirectLoadTraceId traceId)
+                                                                                          throws ObDirectLoadException {
         if (!isInited) {
             logger.warn("connection not init");
             throw new ObDirectLoadIllegalStateException("connection not init");
@@ -240,7 +241,7 @@ public class ObDirectLoadConnection {
             logger.warn("connection is closed");
             throw new ObDirectLoadIllegalStateException("connection is closed");
         }
-        ObDirectLoadStatement stmt = new ObDirectLoadStatement(this);
+        ObDirectLoadStatement stmt = new ObDirectLoadStatement(this, traceId);
         this.statementList.addLast(stmt);
         return stmt;
     }
@@ -257,7 +258,9 @@ public class ObDirectLoadConnection {
                                                                                throws ObDirectLoadException {
         ObDirectLoadStatement stmt = null;
         try {
-            stmt = createStatement();
+            final ObDirectLoadTraceId traceId = builder.getTraceId() != null ? builder.getTraceId()
+                : ObDirectLoadTraceId.generateTraceId();
+            stmt = createStatement(traceId);
             stmt.init(builder);
         } catch (Exception e) {
             logger.warn("build statement failed, args:" + builder, e);

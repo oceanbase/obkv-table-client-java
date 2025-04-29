@@ -111,6 +111,12 @@ public class ObDirectLoadDemo {
             .setParallel(parallel).setQueryTimeout(timeout).build();
     }
 
+    private static ObDirectLoadStatement buildStatement(ObDirectLoadConnection connection, ObDirectLoadStatementExecutionId executionId)
+                                                                                          throws ObDirectLoadException {
+        return connection.getStatementBuilder().setTableName(tableName).setDupAction(dupAction)
+            .setParallel(parallel).setQueryTimeout(timeout).setExecutionId(executionId).build();
+    }
+
     private static class SimpleTest {
 
         public static void run() {
@@ -240,9 +246,7 @@ public class ObDirectLoadDemo {
                     executionId.decode(executionIdBytes);
 
                     connection = buildConnection(1);
-                    statement = buildStatement(connection);
-
-                    statement.resume(executionId);
+                    statement = buildStatement(connection, executionId);
 
                     ObDirectLoadBucket bucket = new ObDirectLoadBucket();
                     ObObj[] rowObjs = new ObObj[2];
