@@ -25,6 +25,7 @@ import com.alipay.oceanbase.rpc.direct_load.exception.ObDirectLoadIllegalStateEx
 import com.alipay.oceanbase.rpc.direct_load.exception.ObDirectLoadTimeoutException;
 import com.alipay.oceanbase.rpc.direct_load.exception.ObDirectLoadUnexpectedException;
 import com.alipay.oceanbase.rpc.direct_load.execution.ObDirectLoadStatementExecutionId;
+import com.alipay.oceanbase.rpc.direct_load.execution.ObDirectLoadStatementExecutor.NodeRole;
 import com.alipay.oceanbase.rpc.direct_load.execution.ObDirectLoadStatementExecutor;
 import com.alipay.oceanbase.rpc.direct_load.future.ObDirectLoadStatementFailedFuture;
 import com.alipay.oceanbase.rpc.direct_load.future.ObDirectLoadStatementFuture;
@@ -87,7 +88,7 @@ public class ObDirectLoadStatement {
         connection.getProtocol().checkIsSupported(this);
         obTablePool = new ObDirectLoadConnection.ObTablePool(connection, logger, queryTimeout);
         obTablePool.init();
-        executor = new ObDirectLoadStatementExecutor(this);
+        executor = new ObDirectLoadStatementExecutor(this, builder.nodeRole);
         if (builder.executionId != null) {
             executor.resume(builder.executionId);
         }
@@ -308,6 +309,10 @@ public class ObDirectLoadStatement {
         executor.resume(executionId);
     }
 
+    public void abort() throws ObDirectLoadException {
+        executor.abort();
+    }
+
     public static final class Builder {
 
         private final ObDirectLoadConnection     connection;
@@ -327,6 +332,7 @@ public class ObDirectLoadStatement {
         private ObDirectLoadStatementExecutionId executionId       = null;
 
         private static final long                MAX_QUERY_TIMEOUT = Integer.MAX_VALUE;
+        private NodeRole                         nodeRole          = NodeRole.PRIMARY;
 
         Builder(ObDirectLoadConnection connection) {
             this.connection = connection;
@@ -380,6 +386,11 @@ public class ObDirectLoadStatement {
 
         public ObDirectLoadTraceId getTraceId() {
             return traceId;
+        }
+
+        public Builder setNodeRole(NodeRole nodeRole) {
+            this.nodeRole = nodeRole;
+            return this;
         }
 
         public String toString() {
