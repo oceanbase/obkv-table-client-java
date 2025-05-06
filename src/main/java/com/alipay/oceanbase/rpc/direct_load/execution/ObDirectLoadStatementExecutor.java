@@ -59,6 +59,8 @@ public class ObDirectLoadStatementExecutor {
     private ObAddr                             svrAddr       = null;
     private ObDirectLoadException              cause         = null;                   // 失败原因
 
+    private AtomicInteger                      writingCount  = new AtomicInteger(0);
+
     public ObDirectLoadStatementExecutor(ObDirectLoadStatement statement) {
         this.statement = statement;
         this.traceId = statement.getTraceId();
@@ -164,7 +166,7 @@ public class ObDirectLoadStatementExecutor {
     public ObDirectLoadStatementExecutionId getExecutionId() throws ObDirectLoadException {
         checkState(LOADING, "getExecutionId");
         ObDirectLoadStatementExecutionId executionId = new ObDirectLoadStatementExecutionId(
-            tableId, taskId, svrAddr);
+            tableId, taskId, svrAddr, traceId);
         return executionId;
     }
 
@@ -245,6 +247,25 @@ public class ObDirectLoadStatementExecutor {
                 abortFuture.await();
             } catch (ObDirectLoadException e) {
                 logger.warn("statement abort failed", e);
+            }
+        }
+        // 如果还有写没结束, 等待写结束
+        if (writingCount.get() > 0) {
+            logger.info("statement close wait write");
+            try {
+                final long startTimeMillis = System.currentTimeMillis();
+                long loopCnt = 0;
+                while (writingCount.get() > 0) {
+                    Thread.sleep(10);
+                    ++loopCnt;
+                    if (loopCnt % 100 == 0) {
+                        final long curTimeMillis = System.currentTimeMillis();
+                        logger.warn("statement has been wait write for "
+                                    + (curTimeMillis - startTimeMillis) + " ms");
+                    }
+                }
+            } catch (Exception e) {
+                logger.warn("statement wait write failed", e);
             }
         }
     }
@@ -343,15 +364,23 @@ public class ObDirectLoadStatementExecutor {
 
     public void write(ObDirectLoadBucket bucket) throws ObDirectLoadException {
         checkState(LOADING, LOADING_ONLY, "write");
-        ObDirectLoadStatementPromiseTask task = new ObDirectLoadStatementWriteTask(statement, this,
-            bucket);
-        task.run();
-        if (!task.isDone()) {
-            logger.warn("statement write task unexpected not done");
-            throw new ObDirectLoadUnexpectedException("statement write task unexpected not done");
-        }
-        if (!task.isSuccess()) {
-            throw task.cause();
+        writingCount.incrementAndGet();
+        try {
+            ObDirectLoadStatementPromiseTask task = new ObDirectLoadStatementWriteTask(statement,
+                this, bucket);
+            task.run();
+            if (!task.isDone()) {
+                logger.warn("statement write task unexpected not done");
+                throw new ObDirectLoadUnexpectedException(
+                    "statement write task unexpected not done");
+            }
+            if (!task.isSuccess()) {
+                throw task.cause();
+            }
+        } catch (ObDirectLoadException e) {
+            throw e;
+        } finally {
+            writingCount.decrementAndGet();
         }
     }
 

@@ -25,7 +25,10 @@ import com.alipay.oceanbase.rpc.direct_load.ObDirectLoadStatement;
 import com.alipay.oceanbase.rpc.direct_load.exception.ObDirectLoadException;
 import com.alipay.oceanbase.rpc.direct_load.exception.ObDirectLoadExceptionUtil;
 import com.alipay.oceanbase.rpc.direct_load.future.ObDirectLoadStatementPromiseTask;
+import com.alipay.oceanbase.rpc.direct_load.protocol.payload.ObDirectLoadGetStatusRpc;
 import com.alipay.oceanbase.rpc.direct_load.protocol.payload.ObDirectLoadInsertRpc;
+import com.alipay.oceanbase.rpc.direct_load.protocol.payload.ObTableLoadClientStatus;
+import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.direct_load.protocol.ObDirectLoadProtocol;
 import com.alipay.oceanbase.rpc.util.ObByteBuf;
@@ -87,6 +90,9 @@ public class ObDirectLoadStatementWriteTask extends ObDirectLoadStatementPromise
             } catch (ObDirectLoadException e) {
                 logger.warn("statement send insert failed, retry after " + retryInterval
                             + "s, retryCount:" + retryCount, e);
+
+                // 查询服务端状态决定是否重试
+                checkStatus();
                 // 忽略所有发送失败错误码, 重试到任务状态为FAIL
                 ++retryCount;
                 try {
@@ -103,6 +109,35 @@ public class ObDirectLoadStatementWriteTask extends ObDirectLoadStatementPromise
         }
     }
 
+    private void checkStatus() throws ObDirectLoadException {
+        ObDirectLoadGetStatusRpc rpc = null;
+        try {
+            rpc = doGetStatus();
+        } catch (ObDirectLoadException e) {
+            logger.warn("statement send get status rpc failed", e);
+            throw e;
+        }
+
+        ObTableLoadClientStatus status = rpc.getStatus();
+        int errorCode = rpc.getErrorCode();
+        switch (status) {
+            case RUNNING:
+                break;
+            case ERROR:
+                logger.warn("statement server status is error, errorCode:" + errorCode);
+                throw ObDirectLoadExceptionUtil.convertException(status, errorCode);
+            case ABORT:
+                logger.warn("statement server status is abort, errorCode:" + errorCode);
+                if (errorCode == ResultCodes.OB_SUCCESS.errorCode) {
+                    errorCode = ResultCodes.OB_CANCELED.errorCode;
+                }
+                throw ObDirectLoadExceptionUtil.convertException(status, errorCode);
+            default:
+                logger.warn("statement server status is unexpected, status:" + status);
+                throw ObDirectLoadExceptionUtil.convertException(status, errorCode);
+        }
+    }
+
     private ObDirectLoadInsertRpc doSendInsert(ObTable table, ObByteBuf payloadBuffer,
                                                long timeoutMillis) throws ObDirectLoadException {
         // send insert rpc
@@ -115,6 +150,22 @@ public class ObDirectLoadStatementWriteTask extends ObDirectLoadStatementPromise
         logger.debug("statement send insert rpc, arg:" + rpc.getArg());
         connection.executeWithConnection(rpc, table, timeoutMillis);
         logger.debug("statement insert rpc response successful, res:" + rpc.getRes());
+
+        return rpc;
+    }
+
+    private ObDirectLoadGetStatusRpc doGetStatus() throws ObDirectLoadException {
+        final ObTable table = statement.getObTablePool().getControlObTable();
+        final long timeoutMillis = statement.getTimeoutRemain();
+
+        ObDirectLoadGetStatusRpc rpc = protocol.getGetStatusRpc(executor.getTraceId());
+        rpc.setSvrAddr(executor.getSvrAddr());
+        rpc.setTableId(executor.getTableId());
+        rpc.setTaskId(executor.getTaskId());
+
+        logger.debug("statement send get status rpc, arg:" + rpc.getArg());
+        connection.executeWithConnection(rpc, table, timeoutMillis);
+        logger.debug("statement get status rpc response successful, res:" + rpc.getRes());
 
         return rpc;
     }

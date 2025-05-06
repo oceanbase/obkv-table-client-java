@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.direct_load.execution;
 
+import com.alipay.oceanbase.rpc.direct_load.ObDirectLoadTraceId;
 import com.alipay.oceanbase.rpc.direct_load.exception.ObDirectLoadException;
 import com.alipay.oceanbase.rpc.direct_load.exception.ObDirectLoadIllegalArgumentException;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObAddr;
@@ -28,9 +29,11 @@ import io.netty.buffer.Unpooled;
 
 public class ObDirectLoadStatementExecutionId {
 
-    private long   tableId = 0;
-    private long   taskId  = 0;
-    private ObAddr svrAddr = new ObAddr();
+    private long                tableId = 0;
+    private long                taskId  = 0;
+    private ObAddr              svrAddr = new ObAddr();
+
+    private ObDirectLoadTraceId traceId = null;
 
     public ObDirectLoadStatementExecutionId() {
     }
@@ -46,6 +49,20 @@ public class ObDirectLoadStatementExecutionId {
         this.svrAddr = svrAddr;
     }
 
+    public ObDirectLoadStatementExecutionId(long tableId, long taskId, ObAddr svrAddr,
+                                            ObDirectLoadTraceId traceId)
+                                                                        throws ObDirectLoadException {
+        if (tableId < 0 || taskId <= 0 || svrAddr == null || traceId == null) {
+            throw new ObDirectLoadIllegalArgumentException(String.format(
+                "invalid args, tableId:%d, taskId:%d, svrAddr:%s, traceId:%s", tableId, taskId,
+                svrAddr, traceId));
+        }
+        this.tableId = tableId;
+        this.taskId = taskId;
+        this.svrAddr = svrAddr;
+        this.traceId = traceId;
+    }
+
     public long getTableId() {
         return tableId;
     }
@@ -58,12 +75,17 @@ public class ObDirectLoadStatementExecutionId {
         return svrAddr;
     }
 
+    public ObDirectLoadTraceId getTraceId() {
+        return traceId;
+    }
+
     public boolean isValid() {
         return tableId >= 0 && taskId > 0 && svrAddr.isValid();
     }
 
     public String toString() {
-        return String.format("{tableId:%d, taskId:%d, svrAddr:%s}", tableId, taskId, svrAddr);
+        return String.format("{tableId:%d, taskId:%d, svrAddr:%s, traceId:%s}", tableId, taskId,
+            svrAddr, traceId);
     }
 
     public byte[] encode() {
@@ -77,12 +99,18 @@ public class ObDirectLoadStatementExecutionId {
         Serialization.encodeVi64(buf, tableId);
         Serialization.encodeVi64(buf, taskId);
         svrAddr.encode(buf);
+        if (traceId != null) {
+            traceId.encode(buf);
+        }
     }
 
     public ObDirectLoadStatementExecutionId decode(ByteBuf buf) {
         tableId = Serialization.decodeVi64(buf);
         taskId = Serialization.decodeVi64(buf);
         svrAddr.decode(buf);
+        if (buf.readableBytes() > 0) {
+            traceId = ObDirectLoadTraceId.decode(buf);
+        }
         return this;
     }
 
@@ -96,6 +124,9 @@ public class ObDirectLoadStatementExecutionId {
         len += Serialization.getNeedBytes(tableId);
         len += Serialization.getNeedBytes(taskId);
         len += svrAddr.getEncodedSize();
+        if (traceId != null) {
+            len += traceId.getEncodedSize();
+        }
         return len;
     }
 
