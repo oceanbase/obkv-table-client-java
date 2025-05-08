@@ -651,6 +651,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             } catch (Exception ex) {
                 needRefreshPartitionLocation = true;
                 if (obTableClient.isOdpMode()) {
+                    needRefreshPartitionLocation = false;
                     // if exceptions need to retry, retry to timeout
                     if (ex instanceof ObTableException && ((ObTableException) ex).isNeedRetryError()) {
                         logger.warn("meet need retry exception when execute ls batch in odp mode." +

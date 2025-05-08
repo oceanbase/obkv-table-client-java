@@ -389,6 +389,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             } catch (Exception ex) {
                 needRefreshPartitionLocation = true;
                 if (obTableClient.isOdpMode()) {
+                    needRefreshPartitionLocation = false;
                     // if exceptions need to retry, retry to timeout
                     if (ex instanceof ObTableException
                         && ((ObTableException) ex).isNeedRetryError()) {
