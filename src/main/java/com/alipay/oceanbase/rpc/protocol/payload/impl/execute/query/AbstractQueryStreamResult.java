@@ -191,7 +191,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     } else {
                         logger.warn("meet exception when execute in odp mode." +
                                 "tablename: {}, errMsg: {}", indexTableName, e.getMessage());
-                        throw e;
+                        // odp mode do not retry any other exceptions
+                        throw new ObTableException(e);
                     }
                 } else {
                     needRefreshPartitionLocation = true;
