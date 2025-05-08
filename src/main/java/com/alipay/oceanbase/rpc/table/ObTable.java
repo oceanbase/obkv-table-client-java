@@ -78,6 +78,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
 
     private ReentrantLock         statusLock  = new ReentrantLock();
     private AtomicBoolean         valid       = new AtomicBoolean(true);
+    private boolean               isOdpMode   = false; // default as false
 
     /*
      * Init.
@@ -413,7 +414,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     public ObPayload execute(final ObPayload request) throws RemotingException,
                                                      InterruptedException {
 
-        if (!isValid()) {
+        if (!isOdpMode && !isValid()) {
             log.debug("The server is not available, server address: " + ip + ":" + port);
             throw new ObTableServerConnectException("The server is not available, server address: " + ip + ":" + port);
         }
@@ -424,10 +425,16 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             connection.checkStatus();
         } catch (ConnectException ex) {
             // cannot connect to ob server, need refresh table location
-            setDirty();
+            // do not set odp ip and port as dirty
+            if (!isOdpMode) {
+                setDirty();
+            }
             throw new ObTableServerConnectException(ex);
         } catch (ObTableServerConnectException ex) {
-            setDirty();
+            // do not set odp ip and port as dirty
+            if (!isOdpMode) {
+                setDirty();
+            }
             throw ex;
         } catch (Exception ex) {
             throw new ObTableConnectionStatusException("check status failed, cause: " + ex.getMessage(), ex);
@@ -478,7 +485,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                                            AtomicReference<ObTableConnection> connectionRef)
                                                                                             throws RemotingException,
                                                                                             InterruptedException {
-        if (!isValid()) {
+        if (!isOdpMode && !isValid()) {
             log.debug("The server is not available, server address: " + ip + ":" + port);
             throw new ObTableServerConnectException("The server is not available, server address: " + ip + ":" + port);
         }
@@ -494,10 +501,16 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             connection.checkStatus();
         } catch (ConnectException ex) {
             // Cannot connect to ob server, need refresh table location
-            setDirty();
+            // do not set odp ip and port as dirty
+            if (!isOdpMode) {
+                setDirty();
+            }
             throw new ObTableServerConnectException(ex);
         } catch (ObTableServerConnectException ex) {
-            setDirty();
+            // do not set odp ip and port as dirty
+            if (!isOdpMode) {
+                setDirty();
+            }
             throw ex;
         } catch (Exception ex) {
             throw new ObTableConnectionStatusException("check status failed, cause: " + ex.getMessage(), ex);
@@ -621,6 +634,10 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         this.database = database;
     }
 
+    public void setIsOdpMode(boolean isOdpMode) {
+        this.isOdpMode = isOdpMode;
+    }
+
     public void setConfigs(Map<String, Object> configs) {
         this.configs = configs; 
     }
@@ -705,11 +722,12 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         private String     userName;
         private String     password;
         private String     database;
-        ObTableClientType clientType;
+        ObTableClientType  clientType;
 
         private Properties properties = new Properties();
         
         private Map<String, Object> tableConfigs = new HashMap<>();
+        private boolean    isOdpMode = false; // default as false
 
         /*
          * Builder.
@@ -753,6 +771,11 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             return this;
         }
 
+        public Builder setIsOdpMode(boolean isOdpMode) {
+            this.isOdpMode = isOdpMode;
+            return this;
+        }
+
         /*
          * Build.
          */
@@ -767,6 +790,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             obTable.setProperties(properties);
             obTable.setConfigs(tableConfigs);
             obTable.setClientType(clientType);
+            obTable.setIsOdpMode(isOdpMode);
 
             obTable.init();
 

@@ -48,11 +48,11 @@ public class OdpInfo {
 
         this.obTable = new ObTable.Builder(addr, port) //
                 .setLoginInfo(tenantName, fullUserName, password, database, ObTableClientType.JAVA_TABLE_CLIENT) //
-                .setProperties(properties).setConfigs(tableConfigs).build();
+                .setProperties(properties).setConfigs(tableConfigs).setIsOdpMode(true).build();
         if (ObGlobal.isDistributedExecSupport() && runningMode == ObTableClient.RunningMode.HBASE) { // support distributed execute, login again
             this.obTable = new ObTable.Builder(addr, port)
                     .setLoginInfo(tenantName, fullUserName, password, database, ObTableClientType.JAVA_HBASE_CLIENT)
-                    .setProperties(properties).setConfigs(tableConfigs).build();
+                    .setProperties(properties).setConfigs(tableConfigs).setIsOdpMode(true).build();
         }
     }
 
