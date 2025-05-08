@@ -134,12 +134,12 @@ public class TableLocations {
                 try {
                     if (!acquired) {
                         acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
-                    }
-                    if (!acquired) {
-                        String errMsg = "try to lock tableEntry refreshing timeout, tableName:" + tableName
-                                + " , timeout:" + tableEntryRefreshLockTimeout + ".";
-                        RUNTIME.warn(errMsg);
-                        throw new ObTableTryLockTimeoutException(errMsg);
+                        if (!acquired) {
+                            String errMsg = "try to lock tableEntry refreshing timeout, tableName:" + tableName
+                                    + " , timeout:" + tableEntryRefreshLockTimeout + ".";
+                            RUNTIME.warn(errMsg);
+                            throw new ObTableTryLockTimeoutException(errMsg);
+                        }
                     }
                     logger.debug("success to acquire refresh table meta lock, tableName: {}", tableName);
                     tableEntry = locations.get(tableName);
@@ -316,12 +316,12 @@ public class TableLocations {
                 try {
                     if (!acquired) {
                         acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
-                    }
-                    if (!acquired) {
-                        String errMsg = "try to lock tablet location refreshing timeout " + " ,tableName:"
-                                + tableName + " , timeout:" + tableEntryRefreshLockTimeout + ".";
-                        RUNTIME.warn(errMsg);
-                        throw new ObTableTryLockTimeoutException(errMsg);
+                        if (!acquired) {
+                            String errMsg = "try to lock tablet location refreshing timeout " + " ,tableName:"
+                                    + tableName + " , timeout:" + tableEntryRefreshLockTimeout + ".";
+                            RUNTIME.warn(errMsg);
+                            throw new ObTableTryLockTimeoutException(errMsg);
+                        }
                     }
                     logger.debug("success acquire refresh table location lock, tableName: {}", tableName);
                     locationInfo = tableEntry.getPartitionEntry().getPartitionInfo(tabletId);
@@ -443,12 +443,12 @@ public class TableLocations {
                 try {
                     if (!acquired) {
                         acquired = lock.tryLock(tableEntryRefreshLockTimeout, TimeUnit.MILLISECONDS);
-                    }
-                    if (!acquired) {
-                        String errMsg = "try to lock locations refreshing in batch timeout " + " ,tableName:"
-                                + tableName + " , timeout:" + tableEntryRefreshLockTimeout + ".";
-                        RUNTIME.warn(errMsg);
-                        throw new ObTableTryLockTimeoutException(errMsg);
+                        if (!acquired) {
+                            String errMsg = "try to lock locations refreshing in batch timeout " + " ,tableName:"
+                                    + tableName + " , timeout:" + tableEntryRefreshLockTimeout + ".";
+                            RUNTIME.warn(errMsg);
+                            throw new ObTableTryLockTimeoutException(errMsg);
+                        }
                     }
                     logger.debug("success to acquire refresh tablet locations in batch lock, tableName: {}", tableName);
                     lastRefreshTime = tableEntry.getPartitionEntry().getLastRefreshAllTime();
@@ -579,14 +579,16 @@ public class TableLocations {
                 try {
                     // attempt lock the refreshing action, avoiding concurrent refreshing
                     // use the time-out mechanism, avoiding the rpc hanging up
-                    acquired = lock.tryLock(tableClient.getODPTableEntryRefreshLockTimeout(),
-                            TimeUnit.MILLISECONDS);
                     if (!acquired) {
-                        String errMsg = "try to lock odpTable-entry refreshing timeout " + " ,tableName:"
-                                + tableName + " , timeout:"
-                                + tableClient.getODPTableEntryRefreshLockTimeout() + ".";
-                        RUNTIME.warn(errMsg);
-                        throw new ObTableTryLockTimeoutException(errMsg);
+                        acquired = lock.tryLock(tableClient.getODPTableEntryRefreshLockTimeout(),
+                                TimeUnit.MILLISECONDS);
+                        if (!acquired) {
+                            String errMsg = "try to lock odpTable-entry refreshing timeout " + " ,tableName:"
+                                    + tableName + " , timeout:"
+                                    + tableClient.getODPTableEntryRefreshLockTimeout() + ".";
+                            RUNTIME.warn(errMsg);
+                            throw new ObTableTryLockTimeoutException(errMsg);
+                        }
                     }
                     if (locations.get(tableName) != null) {
                         odpTableEntry = locations.get(tableName);
@@ -633,6 +635,7 @@ public class TableLocations {
                         }
                     }
                     locations.put(tableName, odpTableEntry);
+                    return odpTableEntry;
                 } catch (ObTableTryLockTimeoutException e) {
                     // if try lock timeout, need to retry
                     RUNTIME.warn("wait to try lock to timeout when refresh table meta, tryTimes: {}",
