@@ -659,8 +659,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     } else {
                         logger.warn("meet exception when execute ls batch in odp mode." +
                                 "tablename: {}, errMsg: {}", realTableName, ex.getMessage());
-                        // odp mode do not retry any other exceptions
-                        throw new ObTableException(ex);
+                        throw ex;
                     }
                 } else if (ex instanceof ObTableReplicaNotReadableException) {
                     if (System.currentTimeMillis() - startExecute < obTableClient.getRuntimeMaxWait()) {
@@ -823,7 +822,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     }
 
     private boolean shouldRetry(Throwable throwable) {
-        return throwable instanceof ObTableNeedFetchMetaException;
+        return !obTableClient.isOdpMode() && throwable instanceof ObTableNeedFetchMetaException;
     }
 
     private void executeWithRetries(ObTableSingleOpResult[] results,

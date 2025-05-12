@@ -399,8 +399,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                     } else {
                         logger.warn("meet exception when execute normal batch in odp mode."
                                     + "tablename: {}, errMsg: {}", tableName, ex.getMessage());
-                        // odp mode do not retry any other exceptions
-                        throw new ObTableException(ex);
+                        throw ex;
                     }
                 } else if (ex instanceof ObTableReplicaNotReadableException) {
                     if (System.currentTimeMillis() - startExecute < obTableClient
@@ -544,7 +543,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
     }
 
     private boolean shouldRetry(Throwable throwable) {
-        return throwable instanceof ObTableNeedFetchMetaException;
+        return !obTableClient.isOdpMode() && throwable instanceof ObTableNeedFetchMetaException;
     }
 
     private void executeWithRetries(ObTableOperationResult[] results, Map.Entry<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> entry) throws Exception {

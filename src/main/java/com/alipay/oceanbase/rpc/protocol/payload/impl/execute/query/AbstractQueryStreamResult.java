@@ -191,8 +191,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     } else {
                         logger.warn("meet exception when execute in odp mode." +
                                 "tablename: {}, errMsg: {}", indexTableName, e.getMessage());
-                        // odp mode do not retry any other exceptions
-                        throw new ObTableException(e);
+                        throw e;
                     }
                 } else {
                     needRefreshPartitionLocation = true;
@@ -370,7 +369,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     break;
 
                 } catch (Exception e) {
-                    if (e instanceof ObTableNeedFetchMetaException) {
+                    if (shouldRetry(e)) {
                         // TODO: need to skip over the partitions that have been scanned
                         setExpectant(refreshPartition(tableQuery, tableName));
                         // Reset the iterator to start over  
@@ -574,6 +573,10 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         }
     }
 
+    protected boolean shouldRetry(Throwable t) {
+        return !client.isOdpMode() && t instanceof ObTableNeedFetchMetaException;
+    }
+
     /**
      * Get row.
      */
@@ -612,7 +615,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         // try access new partition, async will not remove useless expectant
                         referToNewPartition(entry.getValue());
                     } catch (Exception e) {
-                        if (e instanceof ObTableNeedFetchMetaException) {
+                        if (shouldRetry(e)) {
                             resetCachedResult();
                             setExpectant(refreshPartition(tableQuery, tableName));
                             it = expectant.entrySet().iterator();

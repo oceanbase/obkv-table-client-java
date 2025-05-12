@@ -76,7 +76,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                     referToNewPartition(firstEntry.getValue());
                     break;
                 } catch (Exception e) {
-                    if (e instanceof ObTableNeedFetchMetaException) {
+                    if (shouldRetry(e)) {
                         setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
                             .getTableQuery(), client.getPhyTableNameFromTableGroup(entityType,
                             tableName)));
@@ -232,7 +232,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                     // try access new partition, async will not remove useless expectant
                     referToLastStreamResult(lastEntry.getValue());
                 } catch (Exception e) {
-                    if (e instanceof ObTableNeedFetchMetaException) {
+                    if (shouldRetry(e)) {
                         String realTableName = client.getPhyTableNameFromTableGroup(entityType,
                             tableName);
                         TableEntry entry = client.getOrRefreshTableEntry(realTableName, false);
@@ -272,7 +272,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                     // try access new partition, async will not remove useless expectant
                     referToNewPartition(entry.getValue());
                 } catch (Exception e) {
-                    if (e instanceof ObTableNeedFetchMetaException) {
+                    if (shouldRetry(e)) {
                         String realTableName = client.getPhyTableNameFromTableGroup(entityType,
                             tableName);
                         TableEntry tableEntry = client.getOrRefreshTableEntry(realTableName, false);
