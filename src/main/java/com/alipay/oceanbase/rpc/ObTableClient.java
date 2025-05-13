@@ -457,7 +457,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         int tryTimes = 0;
         boolean needRefreshPartitionLocation = false;
         long startExecute = System.currentTimeMillis();
-        Row rowKey = transformToRow(tableName, callback.getRowKey());
+        Row rowKey = odpMode ? null : transformToRow(tableName, callback.getRowKey());
         while (true) {
             checkStatus();
             long currentExecute = System.currentTimeMillis();
@@ -966,11 +966,17 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @param tableName table name
      * */
     private TableEntry refreshMeta(String tableName) throws Exception {
-        if (odpMode) {
-            return tableRoute.refreshODPMeta(tableName, true);
-        } else {
-            return tableRoute.refreshMeta(tableName);
-        }
+        return tableRoute.refreshMeta(tableName);
+    }
+
+    /**
+     * refresh table meta information except location
+     * work for both OcpMode and OdpMode
+     * only support by ODP version after 4.3.2
+     * @param tableName table name
+     * */
+    public TableEntry refreshOdpMeta(String tableName) throws Exception {
+        return tableRoute.refreshODPMeta(tableName, true);
     }
 
     /**
@@ -1074,6 +1080,20 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     public ObTableParam getTableParamWithPartId(String tableName, long partId, ObServerRoute route)
                                                                                                    throws Exception {
         return tableRoute.getTableWithPartId(tableName, partId, route);
+    }
+
+    /**
+     * get addr by pardId in ODP mode
+     * only support by ODP version after 4.3.2
+     * @param tableName table want to get
+     * @param partId logic of table
+     * @param route ObServer route
+     * @return ObPair of partId and table
+     * @throws Exception exception
+     */
+    public ObTableParam getOdpTableParamWithPartId(String tableName, long partId, ObServerRoute route)
+                                                                                                   throws Exception {
+        return tableRoute.getOdpTableWithPartId(tableName, partId, route);
     }
 
     /**
@@ -1910,14 +1930,17 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             addRowKeyElement(tableName, rowKey.getColumns());
         }
         ObTableParam tableParam = null;
-        if (refresh) {
-            if (odpMode) {
+        if (odpMode) {
+            if (refresh) {
                 tableRoute.refreshODPMeta(tableName, true);
-            } else {
+            }
+            tableParam = tableRoute.getOdpTableParam(tableName, rowKey);
+        } else {
+            if (refresh) {
                 tableRoute.refreshMeta(tableName);
             }
+            tableParam = tableRoute.getTableParam(tableName, rowKey);
         }
-        tableParam = tableRoute.getTableParam(tableName, rowKey);
         return new Partition(tableParam.getPartitionId(), tableParam.getPartId(),
             tableParam.getTableId(), tableParam.getObTable().getIp(), tableParam.getObTable()
                 .getPort(), tableParam.getLsId());
@@ -1941,15 +1964,20 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     private List<Partition> getAllPartitionInternal(String tableName, boolean refresh) throws Exception {
         List<Partition> partitions = new ArrayList<>();
-        if (refresh) {
-            if (odpMode) {
+        List<ObTableParam> allTables;
+        if (odpMode) {
+            if (refresh) {
                 tableRoute.refreshODPMeta(tableName, true);
-            } else {
+            }
+            allTables = tableRoute.getOdpTableParams(tableName, new ObTableQuery(), new Object[]{ ObObj.getMin() }, true,
+                    new Object[]{ ObObj.getMax() }, true);
+        } else {
+            if (refresh) {
                 tableRoute.refreshMeta(tableName);
             }
+            allTables = tableRoute.getTableParams(tableName, new ObTableQuery(), new Object[]{ ObObj.getMin() }, true,
+                    new Object[]{ ObObj.getMax() }, true);
         }
-        List<ObTableParam> allTables = tableRoute.getTableParams(tableName, new ObTableQuery(), new Object[]{ ObObj.getMin() }, true,
-                new Object[]{ ObObj.getMax() }, true);
         for (ObTableParam tableParam : allTables) {
             Partition partition = new Partition(tableParam.getPartitionId(), tableParam.getPartId(), tableParam.getTableId(),
                     tableParam.getObTable().getIp(), tableParam.getObTable().getPort(), tableParam.getLsId());

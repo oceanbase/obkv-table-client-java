@@ -94,16 +94,23 @@ public class TableRoute {
      * */
     public TableEntry getTableEntry(String tableName) throws Exception {
         TableEntry tableEntry;
-        if (tableClient.isOdpMode()) {
-            tableEntry = odpTableLocations.getTableEntry(tableName);
-            if (tableEntry == null) {
-                tableEntry = refreshODPMeta(tableName, false);
-            }
-        } else {
-            tableEntry = tableLocations.getTableEntry(tableName);
-            if (tableEntry == null) {
-                tableEntry = refreshMeta(tableName);
-            }
+        tableEntry = tableLocations.getTableEntry(tableName);
+        if (tableEntry == null) {
+            tableEntry = refreshMeta(tableName);
+        }
+        return tableEntry;
+    }
+
+    /**
+     * get ODP tableEntry by tableName,
+     * this methods will guarantee the tableEntry is not null
+     * only support by ODP version after 4.3.2
+     * */
+    public TableEntry getOdpTableEntry(String tableName) throws Exception {
+        TableEntry tableEntry;
+        tableEntry = odpTableLocations.getTableEntry(tableName);
+        if (tableEntry == null) {
+            tableEntry = refreshODPMeta(tableName, false);
         }
         return tableEntry;
     }
@@ -631,6 +638,16 @@ public class TableRoute {
         return getTableParamWithRoute(tableName, rowkey, route);
     }
 
+    public ObTableParam getOdpTableParam(String tableName, Row rowkey) throws Exception {
+        TableEntry odpTableEntry = getOdpTableEntry(tableName);
+        if (odpTableEntry == null) {
+            logger.error("tableEntry is null, tableName: {}", tableName);
+            throw new ObTableEntryRefreshException("tableEntry is null, tableName: " + tableName);
+        }
+        long partId = getPartId(odpTableEntry, rowkey);
+        return getODPTableInternal(odpTableEntry, partId);
+    }
+
     public ObTableParam getTableParamWithRoute(String tableName, Row rowkey, ObServerRoute route)
                                                                                                  throws Exception {
         TableEntry tableEntry = getTableEntry(tableName);
@@ -639,11 +656,7 @@ public class TableRoute {
             throw new ObTableEntryRefreshException("tableEntry is null, tableName: " + tableName);
         }
         long partId = getPartId(tableEntry, rowkey);
-        if (tableClient.isOdpMode()) {
-            return getODPTableInternal(tableEntry, partId);
-        } else {
-            return getTableInternal(tableName, tableEntry, partId, route);
-        }
+        return getTableInternal(tableName, tableEntry, partId, route);
     }
 
     /**
@@ -665,11 +678,7 @@ public class TableRoute {
         for (Row rowkey : rowkeys) {
             long partId = getPartId(tableEntry, rowkey);
             ObTableParam param = null;
-            if (tableClient.isOdpMode()) {
-                param = getODPTableInternal(tableEntry, partId);
-            } else {
-                param = getTableInternal(tableName, tableEntry, partId, route);
-            }
+            param = getTableInternal(tableName, tableEntry, partId, route);
             params.add(param);
         }
         return params;
@@ -728,11 +737,13 @@ public class TableRoute {
     public ObTableParam getTableWithPartId(String tableName, long partId, ObServerRoute route)
                                                                                               throws Exception {
         TableEntry tableEntry = getTableEntry(tableName);
-        if (tableClient.isOdpMode()) {
-            return getODPTableInternal(tableEntry, partId);
-        } else {
-            return getTableInternal(tableName, tableEntry, partId, route);
-        }
+        return getTableInternal(tableName, tableEntry, partId, route);
+    }
+
+    public ObTableParam getOdpTableWithPartId(String tableName, long partId, ObServerRoute route)
+            throws Exception {
+        TableEntry tableEntry = getOdpTableEntry(tableName);
+        return getODPTableInternal(tableEntry, partId);
     }
 
     /**
@@ -977,13 +988,16 @@ public class TableRoute {
     public List<ObTableParam> getTableParams(String tableName, ObTableQuery query, Object[] start,
                                              boolean startInclusive, Object[] end,
                                              boolean endInclusive) throws Exception {
-
-        if (tableClient.isOdpMode()) {
-            return getODPTablesInternal(tableName, query.getScanRangeColumns(), start,
-                startInclusive, end, endInclusive);
-        }
         return getTablesInternal(tableName, query.getScanRangeColumns(), start, startInclusive,
             end, endInclusive, tableClient.getRoute(false));
+    }
+
+    public List<ObTableParam> getOdpTableParams(String tableName, ObTableQuery query, Object[] start,
+                                             boolean startInclusive, Object[] end,
+                                             boolean endInclusive) throws Exception {
+
+        return getODPTablesInternal(tableName, query.getScanRangeColumns(), start,
+                    startInclusive, end, endInclusive);
     }
 
     private List<ObTableParam> getTablesInternal(String tableName, List<String> scanRangeColumns,
@@ -1083,7 +1097,7 @@ public class TableRoute {
             throw new IllegalArgumentException("length of start key and end key is not equal");
         }
         List<ObTableParam> obTableParams = new ArrayList<ObTableParam>();
-        TableEntry odpTableEntry = getTableEntry(tableName);
+        TableEntry odpTableEntry = getOdpTableEntry(tableName);
 
         if (scanRangeColumns == null || scanRangeColumns.isEmpty()) {
             Map<String, Integer> tableEntryRowKeyElement = tableClient.getRowKeyElement(tableName);
