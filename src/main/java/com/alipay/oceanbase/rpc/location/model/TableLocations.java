@@ -533,13 +533,14 @@ public class TableLocations {
 
     /**
      * fetch ODP partition meta information
+     * only support by ODP version after 4.3.2
      * @param tableName table name to query
      * @param forceRefresh flag to force ODP to fetch the latest partition meta information
      * @param odpTable odp table to execute refreshing
      * @return TableEntry ODPTableEntry
      * @throws Exception Exception
      */
-    public TableEntry refreshODPMeta(String tableName, boolean forceRefresh, ObTable odpTable)
+    public TableEntry refreshOdpMeta(String tableName, boolean forceRefresh, ObTable odpTable)
                                                                                               throws Exception {
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");

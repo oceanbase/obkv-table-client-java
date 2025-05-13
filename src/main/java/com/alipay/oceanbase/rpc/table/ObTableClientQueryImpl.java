@@ -191,10 +191,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             }
             if (entityType != ObTableEntityType.HKV &&
                     getPartId() != null && tableQuery.getIndexName() == null) {
-                ObServerRoute route = obTableClient.getRoute(false);
                 try {
-                    ObTableParam odpTable = obTableClient.getOdpTableParamWithPartId(
-                            tableName, getPartId(), route);
+                    ObTableParam odpTable = obTableClient.getOdpTableParamWithPartId(tableName, getPartId());
                     partitionObTables.put(odpTable.getPartId(), new ObPair<>(odpTable.getPartId(), odpTable));
                 } catch (Exception e) {
                     if (e instanceof ObTableException) {
@@ -205,8 +203,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                         } else if (((ObTableException) e).getErrorCode() == ResultCodes.OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
                             // retry table meta one time
                             obTableClient.refreshOdpMeta(tableName);
-                            ObTableParam odpTable = obTableClient.getOdpTableParamWithPartId(
-                                    tableName, getPartId(), route);
+                            ObTableParam odpTable = obTableClient.getOdpTableParamWithPartId(tableName, getPartId());
                             partitionObTables.put(odpTable.getPartId(), new ObPair<>(odpTable.getPartId(), odpTable));
                         } else {
                             throw e;

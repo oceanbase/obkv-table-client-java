@@ -946,7 +946,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * Get or refresh table entry meta information.
-     * work for both OcpMode and OdpMode
      * @param tableName table name
      * @return TableEntry
      * @throws Exception if fail
@@ -962,7 +961,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * refresh table meta information except location
-     * work for both OcpMode and OdpMode
      * @param tableName table name
      * */
     private TableEntry refreshMeta(String tableName) throws Exception {
@@ -971,12 +969,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     /**
      * refresh table meta information except location
-     * work for both OcpMode and OdpMode
      * only support by ODP version after 4.3.2
      * @param tableName table name
      * */
     public TableEntry refreshOdpMeta(String tableName) throws Exception {
-        return tableRoute.refreshODPMeta(tableName, true);
+        return tableRoute.refreshOdpMeta(tableName, true);
     }
 
     /**
@@ -1087,13 +1084,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * only support by ODP version after 4.3.2
      * @param tableName table want to get
      * @param partId logic of table
-     * @param route ObServer route
      * @return ObPair of partId and table
      * @throws Exception exception
      */
-    public ObTableParam getOdpTableParamWithPartId(String tableName, long partId, ObServerRoute route)
+    public ObTableParam getOdpTableParamWithPartId(String tableName, long partId)
                                                                                                    throws Exception {
-        return tableRoute.getOdpTableWithPartId(tableName, partId, route);
+        return tableRoute.getOdpTableWithPartId(tableName, partId);
     }
 
     /**
@@ -1932,7 +1928,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         ObTableParam tableParam = null;
         if (odpMode) {
             if (refresh) {
-                tableRoute.refreshODPMeta(tableName, true);
+                tableRoute.refreshOdpMeta(tableName, true);
             }
             tableParam = tableRoute.getOdpTableParam(tableName, rowKey);
         } else {
@@ -1967,7 +1963,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         List<ObTableParam> allTables;
         if (odpMode) {
             if (refresh) {
-                tableRoute.refreshODPMeta(tableName, true);
+                tableRoute.refreshOdpMeta(tableName, true);
             }
             allTables = tableRoute.getOdpTableParams(tableName, new ObTableQuery(), new Object[]{ ObObj.getMin() }, true,
                     new Object[]{ ObObj.getMax() }, true);
