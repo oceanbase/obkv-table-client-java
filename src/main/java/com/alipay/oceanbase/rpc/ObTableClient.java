@@ -48,6 +48,7 @@ import com.alipay.oceanbase.rpc.util.*;
 import com.alipay.remoting.util.StringUtils;
 import org.slf4j.Logger;
 
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -1111,6 +1112,17 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
        // If the node address does not exist, a new table is created
        return addTable(addr);
+    }
+    
+    public ObTable getRandomTable() {
+        ObTable anyTable;
+        if (odpMode) {
+            anyTable = tableRoute.getOdpTable();
+        } else {
+            ConcurrentHashMap<ObServerAddr, ObTable> tableRoster = tableRoute.getTableRoster().getTables();
+            anyTable = tableRoster.values().stream().findAny().orElse(null);
+        }
+        return anyTable;
     }
 
     public ObTable addTable(ObServerAddr addr){
