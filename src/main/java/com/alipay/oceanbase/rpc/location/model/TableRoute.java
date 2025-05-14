@@ -94,16 +94,9 @@ public class TableRoute {
      * */
     public TableEntry getTableEntry(String tableName) throws Exception {
         TableEntry tableEntry;
-        if (tableClient.isOdpMode()) {
-            tableEntry = odpTableLocations.getTableEntry(tableName);
-            if (tableEntry == null) {
-                tableEntry = refreshODPMeta(tableName, false);
-            }
-        } else {
-            tableEntry = tableLocations.getTableEntry(tableName);
-            if (tableEntry == null) {
-                tableEntry = refreshMeta(tableName);
-            }
+        tableEntry = tableLocations.getTableEntry(tableName);
+        if (tableEntry == null) {
+            tableEntry = refreshMeta(tableName);
         }
         return tableEntry;
     }
@@ -587,13 +580,6 @@ public class TableRoute {
         }
     }
 
-    /**
-     * get or refresh table meta information in odp mode
-     * */
-    public TableEntry refreshODPMeta(String tableName, boolean forceRefresh) throws Exception {
-        return odpTableLocations.refreshODPMeta(tableName, forceRefresh, odpInfo.getObTable());
-    }
-
     private Long[] getTabletsFromTableEntry(TableEntry tableEntry) {
         Long[] tablets = null;
         if (tableEntry.isPartitionTable()) {
@@ -621,7 +607,6 @@ public class TableRoute {
     }
     /**
      * get TableParam by tableName and rowkey
-     * work for both OcpMode and OdpMode
      * @param tableName tableName
      * @param rowkey row key or partition key names and values
      * @return ObTableParam tableParam
@@ -639,16 +624,11 @@ public class TableRoute {
             throw new ObTableEntryRefreshException("tableEntry is null, tableName: " + tableName);
         }
         long partId = getPartId(tableEntry, rowkey);
-        if (tableClient.isOdpMode()) {
-            return getODPTableInternal(tableEntry, partId);
-        } else {
-            return getTableInternal(tableName, tableEntry, partId, route);
-        }
+        return getTableInternal(tableName, tableEntry, partId, route);
     }
 
     /**
      * get TableParam by tableName and rowkeys in batch
-     * work for both OcpMode and OdpMode
      * @param tableName tableName
      * @param rowkeys list of row key or partition key names and values
      * @return ObTableParam tableParam
@@ -665,11 +645,7 @@ public class TableRoute {
         for (Row rowkey : rowkeys) {
             long partId = getPartId(tableEntry, rowkey);
             ObTableParam param = null;
-            if (tableClient.isOdpMode()) {
-                param = getODPTableInternal(tableEntry, partId);
-            } else {
-                param = getTableInternal(tableName, tableEntry, partId, route);
-            }
+            param = getTableInternal(tableName, tableEntry, partId, route);
             params.add(param);
         }
         return params;
@@ -718,7 +694,7 @@ public class TableRoute {
     }
 
     /**
-     * get addr by pardId
+     * get addr by partId
      * @param tableName table want to get
      * @param partId tabletId of table (real tablet id in 4.x)
      * @param route ObServer route
@@ -728,11 +704,7 @@ public class TableRoute {
     public ObTableParam getTableWithPartId(String tableName, long partId, ObServerRoute route)
                                                                                               throws Exception {
         TableEntry tableEntry = getTableEntry(tableName);
-        if (tableClient.isOdpMode()) {
-            return getODPTableInternal(tableEntry, partId);
-        } else {
-            return getTableInternal(tableName, tableEntry, partId, route);
-        }
+        return getTableInternal(tableName, tableEntry, partId, route);
     }
 
     /**
@@ -807,24 +779,6 @@ public class TableRoute {
         ObTableParam param = createTableParam(obTable, tableEntry, obPartitionLocationInfo, partId,
             tabletId);
         addr.recordAccess();
-        return param;
-    }
-
-    /**
-     * get odp table entry by partId, just get meta information
-     * @param odpTableEntry odp tableEntry
-     * @param partId logicId of tablet
-     * @return ObTableParam table information for execution
-     */
-    private ObTableParam getODPTableInternal(TableEntry odpTableEntry, long partId) {
-        ObTable obTable = odpInfo.getObTable();
-        ObTableParam param = new ObTableParam(obTable);
-        param.setPartId(partId);
-        long tabletId = getTabletIdByPartId(odpTableEntry, partId);
-        param.setLsId(odpTableEntry.getPartitionEntry().getLsId(tabletId));
-        param.setTableId(odpTableEntry.getTableId());
-        // real partition(tablet) id
-        param.setPartitionId(tabletId);
         return param;
     }
 
@@ -964,7 +918,6 @@ public class TableRoute {
 
     /**
      * get TableParams by start-end range in this table
-     * work for both OcpMode and OdpMode
      * @param tableName table want to get
      * @param query query
      * @param start start key
@@ -977,11 +930,6 @@ public class TableRoute {
     public List<ObTableParam> getTableParams(String tableName, ObTableQuery query, Object[] start,
                                              boolean startInclusive, Object[] end,
                                              boolean endInclusive) throws Exception {
-
-        if (tableClient.isOdpMode()) {
-            return getODPTablesInternal(tableName, query.getScanRangeColumns(), start,
-                startInclusive, end, endInclusive);
-        }
         return getTablesInternal(tableName, query.getScanRangeColumns(), start, startInclusive,
             end, endInclusive, tableClient.getRoute(false));
     }
@@ -1073,64 +1021,6 @@ public class TableRoute {
             params.add(param);
         }
         return params;
-    }
-
-    public List<ObTableParam> getODPTablesInternal(String tableName, List<String> scanRangeColumns,
-                                                   Object[] start, boolean startInclusive,
-                                                   Object[] end, boolean endInclusive)
-                                                                                      throws Exception {
-        if (start.length != end.length) {
-            throw new IllegalArgumentException("length of start key and end key is not equal");
-        }
-        List<ObTableParam> obTableParams = new ArrayList<ObTableParam>();
-        TableEntry odpTableEntry = getTableEntry(tableName);
-
-        if (scanRangeColumns == null || scanRangeColumns.isEmpty()) {
-            Map<String, Integer> tableEntryRowKeyElement = tableClient.getRowKeyElement(tableName);
-            if (tableEntryRowKeyElement != null) {
-                scanRangeColumns = new ArrayList<String>(tableEntryRowKeyElement.keySet());
-            }
-        }
-        // 2. get replica location
-        // partIdWithReplicaList -> List<pair<logicId, replica>>
-        Row startRow = new Row();
-        Row endRow = new Row();
-        // ensure the format of column names and values if the current table is a table with partition
-        if (odpTableEntry.isPartitionTable()
-            && odpTableEntry.getPartitionInfo().getLevel() != ObPartitionLevel.LEVEL_ZERO) {
-            if ((scanRangeColumns == null || scanRangeColumns.isEmpty()) && start.length == 1
-                && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj() && end.length == 1
-                && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
-                // for getPartition to query all partitions
-                scanRangeColumns = new ArrayList<String>(Collections.nCopies(start.length,
-                    "partition"));
-            }
-            // scanRangeColumn may be longer than start/end in prefix scanning situation
-            if (scanRangeColumns == null || scanRangeColumns.size() < start.length) {
-                throw new IllegalArgumentException(
-                    "length of key and scan range columns do not match, please use addRowKeyElement or set scan range columns");
-            }
-            for (int i = 0; i < start.length; i++) {
-                startRow.add(scanRangeColumns.get(i), start[i]);
-                endRow.add(scanRangeColumns.get(i), end[i]);
-            }
-        }
-
-        List<Long> partIds = getPartIds(odpTableEntry, startRow, startInclusive, endRow,
-            endInclusive);
-        for (Long partId : partIds) {
-            ObTable obTable = odpInfo.getObTable();
-            ObTableParam param = new ObTableParam(obTable);
-            param.setPartId(partId);
-            long tabletId = getTabletIdByPartId(odpTableEntry, partId);
-            param.setLsId(odpTableEntry.getPartitionEntry().getLsId(tabletId));
-            param.setTableId(odpTableEntry.getTableId());
-            // real partition(tablet) id
-            param.setPartitionId(tabletId);
-            obTableParams.add(param);
-        }
-
-        return obTableParams;
     }
 
     /**
@@ -1230,6 +1120,158 @@ public class TableRoute {
         }
 
         return partIds;
+    }
+
+    /*------------------------------------------------------------------------ODP routing------------------------------------------------------------------------*/
+
+    /**
+     * get ODP tableEntry by tableName,
+     * this methods will guarantee the tableEntry is not null
+     * only support by ODP version after 4.3.2
+     * */
+    public TableEntry getOdpTableEntry(String tableName) throws Exception {
+        TableEntry tableEntry;
+        tableEntry = odpTableLocations.getTableEntry(tableName);
+        if (tableEntry == null) {
+            tableEntry = refreshOdpMeta(tableName, false);
+        }
+        return tableEntry;
+    }
+
+    /**
+     * get or refresh table meta information in odp mode
+     * only support by ODP version after 4.3.2
+     * */
+    public TableEntry refreshOdpMeta(String tableName, boolean forceRefresh) throws Exception {
+        return odpTableLocations.refreshOdpMeta(tableName, forceRefresh, odpInfo.getObTable());
+    }
+
+    /**
+     * get odp TableParam by tableName and rowkey
+     * only support by ODP version after 4.3.2
+     * @param tableName tableName
+     * @param rowkey row key or partition key names and values
+     * @return ObTableParam tableParam
+     * */
+    public ObTableParam getOdpTableParam(String tableName, Row rowkey) throws Exception {
+        TableEntry odpTableEntry = getOdpTableEntry(tableName);
+        if (odpTableEntry == null) {
+            logger.error("tableEntry is null, tableName: {}", tableName);
+            throw new ObTableEntryRefreshException("tableEntry is null, tableName: " + tableName);
+        }
+        long partId = getPartId(odpTableEntry, rowkey);
+        return getOdpTableInternal(odpTableEntry, partId);
+    }
+
+    /**
+     * get odp table addr by partId
+     * only support by ODP version after 4.3.2
+     * @param tableName table want to get
+     * @param partId tabletId of table (real tablet id in 4.x)
+     * @return ObTableParam table information for execution
+     * @throws Exception exception
+     */
+    public ObTableParam getOdpTableWithPartId(String tableName, long partId)
+            throws Exception {
+        TableEntry tableEntry = getOdpTableEntry(tableName);
+        return getOdpTableInternal(tableEntry, partId);
+    }
+
+    /**
+     * get odp table entry by partId, just get meta information
+     * only support by ODP version after 4.3.2
+     * @param odpTableEntry odp tableEntry
+     * @param partId logicId of tablet
+     * @return ObTableParam table information for execution
+     */
+    private ObTableParam getOdpTableInternal(TableEntry odpTableEntry, long partId) {
+        ObTable obTable = odpInfo.getObTable();
+        ObTableParam param = new ObTableParam(obTable);
+        param.setPartId(partId);
+        long tabletId = getTabletIdByPartId(odpTableEntry, partId);
+        param.setLsId(odpTableEntry.getPartitionEntry().getLsId(tabletId));
+        param.setTableId(odpTableEntry.getTableId());
+        // real partition(tablet) id
+        param.setPartitionId(tabletId);
+        return param;
+    }
+
+    /**
+     * get odp TableParams by start-end range in this table
+     * only support by ODP version after 4.3.2
+     * @param tableName table want to get
+     * @param query query
+     * @param start start key
+     * @param startInclusive whether include start key
+     * @param end end key
+     * @param endInclusive whether include end key
+     * @return list of table obTableParams
+     * @throws Exception exception
+     */
+    public List<ObTableParam> getOdpTableParams(String tableName, ObTableQuery query, Object[] start,
+                                                boolean startInclusive, Object[] end,
+                                                boolean endInclusive) throws Exception {
+
+        return getOdpTablesInternal(tableName, query.getScanRangeColumns(), start,
+                startInclusive, end, endInclusive);
+    }
+
+    private List<ObTableParam> getOdpTablesInternal(String tableName, List<String> scanRangeColumns,
+                                                    Object[] start, boolean startInclusive,
+                                                    Object[] end, boolean endInclusive)
+            throws Exception {
+        if (start.length != end.length) {
+            throw new IllegalArgumentException("length of start key and end key is not equal");
+        }
+        List<ObTableParam> obTableParams = new ArrayList<ObTableParam>();
+        TableEntry odpTableEntry = getOdpTableEntry(tableName);
+
+        if (scanRangeColumns == null || scanRangeColumns.isEmpty()) {
+            Map<String, Integer> tableEntryRowKeyElement = tableClient.getRowKeyElement(tableName);
+            if (tableEntryRowKeyElement != null) {
+                scanRangeColumns = new ArrayList<String>(tableEntryRowKeyElement.keySet());
+            }
+        }
+        // 2. get replica location
+        // partIdWithReplicaList -> List<pair<logicId, replica>>
+        Row startRow = new Row();
+        Row endRow = new Row();
+        // ensure the format of column names and values if the current table is a table with partition
+        if (odpTableEntry.isPartitionTable()
+                && odpTableEntry.getPartitionInfo().getLevel() != ObPartitionLevel.LEVEL_ZERO) {
+            if ((scanRangeColumns == null || scanRangeColumns.isEmpty()) && start.length == 1
+                    && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj() && end.length == 1
+                    && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
+                // for getPartition to query all partitions
+                scanRangeColumns = new ArrayList<String>(Collections.nCopies(start.length,
+                        "partition"));
+            }
+            // scanRangeColumn may be longer than start/end in prefix scanning situation
+            if (scanRangeColumns == null || scanRangeColumns.size() < start.length) {
+                throw new IllegalArgumentException(
+                        "length of key and scan range columns do not match, please use addRowKeyElement or set scan range columns");
+            }
+            for (int i = 0; i < start.length; i++) {
+                startRow.add(scanRangeColumns.get(i), start[i]);
+                endRow.add(scanRangeColumns.get(i), end[i]);
+            }
+        }
+
+        List<Long> partIds = getPartIds(odpTableEntry, startRow, startInclusive, endRow,
+                endInclusive);
+        for (Long partId : partIds) {
+            ObTable obTable = odpInfo.getObTable();
+            ObTableParam param = new ObTableParam(obTable);
+            param.setPartId(partId);
+            long tabletId = getTabletIdByPartId(odpTableEntry, partId);
+            param.setLsId(odpTableEntry.getPartitionEntry().getLsId(tabletId));
+            param.setTableId(odpTableEntry.getTableId());
+            // real partition(tablet) id
+            param.setPartitionId(tabletId);
+            obTableParams.add(param);
+        }
+
+        return obTableParams;
     }
 
     /*------------------------------------------------------------------------Table Group------------------------------------------------------------------------*/
