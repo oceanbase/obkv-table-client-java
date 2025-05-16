@@ -18,6 +18,8 @@
 package com.alipay.oceanbase.rpc.bolt.protocol;
 
 import com.alipay.oceanbase.rpc.exception.ObTableRoutingWrongException;
+import com.alipay.oceanbase.rpc.meta.ObTableMetaRequest;
+import com.alipay.oceanbase.rpc.meta.ObTableMetaResponse;
 import com.alipay.oceanbase.rpc.protocol.packet.ObRpcPacketHeader;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
@@ -32,6 +34,8 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.login.ObTableLoginResult;
 import com.alipay.remoting.CommandCode;
+
+import static com.alipay.oceanbase.rpc.protocol.payload.Pcodes.OB_TABLE_API_META_INFO_EXECUTE;
 
 public enum ObTablePacketCode implements CommandCode {
 
@@ -133,6 +137,12 @@ public enum ObTablePacketCode implements CommandCode {
         public ObPayload newPayload(ObRpcPacketHeader header) {
             throw new IllegalArgumentException("OB_ERROR_PACKET has no payload implementation");
         }
+    },
+    OB_TABLE_META_INFO_EXECUTE(Pcodes.OB_TABLE_API_META_INFO_EXECUTE) {
+        @Override
+        public ObPayload newPayload(ObRpcPacketHeader header) {
+            return new ObTableMetaResponse();
+        }
     };
 
     private short value;
@@ -175,6 +185,8 @@ public enum ObTablePacketCode implements CommandCode {
                 return OB_TABLE_API_MOVE;
             case Pcodes.OB_ERROR_PACKET:
                 return OB_ERROR_PACKET;
+            case OB_TABLE_API_META_INFO_EXECUTE:
+                return OB_TABLE_META_INFO_EXECUTE;
         }
         throw new IllegalArgumentException("Unknown Rpc command code value ," + value);
     }
