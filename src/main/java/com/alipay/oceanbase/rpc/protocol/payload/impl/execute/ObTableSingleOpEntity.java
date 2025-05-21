@@ -22,6 +22,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjMeta;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObTableSerialUtil;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -100,6 +101,39 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         }
 
         return bytes;
+    }
+
+    public void encode(ObByteBuf buf) {
+        // 0. encode header
+        encodeHeader(buf);
+
+        // 1. encode rowKey bitmap
+        Serialization.encodeVi64(buf, rowKeyBitLen);
+        for (byte b : rowKeyBitMap) {
+            Serialization.encodeI8(buf, b);
+        }
+
+        // 2. encode rowkey
+        Serialization.encodeVi64(buf, rowkey.size());
+        for (ObObj obj : rowkey) {
+            ObTableSerialUtil.encode(buf, obj);
+        }
+
+        // 3. encode property bitmap
+        if (ignoreEncodePropertiesColumnNames) {
+            Serialization.encodeVi64(buf,0L);
+        } else {
+            Serialization.encodeVi64(buf, propertiesBitLen);
+            for (byte b : propertiesBitMap) {
+                Serialization.encodeI8(buf, b);
+            }
+        }
+
+        // 4. encode properties values
+        Serialization.encodeVi64(buf, propertiesValues.size());
+        for (ObObj obj : propertiesValues) {
+            ObTableSerialUtil.encode(buf, obj);
+        }
     }
 
     private byte[] parseBitMap(long bitLen, List<String> aggColumnNames, List<String> columnNames, ByteBuf buf) {

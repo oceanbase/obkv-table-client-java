@@ -704,6 +704,9 @@ public class Serialization {
      * @param str input data
      */
     public static void encodeVString(ObByteBuf buf, String str) {
+        if (str == null) {
+            str = "";
+        }
         encodeVString(buf, str, StandardCharsets.UTF_8);
     }
 

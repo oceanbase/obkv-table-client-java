@@ -21,6 +21,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -74,6 +75,30 @@ public class ObTableSingleOp extends AbstractPayload {
         }
 
         return bytes;
+    }
+
+    public void encode(ObByteBuf buf) {
+        // 0. encode header
+        encodeHeader(buf);
+
+        // 1. encode op type
+        byte opTypeVal = singleOpType.getByteValue();
+        Serialization.encodeI8(buf, opTypeVal);
+
+        // 2. encode op flag
+        long flag = singleOpFlag.getValue();
+        Serialization.encodeVi64(buf, flag);
+
+        // 3. encode single op query
+        if (ObTableOperationType.needEncodeQuery(singleOpType)) {
+           query.encode(buf);
+        }
+
+        // 4. encode entities
+        Serialization.encodeVi64(buf, entities.size());
+        for (ObTableSingleOpEntity entity : entities) {
+            entity.encode(buf);
+        }
     }
 
     /*

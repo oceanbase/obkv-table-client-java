@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.ObBytesString;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
@@ -99,6 +100,27 @@ public class ObHTableFilter extends AbstractPayload {
         idx += len;
 
         return bytes;
+    }
+
+    public void encode(ObByteBuf buf) {
+        // 0. encode header
+        encodeObUniVersionHeader(buf, getVersion(), getPayloadContentSize());
+
+        // 1. encode
+        Serialization.encodeI8(buf, isValid ? (byte) 1 : (byte) 0);
+
+        Serialization.encodeVi64(buf, selectColumnQualifier.size());
+
+        for (ObBytesString q : selectColumnQualifier) {
+            Serialization.encodeBytesString(buf, q);
+        }
+
+        Serialization.encodeVi64(buf, minStamp);
+        Serialization.encodeVi64(buf, maxStamp);
+        Serialization.encodeVi32(buf, maxVersions);
+        Serialization.encodeVi32(buf, limitPerRowPerCf);
+        Serialization.encodeVi32(buf, offsetPerRowPerCf);
+        Serialization.encodeBytesString(buf, filterString);
     }
 
     /*

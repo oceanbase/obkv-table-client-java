@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -73,6 +74,23 @@ public class ObTableTabletOp extends AbstractPayload {
 
         return bytes;
     }
+
+    public void encode(ObByteBuf buf) {
+        encodeHeader(buf);
+
+        // 1. encode tablet id
+        Serialization.encodeI64(buf, tabletId);
+
+        // 2. encode option flag
+        Serialization.encodeVi64(buf, optionFlag.getValue());
+
+        // 3. encode Operation
+        Serialization.encodeVi64(buf, singleOperations.size());
+        for (ObTableSingleOp singleOperation : singleOperations) {
+            singleOperation.encode(buf);
+        }
+    }
+
 
     /*
      * Decode.
