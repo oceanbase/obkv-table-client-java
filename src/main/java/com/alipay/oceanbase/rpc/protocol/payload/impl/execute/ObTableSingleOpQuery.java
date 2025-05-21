@@ -151,40 +151,43 @@ public class ObTableSingleOpQuery extends ObTableQuery {
      */
     @Override
     public long getPayloadContentSize() {
-        long payloadContentSize = 0;
+        if (this.payLoadContentSize == INVALID_PAYLOAD_CONTENT_SIZE) {
+            long payloadContentSize = 0;
 
-        payloadContentSize += Serialization.getNeedBytes(scanRangeBitLen);
-        payloadContentSize += scanRangeBitMap.length;
+            payloadContentSize += Serialization.getNeedBytes(scanRangeBitLen);
+            payloadContentSize += scanRangeBitMap.length;
 
-        payloadContentSize += Serialization.getNeedBytes(keyRanges.size());
-        for (ObNewRange range : keyRanges) {
-            payloadContentSize += ObTableSerialUtil.getEncodedSize(range);
+            payloadContentSize += Serialization.getNeedBytes(keyRanges.size());
+            for (ObNewRange range : keyRanges) {
+                payloadContentSize += ObTableSerialUtil.getEncodedSize(range);
+            }
+
+            payloadContentSize += Serialization.getNeedBytes(indexName);
+            payloadContentSize += Serialization.getNeedBytes(filterString);
+
+            // calculate part required by HBase Batch Get
+            if (isHbaseQuery && ObGlobal.isHBaseBatchGetSupport()) {
+                payloadContentSize += Serialization.getNeedBytes(selectColumns.size());
+                for (String selectColumn : selectColumns) {
+                    payloadContentSize += Serialization.getNeedBytes(selectColumn);
+                }
+                payloadContentSize += 1; // scanOrder
+
+                if (isHbaseQuery) {
+                    payloadContentSize += hTableFilter.getPayloadSize();
+                } else {
+                    payloadContentSize += HTABLE_DUMMY_BYTES.length;
+                }
+                if (isHbaseQuery && obKVParams != null) {
+                    payloadContentSize += obKVParams.getPayloadSize();
+                } else {
+                    payloadContentSize += HTABLE_DUMMY_BYTES.length;
+                }
+            }
+            this.payLoadContentSize = payloadContentSize;
         }
 
-        payloadContentSize += Serialization.getNeedBytes(indexName);
-        payloadContentSize += Serialization.getNeedBytes(filterString);
-
-        // calculate part required by HBase Batch Get
-        if (isHbaseQuery && ObGlobal.isHBaseBatchGetSupport()) {
-            payloadContentSize += Serialization.getNeedBytes(selectColumns.size());
-            for (String selectColumn : selectColumns) {
-                payloadContentSize += Serialization.getNeedBytes(selectColumn);
-            }
-            payloadContentSize += 1; // scanOrder
-
-            if (isHbaseQuery) {
-                payloadContentSize += hTableFilter.getPayloadSize();
-            } else {
-                payloadContentSize += HTABLE_DUMMY_BYTES.length;
-            }
-            if (isHbaseQuery && obKVParams != null) {
-                payloadContentSize += obKVParams.getPayloadSize();
-            } else {
-                payloadContentSize += HTABLE_DUMMY_BYTES.length;
-            }
-        }
-
-        return payloadContentSize;
+        return this.payLoadContentSize;
     }
 
     // Support class, which is used for column name sorted

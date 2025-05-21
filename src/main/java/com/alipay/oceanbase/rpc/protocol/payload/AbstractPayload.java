@@ -37,6 +37,7 @@ import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderL
 public abstract class AbstractPayload implements ObPayload {
 
     private static final AtomicInteger CHANNELID = new AtomicInteger(1);
+    protected static final long        INVALID_PAYLOAD_CONTENT_SIZE = -1;
     private long                       uniqueId;
     private long                       sequence;
     private Integer                    channelId = null;
@@ -44,6 +45,7 @@ public abstract class AbstractPayload implements ObPayload {
     private long                       version   = 1;
     protected long                     timeout   = RPC_OPERATION_TIMEOUT.getDefaultLong();
     protected int                      groupId   = 0;
+    protected long                     payLoadContentSize = INVALID_PAYLOAD_CONTENT_SIZE;
 
     /*
      * Get pcode.

@@ -103,16 +103,19 @@ public class ObTableSingleOp extends AbstractPayload {
      */
     @Override
     public long getPayloadContentSize() {
-        long payloadContentSize = Serialization.getNeedBytes(singleOpType.getByteValue());
-        payloadContentSize += Serialization.getNeedBytes(singleOpFlag.getValue());
-        if (ObTableOperationType.needEncodeQuery(singleOpType)) {
-            payloadContentSize += query.getPayloadSize();
+        if (this.payLoadContentSize == INVALID_PAYLOAD_CONTENT_SIZE) {
+            long payloadContentSize = Serialization.getNeedBytes(singleOpType.getByteValue());
+            payloadContentSize += Serialization.getNeedBytes(singleOpFlag.getValue());
+            if (ObTableOperationType.needEncodeQuery(singleOpType)) {
+                payloadContentSize += query.getPayloadSize();
+            }
+            payloadContentSize += Serialization.getNeedBytes(entities.size());
+            for (ObTableSingleOpEntity entity : entities) {
+                payloadContentSize += entity.getPayloadSize();
+            }
+            this.payLoadContentSize = payloadContentSize;
         }
-        payloadContentSize += Serialization.getNeedBytes(entities.size());
-        for (ObTableSingleOpEntity entity : entities) {
-            payloadContentSize += entity.getPayloadSize();
-        }
-        return payloadContentSize;
+        return this.payLoadContentSize;
     }
 
     public List<ObNewRange> getScanRange() {
