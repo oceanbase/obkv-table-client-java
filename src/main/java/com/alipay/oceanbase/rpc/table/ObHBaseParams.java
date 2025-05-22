@@ -30,7 +30,7 @@ public class ObHBaseParams extends ObKVParamsBase {
     boolean                  isCacheBlock               = false;  // whether enable server block cache and row cache or not
     boolean                  checkExistenceOnly         = false;  // check the existence only
     String                   hbaseVersion               = "1.3.6";
-
+    final static byte[]      hbaseDefaultVersionBytes   = Serialization.encodeVString("1.3.6");
     private static final int FLAG_ALLOW_PARTIAL_RESULTS = 1 << 0;
     private static final int FLAG_IS_CACHE_BLOCK        = 1 << 1;
     private static final int FLAG_CHECK_EXISTENCE_ONLY  = 1 << 2;
@@ -136,7 +136,11 @@ public class ObHBaseParams extends ObKVParamsBase {
 
         buf.writeBytes(booleansToByteArray());
 
-        Serialization.encodeVString(buf, hbaseVersion);
+        if (hbaseVersion == "1.3.6") {
+            buf.writeBytes(hbaseDefaultVersionBytes);
+        } else {
+            Serialization.encodeVString(buf, hbaseVersion);
+        }
     }
 
     public void byteArrayToBooleans(ByteBuf bytes) {
