@@ -30,10 +30,13 @@ public class ObHBaseParams extends ObKVParamsBase {
     boolean                  isCacheBlock               = false;  // whether enable server block cache and row cache or not
     boolean                  checkExistenceOnly         = false;  // check the existence only
     String                   hbaseVersion               = "1.3.6";
-    final static byte[]      hbaseDefaultVersionBytes   = Serialization.encodeVString("1.3.6");
     private static final int FLAG_ALLOW_PARTIAL_RESULTS = 1 << 0;
     private static final int FLAG_IS_CACHE_BLOCK        = 1 << 1;
     private static final int FLAG_CHECK_EXISTENCE_ONLY  = 1 << 2;
+    // encode perf opt
+    final static byte[]      hbaseDefaultVersionBytes   = Serialization.encodeVString("1.3.6");
+    volatile static byte[]   defaultEncodeBytes         = null;
+
 
     public ObHBaseParams() {
         pType = paramType.HBase;
@@ -112,35 +115,35 @@ public class ObHBaseParams extends ObKVParamsBase {
         byte[] b = new byte[] { (byte) pType.ordinal() };
         System.arraycopy(b, 0, bytes, idx, 1);
         idx += 1;
-        System.arraycopy(Serialization.encodeVi32(caching), 0, bytes, idx,
-            Serialization.getNeedBytes(caching));
-        idx += Serialization.getNeedBytes(caching);
-        System.arraycopy(Serialization.encodeVi32(callTimeout), 0, bytes, idx,
-            Serialization.getNeedBytes(callTimeout));
-        idx += Serialization.getNeedBytes(callTimeout);
+        byte[] tmpBytes = Serialization.encodeVi32(caching);
+        System.arraycopy(tmpBytes, 0, bytes, idx, tmpBytes.length);
+        idx += tmpBytes.length;
+        tmpBytes = Serialization.encodeVi32(callTimeout);
+        System.arraycopy(tmpBytes, 0, bytes, idx, tmpBytes.length);
+        idx += tmpBytes.length;
         System.arraycopy(booleansToByteArray(), 0, bytes, idx, 1);
         idx += 1;
-        System.arraycopy(Serialization.encodeVString(hbaseVersion), 0, bytes, idx,
-            Serialization.getNeedBytes(hbaseVersion));
-        idx += Serialization.getNeedBytes(hbaseVersion);
+        tmpBytes = Serialization.encodeVString(hbaseVersion);
+        System.arraycopy(tmpBytes, 0, bytes, idx, tmpBytes.length);
 
         return bytes;
     }
 
     public void encode(ObByteBuf buf) {
-        buf.writeByte((byte) pType.ordinal());
-
-        Serialization.encodeVi32(buf, caching);
-
-        Serialization.encodeVi32(buf, callTimeout);
-
-        buf.writeBytes(booleansToByteArray());
-
-        if (hbaseVersion == "1.3.6") {
-            buf.writeBytes(hbaseDefaultVersionBytes);
+        if (isUseDefaultEncode()) {
+            buf.writeBytes(encodeDefaultBytes());
         } else {
-            Serialization.encodeVString(buf, hbaseVersion);
+            buf.writeByte((byte) pType.ordinal());
+            Serialization.encodeVi32(buf, caching);
+            Serialization.encodeVi32(buf, callTimeout);
+            buf.writeBytes(booleansToByteArray());
+            if (hbaseVersion == "1.3.6") {
+                buf.writeBytes(hbaseDefaultVersionBytes);
+            } else {
+                Serialization.encodeVString(buf, hbaseVersion);
+            }
         }
+
     }
 
     public void byteArrayToBooleans(ByteBuf bytes) {
@@ -169,6 +172,22 @@ public class ObHBaseParams extends ObKVParamsBase {
                + allowPartialResults + ", \n isCacheBlock = " + isCacheBlock
                + ", \n checkExistenceOnly = " + checkExistenceOnly + ", \n hbaseVersion = "
                + hbaseVersion + "\n}\n";
+    }
+
+    public boolean isUseDefaultEncode() {
+        return caching == -1 && callTimeout == -1 && allowPartialResults == false &&
+                isCacheBlock == false && checkExistenceOnly == false && hbaseVersion == "1.3.6";
+    }
+
+    public byte[] encodeDefaultBytes() {
+        if (defaultEncodeBytes == null) {
+            synchronized (this.getClass()) {
+                if (defaultEncodeBytes == null) {
+                    defaultEncodeBytes = encode();
+                }
+            }
+        }
+        return defaultEncodeBytes;
     }
 
 }

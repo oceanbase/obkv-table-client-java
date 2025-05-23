@@ -36,6 +36,7 @@ public class ObTableSingleOpQuery extends ObTableQuery {
     private byte[] scanRangeBitMap = null;
     private long scanRangeBitLen = 0;
     private List<String> aggColumnNames = new ArrayList<>();
+    private final static byte[] primaryIndexByteArray = Serialization.encodeVString("PRIMARY");
 
     /*
      * Encode.
@@ -113,7 +114,11 @@ public class ObTableSingleOpQuery extends ObTableQuery {
         encodeHeader(buf);
 
         // 1. encode index name
-        Serialization.encodeVString(buf, indexName);
+        if (indexName == null || indexName.isEmpty() || indexName.compareToIgnoreCase("PRIMARY") == 0) {
+            buf.writeBytes(primaryIndexByteArray);
+        } else {
+            Serialization.encodeVString(buf, indexName);
+        }
 
         // 2. encode scan ranges columns
         Serialization.encodeVi64(buf, scanRangeBitLen);
