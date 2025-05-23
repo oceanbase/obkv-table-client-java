@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.table;
 
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import io.netty.buffer.ByteBuf;
 
 import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
@@ -65,6 +66,13 @@ public class ObKVParams extends AbstractPayload {
         return bytes;
     }
 
+    public void encode(ObByteBuf buf) {
+        // 0. encode header
+        encodeObUniVersionHeader(buf, getVersion(), getPayloadContentSize());
+
+        obKVParamsBase.encode(buf);
+    }
+
     public Object decode(ByteBuf buf) {
         super.decode(buf);
         byte b = buf.readByte();
@@ -76,6 +84,9 @@ public class ObKVParams extends AbstractPayload {
 
     @Override
     public long getPayloadContentSize() {
-        return obKVParamsBase.getPayloadContentSize();
+        if (this.payLoadContentSize == INVALID_PAYLOAD_CONTENT_SIZE) {
+            this.payLoadContentSize = obKVParamsBase.getPayloadContentSize();
+        }
+        return this.payLoadContentSize;
     }
 }

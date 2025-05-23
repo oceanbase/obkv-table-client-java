@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.protocol.payload;
 
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -37,6 +38,7 @@ import static com.alipay.oceanbase.rpc.util.Serialization.getObUniVersionHeaderL
 public abstract class AbstractPayload implements ObPayload {
 
     private static final AtomicInteger CHANNELID = new AtomicInteger(1);
+    protected static final long        INVALID_PAYLOAD_CONTENT_SIZE = -1;
     private long                       uniqueId;
     private long                       sequence;
     private Integer                    channelId = null;
@@ -44,7 +46,10 @@ public abstract class AbstractPayload implements ObPayload {
     private long                       version   = 1;
     protected long                     timeout   = RPC_OPERATION_TIMEOUT.getDefaultLong();
     protected int                      groupId   = 0;
-
+    // for perf opt
+    protected long                     payLoadContentSize = INVALID_PAYLOAD_CONTENT_SIZE;
+    protected static volatile byte[]   defaultEncodeBytes = null;
+    protected static volatile long 	   defaultPayLoadSize = INVALID_PAYLOAD_CONTENT_SIZE;
     /*
      * Get pcode.
      */
@@ -182,5 +187,23 @@ public abstract class AbstractPayload implements ObPayload {
         idx += headerLen;
         return idx;
     }
+
+    protected void encodeHeader(ObByteBuf buf) {
+        encodeObUniVersionHeader(buf, getVersion(), getPayloadContentSize());
+    }
+
+    // for perf opt
+    protected byte[] encodeDefaultBytes() {
+        if (defaultEncodeBytes == null) {
+            synchronized (this.getClass()) {
+                if (defaultEncodeBytes == null) {
+                    defaultEncodeBytes = encode();
+                }
+            }
+        }
+        return defaultEncodeBytes;
+    }
+
+    protected boolean isUseDefaultEncode() { return false; }
 
 }

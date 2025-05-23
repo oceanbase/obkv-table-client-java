@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -117,6 +118,42 @@ public class ObTableLSOperation extends AbstractPayload {
         return bytes;
     }
 
+    public void encode(ObByteBuf buf) {
+
+        // 0. encode header
+        encodeHeader(buf);
+
+        // 1. encode ls id
+        Serialization.encodeI64(buf, lsId);
+
+        // 2. encode table name
+        Serialization.encodeVString(buf, tableName);
+
+        // 3. encode table id
+        Serialization.encodeVi64(buf, tableId);
+
+        // 4. encode rowKey names
+        Serialization.encodeVi64(buf, rowKeyNames.size());
+        for (String rowKeyName : rowKeyNames) {
+            Serialization.encodeVString(buf, rowKeyName);
+        }
+
+        // 5. encode properties names
+        Serialization.encodeVi64(buf, propertiesNames.size());
+        for (String propertyName : propertiesNames) {
+            Serialization.encodeVString(buf, propertyName);
+        }
+
+        // 6. encode option flag
+        Serialization.encodeVi64(buf, optionFlag.getValue());
+
+        // 7. encode Operation
+        Serialization.encodeVi64(buf, tabletOperations.size());
+        for (ObTableTabletOp tabletOperation : tabletOperations) {
+            tabletOperation.encode(buf);
+        }
+    }
+
     /*
      * Decode.
      */
@@ -169,24 +206,28 @@ public class ObTableLSOperation extends AbstractPayload {
      */
     @Override
     public long getPayloadContentSize() {
-        long payloadContentSize = 0;
-        payloadContentSize += Serialization.getNeedBytes(tabletOperations.size());
-        for (ObTableTabletOp operation : tabletOperations) {
-            payloadContentSize += operation.getPayloadSize();
-        }
+        if (this.payLoadContentSize == INVALID_PAYLOAD_CONTENT_SIZE) {
+            long payloadContentSize = 0;
+            payloadContentSize += Serialization.getNeedBytes(tabletOperations.size());
+            for (ObTableTabletOp operation : tabletOperations) {
+                payloadContentSize += operation.getPayloadSize();
+            }
 
-        payloadContentSize += Serialization.getNeedBytes(rowKeyNames.size());
-        for (String rowKeyName : rowKeyNames) {
-            payloadContentSize += Serialization.getNeedBytes(rowKeyName);
-        }
+            payloadContentSize += Serialization.getNeedBytes(rowKeyNames.size());
+            for (String rowKeyName : rowKeyNames) {
+                payloadContentSize += Serialization.getNeedBytes(rowKeyName);
+            }
 
-        payloadContentSize += Serialization.getNeedBytes(propertiesNames.size());
-        for (String propertyName : propertiesNames) {
-            payloadContentSize += Serialization.getNeedBytes(propertyName);
-        }
+            payloadContentSize += Serialization.getNeedBytes(propertiesNames.size());
+            for (String propertyName : propertiesNames) {
+                payloadContentSize += Serialization.getNeedBytes(propertyName);
+            }
 
-        return payloadContentSize + LS_ID_SIZE + Serialization.getNeedBytes(optionFlag.getValue())
-                +  Serialization.getNeedBytes(tableName) + Serialization.getNeedBytes(tableId);
+            this.payLoadContentSize = payloadContentSize + LS_ID_SIZE + Serialization.getNeedBytes(optionFlag.getValue())
+                    +  Serialization.getNeedBytes(tableName) + Serialization.getNeedBytes(tableId);
+        }
+        return this.payLoadContentSize;
+
     }
 
     /*
