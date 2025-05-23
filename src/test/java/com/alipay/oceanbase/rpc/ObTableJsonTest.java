@@ -53,7 +53,7 @@ class JsonTestUtils {
     public static String Case1() {
         JSONObject obj = new JSONObject();
         for (int i = 0; i < 10; i++) {
-            obj.put("key" + i, generateRandomString(100));
+            obj.put("k" + i, generateRandomString(90));
         }
         return obj.toJSONString();
     }
@@ -61,7 +61,7 @@ class JsonTestUtils {
     public static String Case2() {
         JSONObject obj = new JSONObject();
         for (int i = 0; i < 100; i++) {
-            obj.put("key" + i, generateRandomString(10));
+            obj.put("k"+i, generateRandomString(6));
         }
         return obj.toJSONString();
     }
@@ -69,13 +69,13 @@ class JsonTestUtils {
     public static JSONObject recJson(int curL, int maxLevel) {
         JSONObject obj = new JSONObject();
         if (curL == maxLevel) {
-            String big_str = generateJsonString(100);
-            obj.put("key", big_str);
+            String big_str = generateRandomString(80);
+            obj.put("key"+ curL, big_str);
         }
 
         if (curL < maxLevel) {
-            obj.put("key" + curL, generateRandomString(100));
-            obj.put("L" + curL, generateLevel(curL + 1, maxLevel));
+            obj.put("key" + curL, generateRandomString(80));
+            obj.put("L" + curL, recJson(curL + 1, maxLevel));
         }
         return obj;
     }
@@ -508,6 +508,7 @@ public class ObTableJsonTest {
         // insert
         String big_json = JsonTestUtils.Case2();
         System.out.println((big_json.getBytes().length));
+        System.out.println(big_json);
         BatchOperation batch = client.batchOperation(tableName);
         for (int i = 0; i < 5000000; i++) {
             long key = i;
