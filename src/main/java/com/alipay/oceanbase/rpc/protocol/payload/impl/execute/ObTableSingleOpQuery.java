@@ -114,7 +114,7 @@ public class ObTableSingleOpQuery extends ObTableQuery {
         encodeHeader(buf);
 
         // 1. encode index name
-        if (indexName == null || indexName.isEmpty() || indexName.compareToIgnoreCase("PRIMARY") == 0) {
+        if (indexName != null && indexName.compareToIgnoreCase("PRIMARY") == 0) {
             buf.writeBytes(primaryIndexByteArray);
         } else {
             Serialization.encodeVString(buf, indexName);
@@ -207,8 +207,11 @@ public class ObTableSingleOpQuery extends ObTableQuery {
             for (ObNewRange range : keyRanges) {
                 payloadContentSize += ObTableSerialUtil.getEncodedSize(range);
             }
-
-            payloadContentSize += Serialization.getNeedBytes(indexName);
+            if (indexName != null && indexName.compareToIgnoreCase("PRIMARY") == 0) {
+                payloadContentSize += primaryIndexByteArray.length;
+            } else {
+                payloadContentSize += Serialization.getNeedBytes(indexName);
+            }
             payloadContentSize += Serialization.getNeedBytes(filterString);
 
             // calculate part required by HBase Batch Get
