@@ -46,10 +46,8 @@ public abstract class AbstractPayload implements ObPayload {
     private long                       version   = 1;
     protected long                     timeout   = RPC_OPERATION_TIMEOUT.getDefaultLong();
     protected int                      groupId   = 0;
-    // for perf opt
     protected long                     payLoadContentSize = INVALID_PAYLOAD_CONTENT_SIZE;
-    protected static volatile byte[]   defaultEncodeBytes = null;
-    protected static volatile long 	   defaultPayLoadSize = INVALID_PAYLOAD_CONTENT_SIZE;
+
     /*
      * Get pcode.
      */
@@ -191,19 +189,5 @@ public abstract class AbstractPayload implements ObPayload {
     protected void encodeHeader(ObByteBuf buf) {
         encodeObUniVersionHeader(buf, getVersion(), getPayloadContentSize());
     }
-
-    // for perf opt
-    protected byte[] encodeDefaultBytes() {
-        if (defaultEncodeBytes == null) {
-            synchronized (this.getClass()) {
-                if (defaultEncodeBytes == null) {
-                    defaultEncodeBytes = encode();
-                }
-            }
-        }
-        return defaultEncodeBytes;
-    }
-
-    protected boolean isUseDefaultEncode() { return false; }
 
 }

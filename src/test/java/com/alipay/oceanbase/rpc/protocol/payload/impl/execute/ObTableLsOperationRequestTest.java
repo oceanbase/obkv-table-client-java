@@ -193,43 +193,6 @@ public class ObTableLsOperationRequestTest {
     }
 
     @Test
-    public void testDefaultHTableFilterEncode() {
-        PerformanceComparator perfComparator = new PerformanceComparator();
-        {
-            // caching default
-            ObHTableFilter defaultHTableFilter = new ObHTableFilter();
-            defaultHTableFilter.setValid(true);
-            long defaultPayLoadSize = defaultHTableFilter.getPayloadSize();
-            byte[] defaultEncodeBytes = new byte[(int) defaultPayLoadSize];
-            ObByteBuf defaultByteBuf = new ObByteBuf(defaultEncodeBytes);
-            defaultHTableFilter.encode(defaultByteBuf);
-        }
-        for (int i = 0; i < defaultIterSize; i++) {
-            ObHTableFilter hTableFilter = new ObHTableFilter();
-            hTableFilter.setValid(true);
-            hTableFilter.setMaxVersions(generateRandomInt());
-            hTableFilter.setMaxStamp(generateRandomInt());
-            hTableFilter.setMinStamp(generateRandomInt());
-            hTableFilter.setLimitPerRowPerCf(generateRandomInt());
-            hTableFilter.setOffsetPerRowPerCf(generateRandomInt());
-            long payLoadSize = hTableFilter.getPayloadSize();
-            byte[] encodeBytes = new byte[(int) payLoadSize];
-            ObByteBuf byteBuf = new ObByteBuf(encodeBytes);
-            perfComparator.execFirst(() -> hTableFilter.encode(byteBuf));
-
-            // default
-            ObHTableFilter defaultHTableFilter = new ObHTableFilter();
-            defaultHTableFilter.setValid(true);
-            long defaultPayLoadSize = defaultHTableFilter.getPayloadSize();
-            byte[] defaultEncodeBytes = new byte[(int) defaultPayLoadSize];
-            ObByteBuf defaultByteBuf = new ObByteBuf(defaultEncodeBytes);
-            perfComparator.execSecond(() -> defaultHTableFilter.encode(defaultByteBuf));
-        }
-        // Calculate and print average times
-        perfComparator.printResult("testDefaultHTableFilterEncode");
-    }
-
-    @Test
     public void testKVParamsEncode() {
         PerformanceComparator perfComparator = new PerformanceComparator();
         for (int i = 0; i < defaultIterSize; i++) {
@@ -254,47 +217,6 @@ public class ObTableLsOperationRequestTest {
         // Calculate and print average times
         perfComparator.printResult("testKVParamsEncode");
     }
-
-    @Test
-    public void testDefaultKVParamsEncode() {
-        PerformanceComparator perfComparator = new PerformanceComparator();
-        // cache default bytes
-        {
-            // default encode
-            ObKVParams defaultObKVParams = new ObKVParams();
-            ObHBaseParams defaultHbaseParams = (ObHBaseParams) defaultObKVParams.getObParams(HBase);
-            defaultObKVParams.setObParamsBase(defaultHbaseParams);
-            long defaultPayLoadSize = defaultObKVParams.getPayloadSize();
-            byte[] defaultEncodeBytes = new byte[(int) defaultPayLoadSize];
-            ObByteBuf defaultByteBuf = new ObByteBuf(defaultEncodeBytes);
-            defaultObKVParams.encode(defaultByteBuf);
-        }
-        for (int i = 0; i < defaultIterSize; i++) {
-            ObKVParams obKVParams = new ObKVParams();
-            ObHBaseParams hbaseParams = (ObHBaseParams) obKVParams.getObParams(HBase);
-            obKVParams.setObParamsBase(hbaseParams);
-            hbaseParams.setCaching(generateRandomInt());
-            hbaseParams.setCallTimeout(generateRandomInt());
-            hbaseParams.setAllowPartialResults(generateRandomBoolean());
-            hbaseParams.setCacheBlock(generateRandomBoolean());
-            hbaseParams.setCheckExistenceOnly(generateRandomBoolean());
-            long payLoadSize = obKVParams.getPayloadSize();
-            byte[] newEncodeBytes = new byte[(int) payLoadSize];
-            ObByteBuf byteBuf = new ObByteBuf(newEncodeBytes);
-            perfComparator.execFirst(() -> obKVParams.encode(byteBuf));
-            // default encode
-            ObKVParams defaultObKVParams = new ObKVParams();
-            ObHBaseParams defaultHbaseParams = (ObHBaseParams) defaultObKVParams.getObParams(HBase);
-            defaultObKVParams.setObParamsBase(defaultHbaseParams);
-            long defaultPayLoadSize = defaultObKVParams.getPayloadSize();
-            byte[] defaultEncodeBytes = new byte[(int) defaultPayLoadSize];
-            ObByteBuf defaultByteBuf = new ObByteBuf(defaultEncodeBytes);
-            perfComparator.execSecond(() -> defaultObKVParams.encode(defaultByteBuf));
-        }
-        // Calculate and print average times
-        perfComparator.printResult("testDefaultKVParamsEncode");
-    }
-
 
     private static void assertEncodeByteArray(byte[] bytes1, byte[] bytes2) {
         if (bytes1 == bytes2) return;
