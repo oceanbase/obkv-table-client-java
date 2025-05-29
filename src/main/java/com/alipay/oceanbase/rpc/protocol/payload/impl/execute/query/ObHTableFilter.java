@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.ObBytesString;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
@@ -61,44 +62,73 @@ public class ObHTableFilter extends AbstractPayload {
         int idx = 0;
 
         // 0. encode header
-        int headerLen = (int) getObUniVersionHeaderLength(getVersion(), getPayloadContentSize());
-        System.arraycopy(encodeObUniVersionHeader(getVersion(), getPayloadContentSize()), 0, bytes,
-            idx, headerLen);
-        idx += headerLen;
+        byte[] headerBytes = encodeObUniVersionHeader(getVersion(), getPayloadContentSize());
+        System.arraycopy(headerBytes, 0, bytes, idx, headerBytes.length);
+        idx += headerBytes.length;
 
         // 1. encode
         System.arraycopy(Serialization.encodeI8(isValid ? (byte) 1 : (byte) 0), 0, bytes, idx, 1);
         idx++;
-        int len = Serialization.getNeedBytes(selectColumnQualifier.size());
-        System
-            .arraycopy(Serialization.encodeVi64(selectColumnQualifier.size()), 0, bytes, idx, len);
-        idx += len;
+        byte[] selectColumnQualifierBytes = Serialization.encodeVi64(selectColumnQualifier.size());
+        System.arraycopy(selectColumnQualifierBytes, 0, bytes, idx, selectColumnQualifierBytes.length);
+        idx += selectColumnQualifierBytes.length;
+
         for (ObBytesString q : selectColumnQualifier) {
-            len = Serialization.getNeedBytes(q);
-            System.arraycopy(Serialization.encodeBytesString(q), 0, bytes, idx, len);
-            idx += len;
+            byte[] QualifierBytes = Serialization.encodeBytesString(q);
+            System.arraycopy(QualifierBytes, 0, bytes, idx, QualifierBytes.length);
+            idx += QualifierBytes.length;
         }
 
-        len = Serialization.getNeedBytes(minStamp);
-        System.arraycopy(Serialization.encodeVi64(minStamp), 0, bytes, idx, len);
-        idx += len;
-        len = Serialization.getNeedBytes(maxStamp);
-        System.arraycopy(Serialization.encodeVi64(maxStamp), 0, bytes, idx, len);
-        idx += len;
-        len = Serialization.getNeedBytes(maxVersions);
-        System.arraycopy(Serialization.encodeVi32(maxVersions), 0, bytes, idx, len);
-        idx += len;
-        len = Serialization.getNeedBytes(limitPerRowPerCf);
-        System.arraycopy(Serialization.encodeVi32(limitPerRowPerCf), 0, bytes, idx, len);
-        idx += len;
-        len = Serialization.getNeedBytes(offsetPerRowPerCf);
-        System.arraycopy(Serialization.encodeVi32(offsetPerRowPerCf), 0, bytes, idx, len);
-        idx += len;
-        len = Serialization.getNeedBytes(filterString);
-        System.arraycopy(Serialization.encodeBytesString(filterString), 0, bytes, idx, len);
-        idx += len;
+        byte[] minStampBytes = Serialization.encodeVi64(minStamp);
+        System.arraycopy(minStampBytes, 0, bytes, idx, minStampBytes.length);
+        idx += minStampBytes.length;
+        byte[] maxStampBytes = Serialization.encodeVi64(maxStamp);
+        System.arraycopy(maxStampBytes, 0, bytes, idx, maxStampBytes.length);
+        idx += maxStampBytes.length;
+        byte[] maxVersionsBytes = Serialization.encodeVi32(maxVersions);
+        System.arraycopy(maxVersionsBytes, 0, bytes, idx, maxVersionsBytes.length);
+        idx += maxVersionsBytes.length;
+        byte[] limitPerRowPerCfBytes = Serialization.encodeVi32(limitPerRowPerCf);
+        System.arraycopy(Serialization.encodeVi32(limitPerRowPerCf), 0, bytes, idx, limitPerRowPerCfBytes.length);
+        idx += limitPerRowPerCfBytes.length;
+        byte[] offsetPerRowPerCfBytes = Serialization.encodeVi32(offsetPerRowPerCf);
+        System.arraycopy(offsetPerRowPerCfBytes, 0, bytes, idx, offsetPerRowPerCfBytes.length);
+        idx += offsetPerRowPerCfBytes.length;
+        byte[] filterStringBytes = Serialization.encodeBytesString(filterString);
+        System.arraycopy(filterStringBytes, 0, bytes, idx, filterStringBytes.length);
 
         return bytes;
+    }
+
+    protected boolean isUseDefaultEncode() {
+        return isValid == true && selectColumnQualifier.isEmpty() && minStamp == 0 &&
+                maxStamp == Long.MAX_VALUE && maxVersions == 1 && limitPerRowPerCf == -1 &&
+                offsetPerRowPerCf == 0 && filterString == null;
+    }
+
+    public void encode(ObByteBuf buf) {
+        if (isUseDefaultEncode()) {
+            buf.writeBytes(encodeDefaultBytes());
+        } else {
+            // 0. encode header
+            encodeObUniVersionHeader(buf, getVersion(), getPayloadContentSize());
+
+            // 1. encode
+            Serialization.encodeI8(buf, isValid ? (byte) 1 : (byte) 0);
+
+            Serialization.encodeVi64(buf, selectColumnQualifier.size());
+
+            for (ObBytesString q : selectColumnQualifier) {
+                Serialization.encodeBytesString(buf, q);
+            }
+
+            Serialization.encodeVi64(buf, minStamp);
+            Serialization.encodeVi64(buf, maxStamp);
+            Serialization.encodeVi32(buf, maxVersions);
+            Serialization.encodeVi32(buf, limitPerRowPerCf);
+            Serialization.encodeVi32(buf, offsetPerRowPerCf);
+            Serialization.encodeBytesString(buf, filterString);
+        }
     }
 
     /*
@@ -130,21 +160,24 @@ public class ObHTableFilter extends AbstractPayload {
      */
     @Override
     public long getPayloadContentSize() {
-        long contentSize = 0;
-        contentSize += 1; // isValid
+        if (this.payLoadContentSize == INVALID_PAYLOAD_CONTENT_SIZE) {
+            long contentSize = 0;
+            contentSize += 1; // isValid
 
-        contentSize += Serialization.getNeedBytes(selectColumnQualifier.size());
-        for (ObBytesString q : selectColumnQualifier) {
-            contentSize += Serialization.getNeedBytes(q);
+            contentSize += Serialization.getNeedBytes(selectColumnQualifier.size());
+            for (ObBytesString q : selectColumnQualifier) {
+                contentSize += Serialization.getNeedBytes(q);
+            }
+
+            contentSize += Serialization.getNeedBytes(minStamp);
+            contentSize += Serialization.getNeedBytes(maxStamp);
+            contentSize += Serialization.getNeedBytes(maxVersions);
+            contentSize += Serialization.getNeedBytes(limitPerRowPerCf);
+            contentSize += Serialization.getNeedBytes(offsetPerRowPerCf);
+            contentSize += Serialization.getNeedBytes(filterString);
+            this.payLoadContentSize = contentSize;
         }
-
-        contentSize += Serialization.getNeedBytes(minStamp);
-        contentSize += Serialization.getNeedBytes(maxStamp);
-        contentSize += Serialization.getNeedBytes(maxVersions);
-        contentSize += Serialization.getNeedBytes(limitPerRowPerCf);
-        contentSize += Serialization.getNeedBytes(offsetPerRowPerCf);
-        contentSize += Serialization.getNeedBytes(filterString);
-        return contentSize;
+        return this.payLoadContentSize;
     }
 
     /*
