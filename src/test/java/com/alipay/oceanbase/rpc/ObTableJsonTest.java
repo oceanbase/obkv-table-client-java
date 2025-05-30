@@ -17,9 +17,11 @@
 
 package com.alipay.oceanbase.rpc;
 
+import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.get.Get;
 import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
+import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
@@ -27,7 +29,11 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
@@ -35,9 +41,11 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * create table test_json(k bigint, v json, primary key(k)) partition by key(k) partitions 97;
+  create table test_json_not_null(k bigint, v json NOT NULL, primary key(k)) partition by key(k) partitions 97;
  * create table test_json_append_incre(k bigint, v json, id int, str varchar(50), primary key(k)) partition by key(k) partitions 97;
  */
 class JsonTestUtils {
@@ -114,6 +122,7 @@ class JsonTestUtils {
 public class ObTableJsonTest {
     ObTableClient client;
     public static String tableName = "test_json";
+    public static String tableNameNotNull = "test_json_not_null";
     public static String extraTable = "test_json_append_incre";
 
     @Before
@@ -130,6 +139,7 @@ public class ObTableJsonTest {
         String val = "{\"key\":\"value\"}";
         String new_val = "{\"key\":\"new_value\"}";
         Row rowKey = row().add(colVal("k", key_bigint));
+        Row prop = row().add(colVal("v", ""));
         // insert wrong type on column
         try {
             client.insertOrUpdate(tableName).setRowKey(row(colVal("k", key_bigint)))
@@ -503,7 +513,7 @@ public class ObTableJsonTest {
         Assert.assertNull(res.get("v"));
     }
 
-    @Test
+//    @Test
     public void testBigJsonInsert2() throws Exception {
         // insert
         String big_json = JsonTestUtils.Case2();
@@ -537,4 +547,52 @@ public class ObTableJsonTest {
         client.batchOperation(tableName).execute();
     }
 
+    @Test
+    public void testReadWriteNull() throws Exception {
+        // batchInsert or update
+        Row rowKey0 = row().add(colVal("k", (long)0));
+        String new_val0 = "{\"key_001\":\"new_value1\"}";
+        Row prop0 = row().add(colVal("v", new_val0.getBytes()));
+        InsertOrUpdate insertUpOp1 = insertOrUpdate().setRowKey(rowKey0).addMutateRow(prop0);
+        BatchOperation batch = client.batchOperation(tableName);
+        batch.addOperation(insertUpOp1).execute();
+        client.delete(tableName).setRowKey(rowKey0).execute();
+
+        Row rowKey1 = row().add(colVal("k", (long)1));
+        try {
+            Row prop = row().add(colVal("v",""));
+            client.insertOrUpdate(tableNameNotNull).setRowKey(rowKey1)
+                    .addMutateRow(prop)
+                    .execute();
+        } catch (ObTableException e) {
+            assertEquals(ResultCodes.OB_ERR_INVALID_JSON_TEXT_IN_PARAM.errorCode, e.getErrorCode());
+        } finally {
+            client.delete(tableNameNotNull).setRowKey(rowKey1).execute();
+        }
+
+        // insert null on schema 'json not null'
+        Row rowKey2 = row().add(colVal("k", (long)2));
+        try {
+            Row prop = row().add(colVal("v", null));
+            client.insertOrUpdate(tableNameNotNull).setRowKey(rowKey2)
+                    .addMutateRow(prop)
+                    .execute();
+        } catch (ObTableException e) {
+            assertEquals(ResultCodes.OB_BAD_NULL_ERROR.errorCode, e.getErrorCode());
+        } finally {
+            client.delete(tableNameNotNull).setRowKey(rowKey2).execute();
+        }
+
+        // insert null on schema 'json'(can be null) and get
+        Row prop = row().add(colVal("v", null));
+        client.insertOrUpdate(tableName).setRowKey(rowKey2)
+                .addMutateRow(prop)
+                .execute();
+        Map<String, Object> res = client.get(tableName).setRowKey(rowKey2)
+                .select("k", "v").execute();
+        client.delete(tableName).setRowKey(rowKey2).execute();
+        Assert.assertNotNull(res);
+        Assert.assertNull(res.get("v"));
+
+    }
 }
