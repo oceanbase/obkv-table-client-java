@@ -27,6 +27,8 @@ public enum ObTableRpcMetaType {
     HTABLE_TRUNCATE_TABLE(6), // 清空表
     HTABLE_EXISTS(7), // 检查表是否存在
     HTABLE_GET_DESC(8), // 获取表元信息
+    HTABLE_ENABLE_TABLE(9),
+    HTABLE_DISABLE_TABLE(10),
     HTABLE_META_MAX(255);
     private int type;
 
