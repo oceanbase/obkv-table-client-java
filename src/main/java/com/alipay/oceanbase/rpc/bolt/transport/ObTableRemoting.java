@@ -143,7 +143,7 @@ public class ObTableRemoting extends BaseRemoting {
             if (resultCode.getRcode() != 0
                 && response.getHeader().getPcode() != Pcodes.OB_TABLE_API_MOVE) {
                 String errMessage = TraceUtil.formatTraceMessage(conn, request,
-                    "routed to the wrong server:  [error code:" + resultCode.getRcode() + "]"
+                    "meet exception: [error code:" + resultCode.getRcode() + "]"
                             + resultCode.getErrMsg());
                 logger.debug(errMessage);
                 if (needFetchMeta(resultCode.getRcode(), resultCode.getPcode())) {
