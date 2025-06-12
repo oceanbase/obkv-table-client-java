@@ -17,10 +17,8 @@
 
 package com.alipay.oceanbase.rpc.location;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONException;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.parser.ParserConfig;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.constant.Constants;
 import com.alipay.oceanbase.rpc.exception.*;
@@ -59,7 +57,6 @@ public class LocationUtil {
     private static final Logger logger                                              = TableClientLoggerFactory
                                                                                         .getLogger(LocationUtil.class);
     static {
-        ParserConfig.getGlobalInstance().setSafeMode(true);
         loadJdbcDriver();
     }
 
@@ -236,6 +233,7 @@ public class LocationUtil {
                                                                                             .getProperty(
                                                                                                 "table.entry.location.refresh.threshold",
                                                                                                 "0"));
+    private static ObjectMapper objectMapper = new ObjectMapper();
 
     private abstract static class TableEntryRefreshWithPriorityCallback<T> {
         abstract T execute(ObServerAddr obServerAddr) throws ObTableEntryRefreshException;
@@ -794,7 +792,7 @@ public class LocationUtil {
                         }
                         if (logger.isInfoEnabled()) {
                             logger.info("get part info from remote info:{}",
-                                JSON.toJSON(tableEntry.getPartitionInfo()));
+                                objectMapper.writeValueAsString(tableEntry.getPartitionInfo()));
                         }
                         // set partition locations
                         if (oldTableEntry == null) {
@@ -823,7 +821,7 @@ public class LocationUtil {
                         if (!initialized) {
                             if (BOOT.isInfoEnabled()) {
                                 BOOT.info("finish get table entry from remote, entry={}",
-                                    JSON.toJSON(tableEntry));
+                                    objectMapper.writeValueAsString(tableEntry));
                             }
                         } else {
                             if (logger.isInfoEnabled()) {
@@ -1316,7 +1314,7 @@ public class LocationUtil {
 
                 if (logger.isInfoEnabled()) {
                     logger.info(format("uuid:%s, get first ranges from remote for %s, bounds=%s",
-                        uuid, tableName, JSON.toJSON(bounds)));
+                        uuid, tableName, objectMapper.writeValueAsString(bounds)));
                 }
 
             } else if (obPartFuncType.isListPart()) {
@@ -1324,7 +1322,7 @@ public class LocationUtil {
                 ((ObListPartDesc) tableEntry.getPartitionInfo().getFirstPartDesc()).setSets(sets);
                 if (logger.isInfoEnabled()) {
                     logger.info(format("uuid:%s, get first list sets from remote for %s, sets=%s",
-                        uuid, tableName, JSON.toJSON(sets)));
+                        uuid, tableName, objectMapper.writeValueAsString(sets)));
                 }
             } else if (obPartFuncType.isKeyPart() || obPartFuncType.isHashPart()) {
                 tableEntry.getPartitionInfo().setPartTabletIdMap(
@@ -1390,14 +1388,14 @@ public class LocationUtil {
                         .setHighBoundValues(highBoundVals);
                 if (logger.isInfoEnabled()) {
                     logger.info(format("uuid:%s, get sub ranges from remote for %s, bounds=%s",
-                        uuid, tableName, JSON.toJSON(bounds)));
+                        uuid, tableName, objectMapper.writeValueAsString(bounds)));
                 }
             } else if (subPartFuncType.isListPart()) {
                 Map<ObPartitionKey, Long> sets = parseSubPartSets(rs, tableEntry);
                 ((ObListPartDesc) tableEntry.getPartitionInfo().getSubPartDesc()).setSets(sets);
                 if (logger.isInfoEnabled()) {
                     logger.info(format("uuid:%s, get sub list sets from remote, sets=%s", uuid,
-                        JSON.toJSON(sets)));
+                        objectMapper.writeValueAsString(sets)));
                 }
             } else if (subPartFuncType.isKeyPart() || subPartFuncType.isHashPart()) {
                 tableEntry.getPartitionInfo().setPartTabletIdMap(
@@ -2321,7 +2319,7 @@ public class LocationUtil {
         for (; tries < tryTimes; tries++) {
             try {
                 content = loadStringFromUrl(paramURL, connectTimeout, readTimeout);
-                ocpResponse = JSONObject.parseObject(content, OcpResponse.class);
+                ocpResponse = objectMapper.readValue(content, OcpResponse.class);
                 if (ocpResponse != null && ocpResponse.validate()) {
                     if (dataSourceName != null && !dataSourceName.isEmpty()) {
                         saveLocalContent(dataSourceName, content);
@@ -2368,7 +2366,7 @@ public class LocationUtil {
         for (; tries < tryTimes; tries++) {
             try {
                 content = loadStringFromUrl(paramURL, connectTimeout, readTimeout);
-                ocpResponse = JSONObject.parseObject(content, OcpResponse.class);
+                ocpResponse = objectMapper.readValue(content, OcpResponse.class);
                 if (ocpResponse != null) {
                     return ocpResponse;
                 }
@@ -2386,8 +2384,8 @@ public class LocationUtil {
         return null;
     }
 
-    private static OcpResponse parseOcpResponse(String content) throws JSONException {
-        return JSONObject.parseObject(content, OcpResponse.class);
+    private static OcpResponse parseOcpResponse(String content) throws JsonProcessingException {
+        return objectMapper.readValue(content, OcpResponse.class);
     }
 
     private static OcpResponse getLocalOcpResponseOrNull(String fileName) {

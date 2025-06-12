@@ -22,6 +22,7 @@ public class OcpResponse {
     private String          Message;
     private boolean         Success;
     private OcpResponseData Data;
+    public OcpResponse() {}
 
     /*
      * Get code.
