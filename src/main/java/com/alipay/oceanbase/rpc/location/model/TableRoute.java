@@ -17,7 +17,7 @@
 
 package com.alipay.oceanbase.rpc.location.model;
 
-import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.LocationUtil;
@@ -49,6 +49,7 @@ import static java.lang.String.format;
 
 public class TableRoute {
     private static final Logger       logger                 = getLogger(TableRoute.class);
+    private static final ObjectMapper objectMapper           = new ObjectMapper();
     private final ObTableClient       tableClient;
     private final ObUserAuth          sysUA;                                               // user and password to access route table
     private final ServerRoster        serverRoster           = new ServerRoster();         // all servers which contain current tenant
@@ -196,8 +197,8 @@ public class TableRoute {
         ConcurrentHashMap<ObServerAddr, ObTable> addr2Table = new ConcurrentHashMap<ObServerAddr, ObTable>();
         List<ObServerAddr> rsList = configServerInfo.getRsList();
         BOOT.info("{} success to get rsList, paramURL: {}, rsList: {}，idc2Region: {}",
-            tableClient.getDatabase(), configServerInfo.getParamURL(), JSON.toJSON(rsList),
-            JSON.toJSON(configServerInfo.getIdc2Region()));
+            tableClient.getDatabase(), configServerInfo.getParamURL(), objectMapper.writeValueAsString(rsList),
+                objectMapper.writeValueAsString(configServerInfo.getIdc2Region()));
 
         TableEntry tableEntry = null;
         int retryMaxTimes = rsList.size();
@@ -211,7 +212,7 @@ public class TableRoute {
                     tableClient.getTableEntryAcquireConnectTimeout(),//
                     tableClient.getTableEntryAcquireSocketTimeout(), sysUA, initialized);
                 BOOT.info("{} success to get tableEntry with rootServerKey all_dummy_tables {}",
-                    tableClient.getDatabase(), JSON.toJSON(tableEntry));
+                    tableClient.getDatabase(), objectMapper.writeValueAsString(tableEntry));
                 success = true;
             } catch (ObTableEntryRefreshException e) {
                 if (e.isConnectInactive()) {
@@ -233,7 +234,7 @@ public class TableRoute {
         List<ReplicaLocation> replicaLocations = tableEntry.getTableLocation()
             .getReplicaLocations();
         BOOT.info("{} success to get replicaLocation {}", tableClient.getDatabase(),
-            JSON.toJSON(replicaLocations));
+                objectMapper.writeValueAsString(replicaLocations));
 
         for (ReplicaLocation replicaLocation : replicaLocations) {
             ObServerInfo info = replicaLocation.getInfo();
@@ -270,12 +271,12 @@ public class TableRoute {
         }
         if (servers.isEmpty()) {
             BOOT.error("{} failed to connect any replicaLocation server: {}",
-                tableClient.getDatabase(), JSON.toJSON(replicaLocations));
+                tableClient.getDatabase(), objectMapper.writeValueAsString(replicaLocations));
             throw new Exception("failed to connect any replicaLocation server");
         }
 
         BOOT.info("{} success to build server connection {}", tableClient.getDatabase(),
-            JSON.toJSON(servers));
+            objectMapper.writeValueAsString(servers));
         this.tableRoster = TableRoster.getInstanceOf(tableClient.getTenantName(),
             tableClient.getUserName(), tableClient.getPassword(), tableClient.getDatabase(),
             tableClient.getClientType(runningMode), tableClient.getProperties(),
@@ -321,7 +322,7 @@ public class TableRoute {
             tableClient.getCurrentIDC(), regionFromOcp));
         if (BOOT.isInfoEnabled()) {
             BOOT.info("{} finish refresh serverRoster: {}", tableClient.getDatabase(),
-                JSON.toJSON(serverRoster));
+                objectMapper.writeValueAsString(serverRoster));
             BOOT.info("finish initMetadata for all tables for database {}",
                 tableClient.getDatabase());
         }
@@ -415,7 +416,7 @@ public class TableRoute {
         } // end while
         if (!success) {
             logger.error("all tenant servers are not available, tenant: {}, serverRoster: {}",
-                allDummyKey.getTenantName(), JSON.toJSON(serverRoster));
+                allDummyKey.getTenantName(), objectMapper.writeValueAsString(serverRoster));
             throw new ObTableUnexpectedException("all tenant servers are not available");
         }
 
@@ -426,7 +427,7 @@ public class TableRoute {
 
         if (logger.isInfoEnabled()) {
             logger.info("finish refresh serverRoster: {}, servers num: {}",
-                JSON.toJSON(serverRoster), servers.size());
+                objectMapper.writeValueAsString(serverRoster), servers.size());
         }
         lastRefreshMetadataTimestamp = System.currentTimeMillis();
     }

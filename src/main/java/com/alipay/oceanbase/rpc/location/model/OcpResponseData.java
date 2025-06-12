@@ -24,6 +24,7 @@ public class OcpResponseData {
     private long                     ObRegionId = -1;
     private List<OcpResponseDataRs>  RsList;
     private List<OcpResponseDataIDC> IDCList;
+    public OcpResponseData() {}
 
     /*
      * Get ob region.
