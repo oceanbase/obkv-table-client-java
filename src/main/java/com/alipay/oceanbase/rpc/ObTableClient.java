@@ -485,8 +485,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     }
                     tableParam = getTableParamWithRoute(tableName, rowKey, route);
                 }
-                logger.debug("tableName: {}, tableParam obTable ip:port is {}:{}",
-                        tableName, tableParam.getObTable().getIp(), tableParam.getObTable().getPort());
+                logger.debug("tableName: {}, tableParam obTable ip:port is {}:{}, ls_id: {}, tablet_id: {}",
+                        tableName, tableParam.getObTable().getIp(), tableParam.getObTable().getPort(), tableParam.getLsId(), tableParam.getTabletId());
                 T t = callback.execute(tableParam);
                 resetExecuteContinuousFailureCount(tableName);
                 return t;
@@ -704,8 +704,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         throw new ObTableException("RowKey or scan range is null");
                     }
                 }
-                logger.debug("tableName: {}, tableParam obTable ip:port is {}:{}",
-                        tableName, tableParam.getObTable().getIp(), tableParam.getObTable().getPort());
+                logger.debug("tableName: {}, tableParam obTable ip:port is {}:{}, ls_id: {}, tablet_id: {}",
+                        tableName, tableParam.getObTable().getIp(), tableParam.getObTable().getPort(), tableParam.getLsId(), tableParam.getTabletId());
                 T t = callback.execute(tableParam);
                 resetExecuteContinuousFailureCount(tableName);
                 return t;

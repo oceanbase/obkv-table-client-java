@@ -534,6 +534,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                                  Map.Entry<Long, TabletOperationsMap> lsOperation)
             throws Exception {
         long lsId = lsOperation.getKey();
+        logger.debug("ls batch lsId: {}", lsId);
         TabletOperationsMap tabletOperationsMap = lsOperation.getValue();
         if (tabletOperationsMap.isEmpty()) {
             logger.warn("the size of tablet operations in ls operation is zero");
@@ -675,7 +676,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     }
                 } else if (ex instanceof ObTableException) {
                     if (((ObTableException) ex).isNeedRefreshTableEntry()) {
-                        logger.warn("meet need refresh exception, errCode: {}, ls id: {}, errMsg: {}", ((ObTableException) ex).getErrorCode(), lsId, ex.getMessage());
+                        logger.warn("meet need refresh exception, errCode: {}, ls id: {}, table_id: {}, errMsg: {}", ((ObTableException) ex).getErrorCode(), lsId, tableId, ex.getMessage());
                         if ((((ObTableException) ex).getErrorCode() == ResultCodes.OB_TABLE_NOT_EXIST.errorCode ||
                                 ((ObTableException) ex).getErrorCode() == ResultCodes.OB_SCHEMA_ERROR.errorCode)
                                 && obTableClient.isTableGroupName(tableName)
