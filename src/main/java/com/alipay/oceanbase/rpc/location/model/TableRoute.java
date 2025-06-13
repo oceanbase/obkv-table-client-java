@@ -604,6 +604,8 @@ public class TableRoute {
         Map.Entry<Long, ObTableParam> entry = partIdParamMap.entrySet().iterator().next();
         TableEntry tableEntry = getTableEntry(tableName);
         long tabletId = entry.getValue().getTabletId();
+        logger.info("[debug NOT_MASTER] tabletId: {}, ip:port: {}:{}, lsId: {}, isHKV: {}",
+                tabletId, entry.getValue().getObTable().getIp(), entry.getValue().getObTable().getPort(), entry.getValue().getLsId(), isHKV);
         refreshPartitionLocation(tableName, tabletId, tableEntry);
     }
 

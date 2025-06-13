@@ -2308,6 +2308,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         request.setPartitionId(partitionId);
                         request.setTimeout(tableParam.getObTable().getObTableOperationTimeout());
                         ObTable obTable = tableParam.getObTable();
+                        logger.info("[debug NOT_MASTER] execute tabletId: {}, ip:port: {}:{}, lsId:{}",
+                                request.getPartitionId(), obTable.getIp(), obTable.getPort(), tableParam.getLsId());
 
                         // Attempt to execute the operation
                         return executeWithRetry(obTable, request, request.getTableName());
