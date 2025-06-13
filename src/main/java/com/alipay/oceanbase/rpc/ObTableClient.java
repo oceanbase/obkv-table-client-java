@@ -477,6 +477,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     tableParam = new ObTableParam(odpTable);
                 } else {
                     if (tryTimes > 1 && needRefreshPartitionLocation) {
+                        needRefreshPartitionLocation = false;
                         // refresh partition location
                         TableEntry entry = tableRoute.getTableEntry(tableName);
                         long partId = tableRoute.getPartId(entry, rowKey);
@@ -485,8 +486,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     }
                     tableParam = getTableParamWithRoute(tableName, rowKey, route);
                 }
-                logger.debug("tableName: {}, tableParam obTable ip:port is {}:{}",
-                        tableName, tableParam.getObTable().getIp(), tableParam.getObTable().getPort());
+                logger.debug("tableName: {}, tableParam obTable ip:port is {}:{}, ls_id: {}, tablet_id: {}",
+                        tableName, tableParam.getObTable().getIp(), tableParam.getObTable().getPort(), tableParam.getLsId(), tableParam.getTabletId());
                 T t = callback.execute(tableParam);
                 resetExecuteContinuousFailureCount(tableName);
                 return t;
@@ -687,6 +688,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 } else {
                     if (null != callback.getRowKey()) {
                         if (tryTimes > 1 && needRefreshPartitionLocation) {
+                            needRefreshPartitionLocation = false;
                             // refresh partition location
                             TableEntry entry = tableRoute.getTableEntry(tableName);
                             long partId = tableRoute.getPartId(entry, callback.getRowKey());
@@ -696,6 +698,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         // using row key
                         tableParam = tableRoute.getTableParamWithRoute(tableName, callback.getRowKey(), route);
                     } else if (null != callback.getQuery()) {
+                        if (tryTimes > 1 && needRefreshPartitionLocation) {
+                            needRefreshPartitionLocation = false;
+                            boolean isHKV = callback.getQuery().getEntityType() == ObTableEntityType.HKV;
+                            tableRoute.refreshTabletLocationForAtomicQuery(tableName, callback.getQuery().getObTableQuery(), isHKV);
+                        }
                         ObTableQuery tableQuery = callback.getQuery().getObTableQuery();
                         // using scan range
                         tableParam = tableRoute.getTableParam(tableName, tableQuery.getScanRangeColumns(),
@@ -704,8 +711,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         throw new ObTableException("RowKey or scan range is null");
                     }
                 }
-                logger.debug("tableName: {}, tableParam obTable ip:port is {}:{}",
-                        tableName, tableParam.getObTable().getIp(), tableParam.getObTable().getPort());
+                logger.debug("tableName: {}, tableParam obTable ip:port is {}:{}, ls_id: {}, tablet_id: {}",
+                        tableName, tableParam.getObTable().getIp(), tableParam.getObTable().getPort(), tableParam.getLsId(), tableParam.getTabletId());
                 T t = callback.execute(tableParam);
                 resetExecuteContinuousFailureCount(tableName);
                 return t;
@@ -2260,8 +2267,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 return getOdpTable().execute(request);
             } else {
                 int tryTimes = 0;
+                boolean needRefreshTabletLocation = false;
                 long startExecute = System.currentTimeMillis();
-                Map<Long, ObTableParam> partIdMapObTable = new HashMap<Long, ObTableParam>();
                 while (true) {
                     long currentExecute = System.currentTimeMillis();
                     long costMillis = currentExecute - startExecute;
@@ -2278,40 +2285,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     }
                     try {
                         // Recalculate partIdMapObTable
-                        // Clear the map before recalculating
-                        partIdMapObTable.clear();
-                        for (ObNewRange rang : tableQuery.getKeyRanges()) {
-                            ObRowKey startKey = rang.getStartKey();
-                            int startKeySize = startKey.getObjs().size();
-                            ObRowKey endKey = rang.getEndKey();
-                            int endKeySize = endKey.getObjs().size();
-                            Object[] start = new Object[startKeySize];
-                            Object[] end = new Object[endKeySize];
-                            for (int i = 0; i < startKeySize; i++) {
-                                ObObj curStart = startKey.getObj(i);
-                                if (curStart.isMinObj()) {
-                                    start[i] = curStart;
-                                } else {
-                                    start[i] = curStart.getValue();
-                                }
-                            }
-
-                            for (int i = 0; i < endKeySize; i++) {
-                                ObObj curEnd = endKey.getObj(i);
-                                if (curEnd.isMaxObj()) {
-                                    end[i] = curEnd;
-                                } else {
-                                    end[i] = curEnd.getValue();
-                                }
-                            }
-                            ObBorderFlag borderFlag = rang.getBorderFlag();
-                            List<ObTableParam> params = getTableParams(request.getTableName(),
-                                    tableQuery, start, borderFlag.isInclusiveStart(), end,
-                                    borderFlag.isInclusiveEnd());
-                            for (ObTableParam param : params) {
-                                partIdMapObTable.put(param.getPartId(), param);
-                            }
+                        if (needRefreshTabletLocation) {
+                            needRefreshTabletLocation = false;
+                            boolean isHKV = request.getEntityType() == ObTableEntityType.HKV;
+                            tableRoute.refreshTabletLocationForAtomicQuery(request.getTableName(), tableQuery, isHKV);
                         }
+                        Map<Long, ObTableParam> partIdMapObTable = tableRoute.getPartIdParamMapForQuery(
+                                request.getTableName(), tableQuery.getScanRangeColumns(),
+                                tableQuery.getKeyRanges());
 
                         // Check if partIdMapObTable size is greater than 1
                         boolean isDistributedExecuteSupported = getServerCapacity().isSupportDistributedExecute();
@@ -2344,9 +2325,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                         request.getTableName(), request.getPartitionId(), ((ObTableException) ex).getErrorCode(),
                                         tryTimes, ex);
 
-                                if (ex instanceof ObTableNeedFetchMetaException) {
-                                    // Refresh table info
-                                    refreshMeta(request.getTableName());
+                                if (((ObTableException) ex).isNeedRefreshTableEntry()) {
+                                    needRefreshTabletLocation = true;
+                                    if (ex instanceof ObTableNeedFetchMetaException) {
+                                        // Refresh table info
+                                        refreshMeta(request.getTableName());
+                                    }
                                 }
                             } else {
                                 calculateContinuousFailure(request.getTableName(), ex.getMessage());
