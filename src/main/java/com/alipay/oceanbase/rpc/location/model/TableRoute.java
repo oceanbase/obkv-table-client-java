@@ -235,6 +235,7 @@ public class TableRoute {
         BOOT.info("{} success to get replicaLocation {}", tableClient.getDatabase(),
             JSON.toJSON(replicaLocations));
 
+        List<Exception> obTableExceptions = new ArrayList<>();
         for (ReplicaLocation replicaLocation : replicaLocations) {
             ObServerInfo info = replicaLocation.getInfo();
             ObServerAddr addr = replicaLocation.getAddr();
@@ -266,11 +267,32 @@ public class TableRoute {
                     addr.getIp(), addr.getSvrPort());
                 RUNTIME.warn("initMetadata meet exception", e);
                 e.printStackTrace();
+                // collect exceptions when login
+                obTableExceptions.add(e);
             }
         }
         if (servers.isEmpty()) {
             BOOT.error("{} failed to connect any replicaLocation server: {}",
-                tableClient.getDatabase(), JSON.toJSON(replicaLocations));
+                    tableClient.getDatabase(), JSON.toJSON(replicaLocations));
+            boolean isSameTypeException = true;
+            int errCode = -1;
+            // if collected exceptions are the same type, throw the original exception
+            for (Exception e : obTableExceptions) {
+                if (!(e instanceof ObTableException)) {
+                    isSameTypeException = false;
+                    break;
+                }
+                int curErrCord = ((ObTableException) e).getErrorCode();
+                if (errCode == -1) {
+                    errCode = curErrCord;
+                } else if (errCode != curErrCord) {
+                    isSameTypeException = false;
+                    break;
+                }
+            }
+            if (isSameTypeException && !obTableExceptions.isEmpty()) {
+                throw obTableExceptions.get(0);
+            }
             throw new Exception("failed to connect any replicaLocation server");
         }
 
