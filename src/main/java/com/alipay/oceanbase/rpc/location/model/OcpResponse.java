@@ -17,16 +17,18 @@
 
 package com.alipay.oceanbase.rpc.location.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class OcpResponse {
     private int             Code;
     private String          Message;
     private boolean         Success;
     private OcpResponseData Data;
-    public OcpResponse() {}
 
     /*
      * Get code.
      */
+    @JsonProperty("Code")
     public int getCode() {
         return Code;
     }
@@ -41,6 +43,7 @@ public class OcpResponse {
     /*
      * Get message.
      */
+    @JsonProperty("Message")
     public String getMessage() {
         return Message;
     }
@@ -59,6 +62,11 @@ public class OcpResponse {
         return Success;
     }
 
+    @JsonProperty("Success")
+    public boolean getSuccess() {
+        return Success;
+    }
+
     /*
      * Set success.
      */
@@ -69,6 +77,7 @@ public class OcpResponse {
     /*
      * Get data.
      */
+    @JsonProperty("Data")
     public OcpResponseData getData() {
         return Data;
     }

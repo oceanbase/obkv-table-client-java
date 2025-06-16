@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.location;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.constant.Constants;
@@ -33,6 +34,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.column.ObSimpleColumn;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObIndexType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.parser.ObGeneratedColumnExpressParser;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 
 import java.io.*;
@@ -56,7 +58,12 @@ public class LocationUtil {
 
     private static final Logger logger                                              = TableClientLoggerFactory
                                                                                         .getLogger(LocationUtil.class);
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
     static {
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         loadJdbcDriver();
     }
 
@@ -233,7 +240,6 @@ public class LocationUtil {
                                                                                             .getProperty(
                                                                                                 "table.entry.location.refresh.threshold",
                                                                                                 "0"));
-    private static ObjectMapper objectMapper = new ObjectMapper();
 
     private abstract static class TableEntryRefreshWithPriorityCallback<T> {
         abstract T execute(ObServerAddr obServerAddr) throws ObTableEntryRefreshException;
