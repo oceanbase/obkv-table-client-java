@@ -17,7 +17,6 @@
 
 package com.alipay.oceanbase.rpc.bolt.transport;
 
-import com.alipay.remoting.*;
 import com.alipay.remoting.config.ConfigManager;
 import com.alipay.remoting.config.ConfigurableInstance;
 import com.alipay.remoting.config.configs.ConfigContainer;
@@ -25,13 +24,6 @@ import com.alipay.remoting.config.configs.ConfigItem;
 import com.alipay.remoting.config.configs.ConfigType;
 import com.alipay.remoting.config.configs.DefaultConfigContainer;
 import com.alipay.remoting.config.switches.GlobalSwitch;
-import com.alipay.remoting.exception.RemotingException;
-import com.alipay.remoting.rpc.RpcResponseFuture;
-import com.alipay.remoting.rpc.protocol.UserProcessor;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 public class ObConfigurableInstance implements ConfigurableInstance {
     private ConfigContainer configContainer = new DefaultConfigContainer();
