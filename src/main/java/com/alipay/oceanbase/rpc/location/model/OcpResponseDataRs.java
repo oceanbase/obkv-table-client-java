@@ -17,6 +17,8 @@
 
 package com.alipay.oceanbase.rpc.location.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class OcpResponseDataRs {
     private String address;
     private String role;
@@ -25,6 +27,7 @@ public class OcpResponseDataRs {
     /*
      * Get address.
      */
+    @JsonProperty("address")
     public String getAddress() {
         return address;
     }
@@ -39,6 +42,7 @@ public class OcpResponseDataRs {
     /*
      * Get role.
      */
+    @JsonProperty("role")
     public String getRole() {
         return role;
     }
@@ -53,6 +57,7 @@ public class OcpResponseDataRs {
     /*
      * Get sql_port.
      */
+    @JsonProperty("sql_port")
     public int getSql_port() {
         return sql_port;
     }

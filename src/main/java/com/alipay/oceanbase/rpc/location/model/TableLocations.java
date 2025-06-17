@@ -17,7 +17,7 @@
 
 package com.alipay.oceanbase.rpc.location.model;
 
-import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionLocationInfo;
@@ -41,10 +41,11 @@ import static com.alipay.oceanbase.rpc.location.model.TableEntry.HBASE_ROW_KEY_E
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
 
 public class TableLocations {
-    private static final Logger     logger                                  = getLogger(TableLocations.class);
-    private final ObTableClient     tableClient;
-    private Map<String, Lock>       metaRefreshingLocks                     = new ConcurrentHashMap<String, Lock>();
-    private Map<String, Lock>       locationBatchRefreshingLocks            = new ConcurrentHashMap<String, Lock>();
+    private static final Logger       logger                                  = getLogger(TableLocations.class);
+    private static final ObjectMapper objectMapper                            = new ObjectMapper();
+    private final ObTableClient       tableClient;
+    private Map<String, Lock>         metaRefreshingLocks                     = new ConcurrentHashMap<String, Lock>();
+    private Map<String, Lock>         locationBatchRefreshingLocks            = new ConcurrentHashMap<String, Lock>();
     /*
      * TableName -> TableEntry, containing table meta and location information
      */
@@ -264,7 +265,7 @@ public class TableLocations {
         tableEntryRefreshContinuousFailureCount.set(0);
         if (logger.isDebugEnabled()) {
             logger.debug("refresh table entry, tableName: {}, key:{} entry:{} ", tableName,
-                tableEntryKey, JSON.toJSON(tableEntry));
+                tableEntryKey, objectMapper.writeValueAsString(tableEntry));
         }
         return tableEntry;
     }
