@@ -2306,6 +2306,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         if (partIdMapObTable.size() > 1 && !isDistributedExecuteSupported) {
                             throw new ObTablePartitionConsistentException(
                                     "query and mutate must be a atomic operation");
+                        } else if (partIdMapObTable.isEmpty()) {
+                            StringBuilder rangeInfo = new StringBuilder();
+                            rangeInfo.append("could not find part id of ranges: [");
+                            for (int i = 0; i < tableQuery.getKeyRanges().size(); i++) {
+                                if (i > 0) rangeInfo.append(", ");
+                                ObNewRange range = tableQuery.getKeyRanges().get(i);
+                                rangeInfo.append(range.getStartKey().toString()).append(" - ").append(range.getEndKey().toString());
+                            }
+                            rangeInfo.append("]");
+                            throw new ObTableException(rangeInfo.toString());
                         }
                         // Proceed with the operation
                         Map.Entry<Long, ObTableParam> entry = partIdMapObTable.entrySet().iterator().next();

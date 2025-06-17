@@ -135,4 +135,18 @@ public class ObRowKey {
         return Objects.hashCode(objs);
     }
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        for (int i = 0; i < objs.size(); i++) {
+            if (i > 0) {
+                sb.append(", ");
+            }
+            ObObj obj = objs.get(i);
+            sb.append(obj != null ? obj.toString() : "null");
+        }
+        sb.append("]");
+        return sb.toString();
+    }
 }
