@@ -23,7 +23,6 @@ public class OcpResponseDataRs {
     private String address;
     private String role;
     private int    sql_port;
-    public OcpResponseDataRs() {}
 
     /*
      * Get address.

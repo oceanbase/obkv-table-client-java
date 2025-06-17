@@ -25,7 +25,6 @@ package com.alipay.oceanbase.rpc.location.model;
 public class OcpResponseDataIDC {
     private String idc;
     private String region;
-    public OcpResponseDataIDC() {}
 
     /*
      * Get idc.
