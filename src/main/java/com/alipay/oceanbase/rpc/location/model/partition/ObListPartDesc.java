@@ -161,7 +161,7 @@ public class ObListPartDesc extends ObPartDesc {
         } catch (IllegalArgumentException e) {
             logger.error(LCD.convert("01-00001"), e);
             throw new IllegalArgumentException(
-                "ObListPartDesc get part id come across illegal params", e);
+                "ObListPartDesc failed to get part id because of illegal arguments", e);
         }
 
     }

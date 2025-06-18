@@ -176,7 +176,7 @@ public class ObKeyPartDesc extends ObPartDesc {
         } catch (IllegalArgumentException e) {
             logger.error(LCD.convert("01-00002"), e);
             throw new IllegalArgumentException(
-                "ObKeyPartDesc get part id come across illegal params", e);
+                "ObKeyPartDesc failed to get part id because of illegal arguments", e);
         }
     }
 
@@ -243,7 +243,7 @@ public class ObKeyPartDesc extends ObPartDesc {
         } catch (IllegalArgumentException e) {
             logger.error(LCD.convert("01-00023"), e);
             throw new IllegalArgumentException(
-                "ObKeyPartDesc get part id come across illegal params", e);
+                "ObKeyPartDesc failed to get part id because of illegal arguments", e);
         }
     }
 

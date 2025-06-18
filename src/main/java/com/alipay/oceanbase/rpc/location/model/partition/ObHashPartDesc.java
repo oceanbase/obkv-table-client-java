@@ -195,7 +195,7 @@ public class ObHashPartDesc extends ObPartDesc {
         } catch (IllegalArgumentException e) {
             logger.error(LCD.convert("01-00002"), e);
             throw new IllegalArgumentException(
-                "ObHashPartDesc get part id come across illegal params", e);
+                "ObHashPartDesc failed to get part id because of illegal arguments", e);
         }
     }
 
@@ -258,7 +258,7 @@ public class ObHashPartDesc extends ObPartDesc {
             }
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException(
-                "ObHashPartDesc get part id come across illegal params", e);
+                "ObHashPartDesc failed to get part id because of illegal arguments", e);
         }
         return partId;
     }
