@@ -256,7 +256,7 @@ public class ObRangePartDesc extends ObPartDesc {
         } catch (IllegalArgumentException e) {
             RUNTIME.error(LCD.convert("01-00025"), e);
             throw new IllegalArgumentException(
-                "ObRangePartDesc get part id come across illegal params", e);
+                "ObRangePartDesc failed to get part id because of illegal arguments", e);
         }
 
     }
