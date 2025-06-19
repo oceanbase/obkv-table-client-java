@@ -144,7 +144,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         } catch (Throwable t) {
             BOOT.warn("failed to init ObTableClient", t);
             RUNTIME.warn("failed to init ObTableClient", t);
-            throw new RuntimeException(t);
+            if (t instanceof ObTableException) {
+                throw t;
+            } else {
+                throw new RuntimeException(t);
+            }
         } finally {
             BOOT.info("init ObTableClient successfully");
             statusLock.unlock();
