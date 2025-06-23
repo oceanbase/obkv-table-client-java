@@ -378,6 +378,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                                     .ipToString());
                         throw new ObTableRoutingWrongException();
                     }
+                } else if (result != null && result.isRoutingWrong()) {
+                    TableEntry entry = result.isNeedRefreshMeta() ?
+                            obTableClient.getOrRefreshTableEntry(tableName, true) :
+                            obTableClient.getOrRefreshTableEntry(tableName, false);
+                    long tabletId = obTableClient.getTabletIdByPartId(entry, originPartId);
+                    obTableClient.refreshTableLocationByTabletId(tableName, tabletId);
                 }
                 subObTableBatchOperationResult = (ObTableBatchOperationResult) result;
                 obTableClient.resetExecuteContinuousFailureCount(tableName);

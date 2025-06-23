@@ -297,6 +297,14 @@ public class ObRpcPacketHeader {
     }
 
     /*
+    * need to refresh kv table meta
+    * */
+    public boolean isNeedRefreshKvMeta() {
+        return (flag & IS_KV_REQUEST_FALG) != 0;
+    }
+
+
+    /*
      * Set stream next.
      */
     public void setStreamNext() {
