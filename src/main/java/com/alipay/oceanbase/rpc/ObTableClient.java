@@ -837,7 +837,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (failures.incrementAndGet() > runtimeContinuousFailureCeiling) {
             logger.warn("refresh table entry {} while execute failed times exceeded {}, msg: {}",
                 tableName, runtimeContinuousFailureCeiling, errorMsg);
-            refreshMeta(tableName);
+            tableRoute.refreshMeta(tableName);
             failures.set(0);
         } else {
             logger.warn("error msg: {}, current continues failure count: {}", errorMsg, failures);
@@ -968,14 +968,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (!forceRefresh) {
             return tableRoute.getTableEntry(tableName);
         }
-        return refreshMeta(tableName);
-    }
-
-    /**
-     * refresh table meta information except location
-     * @param tableName table name
-     * */
-    private TableEntry refreshMeta(String tableName) throws Exception {
         return tableRoute.refreshMeta(tableName);
     }
 
@@ -2102,6 +2094,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                 "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move .getReplica().getServer().ipToString());
                 throw new ObTableRoutingWrongException();
             }
+        } else if (result != null && result.isRoutingWrong()) {
+            if (result.isNeedRefreshMeta()) {
+                tableRoute.refreshMeta(tableName);
+            }
+            if (request instanceof ObTableAbstractOperationRequest) {
+                long tabletId = ((ObTableAbstractOperationRequest) request).getPartitionId();
+                tableRoute.refreshPartitionLocation(tableName, tabletId, null);
+            }
         }
         return result;
     }
@@ -2365,7 +2365,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                     needRefreshTabletLocation = true;
                                     if (ex instanceof ObTableNeedFetchMetaException) {
                                         // Refresh table info
-                                        refreshMeta(request.getTableName());
+                                        tableRoute.refreshMeta(request.getTableName());
                                     }
                                 }
                             } else {

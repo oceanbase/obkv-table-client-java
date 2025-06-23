@@ -174,6 +174,12 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                         .getServer().ipToString());
                             throw new ObTableRoutingWrongException();
                         }
+                    } else if (result != null && result.isRoutingWrong()) {
+                        TableEntry tableEntry = result.isNeedRefreshMeta() ?
+                                client.getOrRefreshTableEntry(indexTableName, true) :
+                                client.getOrRefreshTableEntry(indexTableName, false);
+                        long tabletId = client.getTabletIdByPartId(tableEntry, partIdWithIndex.getLeft());
+                        client.refreshTableLocationByTabletId(indexTableName, tabletId);
                     }
                 }
                 client.resetExecuteContinuousFailureCount(indexTableName);
