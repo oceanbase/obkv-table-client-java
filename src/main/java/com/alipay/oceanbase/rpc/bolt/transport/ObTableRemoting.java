@@ -119,42 +119,39 @@ public class ObTableRemoting extends BaseRemoting {
             }
 
             // decode ResultCode for response packet
+            boolean isRoutingWrong = false;
+            boolean isNeedRefreshMeta = false;
             ObRpcResultCode resultCode = new ObRpcResultCode();
             resultCode.decode(buf);
-            // If response indicates the request is routed to wrong server, we should refresh the routing meta.
-            if (!conn.getObTable().isEnableRerouting() && response.getHeader().isRoutingWrong()) {
-                String errMessage = TraceUtil.formatTraceMessage(conn, request,
-                    "routed to the wrong server: [error code:" + resultCode.getRcode() + "]"
-                            + resultCode.getErrMsg());
-                logger.debug(errMessage);
-                if (needFetchMeta(resultCode.getRcode(), resultCode.getPcode())) {
-                    throw new ObTableNeedFetchMetaException(errMessage, resultCode.getRcode());
-                } else if (needFetchPartitionLocation(resultCode.getRcode())) {
-                    throw new ObTableRoutingWrongException(errMessage, resultCode.getRcode());
-                } else {
-                    // Encountered an unexpected RoutingWrong error code, 
-                    // possibly due to the client error code version being behind the observer's version.  
-                    // Attempting a full refresh here
-                    // and delegating to the upper-level call to determine whether to throw the exception to the user based on the retry result.
-                    logger.warn("get unexpected error code: {}", errMessage);
-                    throw new ObTableNeedFetchMetaException(errMessage, resultCode.getRcode());
-                }
-            }
-            if (resultCode.getRcode() != 0
-                && response.getHeader().getPcode() != Pcodes.OB_TABLE_API_MOVE) {
-                String errMessage = TraceUtil.formatTraceMessage(conn, request,
-                    "meet exception: [error code:" + resultCode.getRcode() + "]"
-                            + resultCode.getErrMsg());
-                logger.debug(errMessage);
-                if (needFetchMeta(resultCode.getRcode(), resultCode.getPcode())) {
-                    throw new ObTableNeedFetchMetaException(errMessage, resultCode.getRcode());
-                } else if (needFetchPartitionLocation(resultCode.getRcode())) {
-                    throw new ObTableRoutingWrongException(errMessage, resultCode.getRcode());
-                } else {
-                    logger.warn(errMessage);
-                    ExceptionUtil.throwObTableException(conn.getObTable().getIp(), conn
-                        .getObTable().getPort(), response.getHeader().getTraceId1(), response
-                        .getHeader().getTraceId0(), resultCode.getRcode(), resultCode.getErrMsg());
+            logger.debug("[routing feedback] require_rerouting_: {}, need_refresh_kv_meta_: {}"
+                    , response.getHeader().isRoutingWrong(), response.getHeader().isNeedRefreshKvMeta());
+            if (response.getHeader().getPcode() != Pcodes.OB_TABLE_API_MOVE) {
+                if (resultCode.getRcode() != 0) {
+                    String errMessage = TraceUtil.formatTraceMessage(conn, request,
+                            "meet exception: [error code:" + resultCode.getRcode() + "]"
+                                    + resultCode.getErrMsg());
+                    logger.debug(errMessage);
+                    if (needFetchMeta(resultCode.getRcode(), resultCode.getPcode())) {
+                        throw new ObTableNeedFetchMetaException(errMessage, resultCode.getRcode());
+                    } else if (needFetchPartitionLocation(resultCode.getRcode())) {
+                        throw new ObTableRoutingWrongException(errMessage, resultCode.getRcode());
+                    } else {
+                        logger.warn(errMessage);
+                        ExceptionUtil.throwObTableException(conn.getObTable().getIp(), conn
+                                .getObTable().getPort(), response.getHeader().getTraceId1(), response
+                                .getHeader().getTraceId0(), resultCode.getRcode(), resultCode.getErrMsg());
+                    }
+                } else if (resultCode.getRcode() == 0 && response.getHeader().isRoutingWrong()) {
+                    // if distributed capability is supported and enabled
+                    // just need to refresh table entry, no need to retry
+                    String errMessage = TraceUtil.formatTraceMessage(conn, request,
+                            "meet exception and retry successfully in server: [require_rerouting :" + response.getHeader().isRoutingWrong()
+                                    + ", need_refresh_kv_meta :" + response.getHeader().isNeedRefreshKvMeta() + "]");
+                    logger.debug(errMessage);
+                    isRoutingWrong = true;
+                    if (response.getHeader().isNeedRefreshKvMeta()) {
+                        isNeedRefreshMeta = true;
+                    }
                 }
             }
 
@@ -165,6 +162,8 @@ public class ObTableRemoting extends BaseRemoting {
                     .getHeader());
                 payload.setSequence(response.getHeader().getTraceId1());
                 payload.setUniqueId(response.getHeader().getTraceId0());
+                payload.setIsRoutingWrong(isRoutingWrong);
+                payload.setIsNeedRefreshMeta(isNeedRefreshMeta);
             } else {
                 String errMessage = TraceUtil.formatTraceMessage(conn, response,
                     "receive unexpected command code: " + response.getCmdCode().value());
