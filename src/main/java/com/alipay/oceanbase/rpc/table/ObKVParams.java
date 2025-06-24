@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.table;
 
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import io.netty.buffer.ByteBuf;
 
 import static com.alipay.oceanbase.rpc.util.Serialization.encodeObUniVersionHeader;
@@ -54,15 +55,22 @@ public class ObKVParams extends AbstractPayload {
         int idx = 0;
 
         // 0. encode header
-        int headerLen = (int) getObUniVersionHeaderLength(getVersion(), getPayloadContentSize());
-        System.arraycopy(encodeObUniVersionHeader(getVersion(), getPayloadContentSize()), 0, bytes,
-            idx, headerLen);
-        idx += headerLen;
+        byte[] headerBytes = encodeObUniVersionHeader(getVersion(), getPayloadContentSize());
+        System.arraycopy(headerBytes, 0, bytes,
+            idx, headerBytes.length);
+        idx += headerBytes.length;
 
-        int len = (int) obKVParamsBase.getPayloadContentSize();
-        System.arraycopy(obKVParamsBase.encode(), 0, bytes, idx, len);
+        byte[] obKVParamsBaseBytes = obKVParamsBase.encode();
+        System.arraycopy(obKVParamsBaseBytes, 0, bytes, idx, obKVParamsBaseBytes.length);
 
         return bytes;
+    }
+
+    public void encode(ObByteBuf buf) {
+        // 0. encode header
+        encodeObUniVersionHeader(buf, getVersion(), getPayloadContentSize());
+
+        obKVParamsBase.encode(buf);
     }
 
     public Object decode(ByteBuf buf) {
@@ -76,6 +84,9 @@ public class ObKVParams extends AbstractPayload {
 
     @Override
     public long getPayloadContentSize() {
+        if (this.payLoadContentSize == -1) {
+            this.payLoadContentSize = obKVParamsBase.getPayloadContentSize();
+        }
         return obKVParamsBase.getPayloadContentSize();
     }
 }

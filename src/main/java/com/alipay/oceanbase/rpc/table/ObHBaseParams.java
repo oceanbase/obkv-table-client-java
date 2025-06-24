@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.table;
 
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -111,19 +112,33 @@ public class ObHBaseParams extends ObKVParamsBase {
         byte[] b = new byte[] { (byte) pType.ordinal() };
         System.arraycopy(b, 0, bytes, idx, 1);
         idx += 1;
-        System.arraycopy(Serialization.encodeVi32(caching), 0, bytes, idx,
-            Serialization.getNeedBytes(caching));
-        idx += Serialization.getNeedBytes(caching);
-        System.arraycopy(Serialization.encodeVi32(callTimeout), 0, bytes, idx,
-            Serialization.getNeedBytes(callTimeout));
-        idx += Serialization.getNeedBytes(callTimeout);
+        byte[] tmpBytes = Serialization.encodeVi32(caching);
+        System.arraycopy(tmpBytes, 0, bytes, idx,
+                tmpBytes.length);
+        idx += tmpBytes.length;
+        tmpBytes = Serialization.encodeVi32(callTimeout);
+        System.arraycopy(tmpBytes, 0, bytes, idx, tmpBytes.length);
+        idx += tmpBytes.length;
         System.arraycopy(booleansToByteArray(), 0, bytes, idx, 1);
         idx += 1;
-        System.arraycopy(Serialization.encodeVString(hbaseVersion), 0, bytes, idx,
-            Serialization.getNeedBytes(hbaseVersion));
-        idx += Serialization.getNeedBytes(hbaseVersion);
+        tmpBytes = Serialization.encodeVString(hbaseVersion);
+        System.arraycopy(tmpBytes, 0, bytes, idx,
+                tmpBytes.length);
+        idx += tmpBytes.length;
 
         return bytes;
+    }
+
+    public void encode(ObByteBuf buf) {
+        buf.writeByte((byte) pType.ordinal());
+
+        Serialization.encodeVi32(buf, caching);
+
+        Serialization.encodeVi32(buf, callTimeout);
+
+        buf.writeBytes(booleansToByteArray());
+
+        Serialization.encodeVString(buf, hbaseVersion);
     }
 
     public void byteArrayToBooleans(ByteBuf bytes) {

@@ -21,6 +21,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -52,28 +53,52 @@ public class ObTableSingleOp extends AbstractPayload {
 
         // 2. encode op flag
         long flag = singleOpFlag.getValue();
-        int len = Serialization.getNeedBytes(flag);
-        System.arraycopy(Serialization.encodeVi64(flag), 0, bytes, idx, len);
-        idx += len;
+        byte[] singleOpFlagLenBytes = Serialization.encodeVi64(flag);
+        System.arraycopy(singleOpFlagLenBytes, 0, bytes, idx, singleOpFlagLenBytes.length);
+        idx += singleOpFlagLenBytes.length;
 
         // 3. encode single op query
         if (ObTableOperationType.needEncodeQuery(singleOpType)) {
-            len = (int) query.getPayloadSize();
-            System.arraycopy(query.encode(), 0, bytes, idx, len);
-            idx += len;
+            byte[] queryBytes = query.encode();
+            System.arraycopy(queryBytes, 0, bytes, idx, queryBytes.length);
+            idx += queryBytes.length;
         }
 
         // 4. encode entities
-        len = Serialization.getNeedBytes(entities.size());
-        System.arraycopy(Serialization.encodeVi64(entities.size()), 0, bytes, idx, len);
-        idx += len;
+        byte[] entitiesSizeBytes = Serialization.encodeVi64(entities.size());
+        System.arraycopy(entitiesSizeBytes, 0, bytes, idx, entitiesSizeBytes.length);
+        idx += entitiesSizeBytes.length;
         for (ObTableSingleOpEntity entity : entities) {
-            len = (int) entity.getPayloadSize();
-            System.arraycopy(entity.encode(), 0, bytes, idx, len);
-            idx += len;
+            byte[] entityBytes = entity.encode();
+            System.arraycopy(entityBytes, 0, bytes, idx, entityBytes.length);
+            idx += entityBytes.length;
         }
 
         return bytes;
+    }
+
+    public void encode(ObByteBuf buf) {
+        // 0. encode header
+        encodeHeader(buf);
+
+        // 1. encode op type
+        byte opTypeVal = singleOpType.getByteValue();
+        Serialization.encodeI8(buf, opTypeVal);
+
+        // 2. encode op flag
+        long flag = singleOpFlag.getValue();
+        Serialization.encodeVi64(buf, flag);
+
+        // 3. encode single op query
+        if (ObTableOperationType.needEncodeQuery(singleOpType)) {
+           query.encode(buf);
+        }
+
+        // 4. encode entities
+        Serialization.encodeVi64(buf, entities.size());
+        for (ObTableSingleOpEntity entity : entities) {
+            entity.encode(buf);
+        }
     }
 
     /*
@@ -103,16 +128,19 @@ public class ObTableSingleOp extends AbstractPayload {
      */
     @Override
     public long getPayloadContentSize() {
-        long payloadContentSize = Serialization.getNeedBytes(singleOpType.getByteValue());
-        payloadContentSize += Serialization.getNeedBytes(singleOpFlag.getValue());
-        if (ObTableOperationType.needEncodeQuery(singleOpType)) {
-            payloadContentSize += query.getPayloadSize();
+        if (this.payLoadContentSize == -1) {
+            long payloadContentSize = Serialization.getNeedBytes(singleOpType.getByteValue());
+            payloadContentSize += Serialization.getNeedBytes(singleOpFlag.getValue());
+            if (ObTableOperationType.needEncodeQuery(singleOpType)) {
+                payloadContentSize += query.getPayloadSize();
+            }
+            payloadContentSize += Serialization.getNeedBytes(entities.size());
+            for (ObTableSingleOpEntity entity : entities) {
+                payloadContentSize += entity.getPayloadSize();
+            }
+            this.payLoadContentSize = payloadContentSize;
         }
-        payloadContentSize += Serialization.getNeedBytes(entities.size());
-        for (ObTableSingleOpEntity entity : entities) {
-            payloadContentSize += entity.getPayloadSize();
-        }
-        return payloadContentSize;
+        return this.payLoadContentSize;
     }
 
     public List<ObNewRange> getScanRange() {

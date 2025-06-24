@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -57,22 +58,39 @@ public class ObTableTabletOp extends AbstractPayload {
         idx += 8;
 
         // 2. encode option flag
-        int len = Serialization.getNeedBytes(optionFlag.getValue());
-        System.arraycopy(Serialization.encodeVi64(optionFlag.getValue()), 0, bytes, idx, len);
-        idx += len;
+        byte[] optionFlagLenBytes = Serialization.encodeVi64(optionFlag.getValue());
+        System.arraycopy(optionFlagLenBytes, 0, bytes, idx, optionFlagLenBytes.length);
+        idx += optionFlagLenBytes.length;
 
-        // 4. encode Operation
-        len = Serialization.getNeedBytes(singleOperations.size());
-        System.arraycopy(Serialization.encodeVi64(singleOperations.size()), 0, bytes, idx, len);
-        idx += len;
+        // 3. encode Operation
+        byte[] singleOperationsLenBytes = Serialization.encodeVi64(singleOperations.size());
+        System.arraycopy(singleOperationsLenBytes, 0, bytes, idx, singleOperationsLenBytes.length);
+        idx += singleOperationsLenBytes.length;
         for (ObTableSingleOp singleOperation : singleOperations) {
-            len = (int) singleOperation.getPayloadSize();
-            System.arraycopy(singleOperation.encode(), 0, bytes, idx, len);
-            idx += len;
+            byte[] singleOperationLenBytes = singleOperation.encode();
+            System.arraycopy(singleOperationLenBytes, 0, bytes, idx, singleOperationLenBytes.length);
+            idx += singleOperationLenBytes.length;
         }
 
         return bytes;
     }
+
+    public void encode(ObByteBuf buf) {
+        encodeHeader(buf);
+
+        // 1. encode tablet id
+        Serialization.encodeI64(buf, tabletId);
+
+        // 2. encode option flag
+        Serialization.encodeVi64(buf, optionFlag.getValue());
+
+        // 3. encode Operation
+        Serialization.encodeVi64(buf, singleOperations.size());
+        for (ObTableSingleOp singleOperation : singleOperations) {
+            singleOperation.encode(buf);
+        }
+    }
+
 
     /*
      * Decode.
@@ -105,13 +123,16 @@ public class ObTableTabletOp extends AbstractPayload {
      */
     @Override
     public long getPayloadContentSize() {
-        long payloadContentSize = 0;
-        payloadContentSize += Serialization.getNeedBytes(singleOperations.size());
-        for (ObTableSingleOp operation : singleOperations) {
-            payloadContentSize += operation.getPayloadSize();
-        }
+        if (this.payLoadContentSize == -1) {
+            long payloadContentSize = 0;
+            payloadContentSize += Serialization.getNeedBytes(singleOperations.size());
+            for (ObTableSingleOp operation : singleOperations) {
+                payloadContentSize += operation.getPayloadSize();
+            }
 
-        return payloadContentSize + tabletIdSize + Serialization.getNeedBytes(optionFlag.getValue());
+            this.payLoadContentSize = payloadContentSize + tabletIdSize + Serialization.getNeedBytes(optionFlag.getValue());
+        }
+        return this.payLoadContentSize;
     }
 
     /*
