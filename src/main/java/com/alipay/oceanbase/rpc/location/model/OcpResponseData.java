@@ -17,6 +17,8 @@
 
 package com.alipay.oceanbase.rpc.location.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.List;
 
 public class OcpResponseData {
@@ -28,6 +30,7 @@ public class OcpResponseData {
     /*
      * Get ob region.
      */
+    @JsonProperty("ObRegion")
     public String getObRegion() {
         return ObRegion;
     }
@@ -42,6 +45,7 @@ public class OcpResponseData {
     /*
      * Get ob region id.
      */
+    @JsonProperty("ObRegionId")
     public long getObRegionId() {
         return ObRegionId;
     }
@@ -56,6 +60,7 @@ public class OcpResponseData {
     /*
      * Get rs list.
      */
+    @JsonProperty("RsList")
     public List<OcpResponseDataRs> getRsList() {
         return RsList;
     }

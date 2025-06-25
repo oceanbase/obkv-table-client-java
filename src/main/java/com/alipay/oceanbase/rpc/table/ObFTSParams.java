@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.table;
 
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -48,6 +49,11 @@ public class ObFTSParams extends ObKVParamsBase {
         int len = Serialization.getNeedBytes(searchText);
         System.arraycopy(Serialization.encodeVString(searchText), 0, bytes, idx, len);
         return bytes;
+    }
+
+    public void encode(ObByteBuf buf) {
+        buf.writeByte((byte)pType.ordinal());
+        Serialization.encodeVString(buf, searchText);
     }
 
     public Object decode(ByteBuf buf) {

@@ -17,7 +17,7 @@
 
 package com.alipay.oceanbase.rpc.location.model;
 
-import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.LocationUtil;
@@ -49,6 +49,7 @@ import static java.lang.String.format;
 
 public class TableRoute {
     private static final Logger       logger                 = getLogger(TableRoute.class);
+    private static final ObjectMapper objectMapper           = new ObjectMapper();
     private final ObTableClient       tableClient;
     private final ObUserAuth          sysUA;                                               // user and password to access route table
     private final ServerRoster        serverRoster           = new ServerRoster();         // all servers which contain current tenant
@@ -196,8 +197,8 @@ public class TableRoute {
         ConcurrentHashMap<ObServerAddr, ObTable> addr2Table = new ConcurrentHashMap<ObServerAddr, ObTable>();
         List<ObServerAddr> rsList = configServerInfo.getRsList();
         BOOT.info("{} success to get rsList, paramURL: {}, rsList: {}，idc2Region: {}",
-            tableClient.getDatabase(), configServerInfo.getParamURL(), JSON.toJSON(rsList),
-            JSON.toJSON(configServerInfo.getIdc2Region()));
+            tableClient.getDatabase(), configServerInfo.getParamURL(), objectMapper.writeValueAsString(rsList),
+                objectMapper.writeValueAsString(configServerInfo.getIdc2Region()));
 
         TableEntry tableEntry = null;
         int retryMaxTimes = rsList.size();
@@ -211,7 +212,7 @@ public class TableRoute {
                     tableClient.getTableEntryAcquireConnectTimeout(),//
                     tableClient.getTableEntryAcquireSocketTimeout(), sysUA, initialized);
                 BOOT.info("{} success to get tableEntry with rootServerKey all_dummy_tables {}",
-                    tableClient.getDatabase(), JSON.toJSON(tableEntry));
+                    tableClient.getDatabase(), objectMapper.writeValueAsString(tableEntry));
                 success = true;
             } catch (ObTableEntryRefreshException e) {
                 if (e.isConnectInactive()) {
@@ -233,8 +234,9 @@ public class TableRoute {
         List<ReplicaLocation> replicaLocations = tableEntry.getTableLocation()
             .getReplicaLocations();
         BOOT.info("{} success to get replicaLocation {}", tableClient.getDatabase(),
-            JSON.toJSON(replicaLocations));
+                objectMapper.writeValueAsString(replicaLocations));
 
+        List<Exception> obTableExceptions = new ArrayList<>();
         for (ReplicaLocation replicaLocation : replicaLocations) {
             ObServerInfo info = replicaLocation.getInfo();
             ObServerAddr addr = replicaLocation.getAddr();
@@ -266,16 +268,37 @@ public class TableRoute {
                     addr.getIp(), addr.getSvrPort());
                 RUNTIME.warn("initMetadata meet exception", e);
                 e.printStackTrace();
+                // collect exceptions when login
+                obTableExceptions.add(e);
             }
         }
         if (servers.isEmpty()) {
             BOOT.error("{} failed to connect any replicaLocation server: {}",
-                tableClient.getDatabase(), JSON.toJSON(replicaLocations));
+                    tableClient.getDatabase(), objectMapper.writeValueAsString(replicaLocations));
+            boolean isSameTypeException = true;
+            int errCode = -1;
+            // if collected exceptions are the same type, throw the original exception
+            for (Exception e : obTableExceptions) {
+                if (!(e instanceof ObTableException)) {
+                    isSameTypeException = false;
+                    break;
+                }
+                int curErrCord = ((ObTableException) e).getErrorCode();
+                if (errCode == -1) {
+                    errCode = curErrCord;
+                } else if (errCode != curErrCord) {
+                    isSameTypeException = false;
+                    break;
+                }
+            }
+            if (isSameTypeException && !obTableExceptions.isEmpty()) {
+                throw obTableExceptions.get(0);
+            }
             throw new Exception("failed to connect any replicaLocation server");
         }
 
         BOOT.info("{} success to build server connection {}", tableClient.getDatabase(),
-            JSON.toJSON(servers));
+            objectMapper.writeValueAsString(servers));
         this.tableRoster = TableRoster.getInstanceOf(tableClient.getTenantName(),
             tableClient.getUserName(), tableClient.getPassword(), tableClient.getDatabase(),
             tableClient.getClientType(runningMode), tableClient.getProperties(),
@@ -321,7 +344,7 @@ public class TableRoute {
             tableClient.getCurrentIDC(), regionFromOcp));
         if (BOOT.isInfoEnabled()) {
             BOOT.info("{} finish refresh serverRoster: {}", tableClient.getDatabase(),
-                JSON.toJSON(serverRoster));
+                objectMapper.writeValueAsString(serverRoster));
             BOOT.info("finish initMetadata for all tables for database {}",
                 tableClient.getDatabase());
         }
@@ -415,7 +438,7 @@ public class TableRoute {
         } // end while
         if (!success) {
             logger.error("all tenant servers are not available, tenant: {}, serverRoster: {}",
-                allDummyKey.getTenantName(), JSON.toJSON(serverRoster));
+                allDummyKey.getTenantName(), objectMapper.writeValueAsString(serverRoster));
             throw new ObTableUnexpectedException("all tenant servers are not available");
         }
 
@@ -426,7 +449,7 @@ public class TableRoute {
 
         if (logger.isInfoEnabled()) {
             logger.info("finish refresh serverRoster: {}, servers num: {}",
-                JSON.toJSON(serverRoster), servers.size());
+                objectMapper.writeValueAsString(serverRoster), servers.size());
         }
         lastRefreshMetadataTimestamp = System.currentTimeMillis();
     }
@@ -580,6 +603,33 @@ public class TableRoute {
         }
     }
 
+    public void refreshTabletLocationForAtomicQuery(String tableName, ObTableQuery query, boolean isHKV) throws Exception {
+        Map<Long, ObTableParam> partIdParamMap = getPartIdParamMapForQuery(tableName, query.getScanRangeColumns(), query.getKeyRanges());
+        if (isHKV) {
+            // for HBase process, if distributed function is enabled, no need to do routing refresh
+            boolean isDistributedSupported = getServerCapacity().isSupportDistributedExecute();
+            if (partIdParamMap.size() > 1 && !isDistributedSupported) {
+                throw new ObTablePartitionConsistentException(
+                        "query and mutate must be a atomic operation");
+            } else if (isDistributedSupported) {
+                return;
+            }
+        } else {
+            // for table process, distributed function is not supported yet, need to refresh routing
+            // for now only support to query single tablet
+            if (partIdParamMap.size() > 1) {
+                throw new ObTablePartitionConsistentException(
+                        "query and mutate must be a atomic operation");
+            } else if (partIdParamMap.isEmpty()) {
+                throw new ObTableException("could not find part id of range");
+            }
+        }
+        Map.Entry<Long, ObTableParam> entry = partIdParamMap.entrySet().iterator().next();
+        TableEntry tableEntry = getTableEntry(tableName);
+        long tabletId = entry.getValue().getTabletId();
+        refreshPartitionLocation(tableName, tabletId, tableEntry);
+    }
+
     private Long[] getTabletsFromTableEntry(TableEntry tableEntry) {
         Long[] tablets = null;
         if (tableEntry.isPartitionTable()) {
@@ -691,6 +741,44 @@ public class TableRoute {
             obPartitionLocationInfo.initializationLatch.await();
         }
         return obPartitionLocationInfo;
+    }
+
+    public Map<Long, ObTableParam> getPartIdParamMapForQuery(String tableName, List<String> scanRangeColumns,
+                                                              List<ObNewRange> keyRanges) throws Exception {
+        Map<Long, ObTableParam> parIdParamMapObTable = new HashMap<Long, ObTableParam>();
+        for (ObNewRange keyRange : keyRanges) {
+            ObRowKey startKey = keyRange.getStartKey();
+            int startKeySize = startKey.getObjs().size();
+            ObRowKey endKey = keyRange.getEndKey();
+            int endKeySize = endKey.getObjs().size();
+            Object[] start = new Object[startKeySize];
+            Object[] end = new Object[endKeySize];
+            for (int i = 0; i < startKeySize; i++) {
+                ObObj curStart = startKey.getObj(i);
+                if (curStart.isMinObj()) {
+                    start[i] = curStart;
+                } else {
+                    start[i] = curStart.getValue();
+                }
+            }
+
+            for (int i = 0; i < endKeySize; i++) {
+                ObObj curEnd = endKey.getObj(i);
+                if (curEnd.isMaxObj()) {
+                    end[i] = curEnd;
+                } else {
+                    end[i] = curEnd.getValue();
+                }
+            }
+            ObBorderFlag borderFlag = keyRange.getBorderFlag();
+            List<ObTableParam> paramList = getTablesInternal(tableName, scanRangeColumns, start,
+                    borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(),
+                    tableClient.getRoute(false));
+            for (ObTableParam param : paramList) {
+                parIdParamMapObTable.put(param.getPartId(), param);
+            }
+        }
+        return parIdParamMapObTable;
     }
 
     /**
@@ -869,50 +957,18 @@ public class TableRoute {
      */
     public ObTableParam getTableParam(String tableName, List<String> scanRangeColumns,
                                       List<ObNewRange> keyRanges) throws Exception {
-        Map<Long, ObTableParam> tabletIdIdMapObTable = new HashMap<Long, ObTableParam>();
-        for (ObNewRange keyRange : keyRanges) {
-            ObRowKey startKey = keyRange.getStartKey();
-            int startKeySize = startKey.getObjs().size();
-            ObRowKey endKey = keyRange.getEndKey();
-            int endKeySize = endKey.getObjs().size();
-            Object[] start = new Object[startKeySize];
-            Object[] end = new Object[endKeySize];
-            for (int i = 0; i < startKeySize; i++) {
-                ObObj curStart = startKey.getObj(i);
-                if (curStart.isMinObj()) {
-                    start[i] = curStart;
-                } else {
-                    start[i] = curStart.getValue();
-                }
-            }
-
-            for (int i = 0; i < endKeySize; i++) {
-                ObObj curEnd = endKey.getObj(i);
-                if (curEnd.isMaxObj()) {
-                    end[i] = curEnd;
-                } else {
-                    end[i] = curEnd.getValue();
-                }
-            }
-            ObBorderFlag borderFlag = keyRange.getBorderFlag();
-            List<ObTableParam> paramList = getTablesInternal(tableName, scanRangeColumns, start,
-                borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(),
-                tableClient.getRoute(false));
-            for (ObTableParam param : paramList) {
-                tabletIdIdMapObTable.put(param.getTabletId(), param);
-            }
-        }
+        Map<Long, ObTableParam> partIdIdMapObTable = getPartIdParamMapForQuery(
+                tableName, scanRangeColumns, keyRanges);
         // for now only support to query single tablet
-        if (tabletIdIdMapObTable.size() > 1) {
+        if (partIdIdMapObTable.size() > 1) {
             throw new ObTablePartitionConsistentException(
                 "query and mutate must be a atomic operation");
-        } else if (tabletIdIdMapObTable.size() < 1) {
+        } else if (partIdIdMapObTable.isEmpty()) {
             throw new ObTableException("could not find part id of range");
         }
         ObTableParam ans = null;
-        for (Long tabletId : tabletIdIdMapObTable.keySet()) {
-            ans = tabletIdIdMapObTable.get(tabletId);
-        }
+        Map.Entry<Long, ObTableParam> entry = partIdIdMapObTable.entrySet().iterator().next();
+        ans = entry.getValue();
         return ans;
     }
 
@@ -979,45 +1035,7 @@ public class TableRoute {
         List<ObTableParam> params = new ArrayList<>();
         for (ObPair<Long, ReplicaLocation> partIdWithReplica : partIdWithReplicaList) {
             long partId = partIdWithReplica.getLeft();
-            long tabletId = getTabletIdByPartId(tableEntry, partId);
-            ReplicaLocation replica = partIdWithReplica.getRight();
-            ObServerAddr addr = replica.getAddr();
-            ObTable obTable = tableRoster.getTable(addr);
-            int retryTimes = 0;
-            while (obTable == null && retryTimes < 2) {
-                ++retryTimes;
-                // need to refresh table roster to ensure the current roster is the latest
-                tableClient.syncRefreshMetadata(true);
-                // the addr is wrong, need to refresh location
-                if (logger.isInfoEnabled()) {
-                    logger.info("Cannot get ObTable by addr {}, refreshing metadata.", addr);
-                }
-                // refresh tablet location based on the latest roster, in case that some of the observers hase been killed
-                // and used the old location
-                tableEntry = refreshPartitionLocation(tableName, tabletId, tableEntry);
-                ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
-                replica = getPartitionLocation(locationInfo, route);
-
-                if (replica == null) {
-                    RUNTIME.error("Cannot get replica by tableName: {}, tabletId: {}", tableName, tabletId);
-                    throw new ObTableGetException("Cannot get replica by tableName: " + tableName + ", tabletId: " + tabletId);
-                }
-                addr = replica.getAddr();
-                obTable = tableRoster.getTable(addr);
-            }
-            if (obTable == null) {
-                RUNTIME.error("cannot get table by addr: " + addr);
-                throw new ObTableGetException("obTable is null, addr is: " + addr.getIp() + ":" + addr.getSvrPort());
-            }
-
-            ObTableParam param = new ObTableParam(obTable);
-            param.setLsId(tableEntry.getPartitionEntry().getPartitionInfo(tabletId).getTabletLsId());
-            param.setTableId(tableEntry.getTableId());
-            param.setPartId(partId);
-            // real tablet id
-            param.setPartitionId(tabletId);
-
-            addr.recordAccess();
+            ObTableParam param = getTableInternal(tableName, tableEntry, partId, route);
             params.add(param);
         }
         return params;
