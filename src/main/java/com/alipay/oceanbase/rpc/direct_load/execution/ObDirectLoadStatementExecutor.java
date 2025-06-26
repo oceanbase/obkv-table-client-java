@@ -58,13 +58,21 @@ public class ObDirectLoadStatementExecutor {
     private long                               taskId        = 0;
     private ObAddr                             svrAddr       = null;
     private ObDirectLoadException              cause         = null;                   // 失败原因
+    private NodeRole                           nodeRole      = NodeRole.PRIMARY;
 
     private AtomicInteger                      writingCount  = new AtomicInteger(0);
 
-    public ObDirectLoadStatementExecutor(ObDirectLoadStatement statement) {
+    public enum NodeRole {
+        PRIMARY, WRITE_ONLY, P2P;
+    }
+
+    public ObDirectLoadStatementExecutor(ObDirectLoadStatement statement, boolean isP2PMode) {
         this.statement = statement;
         this.traceId = statement.getTraceId();
         this.logger = statement.getLogger();
+        if (isP2PMode) {
+            this.nodeRole = NodeRole.P2P;
+        }
     }
 
     public ObDirectLoadStatement getStatement() {
@@ -103,6 +111,11 @@ public class ObDirectLoadStatementExecutor {
         logger.info("statement call begin");
         ObDirectLoadStatementAsyncPromiseTask task = null;
         try {
+            if (NodeRole.PRIMARY != nodeRole && NodeRole.P2P != nodeRole) {
+                logger.warn("unexpected node role during begin process", nodeRole);
+                throw new ObDirectLoadUnexpectedException(
+                    "unexpected node role during begin process");
+            }
             compareAndSetState(NONE, BEGINNING, "begin");
         } catch (ObDirectLoadException e) {
             logger.warn("statement begin failed", e);
@@ -124,6 +137,11 @@ public class ObDirectLoadStatementExecutor {
         logger.info("statement call commit");
         ObDirectLoadStatementAsyncPromiseTask task = null;
         try {
+            if (NodeRole.PRIMARY != nodeRole && NodeRole.P2P != nodeRole) {
+                logger.warn("unexpected node role during commit process", nodeRole);
+                throw new ObDirectLoadUnexpectedException(
+                    "unexpected node role during commit process");
+            }
             compareAndSetState(LOADING, COMMITTING, "commit");
         } catch (ObDirectLoadException e) {
             logger.warn("statement commit failed", e);
@@ -174,7 +192,13 @@ public class ObDirectLoadStatementExecutor {
                                                                                  throws ObDirectLoadException {
         logger.info("statement call resume");
         try {
-            compareAndSetState(NONE, LOADING_ONLY, "resume");
+            if (NodeRole.P2P == nodeRole) {
+                compareAndSetState(NONE, LOADING, "resume in P2P mode");
+                startHeartBeat();
+            } else {
+                nodeRole = NodeRole.WRITE_ONLY;
+                compareAndSetState(NONE, LOADING_ONLY, "resume");
+            }
         } catch (ObDirectLoadException e) {
             logger.warn("statement resume failed", e);
             throw e;
@@ -272,6 +296,10 @@ public class ObDirectLoadStatementExecutor {
 
     private synchronized void abortIfNeed() {
         logger.debug("statement abort if need");
+        if (NodeRole.PRIMARY != nodeRole) {
+            //other roles have no ownership
+            return;
+        }
         if (abortFuture != null) {
             logger.debug("statement in abort");
             return;
@@ -312,6 +340,16 @@ public class ObDirectLoadStatementExecutor {
             }
         } else if (isDetached) {
             logger.debug("statement no need abort because is detached");
+        } else {
+            abort();
+        }
+    }
+
+    public void requestAbort() throws ObDirectLoadException {
+        if (NodeRole.PRIMARY != nodeRole && NodeRole.P2P != nodeRole) {
+            logger.warn("unexpected node role during abort process", nodeRole);
+            throw new ObDirectLoadUnexpectedException(
+                "unexpected node role during abort process");
         } else {
             abort();
         }
