@@ -201,8 +201,7 @@ public class ObTableRemoting extends BaseRemoting {
                || errorCode == ResultCodes.OB_SCHEMA_EAGAIN.errorCode
                || errorCode == ResultCodes.OB_ERR_WAIT_REMOTE_SCHEMA_REFRESH.errorCode
                || errorCode == ResultCodes.OB_GTS_NOT_READY.errorCode
-               || errorCode == ResultCodes.OB_ERR_OPERATION_ON_RECYCLE_OBJECT.errorCode
-               || (pcode == Pcodes.OB_TABLE_API_LS_EXECUTE && errorCode == ResultCodes.OB_NOT_MASTER.errorCode);
+               || errorCode == ResultCodes.OB_ERR_OPERATION_ON_RECYCLE_OBJECT.errorCode;
     }
 
     private boolean needFetchPartitionLocation(int errorCode) {
