@@ -123,14 +123,14 @@ public class ObTableRemoting extends BaseRemoting {
             boolean isNeedRefreshMeta = false;
             ObRpcResultCode resultCode = new ObRpcResultCode();
             resultCode.decode(buf);
-            logger.debug("[routing feedback] require_rerouting_: {}, need_refresh_kv_meta_: {}"
+            logger.warn("[routing feedback] require_rerouting_: {}, need_refresh_kv_meta_: {}"
                     , response.getHeader().isRoutingWrong(), response.getHeader().isNeedRefreshKvMeta());
             if (response.getHeader().getPcode() != Pcodes.OB_TABLE_API_MOVE) {
                 if (resultCode.getRcode() != 0) {
                     String errMessage = TraceUtil.formatTraceMessage(conn, request,
                             "meet exception: [error code:" + resultCode.getRcode() + "]"
                                     + resultCode.getErrMsg());
-                    logger.debug(errMessage);
+                    logger.warn(errMessage);
                     if (needFetchMeta(resultCode.getRcode(), resultCode.getPcode())) {
                         throw new ObTableNeedFetchMetaException(errMessage, resultCode.getRcode());
                     } else if (needFetchPartitionLocation(resultCode.getRcode())) {
