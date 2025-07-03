@@ -165,7 +165,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
     public List<Object> execute() throws Exception {
         // consistent can not be sure
         List<Object> results = new ArrayList<Object>(batchOperation.getTableOperations().size());
-        for (ObTableOperationResult result : executeInternal().getResults()) {
+        List<ObTableOperationResult> batchResults = executeInternal().getResults();
+        for (ObTableOperationResult result : batchResults) {
             int errCode = result.getHeader().getErrno();
             if (errCode == ResultCodes.OB_SUCCESS.errorCode) {
                 switch (result.getOperationType()) {
@@ -192,7 +193,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
     public List<Object> executeWithResult() throws Exception {
         // consistent can not be sure
         List<Object> results = new ArrayList<Object>(batchOperation.getTableOperations().size());
-        for (ObTableOperationResult result : executeInternal().getResults()) {
+        List<ObTableOperationResult> batchResults = executeInternal().getResults();
+        for (ObTableOperationResult result : batchResults) {
             int errCode = result.getHeader().getErrno();
             if (errCode == ResultCodes.OB_SUCCESS.errorCode) {
                 switch (result.getOperationType()) {
@@ -231,15 +233,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         return rowKey;
     }
 
-    public List<ObTableOperation> extractOperations(List<ObPair<Integer, ObTableOperation>> operationsPairs) {
-        List<ObTableOperation> operations = new ArrayList<>(operationsPairs.size());
-        for (ObPair<Integer, ObTableOperation> pair : operationsPairs) {
-            operations.add(pair.getRight());
-        }
-        return operations;
-    }
-
-    public Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> prepareOperations(List<ObTableOperation> operations) throws Exception {
+    public Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> prepareOperations(List<ObPair<Integer, ObTableOperation>> operations) throws Exception {
         Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> partitionOperationsMap = new HashMap<>();
 
         if (obTableClient.isOdpMode()) {
@@ -247,16 +241,14 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                     new ObTableParam(obTableClient.getOdpTable()),
                     new ArrayList<>());
             for (int i = 0; i < operations.size(); i++) {
-                ObTableOperation operation = operations.get(i);
-                obTableOperations.getRight().add(
-                        new ObPair<>(i, operation));
+                obTableOperations.getRight().add(operations.get(i));
             }
             partitionOperationsMap.put(0L, obTableOperations);
             return partitionOperationsMap;
         }
 
         for (int i = 0; i < operations.size(); i++) {
-            ObTableOperation operation = operations.get(i);
+            ObTableOperation operation = operations.get(i).getRight();
             ObRowKey rowKeyObject = operation.getEntity().getRowKey();
             int rowKeySize = rowKeyObject.getObjs().size();
             Object[] rowKey = new Object[rowKeySize];
@@ -269,7 +261,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
             ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>> obTableOperations = partitionOperationsMap
                     .computeIfAbsent(tableParam.getPartId(), k -> new ObPair<>(
                             tableParam, new ArrayList<>()));
-            obTableOperations.getRight().add(new ObPair<>(i, operation));
+            obTableOperations.getRight().add(operations.get(i));
         }
         return partitionOperationsMap;
     }
@@ -278,7 +270,11 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                                                                                                       throws Exception {
         // consistent can not be sure
         List<ObTableOperation> operations = batchOperation.getTableOperations();
-        return prepareOperations(operations);
+        List<ObPair<Integer, ObTableOperation>> operationIdx = new ArrayList<>();
+        for (int i = 0; i < operations.size(); ++i) {
+            operationIdx.add(new ObPair<>(i, operations.get(i)));
+        }
+        return prepareOperations(operationIdx);
     }
 
     /*
@@ -574,8 +570,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         retryCount++;
                         errCode = ((ObTableNeedFetchMetaException)e).getErrorCode();
                         errMsg = e.getMessage();
-                        List<ObTableOperation> failedOperations = extractOperations(currentEntry.getValue().getRight());
-                        currentPartitions = prepareOperations(failedOperations);
+                        currentPartitions = prepareOperations(currentEntry.getValue().getRight());
                         allPartitionsSuccess = false;
                         break;
                     } else {
