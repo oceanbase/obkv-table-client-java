@@ -75,6 +75,7 @@ public class OcpResponseData {
     /*
      * Get IDC list.
      */
+    @JsonProperty("IDCList")
     public List<OcpResponseDataIDC> getIDCList() {
         return IDCList;
     }
