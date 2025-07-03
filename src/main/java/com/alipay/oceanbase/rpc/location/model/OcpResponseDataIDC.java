@@ -22,6 +22,8 @@ package com.alipay.oceanbase.rpc.location.model;
  *
  */
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class OcpResponseDataIDC {
     private String idc;
     private String region;
@@ -29,6 +31,7 @@ public class OcpResponseDataIDC {
     /*
      * Get idc.
      */
+    @JsonProperty("idc")
     public String getIdc() {
         return idc;
     }
@@ -43,6 +46,7 @@ public class OcpResponseDataIDC {
     /*
      * Get region.
      */
+    @JsonProperty("region")
     public String getRegion() {
         return region;
     }
