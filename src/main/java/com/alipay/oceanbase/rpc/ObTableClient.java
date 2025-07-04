@@ -483,6 +483,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     if (tryTimes > 1 && needRefreshPartitionLocation) {
                         needRefreshPartitionLocation = false;
                         // refresh partition location
+                        // recalculate rowkey in the situation of partition splitting
+                        rowKey = transformToRow(tableName, callback.getRowKey());
                         TableEntry entry = tableRoute.getTableEntry(tableName);
                         long partId = tableRoute.getPartId(entry, rowKey);
                         long tabletId = tableRoute.getTabletIdByPartId(entry, partId);
