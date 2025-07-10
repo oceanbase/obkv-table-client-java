@@ -2095,6 +2095,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 throw new ObTableRoutingWrongException();
             }
         } else if (result != null && result.isRoutingWrong()) {
+            logger.debug("errors happened in server and retried successfully, server ip:port is {}:{}, tableName: {}, need_refresh_meta: {}",
+                    obTable.getIp(), obTable.getPort(), tableName, result.isNeedRefreshMeta());
             if (result.isNeedRefreshMeta()) {
                 tableRoute.refreshMeta(tableName);
             }
