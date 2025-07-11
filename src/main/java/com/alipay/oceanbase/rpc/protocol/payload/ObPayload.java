@@ -41,6 +41,14 @@ public interface ObPayload extends ObUnisVersion {
      */
     long getTimeout();
 
+    boolean isRoutingWrong();
+
+    void setIsRoutingWrong(boolean isRoutingWrong);
+
+    boolean isNeedRefreshMeta();
+
+    void setIsNeedRefreshMeta(boolean isNeedRefreshMeta);
+
     /*
      * set sequence
      */
