@@ -732,9 +732,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                                 ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
                             logger.debug("ls batch meet transport timeout, obTable ip:port is {}:{}",
                                     subObTable.getIp(), subObTable.getPort());
-                            obTableClient.syncRefreshMetadata(true);
-                            obTableClient.refreshTabletLocationBatch(realTableName);
                             subObTable.setDirty();
+                            obTableClient.dealWithRpcTimeoutForBatchTablet(subObTable.getObServerAddr(), realTableName);
                         }
                         obTableClient.calculateContinuousFailure(realTableName, ex.getMessage());
                         throw ex;

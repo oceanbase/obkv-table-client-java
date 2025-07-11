@@ -290,10 +290,9 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                 && ((ObTableTransportException) e).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
                                 logger.debug("query meet transport timeout, obTable ip:port is {}:{}",
                                         subObTable.getIp(), subObTable.getPort());
-                                client.syncRefreshMetadata(true);
                                 long tabletId = partIdWithIndex.getRight().getTabletId();
-                                client.refreshTableLocationByTabletId(indexTableName, tabletId);
                                 subObTable.setDirty();
+                                client.dealWithRpcTimeoutForSingleTablet(subObTable.getObServerAddr(), indexTableName, tabletId);
                             }
                             client.calculateContinuousFailure(indexTableName, e.getMessage());
                             throw e;

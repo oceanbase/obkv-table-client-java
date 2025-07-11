@@ -581,12 +581,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                 ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
                             logger.debug("client execute meet transport timeout, obTable ip:port is {}:{}",
                                     tableParam.getObTable().getIp(), tableParam.getObTable().getPort());
-                            syncRefreshMetadata(true);
                             TableEntry entry = tableRoute.getTableEntry(tableName);
                             long partId = tableRoute.getPartId(entry, rowKey);
                             long tabletId = tableRoute.getTabletIdByPartId(entry, partId);
-                            tableRoute.refreshPartitionLocation(tableName, tabletId, entry);
                             tableParam.getObTable().setDirty();
+                            dealWithRpcTimeoutForSingleTablet(tableParam.getObTable().getObServerAddr(), tableName, tabletId);
                         }
                         calculateContinuousFailure(tableName, ex.getMessage());
                         throw ex;
@@ -810,12 +809,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                 ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
                             logger.debug("client execute meet transport timeout, obTable ip:port is {}:{}",
                                     tableParam.getObTable().getIp(), tableParam.getObTable().getPort());
-                            syncRefreshMetadata(true);
                             TableEntry entry = tableRoute.getTableEntry(tableName);
                             long partId = tableRoute.getPartId(entry, callback.getRowKey());
                             long tabletId = tableRoute.getTabletIdByPartId(entry, partId);
-                            tableRoute.refreshPartitionLocation(tableName, tabletId, entry);
                             tableParam.getObTable().setDirty();
+                            dealWithRpcTimeoutForSingleTablet(tableParam.getObTable().getObServerAddr(), tableName, tabletId);
                         }
                         calculateContinuousFailure(tableName, ex.getMessage());
                         throw ex;
@@ -1145,7 +1143,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             logger.info("server from response not exist in route cache, server ip {}, port {} , execute add Table.", addr.getIp(), addr.getSvrPort());
             ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort()) //
                     .setLoginInfo(tenantName, userName, password, database, getClientType(runningMode)) //
-                    .setProperties(getProperties()).build();
+                    .setProperties(getProperties()).setObServerAddr(addr).build();
             tableRoster.put(addr, obTable);
             return obTable;
         } catch (Exception e) {
@@ -1181,6 +1179,17 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
         }
         return row;
+    }
+
+    public void dealWithRpcTimeoutForSingleTablet(ObServerAddr addr, String tableName, long tabletId) throws Exception {
+        tableRoute.refreshPartitionLocation(tableName, tabletId, null);
+        RouteTableRefresher.SuspectObServer suspectAddr = new RouteTableRefresher.SuspectObServer(addr);
+        tableRoute.addIntoSuspectIPs(suspectAddr);
+    }
+    public void dealWithRpcTimeoutForBatchTablet(ObServerAddr addr, String tableName) throws Exception {
+        tableRoute.refreshTabletLocationBatch(tableName);
+        RouteTableRefresher.SuspectObServer suspectAddr = new RouteTableRefresher.SuspectObServer(addr);
+        tableRoute.addIntoSuspectIPs(suspectAddr);
     }
 
     /**
