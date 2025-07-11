@@ -17,6 +17,7 @@
 package com.alipay.oceanbase.rpc.location.model;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
@@ -28,6 +29,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
+import com.alipay.oceanbase.rpc.exception.ObTableEntryRefreshException;
 import com.alipay.oceanbase.rpc.exception.ObTableTryLockTimeoutException;
 import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.location.LocationUtil;
@@ -142,33 +144,51 @@ public class RouteTableRefresher {
     private void checkAlive(ObServerAddr addr) {
         long connectTimeout = 1000L; // 1s
         long socketTimeout = 5000L; // 5s
-        int failureLimit = 3;
         String url = LocationUtil.formatObServerUrl(addr, connectTimeout, socketTimeout);
-        TableRoute tableRoute = tableClient.getTableRoute();
         Connection connection = null;
         Statement statement = null;
+        ResultSet rs = null;
         try {
+            logger.debug("[background keep alive] check alive, server: {}", addr);
             connection = LocationUtil.getMetaRefreshConnection(url, sysUA);
             statement = connection.createStatement();
-            statement.execute(sql);
-            removeFromSuspectIPs(addr);
-        } catch (Exception e) {
-            if (e instanceof SQLException) {
-                SuspectObServer server = suspectServers.get(addr);
-                server.incrementFailure();
-                int failure = server.getFailure();
-                if (failure >= failureLimit) {
-                    tableRoute.removeObServer(addr);
+            rs = statement.executeQuery(sql);
+            boolean alive = false;
+            while (rs.next()) {
+                String res = rs.getString("detect server alive");
+                logger.debug("[background keep alive] result: {}", res);
+                alive = res.equalsIgnoreCase("detect server alive");
+            }
+            if (alive) {
+                logger.debug("[background keep alive] alive, remove server: {}", addr);
+                removeFromSuspectIPs(addr);
+            } else {
+                calcFailureOrClearCache(addr);
+            }
+        } catch (Throwable t) {
+            logger.debug("check alive failed, server: {}", addr, t);
+            if (t instanceof SQLException) {
+                // occurred during query
+                calcFailureOrClearCache(addr);
+            } if (t instanceof ObTableEntryRefreshException) {
+                // occurred during connection construction
+                ObTableEntryRefreshException e = (ObTableEntryRefreshException) t;
+                if (e.isConnectInactive()) {
+                    calcFailureOrClearCache(addr);
+                } else {
+                    logger.warn("background check-alive mechanic meet ObTableEntryRefreshException, server: {}", addr.toString(), t);
                     removeFromSuspectIPs(addr);
                 }
-                logger.debug("background keep-alive mechanic failed to receive response, server: {}, failure: {}",
-                        addr, failure, e);
             } else {
                 // silence resolving
-                logger.warn("background check-alive mechanic meet exception, server: {}", addr.toString(), e);
+                logger.warn("background check-alive mechanic meet exception, server: {}", addr.toString(), t);
+                removeFromSuspectIPs(addr);
             }
         } finally {
             try {
+                if (rs != null) {
+                    rs.close();
+                }
                 if (statement != null) {
                     statement.close();
                 }
@@ -182,6 +202,7 @@ public class RouteTableRefresher {
     }
 
     public void addIntoSuspectIPs(SuspectObServer server) throws Exception {
+        logger.debug("[background keep alive] enter addInto");
         ObServerAddr addr = server.getAddr();
         if (suspectServers.get(addr) != null) {
             // already in the list, directly return
@@ -212,6 +233,7 @@ public class RouteTableRefresher {
                             break;
                         }
                     }
+                    logger.debug("[background keep alive] add into ips, server: {}", addr);
                     suspectServers.put(addr, server);
                     serverLastAccessTimestamps.put(addr, server.getAccessTimestamp());
                     break;
@@ -230,6 +252,7 @@ public class RouteTableRefresher {
     }
 
     private void removeFromSuspectIPs(ObServerAddr addr) {
+        logger.debug("[background keep alive] remove server, server:{}", addr);
         Lock lock = suspectLocks.get(addr);
         if (lock == null) {
             // lock must have been added before remove
@@ -247,6 +270,7 @@ public class RouteTableRefresher {
                     }
                     // no need to remove lock
                     suspectServers.remove(addr);
+                    logger.debug("[background keep alive] removed server: {}", addr);
                     break;
                 } catch (ObTableTryLockTimeoutException e) {
                     // if try lock timeout, need to retry
@@ -264,6 +288,20 @@ public class RouteTableRefresher {
                 lock.unlock();
             }
         }
+    }
+
+    private void calcFailureOrClearCache(ObServerAddr addr) {
+        int failureLimit = 3;
+        TableRoute tableRoute = tableClient.getTableRoute();
+        SuspectObServer server = suspectServers.get(addr);
+        server.incrementFailure();
+        int failure = server.getFailure();
+        if (failure >= failureLimit) {
+            tableRoute.removeObServer(addr);
+            removeFromSuspectIPs(addr);
+        }
+        logger.debug("background keep-alive mechanic failed to receive response, server: {}, failure: {}",
+                addr, failure);
     }
 
     public static class SuspectObServer {
