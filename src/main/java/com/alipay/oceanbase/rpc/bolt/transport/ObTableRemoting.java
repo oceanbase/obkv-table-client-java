@@ -123,15 +123,15 @@ public class ObTableRemoting extends BaseRemoting {
             boolean isNeedRefreshMeta = false;
             ObRpcResultCode resultCode = new ObRpcResultCode();
             resultCode.decode(buf);
-            logger.warn("[routing feedback] require_rerouting_: {}, need_refresh_kv_meta_: {}"
+            logger.debug("require_rerouting_: {}, need_refresh_kv_meta_: {}"
                     , response.getHeader().isRoutingWrong(), response.getHeader().isNeedRefreshKvMeta());
             if (response.getHeader().getPcode() != Pcodes.OB_TABLE_API_MOVE) {
                 if (resultCode.getRcode() != 0) {
                     String errMessage = TraceUtil.formatTraceMessage(conn, request,
                             "meet exception: [error code:" + resultCode.getRcode() + "]"
                                     + resultCode.getErrMsg());
-                    logger.warn(errMessage);
-                    if (needFetchMeta(resultCode.getRcode(), resultCode.getPcode())) {
+                    logger.debug(errMessage);
+                    if (needFetchMeta(resultCode.getRcode())) {
                         throw new ObTableNeedFetchMetaException(errMessage, resultCode.getRcode());
                     } else if (needFetchPartitionLocation(resultCode.getRcode())) {
                         throw new ObTableRoutingWrongException(errMessage, resultCode.getRcode());
@@ -191,7 +191,7 @@ public class ObTableRemoting extends BaseRemoting {
     }
 
     // schema changed
-    private boolean needFetchMeta(int errorCode, int pcode) {
+    private boolean needFetchMeta(int errorCode) {
         return errorCode == ResultCodes.OB_SCHEMA_ERROR.errorCode
                || errorCode == ResultCodes.OB_TABLE_NOT_EXIST.errorCode
                || errorCode == ResultCodes.OB_TABLET_NOT_EXIST.errorCode

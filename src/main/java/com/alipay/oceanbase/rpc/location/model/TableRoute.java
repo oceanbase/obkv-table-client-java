@@ -662,7 +662,7 @@ public class TableRoute {
         ReplicaLocation replica = getPartitionLocation(obPartitionLocationInfo, route);
         ObServerAddr addr = replica.getAddr();
         ObTable obTable = tableRoster.getTable(addr);
-        if (obTable != null) {
+        if (obTable != null && !obTable.isValid()) {
             obTable.setValid();
         }
     }
