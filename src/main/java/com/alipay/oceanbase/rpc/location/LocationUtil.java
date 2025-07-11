@@ -305,7 +305,7 @@ public class LocationUtil {
      * @param socketTimeout
      * @return
      */
-    private static String formatObServerUrl(ObServerAddr obServerAddr, long connectTimeout,
+    public static String formatObServerUrl(ObServerAddr obServerAddr, long connectTimeout,
                                             long socketTimeout) {
         return format(
             "jdbc:mysql://%s/oceanbase?useUnicode=true&characterEncoding=utf-8&connectTimeout=%d&socketTimeout=%d",
@@ -319,7 +319,7 @@ public class LocationUtil {
      * @return
      * @throws ObTableEntryRefreshException
      */
-    private static Connection getMetaRefreshConnection(String url, ObUserAuth sysUA)
+    public static Connection getMetaRefreshConnection(String url, ObUserAuth sysUA)
                                                                                     throws ObTableEntryRefreshException {
 
         try {

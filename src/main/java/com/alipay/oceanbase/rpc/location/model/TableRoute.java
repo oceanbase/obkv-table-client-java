@@ -259,7 +259,7 @@ public class TableRoute {
                         tableClient.getClientType(runningMode))
                     //
                     .setProperties(tableClient.getProperties())
-                    .setConfigs(tableClient.getTableConfigs()).build();
+                    .setConfigs(tableClient.getTableConfigs()).setObServerAddr(addr).build();
                 addr2Table.put(addr, obTable);
                 servers.add(addr);
             } catch (Exception e) {
@@ -353,8 +353,23 @@ public class TableRoute {
     }
 
     public void launchRouteRefresher() {
-        routeRefresher = new RouteTableRefresher(tableClient);
+        routeRefresher = new RouteTableRefresher(tableClient, sysUA);
         routeRefresher.start();
+    }
+
+    public void removeObServer(ObServerAddr addr) {
+        logger.debug("remove useless table addr, {}", addr.toString());
+        ConcurrentHashMap<ObServerAddr, ObTable> tables = this.tableRoster.getTables();
+        ObTable table = tables.remove(addr);
+        if (table != null) {
+            table.close();
+        }
+        List<ObServerAddr> servers = this.serverRoster.getMembers();
+        servers.remove(addr);
+    }
+
+    public void addIntoSuspectIPs(RouteTableRefresher.SuspectObServer addr) throws Exception {
+        routeRefresher.addIntoSuspectIPs(addr);
     }
 
     /**
