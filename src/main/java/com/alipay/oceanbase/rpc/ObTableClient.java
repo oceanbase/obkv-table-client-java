@@ -2268,28 +2268,28 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (tableQuery.getKeyRanges().isEmpty()) {
                 tableQuery.addKeyRange(ObNewRange.getWholeRange());
             }
-            if (isOdpMode()) {
-                request.setTimeout(getOdpTable().getObTableOperationTimeout());
-                return getOdpTable().execute(request);
-            } else {
-                int tryTimes = 0;
-                boolean needRefreshTabletLocation = false;
-                long startExecute = System.currentTimeMillis();
-                while (true) {
-                    long currentExecute = System.currentTimeMillis();
-                    long costMillis = currentExecute - startExecute;
-                    if (costMillis > getRuntimeMaxWait()) {
-                        logger.error(
-                                "tablename:{} it has tried " + tryTimes
-                                        + " times and it has waited " + costMillis
-                                        + "/ms which exceeds response timeout "
-                                        + getRuntimeMaxWait() + "/ms", request.getTableName());
-                        throw new ObTableTimeoutExcetion("it has tried " + tryTimes
-                                + " times and it has waited " + costMillis
-                                + "/ms which exceeds response timeout "
-                                + getRuntimeMaxWait() + "/ms");
-                    }
-                    try {
+            int tryTimes = 0;
+            boolean needRefreshTabletLocation = false;
+            long startExecute = System.currentTimeMillis();
+            while (true) {
+                long currentExecute = System.currentTimeMillis();
+                long costMillis = currentExecute - startExecute;
+                if (costMillis > getRuntimeMaxWait()) {
+                    logger.error(
+                            "tablename:{} it has tried " + tryTimes
+                                    + " times and it has waited " + costMillis
+                                    + "/ms which exceeds response timeout "
+                                    + getRuntimeMaxWait() + "/ms", request.getTableName());
+                    throw new ObTableTimeoutExcetion("it has tried " + tryTimes
+                            + " times and it has waited " + costMillis
+                            + "/ms which exceeds response timeout "
+                            + getRuntimeMaxWait() + "/ms");
+                }
+                try {
+                    if (odpMode) {
+                        request.setTimeout(getOdpTable().getObTableOperationTimeout());
+                        return getOdpTable().execute(request);
+                    } else {
                         // Recalculate partIdMapObTable
                         if (needRefreshTabletLocation) {
                             needRefreshTabletLocation = false;
@@ -2317,8 +2317,29 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
                         // Attempt to execute the operation
                         return executeWithRetry(obTable, request, request.getTableName());
-                    } catch (Exception ex) {
-                        tryTimes++;
+                    }
+                } catch (Exception ex) {
+                    tryTimes++;
+                    if (odpMode) {
+                        // about routing problems, ODP will retry on their side
+                        if (ex instanceof ObTableException) {
+                            // errors needed to retry will retry until timeout
+                            if (((ObTableException) ex).isNeedRetryError()) {
+                                logger.warn(
+                                        "meet need retry exception when execute queryAndMutate in odp mode. tablename: {}, errorCode: {} , errorMsg: {}, try times {}",
+                                        request.getTableName(), ((ObTableException) ex).getErrorCode(),
+                                        ex.getMessage(), tryTimes);
+                            } else {
+                                logger.warn("meet table exception when execute queryAndMutate in odp mode. tablename: {}, errMsg: {}"
+                                        , request.getTableName(), ex.getMessage());
+                                throw ex;
+                            }
+                        } else {
+                            logger.warn("meet exception when execute queryAndMutate in odp mode. tablename: {}, errMsg: {}",
+                                    request.getTableName(), ex.getMessage());
+                            throw ex;
+                        }
+                    } else {
                         if (ex instanceof ObTableException &&
                                 (((ObTableException) ex).isNeedRefreshTableEntry() || ((ObTableException) ex).isNeedRetryError())) {
                             logger.warn(
