@@ -2,6 +2,7 @@ package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.get.Get;
+import com.alipay.oceanbase.rpc.get.result.GetResult;
 import com.alipay.oceanbase.rpc.mutation.BatchOperation;
 import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
@@ -9,12 +10,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /*
 CREATE TABLE IF NOT EXISTS `test_get` (
@@ -258,5 +260,38 @@ public class ObTableGetTest {
 
         System.out.println(thrown.getMessage());
         assertTrue(thrown.getMessage().contains("[-4007][OB_NOT_SUPPORTED][operation is not supported to partially fill rowkey columns not supported]"));
+    }
+
+    /* test same Get */
+    @Test
+    public void testBatchGet6() throws Exception {
+        try {
+            // insert
+            client.insertOrUpdate(tableName)
+                    .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
+                    .addMutateColVal(colVal("c3", "c3_val")).execute();
+
+            // select c1,c2
+            BatchOperation batch = client.batchOperation(tableName);
+            Get get1 = client.get(tableName)
+                    .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val"))).select("c1", "c2", "c3");
+            Get get2 = client.get(tableName)
+                    .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val"))).select("c1", "c2", "c3");
+            batch.addOperation(get1, get2);
+            BatchOperationResult res = batch.execute();
+            Assert.assertNotNull(res);
+            List<Object> getResults = res.getResults();
+            assertEquals(2, getResults.size());
+            for (Object result : getResults) {
+                GetResult getResult = (GetResult) result;
+                Map<String, Object> row = getResult.getOperationRow().getMap();
+                assertEquals("c1_val", row.get("c1"));
+                assertEquals("c2_val", row.get("c2"));
+                assertEquals("c3_val", row.get("c3"));
+            }
+        } finally {
+            client.delete(tableName).setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
+                    .execute();
+        }
     }
 }
