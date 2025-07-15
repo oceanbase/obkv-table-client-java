@@ -977,7 +977,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                     }
                     connections[idx].reConnectAndLogin("expired");
                 } catch (Exception e) {
-                    log.warn("ObTableConnectionPool::checkAndReconnect reconnect fail {}. {}", connections[idx].getConnection().getUrl(), e.getMessage());
+                    log.warn("ObTableConnectionPool::checkAndReconnect reconnect fail {}:{}. {}", obTable.getIp(), obTable.getPort(), e.getMessage());
                 } finally {
                     connections[idx].setExpired(false);
                 }

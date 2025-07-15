@@ -39,21 +39,21 @@ import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.getLogger;
 
 public class RouteTableRefresher {
 
-    private static final Logger                                    logger    = getLogger(RouteTableRefresher.class);
+    private static final Logger                                           logger    = getLogger(RouteTableRefresher.class);
 
-    private static final String                                    sql = "select 'detect server alive' from dual";
+    private static final String                                           sql = "select 'detect server alive' from dual";
 
-    private final ObTableClient                                    tableClient;
+    private final ObTableClient                                           tableClient;
 
-    private final ObUserAuth                                       sysUA;
+    private final ObUserAuth                                              sysUA;
 
-    private final ScheduledExecutorService                         scheduler = Executors.newScheduledThreadPool(2);
+    private final ScheduledExecutorService                                scheduler = Executors.newScheduledThreadPool(2);
 
-    private final ConcurrentHashMap<ObServerAddr, Lock>            suspectLocks = new ConcurrentHashMap<>(); // ObServer -> access lock
+    private final static ConcurrentHashMap<ObServerAddr, Lock>            suspectLocks = new ConcurrentHashMap<>(); // ObServer -> access lock
 
-    private final ConcurrentHashMap<ObServerAddr, SuspectObServer> suspectServers = new ConcurrentHashMap<>(); // ObServer -> information structure
+    private final static ConcurrentHashMap<ObServerAddr, SuspectObServer> suspectServers = new ConcurrentHashMap<>(); // ObServer -> information structure
 
-    private final HashMap<ObServerAddr, Long>                      serverLastAccessTimestamps = new HashMap<>(); // ObServer -> last access timestamp
+    private final static HashMap<ObServerAddr, Long>                      serverLastAccessTimestamps = new HashMap<>(); // ObServer -> last access timestamp
 
     public RouteTableRefresher(ObTableClient tableClient, ObUserAuth sysUA) {
         this.tableClient = tableClient;
@@ -149,24 +149,21 @@ public class RouteTableRefresher {
         Statement statement = null;
         ResultSet rs = null;
         try {
-            logger.debug("[background keep alive] check alive, server: {}", addr);
             connection = LocationUtil.getMetaRefreshConnection(url, sysUA);
             statement = connection.createStatement();
             rs = statement.executeQuery(sql);
             boolean alive = false;
             while (rs.next()) {
                 String res = rs.getString("detect server alive");
-                logger.debug("[background keep alive] result: {}", res);
                 alive = res.equalsIgnoreCase("detect server alive");
             }
             if (alive) {
-                logger.debug("[background keep alive] alive, remove server: {}", addr);
                 removeFromSuspectIPs(addr);
             } else {
                 calcFailureOrClearCache(addr);
             }
         } catch (Throwable t) {
-            logger.debug("check alive failed, server: {}", addr, t);
+            logger.debug("check alive failed, server: {}", addr.toString(), t);
             if (t instanceof SQLException) {
                 // occurred during query
                 calcFailureOrClearCache(addr);
@@ -201,8 +198,7 @@ public class RouteTableRefresher {
         }
     }
 
-    public void addIntoSuspectIPs(SuspectObServer server) throws Exception {
-        logger.debug("[background keep alive] enter addInto");
+    public static void addIntoSuspectIPs(SuspectObServer server) throws Exception {
         ObServerAddr addr = server.getAddr();
         if (suspectServers.get(addr) != null) {
             // already in the list, directly return
@@ -233,7 +229,7 @@ public class RouteTableRefresher {
                             break;
                         }
                     }
-                    logger.debug("[background keep alive] add into ips, server: {}", addr);
+                    logger.debug("add into suspect list, server: {}", addr);
                     suspectServers.put(addr, server);
                     serverLastAccessTimestamps.put(addr, server.getAccessTimestamp());
                     break;
@@ -252,7 +248,6 @@ public class RouteTableRefresher {
     }
 
     private void removeFromSuspectIPs(ObServerAddr addr) {
-        logger.debug("[background keep alive] remove server, server:{}", addr);
         Lock lock = suspectLocks.get(addr);
         if (lock == null) {
             // lock must have been added before remove
@@ -270,7 +265,7 @@ public class RouteTableRefresher {
                     }
                     // no need to remove lock
                     suspectServers.remove(addr);
-                    logger.debug("[background keep alive] removed server: {}", addr);
+                    logger.debug("removed server from suspect list: {}", addr);
                     break;
                 } catch (ObTableTryLockTimeoutException e) {
                     // if try lock timeout, need to retry

@@ -368,10 +368,6 @@ public class TableRoute {
         servers.remove(addr);
     }
 
-    public void addIntoSuspectIPs(RouteTableRefresher.SuspectObServer addr) throws Exception {
-        routeRefresher.addIntoSuspectIPs(addr);
-    }
-
     /**
      * refresh all ob server synchronized, it will not refresh if last refresh time is 1 min ago
      * @param newRsList new root servers
