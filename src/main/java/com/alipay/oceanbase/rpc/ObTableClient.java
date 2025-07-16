@@ -1182,14 +1182,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     public void dealWithRpcTimeoutForSingleTablet(ObServerAddr addr, String tableName, long tabletId) throws Exception {
-        tableRoute.refreshPartitionLocation(tableName, tabletId, null);
         RouteTableRefresher.SuspectObServer suspectAddr = new RouteTableRefresher.SuspectObServer(addr);
         RouteTableRefresher.addIntoSuspectIPs(suspectAddr);
+        tableRoute.refreshPartitionLocation(tableName, tabletId, null);
     }
     public void dealWithRpcTimeoutForBatchTablet(ObServerAddr addr, String tableName) throws Exception {
-        tableRoute.refreshTabletLocationBatch(tableName);
         RouteTableRefresher.SuspectObServer suspectAddr = new RouteTableRefresher.SuspectObServer(addr);
         RouteTableRefresher.addIntoSuspectIPs(suspectAddr);
+        tableRoute.refreshTabletLocationBatch(tableName);
     }
 
     /**
