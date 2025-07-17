@@ -2288,6 +2288,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 try {
                     if (odpMode) {
                         request.setTimeout(getOdpTable().getObTableOperationTimeout());
+                        logger.info("execute ObTableQueryAndMutateRequest, tableName: {}, odp ip:port {}:{}, odpMode:{}",
+                                request.getTableName(), odpAddr, odpPort, odpMode);
                         return getOdpTable().execute(request);
                     } else {
                         // Recalculate partIdMapObTable
@@ -2314,7 +2316,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         request.setPartitionId(partitionId);
                         request.setTimeout(tableParam.getObTable().getObTableOperationTimeout());
                         ObTable obTable = tableParam.getObTable();
-
+                        logger.info("execute ObTableQueryAndMutateRequest, tableName: {}, tablet_id: {}, server ip:port {}:{}, odpMode:{}",
+                                request.getTableName(), tableParam.getTabletId(), obTable.getIp(), obTable.getPort(), odpMode);
                         // Attempt to execute the operation
                         return executeWithRetry(obTable, request, request.getTableName());
                     }
