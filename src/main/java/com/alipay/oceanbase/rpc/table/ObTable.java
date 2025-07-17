@@ -640,6 +640,10 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         this.isOdpMode = isOdpMode;
     }
 
+    public boolean isOdpMode() {
+        return this.isOdpMode;
+    }
+
     public ObServerAddr getObServerAddr() {
         return this.addr;
     }

@@ -116,8 +116,10 @@ public class ObTableConnection {
         MONITOR.info(logMessage(null, "CONNECT", endpoint, System.currentTimeMillis() - start));
 
         if (tries >= maxTryTimes) {
-            RouteTableRefresher.SuspectObServer suspectAddr = new RouteTableRefresher.SuspectObServer(obTable.getObServerAddr());
-            RouteTableRefresher.addIntoSuspectIPs(suspectAddr);
+            if (!obTable.isOdpMode()) {
+                RouteTableRefresher.SuspectObServer suspectAddr = new RouteTableRefresher.SuspectObServer(obTable.getObServerAddr());
+                RouteTableRefresher.addIntoSuspectIPs(suspectAddr);
+            }
             LOGGER.warn("connect failed after max " + maxTryTimes + " tries "
                         + TraceUtil.formatIpPort(obTable));
             throw new ObTableServerConnectException("connect failed after max " + maxTryTimes
