@@ -410,7 +410,7 @@ public class ObTableSingleOpEntity extends AbstractPayload {
 
     public Map<String, Object> getSimpleProperties() {
         Map<String, Object> values = new HashMap<String, Object>((int) propertiesValues.size());
-        for (int i = 0; i < propertiesNames.size(); i++) {
+        for (int i = 0; i < propertiesNames.size() && i < propertiesValues.size(); i++) {
             values.put(propertiesNames.get(i), propertiesValues.get(i).getValue());
         }
         return values;
