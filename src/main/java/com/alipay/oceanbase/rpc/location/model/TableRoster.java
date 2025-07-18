@@ -95,7 +95,7 @@ public class TableRoster {
 
             ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort()) //
                     .setLoginInfo(tenantName, userName, password, database, clientType) //
-                    .setProperties(properties).setConfigs(tableConfigs).build();
+                    .setProperties(properties).setConfigs(tableConfigs).setObServerAddr(addr).build();
             ObTable oldObTable = tables.putIfAbsent(addr, obTable);
             logger.warn("add new table addr, {}", addr.toString());
             if (oldObTable != null) { // maybe create two ob table concurrently, close current ob table

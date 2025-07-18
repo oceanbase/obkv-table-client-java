@@ -20,6 +20,7 @@ package com.alipay.oceanbase.rpc.bolt.transport;
 import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.LocationUtil;
+import com.alipay.oceanbase.rpc.location.model.RouteTableRefresher;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.login.ObTableLoginRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.login.ObTableLoginResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
@@ -115,6 +116,10 @@ public class ObTableConnection {
         MONITOR.info(logMessage(null, "CONNECT", endpoint, System.currentTimeMillis() - start));
 
         if (tries >= maxTryTimes) {
+            if (!obTable.isOdpMode()) {
+                RouteTableRefresher.SuspectObServer suspectAddr = new RouteTableRefresher.SuspectObServer(obTable.getObServerAddr());
+                RouteTableRefresher.addIntoSuspectIPs(suspectAddr);
+            }
             LOGGER.warn("connect failed after max " + maxTryTimes + " tries "
                         + TraceUtil.formatIpPort(obTable));
             throw new ObTableServerConnectException("connect failed after max " + maxTryTimes
@@ -252,7 +257,7 @@ public class ObTableConnection {
         try {
             // 1. check the connection is available, force to close it
             if (checkAvailable()) {
-                LOGGER.warn("The connection would be closed and reconnected if: "
+                LOGGER.warn("The connection would be closed and reconnected is: "
                             + connection.getUrl());
                 close();
             }

@@ -456,9 +456,8 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                             && ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
                             logger.debug("normal batch meet transport timeout, obTable ip:port is {}:{}",
                                     subObTable.getIp(), subObTable.getPort());
-                            obTableClient.syncRefreshMetadata(true);
-                            obTableClient.refreshTableLocationByTabletId(tableName, partId);
                             subObTable.setDirty();
+                            obTableClient.dealWithRpcTimeoutForSingleTablet(subObTable.getObServerAddr(), tableName, partId);
                         }
                         obTableClient.calculateContinuousFailure(tableName, ex.getMessage());
                         throw ex;

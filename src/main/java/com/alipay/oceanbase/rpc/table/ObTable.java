@@ -25,6 +25,7 @@ import com.alipay.oceanbase.rpc.bolt.transport.ObTableRemoting;
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.filter.ObTableFilter;
+import com.alipay.oceanbase.rpc.location.model.ObServerAddr;
 import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
@@ -65,6 +66,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     private ConnectionFactory     connectionFactory;
     private ObTableRemoting       realClient;
     private ObTableConnectionPool connectionPool;
+    private ObServerAddr          addr; // just used in background keep-alive
 
     private ObTableServerCapacity serverCapacity = new ObTableServerCapacity();
     
@@ -638,6 +640,18 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         this.isOdpMode = isOdpMode;
     }
 
+    public boolean isOdpMode() {
+        return this.isOdpMode;
+    }
+
+    public ObServerAddr getObServerAddr() {
+        return this.addr;
+    }
+
+    public void setObServerAddr(ObServerAddr addr) {
+        this.addr = addr;
+    }
+
     public void setConfigs(Map<String, Object> configs) {
         this.configs = configs; 
     }
@@ -715,19 +729,20 @@ public class ObTable extends AbstractObTable implements Lifecycle {
 
     public static class Builder {
 
-        private String     ip;
-        private int        port;
+        private String       ip;
+        private int          port;
 
-        private String     tenantName;
-        private String     userName;
-        private String     password;
-        private String     database;
-        ObTableClientType  clientType;
+        private String       tenantName;
+        private String       userName;
+        private String       password;
+        private String       database;
+        private ObServerAddr addr = null; // only used in background keep-alive
+        ObTableClientType    clientType;
 
-        private Properties properties = new Properties();
+        private Properties   properties = new Properties();
         
         private Map<String, Object> tableConfigs = new HashMap<>();
-        private boolean    isOdpMode = false; // default as false
+        private boolean      isOdpMode = false; // default as false
 
         /*
          * Builder.
@@ -776,6 +791,11 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             return this;
         }
 
+        public Builder setObServerAddr(ObServerAddr addr) {
+            this.addr = addr;
+            return this;
+        }
+
         /*
          * Build.
          */
@@ -791,6 +811,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             obTable.setConfigs(tableConfigs);
             obTable.setClientType(clientType);
             obTable.setIsOdpMode(isOdpMode);
+            obTable.setObServerAddr(addr);
 
             obTable.init();
 
@@ -960,7 +981,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                     }
                     connections[idx].reConnectAndLogin("expired");
                 } catch (Exception e) {
-                    log.warn("ObTableConnectionPool::checkAndReconnect reconnect fail {}. {}", connections[idx].getConnection().getUrl(), e.getMessage());
+                    log.warn("ObTableConnectionPool::checkAndReconnect reconnect fail {}:{}. {}", obTable.getIp(), obTable.getPort(), e.getMessage());
                 } finally {
                     connections[idx].setExpired(false);
                 }
