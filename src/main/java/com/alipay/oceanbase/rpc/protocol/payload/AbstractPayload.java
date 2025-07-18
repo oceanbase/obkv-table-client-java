@@ -42,6 +42,8 @@ public abstract class AbstractPayload implements ObPayload {
     private long                       uniqueId;
     private long                       sequence;
     private Integer                    channelId = null;
+    private boolean                    isRoutingWrong = false; // flag means tableEntry location or meta need to be refreshed
+    private boolean                    isNeedRefreshMeta = false; // flag means tableEntry meta need to be refreshed
     protected long                     tenantId  = 1;
     private long                       version   = 1;
     protected long                     timeout   = RPC_OPERATION_TIMEOUT.getDefaultLong();
@@ -64,6 +66,38 @@ public abstract class AbstractPayload implements ObPayload {
     @Override
     public long getTimeout() {
         return timeout;
+    }
+
+    /*
+    * Get isRoutingWrong
+    * */
+    @Override
+    public boolean isRoutingWrong() {
+        return this.isRoutingWrong;
+    }
+
+    /*
+    * Set isRoutingWrong
+    * */
+    @Override
+    public void setIsRoutingWrong(boolean isRoutingWrong) {
+        this.isRoutingWrong = isRoutingWrong;
+    }
+
+    /*
+    * Get isNeedRefreshMeta
+    * */
+    @Override
+    public boolean isNeedRefreshMeta() {
+        return this.isNeedRefreshMeta;
+    }
+
+    /*
+    * Set isNeedRefreshMeta
+    * */
+    @Override
+    public void setIsNeedRefreshMeta(boolean isNeedRefreshMeta) {
+        this.isNeedRefreshMeta = isNeedRefreshMeta;
     }
 
     /*

@@ -378,6 +378,14 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                                     .ipToString());
                         throw new ObTableRoutingWrongException();
                     }
+                } else if (result != null && result.isRoutingWrong()) {
+                    logger.debug("errors happened in server and retried successfully, server ip:port is {}:{}, tableName: {}, need_refresh_meta: {}",
+                            subObTable.getIp(), subObTable.getPort(), tableName, result.isNeedRefreshMeta());
+                    TableEntry entry = result.isNeedRefreshMeta() ?
+                            obTableClient.getOrRefreshTableEntry(tableName, true) :
+                            obTableClient.getOrRefreshTableEntry(tableName, false);
+                    long tabletId = obTableClient.getTabletIdByPartId(entry, originPartId);
+                    obTableClient.refreshTableLocationByTabletId(tableName, tabletId);
                 }
                 subObTableBatchOperationResult = (ObTableBatchOperationResult) result;
                 obTableClient.resetExecuteContinuousFailureCount(tableName);
