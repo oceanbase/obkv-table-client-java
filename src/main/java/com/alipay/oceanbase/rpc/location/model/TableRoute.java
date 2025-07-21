@@ -1314,6 +1314,9 @@ public class TableRoute {
      */
     public String tryGetTableNameFromTableGroupCache(final String tableGroupName,
                                                      final boolean refresh) throws Exception {
+        if (tableGroupCache == null && tableClient.isOdpMode()) {
+            throw new FeatureNotSupportedException("not supported yet in odp mode");
+        }
         return tableGroupCache.tryGetTableNameFromTableGroupCache(tableGroupName, refresh,
             serverRoster, sysUA);
     }
