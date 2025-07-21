@@ -26,6 +26,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.direct_load.ObTableDirectLoadResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableApiMove;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObFetchPartitionMetaResult;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObHbaseResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableBatchOperationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableLSOpResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationResult;
@@ -35,6 +36,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQ
 import com.alipay.oceanbase.rpc.protocol.payload.impl.login.ObTableLoginResult;
 import com.alipay.remoting.CommandCode;
 
+import static com.alipay.oceanbase.rpc.protocol.payload.Pcodes.OB_TABLE_API_HBASE_EXECUTE;
 import static com.alipay.oceanbase.rpc.protocol.payload.Pcodes.OB_TABLE_API_META_INFO_EXECUTE;
 
 public enum ObTablePacketCode implements CommandCode {
@@ -143,6 +145,12 @@ public enum ObTablePacketCode implements CommandCode {
         public ObPayload newPayload(ObRpcPacketHeader header) {
             return new ObTableMetaResponse();
         }
+    },
+    OB_TABLE_API_HBASE_EXECUTE(Pcodes.OB_TABLE_API_HBASE_EXECUTE) {
+        @Override
+        public ObPayload newPayload(ObRpcPacketHeader header) {
+            return new ObHbaseResult();
+        }
     };
 
     private short value;
@@ -185,8 +193,10 @@ public enum ObTablePacketCode implements CommandCode {
                 return OB_TABLE_API_MOVE;
             case Pcodes.OB_ERROR_PACKET:
                 return OB_ERROR_PACKET;
-            case OB_TABLE_API_META_INFO_EXECUTE:
+            case Pcodes.OB_TABLE_API_META_INFO_EXECUTE:
                 return OB_TABLE_META_INFO_EXECUTE;
+            case Pcodes.OB_TABLE_API_HBASE_EXECUTE:
+                return OB_TABLE_API_HBASE_EXECUTE;
         }
         throw new IllegalArgumentException("Unknown Rpc command code value ," + value);
     }
