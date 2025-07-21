@@ -2386,6 +2386,24 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 + "is not supported. make sure the correct version");
     }
 
+    public ObPayload execute(final ObHbaseRequest request) throws Exception {
+        if (request.getTableName() == null || request.getTableName().isEmpty()) {
+            throw new IllegalArgumentException("table name is null");
+        }
+        if (isOdpMode()) {
+            return getOdpTable().execute(request);
+        } else {
+            Row row = new Row();
+            row.add("K", request.getKeys().get(0).getValue());
+            row.add("Q", request.getCells().get(0).getQ().getValue());
+            row.add("T", request.getCells().get(0).getT().getValue());
+            row.add("V", request.getCells().get(0).getV().getValue());
+            ObTableParam tableParam = tableRoute.getTableParam(request.getTableName(), row);
+            ObTable obTable = tableParam.getObTable();
+            return executeWithRetry(obTable, request, request.getTableName());
+        }
+    }
+
     private ObTableQueryAndMutate buildObTableQueryAndMutate(ObTableQuery obTableQuery,
                                                              ObTableBatchOperation obTableBatchOperation) {
         ObTableQueryAndMutate queryAndMutate = new ObTableQueryAndMutate();
