@@ -87,7 +87,7 @@ public class ObDirectLoadStatement {
         connection.getProtocol().checkIsSupported(this);
         obTablePool = new ObDirectLoadConnection.ObTablePool(connection, logger, queryTimeout);
         obTablePool.init();
-        executor = new ObDirectLoadStatementExecutor(this);
+        executor = new ObDirectLoadStatementExecutor(this, builder.isP2PMode);
         if (builder.executionId != null) {
             executor.resume(builder.executionId);
         }
@@ -308,6 +308,24 @@ public class ObDirectLoadStatement {
         executor.resume(executionId);
     }
 
+    public ObDirectLoadStatementFuture abortAsync() {
+        try {
+            checkStatus();
+            return executor.requestAbort();
+        } catch (ObDirectLoadException e) {
+            logger.warn("statement abort failed", e);
+            return new ObDirectLoadStatementFailedFuture(this, e);
+        }
+    }
+
+    public void abort() throws ObDirectLoadException {
+        ObDirectLoadStatementFuture future = abortAsync();
+        future.await();
+        if (!future.isSuccess()) {
+            throw future.cause();
+        }
+    }
+
     public static final class Builder {
 
         private final ObDirectLoadConnection     connection;
@@ -325,6 +343,7 @@ public class ObDirectLoadStatement {
 
         private ObDirectLoadTraceId              traceId           = null;
         private ObDirectLoadStatementExecutionId executionId       = null;
+        private boolean                          isP2PMode         = false;
 
         private static final long                MAX_QUERY_TIMEOUT = Integer.MAX_VALUE;
 
@@ -380,6 +399,11 @@ public class ObDirectLoadStatement {
 
         public ObDirectLoadTraceId getTraceId() {
             return traceId;
+        }
+
+        public Builder setIsP2PMode(boolean isP2PMode) {
+            this.isP2PMode = isP2PMode;
+            return this;
         }
 
         public String toString() {
