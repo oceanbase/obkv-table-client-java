@@ -18,7 +18,7 @@ Import the dependency for your maven project:
 <dependency>
     <groupId>com.oceanbase</groupId>
     <artifactId>obkv-table-client</artifactId>
-    <version>2.0.0</version>
+    <version>2.1.0</version>
 </dependency>
 ```
 
