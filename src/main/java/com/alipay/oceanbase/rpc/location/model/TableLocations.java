@@ -27,6 +27,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObFetchPartitionMe
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObFetchPartitionMetaResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObFetchPartitionMetaType;
 import com.alipay.oceanbase.rpc.table.ObTable;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 
 import java.util.Map;
@@ -43,6 +44,12 @@ import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
 public class TableLocations {
     private static final Logger       logger                                  = getLogger(TableLocations.class);
     private static final ObjectMapper objectMapper                            = new ObjectMapper();
+    static {
+        // FAIL_ON_EMPTY_BEANS means that whether throwing exception if there is no any serializable member with getter or setter in an object
+        // considering partitionElements in range partDesc is a list of Comparable interface and Comparable has no getter and setter
+        // we have to set this configuration as false because tableEntry may be serialized in debug log
+        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+    }
     private final ObTableClient       tableClient;
     private Map<String, Lock>         metaRefreshingLocks                     = new ConcurrentHashMap<String, Lock>();
     private Map<String, Lock>         locationBatchRefreshingLocks            = new ConcurrentHashMap<String, Lock>();
