@@ -2394,11 +2394,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             return getOdpTable().execute(request);
         } else {
             Row row = new Row();
-            row.add("K", request.getKeys().get(0).getValue());
-            row.add("Q", request.getCells().get(0).getQ().getValue());
-            row.add("T", request.getCells().get(0).getT().getValue());
-            row.add("V", request.getCells().get(0).getV().getValue());
-            ObTableParam tableParam = tableRoute.getTableParam(request.getTableName(), row);
+            // get the first cell from the first cfRows to route
+            String realTableName = request.getCfRows().get(0).getRealTableName();
+            int keyIdx = request.getCfRows().get(0).getKeyIndex(0);
+            row.add("K", request.getKeys().get(keyIdx).getValue());
+            row.add("Q", request.getCfRows().get(0).getCells().get(0).getQ().getValue());
+            row.add("T", request.getCfRows().get(0).getCells().get(0).getT().getValue());
+            ObTableParam tableParam = tableRoute.getTableParam(realTableName, row);
             ObTable obTable = tableParam.getObTable();
             return executeWithRetry(obTable, request, request.getTableName());
         }

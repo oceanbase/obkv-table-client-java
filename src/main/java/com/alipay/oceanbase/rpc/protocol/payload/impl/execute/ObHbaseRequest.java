@@ -43,25 +43,23 @@ OB_SERIALIZE_MEMBER(ObHbaseRequest,
 */
 public class ObHbaseRequest extends AbstractPayload implements Credentialable {
     protected ObBytesString           credential;
-    protected String                  tableName;
+    protected String                  tableName; // HBase tableName, OceanBase tablegroup_name
+    protected ObTableOperationType    opType;
     protected List<ObObj>             keys = new ArrayList<>();
-    protected List<Integer>           cellNumArray = new ArrayList<>();
-    protected List<ObHbaseQTV>        cells = new ArrayList<>();
+    protected List<ObHbaseCfRows>     cfRows;
 
     public ObHbaseRequest() {
         this.credential = new ObBytesString();
         this.tableName = "";
         this.keys = new ArrayList<>();
-        this.cellNumArray = new ArrayList<>();
-        this.cells = new ArrayList<>();
+        this.cfRows = new ArrayList<>();
     }
 
-    public ObHbaseRequest(ObBytesString credential, String tableName, List<ObObj> keys, List<Integer> cellNumArray, List<ObHbaseQTV> cells) {
+    public ObHbaseRequest(ObBytesString credential, String tableName, List<ObObj> keys, List<Integer> cellNumArray, List<ObHbaseCfRows> cfRows) {
         this.credential = credential;
         this.tableName = tableName;
         this.keys = keys;
-        this.cellNumArray = cellNumArray;
-        this.cells = cells;
+        this.cfRows = cfRows;
     }
 
     /*
@@ -89,25 +87,21 @@ public class ObHbaseRequest extends AbstractPayload implements Credentialable {
         // 2. encode tableName
         Serialization.encodeVString(buf, tableName);
 
-        // 3. encode keys array size and keys
+        // 3. encode op_type
+        Serialization.encodeI8(buf, opType.getByteValue());
+
+        // 4. encode keys array size and keys
         Serialization.encodeVi64(buf, keys.size());
         for (int i = 0; i < keys.size(); i++) {
             ObObj key = keys.get(i);
             ObTableSerialUtil.encode(buf, key);
         }
 
-        // 4. encode cellNumArray size and elements
-        Serialization.encodeVi64(buf, cellNumArray.size());
-        for (int i = 0; i < cellNumArray.size(); i++) {
-            int cellNum = cellNumArray.get(i);
-            Serialization.encodeVi64(buf, cellNum);
-        }
-
-        // 5. encode cells array size and cells
-        Serialization.encodeVi64(buf, cells.size());
-        for (int i = 0; i < cells.size(); i++) {
-            ObHbaseQTV cell = cells.get(i); 
-            cell.encode(buf);
+        // 5. encode same cf rows array size and rows
+        Serialization.encodeVi64(buf, cfRows.size());
+        for (int i = 0; i < cfRows.size(); i++) {
+            ObHbaseCfRows sameCfRows = cfRows.get(i);
+            sameCfRows.encode(buf);
         }
         
         if (buf.pos != buf.bytes.length) {
@@ -132,7 +126,9 @@ public class ObHbaseRequest extends AbstractPayload implements Credentialable {
     @Override
     public long getPayloadContentSize() {
         if (payLoadContentSize == INVALID_PAYLOAD_CONTENT_SIZE) {
-            payLoadContentSize = Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName);
+            payLoadContentSize = Serialization.getNeedBytes(credential)
+                                + Serialization.getNeedBytes(tableName)
+                                + Serialization.getNeedBytes(opType.getByteValue());
             
             // Size for keys array
             payLoadContentSize += Serialization.getNeedBytes(keys.size());
@@ -140,16 +136,10 @@ public class ObHbaseRequest extends AbstractPayload implements Credentialable {
                 payLoadContentSize += ObTableSerialUtil.getEncodedSize(key);
             }
             
-            // Size for cellNumArray
-            payLoadContentSize += Serialization.getNeedBytes(cellNumArray.size());
-            for (int cellNum : cellNumArray) {
-                payLoadContentSize += Serialization.getNeedBytes(cellNum);
-            }
-            
-            // Size for cells array
-            payLoadContentSize += Serialization.getNeedBytes(cells.size());
-            for (ObHbaseQTV cell : cells) {
-                payLoadContentSize += cell.getPayloadSize();
+            // Size for sameCfRows array
+            payLoadContentSize += Serialization.getNeedBytes(cfRows.size());
+            for (ObHbaseCfRows cfRows : cfRows) {
+                payLoadContentSize += cfRows.getPayloadSize();
             }
         }
         return payLoadContentSize;
@@ -168,12 +158,12 @@ public class ObHbaseRequest extends AbstractPayload implements Credentialable {
         this.keys = keys;
     }
 
-    public void setCellNumArray(List<Integer> cellNumArray) {
-        this.cellNumArray = cellNumArray;
+    public void setOpType(ObTableOperationType opType) {
+        this.opType = opType;
     }
 
-    public void setCells(List<ObHbaseQTV> cells) {
-        this.cells = cells;
+    public void setCfRows(List<ObHbaseCfRows> sameCfRows) {
+        this.cfRows = sameCfRows;
     }
 
     public ObBytesString getCredential() {
@@ -188,7 +178,7 @@ public class ObHbaseRequest extends AbstractPayload implements Credentialable {
         return keys;
     }
 
-    public List<ObHbaseQTV> getCells() {
-        return cells;
+    public List<ObHbaseCfRows> getCfRows() {
+        return cfRows;
     }
 }
