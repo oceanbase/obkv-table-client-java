@@ -35,4 +35,5 @@ public interface Pcodes {
     int OB_TABLE_API_MOVE               = 0x1124;
     int OB_TABLE_API_LS_EXECUTE         = 0x1125;
     int OB_TABLE_API_META_INFO_EXECUTE  = 0x1128;
+    int OB_TABLE_API_HBASE_EXECUTE      = 0x1129;
 }
