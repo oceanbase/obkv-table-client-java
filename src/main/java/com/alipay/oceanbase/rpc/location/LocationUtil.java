@@ -225,7 +225,7 @@ public class LocationUtil {
 
     private static final String TABLE_GROUP_GET_TABLE_NAME                          = "SELECT /*+READ_CONSISTENCY(WEAK)*/ table_name "
                                                                                       + "FROM oceanbase.CDB_OB_TABLEGROUP_TABLES "
-                                                                                      + "WHERE tablegroup_name = ? and tenant_id = ? limit 1;";
+                                                                                      + "WHERE tablegroup_name = ? and tenant_id = ? order by table_name limit 1;";
 
     private static final int    TEMPLATE_PART_ID                                    = -1;
 
