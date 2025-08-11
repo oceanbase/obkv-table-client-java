@@ -121,6 +121,12 @@ public class ObGlobal {
         return OB_VERSION >= OB_VERSION_4_3_5_1;
     }
 
+    public static boolean isHBasePutPerfSupport() {
+        return OB_VERSION >= OB_VERSION_4_4_1_0;
+    }
+
+    /*-------------------------------------------- OB_VERSION --------------------------------------------*/
+
     public static final long OB_VERSION_4_2_3_0 = calcVersion(4, (short) 2, (byte) 3, (byte) 0);
 
     public static final long OB_VERSION_4_2_5_2 = calcVersion(4, (short) 2, (byte) 5, (byte) 2);
@@ -139,5 +145,15 @@ public class ObGlobal {
 
     public static final long OB_VERSION_4_4_0_0 = calcVersion(4, (short) 4, (byte) 0, (byte) 0);
 
+    public static final long OB_VERSION_4_4_1_0 = calcVersion(4, (short) 4, (byte) 1, (byte) 0);
+
     public static long       OB_VERSION         = calcVersion(0, (short) 0, (byte) 0, (byte) 0);
+
+    /*-------------------------------------------- OB_PROXY_VERSION --------------------------------------------*/
+
+    public static final long OB_PROXY_VERSION_4_3_5_0 = calcVersion(4, (short) 3, (byte) 5, (byte) 0);
+
+    public static final long OB_PROXY_VERSION_4_3_6_0 = calcVersion(4, (short) 3, (byte) 6, (byte) 0);
+
+    public static long       OB_PROXY_VERSION   = calcVersion(0, (short) 0, (byte) 0, (byte) 0);
 }
