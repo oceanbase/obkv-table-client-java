@@ -17,10 +17,10 @@
 
 package com.alipay.oceanbase.rpc.location;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONException;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.parser.ParserConfig;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.constant.Constants;
 import com.alipay.oceanbase.rpc.exception.*;
@@ -58,8 +58,13 @@ public class LocationUtil {
 
     private static final Logger logger                                        = TableClientLoggerFactory
                                                                                   .getLogger(LocationUtil.class);
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
     static {
-        ParserConfig.getGlobalInstance().setSafeMode(true);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                    .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+                    .enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
         loadJdbcDriver();
     }
 
@@ -774,7 +779,7 @@ public class LocationUtil {
 
                 if (!initialized) {
                     if (BOOT.isInfoEnabled()) {
-                        BOOT.info("get table entry from remote, entry={}", JSON.toJSON(tableEntry));
+                        BOOT.info("get table entry from remote, entry={}", objectMapper.writeValueAsString(tableEntry));
                     }
                 } else {
                     if (logger.isInfoEnabled()) {
@@ -793,7 +798,7 @@ public class LocationUtil {
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00009"), key, e);
             if (e instanceof ObTableEntryRefreshException) {
-                throw e;
+                throw (ObTableEntryRefreshException) e;
             }
             throw new ObTableEntryRefreshException(format(
                 "fail to get table entry from remote, key=%s", key), e);
@@ -1113,7 +1118,7 @@ public class LocationUtil {
 
                 if (logger.isInfoEnabled()) {
                     logger.info(format("uuid:%s, get first ranges from remote for %s, bounds=%s",
-                        uuid, tableName, JSON.toJSON(bounds)));
+                        uuid, tableName, objectMapper.writeValueAsString(bounds)));
                 }
 
             } else if (obPartFuncType.isListPart()) {
@@ -1121,7 +1126,7 @@ public class LocationUtil {
                 ((ObListPartDesc) tableEntry.getPartitionInfo().getFirstPartDesc()).setSets(sets);
                 if (logger.isInfoEnabled()) {
                     logger.info(format("uuid:%s, get first list sets from remote for %s, sets=%s",
-                        uuid, tableName, JSON.toJSON(sets)));
+                        uuid, tableName, objectMapper.writeValueAsString(sets)));
                 }
             } else if (ObGlobal.obVsnMajor() >= 4
                        && (obPartFuncType.isKeyPart() || obPartFuncType.isHashPart())) {
@@ -1186,14 +1191,14 @@ public class LocationUtil {
                         .setHighBoundValues(highBoundVals);
                 if (logger.isInfoEnabled()) {
                     logger.info(format("uuid:%s, get sub ranges from remote for %s, bounds=%s",
-                        uuid, tableName, JSON.toJSON(bounds)));
+                        uuid, tableName, objectMapper.writeValueAsString(bounds)));
                 }
             } else if (subPartFuncType.isListPart()) {
                 Map<ObPartitionKey, Long> sets = parseSubPartSets(rs, tableEntry);
                 ((ObListPartDesc) tableEntry.getPartitionInfo().getSubPartDesc()).setSets(sets);
                 if (logger.isInfoEnabled()) {
                     logger.info(format("uuid:%s, get sub list sets from remote, sets=%s", uuid,
-                        JSON.toJSON(sets)));
+                            objectMapper.writeValueAsString(sets)));
                 }
             } else if (ObGlobal.obVsnMajor() >= 4
                        && (subPartFuncType.isKeyPart() || subPartFuncType.isHashPart())) {
@@ -1499,7 +1504,7 @@ public class LocationUtil {
             info = parsePartitionInfo(rs);
 
             if (logger.isInfoEnabled()) {
-                logger.info("get part info from remote info:{}", JSON.toJSON(info));
+                logger.info("get part info from remote info:{}", objectMapper.writeValueAsString(info));
             }
             tableEntry.setPartitionInfo(info);
         } catch (SQLException e) {
@@ -2085,7 +2090,7 @@ public class LocationUtil {
         for (; tries < tryTimes; tries++) {
             try {
                 content = loadStringFromUrl(paramURL, connectTimeout, readTimeout);
-                ocpResponse = JSONObject.parseObject(content, OcpResponse.class);
+                ocpResponse = objectMapper.readValue(content, OcpResponse.class);
                 if (ocpResponse != null && ocpResponse.validate()) {
                     if (dataSourceName != null && !dataSourceName.isEmpty()) {
                         saveLocalContent(dataSourceName, content);
@@ -2132,7 +2137,7 @@ public class LocationUtil {
         for (; tries < tryTimes; tries++) {
             try {
                 content = loadStringFromUrl(paramURL, connectTimeout, readTimeout);
-                ocpResponse = JSONObject.parseObject(content, OcpResponse.class);
+                ocpResponse = objectMapper.readValue(content, OcpResponse.class);
                 if (ocpResponse != null) {
                     return ocpResponse;
                 }
@@ -2150,8 +2155,8 @@ public class LocationUtil {
         return null;
     }
 
-    private static OcpResponse parseOcpResponse(String content) throws JSONException {
-        return JSONObject.parseObject(content, OcpResponse.class);
+    private static OcpResponse parseOcpResponse(String content) throws JsonProcessingException {
+        return objectMapper.readValue(content, OcpResponse.class);
     }
 
     private static OcpResponse getLocalOcpResponseOrNull(String fileName) {

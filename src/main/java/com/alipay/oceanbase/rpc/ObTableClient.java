@@ -17,7 +17,6 @@
 
 package com.alipay.oceanbase.rpc;
 
-import com.alibaba.fastjson.JSON;
 import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.constant.Constants;
 import com.alipay.oceanbase.rpc.exception.*;
@@ -46,6 +45,9 @@ import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.*;
 import com.alipay.remoting.util.StringUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -68,6 +70,15 @@ import static java.lang.String.format;
 
 public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private static final Logger                               logger                                  = getLogger(ObTableClient.class);
+
+    private static final ObjectMapper objectMapper           = new ObjectMapper();
+
+    static {
+        // FAIL_ON_EMPTY_BEANS means that whether throwing exception if there is no any serializable member with getter or setter in an object
+        // considering partitionElements in range partDesc is a list of Comparable interface and Comparable has no getter and setter
+        // we have to set this configuration as false because tableEntry may be serialized in debug log
+        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+    }
 
     private static final String                               usernameSeparators                      = ":;-;.";
 
@@ -456,19 +467,19 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         List<ObServerAddr> rsList = ocpModel.getObServerAddrs();
         BOOT.info("{} success to get rsList, paramURL: {}, rsList: {}，idc2Region: {}",
-            this.database, paramURL, JSON.toJSON(rsList), JSON.toJSON(ocpModel.getIdc2Region()));
+            this.database, paramURL, objectMapper.writeValueAsString(rsList), objectMapper.writeValueAsString(ocpModel.getIdc2Region()));
 
         TableEntry tableEntry = loadTableEntryRandomly(rsList,//
             rootServerKey,//
             tableEntryAcquireConnectTimeout,//
             tableEntryAcquireSocketTimeout, sysUA, initialized);
         BOOT.info("{} success to get tableEntry with rootServerKey all_dummy_tables {}",
-            this.database, JSON.toJSON(tableEntry));
+            this.database, objectMapper.writeValueAsString(tableEntry));
 
         List<ReplicaLocation> replicaLocations = tableEntry.getTableLocation()
             .getReplicaLocations();
         BOOT.info("{} success to get replicaLocation {}", this.database,
-            JSON.toJSON(replicaLocations));
+                objectMapper.writeValueAsString(replicaLocations));
 
         for (ReplicaLocation replicaLocation : replicaLocations) {
             ObServerInfo info = replicaLocation.getInfo();
@@ -500,11 +511,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
         if (servers.isEmpty()) {
             BOOT.error("{} failed to connect any replicaLocation server: {}", this.database,
-                JSON.toJSON(replicaLocations));
+                    objectMapper.writeValueAsString(replicaLocations));
             throw new Exception("failed to connect any replicaLocation server");
         }
 
-        BOOT.info("{} success to build server connection {}", this.database, JSON.toJSON(servers));
+        BOOT.info("{} success to build server connection {}", this.database, objectMapper.writeValueAsString(servers));
         this.tableRoster = tableRoster;
         this.serverRoster.reset(servers);
 
@@ -525,7 +536,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         if (BOOT.isInfoEnabled()) {
             BOOT.info("{} finish refresh serverRoster: {}", this.database,
-                JSON.toJSON(serverRoster));
+                    objectMapper.writeValueAsString(serverRoster));
             BOOT.info("finish initMetadata for all tables for database {}", this.database);
         }
 
@@ -1031,7 +1042,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 currentIDC, regionFromOcp));
 
             if (logger.isInfoEnabled()) {
-                logger.info("finish refresh serverRoster: {}", JSON.toJSON(serverRoster));
+                logger.info("finish refresh serverRoster: {}", objectMapper.writeValueAsString(serverRoster));
             }
             this.lastRefreshMetadataTimestamp = System.currentTimeMillis();
         } finally {
@@ -1365,7 +1376,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws ObTableEntryRefreshException
      */
     private TableEntry refreshTableEntry(TableEntry tableEntry, String tableName)
-                                                                                 throws ObTableEntryRefreshException {
+                                                                                 throws ObTableEntryRefreshException,
+                                                                                        JsonProcessingException {
         return refreshTableEntry(tableEntry, tableName, false);
     }
 
@@ -1476,7 +1488,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      * @throws ObTableEntryRefreshException
      */
     private TableEntry refreshTableEntry(TableEntry tableEntry, String tableName, boolean fetchAll)
-                                                                                                   throws ObTableEntryRefreshException {
+                                                                                                   throws ObTableEntryRefreshException,
+                                                                                                          JsonProcessingException {
         TableEntryKey tableEntryKey = new TableEntryKey(clusterName, tenantName, database,
             tableName);
         try {
@@ -1552,7 +1565,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (logger.isDebugEnabled()) {
             logger.debug(
                 "refresh table entry, dataSource: {}, tableName: {}, refresh: {} key:{} entry:{} ",
-                dataSourceName, tableName, true, tableEntryKey, JSON.toJSON(tableEntry));
+                dataSourceName, tableName, true, tableEntryKey, objectMapper.writeValueAsString(tableEntry));
         }
         return tableEntry;
     }
