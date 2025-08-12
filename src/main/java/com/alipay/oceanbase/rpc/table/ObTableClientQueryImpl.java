@@ -189,8 +189,10 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                     throw new ObTableException("key range columns must be specified when use index");
                 }
             }
-            if (entityType != ObTableEntityType.HKV &&
-                    getPartId() != null && tableQuery.getIndexName() == null) {
+            if (getPartId() != null &&
+                    (entityType == ObTableEntityType.HKV || tableQuery.getIndexName() == null)) {
+                // in table mode, there is no way to fetch index information from ODP, so index name not supported
+                // in hbase mode, there is no index for hbase table
                 try {
                     ObTableParam odpTable = obTableClient.getOdpTableParamWithPartId(tableName, getPartId());
                     partitionObTables.put(odpTable.getPartId(), new ObPair<>(odpTable.getPartId(), odpTable));
