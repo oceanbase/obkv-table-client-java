@@ -66,6 +66,14 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
         int len = (int) tableQueryAndMutate.getPayloadSize();
         System.arraycopy(tableQueryAndMutate.encode(), 0, bytes, idx, len);
 
+        // encode ObBinlogRowImageType::FULL (2)
+        idx += len;
+        len = Serialization.getNeedBytes(2);
+        System.arraycopy(Serialization.encodeVi32(2), 0, bytes, idx, len);
+
+        idx += len;
+        System.arraycopy(Serialization.encodeI8(option_flag.getByteValue()), 0, bytes, idx, 1);
+
         return bytes;
     }
 
@@ -99,7 +107,7 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
         if (ObGlobal.obVsnMajor() >= 4)
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
                    + Serialization.getNeedBytes(tableId) + 8 + 1
-                   + tableQueryAndMutate.getPayloadSize();
+                   + tableQueryAndMutate.getPayloadSize() + 1;
         else
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
                    + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId)

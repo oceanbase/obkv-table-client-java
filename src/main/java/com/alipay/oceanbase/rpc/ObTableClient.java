@@ -2103,6 +2103,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (request instanceof ObTableAbstractOperationRequest) {
                 long tabletId = ((ObTableAbstractOperationRequest) request).getPartitionId();
                 tableRoute.refreshPartitionLocation(tableName, tabletId, null);
+            } else if (request instanceof ObHbaseRequest) {
+                tableRoute.refreshTabletLocationBatch(tableName);
             }
         }
         return result;
@@ -2397,14 +2399,28 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         } else {
             Row row = new Row();
             // get the first cell from the first cfRows to route
-            String realTableName = request.getCfRows().get(0).getRealTableName();
+            // use the first table in tablegroup to route
+            String realTableName = null;
+            try {
+                realTableName = tryGetTableNameFromTableGroupCache(request.getTableName(), false);
+            } catch (ObTableNotExistException e) {
+                if (request.getCfRows().size() != 1) {
+                    throw new ObTableUnexpectedException("multi-cf operations must create tablegroup and binding tables");
+                } else {
+                    realTableName = request.getCfRows().get(0).getRealTableName();
+                }
+            }
+            if (realTableName == null) {
+                throw new ObTableUnexpectedException("realTableName is null");
+            }
             int keyIdx = request.getCfRows().get(0).getKeyIndex(0);
             row.add("K", request.getKeys().get(keyIdx).getValue());
             row.add("Q", request.getCfRows().get(0).getCells().get(0).getQ().getValue());
             row.add("T", request.getCfRows().get(0).getCells().get(0).getT().getValue());
             ObTableParam tableParam = tableRoute.getTableParam(realTableName, row);
             ObTable obTable = tableParam.getObTable();
-            return executeWithRetry(obTable, request, request.getTableName());
+            request.setTimeout(obTable.getObTableOperationTimeout());
+            return executeWithRetry(obTable, request, realTableName);
         }
     }
 

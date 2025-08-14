@@ -22,6 +22,7 @@ public class ObTableLSOpFlag {
     private static final int FLAG_IS_SAME_PROPERTIES_NAMES = 1 << 1;
     private static final int FLAG_RETURN_ONE_RESULT        = 1 << 2;
     private static final int FLAG_NEED_ALL_PROP            = 1 << 3;
+    private static final int FLAG_SERVER_CAN_RETRY         = 1 << 4;
     private long             flags                         = 0;
 
     public void setFlagIsSameType(boolean isSameType) {
@@ -56,6 +57,14 @@ public class ObTableLSOpFlag {
         }
     }
 
+    public void setFlagServerCanRetry(boolean serverCanRetry) {
+        if (serverCanRetry) {
+            flags |= FLAG_SERVER_CAN_RETRY;
+        } else {
+            flags &= ~FLAG_SERVER_CAN_RETRY;
+        }
+    }
+
     public long getValue() {
         return flags;
     }
@@ -74,5 +83,9 @@ public class ObTableLSOpFlag {
 
     public boolean getFlagNeedAllProp() {
         return (flags & FLAG_NEED_ALL_PROP) != 0;
+    }
+
+    public boolean getFlagServerCanRetry() {
+        return (flags & FLAG_SERVER_CAN_RETRY) != 0;
     }
 }

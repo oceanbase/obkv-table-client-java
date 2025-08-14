@@ -208,6 +208,14 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
         this.option_flag = optionFlagflag;
     }
 
+    public void setServerCanRetry(boolean canRetry) {
+        option_flag.setServerCanRetry(canRetry);
+    }
+
+    public boolean getServerCanRetry() {
+        return option_flag.isServerCanRetry();
+    }
+
     /*
      * Is returning affected entity.
      */

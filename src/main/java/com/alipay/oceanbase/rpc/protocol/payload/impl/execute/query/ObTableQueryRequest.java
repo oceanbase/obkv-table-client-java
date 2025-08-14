@@ -73,6 +73,9 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
         int len = (int) tableQuery.getPayloadSize();
         System.arraycopy(tableQuery.encode(), 0, bytes, idx, len);
 
+        idx += len;
+        System.arraycopy(Serialization.encodeVi64(option_flag.getValue()), 0, bytes, idx, 1);
+
         return bytes;
     }
 
@@ -106,7 +109,7 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
     public long getPayloadContentSize() {
         if (ObGlobal.obVsnMajor() >= 4)
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
-                   + Serialization.getNeedBytes(tableId) + 8 + 2 + tableQuery.getPayloadSize();
+                   + Serialization.getNeedBytes(tableId) + 8 + 2 + tableQuery.getPayloadSize() + 1;
         else
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
                    + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId)

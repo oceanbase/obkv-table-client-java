@@ -290,6 +290,10 @@ public class ObTableLSOperation extends AbstractPayload {
 
     public boolean isNeedAllProp() { return optionFlag.getFlagNeedAllProp(); }
 
+    public void setServerCanRetry(boolean canRetry) { optionFlag.setFlagServerCanRetry(canRetry); }
+
+    public boolean isServerCanRetry() { return optionFlag.getFlagServerCanRetry(); }
+
     public long getTableId() {
         return tableId;
     }
