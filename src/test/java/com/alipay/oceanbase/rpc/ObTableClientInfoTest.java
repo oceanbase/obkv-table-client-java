@@ -17,9 +17,10 @@
 
 package com.alipay.oceanbase.rpc;
 
-import com.alibaba.fastjson.JSON;
 import com.alipay.oceanbase.rpc.property.Property;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -131,7 +132,8 @@ public class ObTableClientInfoTest {
         for (int i = 0; i < clientCnt; i++) {
             String json_config_str = resultMap.get(clients[i].getClientId());
             Assert.assertTrue(json_config_str != null);
-            Map<String, Object> config_map = JSON.parseObject(json_config_str);
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> config_map = objectMapper.readValue(json_config_str, new TypeReference<Map<String, Object>>() {});
             Long srcClientId = (Long) clients[i].getTableConfigs().get("client_id");
             Long dstClientId = (Long) config_map.get("client_id");
             Assert.assertEquals(srcClientId, dstClientId);

@@ -17,7 +17,6 @@
 
 package com.alipay.oceanbase.rpc.bolt.transport;
 
-import com.alibaba.fastjson.JSONObject;
 import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.LocationUtil;
@@ -26,6 +25,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.login.ObTableLoginResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.util.*;
 import com.alipay.remoting.Connection;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 
 import java.net.ConnectException;
@@ -40,6 +40,7 @@ public class ObTableConnection {
 
     private static final Logger LOGGER           = TableClientLoggerFactory
                                                      .getLogger(ObTableConnection.class);
+    private static ObjectMapper objectMapper     = new ObjectMapper();
     private ObBytesString       credential;
     private long                tenantId         = 1;                                    //默认值切勿不要随意改动
     private Connection          connection;
@@ -153,8 +154,8 @@ public class ObTableConnection {
         // When the caller doesn't provide any parameters, configsMap is empty.  
         // In this case, we don't generate any JSON to avoid creating an empty object.
         if (loginWithConfigs && !obTable.getConfigs().isEmpty()) {
-            JSONObject json = new JSONObject(obTable.getConfigs());
-            request.setConfigsStr(json.toJSONString());
+            String configStr = objectMapper.writeValueAsString(obTable.getConfigs());
+            request.setConfigsStr(configStr);
             loginWithConfigs = false;
         }
         generatePassSecret(request);
