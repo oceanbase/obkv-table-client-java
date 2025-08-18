@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate;
 
 import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObBinlogRowImageType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableAbstractOperationRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.util.Serialization;
@@ -32,11 +33,14 @@ import io.netty.buffer.ByteBuf;
      table_id_,
      partition_id_,
      entity_type_,
-     query_and_mutate_);
+     query_and_mutate_,
+     binlog_row_image_type_,
+     option_flag_);
  *
  */
 public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationRequest {
 
+    private ObBinlogRowImageType type = ObBinlogRowImageType.FULL; // no use for now
     private ObTableQueryAndMutate tableQueryAndMutate;
 
     /*
@@ -68,8 +72,8 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
 
         // encode ObBinlogRowImageType::FULL (2)
         idx += len;
-        len = Serialization.getNeedBytes(2);
-        System.arraycopy(Serialization.encodeVi32(2), 0, bytes, idx, len);
+        len = Serialization.getNeedBytes(type.getValue());
+        System.arraycopy(Serialization.encodeVi32(type.getValue()), 0, bytes, idx, len);
 
         idx += len;
         System.arraycopy(Serialization.encodeI8(option_flag.getByteValue()), 0, bytes, idx, 1);
@@ -107,7 +111,7 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
         if (ObGlobal.obVsnMajor() >= 4)
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
                    + Serialization.getNeedBytes(tableId) + 8 + 1
-                   + tableQueryAndMutate.getPayloadSize() + 1;
+                   + tableQueryAndMutate.getPayloadSize() + Serialization.getNeedBytes(type.getValue()) + 1;
         else
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
                    + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId)

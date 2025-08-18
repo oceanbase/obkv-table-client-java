@@ -21,6 +21,6 @@ public class ObTableHbaseReqFlag {
     }
 
     public boolean getFlagServerCanRetry() {
-        return (this.flags & FLAG_SERVER_CAN_RETRY) == 1;
+        return (this.flags & FLAG_SERVER_CAN_RETRY) != 0;
     }
 }
