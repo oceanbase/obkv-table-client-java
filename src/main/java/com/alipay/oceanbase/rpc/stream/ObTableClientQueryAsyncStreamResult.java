@@ -176,6 +176,95 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         }
     }
 
+    public boolean queryLastStreamResultInNext() throws Exception {
+        Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
+                .iterator();
+        Map.Entry<Long, ObPair<Long, ObTableParam>> lastEntry = it.next();
+        try {
+            // try access new partition, async will not remove useless expectant
+            referToLastStreamResult(lastEntry.getValue());
+        } catch (Exception e) {
+            if (shouldRetry(e)) {
+                String realTableName = client.getPhyTableNameFromTableGroup(entityType,
+                        tableName);
+                TableEntry entry = client.getOrRefreshTableEntry(realTableName, false);
+                // Calculate the next partition only when the range partition is affected by a split, based on the keys already scanned.
+                if (entry.isPartitionTable()
+                        && entry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
+                        .isRangePart()) {
+                    this.asyncRequest.getObTableQueryRequest().getTableQuery()
+                            .adjustStartKey(currentStartKey);
+                    setExpectant(refreshPartition(this.asyncRequest
+                            .getObTableQueryRequest().getTableQuery(), realTableName));
+                    setEnd(true);
+                }
+            } else {
+                throw e;
+            }
+        }
+        // remove useless expectant if it is end
+        if (isEnd())
+            it.remove();
+
+        if (!cacheRows.isEmpty()) {
+            nextRow();
+            return true;
+        }
+        return false;
+    }
+
+    public boolean queryNewStreamResultInNext() throws Exception {
+        boolean hasNext = false;
+        Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
+                .iterator();
+        int retryTimes = 0;
+        long startExecute = System.currentTimeMillis();
+        while (it.hasNext()) {
+            Map.Entry<Long, ObPair<Long, ObTableParam>> entry = it.next();
+            try {
+                // try access new partition, async will not remove useless expectant
+                referToNewPartition(entry.getValue());
+            } catch (Exception e) {
+                if (shouldRetry(e)) {
+                    String realTableName = client.getPhyTableNameFromTableGroup(entityType,
+                            tableName);
+                    TableEntry tableEntry = client.getOrRefreshTableEntry(realTableName, false);
+                    if (tableEntry.isPartitionTable()
+                            && tableEntry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
+                            .isRangePart()) {
+                        this.asyncRequest.getObTableQueryRequest().getTableQuery()
+                                .adjustStartKey(currentStartKey);
+                        setExpectant(refreshPartition(this.asyncRequest
+                                .getObTableQueryRequest().getTableQuery(), realTableName));
+                    }
+                    it = expectant.entrySet().iterator();
+                    retryTimes++;
+                    long costMillis = System.currentTimeMillis() - startExecute;
+                    if (costMillis > client.getRuntimeMaxWait()) {
+                        RUNTIME.error("Fail to get refresh table entry response after {}",
+                                retryTimes);
+                        throw new ObTableTimeoutExcetion(
+                                "Fail to get refresh table entry response after " + retryTimes);
+                    }
+                    continue;
+                } else {
+                    throw e;
+                }
+            }
+
+            // remove useless expectant if it is end
+            if (isEnd())
+                it.remove();
+
+            if (!cacheRows.isEmpty()) {
+                hasNext = true;
+                nextRow();
+                break;
+            }
+        }
+        return hasNext;
+    }
+
     @Override
     protected Map<Long, ObPair<Long, ObTableParam>> refreshPartition(ObTableQuery tableQuery,
                                                                      String tableName)
@@ -222,94 +311,26 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                 return true;
             }
 
+            boolean hasNext = false;
             // secondly, refer to the last stream result
             if (!isEnd() && !expectant.isEmpty()) {
-                Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
-                    .iterator();
-
-                Map.Entry<Long, ObPair<Long, ObTableParam>> lastEntry = it.next();
                 try {
-                    // try access new partition, async will not remove useless expectant
-                    referToLastStreamResult(lastEntry.getValue());
-                } catch (Exception e) {
-                    if (shouldRetry(e)) {
-                        String realTableName = client.getPhyTableNameFromTableGroup(entityType,
-                            tableName);
-                        TableEntry entry = client.getOrRefreshTableEntry(realTableName, false);
-                        // Calculate the next partition only when the range partition is affected by a split, based on the keys already scanned.
-                        if (entry.isPartitionTable()
-                            && entry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
-                                .isRangePart()) {
-                            this.asyncRequest.getObTableQueryRequest().getTableQuery()
-                                .adjustStartKey(currentStartKey);
-                            setExpectant(refreshPartition(this.asyncRequest
-                                .getObTableQueryRequest().getTableQuery(), realTableName));
-                            setEnd(true);
-                        }
-                    } else {
-                        throw e;
-                    }
-                }
-                // remove useless expectant if it is end
-                if (isEnd())
-                    it.remove();
-
-                if (!cacheRows.isEmpty()) {
-                    nextRow();
-                    return true;
+                    hasNext = queryLastStreamResultInNext();
+                } catch (ObTableSessionNotExistException e) {
+                    // session_id missing because the tablet has been transferred to new server
+                    // new server does not store the current session_id
+                    // only support range-partitioned table, check in server
+                    this.asyncRequest.getObTableQueryRequest().getTableQuery()
+                            .adjustStartKey(currentStartKey);
+                    // just need to asjust startKey to anchor the correct position
+                    // no need to refresh partition id for session_id missing
+                    hasNext = queryNewStreamResultInNext();
                 }
             }
-
             // lastly, refer to the new partition
-            boolean hasNext = false;
-            Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
-                .iterator();
-            int retryTimes = 0;
-            long startExecute = System.currentTimeMillis();
-            while (it.hasNext()) {
-                Map.Entry<Long, ObPair<Long, ObTableParam>> entry = it.next();
-                try {
-                    // try access new partition, async will not remove useless expectant
-                    referToNewPartition(entry.getValue());
-                } catch (Exception e) {
-                    if (shouldRetry(e)) {
-                        String realTableName = client.getPhyTableNameFromTableGroup(entityType,
-                            tableName);
-                        TableEntry tableEntry = client.getOrRefreshTableEntry(realTableName, false);
-                        if (tableEntry.isPartitionTable()
-                            && tableEntry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
-                                .isRangePart()) {
-                            this.asyncRequest.getObTableQueryRequest().getTableQuery()
-                                .adjustStartKey(currentStartKey);
-                            setExpectant(refreshPartition(this.asyncRequest
-                                .getObTableQueryRequest().getTableQuery(), realTableName));
-                        }
-                        it = expectant.entrySet().iterator();
-                        retryTimes++;
-                        long costMillis = System.currentTimeMillis() - startExecute;
-                        if (costMillis > client.getRuntimeMaxWait()) {
-                            RUNTIME.error("Fail to get refresh table entry response after {}",
-                                retryTimes);
-                            throw new ObTableTimeoutExcetion(
-                                "Fail to get refresh table entry response after " + retryTimes);
-                        }
-                        continue;
-                    } else {
-                        throw e;
-                    }
-                }
-
-                // remove useless expectant if it is end
-                if (isEnd())
-                    it.remove();
-
-                if (!cacheRows.isEmpty()) {
-                    hasNext = true;
-                    nextRow();
-                    break;
-                }
+            if (!hasNext) {
+                hasNext = queryNewStreamResultInNext();
             }
-
             return hasNext;
         } finally {
             lock.unlock();
