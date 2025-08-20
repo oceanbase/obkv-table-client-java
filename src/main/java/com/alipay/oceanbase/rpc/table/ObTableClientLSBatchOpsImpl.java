@@ -68,6 +68,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     private ExecutorService       executorService;
     private boolean               returningAffectedEntity = false;
     private boolean               needAllProp             = false;
+    private boolean               serverCanRetry          = false;
     private List<ObTableSingleOp> batchOperation;
 
     /*
@@ -547,6 +548,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         tableLsOp.setReturnOneResult(returnOneResult);
         tableLsOp.setNeedAllProp(needAllProp);
         tableLsOp.setTableName(tableName);
+        tableLsOp.setServerCanRetry(serverCanRetry);
         // fetch the following parameters in first entry for routing
         long tableId = 0;
         long originPartId = 0;
@@ -1000,5 +1002,13 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
     public void setReturningAffectedEntity(boolean returningAffectedEntity) {
         this.returningAffectedEntity = returningAffectedEntity;
+    }
+
+    public void setServerCanRetry(boolean canRetry) {
+        this.serverCanRetry = canRetry;
+    }
+
+    public boolean getServerCanRetry() {
+        return this.serverCanRetry;
     }
 }

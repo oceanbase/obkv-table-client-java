@@ -33,8 +33,11 @@ import java.util.List;
 /*
 OB_SERIALIZE_MEMBER(ObHbaseRequest,
                     credential_,
+                    option_flag_,
+                    op_type_,
                     table_name_,
-                    rows_);
+                    keys_,
+                    cf_rows_);
  */
 /*
     [k1][k2][k3]...
@@ -44,8 +47,9 @@ OB_SERIALIZE_MEMBER(ObHbaseRequest,
 public class ObHbaseRequest extends AbstractPayload implements Credentialable {
     protected ObBytesString           credential;
     protected String                  tableName; // HBase tableName, OceanBase tablegroup_name
+    protected ObTableHbaseReqFlag     optionFlag = new ObTableHbaseReqFlag();
     protected ObTableOperationType    opType;
-    protected List<ObObj>             keys = new ArrayList<>();
+    protected List<ObObj>             keys       = new ArrayList<>();
     protected List<ObHbaseCfRows>     cfRows;
 
     public ObHbaseRequest() {
@@ -87,17 +91,20 @@ public class ObHbaseRequest extends AbstractPayload implements Credentialable {
         // 2. encode tableName
         Serialization.encodeVString(buf, tableName);
 
-        // 3. encode op_type
+        // 3. encode option flag
+        Serialization.encodeVi64(buf, optionFlag.getValue());
+
+        // 4. encode op_type
         Serialization.encodeI8(buf, opType.getByteValue());
 
-        // 4. encode keys array size and keys
+        // 5. encode keys array size and keys
         Serialization.encodeVi64(buf, keys.size());
         for (int i = 0; i < keys.size(); i++) {
             ObObj key = keys.get(i);
             ObTableSerialUtil.encode(buf, key);
         }
 
-        // 5. encode same cf rows array size and rows
+        // 6. encode same cf rows array size and rows
         Serialization.encodeVi64(buf, cfRows.size());
         for (int i = 0; i < cfRows.size(); i++) {
             ObHbaseCfRows sameCfRows = cfRows.get(i);
@@ -128,6 +135,7 @@ public class ObHbaseRequest extends AbstractPayload implements Credentialable {
         if (payLoadContentSize == INVALID_PAYLOAD_CONTENT_SIZE) {
             payLoadContentSize = Serialization.getNeedBytes(credential)
                                 + Serialization.getNeedBytes(tableName)
+                                + Serialization.getNeedBytes(optionFlag.getValue())
                                 + Serialization.getNeedBytes(opType.getByteValue());
             
             // Size for keys array
@@ -143,6 +151,10 @@ public class ObHbaseRequest extends AbstractPayload implements Credentialable {
             }
         }
         return payLoadContentSize;
+    }
+
+    public void setTimeout(long timeout) {
+        this.timeout = timeout;
     }
 
     @Override
@@ -164,6 +176,14 @@ public class ObHbaseRequest extends AbstractPayload implements Credentialable {
 
     public void setCfRows(List<ObHbaseCfRows> sameCfRows) {
         this.cfRows = sameCfRows;
+    }
+
+    public void setServerCanRetry(boolean canRetry) {
+        optionFlag.setFlagServerCanRetry(canRetry);
+    }
+
+    public boolean getServerCanRetry() {
+        return optionFlag.getFlagServerCanRetry();
     }
 
     public ObBytesString getCredential() {
