@@ -21,6 +21,7 @@ import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.model.TableEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
+import com.alipay.oceanbase.rpc.location.model.partition.ObPartitionLevel;
 import com.alipay.oceanbase.rpc.protocol.payload.Constants;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.*;
@@ -190,6 +191,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                 TableEntry entry = client.getOrRefreshTableEntry(realTableName, false);
                 // Calculate the next partition only when the range partition is affected by a split, based on the keys already scanned.
                 if (entry.isPartitionTable()
+                        && entry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ONE
                         && entry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
                         .isRangePart()) {
                     this.asyncRequest.getObTableQueryRequest().getTableQuery()
@@ -197,15 +199,18 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                     setExpectant(refreshPartition(this.asyncRequest
                             .getObTableQueryRequest().getTableQuery(), realTableName));
                     setEnd(true);
+                } else {
+                    // non one-level-range partitioned table does not retry, inform user to rescan
+                    throw e;
                 }
             } else {
                 throw e;
             }
         }
         // remove useless expectant if it is end
-        if (isEnd())
+        if (isEnd()) {
             it.remove();
-
+        }
         if (!cacheRows.isEmpty()) {
             nextRow();
             return true;
@@ -230,12 +235,16 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                             tableName);
                     TableEntry tableEntry = client.getOrRefreshTableEntry(realTableName, false);
                     if (tableEntry.isPartitionTable()
+                            && tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ONE
                             && tableEntry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
                             .isRangePart()) {
                         this.asyncRequest.getObTableQueryRequest().getTableQuery()
                                 .adjustStartKey(currentStartKey);
                         setExpectant(refreshPartition(this.asyncRequest
                                 .getObTableQueryRequest().getTableQuery(), realTableName));
+                    }  else {
+                        // non one-level-range partitioned table does not retry, inform user to rescan
+                        throw e;
                     }
                     it = expectant.entrySet().iterator();
                     retryTimes++;
@@ -253,9 +262,9 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             }
 
             // remove useless expectant if it is end
-            if (isEnd())
+            if (isEnd()) {
                 it.remove();
-
+            }
             if (!cacheRows.isEmpty()) {
                 hasNext = true;
                 nextRow();
