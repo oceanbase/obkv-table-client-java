@@ -108,17 +108,31 @@ public class ObTableQuery extends AbstractPayload {
     }
 
     private boolean isKeyInRange(ObNewRange range, List<ObObj> key) {
-        byte[] startKeyBytes = parseStartKeyToBytes(range.getStartKey().getObjs());
-        byte[] endKeyBytes = parseStartKeyToBytes(range.getEndKey().getObjs());
-        byte[] keyBytes = parseStartKeyToBytes(key);
+        if (range.getStartKey().getObj(0).isMinObj() && range.getEndKey().getObj(0).isMaxObj()) {
+            return true;
+        } else if (range.getStartKey().getObj(0).isMinObj()) {
+            byte[] keyBytes = parseStartKeyToBytes(key);
+            byte[] endKeyBytes = parseStartKeyToBytes(range.getEndKey().getObjs());
+            int endComparison = compareByteArrays(endKeyBytes, keyBytes);
+            return endComparison > 0;
+        } else if (range.getEndKey().getObj(0).isMaxObj()) {
+            byte[] keyBytes = parseStartKeyToBytes(key);
+            byte[] startKeyBytes = parseStartKeyToBytes(range.getStartKey().getObjs());
+            int startComparison = compareByteArrays(startKeyBytes, keyBytes);
+            return startComparison <= 0;
+        } else {
+            byte[] startKeyBytes = parseStartKeyToBytes(range.getStartKey().getObjs());
+            byte[] endKeyBytes = parseStartKeyToBytes(range.getEndKey().getObjs());
+            byte[] keyBytes = parseStartKeyToBytes(key);
 
-        int startComparison = compareByteArrays(startKeyBytes, keyBytes);
-        int endComparison = compareByteArrays(endKeyBytes, keyBytes);
+            int startComparison = compareByteArrays(startKeyBytes, keyBytes);
+            int endComparison = compareByteArrays(endKeyBytes, keyBytes);
 
-        boolean withinStart = startComparison <= 0;
-        boolean withinEnd = endComparison > 0;
+            boolean withinStart = startComparison <= 0;
+            boolean withinEnd = endComparison > 0;
 
-        return withinStart && withinEnd;
+            return withinStart && withinEnd;
+        }
     }
 
 

@@ -123,7 +123,7 @@ public class ObTableRemoting extends BaseRemoting {
             boolean isNeedRefreshMeta = false;
             ObRpcResultCode resultCode = new ObRpcResultCode();
             resultCode.decode(buf);
-            logger.debug("require_rerouting_: {}, need_refresh_kv_meta_: {}"
+            logger.debug("require_rerouting: {}, need_refresh_kv_meta: {}"
                     , response.getHeader().isRoutingWrong(), response.getHeader().isNeedRefreshKvMeta());
             if (response.getHeader().getPcode() != Pcodes.OB_TABLE_API_MOVE) {
                 if (resultCode.getRcode() != 0) {

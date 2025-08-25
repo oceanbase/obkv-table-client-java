@@ -150,7 +150,11 @@ public class TableGroupCache {
 
     public void eraseTableGroupFromCache(String tableGroupName) {
         // clear table group cache
-        TableGroupInverted.remove(TableGroupCache.get(tableGroupName));
+        String tableName = TableGroupCache.get(tableGroupName);
+        if (tableName != null) {
+            // maybe in concurrent situation, other thread has erased name already
+            TableGroupInverted.remove(tableName);
+        }
         TableGroupCache.remove(tableGroupName);
         TableGroupCacheLocks.remove(tableGroupName);
     }

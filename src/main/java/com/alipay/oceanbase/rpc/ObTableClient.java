@@ -1193,7 +1193,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     public String tryGetTableNameFromTableGroupCache(final String tableGroupName,
                                                      final boolean refresh) throws Exception {
-        return tableRoute.tryGetTableNameFromTableGroupCache(tableGroupName, refresh);
+        if (isTableGroupName(tableGroupName)) {
+            return tableRoute.tryGetTableNameFromTableGroupCache(tableGroupName, refresh);
+        }
+        return tableGroupName;
     }
 
     /**
@@ -2401,17 +2404,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             // get the first cell from the first cfRows to route
             // use the first table in tablegroup to route
             String realTableName = null;
-            try {
-                realTableName = tryGetTableNameFromTableGroupCache(request.getTableName(), false);
-            } catch (ObTableNotExistException e) {
-                if (request.getCfRows().size() != 1) {
-                    throw new ObTableUnexpectedException("multi-cf operations must create tablegroup and binding tables");
-                } else {
-                    realTableName = request.getCfRows().get(0).getRealTableName();
-                }
+            if (request.getCfRows().isEmpty()) {
+                throw new ObTableUnexpectedException("no cf rows");
             }
-            if (realTableName == null) {
-                throw new ObTableUnexpectedException("realTableName is null");
+            if (request.getCfRows().size() > 1) {
+                realTableName = tryGetTableNameFromTableGroupCache(request.getTableName(), false);
+            } else {
+                realTableName = request.getCfRows().get(0).getRealTableName();
             }
             int keyIdx = request.getCfRows().get(0).getKeyIndex(0);
             row.add("K", request.getKeys().get(keyIdx).getValue());
