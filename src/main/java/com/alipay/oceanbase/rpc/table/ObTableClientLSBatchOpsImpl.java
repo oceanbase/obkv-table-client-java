@@ -628,9 +628,16 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                             route.setBlackList(failedServerList);
                         }
                         if (needRefreshPartitionLocation) {
-                            // refresh partition location
-                            TableEntry entry = obTableClient.getOrRefreshTableEntry(realTableName, false);
-                            obTableClient.refreshTableLocationByTabletId(realTableName, obTableClient.getTabletIdByPartId(entry, originPartId));
+                            if (obTableClient.getServerCapacity().isSupportDistributedExecute()) {
+                                // if distributing execution is enabled, all the tablets of this table need to refresh their leader location
+                                // because we have no idea of which LS had been transferred
+                                // retry in client means server retried to timeout
+                                obTableClient.refreshTabletLocationBatch(realTableName);
+                            } else {
+                                // refresh partition location
+                                TableEntry entry = obTableClient.getOrRefreshTableEntry(realTableName, false);
+                                obTableClient.refreshTableLocationByTabletId(realTableName, obTableClient.getTabletIdByPartId(entry, originPartId));
+                            }
                             ObTableParam param = obTableClient.getTableParamWithPartId(realTableName, originPartId, route);
                             subObTable = param.getObTable();
                         }
@@ -654,7 +661,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     if (result.isNeedRefreshMeta()) {
                         obTableClient.getOrRefreshTableEntry(realTableName, true);
                     }
-                    // TODO: 如果是不需要全部刷新地址的错误，全部刷新地址会降低效率。如何确定出错的 tablet_id 并刷新？
+                    // if distributing execution is enabled, all the tablets of this table need to refresh their leader location
+                    // because we have no idea of which LS had been transferred
                     obTableClient.refreshTabletLocationBatch(realTableName);
                 }
                 subLSOpResult = (ObTableLSOpResult) result;

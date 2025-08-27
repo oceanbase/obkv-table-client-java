@@ -482,13 +482,20 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 } else {
                     if (tryTimes > 1 && needRefreshPartitionLocation) {
                         needRefreshPartitionLocation = false;
-                        // refresh partition location
-                        // recalculate rowkey in the situation of partition splitting
-                        rowKey = transformToRow(tableName, callback.getRowKey());
-                        TableEntry entry = tableRoute.getTableEntry(tableName);
-                        long partId = tableRoute.getPartId(entry, rowKey);
-                        long tabletId = tableRoute.getTabletIdByPartId(entry, partId);
-                        tableRoute.refreshPartitionLocation(tableName, tabletId, entry);
+                        if (getServerCapacity().isSupportDistributedExecute()) {
+                            // if distributing execution is enabled, all the tablets of this table need to refresh their leader location
+                            // because we have no idea of which LS had been transferred
+                            // retry in client means server retried to timeout
+                            tableRoute.refreshTabletLocationBatch(tableName);
+                        } else {
+                            // refresh partition location
+                            // recalculate rowkey in the situation of partition splitting
+                            rowKey = transformToRow(tableName, callback.getRowKey());
+                            TableEntry entry = tableRoute.getTableEntry(tableName);
+                            long partId = tableRoute.getPartId(entry, rowKey);
+                            long tabletId = tableRoute.getTabletIdByPartId(entry, partId);
+                            tableRoute.refreshPartitionLocation(tableName, tabletId, entry);
+                        }
                     }
                     tableParam = getTableParamWithRoute(tableName, rowKey, route);
                 }
@@ -694,11 +701,18 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     if (null != callback.getRowKey()) {
                         if (tryTimes > 1 && needRefreshPartitionLocation) {
                             needRefreshPartitionLocation = false;
-                            // refresh partition location
-                            TableEntry entry = tableRoute.getTableEntry(tableName);
-                            long partId = tableRoute.getPartId(entry, callback.getRowKey());
-                            long tabletId = tableRoute.getTabletIdByPartId(entry, partId);
-                            tableRoute.refreshPartitionLocation(tableName, tabletId, entry);
+                            if (getServerCapacity().isSupportDistributedExecute()) {
+                                // if distributing execution is enabled, all the tablets of this table need to refresh their leader location
+                                // because we have no idea of which LS had been transferred
+                                // retry in client means server retried to timeout
+                                tableRoute.refreshTabletLocationBatch(tableName);
+                            } else {
+                                // refresh partition location
+                                TableEntry entry = tableRoute.getTableEntry(tableName);
+                                long partId = tableRoute.getPartId(entry, callback.getRowKey());
+                                long tabletId = tableRoute.getTabletIdByPartId(entry, partId);
+                                tableRoute.refreshPartitionLocation(tableName, tabletId, entry);
+                            }
                         }
                         // using row key
                         tableParam = tableRoute.getTableParamWithRoute(tableName, callback.getRowKey(), route);
@@ -2103,12 +2117,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (result.isNeedRefreshMeta()) {
                 tableRoute.refreshMeta(tableName);
             }
-            if (request instanceof ObTableAbstractOperationRequest) {
-                long tabletId = ((ObTableAbstractOperationRequest) request).getPartitionId();
-                tableRoute.refreshPartitionLocation(tableName, tabletId, null);
-            } else if (request instanceof ObHbaseRequest) {
-                tableRoute.refreshTabletLocationBatch(tableName);
-            }
+            // if distributing execution is enabled, all the tablets of this table need to refresh their leader location
+            // because we have no idea of which LS had been transferred
+            tableRoute.refreshTabletLocationBatch(tableName);
         }
         return result;
     }

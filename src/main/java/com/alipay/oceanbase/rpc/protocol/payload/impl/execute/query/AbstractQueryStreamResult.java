@@ -149,10 +149,17 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                             // refresh partition
                             TableEntry tableEntry = client.getOrRefreshTableEntry(indexTableName,
                                 false);
-                            client.refreshTableLocationByTabletId(indexTableName,
-                                client.getTabletIdByPartId(tableEntry, partIdWithIndex.getLeft()));
-                            subObTable = client.getTableParamWithPartId(indexTableName,
-                                partIdWithIndex.getRight().getTabletId(), route).getObTable();
+                            if (client.getServerCapacity().isSupportDistributedExecute()) {
+                                // if distributing execution is enabled, all the tablets of this table need to refresh their leader location
+                                // because we have no idea of which LS had been transferred
+                                // retry in client means server retried to timeout
+                                client.refreshTabletLocationBatch(indexTableName);
+                            } else {
+                                client.refreshTableLocationByTabletId(indexTableName,
+                                        client.getTabletIdByPartId(tableEntry, partIdWithIndex.getLeft()));
+                                subObTable = client.getTableParamWithPartId(indexTableName,
+                                        partIdWithIndex.getRight().getTabletId(), route).getObTable();
+                            }
                         }
                     }
                 }
@@ -177,11 +184,12 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     } else if (result != null && result.isRoutingWrong()) {
                         logger.debug("errors happened in server and retried successfully, server ip:port is {}:{}, tableName: {}, need_refresh_meta: {}",
                                 subObTable.getIp(), subObTable.getPort(), indexTableName, result.isNeedRefreshMeta());
-                        TableEntry tableEntry = result.isNeedRefreshMeta() ?
-                                client.getOrRefreshTableEntry(indexTableName, true) :
-                                client.getOrRefreshTableEntry(indexTableName, false);
-                        long tabletId = client.getTabletIdByPartId(tableEntry, partIdWithIndex.getLeft());
-                        client.refreshTableLocationByTabletId(indexTableName, tabletId);
+                        if (result.isNeedRefreshMeta()) {
+                            client.getOrRefreshTableEntry(indexTableName, true);
+                        }
+                        // if distributing execution is enabled, all the tablets of this table need to refresh their leader location
+                        // because we have no idea of which LS had been transferred
+                        client.refreshTabletLocationBatch(indexTableName);
                     }
                 }
                 client.resetExecuteContinuousFailureCount(indexTableName);

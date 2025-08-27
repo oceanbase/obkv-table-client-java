@@ -381,11 +381,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 } else if (result != null && result.isRoutingWrong() && !obTableClient.isOdpMode()) {
                     logger.debug("errors happened in server and retried successfully, server ip:port is {}:{}, tableName: {}, need_refresh_meta: {}",
                             subObTable.getIp(), subObTable.getPort(), tableName, result.isNeedRefreshMeta());
-                    TableEntry entry = result.isNeedRefreshMeta() ?
-                            obTableClient.getOrRefreshTableEntry(tableName, true) :
-                            obTableClient.getOrRefreshTableEntry(tableName, false);
-                    long tabletId = obTableClient.getTabletIdByPartId(entry, originPartId);
-                    obTableClient.refreshTableLocationByTabletId(tableName, tabletId);
+                    if (result.isNeedRefreshMeta()) {
+                        obTableClient.getOrRefreshTableEntry(tableName, true);
+                    }
+                    // if distributing execution is enabled, all the tablets of this table need to refresh their leader location
+                    // because we have no idea of which LS had been transferred
+                    obTableClient.refreshTabletLocationBatch(tableName);
                 }
                 subObTableBatchOperationResult = (ObTableBatchOperationResult) result;
                 obTableClient.resetExecuteContinuousFailureCount(tableName);
