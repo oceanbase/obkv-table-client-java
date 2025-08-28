@@ -158,7 +158,6 @@ public class ObTableLSOperation extends AbstractPayload {
                     "writeBufferLength:" + buffLength + ", payLoadContentSize:" + this.payLoadContentSize + "), " +
                     "ObTableLSOperation details: " + this.toString());
         }
-        System.out.println(this.toString());
     }
 
     /*
