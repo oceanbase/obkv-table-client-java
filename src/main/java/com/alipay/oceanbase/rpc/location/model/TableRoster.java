@@ -89,7 +89,8 @@ public class TableRoster {
 
             newServers.add(addr);
 
-            if (tables.containsKey(addr)) { // has ob table addr, continue
+            // has ob table addr and this addr is valid, continue
+            if (tables.containsKey(addr) && tables.get(addr).isValid()) {
                 continue;
             }
 
