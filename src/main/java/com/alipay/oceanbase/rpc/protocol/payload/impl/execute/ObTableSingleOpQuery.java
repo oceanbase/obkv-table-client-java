@@ -155,7 +155,8 @@ public class ObTableSingleOpQuery extends ObTableQuery {
         int writeBufferLength = buf.pos - posStart;
         if (writeBufferLength != this.payLoadContentSize) {
             throw new IllegalArgumentException("error in encode ObTableSingleOpQuery (" +
-                    "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")");
+                    "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")"+
+                    "ObTableSingleOpQuery details: " + this.toString());
         }
     }
 

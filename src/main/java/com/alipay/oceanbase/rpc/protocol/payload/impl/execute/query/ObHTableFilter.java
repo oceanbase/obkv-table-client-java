@@ -133,7 +133,8 @@ public class ObHTableFilter extends AbstractPayload {
         int writeBufferLength = buf.pos - posStart;
         if (writeBufferLength != this.getPayloadSize()) {
             throw new IllegalArgumentException("error in encode OHTableFilter (" +
-                    "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")");
+                    "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")" + 
+                    "ObHTableFilter details: " + this.toString());
         }
     }
 

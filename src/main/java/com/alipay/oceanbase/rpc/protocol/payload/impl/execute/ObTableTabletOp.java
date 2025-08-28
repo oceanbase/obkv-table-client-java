@@ -93,7 +93,8 @@ public class ObTableTabletOp extends AbstractPayload {
         int writeBufferLength = buf.pos - posStart;
         if (writeBufferLength != this.payLoadContentSize) {
             throw new IllegalArgumentException("error in encode ObTableTabletOp (" +
-                    "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")");
+                    "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")"+
+                    "ObTableTabletOp details: " + this.toString());
         }
     }
 

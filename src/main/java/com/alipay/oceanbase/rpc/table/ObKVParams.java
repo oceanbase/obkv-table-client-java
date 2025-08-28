@@ -75,7 +75,8 @@ public class ObKVParams extends AbstractPayload {
         int writeBufferLength = buf.pos - posStart;
         if (writeBufferLength != this.payLoadContentSize) {
             throw new IllegalArgumentException("error in encode ObKvParams (" +
-                    "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")");
+                    "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")"+
+                    "ObKVParams details: " + this.toString());
         }
     }
 

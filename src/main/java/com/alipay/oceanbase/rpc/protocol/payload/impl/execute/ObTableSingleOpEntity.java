@@ -138,7 +138,8 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         int writeBufferLength = buf.pos - posStart;
         if (writeBufferLength != this.payLoadContentSize) {
             throw new IllegalArgumentException("error in encode ObTableSingleOpEntity (" +
-                    "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")");
+                    "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")"+
+                    "ObTableSingleOpEntity details: " + this.toString());
         }
     }
 

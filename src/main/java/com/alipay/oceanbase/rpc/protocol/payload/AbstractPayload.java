@@ -228,7 +228,8 @@ public abstract class AbstractPayload implements ObPayload {
         int writeBufferLength = buf.pos - posStart;
         if (writeBufferLength != getObUniVersionHeaderLength(getVersion(), getPayloadContentSize())) {
             throw new IllegalArgumentException("error in encode Header (" +
-                    "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")");
+                    "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + getVersion() + ")"
+                    );
         }
     }
 
