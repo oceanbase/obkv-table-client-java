@@ -77,6 +77,7 @@ public class ObTableTabletOp extends AbstractPayload {
 
     public void encode(ObByteBuf buf) {
         encodeHeader(buf);
+        int posStart = buf.pos;
 
         // 1. encode tablet id
         Serialization.encodeI64(buf, tabletId);
@@ -88,6 +89,11 @@ public class ObTableTabletOp extends AbstractPayload {
         Serialization.encodeVi64(buf, singleOperations.size());
         for (ObTableSingleOp singleOperation : singleOperations) {
             singleOperation.encode(buf);
+        }
+        int writeBufferLength = buf.pos - posStart;
+        if (writeBufferLength != this.payLoadContentSize) {
+            throw new IllegalArgumentException("error in encode ObTableTabletOp (" +
+                    "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")");
         }
     }
 
@@ -215,4 +221,26 @@ public class ObTableTabletOp extends AbstractPayload {
     public Set<String> getPropertiesNamesSet() {
         return propertiesNamesSet;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ObTableTabletOp{");
+        sb.append("tabletId=").append(tabletId);
+        sb.append(", optionFlag=").append(optionFlag);
+        sb.append(", singleOperations=");
+        if (singleOperations != null) {
+            sb.append('[');
+            for (int i = 0; i < singleOperations.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append("singleOp[").append(i).append("]=").append(singleOperations.get(i));
+            }
+            sb.append(']');
+        } else {
+            sb.append("null");
+        }
+        sb.append('}');
+        return sb.toString();
+    }
+
 }

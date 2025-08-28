@@ -265,4 +265,15 @@ public class ObNewRange implements ObSimplePayload {
         this.flag = flag;
     }
 
+    @Override
+    public String toString() {
+        return "ObNewRange{" +
+                "tableId=" + tableId +
+                ", borderFlag=" + borderFlag +
+                ", startKey=" + startKey +
+                ", endKey=" + endKey +
+                ", flag=" + flag +
+                '}';
+    }
+
 }

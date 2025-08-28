@@ -107,6 +107,7 @@ public class ObHTableFilter extends AbstractPayload {
     }
 
     public void encode(ObByteBuf buf) {
+        int posStart = buf.pos;
         if (isUseDefaultEncode()) {
             buf.writeBytes(encodeDefaultBytes());
         } else {
@@ -128,6 +129,11 @@ public class ObHTableFilter extends AbstractPayload {
             Serialization.encodeVi32(buf, limitPerRowPerCf);
             Serialization.encodeVi32(buf, offsetPerRowPerCf);
             Serialization.encodeBytesString(buf, filterString);
+        }
+        int writeBufferLength = buf.pos - posStart;
+        if (writeBufferLength != this.getPayloadSize()) {
+            throw new IllegalArgumentException("error in encode OHTableFilter (" +
+                    "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")");
         }
     }
 
@@ -308,4 +314,19 @@ public class ObHTableFilter extends AbstractPayload {
         }
         this.filterString.bytes = filterString;
     }
+
+    @Override
+    public String toString() {
+        return "ObHTableFilter{" +
+                "isValid=" + isValid +
+                ", selectColumnQualifier=" + selectColumnQualifier +
+                ", minStamp=" + minStamp +
+                ", maxStamp=" + maxStamp +
+                ", maxVersions=" + maxVersions +
+                ", limitPerRowPerCf=" + limitPerRowPerCf +
+                ", offsetPerRowPerCf=" + offsetPerRowPerCf +
+                ", filterString=" + filterString +
+                '}';
+    }
+
 }

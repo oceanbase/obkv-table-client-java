@@ -139,4 +139,15 @@ public class ObBorderFlag {
         return value == that.value;
     }
 
+    @Override
+    public String toString() {
+        return "ObBorderFlag{" +
+                "value=" + value +
+                ", isInclusiveStart=" + isInclusiveStart() +
+                ", isInclusiveEnd=" + isInclusiveEnd() +
+                ", isMinValue=" + isMinValue() +
+                ", isMaxValue=" + isMaxValue() +
+                '}';
+    }
+
 }

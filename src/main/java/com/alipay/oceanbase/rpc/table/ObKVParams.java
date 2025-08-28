@@ -69,8 +69,14 @@ public class ObKVParams extends AbstractPayload {
     public void encode(ObByteBuf buf) {
         // 0. encode header
         encodeObUniVersionHeader(buf, getVersion(), getPayloadContentSize());
+        int posStart = buf.pos;
 
         obKVParamsBase.encode(buf);
+        int writeBufferLength = buf.pos - posStart;
+        if (writeBufferLength != this.payLoadContentSize) {
+            throw new IllegalArgumentException("error in encode ObKvParams (" +
+                    "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")");
+        }
     }
 
     public Object decode(ByteBuf buf) {
@@ -89,4 +95,12 @@ public class ObKVParams extends AbstractPayload {
         }
         return this.payLoadContentSize;
     }
+
+    @Override
+    public String toString() {
+        return "ObKVParams{" +
+                "obKVParamsBase=" + obKVParamsBase +
+                '}';
+    }
+
 }

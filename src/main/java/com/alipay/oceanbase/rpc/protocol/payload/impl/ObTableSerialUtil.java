@@ -130,6 +130,7 @@ public class ObTableSerialUtil {
     }
 
     static public void encode(ObByteBuf buf, ObNewRange range) {
+
         long tableId = range.getTableId();
         Serialization.encodeVi64(buf, tableId);
 
