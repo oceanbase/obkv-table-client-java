@@ -119,9 +119,9 @@ public class ObTableLSOperation extends AbstractPayload {
     }
 
     public void encode(ObByteBuf buf) {
-
         // 0. encode header
         encodeHeader(buf);
+        int posStart = buf.pos;
 
         // 1. encode ls id
         Serialization.encodeI64(buf, lsId);
@@ -152,6 +152,13 @@ public class ObTableLSOperation extends AbstractPayload {
         for (ObTableTabletOp tabletOperation : tabletOperations) {
             tabletOperation.encode(buf);
         }
+        long buffLength = buf.pos - posStart;
+        if (buffLength != this.payLoadContentSize) {
+            throw new IllegalArgumentException("error in encode ObTableLsOperation (" +
+                    "writeBufferLength:" + buffLength + ", payLoadContentSize:" + this.payLoadContentSize + "), " +
+                    "ObTableLSOperation details: " + this.toString());
+        }
+        System.out.println(this.toString());
     }
 
     /*
@@ -384,6 +391,31 @@ public class ObTableLSOperation extends AbstractPayload {
 
     public void setTableName(String tableName) {
         this.tableName = tableName;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ObTableLSOperation{");
+        sb.append("lsId=").append(lsId);
+        sb.append(", tableName='").append(tableName).append('\'');
+        sb.append(", tableId=").append(tableId);
+        sb.append(", rowKeyNames=").append(rowKeyNames);
+        sb.append(", propertiesNames=").append(propertiesNames);
+        sb.append(", optionFlag=").append(optionFlag);
+        sb.append(", tabletOperations=");
+        if (tabletOperations != null) {
+            sb.append('[');
+            for (int i = 0; i < tabletOperations.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append("tabletOp[").append(i).append("]=").append(tabletOperations.get(i));
+            }
+            sb.append(']');
+        } else {
+            sb.append("null");
+        }
+        sb.append('}');
+        return sb.toString();
     }
 
 }

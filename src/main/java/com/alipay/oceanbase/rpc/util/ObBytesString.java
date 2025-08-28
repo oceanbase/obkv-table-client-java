@@ -113,4 +113,13 @@ public class ObBytesString implements Comparable<ObBytesString> {
         }
         return list.toArray(new ObBytesString[0]);
     }
+
+    @Override
+    public String toString() {
+        return "ObBytesString{" +
+                "bytes.length=" + (bytes != null ? bytes.length : 0) +
+                ", bytes=" + (bytes != null ? java.util.Arrays.toString(bytes) : "null") +
+                '}';
+    }
+
 }

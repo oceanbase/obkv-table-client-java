@@ -106,6 +106,7 @@ public class ObTableSingleOpEntity extends AbstractPayload {
     public void encode(ObByteBuf buf) {
         // 0. encode header
         encodeHeader(buf);
+        int posStart = buf.pos;
 
         // 1. encode rowKey bitmap
         Serialization.encodeVi64(buf, rowKeyBitLen);
@@ -133,6 +134,11 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         Serialization.encodeVi64(buf, propertiesValues.size());
         for (ObObj obj : propertiesValues) {
             ObTableSerialUtil.encode(buf, obj);
+        }
+        int writeBufferLength = buf.pos - posStart;
+        if (writeBufferLength != this.payLoadContentSize) {
+            throw new IllegalArgumentException("error in encode ObTableSingleOpEntity (" +
+                    "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")");
         }
     }
 
@@ -426,6 +432,65 @@ public class ObTableSingleOpEntity extends AbstractPayload {
 
     public List<ObObj> getPropertiesValues() {
         return this.propertiesValues;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ObTableSingleOpEntity{");
+        sb.append("rowKeyNames=");
+        if (rowKeyNames != null) {
+            sb.append('[');
+            for (int i = 0; i < rowKeyNames.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append("'").append(rowKeyNames.get(i)).append("'");
+            }
+            sb.append(']');
+        } else {
+            sb.append("null");
+        }
+        sb.append(", rowKeyBitLen=").append(rowKeyBitLen);
+        sb.append(", rowkey=");
+        if (rowkey != null) {
+            sb.append('[');
+            for (int i = 0; i < rowkey.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append("obj[").append(i).append("]=").append(rowkey.get(i));
+            }
+            sb.append(']');
+        } else {
+            sb.append("null");
+        }
+        if (!ignoreEncodePropertiesColumnNames) {
+            sb.append(", propertiesNames=");
+            if (propertiesNames != null) {
+                sb.append('[');
+                for (int i = 0; i < propertiesNames.size(); i++) {
+                    if (i > 0) sb.append(", ");
+                    sb.append("'").append(propertiesNames.get(i)).append("'");
+                }
+                sb.append(']');
+            } else {
+                sb.append("null");
+            }
+            sb.append(", propertiesBitLen=").append(propertiesBitLen);
+        } else {
+            sb.append(", propertiesNames=ignored");
+        }
+        sb.append(", propertiesValues=");
+        if (propertiesValues != null) {
+            sb.append('[');
+            for (int i = 0; i < propertiesValues.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append("obj[").append(i).append("]=").append(propertiesValues.get(i));
+            }
+            sb.append(']');
+        } else {
+            sb.append("null");
+        }
+        sb.append(", ignoreEncodePropertiesColumnNames=").append(ignoreEncodePropertiesColumnNames);
+        sb.append('}');
+        return sb.toString();
     }
 
 }

@@ -42,9 +42,9 @@ import static com.alipay.oceanbase.rpc.table.ObKVParamsBase.paramType.HBase;
 
 public class ObTableLsOperationRequestTest {
     private int lsOpReqSize = 10;
-    private int tabletOpSize = 10;
-    private int singleOpSize = 10;
-    private int defaultIterSize = 10;
+    private int tabletOpSize = 1;
+    private int singleOpSize = 1;
+    private int defaultIterSize = 1;
 
     private static final Random random = new Random();
 

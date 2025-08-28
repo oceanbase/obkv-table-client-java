@@ -43,4 +43,13 @@ public class ObTableQueryFlag {
             value = value | HOT_ONLY;
         }
     }
-};
+
+    @Override
+    public String toString() {
+        return "ObTableQueryFlag{" +
+                "value=" + value +
+                ", isHotOnly=" + isHotOnly() +
+                '}';
+    }
+
+}

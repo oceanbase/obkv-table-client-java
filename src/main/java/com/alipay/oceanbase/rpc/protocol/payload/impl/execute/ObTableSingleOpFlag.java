@@ -66,4 +66,17 @@ public class ObTableSingleOpFlag {
     void setValue(long value) {
         flags = value;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ObTableSingleOpFlag{");
+        sb.append("flags=").append(flags);
+        sb.append(", isCheckNotExists=").append(isCheckNotExists());
+        sb.append(", isRollbackWhenCheckFailed=").append(isRollbackWhenCheckFailed());
+        sb.append(", isUserSpecifiedT=").append(isUserSpecifiedT());
+        sb.append('}');
+        return sb.toString();
+    }
+
 }

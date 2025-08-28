@@ -112,6 +112,7 @@ public class ObTableSingleOpQuery extends ObTableQuery {
     public void encode(ObByteBuf buf) {
         // 0. encode header
         encodeHeader(buf);
+        int posStart = buf.pos;
 
         // 1. encode index name
         if (indexName != null && indexName.compareToIgnoreCase("PRIMARY") == 0) {
@@ -150,6 +151,11 @@ public class ObTableSingleOpQuery extends ObTableQuery {
             } else {
                 buf.writeBytes(HTABLE_DUMMY_BYTES);
             }
+        }
+        int writeBufferLength = buf.pos - posStart;
+        if (writeBufferLength != this.payLoadContentSize) {
+            throw new IllegalArgumentException("error in encode ObTableSingleOpQuery (" +
+                    "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")");
         }
     }
 
@@ -353,4 +359,54 @@ public class ObTableSingleOpQuery extends ObTableQuery {
         query.setFilterString(filterString);
         return query;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ObTableSingleOpQuery{");
+        sb.append("indexName='").append(indexName).append('\'');
+        sb.append(", scanRangeColumns=");
+        if (scanRangeColumns != null) {
+            sb.append('[');
+            for (int i = 0; i < scanRangeColumns.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append("'").append(scanRangeColumns.get(i)).append("'");
+            }
+            sb.append(']');
+        } else {
+            sb.append("null");
+        }
+        sb.append(", scanRangeBitLen=").append(scanRangeBitLen);
+        sb.append(", keyRanges=");
+        if (keyRanges != null) {
+            sb.append('[');
+            for (int i = 0; i < keyRanges.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append("range[").append(i).append("]=").append(keyRanges.get(i));
+            }
+            sb.append(']');
+        } else {
+            sb.append("null");
+        }
+        sb.append(", filterString='").append(filterString).append('\'');
+        if (isHbaseQuery && ObGlobal.isHBaseBatchGetSupport()) {
+            sb.append(", selectColumns=");
+            if (selectColumns != null) {
+                sb.append('[');
+                for (int i = 0; i < selectColumns.size(); i++) {
+                    if (i > 0) sb.append(", ");
+                    sb.append("'").append(selectColumns.get(i)).append("'");
+                }
+                sb.append(']');
+            } else {
+                sb.append("null");
+            }
+            sb.append(", scanOrder=").append(scanOrder);
+            sb.append(", hTableFilter=").append(hTableFilter);
+            sb.append(", obKVParams=").append(obKVParams);
+        }
+        sb.append('}');
+        return sb.toString();
+    }
+
 }

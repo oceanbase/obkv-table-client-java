@@ -69,4 +69,13 @@ public abstract class ObKVParamsBase {
     public long getPayloadContentSize() {
         return 0;
     }
+
+    @Override
+    public String toString() {
+        return "ObKVParamsBase{" +
+                "byteSize=" + byteSize +
+                ", pType=" + pType +
+                '}';
+    }
+
 }

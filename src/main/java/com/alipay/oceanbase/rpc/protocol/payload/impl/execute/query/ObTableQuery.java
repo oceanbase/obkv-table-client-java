@@ -618,4 +618,28 @@ public class ObTableQuery extends AbstractPayload {
     public void setHotOnly(boolean hotOnly) {
         this.flag.setHotOnly(hotOnly);
     }
+
+    @Override
+    public String toString() {
+        return "ObTableQuery{" +
+                "keyRanges=" + keyRanges +
+                ", selectColumns=" + selectColumns +
+                ", filterString='" + filterString + '\'' +
+                ", limit=" + limit +
+                ", offset=" + offset +
+                ", scanOrder=" + scanOrder +
+                ", indexName='" + indexName + '\'' +
+                ", batchSize=" + batchSize +
+                ", maxResultSize=" + maxResultSize +
+                ", hTableFilter=" + hTableFilter +
+                ", isHbaseQuery=" + isHbaseQuery +
+                ", isFTSQuery=" + isFTSQuery +
+                ", scanRangeColumns=" + scanRangeColumns +
+                ", aggregations=" + aggregations +
+                ", partId=" + partId +
+                ", obKVParams=" + obKVParams +
+                ", flag=" + flag +
+                '}';
+    }
+
 }

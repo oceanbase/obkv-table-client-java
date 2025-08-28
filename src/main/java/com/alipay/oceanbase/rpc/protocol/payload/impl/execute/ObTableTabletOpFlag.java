@@ -67,4 +67,17 @@ public class ObTableTabletOpFlag {
     public boolean getFlagIsReadOnly() {
         return (flags & FLAG_IS_READ_ONLY) != 0;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ObTableTabletOpFlag{");
+        sb.append("flags=").append(flags);
+        sb.append(", isSameType=").append(getFlagIsSameType());
+        sb.append(", isSamePropertiesNames=").append(getFlagIsSamePropertiesNames());
+        sb.append(", isReadOnly=").append(getFlagIsReadOnly());
+        sb.append('}');
+        return sb.toString();
+    }
+
 }

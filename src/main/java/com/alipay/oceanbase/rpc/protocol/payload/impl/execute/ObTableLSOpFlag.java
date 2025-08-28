@@ -88,4 +88,17 @@ public class ObTableLSOpFlag {
     public boolean getFlagServerCanRetry() {
         return (flags & FLAG_SERVER_CAN_RETRY) != 0;
     }
+
+    @Override
+    public String toString() {
+        return "ObTableLSOpFlag{" +
+                "flags=" + flags +
+                ", isSameType=" + getFlagIsSameType() +
+                ", isSamePropertiesNames=" + getFlagIsSamePropertiesNames() +
+                ", returnOneResult=" + ((flags & FLAG_RETURN_ONE_RESULT) != 0) +
+                ", needAllProp=" + getFlagNeedAllProp() +
+                ", serverCanRetry=" + getFlagServerCanRetry() +
+                '}';
+    }
+
 }

@@ -80,6 +80,7 @@ public class ObTableSingleOp extends AbstractPayload {
     public void encode(ObByteBuf buf) {
         // 0. encode header
         encodeHeader(buf);
+        int posStart = buf.pos;
 
         // 1. encode op type
         byte opTypeVal = singleOpType.getByteValue();
@@ -98,6 +99,11 @@ public class ObTableSingleOp extends AbstractPayload {
         Serialization.encodeVi64(buf, entities.size());
         for (ObTableSingleOpEntity entity : entities) {
             entity.encode(buf);
+        }
+        int writeBufferLength = buf.pos - posStart;
+        if (writeBufferLength != this.payLoadContentSize) {
+            throw new IllegalArgumentException("error in encode ObTableSingleOp (" +
+                    "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")");
         }
     }
 
@@ -223,4 +229,29 @@ public class ObTableSingleOp extends AbstractPayload {
         }
         return rowKeyNames;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ObTableSingleOp{");
+        sb.append("singleOpType=").append(singleOpType);
+        sb.append(", singleOpFlag=").append(singleOpFlag);
+        if (ObTableOperationType.needEncodeQuery(singleOpType)) {
+            sb.append(", query=").append(query);
+        }
+        sb.append(", entities=");
+        if (entities != null) {
+            sb.append('[');
+            for (int i = 0; i < entities.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append("entity[").append(i).append("]=").append(entities.get(i));
+            }
+            sb.append(']');
+        } else {
+            sb.append("null");
+        }
+        sb.append('}');
+        return sb.toString();
+    }
+
 }

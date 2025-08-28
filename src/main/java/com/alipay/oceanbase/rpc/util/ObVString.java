@@ -51,4 +51,14 @@ public class ObVString {
     public String getStringVal() {
         return stringVal;
     }
+
+    @Override
+    public String toString() {
+        return "ObVString{" +
+                "stringVal='" + stringVal + '\'' +
+                ", bytesVal.length=" + (bytesVal != null ? bytesVal.length : 0) +
+                ", encodeBytes.length=" + (encodeBytes != null ? encodeBytes.length : 0) +
+                '}';
+    }
+
 }
