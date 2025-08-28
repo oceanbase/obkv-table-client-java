@@ -378,7 +378,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                                     .ipToString());
                         throw new ObTableRoutingWrongException();
                     }
-                } else if (result != null && result.isRoutingWrong()) {
+                } else if (result != null && result.isRoutingWrong() && !obTableClient.isOdpMode()) {
                     logger.debug("errors happened in server and retried successfully, server ip:port is {}:{}, tableName: {}, need_refresh_meta: {}",
                             subObTable.getIp(), subObTable.getPort(), tableName, result.isNeedRefreshMeta());
                     TableEntry entry = result.isNeedRefreshMeta() ?

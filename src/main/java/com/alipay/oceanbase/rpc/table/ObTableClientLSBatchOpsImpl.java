@@ -647,7 +647,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                                 "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move.getReplica().getServer().ipToString());
                         throw new ObTableRoutingWrongException();
                     }
-                } else if (result != null && result.isRoutingWrong()) {
+                } else if (result != null && result.isRoutingWrong() && !obTableClient.isOdpMode()) {
                     // retry successfully in server and need to refresh client cache
                     logger.debug("errors happened in server and retried successfully, server ip:port is {}:{}, tableName: {}, need_refresh_meta: {}",
                             subObTable.getIp(), subObTable.getPort(), realTableName, result.isNeedRefreshMeta());
