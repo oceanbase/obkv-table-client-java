@@ -26,6 +26,7 @@ import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.location.model.ObServerAddr;
+import com.alipay.oceanbase.rpc.location.model.RouteTableRefresher;
 import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
@@ -429,13 +430,13 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             // cannot connect to ob server, need refresh table location
             // do not set odp ip and port as dirty
             if (!isOdpMode) {
-                setDirty();
+                dealWithReconnectFailForObTableConnection();
             }
             throw new ObTableServerConnectException(ex);
         } catch (ObTableServerConnectException ex) {
             // do not set odp ip and port as dirty
             if (!isOdpMode) {
-                setDirty();
+                dealWithReconnectFailForObTableConnection();
             }
             throw ex;
         } catch (Exception ex) {
@@ -505,19 +506,25 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             // Cannot connect to ob server, need refresh table location
             // do not set odp ip and port as dirty
             if (!isOdpMode) {
-                setDirty();
+                dealWithReconnectFailForObTableConnection();
             }
             throw new ObTableServerConnectException(ex);
         } catch (ObTableServerConnectException ex) {
             // do not set odp ip and port as dirty
             if (!isOdpMode) {
-                setDirty();
+                dealWithReconnectFailForObTableConnection();
             }
             throw ex;
         } catch (Exception ex) {
             throw new ObTableConnectionStatusException("check status failed, cause: " + ex.getMessage(), ex);
         }
         return executeWithReconnect(connection, request);
+    }
+
+    private void dealWithReconnectFailForObTableConnection() throws InterruptedException {
+        setDirty();
+        RouteTableRefresher.SuspectObServer suspectAddr = new RouteTableRefresher.SuspectObServer(addr);
+        RouteTableRefresher.addIntoSuspectIPs(suspectAddr);
     }
 
     private void checkObTableOperationResult(String ip, int port, Object result) {
