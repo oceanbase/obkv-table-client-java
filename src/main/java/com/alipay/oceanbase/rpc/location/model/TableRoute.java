@@ -204,6 +204,7 @@ public class TableRoute {
         int retryMaxTimes = rsList.size();
         int retryTimes = 0;
         boolean success = false;
+        Exception exception = null;
         while (!success && retryTimes < retryMaxTimes) {
             try {
                 ObServerAddr obServerAddr = rsList.get(retryTimes);
@@ -221,6 +222,7 @@ public class TableRoute {
                             "current server addr is invalid but rsList is not updated, ip: {}, sql port: {}",
                             rsList.get(retryTimes).getIp(), rsList.get(retryTimes).getSqlPort());
                     retryTimes++;
+                    exception = e;
                 } else {
                     throw e;
                 }
@@ -229,14 +231,13 @@ public class TableRoute {
         if (!success) {
             BOOT.error("all rs servers are not available, rootServerKey:{}, rsList: {}",
                 rootServerKey, rsList);
-            throw new ObTableUnexpectedException("all rs servers are not available");
+            throw new ObTableUnexpectedException("all rs servers are not available", exception);
         }
         List<ReplicaLocation> replicaLocations = tableEntry.getTableLocation()
             .getReplicaLocations();
         BOOT.info("{} success to get replicaLocation {}", tableClient.getDatabase(),
                 objectMapper.writeValueAsString(replicaLocations));
 
-        List<Exception> obTableExceptions = new ArrayList<>();
         for (ReplicaLocation replicaLocation : replicaLocations) {
             ObServerInfo info = replicaLocation.getInfo();
             ObServerAddr addr = replicaLocation.getAddr();
@@ -246,55 +247,19 @@ public class TableRoute {
                 continue;
             }
 
-            // 忽略初始化建连失败，否则client会初始化失败，导致应用无法启动的问题
-            // 初始化建连失败(可能性较小)，如果后面这台server恢复，数据路由失败，就会重新刷新metadata
-            // 在失败100次后(RUNTIME_CONTINUOUS_FAILURE_CEILING)，重新刷新建连
-            // 本地cache 1小时超时后(SERVER_ADDRESS_CACHING_TIMEOUT)，重新刷新建连
-            // 应急可以直接observer切主
             try {
                 ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort())
-                    //
                     .setLoginInfo(tableClient.getTenantName(), tableClient.getUserName(),
                         tableClient.getPassword(), tableClient.getDatabase(),
                         tableClient.getClientType(runningMode))
-                    //
                     .setProperties(tableClient.getProperties())
                     .setConfigs(tableClient.getTableConfigs()).setObServerAddr(addr).build();
                 addr2Table.put(addr, obTable);
                 servers.add(addr);
             } catch (Exception e) {
-                BOOT.warn(
-                    "The addr{}:{} failed to put into table roster, the node status may be wrong, Ignore",
-                    addr.getIp(), addr.getSvrPort());
-                RUNTIME.warn("initMetadata meet exception", e);
-                e.printStackTrace();
-                // collect exceptions when login
-                obTableExceptions.add(e);
+                BOOT.warn("initMetadata meet exception", e);
+                throw e;
             }
-        }
-        if (servers.isEmpty()) {
-            BOOT.error("{} failed to connect any replicaLocation server: {}",
-                    tableClient.getDatabase(), objectMapper.writeValueAsString(replicaLocations));
-            boolean isSameTypeException = true;
-            int errCode = -1;
-            // if collected exceptions are the same type, throw the original exception
-            for (Exception e : obTableExceptions) {
-                if (!(e instanceof ObTableException)) {
-                    isSameTypeException = false;
-                    break;
-                }
-                int curErrCord = ((ObTableException) e).getErrorCode();
-                if (errCode == -1) {
-                    errCode = curErrCord;
-                } else if (errCode != curErrCord) {
-                    isSameTypeException = false;
-                    break;
-                }
-            }
-            if (isSameTypeException && !obTableExceptions.isEmpty()) {
-                throw obTableExceptions.get(0);
-            }
-            throw new Exception("failed to connect any replicaLocation server");
         }
 
         BOOT.info("{} success to build server connection {}", tableClient.getDatabase(),
