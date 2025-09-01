@@ -48,6 +48,7 @@ public class BatchOperation {
     boolean                     returnOneResult  = false;
     boolean                     hasCheckAndInsUp = false;
     boolean                     hasGet           = false;
+    boolean                     serverCanRetry   = false;
     ObTableOperationType        lastType         = ObTableOperationType.INVALID;
     boolean                     isSameType       = true;
     protected ObTableEntityType entityType       = ObTableEntityType.KV;
@@ -179,6 +180,10 @@ public class BatchOperation {
 
     public void setEntityType(ObTableEntityType entityType) {
         this.entityType = entityType;
+    }
+
+    public void setServerCanRetry(boolean canRetry) {
+        this.serverCanRetry = canRetry;
     }
 
     public BatchOperation setIsAtomic(boolean isAtomic) {
@@ -313,6 +318,7 @@ public class BatchOperation {
         if (client instanceof ObTableClient) {
             batchOps = new ObTableClientLSBatchOpsImpl(tableName, (ObTableClient) client);
             batchOps.setEntityType(entityType);
+            batchOps.setServerCanRetry(serverCanRetry);
             for (Object operation : operations) {
                 if (operation instanceof CheckAndInsUp) {
                     checkAndInsUpCnt++;

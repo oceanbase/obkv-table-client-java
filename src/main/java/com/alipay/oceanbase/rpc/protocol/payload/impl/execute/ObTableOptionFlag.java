@@ -21,8 +21,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum ObTableOptionFlag {
-
-    DEFAULT(0), RETURNING_ROWKEY(1 << 0), USE_PUT(1 << 1), RETURN_ONE_RES(1 << 2);
+    DEFAULT(0),
+    RETURNING_ROWKEY(1 << 0),
+    USE_PUT(1 << 1),
+    RETURN_ONE_RES(1 << 2),
+    SERVER_CAN_RETRY(1 << 3);
 
     private int                                    value;
     private static Map<Integer, ObTableOptionFlag> map = new HashMap<Integer, ObTableOptionFlag>();
@@ -71,14 +74,14 @@ public enum ObTableOptionFlag {
      * Get isReturningRowKey.
      */
     public boolean isReturningRowKey() {
-        return this.value == RETURNING_ROWKEY.value;
+        return (this.value & RETURNING_ROWKEY.value) != 0;
     }
 
     /*
      * Get usePut.
      */
     public boolean isUsePut() {
-        return this.value == USE_PUT.value;
+        return (this.value & USE_PUT.value) != 0;
     }
 
     /*
@@ -91,7 +94,7 @@ public enum ObTableOptionFlag {
     }
 
     public boolean isReturnOneResult() {
-        return (this.value & RETURN_ONE_RES.value) == 1;
+        return (this.value & RETURN_ONE_RES.value) != 0;
     }
 
     public void setReturnOneResult(boolean returnOneResult) {
@@ -99,6 +102,18 @@ public enum ObTableOptionFlag {
             this.value |= RETURN_ONE_RES.value;
         } else {
             this.value &= ~(RETURN_ONE_RES.value);
+        }
+    }
+
+    public boolean isServerCanRetry() {
+        return (this.value & SERVER_CAN_RETRY.value) != 0;
+    }
+
+    public void setServerCanRetry(boolean serverCanRetry) {
+        if (serverCanRetry) {
+            this.value |= SERVER_CAN_RETRY.value;
+        } else {
+            this.value &= ~(SERVER_CAN_RETRY.value);
         }
     }
 }

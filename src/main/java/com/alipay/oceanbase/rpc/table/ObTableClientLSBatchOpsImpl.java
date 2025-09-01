@@ -68,6 +68,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     private ExecutorService       executorService;
     private boolean               returningAffectedEntity = false;
     private boolean               needAllProp             = false;
+    private boolean               serverCanRetry          = false;
     private List<ObTableSingleOp> batchOperation;
 
     /*
@@ -547,6 +548,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         tableLsOp.setReturnOneResult(returnOneResult);
         tableLsOp.setNeedAllProp(needAllProp);
         tableLsOp.setTableName(tableName);
+        tableLsOp.setServerCanRetry(serverCanRetry);
         // fetch the following parameters in first entry for routing
         long tableId = 0;
         long originPartId = 0;
@@ -645,6 +647,15 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                                 "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move.getReplica().getServer().ipToString());
                         throw new ObTableRoutingWrongException();
                     }
+                } else if (result != null && result.isRoutingWrong() && !obTableClient.isOdpMode()) {
+                    // retry successfully in server and need to refresh client cache
+                    logger.debug("errors happened in server and retried successfully, server ip:port is {}:{}, tableName: {}, need_refresh_meta: {}",
+                            subObTable.getIp(), subObTable.getPort(), realTableName, result.isNeedRefreshMeta());
+                    if (result.isNeedRefreshMeta()) {
+                        obTableClient.getOrRefreshTableEntry(realTableName, true);
+                    }
+                    // TODO: 如果是不需要全部刷新地址的错误，全部刷新地址会降低效率。如何确定出错的 tablet_id 并刷新？
+                    obTableClient.refreshTabletLocationBatch(realTableName);
                 }
                 subLSOpResult = (ObTableLSOpResult) result;
                 obTableClient.resetExecuteContinuousFailureCount(realTableName);
@@ -991,5 +1002,13 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
     public void setReturningAffectedEntity(boolean returningAffectedEntity) {
         this.returningAffectedEntity = returningAffectedEntity;
+    }
+
+    public void setServerCanRetry(boolean canRetry) {
+        this.serverCanRetry = canRetry;
+    }
+
+    public boolean getServerCanRetry() {
+        return this.serverCanRetry;
     }
 }

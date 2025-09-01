@@ -21,10 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -33,6 +30,7 @@ import com.alipay.oceanbase.rpc.exception.ObTableEntryRefreshException;
 import com.alipay.oceanbase.rpc.exception.ObTableTryLockTimeoutException;
 import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.location.LocationUtil;
+import com.alipay.oceanbase.rpc.table.ObTable;
 import org.slf4j.Logger;
 
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.getLogger;
@@ -40,6 +38,8 @@ import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.getLogger;
 public class RouteTableRefresher {
 
     private static final Logger                                           logger    = getLogger(RouteTableRefresher.class);
+
+    private static final int                                              failureLimit = 3;
 
     private static final String                                           sql = "select 'detect server alive' from dual";
 
@@ -136,7 +136,7 @@ public class RouteTableRefresher {
                 checkAlive(entry.getKey());
             } catch (Exception e) {
                 // silence resolving
-                logger.warn("RouteTableRefresher::doCheckAliveTask fail, failed server: {}", entry.getKey().toString());
+                logger.warn("RouteTableRefresher::doCheckAliveTask fail, failed server: {}", entry.getKey().toString(), e);
             }
         }
     }
@@ -198,7 +198,7 @@ public class RouteTableRefresher {
         }
     }
 
-    public static void addIntoSuspectIPs(SuspectObServer server) throws Exception {
+    public static void addIntoSuspectIPs(SuspectObServer server) throws InterruptedException {
         ObServerAddr addr = server.getAddr();
         if (suspectServers.get(addr) != null) {
             // already in the list, directly return
@@ -264,7 +264,16 @@ public class RouteTableRefresher {
                         throw new ObTableTryLockTimeoutException("try to get suspect server lock timeout, timeout: 1s");
                     }
                     // no need to remove lock
-                    suspectServers.remove(addr);
+                    SuspectObServer server = suspectServers.remove(addr);
+                    if (server != null) {
+                        int failure = server.getFailure();
+                        if (failure < failureLimit) {
+                            ObTable obTable = tableClient.getTableRoute().getTableRoster().getTable(addr);
+                            if (obTable != null && !obTable.isValid()) {
+                                obTable.setValid();
+                            }
+                        }
+                    }
                     logger.debug("removed server from suspect list: {}", addr);
                     break;
                 } catch (ObTableTryLockTimeoutException e) {
@@ -286,7 +295,6 @@ public class RouteTableRefresher {
     }
 
     private void calcFailureOrClearCache(ObServerAddr addr) {
-        int failureLimit = 3;
         TableRoute tableRoute = tableClient.getTableRoute();
         SuspectObServer server = suspectServers.get(addr);
         server.incrementFailure();

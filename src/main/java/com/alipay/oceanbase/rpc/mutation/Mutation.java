@@ -45,6 +45,7 @@ public class Mutation<T> {
     protected Row          rowKey;
     private TableQuery     query;
     private boolean        hasSetRowKey = false;
+    private boolean        hasSetPartitionKey = false;
     protected List<String> rowKeyNames  = null;
     protected List<Object> rowKeyValues = null;
     protected List<String> columns;
@@ -309,6 +310,140 @@ public class Mutation<T> {
     }
 
     /*
+     * set the Partition Key of mutation with Row
+     */
+    @SuppressWarnings("unchecked")
+    public T setPartitionKey(Row partitionKey) {
+        if (hasSetRowKey) {
+            throw new IllegalArgumentException("Heap table can not set row key");
+        } else if (hasSetPartitionKey) {
+            throw new IllegalArgumentException("Could not set partition key (scan range) twice");
+        } else if (null == partitionKey) {
+            throw new IllegalArgumentException("Invalid null partitionKey set into Mutation");
+        } else if (0 == partitionKey.getMap().size()) {
+            throw new IllegalArgumentException("input partition key should not be empty");
+        }
+
+        // set partitionKey
+        this.rowKey = partitionKey;
+
+        // set row key name into client and set rowKeys
+        this.rowKeyValues = new ArrayList<>(Arrays.asList(rowKey.getValues()));
+        this.rowKeyNames = new ArrayList<>(Arrays.asList(rowKey.getColumns()));
+
+        // set row key in table
+        if (null != tableName) {
+            ((ObTableClient) client)
+                .addRowKeyElement(tableName, this.rowKeyNames.toArray(new String[0]));
+        }
+
+        // renew scan range of QueryAndMutate
+        if (null != query) {
+            query.addScanRange(rowKeyValues.toArray(), rowKeyValues.toArray());
+        }
+
+        hasSetPartitionKey = true;
+        return (T) this;
+    }
+
+    /*
+     * Set the Partition Key of mutation with Row and keep scan range
+     */
+    @SuppressWarnings("unchecked")
+    protected T setPartitionKeyOnly(Row partitionKey) {
+        if (hasSetRowKey) {
+            throw new IllegalArgumentException("Heap table can not set row key");
+        } else if (hasSetPartitionKey) {
+            throw new IllegalArgumentException("Could not set partition key (scan range) twice");
+        } else if (null == partitionKey) {
+            throw new IllegalArgumentException("Invalid null partitionKey set into Mutation");
+        } else if (0 == partitionKey.getMap().size()) {
+            throw new IllegalArgumentException("input partition key should not be empty");
+        }
+
+        // set partitionKey
+        this.rowKey = partitionKey;
+
+        // set row key name into client and set rowKeys
+        this.rowKeyValues = new ArrayList<>(Arrays.asList(rowKey.getValues()));
+        this.rowKeyNames = new ArrayList<>(Arrays.asList(rowKey.getColumns()));
+
+        // set row key in table
+        if (null != tableName) {
+            ((ObTableClient) client)
+                .addRowKeyElement(tableName, this.rowKeyNames.toArray(new String[0]));
+        }
+
+        hasSetPartitionKey = true;
+        return (T) this;
+    }
+
+    /*
+     * set the Partition Key of mutation with ColumnValues
+     */
+    @SuppressWarnings("unchecked")
+    public T setPartitionKey(ColumnValue... partitionKey) {
+        if (hasSetRowKey) {
+            throw new IllegalArgumentException("Heap table can not set row key");
+        } else if (hasSetPartitionKey) {
+            throw new IllegalArgumentException("Could not set partition key (scan range) twice");
+        } else if (null == partitionKey) {
+            throw new IllegalArgumentException("Invalid null partitionKey set into Mutation");
+        }
+
+        // set partitionKey
+        this.rowKey = new Row(partitionKey);
+
+        // set row key name into client and set rowKey
+        this.rowKeyValues = new ArrayList<>(Arrays.asList(this.rowKey.getValues()));
+        this.rowKeyNames = new ArrayList<>(Arrays.asList(this.rowKey.getColumns()));
+
+        // set row key in table
+        if (null != tableName) {
+            ((ObTableClient) client)
+                .addRowKeyElement(tableName, this.rowKeyNames.toArray(new String[0]));
+        }
+
+        // renew scan range of QueryAndMutate
+        if (null != query) {
+            query.addScanRange(rowKeyValues.toArray(), rowKeyValues.toArray());
+        }
+
+        hasSetPartitionKey = true;
+        return (T) this;
+    }
+
+    /*
+     * set the Partition Key of mutation with ColumnValues and keep scan range
+     */
+    @SuppressWarnings("unchecked")
+    public T setPartitionKeyOnly(ColumnValue... partitionKey) {
+        if (hasSetRowKey) {
+            throw new IllegalArgumentException("Heap table can not set row key");
+        } else if (hasSetPartitionKey) {
+            throw new IllegalArgumentException("Could not set partition key (scan range) twice");
+        } else if (null == partitionKey) {
+            throw new IllegalArgumentException("Invalid null partitionKey set into Mutation");
+        }
+
+        // set partitionKey
+        this.rowKey = new Row(partitionKey);
+
+        // set row key name into client and set rowKey
+        this.rowKeyValues = new ArrayList<>(Arrays.asList(this.rowKey.getValues()));
+        this.rowKeyNames = new ArrayList<>(Arrays.asList(this.rowKey.getColumns()));
+
+        // set row key in table
+        if (null != tableName) {
+            ((ObTableClient) client)
+                .addRowKeyElement(tableName, this.rowKeyNames.toArray(new String[0]));
+        }
+
+        hasSetPartitionKey = true;
+        return (T) this;
+    }
+
+    /*
      * add filter into mutation (use QueryAndMutate)
      */
     @SuppressWarnings("unchecked")
@@ -436,12 +571,12 @@ public class Mutation<T> {
         return (T) this;
     }
 
-    static void removeRowkeyFromMutateColval(List<String> columns, List<Object> values,
-                                             List<String> rowKeyNames) {
+    protected void removeRowkeyFromMutateColval(List<String> columns, List<Object> values,
+                                                List<String> rowKeyNames) {
         if (null == columns || null == rowKeyNames || columns.size() != values.size()) {
             return;
         }
-        for (int i = values.size() - 1; i >= 0; --i) {
+        for (int i = values.size() - 1; i >= 0 && hasSetRowKey; --i) {
             if (rowKeyNames.contains(columns.get(i))) {
                 columns.remove(i);
                 values.remove(i);

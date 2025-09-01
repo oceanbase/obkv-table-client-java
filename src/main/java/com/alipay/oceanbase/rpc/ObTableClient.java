@@ -837,7 +837,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (failures.incrementAndGet() > runtimeContinuousFailureCeiling) {
             logger.warn("refresh table entry {} while execute failed times exceeded {}, msg: {}",
                 tableName, runtimeContinuousFailureCeiling, errorMsg);
-            refreshMeta(tableName);
+            tableRoute.refreshMeta(tableName);
             failures.set(0);
         } else {
             logger.warn("error msg: {}, current continues failure count: {}", errorMsg, failures);
@@ -968,14 +968,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         if (!forceRefresh) {
             return tableRoute.getTableEntry(tableName);
         }
-        return refreshMeta(tableName);
-    }
-
-    /**
-     * refresh table meta information except location
-     * @param tableName table name
-     * */
-    private TableEntry refreshMeta(String tableName) throws Exception {
         return tableRoute.refreshMeta(tableName);
     }
 
@@ -1201,7 +1193,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     public String tryGetTableNameFromTableGroupCache(final String tableGroupName,
                                                      final boolean refresh) throws Exception {
-        return tableRoute.tryGetTableNameFromTableGroupCache(tableGroupName, refresh);
+        if (isTableGroupName(tableGroupName)) {
+            return tableRoute.tryGetTableNameFromTableGroupCache(tableGroupName, refresh);
+        }
+        return tableGroupName;
     }
 
     /**
@@ -2102,6 +2097,18 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                 "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move .getReplica().getServer().ipToString());
                 throw new ObTableRoutingWrongException();
             }
+        } else if (result != null && result.isRoutingWrong() && !isOdpMode()) {
+            logger.debug("errors happened in server and retried successfully, server ip:port is {}:{}, tableName: {}, need_refresh_meta: {}",
+                    obTable.getIp(), obTable.getPort(), tableName, result.isNeedRefreshMeta());
+            if (result.isNeedRefreshMeta()) {
+                tableRoute.refreshMeta(tableName);
+            }
+            if (request instanceof ObTableAbstractOperationRequest) {
+                long tabletId = ((ObTableAbstractOperationRequest) request).getPartitionId();
+                tableRoute.refreshPartitionLocation(tableName, tabletId, null);
+            } else if (request instanceof ObHbaseRequest) {
+                tableRoute.refreshTabletLocationBatch(tableName);
+            }
         }
         return result;
     }
@@ -2365,7 +2372,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                     needRefreshTabletLocation = true;
                                     if (ex instanceof ObTableNeedFetchMetaException) {
                                         // Refresh table info
-                                        refreshMeta(request.getTableName());
+                                        tableRoute.refreshMeta(request.getTableName());
                                     }
                                 }
                             } else {
@@ -2384,6 +2391,36 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         throw new FeatureNotSupportedException("request type " + request.getClass().getSimpleName()
                 + "is not supported. make sure the correct version");
+    }
+
+    public ObPayload execute(final ObHbaseRequest request) throws Exception {
+        if (request.getTableName() == null || request.getTableName().isEmpty()) {
+            throw new IllegalArgumentException("table name is null");
+        }
+        if (isOdpMode()) {
+            return getOdpTable().execute(request);
+        } else {
+            Row row = new Row();
+            // get the first cell from the first cfRows to route
+            // use the first table in tablegroup to route
+            String realTableName = null;
+            if (request.getCfRows().isEmpty()) {
+                throw new ObTableUnexpectedException("no cf rows");
+            }
+            if (request.getCfRows().size() > 1) {
+                realTableName = tryGetTableNameFromTableGroupCache(request.getTableName(), false);
+            } else {
+                realTableName = request.getCfRows().get(0).getRealTableName();
+            }
+            int keyIdx = request.getCfRows().get(0).getKeyIndex(0);
+            row.add("K", request.getKeys().get(keyIdx).getValue());
+            row.add("Q", request.getCfRows().get(0).getCells().get(0).getQ().getValue());
+            row.add("T", request.getCfRows().get(0).getCells().get(0).getT().getValue());
+            ObTableParam tableParam = tableRoute.getTableParam(realTableName, row);
+            ObTable obTable = tableParam.getObTable();
+            request.setTimeout(obTable.getObTableOperationTimeout());
+            return executeWithRetry(obTable, request, realTableName);
+        }
     }
 
     private ObTableQueryAndMutate buildObTableQueryAndMutate(ObTableQuery obTableQuery,

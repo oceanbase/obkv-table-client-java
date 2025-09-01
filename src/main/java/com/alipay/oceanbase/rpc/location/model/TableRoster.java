@@ -89,8 +89,14 @@ public class TableRoster {
 
             newServers.add(addr);
 
-            if (tables.containsKey(addr)) { // has ob table addr, continue
-                continue;
+            // has ob table addr and this addr is valid, continue
+            if (tables.containsKey(addr)) {
+                if (!tables.get(addr).isValid()) {
+                    ObTable oldTable = tables.remove(addr);
+                    oldTable.close();
+                } else {
+                    continue;
+                }
             }
 
             ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort()) //

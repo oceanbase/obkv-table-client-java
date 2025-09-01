@@ -62,8 +62,9 @@ public class LocationUtil {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     static {
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                    .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+                    .enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
         loadJdbcDriver();
     }
 
@@ -225,7 +226,7 @@ public class LocationUtil {
 
     private static final String TABLE_GROUP_GET_TABLE_NAME                          = "SELECT /*+READ_CONSISTENCY(WEAK)*/ table_name "
                                                                                       + "FROM oceanbase.CDB_OB_TABLEGROUP_TABLES "
-                                                                                      + "WHERE tablegroup_name = ? and tenant_id = ? limit 1;";
+                                                                                      + "WHERE tablegroup_name = ? and tenant_id = ? order by table_name limit 1;";
 
     private static final int    TEMPLATE_PART_ID                                    = -1;
 
@@ -2507,11 +2508,11 @@ public class LocationUtil {
                                                                    throws FeatureNotSupportedException {
         Pattern pattern;
         if (serverVersion.startsWith("OceanBase_CE")) {
-            // serverVersion in CE is like "OceanBase_CE 4.0.0.0"
-            pattern = Pattern.compile("OceanBase_CE\\s+(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)");
+            // serverVersion in CE is like "OceanBase_CE 4.0.0.0 (+ Obproxy 4.3.6.0), content in () is optional and valid after Obproxy 4.3.5"
+            pattern = Pattern.compile("OceanBase_CE\\s+(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)(\\s+\\+\\s+(Obproxy)\\s+(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+))?");
         } else {
-            // serverVersion is like "OceanBase 4.0.0.0"
-            pattern = Pattern.compile("OceanBase\\s+(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)");
+            // serverVersion is like "OceanBase 4.0.0.0 (+ Obproxy 4.3.6.0), content in () is optional and valid after Obproxy 4.3.5"
+            pattern = Pattern.compile("OceanBase\\s+(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)(\\s+\\+\\s+(Obproxy)\\s+(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+))?");
         }
         Matcher matcher = pattern.matcher(serverVersion);
         if (matcher.find() && ObGlobal.OB_VERSION == 0) {
@@ -2519,6 +2520,12 @@ public class LocationUtil {
                 (short) Integer.parseInt(matcher.group(2)),
                 (byte) Integer.parseInt(matcher.group(3)),
                 (byte) Integer.parseInt(matcher.group(4)));
+            if (matcher.group(5) != null && matcher.group(6) != null) { // Obproxy part
+                ObGlobal.OB_PROXY_VERSION = ObGlobal.calcVersion(Integer.parseInt(matcher.group(7)),
+                        (short) Integer.parseInt(matcher.group(8)),
+                        (byte) Integer.parseInt(matcher.group(9)),
+                        (byte) Integer.parseInt(matcher.group(10)));
+            }
             if (ObGlobal.obVsnMajor() < 4) {
                 throw new FeatureNotSupportedException(
                         "The current client version supports only server version greater than or equal to 4.0.0.0");
