@@ -851,9 +851,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             long costMillis = System.currentTimeMillis() - startExecute;
             if (costMillis > runTimeMaxWait) {
                 errMsg = tableName + " failed to execute operation after retrying " + retryCount
-                        + " times and it has waited " +  costMillis + " ms"
-                        + " which exceeds runtime max wait timeout " + runTimeMaxWait
-                        + " ms. Last error Msg:" + "[errCode=" + errCode + "] " + errMsg;
+                         + " times and it has waited " + costMillis + " ms"
+                         + " which exceeds runtime max wait timeout " + runTimeMaxWait
+                         + " ms. Last error Msg:" + "[errCode=" + errCode + "] " + errMsg;
                 logger.error(errMsg);
                 throw new ObTableUnexpectedException(errMsg);
             }

@@ -40,7 +40,7 @@ import io.netty.buffer.ByteBuf;
  */
 public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationRequest {
 
-    private ObBinlogRowImageType type = ObBinlogRowImageType.FULL; // no use for now
+    private ObBinlogRowImageType  type = ObBinlogRowImageType.FULL; // no use for now
     private ObTableQueryAndMutate tableQueryAndMutate;
 
     /*
@@ -111,7 +111,8 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
         if (ObGlobal.obVsnMajor() >= 4)
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
                    + Serialization.getNeedBytes(tableId) + 8 + 1
-                   + tableQueryAndMutate.getPayloadSize() + Serialization.getNeedBytes(type.getValue()) + 1;
+                   + tableQueryAndMutate.getPayloadSize()
+                   + Serialization.getNeedBytes(type.getValue()) + 1;
         else
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
                    + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId)

@@ -178,26 +178,23 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
     }
 
     public boolean queryLastStreamResultInNext() throws Exception {
-        Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
-                .iterator();
+        Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet().iterator();
         Map.Entry<Long, ObPair<Long, ObTableParam>> lastEntry = it.next();
         try {
             // try access new partition, async will not remove useless expectant
             referToLastStreamResult(lastEntry.getValue());
         } catch (Exception e) {
             if (shouldRetry(e)) {
-                String realTableName = client.getPhyTableNameFromTableGroup(entityType,
-                        tableName);
+                String realTableName = client.getPhyTableNameFromTableGroup(entityType, tableName);
                 TableEntry entry = client.getOrRefreshTableEntry(realTableName, false);
                 // Calculate the next partition only when the range partition is affected by a split, based on the keys already scanned.
                 if (entry.isPartitionTable()
-                        && entry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ONE
-                        && entry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
-                        .isRangePart()) {
+                    && entry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ONE
+                    && entry.getPartitionInfo().getFirstPartDesc().getPartFuncType().isRangePart()) {
                     this.asyncRequest.getObTableQueryRequest().getTableQuery()
-                            .adjustStartKey(currentStartKey);
-                    setExpectant(refreshPartition(this.asyncRequest
-                            .getObTableQueryRequest().getTableQuery(), realTableName));
+                        .adjustStartKey(currentStartKey);
+                    setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
+                        .getTableQuery(), realTableName));
                     setEnd(true);
                 } else {
                     // non one-level-range partitioned table does not retry, inform user to rescan
@@ -220,8 +217,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
 
     public boolean queryNewStreamResultInNext() throws Exception {
         boolean hasNext = false;
-        Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet()
-                .iterator();
+        Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet().iterator();
         int retryTimes = 0;
         long startExecute = System.currentTimeMillis();
         while (it.hasNext()) {
@@ -232,17 +228,17 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             } catch (Exception e) {
                 if (shouldRetry(e)) {
                     String realTableName = client.getPhyTableNameFromTableGroup(entityType,
-                            tableName);
+                        tableName);
                     TableEntry tableEntry = client.getOrRefreshTableEntry(realTableName, false);
                     if (tableEntry.isPartitionTable()
-                            && tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ONE
-                            && tableEntry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
+                        && tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ONE
+                        && tableEntry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
                             .isRangePart()) {
                         this.asyncRequest.getObTableQueryRequest().getTableQuery()
-                                .adjustStartKey(currentStartKey);
-                        setExpectant(refreshPartition(this.asyncRequest
-                                .getObTableQueryRequest().getTableQuery(), realTableName));
-                    }  else {
+                            .adjustStartKey(currentStartKey);
+                        setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
+                            .getTableQuery(), realTableName));
+                    } else {
                         // non one-level-range partitioned table does not retry, inform user to rescan
                         throw e;
                     }
@@ -251,9 +247,9 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                     long costMillis = System.currentTimeMillis() - startExecute;
                     if (costMillis > client.getRuntimeMaxWait()) {
                         RUNTIME.error("Fail to get refresh table entry response after {}",
-                                retryTimes);
+                            retryTimes);
                         throw new ObTableTimeoutExcetion(
-                                "Fail to get refresh table entry response after " + retryTimes);
+                            "Fail to get refresh table entry response after " + retryTimes);
                     }
                     continue;
                 } else {
@@ -330,7 +326,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                     // new server does not store the current session_id
                     // only support range-partitioned table, check in server
                     this.asyncRequest.getObTableQueryRequest().getTableQuery()
-                            .adjustStartKey(currentStartKey);
+                        .adjustStartKey(currentStartKey);
                     // just need to asjust startKey to anchor the correct position
                     // no need to refresh partition id for session_id missing
                     hasNext = queryNewStreamResultInNext();

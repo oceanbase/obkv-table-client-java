@@ -44,10 +44,10 @@ public class Mutation<T> {
     private Table          client;
     protected Row          rowKey;
     private TableQuery     query;
-    private boolean        hasSetRowKey = false;
+    private boolean        hasSetRowKey       = false;
     private boolean        hasSetPartitionKey = false;
-    protected List<String> rowKeyNames  = null;
-    protected List<Object> rowKeyValues = null;
+    protected List<String> rowKeyNames        = null;
+    protected List<Object> rowKeyValues       = null;
     protected List<String> columns;
     protected List<Object> values;
 

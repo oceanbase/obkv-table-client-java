@@ -24,12 +24,12 @@ import io.netty.buffer.ByteBuf;
 
 public class ObTableOperationResult extends AbstractPayload {
 
-    private ObTableResult        header        = new ObTableResult();
-    private ObTableOperationType operationType = ObTableOperationType.GET;
-    private ObITableEntity       entity        = new ObTableEntity();
-    private long                 affectedRows  = 0;
-    private String               executeHost;
-    private int                  executePort;
+    protected ObTableResult        header        = new ObTableResult();
+    protected ObTableOperationType operationType = ObTableOperationType.GET;
+    protected ObITableEntity       entity        = new ObTableEntity();
+    protected long                 affectedRows  = 0;
+    protected String               executeHost;
+    protected int                  executePort;
 
     /*
      * Get pcode.

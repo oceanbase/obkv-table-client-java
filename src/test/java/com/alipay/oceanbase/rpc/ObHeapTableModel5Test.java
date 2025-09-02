@@ -1166,8 +1166,8 @@ public class ObHeapTableModel5Test {
             // 添加多个插入操作
             for (int i = 1; i <= 3; i++) {
                 Replace replace = client.replace(tableName);
-                replace.setPartitionKey(row(colVal("c1", 1001L))).addMutateColVal(colVal("c1", 1001L),
-                    colVal("c2", "batch_test1"), colVal("c3", 2001L));
+                replace.setPartitionKey(row(colVal("c1", 1001L))).addMutateColVal(
+                    colVal("c1", 1001L), colVal("c2", "batch_test1"), colVal("c3", 2001L));
                 batch.addOperation(replace);
             }
 

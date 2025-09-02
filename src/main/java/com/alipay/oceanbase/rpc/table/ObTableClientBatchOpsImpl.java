@@ -379,11 +379,14 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         throw new ObTableRoutingWrongException();
                     }
                 } else if (result != null && result.isRoutingWrong() && !obTableClient.isOdpMode()) {
-                    logger.debug("errors happened in server and retried successfully, server ip:port is {}:{}, tableName: {}, need_refresh_meta: {}",
-                            subObTable.getIp(), subObTable.getPort(), tableName, result.isNeedRefreshMeta());
-                    TableEntry entry = result.isNeedRefreshMeta() ?
-                            obTableClient.getOrRefreshTableEntry(tableName, true) :
-                            obTableClient.getOrRefreshTableEntry(tableName, false);
+                    logger
+                        .debug(
+                            "errors happened in server and retried successfully, server ip:port is {}:{}, tableName: {}, need_refresh_meta: {}",
+                            subObTable.getIp(), subObTable.getPort(), tableName,
+                            result.isNeedRefreshMeta());
+                    TableEntry entry = result.isNeedRefreshMeta() ? obTableClient
+                        .getOrRefreshTableEntry(tableName, true) : obTableClient
+                        .getOrRefreshTableEntry(tableName, false);
                     long tabletId = obTableClient.getTabletIdByPartId(entry, originPartId);
                     obTableClient.refreshTableLocationByTabletId(tableName, tabletId);
                 }
@@ -425,10 +428,14 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         if (obTableClient.isRetryOnChangeMasterTimes()) {
                             if (ex instanceof ObTableNeedFetchMetaException) {
                                 // refresh table info
-                                TableEntry entry = obTableClient.getOrRefreshTableEntry(tableName, true);
-                                if (((ObTableNeedFetchMetaException) ex).isNeedRefreshMetaAndLocation()) {
-                                    long tabletId = obTableClient.getTabletIdByPartId(entry, originPartId);
-                                    obTableClient.refreshTableLocationByTabletId(tableName, tabletId);
+                                TableEntry entry = obTableClient.getOrRefreshTableEntry(tableName,
+                                    true);
+                                if (((ObTableNeedFetchMetaException) ex)
+                                    .isNeedRefreshMetaAndLocation()) {
+                                    long tabletId = obTableClient.getTabletIdByPartId(entry,
+                                        originPartId);
+                                    obTableClient.refreshTableLocationByTabletId(tableName,
+                                        tabletId);
                                 }
                                 throw ex;
                             }
@@ -462,10 +469,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                     } else {
                         if (ex instanceof ObTableTransportException
                             && ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
-                            logger.debug("normal batch meet transport timeout, obTable ip:port is {}:{}",
-                                    subObTable.getIp(), subObTable.getPort());
+                            logger.debug(
+                                "normal batch meet transport timeout, obTable ip:port is {}:{}",
+                                subObTable.getIp(), subObTable.getPort());
                             subObTable.setDirty();
-                            obTableClient.dealWithRpcTimeoutForSingleTablet(subObTable.getObServerAddr(), tableName, partId);
+                            obTableClient.dealWithRpcTimeoutForSingleTablet(
+                                subObTable.getObServerAddr(), tableName, partId);
                         }
                         obTableClient.calculateContinuousFailure(tableName, ex.getMessage());
                         throw ex;

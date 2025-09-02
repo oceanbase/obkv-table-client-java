@@ -21,11 +21,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum ObTableOptionFlag {
-    DEFAULT(0),
-    RETURNING_ROWKEY(1 << 0),
-    USE_PUT(1 << 1),
-    RETURN_ONE_RES(1 << 2),
-    SERVER_CAN_RETRY(1 << 3);
+    DEFAULT(0), RETURNING_ROWKEY(1 << 0), USE_PUT(1 << 1), RETURN_ONE_RES(1 << 2), SERVER_CAN_RETRY(
+                                                                                                    1 << 3);
 
     private int                                    value;
     private static Map<Integer, ObTableOptionFlag> map = new HashMap<Integer, ObTableOptionFlag>();

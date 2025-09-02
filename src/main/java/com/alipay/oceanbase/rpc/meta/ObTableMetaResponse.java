@@ -36,7 +36,7 @@ public class ObTableMetaResponse extends AbstractPayload {
     public int getPcode() {
         return Pcodes.OB_TABLE_API_META_INFO_EXECUTE;
     }
-    
+
     @Override
     public byte[] encode() {
         return null;
@@ -57,7 +57,7 @@ public class ObTableMetaResponse extends AbstractPayload {
     public long getPayloadContentSize() {
         return 0;
     }
-    
+
     public String getData() {
         return data;
     }

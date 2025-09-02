@@ -1,3 +1,20 @@
+/*-
+ * #%L
+ * com.oceanbase:obkv-table-client
+ * %%
+ * Copyright (C) 2021 - 2025 OceanBase
+ * %%
+ * OBKV Table Client Framework is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * #L%
+ */
+
 package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.mutation.BatchOperation;
@@ -44,7 +61,7 @@ import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
  * ) ORGANIZATION = HEAP PARTITION BY KEY(c1) PARTITIONS 3;
  */
 public class ObHeapTableModel4Test {
-    ObTableClient client;
+    ObTableClient        client;
     public static String tableName = "test_heap_model4";
 
     @Before
@@ -63,13 +80,10 @@ public class ObHeapTableModel4Test {
     private void createTable() throws Exception {
         Connection connection = ObTableClientTestUtil.getConnection();
         Statement statement = connection.createStatement();
-        statement.execute("CREATE TABLE " + tableName + " ( " +
-        "c1 bigint, " +
-        "c2 varchar(20), " +
-        "c3 bigint, " +
-        "UNIQUE KEY idx_unique_c1 (c1), " +
-        "UNIQUE KEY idx_unique_c1_c2 (c1, c2) " +
-        ") ORGANIZATION = HEAP PARTITION BY KEY(c1) PARTITIONS 3");
+        statement.execute("CREATE TABLE " + tableName + " ( " + "c1 bigint, " + "c2 varchar(20), "
+                          + "c3 bigint, " + "UNIQUE KEY idx_unique_c1 (c1), "
+                          + "UNIQUE KEY idx_unique_c1_c2 (c1, c2) "
+                          + ") ORGANIZATION = HEAP PARTITION BY KEY(c1) PARTITIONS 3");
     }
 
     private void dropTable() throws Exception {
@@ -97,8 +111,8 @@ public class ObHeapTableModel4Test {
                 .setPartitionKey(row(colVal("c1", 1001L)))
                 .addMutateColVal(colVal("c1", 1001L), colVal("c2", "test1"), colVal("c3", 2001L))
                 .execute();
-            
-            assertEquals("Insert should affect 1 row", 1, result1.getAffectedRows());   
+
+            assertEquals("Insert should affect 1 row", 1, result1.getAffectedRows());
             System.out.println("Single insert successful: " + result1 + " row affected");
 
             // 插入数据
@@ -106,14 +120,13 @@ public class ObHeapTableModel4Test {
                 .setPartitionKey(row(colVal("c1", 1002L)))
                 .addMutateColVal(colVal("c1", 1002L), colVal("c2", "test2"), colVal("c3", 2002L))
                 .execute();
-            
+
             assertEquals("Insert should affect 1 row", 1, result2.getAffectedRows());
             System.out.println("Single insert successful: " + result2 + " row affected");
-            
+
             // 验证插入结果
             TableQuery tableQuery = client.query(tableName)
-            .addScanRange(ObObj.getMin(), ObObj.getMax())
-            .select("c1", "c2", "c3");
+                .addScanRange(ObObj.getMin(), ObObj.getMax()).select("c1", "c2", "c3");
             QueryResultSet res = tableQuery.execute();
             int count = 0;
             while (res.next()) {
@@ -121,7 +134,7 @@ public class ObHeapTableModel4Test {
                 if (count == 0) {
                     assertEquals("c1 should match", 1001L, valueMap.get("c1"));
                     assertEquals("c2 should match", "test1", valueMap.get("c2"));
-                    assertEquals("c3 should match", 2001L, valueMap.get("c3")); 
+                    assertEquals("c3 should match", 2001L, valueMap.get("c3"));
                 } else {
                     assertEquals("c1 should match", 1002L, valueMap.get("c1"));
                     assertEquals("c2 should match", "test2", valueMap.get("c2"));
@@ -181,7 +194,7 @@ public class ObHeapTableModel4Test {
                 .setPartitionKey(row(colVal("c1", 1001L)))
                 .addMutateColVal(colVal("c1", 1001L), colVal("c2", "test1"), colVal("c3", 2001L))
                 .execute();
-            
+
             assertEquals("Insert should affect 1 row", 1, result1.getAffectedRows());
             System.out.println("Single insertOrUpdate successful: " + result1 + " row affected");
 
@@ -190,14 +203,13 @@ public class ObHeapTableModel4Test {
                 .setPartitionKey(row(colVal("c1", 1002L)))
                 .addMutateColVal(colVal("c1", 1002L), colVal("c2", "test2"), colVal("c3", 2002L))
                 .execute();
-            
+
             assertEquals("Insert should affect 1 row", 1, result2.getAffectedRows());
             System.out.println("Single insertOrUpdate successful: " + result2 + " row affected");
-            
+
             // 验证插入结果
             TableQuery tableQuery = client.query(tableName)
-            .addScanRange(ObObj.getMin(), ObObj.getMax())
-            .select("c1", "c2", "c3");
+                .addScanRange(ObObj.getMin(), ObObj.getMax()).select("c1", "c2", "c3");
             QueryResultSet res = tableQuery.execute();
             int count = 0;
             while (res.next()) {
@@ -231,7 +243,7 @@ public class ObHeapTableModel4Test {
                 .setPartitionKey(row(colVal("c1", 1001L)))
                 .addMutateColVal(colVal("c1", 1001L), colVal("c2", "test1"), colVal("c3", 2001L))
                 .execute();
-            
+
             assertEquals("Insert should affect 1 row", 1, result1.getAffectedRows());
             System.out.println("Single insertOrUpdate successful: " + result1 + " row affected");
 
@@ -246,8 +258,7 @@ public class ObHeapTableModel4Test {
 
             // 验证插入结果
             TableQuery tableQuery = client.query(tableName)
-                .addScanRange(ObObj.getMin(), ObObj.getMax())
-                .select("c1", "c2", "c3");
+                .addScanRange(ObObj.getMin(), ObObj.getMax()).select("c1", "c2", "c3");
             QueryResultSet res = tableQuery.execute();
             int count = 0;
             while (res.next()) {
@@ -260,7 +271,8 @@ public class ObHeapTableModel4Test {
             assertEquals("Should have 2 records", 1, count);
 
             // sql 验证
-            String sql = "select /*+ opt_param('hidden_column_visible','true') */ __pk_increment, c1, c2, c3 from " + tableName + " where c1 = 1001";
+            String sql = "select /*+ opt_param('hidden_column_visible','true') */ __pk_increment, c1, c2, c3 from "
+                         + tableName + " where c1 = 1001";
             Connection connection = ObTableClientTestUtil.getConnection();
             Statement statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(sql);
@@ -287,7 +299,7 @@ public class ObHeapTableModel4Test {
                 .setPartitionKey(row(colVal("c1", 1001L)))
                 .addMutateColVal(colVal("c1", 1001L), colVal("c2", "test1"), colVal("c3", 2001L))
                 .execute();
-            
+
             assertEquals("Insert should affect 1 row", 1, result1.getAffectedRows());
             System.out.println("Single replace successful: " + result1 + " row affected");
 
@@ -296,14 +308,13 @@ public class ObHeapTableModel4Test {
                 .setPartitionKey(row(colVal("c1", 1002L)))
                 .addMutateColVal(colVal("c1", 1002L), colVal("c2", "test2"), colVal("c3", 2002L))
                 .execute();
-            
+
             assertEquals("Insert should affect 1 row", 1, result2.getAffectedRows());
             System.out.println("Single replace successful: " + result2 + " row affected");
-            
+
             // 验证插入结果
             TableQuery tableQuery = client.query(tableName)
-            .addScanRange(ObObj.getMin(), ObObj.getMax())
-            .select("c1", "c2", "c3");
+                .addScanRange(ObObj.getMin(), ObObj.getMax()).select("c1", "c2", "c3");
             QueryResultSet res = tableQuery.execute();
             int count = 0;
             while (res.next()) {
@@ -337,7 +348,7 @@ public class ObHeapTableModel4Test {
                 .setPartitionKey(row(colVal("c1", 1001L)))
                 .addMutateColVal(colVal("c1", 1001L), colVal("c2", "test1"), colVal("c3", 2001L))
                 .execute();
-            
+
             assertEquals("Insert should affect 1 row", 1, result1.getAffectedRows());
             System.out.println("Single replace successful: " + result1 + " row affected");
 
@@ -346,14 +357,13 @@ public class ObHeapTableModel4Test {
                 .setPartitionKey(row(colVal("c1", 1001L)))
                 .addMutateColVal(colVal("c1", 1001L), colVal("c2", "test1"), colVal("c3", 2001L))
                 .execute();
-            
+
             assertEquals("Insert should affect 2 row", 2, result2.getAffectedRows());
             System.out.println("Single replace successful: " + result2 + " row affected");
-            
+
             // 验证插入结果
             TableQuery tableQuery = client.query(tableName)
-            .addScanRange(ObObj.getMin(), ObObj.getMax())
-            .select("c1", "c2", "c3");
+                .addScanRange(ObObj.getMin(), ObObj.getMax()).select("c1", "c2", "c3");
             QueryResultSet res = tableQuery.execute();
             int count = 0;
             while (res.next()) {
@@ -511,30 +521,30 @@ public class ObHeapTableModel4Test {
         try {
             // 使用BatchOperation进行批量插入
             BatchOperation batch = client.batchOperation(tableName);
-            
+
             // 添加多个插入操作
             for (int i = 1; i <= 3; i++) {
                 Insert insert = client.insert(tableName);
-                insert.setPartitionKey(row(colVal("c1", (long)(2000 + i))))
-                    .addMutateColVal(colVal("c1", (long)(2000 + i)), colVal("c2", "batch_test"), colVal("c3", (long)(3000 + i)));
+                insert.setPartitionKey(row(colVal("c1", (long) (2000 + i)))).addMutateColVal(
+                    colVal("c1", (long) (2000 + i)), colVal("c2", "batch_test"),
+                    colVal("c3", (long) (3000 + i)));
                 batch.addOperation(insert);
             }
-            
+
             batch.execute();
             System.out.println("Batch insert successful: 3 operations executed");
 
             // 指定select column
             TableQuery query1 = client.query(tableName)
-                .addScanRange(ObObj.getMin(), ObObj.getMax())
-                .select("c1", "c2", "c3");
+                .addScanRange(ObObj.getMin(), ObObj.getMax()).select("c1", "c2", "c3");
             QueryResultSet res1 = query1.execute();
             int count1 = 0;
             while (res1.next()) {
                 count1++;
                 Map<String, Object> valueMap = res1.getRow();
-                long c1 = (long)valueMap.get("c1");
-                String c2 = (String)valueMap.get("c2");
-                long c3 = (long)valueMap.get("c3");
+                long c1 = (long) valueMap.get("c1");
+                String c2 = (String) valueMap.get("c2");
+                long c3 = (long) valueMap.get("c3");
                 assertEquals("c1 should match", c1 >= 2000 && c1 <= 2003, true);
                 assertEquals("c2 should match", c2.equals("batch_test"), true);
                 assertEquals("c3 should match", c3 >= 3000 && c3 <= 3003, true);
@@ -549,15 +559,15 @@ public class ObHeapTableModel4Test {
             while (res2.next()) {
                 count2++;
                 Map<String, Object> valueMap = res2.getRow();
-                long c1 = (long)valueMap.get("c1");
-                String c2 = (String)valueMap.get("c2");
-                long c3 = (long)valueMap.get("c3");
+                long c1 = (long) valueMap.get("c1");
+                String c2 = (String) valueMap.get("c2");
+                long c3 = (long) valueMap.get("c3");
                 assertEquals("c1 should match", c1 >= 2000 && c1 <= 2003, true);
                 assertEquals("c2 should match", c2.equals("batch_test"), true);
                 assertEquals("c3 should match", c3 >= 3000 && c3 <= 3003, true);
             }
             assertEquals("Should have 3 records", 3, count2);
-            
+
         } finally {
             truncateTable();
         }
@@ -571,30 +581,30 @@ public class ObHeapTableModel4Test {
         try {
             // 使用BatchOperation进行批量插入
             BatchOperation batch = client.batchOperation(tableName);
-            
+
             // 添加多个插入操作
             for (int i = 1; i <= 3; i++) {
                 Insert insert = client.insert(tableName);
-                insert.setPartitionKey(row(colVal("c1", (long)(2000 + i))))
-                    .addMutateColVal(colVal("c1", (long)(2000 + i)), colVal("c2", "batch_test"), colVal("c3", (long)(3000 + i)));
+                insert.setPartitionKey(row(colVal("c1", (long) (2000 + i)))).addMutateColVal(
+                    colVal("c1", (long) (2000 + i)), colVal("c2", "batch_test"),
+                    colVal("c3", (long) (3000 + i)));
                 batch.addOperation(insert);
             }
-            
+
             batch.execute();
             System.out.println("Batch insert successful: 3 operations executed");
 
             // 指定select column
             TableQuery query1 = client.query(tableName)
-                .addScanRange(ObObj.getMin(), ObObj.getMax())
-                .select("c1", "c2", "c3");
+                .addScanRange(ObObj.getMin(), ObObj.getMax()).select("c1", "c2", "c3");
             QueryResultSet res1 = query1.asyncExecute();
             int count1 = 0;
             while (res1.next()) {
                 count1++;
                 Map<String, Object> valueMap = res1.getRow();
-                long c1 = (long)valueMap.get("c1");
-                String c2 = (String)valueMap.get("c2");
-                long c3 = (long)valueMap.get("c3");
+                long c1 = (long) valueMap.get("c1");
+                String c2 = (String) valueMap.get("c2");
+                long c3 = (long) valueMap.get("c3");
                 assertEquals("c1 should match", c1 >= 2000 && c1 <= 2003, true);
                 assertEquals("c2 should match", c2.equals("batch_test"), true);
                 assertEquals("c3 should match", c3 >= 3000 && c3 <= 3003, true);
@@ -609,15 +619,15 @@ public class ObHeapTableModel4Test {
             while (res2.next()) {
                 count2++;
                 Map<String, Object> valueMap = res2.getRow();
-                long c1 = (long)valueMap.get("c1");
-                String c2 = (String)valueMap.get("c2");
-                long c3 = (long)valueMap.get("c3");
+                long c1 = (long) valueMap.get("c1");
+                String c2 = (String) valueMap.get("c2");
+                long c3 = (long) valueMap.get("c3");
                 assertEquals("c1 should match", c1 >= 2000 && c1 <= 2003, true);
                 assertEquals("c2 should match", c2.equals("batch_test"), true);
                 assertEquals("c3 should match", c3 >= 3000 && c3 <= 3003, true);
             }
             assertEquals("Should have 3 records", 3, count2);
-            
+
         } finally {
             truncateTable();
         }
@@ -631,32 +641,30 @@ public class ObHeapTableModel4Test {
         try {
             // 使用BatchOperation进行批量插入
             BatchOperation batch = client.batchOperation(tableName);
-            
+
             // 添加多个插入操作
             for (int i = 1; i <= 3; i++) {
                 Insert insert = client.insert(tableName);
-                insert.setPartitionKey(row(colVal("c1", (long)(2000 + i))))
-                    .addMutateColVal(colVal("c1", (long)(2000 + i)), colVal("c2", "batch_test"), colVal("c3", (long)(3000 + i)));
+                insert.setPartitionKey(row(colVal("c1", (long) (2000 + i)))).addMutateColVal(
+                    colVal("c1", (long) (2000 + i)), colVal("c2", "batch_test"),
+                    colVal("c3", (long) (3000 + i)));
                 batch.addOperation(insert);
             }
-            
+
             batch.execute();
             System.out.println("Batch insert successful: 3 operations executed");
 
             // 指定select column
-            TableQuery query1 = client.query(tableName)
-                .addScanRange(2000L, 2003L)
-                .setScanRangeColumns("c1")
-                .indexName("idx_unique_c1")
-                .select("c1", "c2", "c3");
+            TableQuery query1 = client.query(tableName).addScanRange(2000L, 2003L)
+                .setScanRangeColumns("c1").indexName("idx_unique_c1").select("c1", "c2", "c3");
             QueryResultSet res1 = query1.execute();
             int count1 = 0;
             while (res1.next()) {
                 count1++;
                 Map<String, Object> valueMap = res1.getRow();
-                long c1 = (long)valueMap.get("c1");
-                String c2 = (String)valueMap.get("c2");
-                long c3 = (long)valueMap.get("c3");
+                long c1 = (long) valueMap.get("c1");
+                String c2 = (String) valueMap.get("c2");
+                long c3 = (long) valueMap.get("c3");
                 assertEquals("c1 should match", c1 >= 2000 && c1 <= 2003, true);
                 assertEquals("c2 should match", c2.equals("batch_test"), true);
                 assertEquals("c3 should match", c3 >= 3000 && c3 <= 3003, true);
@@ -664,24 +672,22 @@ public class ObHeapTableModel4Test {
             assertEquals("Should have 3 records", 3, count1);
 
             // 不指定select column
-            TableQuery query2 = client.query(tableName)
-                .addScanRange(2000L, 2003L)
-                .setScanRangeColumns("c1")
-                .indexName("idx_unique_c1");
+            TableQuery query2 = client.query(tableName).addScanRange(2000L, 2003L)
+                .setScanRangeColumns("c1").indexName("idx_unique_c1");
             QueryResultSet res2 = query2.execute();
             int count2 = 0;
             while (res2.next()) {
                 count2++;
                 Map<String, Object> valueMap = res2.getRow();
-                long c1 = (long)valueMap.get("c1");
-                String c2 = (String)valueMap.get("c2");
-                long c3 = (long)valueMap.get("c3");
+                long c1 = (long) valueMap.get("c1");
+                String c2 = (String) valueMap.get("c2");
+                long c3 = (long) valueMap.get("c3");
                 assertEquals("c1 should match", c1 >= 2000 && c1 <= 2003, true);
                 assertEquals("c2 should match", c2.equals("batch_test"), true);
                 assertEquals("c3 should match", c3 >= 3000 && c3 <= 3003, true);
             }
             assertEquals("Should have 3 records", 3, count2);
-            
+
         } finally {
             truncateTable();
         }
@@ -695,32 +701,30 @@ public class ObHeapTableModel4Test {
         try {
             // 使用BatchOperation进行批量插入
             BatchOperation batch = client.batchOperation(tableName);
-            
+
             // 添加多个插入操作
             for (int i = 1; i <= 3; i++) {
                 Insert insert = client.insert(tableName);
-                insert.setPartitionKey(row(colVal("c1", (long)(2000 + i))))
-                    .addMutateColVal(colVal("c1", (long)(2000 + i)), colVal("c2", "batch_test"), colVal("c3", (long)(3000 + i)));
+                insert.setPartitionKey(row(colVal("c1", (long) (2000 + i)))).addMutateColVal(
+                    colVal("c1", (long) (2000 + i)), colVal("c2", "batch_test"),
+                    colVal("c3", (long) (3000 + i)));
                 batch.addOperation(insert);
             }
-            
+
             batch.execute();
             System.out.println("Batch insert successful: 3 operations executed");
 
             // 指定select column
-            TableQuery query1 = client.query(tableName)
-                .addScanRange(2000L, 2003L)
-                .indexName("idx_unique_c1")
-                .setScanRangeColumns("c1")
-                .select("c1", "c2", "c3");
+            TableQuery query1 = client.query(tableName).addScanRange(2000L, 2003L)
+                .indexName("idx_unique_c1").setScanRangeColumns("c1").select("c1", "c2", "c3");
             QueryResultSet res1 = query1.asyncExecute();
             int count1 = 0;
             while (res1.next()) {
                 count1++;
                 Map<String, Object> valueMap = res1.getRow();
-                long c1 = (long)valueMap.get("c1");
-                String c2 = (String)valueMap.get("c2");
-                long c3 = (long)valueMap.get("c3");
+                long c1 = (long) valueMap.get("c1");
+                String c2 = (String) valueMap.get("c2");
+                long c3 = (long) valueMap.get("c3");
                 assertEquals("c1 should match", c1 >= 2000 && c1 <= 2003, true);
                 assertEquals("c2 should match", c2.equals("batch_test"), true);
                 assertEquals("c3 should match", c3 >= 3000 && c3 <= 3003, true);
@@ -728,24 +732,22 @@ public class ObHeapTableModel4Test {
             assertEquals("Should have 3 records", 3, count1);
 
             // 不指定select column
-            TableQuery query2 = client.query(tableName)
-                .addScanRange(2000L, 2003L)
-                .indexName("idx_unique_c1")
-                .setScanRangeColumns("c1");
+            TableQuery query2 = client.query(tableName).addScanRange(2000L, 2003L)
+                .indexName("idx_unique_c1").setScanRangeColumns("c1");
             QueryResultSet res2 = query2.asyncExecute();
             int count2 = 0;
             while (res2.next()) {
                 count2++;
                 Map<String, Object> valueMap = res2.getRow();
-                long c1 = (long)valueMap.get("c1");
-                String c2 = (String)valueMap.get("c2");
-                long c3 = (long)valueMap.get("c3");
+                long c1 = (long) valueMap.get("c1");
+                String c2 = (String) valueMap.get("c2");
+                long c3 = (long) valueMap.get("c3");
                 assertEquals("c1 should match", c1 >= 2000 && c1 <= 2003, true);
                 assertEquals("c2 should match", c2.equals("batch_test"), true);
                 assertEquals("c3 should match", c3 >= 3000 && c3 <= 3003, true);
             }
             assertEquals("Should have 3 records", 3, count2);
-            
+
         } finally {
             truncateTable();
         }
@@ -759,32 +761,33 @@ public class ObHeapTableModel4Test {
         try {
             // 使用BatchOperation进行批量插入
             BatchOperation batch = client.batchOperation(tableName);
-            
+
             // 添加多个插入操作
             for (int i = 1; i <= 3; i++) {
                 Insert insert = client.insert(tableName);
-                insert.setPartitionKey(row(colVal("c1", (long)(2000 + i))))
-                    .addMutateColVal(colVal("c1", (long)(2000 + i)), colVal("c2", "batch_test"), colVal("c3", (long)(3000 + i)));
+                insert.setPartitionKey(row(colVal("c1", (long) (2000 + i)))).addMutateColVal(
+                    colVal("c1", (long) (2000 + i)), colVal("c2", "batch_test"),
+                    colVal("c3", (long) (3000 + i)));
                 batch.addOperation(insert);
             }
-            
+
             batch.execute();
             System.out.println("Batch insert successful: 3 operations executed");
 
             // 指定select column
-            TableQuery query1 = client.query(tableName)
-                .addScanRange(new Object[] {2000L, "batch_test"}, new Object[] {2003L, "batch_test"})
-                .setScanRangeColumns("c1", "c2")
-                .indexName("idx_unique_c1_c2")
-                .select("c1", "c2", "c3");
+            TableQuery query1 = client
+                .query(tableName)
+                .addScanRange(new Object[] { 2000L, "batch_test" },
+                    new Object[] { 2003L, "batch_test" }).setScanRangeColumns("c1", "c2")
+                .indexName("idx_unique_c1_c2").select("c1", "c2", "c3");
             QueryResultSet res1 = query1.execute();
             int count1 = 0;
             while (res1.next()) {
                 count1++;
                 Map<String, Object> valueMap = res1.getRow();
-                long c1 = (long)valueMap.get("c1");
-                String c2 = (String)valueMap.get("c2");
-                long c3 = (long)valueMap.get("c3");
+                long c1 = (long) valueMap.get("c1");
+                String c2 = (String) valueMap.get("c2");
+                long c3 = (long) valueMap.get("c3");
                 assertEquals("c1 should match", c1 >= 2000 && c1 <= 2003, true);
                 assertEquals("c2 should match", c2.equals("batch_test"), true);
                 assertEquals("c3 should match", c3 >= 3000 && c3 <= 3003, true);
@@ -792,24 +795,25 @@ public class ObHeapTableModel4Test {
             assertEquals("Should have 3 records", 3, count1);
 
             // 不指定select column
-            TableQuery query2 = client.query(tableName)
-                .addScanRange(new Object[] {2000L, "batch_test"}, new Object[] {2003L, "batch_test"})
-                .setScanRangeColumns("c1", "c2")
+            TableQuery query2 = client
+                .query(tableName)
+                .addScanRange(new Object[] { 2000L, "batch_test" },
+                    new Object[] { 2003L, "batch_test" }).setScanRangeColumns("c1", "c2")
                 .indexName("idx_unique_c1_c2");
             QueryResultSet res2 = query2.execute();
             int count2 = 0;
             while (res2.next()) {
                 count2++;
                 Map<String, Object> valueMap = res2.getRow();
-                long c1 = (long)valueMap.get("c1");
-                String c2 = (String)valueMap.get("c2");
-                long c3 = (long)valueMap.get("c3");
+                long c1 = (long) valueMap.get("c1");
+                String c2 = (String) valueMap.get("c2");
+                long c3 = (long) valueMap.get("c3");
                 assertEquals("c1 should match", c1 >= 2000 && c1 <= 2003, true);
                 assertEquals("c2 should match", c2.equals("batch_test"), true);
                 assertEquals("c3 should match", c3 >= 3000 && c3 <= 3003, true);
             }
             assertEquals("Should have 3 records", 3, count2);
-            
+
         } finally {
             truncateTable();
         }
@@ -823,32 +827,33 @@ public class ObHeapTableModel4Test {
         try {
             // 使用BatchOperation进行批量插入
             BatchOperation batch = client.batchOperation(tableName);
-            
+
             // 添加多个插入操作
             for (int i = 1; i <= 3; i++) {
                 Insert insert = client.insert(tableName);
-                insert.setPartitionKey(row(colVal("c1", (long)(2000 + i))))
-                    .addMutateColVal(colVal("c1", (long)(2000 + i)), colVal("c2", "batch_test"), colVal("c3", (long)(3000 + i)));
+                insert.setPartitionKey(row(colVal("c1", (long) (2000 + i)))).addMutateColVal(
+                    colVal("c1", (long) (2000 + i)), colVal("c2", "batch_test"),
+                    colVal("c3", (long) (3000 + i)));
                 batch.addOperation(insert);
             }
-            
+
             batch.execute();
             System.out.println("Batch insert successful: 3 operations executed");
 
             // 指定select column
-            TableQuery query1 = client.query(tableName)
-                .addScanRange(new Object[] {2000L, "batch_test"}, new Object[] {2003L, "batch_test"})
-                .indexName("idx_unique_c1_c2")
-                .setScanRangeColumns("c1", "c2")
-                .select("c1", "c2", "c3");
+            TableQuery query1 = client
+                .query(tableName)
+                .addScanRange(new Object[] { 2000L, "batch_test" },
+                    new Object[] { 2003L, "batch_test" }).indexName("idx_unique_c1_c2")
+                .setScanRangeColumns("c1", "c2").select("c1", "c2", "c3");
             QueryResultSet res1 = query1.asyncExecute();
             int count1 = 0;
             while (res1.next()) {
                 count1++;
                 Map<String, Object> valueMap = res1.getRow();
-                long c1 = (long)valueMap.get("c1");
-                String c2 = (String)valueMap.get("c2");
-                long c3 = (long)valueMap.get("c3");
+                long c1 = (long) valueMap.get("c1");
+                String c2 = (String) valueMap.get("c2");
+                long c3 = (long) valueMap.get("c3");
                 assertEquals("c1 should match", c1 >= 2000 && c1 <= 2003, true);
                 assertEquals("c2 should match", c2.equals("batch_test"), true);
                 assertEquals("c3 should match", c3 >= 3000 && c3 <= 3003, true);
@@ -856,24 +861,25 @@ public class ObHeapTableModel4Test {
             assertEquals("Should have 3 records", 3, count1);
 
             // 不指定select column
-            TableQuery query2 = client.query(tableName)
-                .addScanRange(new Object[] {2000L, "batch_test"}, new Object[] {2003L, "batch_test"})
-                .indexName("idx_unique_c1_c2")
+            TableQuery query2 = client
+                .query(tableName)
+                .addScanRange(new Object[] { 2000L, "batch_test" },
+                    new Object[] { 2003L, "batch_test" }).indexName("idx_unique_c1_c2")
                 .setScanRangeColumns("c1", "c2");
             QueryResultSet res2 = query2.asyncExecute();
             int count2 = 0;
             while (res2.next()) {
                 count2++;
                 Map<String, Object> valueMap = res2.getRow();
-                long c1 = (long)valueMap.get("c1");
-                String c2 = (String)valueMap.get("c2");
-                long c3 = (long)valueMap.get("c3");
+                long c1 = (long) valueMap.get("c1");
+                String c2 = (String) valueMap.get("c2");
+                long c3 = (long) valueMap.get("c3");
                 assertEquals("c1 should match", c1 >= 2000 && c1 <= 2003, true);
                 assertEquals("c2 should match", c2.equals("batch_test"), true);
                 assertEquals("c3 should match", c3 >= 3000 && c3 <= 3003, true);
             }
             assertEquals("Should have 3 records", 3, count2);
-            
+
         } finally {
             truncateTable();
         }
@@ -889,30 +895,30 @@ public class ObHeapTableModel4Test {
         try {
             // 使用BatchOperation进行批量插入
             BatchOperation batch = client.batchOperation(tableName);
-            
+
             // 添加多个插入操作
             for (int i = 1; i <= 3; i++) {
                 Insert insert = client.insert(tableName);
-                insert.setPartitionKey(row(colVal("c1", 1001L)))
-                    .addMutateColVal(colVal("c1", (long)(2000 + i)), colVal("c2", "batch_test" + i), colVal("c3", (long)(3000 + i)));
+                insert.setPartitionKey(row(colVal("c1", 1001L))).addMutateColVal(
+                    colVal("c1", (long) (2000 + i)), colVal("c2", "batch_test" + i),
+                    colVal("c3", (long) (3000 + i)));
                 batch.addOperation(insert);
             }
-            
+
             batch.execute();
             System.out.println("Batch insert successful: 3 operations executed");
-            
+
             // 验证插入结果
             TableQuery tableQuery = client.query(tableName)
-                .addScanRange(ObObj.getMin(), ObObj.getMax())
-                .select("c1", "c2", "c3");
+                .addScanRange(ObObj.getMin(), ObObj.getMax()).select("c1", "c2", "c3");
             QueryResultSet res = tableQuery.execute();
             int count = 0;
             while (res.next()) {
                 count++;
                 Map<String, Object> valueMap = res.getRow();
-                long c1 = (long)valueMap.get("c1");
-                String c2 = (String)valueMap.get("c2");
-                long c3 = (long)valueMap.get("c3");
+                long c1 = (long) valueMap.get("c1");
+                String c2 = (String) valueMap.get("c2");
+                long c3 = (long) valueMap.get("c3");
                 assertEquals("c1 should match", c1 >= 2000 && c1 <= 2003, true);
                 assertEquals("c2 should match", c2.equals("batch_test" + count), true);
                 assertEquals("c3 should match", c3 >= 3000 && c3 <= 3003, true);
@@ -957,30 +963,30 @@ public class ObHeapTableModel4Test {
         try {
             // 使用BatchOperation进行批量插入
             BatchOperation batch = client.batchOperation(tableName);
-            
+
             // 添加多个插入操作
             for (int i = 1; i <= 3; i++) {
                 InsertOrUpdate insertOrUpdate = client.insertOrUpdate(tableName);
-                insertOrUpdate.setPartitionKey(row(colVal("c1", 1001L)))
-                    .addMutateColVal(colVal("c1", (long)(2000 + i)), colVal("c2", "batch_test" + i), colVal("c3", (long)(3000 + i)));
+                insertOrUpdate.setPartitionKey(row(colVal("c1", 1001L))).addMutateColVal(
+                    colVal("c1", (long) (2000 + i)), colVal("c2", "batch_test" + i),
+                    colVal("c3", (long) (3000 + i)));
                 batch.addOperation(insertOrUpdate);
             }
-            
+
             batch.execute();
             System.out.println("Batch insert successful: 3 operations executed");
-            
+
             // 验证插入结果
             TableQuery tableQuery = client.query(tableName)
-                .addScanRange(ObObj.getMin(), ObObj.getMax())
-                .select("c1", "c2", "c3");
+                .addScanRange(ObObj.getMin(), ObObj.getMax()).select("c1", "c2", "c3");
             QueryResultSet res = tableQuery.execute();
             int count = 0;
             while (res.next()) {
                 count++;
                 Map<String, Object> valueMap = res.getRow();
-                long c1 = (long)valueMap.get("c1");
-                String c2 = (String)valueMap.get("c2");
-                long c3 = (long)valueMap.get("c3");
+                long c1 = (long) valueMap.get("c1");
+                String c2 = (String) valueMap.get("c2");
+                long c3 = (long) valueMap.get("c3");
                 assertEquals("c1 should match", c1 >= 2000 && c1 <= 2003, true);
                 assertEquals("c2 should match", c2.equals("batch_test" + count), true);
                 assertEquals("c3 should match", c3 >= 3000 && c3 <= 3003, true);
@@ -1002,8 +1008,8 @@ public class ObHeapTableModel4Test {
         // 添加多个插入操作
         for (int i = 1; i <= 3; i++) {
             InsertOrUpdate insUp = client.insertOrUpdate(tableName);
-            insUp.setPartitionKey(row(colVal("c1", 1001L)))
-                .addMutateColVal(colVal("c1", 1001L), colVal("c2", "batch_test1"), colVal("c3", 2001L));
+            insUp.setPartitionKey(row(colVal("c1", 1001L))).addMutateColVal(colVal("c1", 1001L),
+                colVal("c2", "batch_test1"), colVal("c3", 2001L));
             batch.addOperation(insUp);
         }
         batch.execute();
@@ -1012,16 +1018,15 @@ public class ObHeapTableModel4Test {
 
         // 验证插入结果
         TableQuery tableQuery = client.query(tableName)
-        .addScanRange(ObObj.getMin(), ObObj.getMax())
-        .select("c1", "c2", "c3");
+            .addScanRange(ObObj.getMin(), ObObj.getMax()).select("c1", "c2", "c3");
         QueryResultSet res = tableQuery.execute();
         int count = 0;
         while (res.next()) {
             count++;
             Map<String, Object> valueMap = res.getRow();
-            long c1 = (long)valueMap.get("c1");
-            String c2 = (String)valueMap.get("c2");
-            long c3 = (long)valueMap.get("c3");
+            long c1 = (long) valueMap.get("c1");
+            String c2 = (String) valueMap.get("c2");
+            long c3 = (long) valueMap.get("c3");
             assertEquals("c1 should match", c1 == 1001L, true);
             assertEquals("c2 should match", c2.equals("batch_test1"), true);
             assertEquals("c3 should match", c3 == 2001L, true);
@@ -1029,7 +1034,8 @@ public class ObHeapTableModel4Test {
         assertEquals("Should have 1 records", 1, count);
 
         // sql 验证
-        String sql = "select /*+ opt_param('hidden_column_visible','true') */ __pk_increment, c1, c2, c3 from " + tableName + " where c1 = 1001";
+        String sql = "select /*+ opt_param('hidden_column_visible','true') */ __pk_increment, c1, c2, c3 from "
+                     + tableName + " where c1 = 1001";
         Connection connection = ObTableClientTestUtil.getConnection();
         Statement statement = connection.createStatement();
         ResultSet resultSet = statement.executeQuery(sql);
@@ -1049,30 +1055,30 @@ public class ObHeapTableModel4Test {
         try {
             // 使用BatchOperation进行批量插入
             BatchOperation batch = client.batchOperation(tableName);
-            
+
             // 添加多个插入操作
             for (int i = 1; i <= 3; i++) {
                 Replace replace = client.replace(tableName);
-                replace.setPartitionKey(row(colVal("c1", 1001L)))
-                    .addMutateColVal(colVal("c1", (long)(2000 + i)), colVal("c2", "batch_test" + i), colVal("c3", (long)(3000 + i)));
+                replace.setPartitionKey(row(colVal("c1", 1001L))).addMutateColVal(
+                    colVal("c1", (long) (2000 + i)), colVal("c2", "batch_test" + i),
+                    colVal("c3", (long) (3000 + i)));
                 batch.addOperation(replace);
             }
-            
+
             batch.execute();
             System.out.println("Batch insert successful: 3 operations executed");
-            
+
             // 验证插入结果
             TableQuery tableQuery = client.query(tableName)
-                .addScanRange(ObObj.getMin(), ObObj.getMax())
-                .select("c1", "c2", "c3");
+                .addScanRange(ObObj.getMin(), ObObj.getMax()).select("c1", "c2", "c3");
             QueryResultSet res = tableQuery.execute();
             int count = 0;
             while (res.next()) {
                 count++;
                 Map<String, Object> valueMap = res.getRow();
-                long c1 = (long)valueMap.get("c1");
-                String c2 = (String)valueMap.get("c2");
-                long c3 = (long)valueMap.get("c3");
+                long c1 = (long) valueMap.get("c1");
+                String c2 = (String) valueMap.get("c2");
+                long c3 = (long) valueMap.get("c3");
                 assertEquals("c1 should match", c1 >= 2000 && c1 <= 2003, true);
                 assertEquals("c2 should match", c2.equals("batch_test" + count), true);
                 assertEquals("c3 should match", c3 >= 3000 && c3 <= 3003, true);
@@ -1093,22 +1099,21 @@ public class ObHeapTableModel4Test {
         try {
             // 使用BatchOperation进行批量插入
             BatchOperation batch = client.batchOperation(tableName);
-            
+
             // 添加多个插入操作
             for (int i = 1; i <= 3; i++) {
                 Replace replace = client.replace(tableName);
-                replace.setPartitionKey(row(colVal("c1", 1001L)))
-                    .addMutateColVal(colVal("c1", 1001L), colVal("c2", "batch_test1"), colVal("c3", 2001L));
+                replace.setPartitionKey(row(colVal("c1", 1001L))).addMutateColVal(
+                    colVal("c1", 1001L), colVal("c2", "batch_test1"), colVal("c3", 2001L));
                 batch.addOperation(replace);
             }
-            
+
             batch.execute();
             System.out.println("Batch insert successful: 3 operations executed");
-            
+
             // 验证插入结果
             TableQuery tableQuery = client.query(tableName)
-                .addScanRange(ObObj.getMin(), ObObj.getMax())
-                .select("c1", "c2", "c3");
+                .addScanRange(ObObj.getMin(), ObObj.getMax()).select("c1", "c2", "c3");
             QueryResultSet res = tableQuery.execute();
             int count = 0;
             while (res.next()) {
@@ -1293,4 +1298,4 @@ public class ObHeapTableModel4Test {
         System.out.println(thrown.getMessage());
         assertTrue(thrown.getMessage().contains("[-4007][OB_NOT_SUPPORTED][heap table use checkAndInsUp not supported]"));
     }
-} 
+}

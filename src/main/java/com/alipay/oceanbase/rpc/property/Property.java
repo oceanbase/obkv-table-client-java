@@ -35,6 +35,11 @@ public enum Property {
     // [ObTableClient][METADATA]
     METADATA_REFRESH_INTERVAL("metadata.refresh.interval", 60000L, "刷新METADATA的时间间隔"),
 
+    GROUP_REFRESH_INTERVAL("group.refresh.interval", 10L, "组更新刷新间隔时间"), DDS_CONFIG_FATCH_TIMEOUT(
+                                                                                                 "dds.config.fetch.timeout",
+                                                                                                 1000L,
+                                                                                                 "dds配置获取一次的超时时间"),
+
     @Deprecated
     METADATA_REFRESH_INTERNAL("metadata.refresh.internal", 60000L, "刷新METADATA的时间间隔"),
 

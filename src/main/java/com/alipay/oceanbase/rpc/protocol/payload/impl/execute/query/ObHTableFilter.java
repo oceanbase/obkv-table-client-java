@@ -70,7 +70,8 @@ public class ObHTableFilter extends AbstractPayload {
         System.arraycopy(Serialization.encodeI8(isValid ? (byte) 1 : (byte) 0), 0, bytes, idx, 1);
         idx++;
         byte[] selectColumnQualifierBytes = Serialization.encodeVi64(selectColumnQualifier.size());
-        System.arraycopy(selectColumnQualifierBytes, 0, bytes, idx, selectColumnQualifierBytes.length);
+        System.arraycopy(selectColumnQualifierBytes, 0, bytes, idx,
+            selectColumnQualifierBytes.length);
         idx += selectColumnQualifierBytes.length;
 
         for (ObBytesString q : selectColumnQualifier) {
@@ -89,7 +90,8 @@ public class ObHTableFilter extends AbstractPayload {
         System.arraycopy(maxVersionsBytes, 0, bytes, idx, maxVersionsBytes.length);
         idx += maxVersionsBytes.length;
         byte[] limitPerRowPerCfBytes = Serialization.encodeVi32(limitPerRowPerCf);
-        System.arraycopy(Serialization.encodeVi32(limitPerRowPerCf), 0, bytes, idx, limitPerRowPerCfBytes.length);
+        System.arraycopy(Serialization.encodeVi32(limitPerRowPerCf), 0, bytes, idx,
+            limitPerRowPerCfBytes.length);
         idx += limitPerRowPerCfBytes.length;
         byte[] offsetPerRowPerCfBytes = Serialization.encodeVi32(offsetPerRowPerCf);
         System.arraycopy(offsetPerRowPerCfBytes, 0, bytes, idx, offsetPerRowPerCfBytes.length);
@@ -101,9 +103,9 @@ public class ObHTableFilter extends AbstractPayload {
     }
 
     protected boolean isUseDefaultEncode() {
-        return isValid == true && selectColumnQualifier.isEmpty() && minStamp == 0 &&
-                maxStamp == Long.MAX_VALUE && maxVersions == 1 && limitPerRowPerCf == -1 &&
-                offsetPerRowPerCf == 0 && filterString == null;
+        return isValid == true && selectColumnQualifier.isEmpty() && minStamp == 0
+               && maxStamp == Long.MAX_VALUE && maxVersions == 1 && limitPerRowPerCf == -1
+               && offsetPerRowPerCf == 0 && filterString == null;
     }
 
     public void encode(ObByteBuf buf) {

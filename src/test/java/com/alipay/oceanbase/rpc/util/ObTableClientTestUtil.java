@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.util;
 
 import com.alipay.oceanbase.rpc.ObTableClient;
+import com.alipay.oceanbase.rpc.dds.DdsObTableClient;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

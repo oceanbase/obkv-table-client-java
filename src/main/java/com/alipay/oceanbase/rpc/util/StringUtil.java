@@ -1,8 +1,10 @@
 /*-
- * #%L
- * OBKV Table Client Framework
+* #%L
+ * * OceanBase Table Client Framework
+ * *
  * %%
- * Copyright (C) 2021 OceanBase
+ * Copyright (C) 2016 - 2018 Ant Financial Services Group
+ * *
  * %%
  * OBKV Table Client Framework is licensed under Mulan PSL v2.
  * You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -13,24 +15,44 @@
  * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
  * See the Mulan PSL v2 for more details.
  * #L%
- */
+*/
 
 package com.alipay.oceanbase.rpc.util;
 
+/**
+ * @author hongwei.yhw
+* @since 2018-May-07
+*/
 public class StringUtil {
 
+    /**
+     * Is empty.
+    */
     public static boolean isEmpty(String str) {
         return str == null || str.isEmpty();
     }
 
+    /**
+     * Is not empty.
+    */
     public static boolean isNotEmpty(String str) {
         return !isEmpty(str);
     }
 
+    /**
+     *
+    * @param str
+    * @return
+    */
     public static final boolean isNotBlank(String str) {
         return !isBlank(str);
     }
 
+    /**
+     *
+    * @param str
+    * @return
+    */
     public static final boolean isBlank(String str) {
         int strLen = 0;
         if (str == null || (strLen = str.length()) == 0) {
@@ -45,21 +67,21 @@ public class StringUtil {
 
     /**
      * 扩展并右对齐字符串，用指定字符填充左边。
-     * <pre>
-     * StringUtil.alignRight(null, *, *)     = null
-     * StringUtil.alignRight("", 3, 'z')     = "zzz"
-     * StringUtil.alignRight("bat", 3, 'z')  = "bat"
-     * StringUtil.alignRight("bat", 5, 'z')  = "zzbat"
-     * StringUtil.alignRight("bat", 1, 'z')  = "bat"
-     * StringUtil.alignRight("bat", -1, 'z') = "bat"
-     * </pre>
-     *
-     * @param str 要对齐的字符串
-     * @param size 扩展字符串到指定宽度
-     * @param padChar 填充字符
-     *
-     * @return 扩展后的字符串，如果字符串为<code>null</code>，则返回<code>null</code>
-     */
+    * <pre>
+    * StringUtil.alignRight(null, *, *)     = null
+    * StringUtil.alignRight("", 3, 'z')     = "zzz"
+    * StringUtil.alignRight("bat", 3, 'z')  = "bat"
+    * StringUtil.alignRight("bat", 5, 'z')  = "zzbat"
+    * StringUtil.alignRight("bat", 1, 'z')  = "bat"
+    * StringUtil.alignRight("bat", -1, 'z') = "bat"
+    * </pre>
+    *
+    * @param str 要对齐的字符串
+    * @param size 扩展字符串到指定宽度
+    * @param padChar 填充字符
+    *
+    * @return 扩展后的字符串，如果字符串为<code>null</code>，则返回<code>null</code>
+    */
     public static String alignRight(String str, int size, char padChar) {
         if (str == null) {
             return null;
@@ -76,24 +98,24 @@ public class StringUtil {
 
     /**
      * 扩展并右对齐字符串，用指定字符串填充左边。
-     * <pre>
-     * StringUtil.alignRight(null, *, *)      = null
-     * StringUtil.alignRight("", 3, "z")      = "zzz"
-     * StringUtil.alignRight("bat", 3, "yz")  = "bat"
-     * StringUtil.alignRight("bat", 5, "yz")  = "yzbat"
-     * StringUtil.alignRight("bat", 8, "yz")  = "yzyzybat"
-     * StringUtil.alignRight("bat", 1, "yz")  = "bat"
-     * StringUtil.alignRight("bat", -1, "yz") = "bat"
-     * StringUtil.alignRight("bat", 5, null)  = "  bat"
-     * StringUtil.alignRight("bat", 5, "")    = "  bat"
-     * </pre>
-     *
-     * @param str 要对齐的字符串
-     * @param size 扩展字符串到指定宽度
-     * @param padStr 填充字符串
-     *
-     * @return 扩展后的字符串，如果字符串为<code>null</code>，则返回<code>null</code>
-     */
+    * <pre>
+    * StringUtil.alignRight(null, *, *)      = null
+    * StringUtil.alignRight("", 3, "z")      = "zzz"
+    * StringUtil.alignRight("bat", 3, "yz")  = "bat"
+    * StringUtil.alignRight("bat", 5, "yz")  = "yzbat"
+    * StringUtil.alignRight("bat", 8, "yz")  = "yzyzybat"
+    * StringUtil.alignRight("bat", 1, "yz")  = "bat"
+    * StringUtil.alignRight("bat", -1, "yz") = "bat"
+    * StringUtil.alignRight("bat", 5, null)  = "  bat"
+    * StringUtil.alignRight("bat", 5, "")    = "  bat"
+    * </pre>
+    *
+    * @param str 要对齐的字符串
+    * @param size 扩展字符串到指定宽度
+    * @param padStr 填充字符串
+    *
+    * @return 扩展后的字符串，如果字符串为<code>null</code>，则返回<code>null</code>
+    */
     public static String alignRight(String str, int size, String padStr) {
         if (str == null) {
             return null;
@@ -129,52 +151,56 @@ public class StringUtil {
 
     /**
      * 替换指定的子串，只替换第一个出现的子串。
-     *
-     * 如果字符串为<code>null</code>则返回<code>null</code>，如果指定子串为<code>null</code>，则返回原字符串。
-     * <pre>
-     * StringUtil.replaceOnce(null, *, *)        = null
-     * StringUtil.replaceOnce("", *, *)          = ""
-     * StringUtil.replaceOnce("aba", null, null) = "aba"
-     * StringUtil.replaceOnce("aba", null, null) = "aba"
-     * StringUtil.replaceOnce("aba", "a", null)  = "aba"
-     * StringUtil.replaceOnce("aba", "a", "")    = "ba"
-     * StringUtil.replaceOnce("aba", "a", "z")   = "zba"
-     * </pre>
-     *
-     * @param text 要扫描的字符串
-     * @param repl 要搜索的子串
-     * @param with 替换字符串
-     *
-     * @return 被替换后的字符串，如果原始字符串为<code>null</code>，则返回<code>null</code>
-     */
+    *
+    * <p>
+    * 如果字符串为<code>null</code>则返回<code>null</code>，如果指定子串为<code>null</code>，则返回原字符串。
+    * <pre>
+    * StringUtil.replaceOnce(null, *, *)        = null
+    * StringUtil.replaceOnce("", *, *)          = ""
+    * StringUtil.replaceOnce("aba", null, null) = "aba"
+    * StringUtil.replaceOnce("aba", null, null) = "aba"
+    * StringUtil.replaceOnce("aba", "a", null)  = "aba"
+    * StringUtil.replaceOnce("aba", "a", "")    = "ba"
+    * StringUtil.replaceOnce("aba", "a", "z")   = "zba"
+    * </pre>
+    * </p>
+    *
+    * @param text 要扫描的字符串
+    * @param repl 要搜索的子串
+    * @param with 替换字符串
+    *
+    * @return 被替换后的字符串，如果原始字符串为<code>null</code>，则返回<code>null</code>
+    */
     public static String replaceOnce(String text, String repl, String with) {
         return replace(text, repl, with, 1);
     }
 
     /**
      * 替换指定的子串，替换指定的次数。
-     *
-     * 如果字符串为<code>null</code>则返回<code>null</code>，如果指定子串为<code>null</code>，则返回原字符串。
-     * <pre>
-     * StringUtil.replace(null, *, *, *)         = null
-     * StringUtil.replace("", *, *, *)           = ""
-     * StringUtil.replace("abaa", null, null, 1) = "abaa"
-     * StringUtil.replace("abaa", null, null, 1) = "abaa"
-     * StringUtil.replace("abaa", "a", null, 1)  = "abaa"
-     * StringUtil.replace("abaa", "a", "", 1)    = "baa"
-     * StringUtil.replace("abaa", "a", "z", 0)   = "abaa"
-     * StringUtil.replace("abaa", "a", "z", 1)   = "zbaa"
-     * StringUtil.replace("abaa", "a", "z", 2)   = "zbza"
-     * StringUtil.replace("abaa", "a", "z", -1)  = "zbzz"
-     * </pre>
-     *
-     * @param text 要扫描的字符串
-     * @param repl 要搜索的子串
-     * @param with 替换字符串
-     * @param max maximum number of values to replace, or <code>-1</code> if no maximum
-     *
-     * @return 被替换后的字符串，如果原始字符串为<code>null</code>，则返回<code>null</code>
-     */
+    *
+    * <p>
+    * 如果字符串为<code>null</code>则返回<code>null</code>，如果指定子串为<code>null</code>，则返回原字符串。
+    * <pre>
+    * StringUtil.replace(null, *, *, *)         = null
+    * StringUtil.replace("", *, *, *)           = ""
+    * StringUtil.replace("abaa", null, null, 1) = "abaa"
+    * StringUtil.replace("abaa", null, null, 1) = "abaa"
+    * StringUtil.replace("abaa", "a", null, 1)  = "abaa"
+    * StringUtil.replace("abaa", "a", "", 1)    = "baa"
+    * StringUtil.replace("abaa", "a", "z", 0)   = "abaa"
+    * StringUtil.replace("abaa", "a", "z", 1)   = "zbaa"
+    * StringUtil.replace("abaa", "a", "z", 2)   = "zbza"
+    * StringUtil.replace("abaa", "a", "z", -1)  = "zbzz"
+    * </pre>
+    * </p>
+    *
+    * @param text 要扫描的字符串
+    * @param repl 要搜索的子串
+    * @param with 替换字符串
+    * @param max maximum number of values to replace, or <code>-1</code> if no maximum
+    *
+    * @return 被替换后的字符串，如果原始字符串为<code>null</code>，则返回<code>null</code>
+    */
     public static String replace(String text, String repl, String with, int max) {
         if ((text == null) || (repl == null) || (with == null) || (repl.length() == 0)
             || (max == 0)) {
@@ -200,9 +226,7 @@ public class StringUtil {
 
     /**
      * Parse name pattern.
-     * @param pattern pattern
-     * @return string array
-     */
+    */
     public static String[] parseNamePattern(String pattern) {
         String dbIndexes[];
         //去掉*{}
@@ -285,6 +309,67 @@ public class StringUtil {
             }
         }
         return -1;
+    }
+
+    /**
+     *
+    * @param str
+    * @param searchChar
+    * @return
+    */
+    public static int indexOf(String str, char searchChar) {
+        return str != null && str.length() != 0 ? str.indexOf(searchChar) : -1;
+    }
+
+    /**
+     *
+    * @param str
+    * @param searchChar
+    * @param startPos
+    * @return
+    */
+    public static int indexOf(String str, char searchChar, int startPos) {
+        return str != null && str.length() != 0 ? str.indexOf(searchChar, startPos) : -1;
+    }
+
+    /**
+     *
+    * @param str
+    * @param searchStr
+    * @return
+    */
+    public static int indexOf(String str, String searchStr) {
+        return str != null && searchStr != null ? str.indexOf(searchStr) : -1;
+    }
+
+    /**
+     *
+    * @param str
+    * @param searchStr
+    * @param startPos
+    * @return
+    */
+    public static int indexOf(String str, String searchStr, int startPos) {
+        if (str != null && searchStr != null) {
+            return searchStr.length() == 0 && startPos >= str.length() ? str.length() : str
+                .indexOf(searchStr, startPos);
+        } else {
+            return -1;
+        }
+    }
+
+    /**
+     *
+    * @param str1
+    * @param str2
+    * @return
+    */
+    public static boolean equals(String str1, String str2) {
+        if (str1 == null) {
+            return str2 == null;
+        } else {
+            return str1.equals(str2);
+        }
     }
 
 }

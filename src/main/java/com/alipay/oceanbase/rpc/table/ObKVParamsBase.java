@@ -60,7 +60,8 @@ public abstract class ObKVParamsBase {
         return null;
     }
 
-    public void encode(ObByteBuf buf) { }
+    public void encode(ObByteBuf buf) {
+    }
 
     public Object decode(ByteBuf buf) {
         return null;

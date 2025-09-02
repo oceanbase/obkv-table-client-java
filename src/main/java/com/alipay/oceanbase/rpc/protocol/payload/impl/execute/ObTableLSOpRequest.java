@@ -71,8 +71,9 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
         // 4. encode lsOperation
         lsOperation.encode(buf);
         if (buf.pos != buf.bytes.length) {
-            throw new IllegalArgumentException("error in encode lsOperationRequest (" +
-                    "pos:" + buf.pos + ", buf.capacity:" + buf.bytes.length + ")");
+            throw new IllegalArgumentException("error in encode lsOperationRequest (" + "pos:"
+                                               + buf.pos + ", buf.capacity:" + buf.bytes.length
+                                               + ")");
         }
         return buf.bytes;
     }
@@ -98,8 +99,9 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
     @Override
     public long getPayloadContentSize() {
         if (payLoadContentSize == INVALID_PAYLOAD_CONTENT_SIZE) {
-            payLoadContentSize = lsOperation.getPayloadSize() + Serialization.getNeedBytes(credential) + 1 // entityType
-                    + 1; // consistencyLevel
+            payLoadContentSize = lsOperation.getPayloadSize()
+                                 + Serialization.getNeedBytes(credential) + 1 // entityType
+                                 + 1; // consistencyLevel
         }
         return payLoadContentSize;
     }

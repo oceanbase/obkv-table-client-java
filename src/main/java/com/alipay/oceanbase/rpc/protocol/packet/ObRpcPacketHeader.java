@@ -303,7 +303,6 @@ public class ObRpcPacketHeader {
         return (flag & IS_KV_REQUEST_FALG) != 0;
     }
 
-
     /*
      * Set stream next.
      */

@@ -283,15 +283,17 @@ public class ObTableGetTest {
         try {
             // insert
             client.insertOrUpdate(tableName)
-                    .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
-                    .addMutateColVal(colVal("c3", "c3_val")).execute();
+                .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
+                .addMutateColVal(colVal("c3", "c3_val")).execute();
 
             // select c1,c2
             BatchOperation batch = client.batchOperation(tableName);
             Get get1 = client.get(tableName)
-                    .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val"))).select("c1", "c2", "c3");
+                .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
+                .select("c1", "c2", "c3");
             Get get2 = client.get(tableName)
-                    .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val"))).select("c1", "c2", "c3");
+                .setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
+                .select("c1", "c2", "c3");
             batch.addOperation(get1, get2);
             BatchOperationResult res = batch.execute();
             Assert.assertNotNull(res);
@@ -306,7 +308,7 @@ public class ObTableGetTest {
             }
         } finally {
             client.delete(tableName).setRowKey(row(colVal("c1", "c1_val"), colVal("c2", "c2_val")))
-                    .execute();
+                .execute();
         }
     }
 }

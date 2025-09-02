@@ -46,6 +46,8 @@ import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.*;
 import com.alipay.remoting.util.StringUtils;
+import com.alipay.sofa.dds.config.ExtendedDataSourceConfig;
+import com.alipay.sofa.dds.sdk.DdsSDK;
 import org.slf4j.Logger;
 
 import java.lang.reflect.Array;
@@ -110,6 +112,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private String                                            currentIDC;
     private ObReadConsistency                                 readConsistency                         = ObReadConsistency.STRONG;
     private ObRoutePolicy                                     obRoutePolicy                           = ObRoutePolicy.IDC_ORDER;
+    private DdsSDK                                            ddsSDK;
+
+    private String                                            appName                                 = "";
+    private String                                            appDataSourceName                       = "";
+
+    private String                                            version                                 = "";
+
+    private long                                              configFetchOnceTimeoutMillis            = 0;
 
     private boolean                                           odpMode                                 = false;
 
@@ -140,6 +150,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             initProperties();
             // 4. init metadata
             initMetadata();
+            if (StringUtil.isEmpty(appName)) {
+                setAppName("");
+            }
             initialized = true;
         } catch (Throwable t) {
             BOOT.warn("failed to init ObTableClient", t);
@@ -152,6 +165,93 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         } finally {
             BOOT.info("init ObTableClient successfully");
             statusLock.unlock();
+        }
+    }
+
+   /**
+     * 使用 dds 应用数据源初始化
+     */
+    public void initSingleDatasourceWithDDSConfig() {
+        this.ddsSDK = new DdsSDK();
+        ddsSDK.setAppName(appName);
+        ddsSDK.setAppDataSourceName(appDataSourceName);
+        ddsSDK.setVersion(version);
+        if (configFetchOnceTimeoutMillis != 0) {
+            ddsSDK.setConfigFetchOnceTimeoutMillis(configFetchOnceTimeoutMillis);
+        }
+
+        ddsSDK.init();
+
+        Map<String, ExtendedDataSourceConfig> configs = ddsSDK.getDdsDataSourceConfig().getExtendedDataSourceConfigs();
+        if (configs.size() != 1) {
+            throw new RuntimeException("ObTableClient initWithDDSConfig can only support get single groupDataSource, actual size:" + configs.size());
+        }
+        try {
+            for (Map.Entry<String, ExtendedDataSourceConfig> configEntry : configs
+                    .entrySet()) {
+                ExtendedDataSourceConfig config = configEntry.getValue();
+                this.setFullUserName(config.getUsername());
+                this.setParamURL(config.getJdbcUrl());
+                this.setPassword(config.getPassword());
+
+                this.init();
+            }
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    /**
+     *
+     * 仅仅提供使用给 dds 单库单表模式的配置初始化
+     * 分库分表请使用 ddsObTableClient 初始化
+     * @param appName
+     * @param appDsName
+     * @param version
+     * @param timeOutMillis
+     */
+    public void initSingleDatasourceWithDDSConfig(String appName, String appDsName, String version, long timeOutMillis) {
+        this.ddsSDK = new DdsSDK();
+        this.setAppName(appName);
+        this.setAppDataSourceName(appDsName);
+        this.setVersion(version);
+        this.setConfigFetchOnceTimeoutMillis(timeOutMillis);
+
+        ddsSDK.setAppName(appName);
+        ddsSDK.setAppDataSourceName(appDsName);
+        ddsSDK.setVersion(version);
+        ddsSDK.setConfigFetchOnceTimeoutMillis(timeOutMillis);
+        ddsSDK.init();
+
+        Map<String, ExtendedDataSourceConfig> configs = ddsSDK.getDdsDataSourceConfig().getExtendedDataSourceConfigs();
+        if (configs.size() != 1) {
+            throw new RuntimeException("ObTableClient initWithDDSConfig can only support get single groupDataSource, actual size:" + configs.size());
+        }
+        try {
+            for (Map.Entry<String, ExtendedDataSourceConfig> configEntry : configs
+                    .entrySet()) {
+                ExtendedDataSourceConfig config = configEntry.getValue();
+                this.setFullUserName(config.getUsername());
+                this.setParamURL(config.getJdbcUrl());
+                this.setPassword(config.getPassword());
+
+                this.init();
+            }
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    /**
+     * 在 init 后调用
+     * 可以提前初始化 table entry，防止初次访问拉取元数据超时
+     * @param tableNames 表名
+     * @throws Exception
+     */
+    // TODO(maochongxin): 当前应该不需要了
+    public void warmUp(String[] tableNames) throws Exception {
+        for (String tableName : tableNames) {
+            getOrRefreshTableEntry(tableName, true);
         }
     }
 
@@ -3188,4 +3288,72 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
         return ((ObObj) mutation.getRowKeyValues().get(index)).getValue();
     }
+
+    /**
+     * 设置 app 名，默认获取环境变量 appName
+     * @param appName
+     */
+    public void setAppName(String appName) {
+        if (StringUtils.isBlank(appName)) {
+            this.appName = System.getProperty("appName");
+        } else {
+            this.appName = appName;
+        }
+
+        if (StringUtils.isBlank(appName)) {
+            this.appName = this.database;
+        }
+
+        BOOT.info("set appname is {}", this.appName);
+    }
+
+    /**
+     *
+     * @return
+     */
+    public String getVersion() {
+        return version;
+    }
+
+    /**
+     *
+     * @param version
+     */
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
+
+    /**
+     *
+     * @return
+     */
+    public String getAppName() {
+        return this.appName;
+    }
+
+    public void setAppDataSourceName(String appDataSourceName) {
+        this.appDataSourceName = appDataSourceName;
+    }
+
+    public String getAppDataSourceName() {
+        return this.appDataSourceName;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public long getConfigFetchOnceTimeoutMillis() {
+        return configFetchOnceTimeoutMillis;
+    }
+
+    /**
+     *
+     * @param configFetchOnceTimeoutMillis
+     */
+    public void setConfigFetchOnceTimeoutMillis(long configFetchOnceTimeoutMillis) {
+        this.configFetchOnceTimeoutMillis = configFetchOnceTimeoutMillis;
+    }
+    
 }

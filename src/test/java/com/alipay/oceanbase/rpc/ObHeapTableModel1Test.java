@@ -102,7 +102,8 @@ public class ObHeapTableModel1Test {
     public void testSingleInsert1() throws Exception {
         try {
             // 插入数据
-            MutationResult result1 = client.insert(tableName).setPartitionKey(row(colVal("spk", 1001L)))
+            MutationResult result1 = client.insert(tableName)
+                .setPartitionKey(row(colVal("spk", 1001L)))
                 .addMutateColVal(colVal("c1", 1001L), colVal("c2", "test1"), colVal("c3", 2001L))
                 .execute();
 
@@ -110,7 +111,8 @@ public class ObHeapTableModel1Test {
             System.out.println("Single insert successful: " + result1 + " row affected");
 
             // 插入数据
-            MutationResult result2 = client.insert(tableName).setPartitionKey(row(colVal("spk", 1002L)))
+            MutationResult result2 = client.insert(tableName)
+                .setPartitionKey(row(colVal("spk", 1002L)))
                 .addMutateColVal(colVal("c1", 1002L), colVal("c2", "test2"), colVal("c3", 2002L))
                 .execute();
 
@@ -149,7 +151,8 @@ public class ObHeapTableModel1Test {
     public void testSingleInsert2() throws Exception {
         try {
             // 插入数据
-            MutationResult result1 = client.insert(tableName).setPartitionKey(row(colVal("spk", 1001L)))
+            MutationResult result1 = client.insert(tableName)
+                .setPartitionKey(row(colVal("spk", 1001L)))
                 .addMutateColVal(colVal("c1", 1001L), colVal("c2", "test1"), colVal("c3", 2001L))
                 .execute();
 
@@ -157,7 +160,8 @@ public class ObHeapTableModel1Test {
             System.out.println("Single insert successful: " + result1 + " row affected");
 
             // 插入相同数据
-            MutationResult result2 = client.insert(tableName).setPartitionKey(row(colVal("spk", 1001L)))
+            MutationResult result2 = client.insert(tableName)
+                .setPartitionKey(row(colVal("spk", 1001L)))
                 .addMutateColVal(colVal("c1", 1001L), colVal("c2", "test1"), colVal("c3", 2001L))
                 .execute();
 
@@ -282,7 +286,8 @@ public class ObHeapTableModel1Test {
     public void testSingleReplace1() throws Exception {
         try {
             // 插入数据
-            MutationResult result1 = client.replace(tableName).setPartitionKey(row(colVal("spk", 1001L)))
+            MutationResult result1 = client.replace(tableName)
+                .setPartitionKey(row(colVal("spk", 1001L)))
                 .addMutateColVal(colVal("c1", 1001L), colVal("c2", "test1"), colVal("c3", 2001L))
                 .execute();
 
@@ -290,7 +295,8 @@ public class ObHeapTableModel1Test {
             System.out.println("Single replace successful: " + result1 + " row affected");
 
             // 插入数据
-            MutationResult result2 = client.replace(tableName).setPartitionKey(row(colVal("spk", 1002L)))
+            MutationResult result2 = client.replace(tableName)
+                .setPartitionKey(row(colVal("spk", 1002L)))
                 .addMutateColVal(colVal("c1", 1002L), colVal("c2", "test2"), colVal("c3", 2002L))
                 .execute();
 
@@ -329,7 +335,8 @@ public class ObHeapTableModel1Test {
     public void testSingleReplace2() throws Exception {
         try {
             // 插入数据
-            MutationResult result1 = client.replace(tableName).setPartitionKey(row(colVal("spk", 1001L)))
+            MutationResult result1 = client.replace(tableName)
+                .setPartitionKey(row(colVal("spk", 1001L)))
                 .addMutateColVal(colVal("c1", 1001L), colVal("c2", "test1"), colVal("c3", 2001L))
                 .execute();
 
@@ -337,7 +344,8 @@ public class ObHeapTableModel1Test {
             System.out.println("Single replace successful: " + result1 + " row affected");
 
             // 插入数据
-            MutationResult result2 = client.replace(tableName).setPartitionKey(row(colVal("spk", 1001L)))
+            MutationResult result2 = client.replace(tableName)
+                .setPartitionKey(row(colVal("spk", 1001L)))
                 .addMutateColVal(colVal("c1", 1001L), colVal("c2", "test1"), colVal("c3", 2001L))
                 .execute();
 
@@ -659,8 +667,8 @@ public class ObHeapTableModel1Test {
             // 添加多个插入操作
             for (int i = 1; i <= 3; i++) {
                 Insert insert = client.insert(tableName);
-                insert.setPartitionKey(row(colVal("spk", 1001L))).addMutateColVal(colVal("c1", 1001L),
-                    colVal("c2", "batch_test1"), colVal("c3", 2001L));
+                insert.setPartitionKey(row(colVal("spk", 1001L))).addMutateColVal(
+                    colVal("c1", 1001L), colVal("c2", "batch_test1"), colVal("c3", 2001L));
                 batch.addOperation(insert);
             }
 
@@ -821,8 +829,8 @@ public class ObHeapTableModel1Test {
             // 添加多个插入操作
             for (int i = 1; i <= 3; i++) {
                 Replace replace = client.replace(tableName);
-                replace.setPartitionKey(row(colVal("spk", 1001L))).addMutateColVal(colVal("c1", 1001L),
-                    colVal("c2", "batch_test1"), colVal("c3", 2001L));
+                replace.setPartitionKey(row(colVal("spk", 1001L))).addMutateColVal(
+                    colVal("c1", 1001L), colVal("c2", "batch_test1"), colVal("c3", 2001L));
                 batch.addOperation(replace);
             }
 

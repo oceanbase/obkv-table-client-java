@@ -15,22 +15,22 @@
  * #L%
  */
 
- package com.alipay.oceanbase.rpc;
+package com.alipay.oceanbase.rpc;
 
- import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
- import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
- 
- import org.junit.After;
- import org.junit.Before;
- import org.junit.Test;
- 
- import java.sql.Connection;
- import java.sql.ResultSet;
- import java.sql.Statement;
- 
- import static org.junit.Assert.*;
- import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
- import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
+import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
+import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
+
+import static org.junit.Assert.*;
+import static com.alipay.oceanbase.rpc.mutation.MutationFactory.colVal;
+import static com.alipay.oceanbase.rpc.mutation.MutationFactory.row;
 
 /*
  * 表模型8：普通分区堆表 + 自增列 + 默认更新时间 + TTL
@@ -108,8 +108,7 @@ public class ObHeapTableModel8Test {
     public void testTTL1() throws Exception {
         try {
             // 插入数据
-            MutationResult result1 = client
-                .insertOrUpdate(tableName)
+            MutationResult result1 = client.insertOrUpdate(tableName)
                 .setPartitionKey(row(colVal("c1", 1001L)))
                 .addMutateColVal(colVal("c1", 1001L), colVal("c2", "test1"), colVal("c4", 4001L))
                 .execute();
@@ -121,8 +120,7 @@ public class ObHeapTableModel8Test {
             Thread.sleep(6000);
 
             // 插入数据, c1=1001 已经过期，对外不可见，内核会先删除旧行，再写入新行
-            MutationResult result2 = client
-                .insertOrUpdate(tableName)
+            MutationResult result2 = client.insertOrUpdate(tableName)
                 .setPartitionKey(row(colVal("c1", 1001L)))
                 .addMutateColVal(colVal("c1", 1001L), colVal("c2", "test2"), colVal("c4", 4002L))
                 .execute();
@@ -155,8 +153,7 @@ public class ObHeapTableModel8Test {
     public void testTTL2() throws Exception {
         try {
             // 插入数据
-            MutationResult result1 = client
-                .insertOrUpdate(tableName)
+            MutationResult result1 = client.insertOrUpdate(tableName)
                 .setPartitionKey(row(colVal("c1", 1001L)))
                 .addMutateColVal(colVal("c1", 1001L), colVal("c2", "test1"), colVal("c4", 4001L))
                 .execute();

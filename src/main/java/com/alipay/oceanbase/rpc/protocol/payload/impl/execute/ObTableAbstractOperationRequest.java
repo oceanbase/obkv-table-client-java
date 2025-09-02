@@ -37,6 +37,7 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
     protected ObTableEntityType       entityType              = ObTableEntityType.KV;          // entity type. 如果明确entity类型，可以用于优化，如果不知道，设定为ObTableEntityType::DYNAMIC
     protected ObTableConsistencyLevel consistencyLevel        = ObTableConsistencyLevel.STRONG; // read consistency level. 读一致性，是否要强一致性等（必须读到刚写入的数据）. 目前只支持STRONG.
     protected ObTableOptionFlag       option_flag             = ObTableOptionFlag.DEFAULT;
+    protected boolean                 returningRowKey         = false;
     protected boolean                 returningAffectedEntity = false;
     protected boolean                 returningAffectedRows   = false;
 

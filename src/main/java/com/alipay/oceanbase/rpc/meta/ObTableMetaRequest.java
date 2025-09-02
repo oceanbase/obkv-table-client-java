@@ -55,7 +55,7 @@ public class ObTableMetaRequest extends AbstractPayload implements Credentialabl
         System.arraycopy(Serialization.encodeBytesString(credential), 0, bytes, idx, len);
         idx += len;
         len = Serialization.getNeedBytes(metaType.getType());
-        System.arraycopy(Serialization.encodeI8((short)metaType.getType()), 0, bytes, idx, len);
+        System.arraycopy(Serialization.encodeI8((short) metaType.getType()), 0, bytes, idx, len);
         idx += len;
         len = Serialization.getNeedBytes(data);
         System.arraycopy(Serialization.encodeVString(data), 0, bytes, idx, len);
@@ -71,7 +71,7 @@ public class ObTableMetaRequest extends AbstractPayload implements Credentialabl
     public void setMetaType(ObTableRpcMetaType metaType) {
         this.metaType = metaType;
     }
-    
+
     public ObTableRpcMetaType getMetaType() {
         return metaType;
     }
@@ -79,7 +79,7 @@ public class ObTableMetaRequest extends AbstractPayload implements Credentialabl
     public void setData(String data) {
         this.data = data;
     }
-    
+
     public String getData() {
         return data;
     }

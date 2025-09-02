@@ -52,7 +52,7 @@ public class ObFTSParams extends ObKVParamsBase {
     }
 
     public void encode(ObByteBuf buf) {
-        buf.writeByte((byte)pType.ordinal());
+        buf.writeByte((byte) pType.ordinal());
         Serialization.encodeVString(buf, searchText);
     }
 
