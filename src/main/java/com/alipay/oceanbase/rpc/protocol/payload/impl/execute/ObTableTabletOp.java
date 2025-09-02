@@ -94,7 +94,8 @@ public class ObTableTabletOp extends AbstractPayload {
         if (writeBufferLength != this.payLoadContentSize) {
             throw new IllegalArgumentException("error in encode ObTableTabletOp (" +
                     "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")"+
-                    "ObTableTabletOp details: " + this.toString());
+                    "ObTableTabletOp details: " + this.toString() +
+                    "memberEncodeLengths: " + memberEncodeLengths.toString()); 
         }
     }
 
@@ -132,12 +133,31 @@ public class ObTableTabletOp extends AbstractPayload {
     public long getPayloadContentSize() {
         if (this.payLoadContentSize == INVALID_PAYLOAD_CONTENT_SIZE) {
             long payloadContentSize = 0;
-            payloadContentSize += Serialization.getNeedBytes(singleOperations.size());
+            
+            // 清空之前的长度记录
+            memberEncodeLengths.clear();
+            
+            // 1. singleOperations 相关长度
+            long singleOperationsCountSize = Serialization.getNeedBytes(singleOperations.size());
+            payloadContentSize += singleOperationsCountSize;
+            memberEncodeLengths.add(singleOperationsCountSize);
+            
             for (ObTableSingleOp operation : singleOperations) {
-                payloadContentSize += operation.getPayloadSize();
+                long operationSize = operation.getPayloadSize();
+                payloadContentSize += operationSize;
+                memberEncodeLengths.add(operationSize);
             }
 
-            this.payLoadContentSize = payloadContentSize + tabletIdSize + Serialization.getNeedBytes(optionFlag.getValue());
+            // 2. 其他固定字段长度
+            long tabletIdSizeValue = tabletIdSize;
+            payloadContentSize += tabletIdSizeValue;
+            memberEncodeLengths.add(tabletIdSizeValue);
+            
+            long optionFlagSize = Serialization.getNeedBytes(optionFlag.getValue());
+            payloadContentSize += optionFlagSize;
+            memberEncodeLengths.add(optionFlagSize);
+
+            this.payLoadContentSize = payloadContentSize;
         }
         return this.payLoadContentSize;
     }

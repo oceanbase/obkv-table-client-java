@@ -139,7 +139,8 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         if (writeBufferLength != this.payLoadContentSize) {
             throw new IllegalArgumentException("error in encode ObTableSingleOpEntity (" +
                     "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")"+
-                    "ObTableSingleOpEntity details: " + this.toString());
+                    "ObTableSingleOpEntity details: " + this.toString() +
+                    "memberEncodeLengths: " + memberEncodeLengths.toString());
         }
     }
 
@@ -205,26 +206,56 @@ public class ObTableSingleOpEntity extends AbstractPayload {
     public long getPayloadContentSize() {
         if (this.payLoadContentSize == INVALID_PAYLOAD_CONTENT_SIZE) {
             long payloadContentSize = 0;
+            
+            // 清空之前的长度记录
+            memberEncodeLengths.clear();
 
-            payloadContentSize += Serialization.getNeedBytes(rowKeyBitLen);
-            payloadContentSize += rowKeyBitMap.length;
+            // 1. rowKey bitmap 相关长度
+            long rowKeyBitmapSize = Serialization.getNeedBytes(rowKeyBitLen);
+            payloadContentSize += rowKeyBitmapSize;
+            memberEncodeLengths.add(rowKeyBitmapSize);
+            
+            long rowKeyBitmapBytes = rowKeyBitMap.length;
+            payloadContentSize += rowKeyBitmapBytes;
+            memberEncodeLengths.add(rowKeyBitmapBytes);
 
-            payloadContentSize += Serialization.getNeedBytes(rowkey.size());
+            // 2. rowkey 相关长度
+            long rowKeyCountSize = Serialization.getNeedBytes(rowkey.size());
+            payloadContentSize += rowKeyCountSize;
+            memberEncodeLengths.add(rowKeyCountSize);
+            
             for (ObObj obj : rowkey) {
-                payloadContentSize += ObTableSerialUtil.getEncodedSize(obj);
+                long objSize = ObTableSerialUtil.getEncodedSize(obj);
+                payloadContentSize += objSize;
+                memberEncodeLengths.add(objSize);
             }
 
+            // 3. properties bitmap 相关长度
             if (ignoreEncodePropertiesColumnNames) {
-                payloadContentSize += Serialization.getNeedBytes(0L);
+                long propertiesBitmapSize = Serialization.getNeedBytes(0L);
+                payloadContentSize += propertiesBitmapSize;
+                memberEncodeLengths.add(propertiesBitmapSize);
             } else {
-                payloadContentSize += Serialization.getNeedBytes(propertiesBitLen);
-                payloadContentSize += propertiesBitMap.length;
+                long propertiesBitmapSize = Serialization.getNeedBytes(propertiesBitLen);
+                payloadContentSize += propertiesBitmapSize;
+                memberEncodeLengths.add(propertiesBitmapSize);
+                
+                long propertiesBitmapBytes = propertiesBitMap.length;
+                payloadContentSize += propertiesBitmapBytes;
+                memberEncodeLengths.add(propertiesBitmapBytes);
             }
 
-            payloadContentSize += Serialization.getNeedBytes(propertiesValues.size());
+            // 4. properties values 相关长度
+            long propertiesCountSize = Serialization.getNeedBytes(propertiesValues.size());
+            payloadContentSize += propertiesCountSize;
+            memberEncodeLengths.add(propertiesCountSize);
+            
             for (ObObj obj : propertiesValues) {
-                payloadContentSize += ObTableSerialUtil.getEncodedSize(obj);
+                long objSize = ObTableSerialUtil.getEncodedSize(obj);
+                payloadContentSize += objSize;
+                memberEncodeLengths.add(objSize);
             }
+            
             this.payLoadContentSize = payloadContentSize;
         }
 

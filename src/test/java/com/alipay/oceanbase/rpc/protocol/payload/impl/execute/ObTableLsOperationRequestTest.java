@@ -26,6 +26,8 @@ import com.alipay.oceanbase.rpc.table.ObKVParams;
 import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.ObBytesString;
+import com.alipay.oceanbase.rpc.util.Serialization;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObTableSerialUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;
@@ -36,17 +38,18 @@ import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.sql.Timestamp;
 
 import static com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType.SCAN;
 import static com.alipay.oceanbase.rpc.table.ObKVParamsBase.paramType.HBase;
 
 public class ObTableLsOperationRequestTest {
-    private int lsOpReqSize = 10;
-    private int tabletOpSize = 1;
-    private int singleOpSize = 1;
-    private int defaultIterSize = 1;
+    private int                 lsOpReqSize     = 10;
+    private int                 tabletOpSize    = 1;
+    private int                 singleOpSize    = 1;
+    private int                 defaultIterSize = 1;
 
-    private static final Random random = new Random();
+    private static final Random random          = new Random();
 
     @Test
     public void testLsReqEncodePerformance() {
@@ -146,6 +149,77 @@ public class ObTableLsOperationRequestTest {
         }
         // Calculate and print average times
         perfComparator.printResult("testSingleOpEntityEncode");
+    }
+
+    @Test
+    public void testSingleOpEntityEncodeLengthMismatch() {
+        // 1. 构造4个rowKey名称
+        String[] rowKeyNames = {"id"};
+        
+        // 2. 构造对应的rowKey值
+        Object[] rowKey = { 211453 };
+        
+        // 3. 构造properties名称和值（模拟错误信息中的数据）
+        String[] propertiesNames = {"col1", "col2", "col3", "col4"};
+
+        Timestamp c1Val = new Timestamp(System.currentTimeMillis());
+
+        Object[] propertiesValues = {
+            c1Val,
+            "?/.92$=]w:S{>%r#2\"6W!!2x?",
+            90,
+            "'2p\"$d70 %N?#\"b7<~)12 \"n.0:("
+        };
+        
+        // 4. 创建实体
+        ObTableSingleOpEntity entity = ObTableSingleOpEntity.getInstance(
+            rowKeyNames, rowKey, propertiesNames, propertiesValues
+        );
+        
+        // 5. 设置列名索引映射（模拟adjustRowkeyColumnName和adjustPropertiesColumnName的调用）
+        Map<String, Long> rowkeyColumnIdxMap = IntStream.range(0, rowKeyNames.length)
+            .boxed()
+            .collect(Collectors.toMap(i -> rowKeyNames[i], i -> Long.valueOf(i)));
+        
+        Map<String, Long> propColumnIdxMap = IntStream.range(0, propertiesNames.length)
+            .boxed()
+            .collect(Collectors.toMap(i -> propertiesNames[i], i -> Long.valueOf(i)));
+        
+        // 6. 调整列名（这会设置bitmap长度）
+        entity.adjustRowkeyColumnName(rowkeyColumnIdxMap);
+        entity.adjustPropertiesColumnName(propColumnIdxMap);
+        
+        // 7. 设置忽略properties列名编码（模拟错误信息中的状态）
+        entity.setIgnoreEncodePropertiesColumnNames(true);
+        
+        // 8. 验证序列化长度计算
+        long calculatedSize = entity.getPayloadContentSize();
+        System.out.println("Calculated payload size: " + calculatedSize);
+        
+        // 9. 执行序列化并验证长度
+        try {
+            // 使用ObByteBuf进行序列化
+            byte[] encodeBytes = new byte[(int) entity.getPayloadSize()];
+            ObByteBuf byteBuf = new ObByteBuf(encodeBytes);
+            entity.encode(byteBuf);
+            
+            // 验证实际写入长度
+            int actualWrittenLength = byteBuf.pos;
+            System.out.println("Actual written length: " + actualWrittenLength);
+            System.out.println("Calculated size without header: " + calculatedSize);
+            System.out.println("Entity details: " + entity.toString());
+        } catch (IllegalArgumentException e) {
+            // 如果捕获到长度不匹配异常，打印详细信息
+            System.err.println("Caught length mismatch exception: " + e.getMessage());
+            System.err.println("Entity details: " + entity.toString());
+            
+            // 重新计算并打印详细信息
+            long recalculatedSize = entity.getPayloadContentSize();
+            System.err.println("Recalculated size: " + recalculatedSize);
+            
+            // 重新抛出异常以便测试失败
+            throw e;
+        }
     }
 
     @Test
@@ -295,20 +369,22 @@ public class ObTableLsOperationRequestTest {
         perfComparator.printResult("testDefaultKVParamsEncode");
     }
 
-
     private static void assertEncodeByteArray(byte[] bytes1, byte[] bytes2) {
-        if (bytes1 == bytes2) return;
-        if (bytes1 == null || bytes2 == null) Assert.fail();
-        if (bytes1.length != bytes2.length) Assert.fail();
+        if (bytes1 == bytes2)
+            return;
+        if (bytes1 == null || bytes2 == null)
+            Assert.fail();
+        if (bytes1.length != bytes2.length)
+            Assert.fail();
 
         for (int i = 0; i < bytes1.length; i++) {
             if (bytes1[i] != bytes2[i]) {
-                System.err.println("byte not equal in index:"+ i + " ,bytes1:" + bytes1[i] + " ,bytes2:" + bytes2[i]);
+                System.err.println("byte not equal in index:" + i + " ,bytes1:" + bytes1[i]
+                                   + " ,bytes2:" + bytes2[i]);
                 Assert.assertEquals(bytes1, bytes2);
             }
         }
     }
-
 
     private ObTableLSOpRequest buildLsReq() {
         ObTableLSOpRequest lsOpReq = new ObTableLSOpRequest();
@@ -476,6 +552,7 @@ public class ObTableLsOperationRequestTest {
         return range;
     }
 }
+
 class PerformanceComparator {
     PerformanceCalculator calc1 = new PerformanceCalculator();
     PerformanceCalculator calc2 = new PerformanceCalculator();
@@ -508,7 +585,8 @@ class PerformanceComparator {
         if (!calc2.isValid() && !calc1.isValid()) {
             System.out.println("not valid results");
         }
-        System.out.println("===========================================================================");
+        System.out
+            .println("===========================================================================");
     }
 }
 
@@ -546,7 +624,7 @@ class PerformanceCalculator {
     }
 
     public void printResults(String msg) {
-        System.out.println(msg +  ": \n\taverage execution time: " + getAverageTime() + " ns");
+        System.out.println(msg + ": \n\taverage execution time: " + getAverageTime() + " ns");
     }
 
     public void clear() {

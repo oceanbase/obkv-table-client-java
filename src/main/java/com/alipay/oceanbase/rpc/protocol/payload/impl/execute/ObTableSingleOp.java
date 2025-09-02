@@ -104,7 +104,8 @@ public class ObTableSingleOp extends AbstractPayload {
         if (writeBufferLength != this.payLoadContentSize) {
             throw new IllegalArgumentException("error in encode ObTableSingleOp (" +
                     "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")"+
-                    "ObTableSingleOp details: " + this.toString());
+                    "ObTableSingleOp details: " + this.toString() +
+                    "memberEncodeLengths: " + memberEncodeLengths.toString());
         }
     }
 
@@ -136,14 +137,37 @@ public class ObTableSingleOp extends AbstractPayload {
     @Override
     public long getPayloadContentSize() {
         if (this.payLoadContentSize == INVALID_PAYLOAD_CONTENT_SIZE) {
-            long payloadContentSize = Serialization.getNeedBytes(singleOpType.getByteValue());
-            payloadContentSize += Serialization.getNeedBytes(singleOpFlag.getValue());
+            long payloadContentSize = 0;
+            
+            // 清空之前的长度记录
+            memberEncodeLengths.clear();
+            
+            // 1. singleOpType 长度
+            long singleOpTypeSize = Serialization.getNeedBytes(singleOpType.getByteValue());
+            payloadContentSize += singleOpTypeSize;
+            memberEncodeLengths.add(singleOpTypeSize);
+            
+            // 2. singleOpFlag 长度
+            long singleOpFlagSize = Serialization.getNeedBytes(singleOpFlag.getValue());
+            payloadContentSize += singleOpFlagSize;
+            memberEncodeLengths.add(singleOpFlagSize);
+            
+            // 3. query 长度（如果需要编码）
             if (ObTableOperationType.needEncodeQuery(singleOpType)) {
-                payloadContentSize += query.getPayloadSize();
+                long querySize = query.getPayloadSize();
+                payloadContentSize += querySize;
+                memberEncodeLengths.add(querySize);
             }
-            payloadContentSize += Serialization.getNeedBytes(entities.size());
+            
+            // 4. entities 相关长度
+            long entitiesCountSize = Serialization.getNeedBytes(entities.size());
+            payloadContentSize += entitiesCountSize;
+            memberEncodeLengths.add(entitiesCountSize);
+            
             for (ObTableSingleOpEntity entity : entities) {
-                payloadContentSize += entity.getPayloadSize();
+                long entitySize = entity.getPayloadSize();
+                payloadContentSize += entitySize;
+                memberEncodeLengths.add(entitySize);
             }
             this.payLoadContentSize = payloadContentSize;
         }

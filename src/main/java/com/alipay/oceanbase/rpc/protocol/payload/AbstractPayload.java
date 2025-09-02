@@ -21,6 +21,7 @@ import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.alipay.oceanbase.rpc.property.Property.RPC_OPERATION_TIMEOUT;
@@ -52,6 +53,8 @@ public abstract class AbstractPayload implements ObPayload {
     protected long                     payLoadContentSize = INVALID_PAYLOAD_CONTENT_SIZE;
     protected static volatile byte[]   defaultEncodeBytes = null;
     protected static volatile long 	   defaultPayLoadSize = INVALID_PAYLOAD_CONTENT_SIZE;
+    // debug
+    protected ArrayList<Long>          memberEncodeLengths = new ArrayList<>();
     /*
      * Get pcode.
      */

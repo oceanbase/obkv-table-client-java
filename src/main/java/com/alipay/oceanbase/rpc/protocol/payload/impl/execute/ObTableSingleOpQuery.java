@@ -156,7 +156,8 @@ public class ObTableSingleOpQuery extends ObTableQuery {
         if (writeBufferLength != this.payLoadContentSize) {
             throw new IllegalArgumentException("error in encode ObTableSingleOpQuery (" +
                     "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")"+
-                    "ObTableSingleOpQuery details: " + this.toString());
+                    "ObTableSingleOpQuery details: " + this.toString() +
+                    "memberEncodeLengths: " + memberEncodeLengths.toString());
         }
     }
 
@@ -206,40 +207,83 @@ public class ObTableSingleOpQuery extends ObTableQuery {
     public long getPayloadContentSize() {
         if (this.payLoadContentSize == INVALID_PAYLOAD_CONTENT_SIZE) {
             long payloadContentSize = 0;
+            
+            // 清空之前的长度记录
+            memberEncodeLengths.clear();
 
-            payloadContentSize += Serialization.getNeedBytes(scanRangeBitLen);
-            payloadContentSize += scanRangeBitMap.length;
+            // 1. scanRange 相关长度
+            long scanRangeBitLenSize = Serialization.getNeedBytes(scanRangeBitLen);
+            payloadContentSize += scanRangeBitLenSize;
+            memberEncodeLengths.add(scanRangeBitLenSize);
+            
+            long scanRangeBitMapSize = scanRangeBitMap.length;
+            payloadContentSize += scanRangeBitMapSize;
+            memberEncodeLengths.add(scanRangeBitMapSize);
 
-            payloadContentSize += Serialization.getNeedBytes(keyRanges.size());
+            // 2. keyRanges 相关长度
+            long keyRangesCountSize = Serialization.getNeedBytes(keyRanges.size());
+            payloadContentSize += keyRangesCountSize;
+            memberEncodeLengths.add(keyRangesCountSize);
+            
             for (ObNewRange range : keyRanges) {
-                payloadContentSize += ObTableSerialUtil.getEncodedSize(range);
+                long rangeSize = ObTableSerialUtil.getEncodedSize(range);
+                payloadContentSize += rangeSize;
+                memberEncodeLengths.add(rangeSize);
             }
+            
+            // 3. indexName 长度
             if (indexName != null && indexName.compareToIgnoreCase("PRIMARY") == 0) {
-                payloadContentSize += primaryIndexByteArray.length;
+                long primaryIndexSize = primaryIndexByteArray.length;
+                payloadContentSize += primaryIndexSize;
+                memberEncodeLengths.add(primaryIndexSize);
             } else {
-                payloadContentSize += Serialization.getNeedBytes(indexName);
+                long indexNameSize = Serialization.getNeedBytes(indexName);
+                payloadContentSize += indexNameSize;
+                memberEncodeLengths.add(indexNameSize);
             }
-            payloadContentSize += Serialization.getNeedBytes(filterString);
+            
+            // 4. filterString 长度
+            long filterStringSize = Serialization.getNeedBytes(filterString);
+            payloadContentSize += filterStringSize;
+            memberEncodeLengths.add(filterStringSize);
 
-            // calculate part required by HBase Batch Get
+            // 5. HBase Batch Get 相关长度
             if (isHbaseQuery && ObGlobal.isHBaseBatchGetSupport()) {
-                payloadContentSize += Serialization.getNeedBytes(selectColumns.size());
+                long selectColumnsCountSize = Serialization.getNeedBytes(selectColumns.size());
+                payloadContentSize += selectColumnsCountSize;
+                memberEncodeLengths.add(selectColumnsCountSize);
+                
                 for (String selectColumn : selectColumns) {
-                    payloadContentSize += Serialization.getNeedBytes(selectColumn);
+                    long columnSize = Serialization.getNeedBytes(selectColumn);
+                    payloadContentSize += columnSize;
+                    memberEncodeLengths.add(columnSize);
                 }
-                payloadContentSize += 1; // scanOrder
+                
+                long scanOrderSize = 1; // scanOrder
+                payloadContentSize += scanOrderSize;
+                memberEncodeLengths.add(scanOrderSize);
 
                 if (isHbaseQuery) {
-                    payloadContentSize += hTableFilter.getPayloadSize();
+                    long hTableFilterSize = hTableFilter.getPayloadSize();
+                    payloadContentSize += hTableFilterSize;
+                    memberEncodeLengths.add(hTableFilterSize);
                 } else {
-                    payloadContentSize += HTABLE_DUMMY_BYTES.length;
+                    long dummySize = HTABLE_DUMMY_BYTES.length;
+                    payloadContentSize += dummySize;
+                    memberEncodeLengths.add(dummySize);
                 }
+                
                 if (isHbaseQuery && obKVParams != null) {
-                    payloadContentSize += obKVParams.getPayloadSize();
+                    long obKVParamsSize = obKVParams.getPayloadSize();
+                    payloadContentSize += obKVParamsSize;
+                    memberEncodeLengths.add(obKVParamsSize);
                 } else {
-                    payloadContentSize += HTABLE_DUMMY_BYTES.length;
+                    long dummySize = HTABLE_DUMMY_BYTES.length;
+                    payloadContentSize += dummySize;
+                    memberEncodeLengths.add(dummySize);
                 }
             }
+            
             this.payLoadContentSize = payloadContentSize;
         }
 

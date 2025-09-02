@@ -156,7 +156,8 @@ public class ObTableLSOperation extends AbstractPayload {
         if (buffLength != this.payLoadContentSize) {
             throw new IllegalArgumentException("error in encode ObTableLsOperation (" +
                     "writeBufferLength:" + buffLength + ", payLoadContentSize:" + this.payLoadContentSize + "), " +
-                    "ObTableLSOperation details: " + this.toString());
+                    "ObTableLSOperation details: " + this.toString() +
+                    "memberEncodeLengths: " + memberEncodeLengths.toString());
         }
     }
 
@@ -214,26 +215,63 @@ public class ObTableLSOperation extends AbstractPayload {
     public long getPayloadContentSize() {
         if (this.payLoadContentSize == INVALID_PAYLOAD_CONTENT_SIZE) {
             long payloadContentSize = 0;
-            payloadContentSize += Serialization.getNeedBytes(tabletOperations.size());
+            
+            // 清空之前的长度记录
+            memberEncodeLengths.clear();
+            
+            // 1. tabletOperations 相关长度
+            long tabletOperationsCountSize = Serialization.getNeedBytes(tabletOperations.size());
+            payloadContentSize += tabletOperationsCountSize;
+            memberEncodeLengths.add(tabletOperationsCountSize);
+            
             for (ObTableTabletOp operation : tabletOperations) {
-                payloadContentSize += operation.getPayloadSize();
+                long operationSize = operation.getPayloadSize();
+                payloadContentSize += operationSize;
+                memberEncodeLengths.add(operationSize);
             }
 
-            payloadContentSize += Serialization.getNeedBytes(rowKeyNames.size());
+            // 2. rowKeyNames 相关长度
+            long rowKeyNamesCountSize = Serialization.getNeedBytes(rowKeyNames.size());
+            payloadContentSize += rowKeyNamesCountSize;
+            memberEncodeLengths.add(rowKeyNamesCountSize);
+            
             for (String rowKeyName : rowKeyNames) {
-                payloadContentSize += Serialization.getNeedBytes(rowKeyName);
+                long nameSize = Serialization.getNeedBytes(rowKeyName);
+                payloadContentSize += nameSize;
+                memberEncodeLengths.add(nameSize);
             }
 
-            payloadContentSize += Serialization.getNeedBytes(propertiesNames.size());
+            // 3. propertiesNames 相关长度
+            long propertiesNamesCountSize = Serialization.getNeedBytes(propertiesNames.size());
+            payloadContentSize += propertiesNamesCountSize;
+            memberEncodeLengths.add(propertiesNamesCountSize);
+            
             for (String propertyName : propertiesNames) {
-                payloadContentSize += Serialization.getNeedBytes(propertyName);
+                long nameSize = Serialization.getNeedBytes(propertyName);
+                payloadContentSize += nameSize;
+                memberEncodeLengths.add(nameSize);
             }
 
-            this.payLoadContentSize = payloadContentSize + LS_ID_SIZE + Serialization.getNeedBytes(optionFlag.getValue())
-                    +  Serialization.getNeedBytes(tableName) + Serialization.getNeedBytes(tableId);
+            // 4. 其他固定字段长度
+            long lsIdSize = LS_ID_SIZE;
+            payloadContentSize += lsIdSize;
+            memberEncodeLengths.add(lsIdSize);
+            
+            long optionFlagSize = Serialization.getNeedBytes(optionFlag.getValue());
+            payloadContentSize += optionFlagSize;
+            memberEncodeLengths.add(optionFlagSize);
+            
+            long tableNameSize = Serialization.getNeedBytes(tableName);
+            payloadContentSize += tableNameSize;
+            memberEncodeLengths.add(tableNameSize);
+            
+            long tableIdSize = Serialization.getNeedBytes(tableId);
+            payloadContentSize += tableIdSize;
+            memberEncodeLengths.add(tableIdSize);
+
+            this.payLoadContentSize = payloadContentSize;
         }
         return this.payLoadContentSize;
-
     }
 
     /*

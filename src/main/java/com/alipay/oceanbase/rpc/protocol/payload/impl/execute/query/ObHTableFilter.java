@@ -70,7 +70,8 @@ public class ObHTableFilter extends AbstractPayload {
         System.arraycopy(Serialization.encodeI8(isValid ? (byte) 1 : (byte) 0), 0, bytes, idx, 1);
         idx++;
         byte[] selectColumnQualifierBytes = Serialization.encodeVi64(selectColumnQualifier.size());
-        System.arraycopy(selectColumnQualifierBytes, 0, bytes, idx, selectColumnQualifierBytes.length);
+        System.arraycopy(selectColumnQualifierBytes, 0, bytes, idx,
+            selectColumnQualifierBytes.length);
         idx += selectColumnQualifierBytes.length;
 
         for (ObBytesString q : selectColumnQualifier) {
@@ -89,7 +90,8 @@ public class ObHTableFilter extends AbstractPayload {
         System.arraycopy(maxVersionsBytes, 0, bytes, idx, maxVersionsBytes.length);
         idx += maxVersionsBytes.length;
         byte[] limitPerRowPerCfBytes = Serialization.encodeVi32(limitPerRowPerCf);
-        System.arraycopy(Serialization.encodeVi32(limitPerRowPerCf), 0, bytes, idx, limitPerRowPerCfBytes.length);
+        System.arraycopy(Serialization.encodeVi32(limitPerRowPerCf), 0, bytes, idx,
+            limitPerRowPerCfBytes.length);
         idx += limitPerRowPerCfBytes.length;
         byte[] offsetPerRowPerCfBytes = Serialization.encodeVi32(offsetPerRowPerCf);
         System.arraycopy(offsetPerRowPerCfBytes, 0, bytes, idx, offsetPerRowPerCfBytes.length);
@@ -101,9 +103,9 @@ public class ObHTableFilter extends AbstractPayload {
     }
 
     protected boolean isUseDefaultEncode() {
-        return isValid == true && selectColumnQualifier.isEmpty() && minStamp == 0 &&
-                maxStamp == Long.MAX_VALUE && maxVersions == 1 && limitPerRowPerCf == -1 &&
-                offsetPerRowPerCf == 0 && filterString == null;
+        return isValid == true && selectColumnQualifier.isEmpty() && minStamp == 0
+               && maxStamp == Long.MAX_VALUE && maxVersions == 1 && limitPerRowPerCf == -1
+               && offsetPerRowPerCf == 0 && filterString == null;
     }
 
     public void encode(ObByteBuf buf) {
@@ -132,9 +134,10 @@ public class ObHTableFilter extends AbstractPayload {
         }
         int writeBufferLength = buf.pos - posStart;
         if (writeBufferLength != this.getPayloadSize()) {
-            throw new IllegalArgumentException("error in encode OHTableFilter (" +
-                    "writeBufferLength:" + writeBufferLength + ", payLoadContentSize:" + this.payLoadContentSize + ")" + 
-                    "ObHTableFilter details: " + this.toString());
+            throw new IllegalArgumentException("error in encode OHTableFilter ("
+                                               + "writeBufferLength:" + writeBufferLength
+                                               + ", payLoadContentSize:" + this.payLoadContentSize
+                                               + ")" + "ObHTableFilter details: " + this.toString());
         }
     }
 
@@ -169,19 +172,51 @@ public class ObHTableFilter extends AbstractPayload {
     public long getPayloadContentSize() {
         if (this.payLoadContentSize == INVALID_PAYLOAD_CONTENT_SIZE) {
             long contentSize = 0;
-            contentSize += 1; // isValid
+            
+            // 清空之前的长度记录
+            memberEncodeLengths.clear();
+            
+            // 1. isValid 长度
+            long isValidSize = 1; // isValid
+            contentSize += isValidSize;
+            memberEncodeLengths.add(isValidSize);
 
-            contentSize += Serialization.getNeedBytes(selectColumnQualifier.size());
+            // 2. selectColumnQualifier 相关长度
+            long selectColumnQualifierCountSize = Serialization.getNeedBytes(selectColumnQualifier.size());
+            contentSize += selectColumnQualifierCountSize;
+            memberEncodeLengths.add(selectColumnQualifierCountSize);
+            
             for (ObBytesString q : selectColumnQualifier) {
-                contentSize += Serialization.getNeedBytes(q);
+                long qualifierSize = Serialization.getNeedBytes(q);
+                contentSize += qualifierSize;
+                memberEncodeLengths.add(qualifierSize);
             }
 
-            contentSize += Serialization.getNeedBytes(minStamp);
-            contentSize += Serialization.getNeedBytes(maxStamp);
-            contentSize += Serialization.getNeedBytes(maxVersions);
-            contentSize += Serialization.getNeedBytes(limitPerRowPerCf);
-            contentSize += Serialization.getNeedBytes(offsetPerRowPerCf);
-            contentSize += Serialization.getNeedBytes(filterString);
+            // 3. 其他字段长度
+            long minStampSize = Serialization.getNeedBytes(minStamp);
+            contentSize += minStampSize;
+            memberEncodeLengths.add(minStampSize);
+            
+            long maxStampSize = Serialization.getNeedBytes(maxStamp);
+            contentSize += maxStampSize;
+            memberEncodeLengths.add(maxStampSize);
+            
+            long maxVersionsSize = Serialization.getNeedBytes(maxVersions);
+            contentSize += maxVersionsSize;
+            memberEncodeLengths.add(maxVersionsSize);
+            
+            long limitPerRowPerCfSize = Serialization.getNeedBytes(limitPerRowPerCf);
+            contentSize += limitPerRowPerCfSize;
+            memberEncodeLengths.add(limitPerRowPerCfSize);
+            
+            long offsetPerRowPerCfSize = Serialization.getNeedBytes(offsetPerRowPerCf);
+            contentSize += offsetPerRowPerCfSize;
+            memberEncodeLengths.add(offsetPerRowPerCfSize);
+            
+            long filterStringSize = Serialization.getNeedBytes(filterString);
+            contentSize += filterStringSize;
+            memberEncodeLengths.add(filterStringSize);
+            
             this.payLoadContentSize = contentSize;
         }
         return this.payLoadContentSize;
@@ -318,16 +353,11 @@ public class ObHTableFilter extends AbstractPayload {
 
     @Override
     public String toString() {
-        return "ObHTableFilter{" +
-                "isValid=" + isValid +
-                ", selectColumnQualifier=" + selectColumnQualifier +
-                ", minStamp=" + minStamp +
-                ", maxStamp=" + maxStamp +
-                ", maxVersions=" + maxVersions +
-                ", limitPerRowPerCf=" + limitPerRowPerCf +
-                ", offsetPerRowPerCf=" + offsetPerRowPerCf +
-                ", filterString=" + filterString +
-                '}';
+        return "ObHTableFilter{" + "isValid=" + isValid + ", selectColumnQualifier="
+               + selectColumnQualifier + ", minStamp=" + minStamp + ", maxStamp=" + maxStamp
+               + ", maxVersions=" + maxVersions + ", limitPerRowPerCf=" + limitPerRowPerCf
+               + ", offsetPerRowPerCf=" + offsetPerRowPerCf + ", filterString=" + filterString
+               + '}';
     }
 
 }
