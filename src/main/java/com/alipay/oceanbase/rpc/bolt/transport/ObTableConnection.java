@@ -257,7 +257,7 @@ public class ObTableConnection {
         try {
             // 1. check the connection is available, force to close it
             if (checkAvailable()) {
-                LOGGER.warn("The connection would be closed and reconnected is: "
+                LOGGER.info("The connection would be closed and reconnected is: "
                             + connection.getUrl());
                 close();
             }
@@ -286,7 +286,7 @@ public class ObTableConnection {
         if (isReConnecting.compareAndSet(false, true)) {
             try {
                 if (connect()) {
-                    LOGGER.warn("reconnect success. reconnect reason: [{}]", msg);
+                    LOGGER.info("reconnect success. reconnect reason: [{}]", msg);
                 } else {
                     LOGGER.info(
                         "connection maybe reconnect by other thread. reconnect reason: [{}]", msg);
