@@ -69,6 +69,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     private boolean               returningAffectedEntity = false;
     private boolean               needAllProp             = false;
     private boolean               serverCanRetry          = false;
+    private boolean               needTabletId  = false;
     private List<ObTableSingleOp> batchOperation;
 
     /*
@@ -553,7 +554,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         long tableId = 0;
         long originPartId = 0;
         long operationTimeout = 0;
-        List<Long> tabletIds = new ArrayList<>();
         ObTable subObTable = null;
 
         boolean isFirstEntry = true;
@@ -561,8 +561,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         List<List<ObPair<Integer, ObTableSingleOp>>> lsOperationWithIndexList = new ArrayList<>();
         for (final Map.Entry<Long, ObPair<ObTableParam, BatchIdxOperationPairList>> tabletOperation : tabletOperationsMap.entrySet()) {
             ObTableParam tableParam = tabletOperation.getValue().getLeft();
-            long tabletId = obTableClient.getServerCapacity().isSupportDistributedExecute() ?
-                    INVALID_TABLET_ID : tableParam.getPartitionId();
+            long tabletId = needTabletId() ? tableParam.getPartitionId() : INVALID_TABLET_ID;
             List<ObPair<Integer, ObTableSingleOp>> tabletOperationWithIndexList = tabletOperation.getValue().getRight();
             lsOperationWithIndexList.add(tabletOperationWithIndexList);
             List<ObTableSingleOp> singleOps = new ArrayList<>();
@@ -572,7 +571,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             ObTableTabletOp tableTabletOp = new ObTableTabletOp();
             tableTabletOp.setSingleOperations(singleOps);
             tableTabletOp.setTabletId(tabletId);
-            tabletIds.add(tabletId);
 
             tableLsOp.addTabletOperation(tableTabletOp);
 
@@ -649,13 +647,13 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     }
                 } else if (result != null && result.isRoutingWrong() && !obTableClient.isOdpMode()) {
                     // retry successfully in server and need to refresh client cache
-                    logger.debug("errors happened in server and retried successfully, server ip:port is {}:{}, tableName: {}, need_refresh_meta: {}",
-                            subObTable.getIp(), subObTable.getPort(), realTableName, result.isNeedRefreshMeta());
+                    long tabletId = tableLsOp.getTabletOperations().get(0).getTabletId();
+                    logger.info("errors happened in server and retried successfully, server ip:port is {}:{}, tableName: {}, need_refresh_meta: {}, tabletId: {}",
+                            subObTable.getIp(), subObTable.getPort(), realTableName, result.isNeedRefreshMeta(), tabletId);
                     if (result.isNeedRefreshMeta()) {
                         obTableClient.getOrRefreshTableEntry(realTableName, true);
                     }
-                    // TODO: 如果是不需要全部刷新地址的错误，全部刷新地址会降低效率。如何确定出错的 tablet_id 并刷新？
-                    obTableClient.refreshTabletLocationBatch(realTableName);
+                    obTableClient.refreshTableLocationByTabletId(realTableName, tabletId);
                 }
                 subLSOpResult = (ObTableLSOpResult) result;
                 obTableClient.resetExecuteContinuousFailureCount(realTableName);
@@ -1010,5 +1008,18 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
     public boolean getServerCanRetry() {
         return this.serverCanRetry;
+    }
+
+    public void setNeedTabletId(boolean needTabletId) {
+        this.needTabletId = needTabletId;
+    }
+
+    private boolean needTabletId() {
+        if (obTableClient.getServerCapacity().isSupportDistributedExecute()) {
+            return needTabletId;
+        } else {
+            // 不开分布式需要tablet_id
+            return true;
+        }
     }
 }

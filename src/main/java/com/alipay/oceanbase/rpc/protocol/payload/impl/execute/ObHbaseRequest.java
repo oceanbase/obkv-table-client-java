@@ -33,9 +33,10 @@ import java.util.List;
 /*
 OB_SERIALIZE_MEMBER(ObHbaseRequest,
                     credential_,
+                    table_name_,
+                    tablet_id_,
                     option_flag_,
                     op_type_,
-                    table_name_,
                     keys_,
                     cf_rows_);
  */
@@ -47,6 +48,7 @@ OB_SERIALIZE_MEMBER(ObHbaseRequest,
 public class ObHbaseRequest extends AbstractPayload implements Credentialable {
     protected ObBytesString           credential;
     protected String                  tableName; // HBase tableName, OceanBase tablegroup_name
+    protected long                    tabletId;  // do not serialize
     protected ObTableHbaseReqFlag     optionFlag = new ObTableHbaseReqFlag();
     protected ObTableOperationType    opType;
     protected List<ObObj>             keys       = new ArrayList<>();
@@ -184,6 +186,14 @@ public class ObHbaseRequest extends AbstractPayload implements Credentialable {
 
     public boolean getServerCanRetry() {
         return optionFlag.getFlagServerCanRetry();
+    }
+
+    public void setTabletId(long tabletId) {
+        this.tabletId = tabletId;
+    }
+
+    public long getTabletId() {
+        return tabletId;
     }
 
     public ObBytesString getCredential() {

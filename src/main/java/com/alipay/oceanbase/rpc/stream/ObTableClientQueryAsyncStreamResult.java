@@ -114,7 +114,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                                                                                                        throws Exception {
         ObTableParam obTableParam = partIdWithObTable.getRight();
         ObTableQueryRequest queryRequest = asyncRequest.getObTableQueryRequest();
-        long partitionId = isDistributeScan() ? INVALID_TABLET_ID : obTableParam.getPartitionId();
+        long partitionId = needTabletId(queryRequest) ? obTableParam.getPartitionId() : INVALID_TABLET_ID;
         // refresh request info
         queryRequest.setPartitionId(partitionId);
         queryRequest.setTableId(obTableParam.getTableId());
@@ -141,7 +141,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         ObTableQueryRequest queryRequest = asyncRequest.getObTableQueryRequest();
 
         // refresh request info
-        long partitionId = isDistributeScan() ? INVALID_TABLET_ID : obTableParam.getPartitionId();
+        long partitionId = needTabletId(queryRequest) ? obTableParam.getPartitionId() : INVALID_TABLET_ID;
         queryRequest.setPartitionId(partitionId);
         queryRequest.setTableId(obTableParam.getTableId());
 
@@ -161,7 +161,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         ObTableQueryRequest queryRequest = asyncRequest.getObTableQueryRequest();
 
         // refresh request info
-        long partitionId = isDistributeScan() ? INVALID_TABLET_ID : obTableParam.getPartitionId();
+        long partitionId = needTabletId(queryRequest) ? obTableParam.getPartitionId() : INVALID_TABLET_ID;
         queryRequest.setPartitionId(partitionId);
         queryRequest.setTableId(obTableParam.getTableId());
 
@@ -438,6 +438,14 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
 
     private boolean isDistributeScan() {
         return allowDistributeScan && client.getServerCapacity().isSupportDistributedExecute();
+    }
+
+    private boolean needTabletId(ObTableQueryRequest queryRequest) {
+        if (isDistributeScan()) {
+            return queryRequest.getNeedTabletId();
+        } else {
+            return true;
+        }
     }
 
     public void setAllowDistributeScan(boolean allowDistributeScan) {
