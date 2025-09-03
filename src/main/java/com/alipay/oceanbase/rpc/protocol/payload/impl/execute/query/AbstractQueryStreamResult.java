@@ -175,13 +175,13 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                             throw new ObTableRoutingWrongException();
                         }
                     } else if (result != null && result.isRoutingWrong()) {
-                        logger.debug("errors happened in server and retried successfully, server ip:port is {}:{}, tableName: {}, need_refresh_meta: {}",
-                                subObTable.getIp(), subObTable.getPort(), indexTableName, result.isNeedRefreshMeta());
                         TableEntry tableEntry = result.isNeedRefreshMeta() ?
                                 client.getOrRefreshTableEntry(indexTableName, true) :
                                 client.getOrRefreshTableEntry(indexTableName, false);
                         long tabletId = client.getTabletIdByPartId(tableEntry, partIdWithIndex.getLeft());
                         client.refreshTableLocationByTabletId(indexTableName, tabletId);
+                        logger.info("errors happened in server and retried successfully, server ip:port is {}:{}, tableName: {}, need_refresh_meta: {}, tabletId: {}",
+                                subObTable.getIp(), subObTable.getPort(), indexTableName, result.isNeedRefreshMeta(), tabletId);
                     }
                 }
                 client.resetExecuteContinuousFailureCount(indexTableName);

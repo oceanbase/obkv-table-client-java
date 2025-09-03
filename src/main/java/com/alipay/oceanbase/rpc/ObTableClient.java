@@ -2107,17 +2107,19 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 throw new ObTableRoutingWrongException();
             }
         } else if (result != null && result.isRoutingWrong() && !isOdpMode()) {
-            logger.debug("errors happened in server and retried successfully, server ip:port is {}:{}, tableName: {}, need_refresh_meta: {}",
-                    obTable.getIp(), obTable.getPort(), tableName, result.isNeedRefreshMeta());
             if (result.isNeedRefreshMeta()) {
                 tableRoute.refreshMeta(tableName);
             }
+            long tabletId = INVALID_TABLET_ID;
             if (request instanceof ObTableAbstractOperationRequest) {
-                long tabletId = ((ObTableAbstractOperationRequest) request).getPartitionId();
+                tabletId = ((ObTableAbstractOperationRequest) request).getPartitionId();
                 tableRoute.refreshPartitionLocation(tableName, tabletId, null);
             } else if (request instanceof ObHbaseRequest) {
-                tableRoute.refreshTabletLocationBatch(tableName);
+                tabletId = ((ObHbaseRequest) request).getTabletId();
+                tableRoute.refreshPartitionLocation(tableName, tabletId, null);
             }
+            logger.info("errors happened in server and retried successfully, server ip:port is {}:{}, tableName: {}, need_refresh_meta: {}, tabletId: {}",
+                    obTable.getIp(), obTable.getPort(), tableName, result.isNeedRefreshMeta(), tabletId);
         }
         return result;
     }
@@ -2337,16 +2339,22 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         }
 
                         // Check if partIdMapObTable size is greater than 1
+                        boolean needTabletId = false;
                         boolean isDistributedExecuteSupported = getServerCapacity().isSupportDistributedExecute();
                         if (partIdMapObTable.size() > 1 && !isDistributedExecuteSupported) {
                             throw new ObTablePartitionConsistentException(
                                     "query and mutate must be a atomic operation");
                         }
+                        if (isDistributedExecuteSupported) {
+                            needTabletId = request.getNeedTabletId();
+                        } else {
+                            needTabletId = true;
+                        }
                         // Proceed with the operation
                         Map.Entry<Long, ObTableParam> entry = partIdMapObTable.entrySet().iterator().next();
                         ObTableParam tableParam = entry.getValue();
                         request.setTableId(tableParam.getTableId());
-                        long partitionId = isDistributedExecuteSupported ? INVALID_TABLET_ID : tableParam.getPartitionId();
+                        long partitionId = needTabletId ? tableParam.getPartitionId() : INVALID_TABLET_ID;
                         routeTabletId = tableParam.getPartitionId();
                         request.setPartitionId(partitionId);
                         request.setTimeout(tableParam.getObTable().getObTableOperationTimeout());
@@ -2424,16 +2432,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         } else {
             Row row = new Row();
             // get the first cell from the first cfRows to route
-            // use the first table in tablegroup to route
-            String realTableName = null;
             if (request.getCfRows().isEmpty()) {
                 throw new ObTableUnexpectedException("no cf rows");
             }
-            if (request.getCfRows().size() > 1) {
-                realTableName = tryGetTableNameFromTableGroupCache(request.getTableName(), false);
-            } else {
-                realTableName = request.getCfRows().get(0).getRealTableName();
-            }
+            String realTableName = request.getCfRows().get(0).getRealTableName();
             int keyIdx = request.getCfRows().get(0).getKeyIndex(0);
             row.add("K", request.getKeys().get(keyIdx).getValue());
             row.add("Q", request.getCfRows().get(0).getCells().get(0).getQ().getValue());
@@ -2441,6 +2443,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObTableParam tableParam = tableRoute.getTableParam(realTableName, row);
             ObTable obTable = tableParam.getObTable();
             request.setTimeout(obTable.getObTableOperationTimeout());
+            request.setTabletId(tableParam.getTabletId());
             return executeWithRetry(obTable, request, realTableName);
         }
     }

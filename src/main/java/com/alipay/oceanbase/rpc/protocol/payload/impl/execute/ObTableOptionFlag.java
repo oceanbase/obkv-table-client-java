@@ -25,7 +25,8 @@ public enum ObTableOptionFlag {
     RETURNING_ROWKEY(1 << 0),
     USE_PUT(1 << 1),
     RETURN_ONE_RES(1 << 2),
-    SERVER_CAN_RETRY(1 << 3);
+    SERVER_CAN_RETRY(1 << 3),
+    DIS_NEED_TABLET_ID(1 << 4);
 
     private int                                    value;
     private static Map<Integer, ObTableOptionFlag> map = new HashMap<Integer, ObTableOptionFlag>();
@@ -114,6 +115,18 @@ public enum ObTableOptionFlag {
             this.value |= SERVER_CAN_RETRY.value;
         } else {
             this.value &= ~(SERVER_CAN_RETRY.value);
+        }
+    }
+
+    public boolean isNeedTabletId() {
+        return (this.value & DIS_NEED_TABLET_ID.value) != 0;
+    }
+
+    public void setNeedTabletId(boolean needTabletId) {
+        if (needTabletId) {
+            this.value |= DIS_NEED_TABLET_ID.value;
+        } else {
+            this.value &= ~(DIS_NEED_TABLET_ID.value);
         }
     }
 }

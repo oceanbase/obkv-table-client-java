@@ -49,6 +49,7 @@ public class BatchOperation {
     boolean                     hasCheckAndInsUp = false;
     boolean                     hasGet           = false;
     boolean                     serverCanRetry   = false;
+    boolean                     needTabletId     = false;
     ObTableOperationType        lastType         = ObTableOperationType.INVALID;
     boolean                     isSameType       = true;
     protected ObTableEntityType entityType       = ObTableEntityType.KV;
@@ -186,6 +187,10 @@ public class BatchOperation {
         this.serverCanRetry = canRetry;
     }
 
+    public void setNeedTabletId(boolean needTabletId) {
+        this.needTabletId = needTabletId;
+    }
+
     public BatchOperation setIsAtomic(boolean isAtomic) {
         this.isAtomic = isAtomic;
         return this;
@@ -319,6 +324,7 @@ public class BatchOperation {
             batchOps = new ObTableClientLSBatchOpsImpl(tableName, (ObTableClient) client);
             batchOps.setEntityType(entityType);
             batchOps.setServerCanRetry(serverCanRetry);
+            batchOps.setNeedTabletId(needTabletId);
             for (Object operation : operations) {
                 if (operation instanceof CheckAndInsUp) {
                     checkAndInsUpCnt++;
