@@ -135,6 +135,19 @@ public class ObTableTabletOp extends AbstractPayload {
         return this.payLoadContentSize;
     }
 
+    /**
+     * Reset the cached payload content size and propagate to child objects
+     */
+    @Override
+    public void resetPayloadContentSize() {
+        super.resetPayloadContentSize();
+        for (ObTableSingleOp operation : singleOperations) {
+            if (operation != null) {
+                operation.resetPayloadContentSize();
+            }
+        }
+    }
+
     /*
      * Get table operations.
      */
