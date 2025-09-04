@@ -669,7 +669,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             throw new IllegalArgumentException("table name is null");
         }
         int tryTimes = 0;
+        long routeQueryTabletId = INVALID_TABLET_ID;
         boolean needRefreshPartitionLocation = false;
+        boolean refreshedTableMeta = false;
         long startExecute = System.currentTimeMillis();
         while (true) {
             checkStatus();
@@ -705,13 +707,19 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     } else if (null != callback.getQuery()) {
                         if (tryTimes > 1 && needRefreshPartitionLocation) {
                             needRefreshPartitionLocation = false;
-                            boolean isHKV = callback.getQuery().getEntityType() == ObTableEntityType.HKV;
-                            tableRoute.refreshTabletLocationForAtomicQuery(tableName, callback.getQuery().getObTableQuery(), isHKV);
+                            if (refreshedTableMeta) {
+                                refreshedTableMeta = false;
+                                boolean isHKV = callback.getQuery().getEntityType() == ObTableEntityType.HKV;
+                                tableRoute.refreshTabletLocationForAtomicQuery(tableName, callback.getQuery().getObTableQuery(), isHKV);
+                            } else {
+                                tableRoute.refreshPartitionLocation(tableName, routeQueryTabletId, null);
+                            }
                         }
                         ObTableQuery tableQuery = callback.getQuery().getObTableQuery();
                         // using scan range
                         tableParam = tableRoute.getTableParam(tableName, tableQuery.getScanRangeColumns(),
                             tableQuery.getKeyRanges());
+                        routeQueryTabletId = tableParam.getPartitionId();
                     } else {
                         throw new ObTableException("RowKey or scan range is null");
                     }
@@ -770,6 +778,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                         ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                         tryTimes);
                                 tableRoute.refreshMeta(tableName);
+                                refreshedTableMeta = true;
                                 // reset failure count while fetch all route info
                                 this.resetExecuteContinuousFailureCount(tableName);
                             } else if (((ObTableException) ex).isNeedRetryError()) {
@@ -2286,6 +2295,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             }
             int tryTimes = 0;
             boolean needRefreshTabletLocation = false;
+            boolean refreshedTableMeta = false;
+            long routeTabletId = INVALID_TABLET_ID;
             long startExecute = System.currentTimeMillis();
             while (true) {
                 long currentExecute = System.currentTimeMillis();
@@ -2309,8 +2320,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         // Recalculate partIdMapObTable
                         if (needRefreshTabletLocation) {
                             needRefreshTabletLocation = false;
-                            boolean isHKV = request.getEntityType() == ObTableEntityType.HKV;
-                            tableRoute.refreshTabletLocationForAtomicQuery(request.getTableName(), tableQuery, isHKV);
+                            if (refreshedTableMeta) {
+                                refreshedTableMeta = false;
+                                // need to recalculate routing tablet_id and refresh location
+                                boolean isHKV = request.getEntityType() == ObTableEntityType.HKV;
+                                tableRoute.refreshTabletLocationForAtomicQuery(request.getTableName(), tableQuery, isHKV);
+                            } else {
+                                tableRoute.refreshPartitionLocation(request.getTableName(), routeTabletId, null);
+                            }
                         }
                         Map<Long, ObTableParam> partIdMapObTable = tableRoute.getPartIdParamMapForQuery(
                                 request.getTableName(), tableQuery.getScanRangeColumns(),
@@ -2327,6 +2344,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         ObTableParam tableParam = entry.getValue();
                         request.setTableId(tableParam.getTableId());
                         long partitionId = isDistributedExecuteSupported ? INVALID_TABLET_ID : tableParam.getPartitionId();
+                        routeTabletId = tableParam.getPartitionId();
                         request.setPartitionId(partitionId);
                         request.setTimeout(tableParam.getObTable().getObTableOperationTimeout());
                         ObTable obTable = tableParam.getObTable();
@@ -2360,12 +2378,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                 (((ObTableException) ex).isNeedRefreshTableEntry() || ((ObTableException) ex).isNeedRetryError())) {
                             logger.warn(
                                     "tablename:{} partition id:{} batch ops refresh table while meet ObTableMasterChangeException, errorCode: {}",
-                                    request.getTableName(), request.getPartitionId(), ((ObTableException) ex).getErrorCode(), ex);
+                                    request.getTableName(), routeTabletId, ((ObTableException) ex).getErrorCode(), ex);
 
                             if (isRetryOnChangeMasterTimes()) {
                                 logger.warn(
                                         "tablename:{} partition id:{} batch ops retry while meet ObTableMasterChangeException, errorCode: {} , retry times {}",
-                                        request.getTableName(), request.getPartitionId(), ((ObTableException) ex).getErrorCode(),
+                                        request.getTableName(), routeTabletId, ((ObTableException) ex).getErrorCode(),
                                         tryTimes, ex);
 
                                 if (((ObTableException) ex).isNeedRefreshTableEntry()) {
@@ -2373,6 +2391,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                     if (ex instanceof ObTableNeedFetchMetaException) {
                                         // Refresh table info
                                         tableRoute.refreshMeta(request.getTableName());
+                                        refreshedTableMeta = true;
                                     }
                                 }
                             } else {
