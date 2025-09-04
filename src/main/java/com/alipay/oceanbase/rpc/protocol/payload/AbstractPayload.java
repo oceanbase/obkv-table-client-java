@@ -240,4 +240,13 @@ public abstract class AbstractPayload implements ObPayload {
 
     protected boolean isUseDefaultEncode() { return false; }
 
+    /**
+     * Reset the cached payload content size to force recalculation
+     * Subclasses should override this method to reset their own cached sizes
+     * and call this method on their child objects
+     */
+    public void resetPayloadContentSize() {
+        this.payLoadContentSize = INVALID_PAYLOAD_CONTENT_SIZE;
+    }
+
 }

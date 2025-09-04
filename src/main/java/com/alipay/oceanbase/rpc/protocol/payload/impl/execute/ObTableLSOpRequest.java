@@ -160,4 +160,15 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
     public void setTableId(long tableId) {
         this.lsOperation.setTableId(tableId);
     }
+
+    /**
+     * Reset the cached payload content size and propagate to child objects
+     */
+    @Override
+    public void resetPayloadContentSize() {
+        super.resetPayloadContentSize();
+        if (lsOperation != null) {
+            lsOperation.resetPayloadContentSize();
+        }
+    }
 }
