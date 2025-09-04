@@ -262,6 +262,15 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         return this.payLoadContentSize;
     }
 
+    /**
+     * Reset the cached payload content size
+     * This class has no child objects, so just call super
+     */
+    @Override
+    public void resetPayloadContentSize() {
+        super.resetPayloadContentSize();
+    }
+
     public static boolean areArraysSameLengthOrBothNull(Object[] a, Object[] b) {
         if (a == null && b == null) {
             return true;

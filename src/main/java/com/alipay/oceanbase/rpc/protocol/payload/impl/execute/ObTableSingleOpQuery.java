@@ -290,6 +290,20 @@ public class ObTableSingleOpQuery extends ObTableQuery {
         return this.payLoadContentSize;
     }
 
+    /**
+     * Reset the cached payload content size and propagate to child objects
+     */
+    @Override
+    public void resetPayloadContentSize() {
+        super.resetPayloadContentSize();
+        if (hTableFilter != null) {
+            hTableFilter.resetPayloadContentSize();
+        }
+        if (obKVParams != null) {
+            obKVParams.resetPayloadContentSize();
+        }
+    }
+
     // Support class, which is used for column name sorted
     private static class ColumnNamePair implements Comparable<ColumnNamePair> {
         long number;

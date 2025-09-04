@@ -174,6 +174,22 @@ public class ObTableSingleOp extends AbstractPayload {
         return this.payLoadContentSize;
     }
 
+    /**
+     * Reset the cached payload content size and propagate to child objects
+     */
+    @Override
+    public void resetPayloadContentSize() {
+        super.resetPayloadContentSize();
+        if (query != null) {
+            query.resetPayloadContentSize();
+        }
+        for (ObTableSingleOpEntity entity : entities) {
+            if (entity != null) {
+                entity.resetPayloadContentSize();
+            }
+        }
+    }
+
     public List<ObNewRange> getScanRange() {
         return query.getScanRanges();
     }

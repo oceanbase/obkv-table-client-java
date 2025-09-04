@@ -274,6 +274,19 @@ public class ObTableLSOperation extends AbstractPayload {
         return this.payLoadContentSize;
     }
 
+    /**
+     * Reset the cached payload content size and propagate to child objects
+     */
+    @Override
+    public void resetPayloadContentSize() {
+        super.resetPayloadContentSize();
+        for (ObTableTabletOp operation : tabletOperations) {
+            if (operation != null) {
+                operation.resetPayloadContentSize();
+            }
+        }
+    }
+
     /*
      * Get table operations.
      */
@@ -416,6 +429,7 @@ public class ObTableLSOperation extends AbstractPayload {
     }
 
     public void prepare() {
+        this.resetPayloadContentSize(); // to avoid use wrong cached when do retry
         this.collectColumnNamesIdxMap();
         this.beforeOption();
         this.prepareOption();
