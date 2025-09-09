@@ -88,9 +88,9 @@ public class ExceptionUtil {
                                                        + trace + "]", resultCodes.errorCode);
         } else if (resultCodes.errorCode == OB_KV_SESS_NOT_EXIST.errorCode) {
             return new ObTableSessionNotExistException("[" + String.valueOf(resultCodes.errorCode)
-                    + "]" + "[" + resultCodes.name() + "]" + "["
-                    + errMsg + "]" + "[" + server + "]" + "["
-                    + trace + "]", resultCodes.errorCode);
+                                                       + "]" + "[" + resultCodes.name() + "]" + "["
+                                                       + errMsg + "]" + "[" + server + "]" + "["
+                                                       + trace + "]", resultCodes.errorCode);
         } else {
             // [errCode][errCodeName][errMsg][server][trace]
             return new ObTableException("[" + String.valueOf(resultCodes.errorCode) + "]" + "["

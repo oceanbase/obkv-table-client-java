@@ -1,0 +1,94 @@
+/*-
+* #%L
+ * * OceanBase Table Client Framework
+ * *
+ * %%
+ * Copyright (C) 2016 - 2018 Ant Financial Services Group
+ * *
+ * %%
+ * OBKV Table Client Framework is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * #L%
+*/
+
+package com.alipay.oceanbase.rpc.dds.config;
+
+import com.alipay.oceanbase.rpc.Lifecycle;
+import com.alipay.sofa.dds.config.ExtendedDataSourceConfig;
+import com.alipay.sofa.dds.config.group.GroupClusterConfig;
+import com.alipay.sofa.dds.config.rule.AppRule;
+import com.alipay.sofa.dds.sdk.DdsSDK;
+
+import java.util.Map;
+
+/**
+* @author zhiqi.zzq
+* @since 2021/7/7 下午8:05
+*/
+public class DistributeConfigHandler implements Lifecycle {
+
+    private final String                   appName;
+    private final String                   appDsName;
+    private final String                   version;
+    private final DistributeDynamicHandler dynamicHandler;
+    private final Long                     timeout;
+
+    private DdsSDK                         ddsSDK;
+
+    public DistributeConfigHandler(String appName, String appDsName, String version,
+                                   long configFetchOnceTimeoutMillis,
+                                   DistributeDynamicHandler dynamicHandler) {
+        this.appName = appName;
+        this.appDsName = appDsName;
+        this.version = version;
+        this.timeout = configFetchOnceTimeoutMillis;
+        this.dynamicHandler = dynamicHandler;
+    }
+
+    @Override
+    public void init() throws Exception {
+        this.ddsSDK = new DdsSDK();
+        ddsSDK.setAppName(appName);
+        ddsSDK.setAppDataSourceName(appDsName);
+        ddsSDK.setVersion(version);
+        ddsSDK.setDynamicConfigHandler(dynamicHandler);
+        ddsSDK.setConfigFetchOnceTimeoutMillis(this.timeout);
+        ddsSDK.init();
+    }
+
+    @Override
+    public void close() throws Exception {
+
+    }
+
+    public Map<String, ExtendedDataSourceConfig> getExtendedDataSourceConfigs() {
+        return ddsSDK.getDdsDataSourceConfig().getExtendedDataSourceConfigs();
+    }
+
+    public GroupClusterConfig getGroupClusterConfig() {
+        return ddsSDK.getDdsDataSourceConfig().getGroupClusterConfig();
+    }
+
+    public AppRule getAppRule() {
+        return ddsSDK.getDdsDataSourceConfig().getAppRule();
+    }
+
+    public String getAppName() {
+        return appName;
+    }
+
+    public String getAppDsName() {
+        return appDsName;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+}

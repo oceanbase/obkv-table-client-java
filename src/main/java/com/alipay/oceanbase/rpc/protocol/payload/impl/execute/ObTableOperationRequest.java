@@ -40,7 +40,7 @@ OB_SERIALIZE_MEMBER(ObTableOperationRequest,
  */
 public class ObTableOperationRequest extends ObTableAbstractOperationRequest {
 
-    private ObTableOperation tableOperation;
+    protected ObTableOperation tableOperation;
 
     /*
      * Get pcode.
