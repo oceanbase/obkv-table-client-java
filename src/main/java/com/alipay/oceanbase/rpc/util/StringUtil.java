@@ -287,4 +287,65 @@ public class StringUtil {
         return -1;
     }
 
+    /**
+     *
+    * @param str
+    * @param searchChar
+    * @return
+    */
+    public static int indexOf(String str, char searchChar) {
+        return str != null && str.length() != 0 ? str.indexOf(searchChar) : -1;
+    }
+
+    /**
+     *
+    * @param str
+    * @param searchChar
+    * @param startPos
+    * @return
+    */
+    public static int indexOf(String str, char searchChar, int startPos) {
+        return str != null && str.length() != 0 ? str.indexOf(searchChar, startPos) : -1;
+    }
+
+    /**
+     *
+    * @param str
+    * @param searchStr
+    * @return
+    */
+    public static int indexOf(String str, String searchStr) {
+        return str != null && searchStr != null ? str.indexOf(searchStr) : -1;
+    }
+
+    /**
+     *
+    * @param str
+    * @param searchStr
+    * @param startPos
+    * @return
+    */
+    public static int indexOf(String str, String searchStr, int startPos) {
+        if (str != null && searchStr != null) {
+            return searchStr.length() == 0 && startPos >= str.length() ? str.length() : str
+                .indexOf(searchStr, startPos);
+        } else {
+            return -1;
+        }
+    }
+
+    /**
+     *
+    * @param str1
+    * @param str2
+    * @return
+    */
+    public static boolean equals(String str1, String str2) {
+        if (str1 == null) {
+            return str2 == null;
+        } else {
+            return str1.equals(str2);
+        }
+    }
+
 }

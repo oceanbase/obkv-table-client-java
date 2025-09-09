@@ -89,7 +89,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                 .newBuilder()
                 .configWriteBufferWaterMark(getNettyBufferLowWatermark(),
                     getNettyBufferHighWatermark()).build();
-            connectionFactory.init(new ConnectionEventHandler(new GlobalSwitch())); // Only for monitoring connection status
+            connectionFactory.init(new ConnectionEventHandler()); // Only for monitoring connection status
             realClient = new ObTableRemoting(new ObPacketFactory(enableRerouting));
             connectionPool = new ObTableConnectionPool(this, obTableConnectionPoolSize);
             connectionPool.init();

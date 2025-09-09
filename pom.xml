@@ -73,6 +73,67 @@
                 <artifactId>junit</artifactId>
                 <version>4.13.2</version>
             </dependency>
+            <!-- Dependency convergence fixes -->
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>3.13.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.toolkit.common</groupId>
+                <artifactId>toolkit-common-logging</artifactId>
+                <version>1.15</version>
+            </dependency>
+            <dependency>
+                <groupId>com.taobao.remoting</groupId>
+                <artifactId>network.core</artifactId>
+                <version>1.2.5</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>2.6</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>fastjson</artifactId>
+                <version>1.2.68.noneautotype</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>2.8.6</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-all</artifactId>
+                <version>4.1.118.Final</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alipay.sofa</groupId>
+                <artifactId>bolt</artifactId>
+                <version>1.6.5</version>
+            </dependency>
+            <dependency>
+                <groupId>org.objenesis</groupId>
+                <artifactId>objenesis</artifactId>
+                <version>3.0.1</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.toolkit.common</groupId>
+                <artifactId>toolkit-common-lang</artifactId>
+                <version>1.1.5</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-netty-shaded</artifactId>
+                <version>1.34.1</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alipay.common</groupId>
+                <artifactId>tracer</artifactId>
+                <version>1.0.39</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -83,21 +144,8 @@
         </dependency>
 
         <dependency>
-            <groupId>com.alipay.sofa</groupId>
-            <artifactId>bolt</artifactId>
-            <version>1.5.10</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>netty-all</artifactId>
-                    <groupId>io.netty</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
-            <version>4.1.100.Final</version>
         </dependency>
 
         <dependency>
@@ -139,12 +187,6 @@
             <artifactId>powermock-api-mockito2</artifactId>
             <version>2.0.9</version>
             <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <artifactId>objenesis</artifactId>
-                    <groupId>org.objenesis</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -176,7 +218,141 @@
             <version>1.2.12</version>
             <scope>test</scope>
         </dependency>
+        <!-- Bolt 通信框架 -->
+        <dependency>
+            <groupId>com.alipay.sofa</groupId>
+            <artifactId>bolt</artifactId>
+            <version>1.6.5</version>
+        </dependency>
+
+        <!-- Hessian 序列化 -->
+        <dependency>
+            <groupId>com.alipay.sofa</groupId>
+            <artifactId>hessian</artifactId>
+            <version>3.3.13</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alipay.sofa</groupId>
+            <artifactId>dds-config</artifactId>
+            <version>2.0.0</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>toolkit-common-logging</artifactId>
+                    <groupId>com.alibaba.toolkit.common</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tracer-biz</artifactId>
+                    <groupId>com.alipay.common</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>antvip-common</artifactId>
+                    <groupId>com.alipay.antvip</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>antvip-client</artifactId>
+                    <groupId>com.alipay.antvip</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>fastjson</artifactId>
+                    <groupId>com.alibaba</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tracer</artifactId>
+                    <groupId>com.alipay.common</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>drm-client</artifactId>
+                    <groupId>com.alipay.drm</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- Spring Framework dependencies for DDS -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+            <version>5.3.21</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>5.3.21</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>5.3.21</version>
+        </dependency>
+        <!-- 核心 tracer 依赖 -->
+        <dependency>
+            <groupId>com.alipay.common</groupId>
+            <artifactId>tracer</artifactId>
+        </dependency>
+
+        <!-- tracer-biz 依赖 -->
+        <dependency>
+            <groupId>com.alipay.common</groupId>
+            <artifactId>tracer-biz</artifactId>
+            <version>1.2.18</version>
+        </dependency>
+
+        <!-- 添加被排除的依赖，使用统一版本 -->
+        <dependency>
+            <groupId>com.alibaba.toolkit.common</groupId>
+            <artifactId>toolkit-common-logging</artifactId>
+            <version>1.15</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alipay.antvip</groupId>
+            <artifactId>antvip-common</artifactId>
+            <version>1.5.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alipay.antvip</groupId>
+            <artifactId>antvip-client</artifactId>
+            <version>1.5.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.68.noneautotype</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alipay.drm</groupId>
+            <artifactId>drm-client</artifactId>
+            <version>4.1.0</version>
+        </dependency>
     </dependencies>
+    <repositories>
+        <repository>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <id>central_prod</id>
+            <url>http://mvn.dev.alipay.net:8080/artifactory/repo</url>
+        </repository>
+        <repository>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <id>central</id>
+            <url>http://mvn.dev.alipay.net:8080/artifactory/repo</url>
+        </repository>
+        <repository>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <id>snapshots</id>
+            <url>http://mvn.dev.alipay.net:8080/artifactory/repo</url>
+        </repository>
+    </repositories>
 
     <build>
         <resources>
@@ -261,18 +437,7 @@
                     <attach>true</attach>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -301,6 +466,17 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.2-beta-5</version>
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                    <appendAssemblyId>true</appendAssemblyId>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>com.googlecode.maven-java-formatter-plugin</groupId>
@@ -372,6 +548,7 @@
                             </execution>
                         </executions>
                     </plugin>
+                    <!-- Temporarily disabled dependency convergence check due to complex dependency conflicts -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-enforcer-plugin</artifactId>

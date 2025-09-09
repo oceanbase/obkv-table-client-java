@@ -45,9 +45,12 @@ import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.*;
 import com.alipay.remoting.util.StringUtils;
+import com.alipay.sofa.dds.config.ExtendedDataSourceConfig;
+import com.alipay.sofa.dds.sdk.DdsSDK;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -68,7 +71,7 @@ import static com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOper
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
 import static java.lang.String.format;
 
-public class ObTableClient extends AbstractObTableClient implements Lifecycle {
+public class ObTableClient extends AbstractObTableClient implements OperationExecuteAble, Lifecycle {
     private static final Logger                               logger                                  = getLogger(ObTableClient.class);
 
     private static final ObjectMapper objectMapper           = new ObjectMapper();
@@ -163,6 +166,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private String                                            currentIDC;
     private ObReadConsistency                                 readConsistency                         = ObReadConsistency.STRONG;
     private ObRoutePolicy                                     obRoutePolicy                           = ObRoutePolicy.IDC_ORDER;
+    private DdsSDK                                            ddsSDK;
+
+    private String                                            appName                                 = "";
+    private String                                            appDataSourceName                       = "";
+
+    private String                                            version                                 = "";
+
+    private long                                              configFetchOnceTimeoutMillis            = 0;
 
     private boolean                                           odpMode                                 = false;
 
@@ -211,6 +222,18 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         } finally {
             BOOT.info("init ObTableClient successfully");
             statusLock.unlock();
+        }
+    }
+
+    /**
+     * 在 init 后调用
+     * 可以提前初始化 table entry，防止初次访问拉取元数据超时
+     * @param tableNames 表名
+     * @throws Exception
+     */
+    public void warmUp(String[] tableNames) throws Exception {
+        for (String tableName : tableNames) {
+            getOrRefreshTableEntry(tableName, true, false);
         }
     }
 
@@ -1199,18 +1222,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
     }
 
-    /**
-     * Get or refresh table entry.
-     * @param tableName table name
-     * @param refresh is re-fresh
-     * @param waitForRefresh wait re-fresh
-     * @return this
-     * @throws Exception if fail
-     */
-    public TableEntry getOrRefreshTableEntry(final String tableName, final boolean refresh,
-                                             final boolean waitForRefresh) throws Exception {
-        return getOrRefreshTableEntry(tableName, refresh, waitForRefresh, false);
-    }
 
     /**
      * Get or refresh table entry.
@@ -4614,4 +4625,97 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
         return endKeys;
     }
+    public static void setRowKeyValue(Mutation mutation, int index, Object value) {
+        if (mutation.getRowKeyValues() == null || (index < 0 || mutation.getRowKeyValues().size() <= index)) {
+            throw new IllegalArgumentException("rowkey is null or index is out of range");
+        }
+        ((ObObj) mutation.getRowKeyValues().get(index)).setValue(value);
+    }
+
+    public static Object getRowKeyValue(Mutation mutation, int index) {
+        if (mutation.getRowKeyValues() == null || (index < 0 || index >= mutation.getRowKeyValues().size())) {
+            throw new IllegalArgumentException("rowkey is null or index is out of range");
+        }
+        return ((ObObj) mutation.getRowKeyValues().get(index)).getValue();
+    }
+
+    /**
+     * 设置 app 名，默认获取环境变量 appName
+     * @param appName
+     */
+    public void setAppName(String appName) {
+        if (StringUtils.isBlank(appName)) {
+            this.appName = System.getProperty("appName");
+        } else {
+            this.appName = appName;
+        }
+
+        if (StringUtils.isBlank(appName)) {
+            this.appName = this.database;
+        }
+
+        BOOT.info("set appname is {}", this.appName);
+    }
+
+    /**
+     *
+     * @return
+     */
+    public String getVersion() {
+        return version;
+    }
+
+    /**
+     *
+     * @param version
+     */
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
+
+    /**
+     *
+     * @return
+     */
+    public String getAppName() {
+        return this.appName;
+    }
+
+    public void setAppDataSourceName(String appDataSourceName) {
+        this.appDataSourceName = appDataSourceName;
+    }
+
+    public String getAppDataSourceName() {
+        return this.appDataSourceName;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public long getConfigFetchOnceTimeoutMillis() {
+        return configFetchOnceTimeoutMillis;
+    }
+
+    /**
+     *
+     * @param configFetchOnceTimeoutMillis
+     */
+    public void setConfigFetchOnceTimeoutMillis(long configFetchOnceTimeoutMillis) {
+        this.configFetchOnceTimeoutMillis = configFetchOnceTimeoutMillis;
+    }
+
+    @Override
+    public TableEntry getOrRefreshTableEntry(String tableName, boolean refresh, boolean waitForRefresh)
+            throws Exception {
+        throw new UnsupportedOperationException("Unimplemented method 'getOrRefreshTableEntry'");
+    }
+
+    @Override
+    public TableEntry getOrRefreshTableEntry(String tableName, Integer groupID, boolean refresh, boolean waitForRefresh)
+            throws Exception {
+        throw new UnsupportedOperationException("Unimplemented method 'getOrRefreshTableEntry'");
+    }
+    
 }

@@ -27,19 +27,30 @@ import java.util.Map;
 public class TableClientLoggerFactory {
 
     public static final String        OCEANBASE_TABLE_CLIENT_LOGGER_SPACE = "oceanbase-table-client";
+    private static final String       HOUR                                = "hour";
+    private static final String       LOG_DATE_PATTERN                    = "date.pattern.oceanbase-table-client";
+
+    private static final String       DAILY_PATTERN                       = "yyyyMMdd";
+    private static final String       HOUR_PATTERN                        = "yyyyMMddHH";
+
     public static final String        OCEANBASE_TABLE_CLIENT_BOOT         = "OBKV-BOOT";
     public static final String        OCEANBASE_TABLE_CLIENT_MONITOR      = "OBKV-MONITOR";
     public static final String        OCEANBASE_TABLE_CLIENT_RUNTIME      = "OBKV-RUNTIME";
     public static final String        OCEANBASE_TABLE_CLIENT_DIRECT       = "OBKV-DIRECT";
+    public static final String        OCEANBASE_TABLE_CLIENT_RULE         = "OBKV-RULE";
+    public static final String        OCEANBASE_TABLE_CLIENT              = "OBKV";
+
     public static LogCode2Description LCD                                 = LogCode2Description
                                                                               .create(OCEANBASE_TABLE_CLIENT_LOGGER_SPACE);
 
+    public static Logger              LOOGER                              = NOPLogger.NOP_LOGGER;
     public static Logger              BOOT                                = NOPLogger.NOP_LOGGER;
     public static Logger              MONITOR                             = NOPLogger.NOP_LOGGER;
     public static Logger              RUNTIME                             = NOPLogger.NOP_LOGGER;
     public static Logger              DIRECT                              = NOPLogger.NOP_LOGGER;
 
     static {
+        LOOGER = getLogger(OCEANBASE_TABLE_CLIENT_LOGGER_SPACE);
         BOOT = getBootLogger();
         MONITOR = getMonitorLogger();
         RUNTIME = getRUNTIMELogger();
@@ -60,6 +71,14 @@ public class TableClientLoggerFactory {
         }
 
         return getLogger(klass.getCanonicalName());
+    }
+
+    public static Logger getRULELogger() {
+        if (LOOGER == NOPLogger.NOP_LOGGER) {
+            LOOGER = new WrappedLogger(getLogger(OCEANBASE_TABLE_CLIENT_RULE));
+        }
+
+        return LOOGER;
     }
 
     public static Logger getBootLogger() {
@@ -92,5 +111,17 @@ public class TableClientLoggerFactory {
         }
 
         return DIRECT;
+    }
+
+    /**
+    *
+    * @return
+    */
+    public static Logger getLogger() {
+        if (LOOGER == NOPLogger.NOP_LOGGER) {
+            LOOGER = new WrappedLogger(getLogger(OCEANBASE_TABLE_CLIENT));
+        }
+
+        return LOOGER;
     }
 }
