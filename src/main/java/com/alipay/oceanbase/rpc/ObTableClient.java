@@ -29,13 +29,11 @@ import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregation;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutate;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateResult;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObBorderFlag;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryRequest;
@@ -48,7 +46,6 @@ import com.alipay.oceanbase.rpc.util.*;
 import com.alipay.remoting.util.StringUtils;
 import org.slf4j.Logger;
 
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -710,15 +707,18 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             if (refreshedTableMeta) {
                                 refreshedTableMeta = false;
                                 boolean isHKV = callback.getQuery().getEntityType() == ObTableEntityType.HKV;
-                                tableRoute.refreshTabletLocationForAtomicQuery(tableName, callback.getQuery().getObTableQuery(), isHKV);
+                                Map<Long, ObTableParam> partIdMapObTable = tableRoute.refreshTabletLocationAndGetPartIdMap(tableName, callback.getQuery().getObTableQuery(), isHKV);
+                                tableParam = partIdMapObTable.entrySet().iterator().next().getValue();
                             } else {
                                 tableRoute.refreshPartitionLocation(tableName, routeQueryTabletId, null);
                             }
                         }
-                        ObTableQuery tableQuery = callback.getQuery().getObTableQuery();
-                        // using scan range
-                        tableParam = tableRoute.getTableParam(tableName, tableQuery.getScanRangeColumns(),
-                            tableQuery.getKeyRanges());
+                        if (tableParam == null) {
+                            ObTableQuery tableQuery = callback.getQuery().getObTableQuery();
+                            // using scan range
+                            tableParam = tableRoute.getTableParam(tableName, tableQuery.getScanRangeColumns(),
+                                    tableQuery.getKeyRanges());
+                        }
                         routeQueryTabletId = tableParam.getPartitionId();
                     } else {
                         throw new ObTableException("RowKey or scan range is null");
@@ -2317,6 +2317,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         request.setTimeout(getOdpTable().getObTableOperationTimeout());
                         return getOdpTable().execute(request);
                     } else {
+                        Map<Long, ObTableParam> partIdMapObTable = null;
                         // Recalculate partIdMapObTable
                         if (needRefreshTabletLocation) {
                             needRefreshTabletLocation = false;
@@ -2324,14 +2325,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                 refreshedTableMeta = false;
                                 // need to recalculate routing tablet_id and refresh location
                                 boolean isHKV = request.getEntityType() == ObTableEntityType.HKV;
-                                tableRoute.refreshTabletLocationForAtomicQuery(request.getTableName(), tableQuery, isHKV);
+                                partIdMapObTable = tableRoute.refreshTabletLocationAndGetPartIdMap(request.getTableName(), tableQuery, isHKV);
                             } else {
                                 tableRoute.refreshPartitionLocation(request.getTableName(), routeTabletId, null);
                             }
                         }
-                        Map<Long, ObTableParam> partIdMapObTable = tableRoute.getPartIdParamMapForQuery(
-                                request.getTableName(), tableQuery.getScanRangeColumns(),
-                                tableQuery.getKeyRanges());
+                        if (partIdMapObTable == null) {
+                            partIdMapObTable = tableRoute.getPartIdParamMapForQuery(
+                                    request.getTableName(), tableQuery.getScanRangeColumns(),
+                                    tableQuery.getKeyRanges());
+                        }
 
                         // Check if partIdMapObTable size is greater than 1
                         boolean isDistributedExecuteSupported = getServerCapacity().isSupportDistributedExecute();
