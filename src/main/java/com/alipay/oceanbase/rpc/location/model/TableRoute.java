@@ -579,7 +579,7 @@ public class TableRoute {
         }
     }
 
-    public void refreshTabletLocationForAtomicQuery(String tableName, ObTableQuery query, boolean isHKV) throws Exception {
+    public Map<Long, ObTableParam> refreshTabletLocationAndGetPartIdMap(String tableName, ObTableQuery query, boolean isHKV) throws Exception {
         Map<Long, ObTableParam> partIdParamMap = getPartIdParamMapForQuery(tableName, query.getScanRangeColumns(), query.getKeyRanges());
         if (isHKV) {
             // for HBase process, if distributed function is enabled, no need to do routing refresh
@@ -588,7 +588,7 @@ public class TableRoute {
                 throw new ObTablePartitionConsistentException(
                         "query and mutate must be a atomic operation");
             } else if (isDistributedSupported) {
-                return;
+                // do nothing
             }
         } else {
             // for table process, distributed function is not supported yet, need to refresh routing
@@ -604,6 +604,7 @@ public class TableRoute {
         TableEntry tableEntry = getTableEntry(tableName);
         long tabletId = entry.getValue().getTabletId();
         refreshPartitionLocation(tableName, tabletId, tableEntry);
+        return partIdParamMap;
     }
 
     private Long[] getTabletsFromTableEntry(TableEntry tableEntry) {
