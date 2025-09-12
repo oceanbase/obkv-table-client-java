@@ -17,7 +17,6 @@
 
 package com.alipay.oceanbase.rpc.stream;
 
-import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.exception.ObTableEntryRefreshException;
 import com.alipay.oceanbase.rpc.exception.ObTableRetryExhaustedException;
@@ -114,7 +113,11 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
     protected Map<Long, ObPair<Long, ObTableParam>> refreshPartition(ObTableQuery tableQuery,
                                                                      String tableName)
                                                                                       throws Exception {
-        return buildPartitions(client, tableQuery, tableName);
+        if (client.getServerCapacity().isSupportDistributedExecute()) {
+            return buildFirstPartitions(client, tableQuery, tableName);
+        } else {
+            return buildAllPartitions(client, tableQuery, tableName);
+        }
     }
 
     private boolean needTabletId(ObTableQueryRequest request) {
