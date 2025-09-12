@@ -46,6 +46,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.alipay.oceanbase.rpc.protocol.payload.Constants.INVALID_TABLET_ID;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.RUNTIME;
 
 public abstract class AbstractQueryStreamResult extends AbstractPayload implements
@@ -412,7 +413,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         }
     }
 
-    protected Map<Long, ObPair<Long, ObTableParam>> buildPartitions(ObTableClient client, ObTableQuery tableQuery, String tableName) throws Exception {
+    protected Map<Long, ObPair<Long, ObTableParam>> buildAllPartitions(ObTableClient client, ObTableQuery tableQuery, String tableName) throws Exception {
         Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new LinkedHashMap<>();
         String indexName = tableQuery.getIndexName();
         if (!client.isOdpMode()) {
@@ -451,6 +452,40 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     partitionObTables.put(param.getPartId(), new ObPair<>(param.getPartId(), param));
                 }
             }
+        }
+
+        return partitionObTables;
+    }
+
+    protected Map<Long, ObPair<Long, ObTableParam>> buildFirstPartitions(ObTableClient client, ObTableQuery tableQuery, String tableName) throws Exception {
+        Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new LinkedHashMap<>();
+        String indexName = tableQuery.getIndexName();
+
+        if (!this.client.isOdpMode()) {
+            indexTableName = client.getIndexTableName(tableName, indexName, tableQuery.getScanRangeColumns(), false);
+        }
+
+        if (tableQuery.getKeyRanges().isEmpty()) {
+            throw new IllegalArgumentException("query ranges is empty");
+        } else {
+            ObNewRange range = tableQuery.getKeyRanges().get(0);
+            ObRowKey startKey = range.getStartKey();
+            int startKeySize = startKey.getObjs().size();
+            Object[] start = new Object[startKeySize];
+
+            for (int i = 0; i < startKeySize; i++) {
+                start[i] = startKey.getObj(i).isMinObj() || startKey.getObj(i).isMaxObj() ?
+                        startKey.getObj(i) : startKey.getObj(i).getValue();
+            }
+
+            if (this.entityType == ObTableEntityType.HKV && client.isTableGroupName(tableName)) {
+                indexTableName = client.tryGetTableNameFromTableGroupCache(tableName, false);
+            }
+            ObBorderFlag borderFlag = range.getBorderFlag();
+            List<ObTableParam> params = this.client.getTableParams(indexTableName, tableQuery, start,
+                    borderFlag.isInclusiveStart(), start, borderFlag.isInclusiveEnd());
+
+            partitionObTables.put(INVALID_TABLET_ID, new ObPair<>(params.get(0).getPartId(), params.get(0)));
         }
 
         return partitionObTables;

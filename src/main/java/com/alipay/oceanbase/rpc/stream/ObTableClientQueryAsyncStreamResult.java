@@ -278,7 +278,11 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
     protected Map<Long, ObPair<Long, ObTableParam>> refreshPartition(ObTableQuery tableQuery,
                                                                      String tableName)
                                                                                       throws Exception {
-        return buildPartitions(client, tableQuery, tableName);
+        if (isDistributeScan()) {
+            return buildFirstPartitions(client, tableQuery, tableName);
+        } else {
+            return buildAllPartitions(client, tableQuery, tableName);
+        }
     }
 
     // This function is designed for HBase-type requests.
