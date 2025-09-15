@@ -17,7 +17,6 @@
 
 package com.alipay.oceanbase.rpc.stream;
 
-import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.exception.ObTableEntryRefreshException;
 import com.alipay.oceanbase.rpc.exception.ObTableRetryExhaustedException;
@@ -44,11 +43,10 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
 
     protected ObTableQueryResult referToNewPartition(ObPair<Long, ObTableParam> partIdWithObTable)
                                                                                                   throws Exception {
-        long partitionId = client.getServerCapacity().isSupportDistributedExecute() ? INVALID_TABLET_ID
-            : partIdWithObTable.getRight().getPartitionId();
         ObTableQueryRequest request = new ObTableQueryRequest();
         request.setTableName(tableName);
         request.setTableQuery(tableQuery);
+        long partitionId = needTabletId(request) ? partIdWithObTable.getRight().getPartitionId() : INVALID_TABLET_ID;
         request.setPartitionId(partitionId);
         request.setTableId(partIdWithObTable.getRight().getTableId());
         request.setEntityType(entityType);
@@ -115,6 +113,18 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
     protected Map<Long, ObPair<Long, ObTableParam>> refreshPartition(ObTableQuery tableQuery,
                                                                      String tableName)
                                                                                       throws Exception {
-        return buildPartitions(client, tableQuery, tableName);
+        if (client.getServerCapacity().isSupportDistributedExecute()) {
+            return buildFirstPartitions(client, tableQuery, tableName);
+        } else {
+            return buildAllPartitions(client, tableQuery, tableName);
+        }
+    }
+
+    private boolean needTabletId(ObTableQueryRequest request) {
+        if (client.getServerCapacity().isSupportDistributedExecute()) {
+            return request.getNeedTabletId();
+        } else {
+            return true;
+        }
     }
 }

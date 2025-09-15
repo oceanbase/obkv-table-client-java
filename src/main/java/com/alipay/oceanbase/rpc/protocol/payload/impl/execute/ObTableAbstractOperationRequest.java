@@ -216,6 +216,14 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
         return option_flag.isServerCanRetry();
     }
 
+    public void setNeedTabletId(boolean needTabletId) {
+        option_flag.setNeedTabletId(needTabletId);
+    }
+
+    public boolean getNeedTabletId() {
+        return option_flag.isNeedTabletId();
+    }
+
     /*
      * Is returning affected entity.
      */

@@ -125,6 +125,11 @@ public class ObGlobal {
         return OB_VERSION >= OB_VERSION_4_4_1_0;
     }
 
+    public static boolean isDistributeNeedTabletIdSupport() {
+        return OB_VERSION >= OB_VERSION_4_3_5_5 && OB_VERSION < OB_VERSION_4_4_0_0
+                || OB_VERSION >= OB_VERSION_4_4_1_0;
+    }
+
     /*-------------------------------------------- OB_VERSION --------------------------------------------*/
 
     public static final long OB_VERSION_4_2_3_0 = calcVersion(4, (short) 2, (byte) 3, (byte) 0);
@@ -142,6 +147,8 @@ public class ObGlobal {
     public static final long OB_VERSION_4_3_5_2 = calcVersion(4, (short) 3, (byte) 5, (byte) 2);
 
     public static final long OB_VERSION_4_3_5_3 = calcVersion(4, (short) 3, (byte) 5, (byte) 3);
+
+    public static final long OB_VERSION_4_3_5_5 = calcVersion(4, (short) 3, (byte) 5, (byte) 5);
 
     public static final long OB_VERSION_4_4_0_0 = calcVersion(4, (short) 4, (byte) 0, (byte) 0);
 
