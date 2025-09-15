@@ -53,6 +53,9 @@ public class ObDirectLoadDemo {
         SimpleTest.run();
         ParallelWriteTest.run();
         MultiNodeWriteTest.run();
+        P2PModeWriteTest.run();
+        SimpleAbortTest.run();
+        P2PModeAbortTest.run();
     }
 
     private static void prepareTestTable() throws Exception {
@@ -105,16 +108,16 @@ public class ObDirectLoadDemo {
             .enableParallelWrite(writeThreadNum).build();
     }
 
-    private static ObDirectLoadStatement buildStatement(ObDirectLoadConnection connection)
+    private static ObDirectLoadStatement buildStatement(ObDirectLoadConnection connection, boolean isP2PMode)
                                                                                           throws ObDirectLoadException {
         return connection.getStatementBuilder().setTableName(tableName).setDupAction(dupAction)
-            .setParallel(parallel).setQueryTimeout(timeout).build();
+            .setParallel(parallel).setQueryTimeout(timeout).setIsP2PMode(isP2PMode).build();
     }
 
-    private static ObDirectLoadStatement buildStatement(ObDirectLoadConnection connection, ObDirectLoadStatementExecutionId executionId)
+    private static ObDirectLoadStatement buildStatement(ObDirectLoadConnection connection, ObDirectLoadStatementExecutionId executionId, boolean isP2PMode)
                                                                                           throws ObDirectLoadException {
         return connection.getStatementBuilder().setTableName(tableName).setDupAction(dupAction)
-            .setParallel(parallel).setQueryTimeout(timeout).setExecutionId(executionId).build();
+            .setParallel(parallel).setQueryTimeout(timeout).setExecutionId(executionId).setIsP2PMode(isP2PMode).build();
     }
 
     private static class SimpleTest {
@@ -127,7 +130,7 @@ public class ObDirectLoadDemo {
                 prepareTestTable();
 
                 connection = buildConnection(1);
-                statement = buildStatement(connection);
+                statement = buildStatement(connection, false);
 
                 statement.begin();
 
@@ -192,7 +195,7 @@ public class ObDirectLoadDemo {
                 prepareTestTable();
 
                 connection = buildConnection(parallel);
-                statement = buildStatement(connection);
+                statement = buildStatement(connection, false);
 
                 statement.begin();
 
@@ -246,7 +249,7 @@ public class ObDirectLoadDemo {
                     executionId.decode(executionIdBytes);
 
                     connection = buildConnection(1);
-                    statement = buildStatement(connection, executionId);
+                    statement = buildStatement(connection, executionId, false);
 
                     ObDirectLoadBucket bucket = new ObDirectLoadBucket();
                     ObObj[] rowObjs = new ObObj[2];
@@ -277,7 +280,7 @@ public class ObDirectLoadDemo {
                 prepareTestTable();
 
                 connection = buildConnection(1);
-                statement = buildStatement(connection);
+                statement = buildStatement(connection, false);
 
                 statement.begin();
 
@@ -309,6 +312,230 @@ public class ObDirectLoadDemo {
                 }
             }
             System.out.println("MultiNodeWriteTest successful");
+        }
+
+    };
+
+    private static class P2PModeWriteTest {
+
+        private static class P2PNodeWriter implements Runnable {
+
+            private final byte[]        executionIdBytes;
+            private final int           id;
+            private final AtomicInteger ref_cnt;
+
+            P2PNodeWriter(byte[] executionIdBytes, int id, AtomicInteger ref_cnt) {
+                this.executionIdBytes = executionIdBytes;
+                this.id = id;
+                this.ref_cnt = ref_cnt;
+            }
+
+            @Override
+            public void run() {
+                ObDirectLoadConnection connection = null;
+                ObDirectLoadStatement statement = null;
+                try {
+                    ObDirectLoadStatementExecutionId executionId = new ObDirectLoadStatementExecutionId();
+                    executionId.decode(executionIdBytes);
+
+                    connection = buildConnection(1);
+                    statement = buildStatement(connection, executionId, true);
+
+                    ObDirectLoadBucket bucket = new ObDirectLoadBucket();
+                    ObObj[] rowObjs = new ObObj[2];
+                    rowObjs[0] = new ObObj(ObObjType.ObInt32Type.getDefaultObjMeta(), id);
+                    rowObjs[1] = new ObObj(ObObjType.ObInt32Type.getDefaultObjMeta(), id);
+                    bucket.addRow(rowObjs);
+                    statement.write(bucket);
+                    
+                    if (0 == ref_cnt.decrementAndGet()) {
+                        statement.commit();
+                    }
+
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                } finally {
+                    if (null != statement) {
+                        statement.close();
+                    }
+                    if (null != connection) {
+                        connection.close();
+                    }
+                }
+            }
+
+        };
+
+        public static void run() {
+            System.out.println("P2PModeWriteTest start");
+            final int writeThreadNum = 10;
+            ObDirectLoadConnection connection = null;
+            ObDirectLoadStatement statement = null;
+            final AtomicInteger ref_cnt = new AtomicInteger(writeThreadNum);
+            try {
+                prepareTestTable();
+
+                connection = buildConnection(1);
+                statement = buildStatement(connection, true);
+
+                statement.begin();
+
+                ObDirectLoadStatementExecutionId executionId = statement.getExecutionId();
+                byte[] executionIdBytes = executionId.encode();
+
+                Thread[] threads = new Thread[writeThreadNum];
+                for (int i = 0; i < threads.length; ++i) {
+                    P2PNodeWriter NodeWriter = new P2PNodeWriter(executionIdBytes, i, ref_cnt);
+                    Thread thread = new Thread(NodeWriter);
+                    thread.start();
+                    threads[i] = thread;
+                }
+                for (int i = 0; i < threads.length; ++i) {
+                    threads[i].join();
+                }
+                queryTestTable(writeThreadNum);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            } finally {
+                if (null != statement) {
+                    statement.close();
+                }
+                if (null != connection) {
+                    connection.close();
+                }
+            }
+            System.out.println("P2PModeWriteTest successful");
+        }
+
+    };
+
+    private static class SimpleAbortTest {
+
+        public static void run() {
+            System.out.println("SimpleAbortTest start");
+            ObDirectLoadConnection connection = null;
+            ObDirectLoadStatement statement = null;
+            try {
+                prepareTestTable();
+                System.out.println("prepareTestTable");
+
+                connection = buildConnection(1);
+                statement = buildStatement(connection, false);
+
+                statement.begin();
+
+                ObDirectLoadBucket bucket = new ObDirectLoadBucket();
+                ObObj[] rowObjs = new ObObj[2];
+                rowObjs[0] = new ObObj(ObObjType.ObInt32Type.getDefaultObjMeta(), 1);
+                rowObjs[1] = new ObObj(ObObjType.ObInt32Type.getDefaultObjMeta(), 2);
+                bucket.addRow(rowObjs);
+                statement.write(bucket);
+
+                statement.abort();
+
+                queryTestTable(0);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            } finally {
+                if (null != statement) {
+                    statement.close();
+                }
+                if (null != connection) {
+                    connection.close();
+                }
+            }
+            System.out.println("SimpleAbortTest successful");
+        }
+
+    };
+
+    private static class P2PModeAbortTest {
+
+
+        private static class AbortP2PNode implements Runnable {
+
+            private final byte[] executionIdBytes;
+            private final int    id;
+
+            AbortP2PNode(byte[] executionIdBytes, int id) {
+                this.executionIdBytes = executionIdBytes;
+                this.id = id;
+            }
+
+            @Override
+            public void run() {
+                ObDirectLoadConnection connection = null;
+                ObDirectLoadStatement statement = null;
+                try {
+                    ObDirectLoadStatementExecutionId executionId = new ObDirectLoadStatementExecutionId();
+                    executionId.decode(executionIdBytes);
+
+                    connection = buildConnection(1);
+                    statement = buildStatement(connection, executionId, true);
+
+                    ObDirectLoadBucket bucket = new ObDirectLoadBucket();
+                    ObObj[] rowObjs = new ObObj[2];
+                    rowObjs[0] = new ObObj(ObObjType.ObInt32Type.getDefaultObjMeta(), id);
+                    rowObjs[1] = new ObObj(ObObjType.ObInt32Type.getDefaultObjMeta(), id);
+                    bucket.addRow(rowObjs);
+                    statement.write(bucket);
+
+                    statement.abort();
+
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                } finally {
+                    if (null != statement) {
+                        statement.close();
+                    }
+                    if (null != connection) {
+                        connection.close();
+                    }
+                }
+            }
+
+        };
+
+        public static void run() {
+            System.out.println("P2PModeAbortTest start");
+            ObDirectLoadConnection connection = null;
+            ObDirectLoadStatement statement = null;
+            try {
+                prepareTestTable();
+
+                connection = buildConnection(1);
+                statement = buildStatement(connection, true);
+
+                statement.begin();
+
+                ObDirectLoadBucket bucket = new ObDirectLoadBucket();
+                ObObj[] rowObjs = new ObObj[2];
+                rowObjs[0] = new ObObj(ObObjType.ObInt32Type.getDefaultObjMeta(), 1);
+                rowObjs[1] = new ObObj(ObObjType.ObInt32Type.getDefaultObjMeta(), 2);
+                bucket.addRow(rowObjs);
+                statement.write(bucket);
+
+                ObDirectLoadStatementExecutionId executionId = statement.getExecutionId();
+                byte[] executionIdBytes = executionId.encode();
+
+                AbortP2PNode abortP2PNode = new AbortP2PNode(executionIdBytes, 3);
+                Thread abortNodeThread = new Thread(abortP2PNode);
+                abortNodeThread.start();
+                abortNodeThread.join();
+
+                queryTestTable(0);
+
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            } finally {
+                if (null != statement) {
+                    statement.close();
+                }
+                if (null != connection) {
+                    connection.close();
+                }
+            }
+            System.out.println("P2PModeAbortTest successful");
         }
 
     };
