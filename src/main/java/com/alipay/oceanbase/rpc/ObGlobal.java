@@ -39,6 +39,17 @@ public class ObGlobal {
                + (minor_patch << OB_VSN_MINOR_PATCH_SHIFT);
     }
 
+
+    public static long calcVersionForV2(int major, short minor, byte major_patch) {
+        return ((long) major << OB_VSN_MAJOR_SHIFT) + ((long) minor << OB_VSN_MINOR_SHIFT)
+               + ((long) major_patch << OB_VSN_MAJOR_PATCH_SHIFT);
+    }
+
+    public static long calcVersionForV2(long major, long minor, long major_patch) {
+        return (major << OB_VSN_MAJOR_SHIFT) + (minor << OB_VSN_MINOR_SHIFT)
+               + (major_patch << OB_VSN_MAJOR_PATCH_SHIFT);
+    }
+
     public static int obVsnMajor() {
         return getObVsnMajor(OB_VERSION);
     }

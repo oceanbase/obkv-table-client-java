@@ -69,6 +69,8 @@ public class LocationUtil {
     }
 
     private static final String OB_VERSION_SQL                                = "SELECT /*+READ_CONSISTENCY(WEAK)*/ OB_VERSION() AS CLUSTER_VERSION;";
+    // ob 2.x
+    private static final String OB_VERSION_SQL_V2                                = "SELECT /*+READ_CONSISTENCY(WEAK)*/ VERSION() AS CLUSTER_VERSION;";
 
     private static final String PROXY_INDEX_INFO_SQL                          = "SELECT /*+READ_CONSISTENCY(WEAK)*/ data_table_id, table_id, index_type FROM oceanbase.__all_virtual_table "
                                                                                 + "where table_name = ?";
@@ -666,6 +668,35 @@ public class LocationUtil {
             } else {
                 throw new ObTableEntryRefreshException("fail to get ob version from remote");
             }
+        } catch (SQLException e) {
+            // If OB_VERSION method is not supported, try OB_VERSION_SQL_V2
+            if (e.getMessage() != null && e.getMessage().toLowerCase().contains("ob_version")) {
+                try {
+                    // Close previous resources
+                    if (null != rs) {
+                        rs.close();
+                        rs = null;
+                    }
+                    if (null != ps) {
+                        ps.close();
+                        ps = null;
+                    }
+                    
+                    // Try with OB_VERSION_SQL_V2
+                    ps = connection.prepareStatement(OB_VERSION_SQL_V2);
+                    rs = ps.executeQuery();
+                    if (rs.next()) {
+                        String versionString = rs.getString("CLUSTER_VERSION");
+                        parseObVersionFromSQL(versionString);
+                    } else {
+                        throw new ObTableEntryRefreshException("fail to get ob version from remote");
+                    }
+                } catch (Exception e2) {
+                    throw new ObTableEntryRefreshException("fail to get ob version from remote", e2);
+                }
+            } else {
+                throw new ObTableEntryRefreshException("fail to get ob version from remote", e);
+            }
         } catch (Exception e) {
             throw new ObTableEntryRefreshException("fail to get ob version from remote", e);
         } finally {
@@ -740,7 +771,10 @@ public class LocationUtil {
             }
             rs = ps.executeQuery();
             tableEntry = getTableEntryFromResultSet(key, rs);
-            if (null != tableEntry) {
+            // TODO: 2.x query non-partition table's partition info will throw exception
+            boolean skip_non_partition_table = ObGlobal.obVsnMajor() == 2
+                                               && !tableEntry.isPartitionTable();
+            if (null != tableEntry && !skip_non_partition_table) {
                 tableEntry.setTableEntryKey(key);
                 // TODO: check capacity flag later
                 // fetch tablet ids when table is partition table
@@ -2258,11 +2292,21 @@ public class LocationUtil {
         // serverVersion is like "4.2.1.0"
         Pattern pattern = Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)");
         Matcher matcher = pattern.matcher(serverVersion);
-        if (matcher.find() && ObGlobal.OB_VERSION == 0) {
-            ObGlobal.OB_VERSION = ObGlobal.calcVersion(Integer.parseInt(matcher.group(1)),
-                (short) Integer.parseInt(matcher.group(2)),
+        boolean isObV2 = false;
+        boolean matchFound = matcher.find();
+        if (!matchFound) { // 2.x serverVersion is like "2.2.30"
+            isObV2 = true;
+            Pattern patternV2 = Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)");
+            matcher = patternV2.matcher(serverVersion);
+            matchFound = matcher.find();
+        }
+        if (matchFound && ObGlobal.OB_VERSION == 0) {
+            ObGlobal.OB_VERSION = !isObV2 ? ObGlobal.calcVersion(
+                Integer.parseInt(matcher.group(1)), (short) Integer.parseInt(matcher.group(2)),
                 (byte) Integer.parseInt(matcher.group(3)),
-                (byte) Integer.parseInt(matcher.group(4)));
+                (byte) Integer.parseInt(matcher.group(4))) : ObGlobal.calcVersionForV2(
+                Integer.parseInt(matcher.group(1)), (short) Integer.parseInt(matcher.group(2)),
+                (byte) Integer.parseInt(matcher.group(3)));
         }
     }
 
