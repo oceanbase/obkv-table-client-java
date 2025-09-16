@@ -126,8 +126,7 @@ public class ObGlobal {
     }
 
     public static boolean isDistributeNeedTabletIdSupport() {
-        return OB_VERSION >= OB_VERSION_4_3_5_5 && OB_VERSION < OB_VERSION_4_4_0_0
-                || OB_VERSION >= OB_VERSION_4_4_1_0;
+        return OB_VERSION >= OB_VERSION_4_4_1_0;
     }
 
     /*-------------------------------------------- OB_VERSION --------------------------------------------*/
