@@ -2332,7 +2332,7 @@ public class LocationUtil {
                 }
             } catch (Exception e) {
                 cause = e;
-                RUNTIME.error(LCD.convert("01-00017"), e);
+                RUNTIME.warn(LCD.convert("01-00017"), e);
                 Thread.sleep(retryInternal);
             }
         }
