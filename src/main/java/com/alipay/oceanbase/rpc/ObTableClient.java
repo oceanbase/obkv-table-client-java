@@ -2440,11 +2440,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             row.add("K", request.getKeys().get(keyIdx).getValue());
             row.add("Q", request.getCfRows().get(0).getCells().get(0).getQ().getValue());
             row.add("T", request.getCfRows().get(0).getCells().get(0).getT().getValue());
-            ObTableParam tableParam = tableRoute.getTableParam(realTableName, row);
-            ObTable obTable = tableParam.getObTable();
-            request.setTimeout(obTable.getObTableOperationTimeout());
-            request.setTabletId(tableParam.getTabletId());
-            return executeWithRetry(obTable, request, realTableName);
+            return execute(realTableName,
+                    new OperationExecuteCallback<ObPayload>(row, null) {
+                        @Override
+                        ObPayload execute(ObTableParam tableParam) throws Exception {
+                            ObTable obTable = tableParam.getObTable();
+                            request.setTimeout(obTable.getObTableOperationTimeout());
+                            request.setTabletId(tableParam.getTabletId());
+                            return executeWithRetry(obTable, request, realTableName);
+                        }
+                    });
         }
     }
 
