@@ -1,5 +1,5 @@
 /*-
-* #%L
+ * #%L
  * * OceanBase Table Client Framework
  * *
  * %%
@@ -15,7 +15,7 @@
  * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
  * See the Mulan PSL v2 for more details.
  * #L%
-*/
+ */
 
 package com.alipay.oceanbase.rpc.dds.config;
 
@@ -26,20 +26,21 @@ import com.alipay.sofa.dds.config.rule.AppRule;
 import com.alipay.sofa.dds.sdk.DdsSDK;
 
 import java.util.Map;
+import java.util.Objects;
 
 /**
-* @author zhiqi.zzq
-* @since 2021/7/7 下午8:05
-*/
+ * @author zhiqi.zzq
+ * @since 2021/7/7 下午8:05
+ */
 public class DistributeConfigHandler implements Lifecycle {
 
-    private final String                   appName;
-    private final String                   appDsName;
-    private final String                   version;
+    private final String appName;
+    private final String appDsName;
+    private final String version;
     private final DistributeDynamicHandler dynamicHandler;
-    private final Long                     timeout;
+    private final Long timeout;
 
-    private DdsSDK                         ddsSDK;
+    private DdsSDK ddsSDK;
 
     public DistributeConfigHandler(String appName, String appDsName, String version,
                                    long configFetchOnceTimeoutMillis,
@@ -59,6 +60,14 @@ public class DistributeConfigHandler implements Lifecycle {
         ddsSDK.setVersion(version);
         ddsSDK.setDynamicConfigHandler(dynamicHandler);
         ddsSDK.setConfigFetchOnceTimeoutMillis(this.timeout);
+        String useLocalConfig = System.getProperty("obkv.dds.use.local.config");
+        if (Objects.nonNull(useLocalConfig)) {
+            ddsSDK.setUseLocalConfigOnly(Boolean.parseBoolean(useLocalConfig));
+        }
+        String localConfigPath = System.getProperty("obkv.dds.local.config.path");
+        if (Objects.nonNull(localConfigPath)) {
+            ddsSDK.setConfigPath(localConfigPath);
+        }
         ddsSDK.init();
     }
 
