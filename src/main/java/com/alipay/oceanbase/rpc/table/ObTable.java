@@ -863,7 +863,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             // expand other connections (if needed) in the background
             connectionPool = new AtomicReference<ObTableConnection[]>();
             ObTableConnection[] curConnectionPool = new ObTableConnection[1];
-            curConnectionPool[0] = new ObTableConnection(obTable);
+            curConnectionPool[0] = new ObTableConnection(obTable, obTable.isOdpMode());
             curConnectionPool[0].enableLoginWithConfigs();
             curConnectionPool[0].init();
 
@@ -912,7 +912,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                 List<ObTableConnection> tmpConnections = new ArrayList<>();
                 for (int i = 0; i < expandSize; ++i) {
                     try {
-                        ObTableConnection tmpConnection = new ObTableConnection(obTable);
+                        ObTableConnection tmpConnection = new ObTableConnection(obTable, obTable.isOdpMode());
                         tmpConnection.init();
                         tmpConnections.add(tmpConnection);
                     } catch (Exception e) {

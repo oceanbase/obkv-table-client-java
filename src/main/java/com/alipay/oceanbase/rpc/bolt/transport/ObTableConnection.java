@@ -52,6 +52,7 @@ public class ObTableConnection {
     private AtomicBoolean       isExpired        = new AtomicBoolean(false);
     private LocalDateTime       lastConnectionTime;
     private boolean             loginWithConfigs = false;
+    private boolean             isOdpMode        = false;
 
     public static long ipToLong(String strIp) {
         String[] ip = strIp.split("\\.");
@@ -79,8 +80,9 @@ public class ObTableConnection {
     /*
      * Ob table connection.
      */
-    public ObTableConnection(ObTable obTable) {
+    public ObTableConnection(ObTable obTable, boolean isOdpMode) {
         this.obTable = obTable;
+        this.isOdpMode = isOdpMode;
     }
 
     /*
@@ -157,6 +159,7 @@ public class ObTableConnection {
         request.setTenantName(obTable.getTenantName());
         request.setUserName(obTable.getUserName());
         request.setDatabaseName(obTable.getDatabase());
+        request.setAllowDistributeCapability(isAllowDistributeCapability());
         // When the caller doesn't provide any parameters, configsMap is empty.  
         // In this case, we don't generate any JSON to avoid creating an empty object.
         if (loginWithConfigs && !obTable.getConfigs().isEmpty()) {
@@ -402,4 +405,11 @@ public class ObTableConnection {
         return stringBuilder.toString();
     }
 
+    private boolean isAllowDistributeCapability() {
+        if (isOdpMode) {
+            return ObGlobal.OB_PROXY_VERSION >= ObGlobal.OB_PROXY_VERSION_4_3_6_0;
+        } else {
+            return true;
+        }
+    }
 }
