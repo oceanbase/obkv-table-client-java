@@ -226,6 +226,80 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
     }
 
     /**
+     * 使用 dds 应用数据源初始化
+     */
+    public void initSingleDatasourceWithDDSConfig() {
+        this.ddsSDK = new DdsSDK();
+        ddsSDK.setAppName(appName);
+        ddsSDK.setAppDataSourceName(appDataSourceName);
+        ddsSDK.setVersion(version);
+        if (configFetchOnceTimeoutMillis != 0) {
+            ddsSDK.setConfigFetchOnceTimeoutMillis(configFetchOnceTimeoutMillis);
+        }
+
+        ddsSDK.init();
+
+        Map<String, ExtendedDataSourceConfig> configs = ddsSDK.getDdsDataSourceConfig().getExtendedDataSourceConfigs();
+        if (configs.size() != 1) {
+            throw new RuntimeException("ObTableClient initWithDDSConfig can only support get single groupDataSource, actual size:" + configs.size());
+        }
+        try {
+            for (Map.Entry<String, ExtendedDataSourceConfig> configEntry : configs
+                    .entrySet()) {
+                ExtendedDataSourceConfig config = configEntry.getValue();
+                this.setFullUserName(config.getUsername());
+                this.setParamURL(config.getJdbcUrl());
+                this.setPassword(config.getPassword());
+
+                this.init();
+            }
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    /**
+     *
+     * 仅仅提供使用给 dds 单库单表模式的配置初始化
+     * 分库分表请使用 ddsObTableClient 初始化
+     * @param appName
+     * @param appDsName
+     * @param version
+     * @param timeOutMillis
+     */
+    public void initSingleDatasourceWithDDSConfig(String appName, String appDsName, String version, long timeOutMillis) {
+        this.ddsSDK = new DdsSDK();
+        this.setAppName(appName);
+        this.setAppDataSourceName(appDsName);
+        this.setVersion(version);
+        this.setConfigFetchOnceTimeoutMillis(timeOutMillis);
+
+        ddsSDK.setAppName(appName);
+        ddsSDK.setAppDataSourceName(appDsName);
+        ddsSDK.setVersion(version);
+        ddsSDK.setConfigFetchOnceTimeoutMillis(timeOutMillis);
+        ddsSDK.init();
+
+        Map<String, ExtendedDataSourceConfig> configs = ddsSDK.getDdsDataSourceConfig().getExtendedDataSourceConfigs();
+        if (configs.size() != 1) {
+            throw new RuntimeException("ObTableClient initWithDDSConfig can only support get single groupDataSource, actual size:" + configs.size());
+        }
+        try {
+            for (Map.Entry<String, ExtendedDataSourceConfig> configEntry : configs
+                    .entrySet()) {
+                ExtendedDataSourceConfig config = configEntry.getValue();
+                this.setFullUserName(config.getUsername());
+                this.setParamURL(config.getJdbcUrl());
+                this.setPassword(config.getPassword());
+
+                this.init();
+            }
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    /**
      * 在 init 后调用
      * 可以提前初始化 table entry，防止初次访问拉取元数据超时
      * @param tableNames 表名

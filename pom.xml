@@ -218,6 +218,14 @@
             <version>1.2.12</version>
             <scope>test</scope>
         </dependency>
+        
+        <!-- Log4j to SLF4J bridge for ZoneClientUtil compatibility -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+            <version>1.7.36</version>
+            <scope>test</scope>
+        </dependency>
         <!-- Bolt 通信框架 -->
         <dependency>
             <groupId>com.alipay.sofa</groupId>
@@ -418,7 +426,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.20</version>
                 <configuration>
-                    <argLine>${argLine} -server -Xms2048m -Xmx2048m -Xmn768m -Xss256k -XX:MaxDirectMemorySize=1024M</argLine>
+                    <argLine>${argLine} -server -Xms2048m -Xmx2048m -Xmn768m -Xss256m -XX:MaxDirectMemorySize=1024M</argLine>
                 </configuration>
             </plugin>
             <plugin>
