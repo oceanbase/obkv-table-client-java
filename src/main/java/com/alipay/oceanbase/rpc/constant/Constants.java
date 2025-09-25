@@ -37,4 +37,8 @@ public interface Constants {
     String OCP_ROOT_SERVICE_ACTION = "ObRootServiceInfo";
     String OCP_IDC_REGION_ACTION   = "ObIDCRegionInfo";
     Long   INVALID_TABLET_ID       = 0L;
+
+    //for test
+    String DDS_USE_LOCAL_CONFIG_KEY = "obkv.dds.use.local.config";
+    String DDS_LOCAL_CONFIG_PATH_KEY = "obkv.dds.local.config.path";
 }

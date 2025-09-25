@@ -28,19 +28,22 @@ import com.alipay.sofa.dds.sdk.DdsSDK;
 import java.util.Map;
 import java.util.Objects;
 
+import static com.alipay.oceanbase.rpc.constant.Constants.DDS_LOCAL_CONFIG_PATH_KEY;
+import static com.alipay.oceanbase.rpc.constant.Constants.DDS_USE_LOCAL_CONFIG_KEY;
+
 /**
  * @author zhiqi.zzq
  * @since 2021/7/7 下午8:05
  */
 public class DistributeConfigHandler implements Lifecycle {
 
-    private final String appName;
-    private final String appDsName;
-    private final String version;
+    private final String                   appName;
+    private final String                   appDsName;
+    private final String                   version;
     private final DistributeDynamicHandler dynamicHandler;
-    private final Long timeout;
+    private final Long                     timeout;
 
-    private DdsSDK ddsSDK;
+    private DdsSDK                         ddsSDK;
 
     public DistributeConfigHandler(String appName, String appDsName, String version,
                                    long configFetchOnceTimeoutMillis,
@@ -60,11 +63,11 @@ public class DistributeConfigHandler implements Lifecycle {
         ddsSDK.setVersion(version);
         ddsSDK.setDynamicConfigHandler(dynamicHandler);
         ddsSDK.setConfigFetchOnceTimeoutMillis(this.timeout);
-        String useLocalConfig = System.getProperty("obkv.dds.use.local.config");
+        String useLocalConfig = System.getProperty(DDS_USE_LOCAL_CONFIG_KEY);
         if (Objects.nonNull(useLocalConfig)) {
             ddsSDK.setUseLocalConfigOnly(Boolean.parseBoolean(useLocalConfig));
         }
-        String localConfigPath = System.getProperty("obkv.dds.local.config.path");
+        String localConfigPath = System.getProperty(DDS_LOCAL_CONFIG_PATH_KEY);
         if (Objects.nonNull(localConfigPath)) {
             ddsSDK.setConfigPath(localConfigPath);
         }

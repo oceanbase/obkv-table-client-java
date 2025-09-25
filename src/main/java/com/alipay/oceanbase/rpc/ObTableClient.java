@@ -236,7 +236,14 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
         if (configFetchOnceTimeoutMillis != 0) {
             ddsSDK.setConfigFetchOnceTimeoutMillis(configFetchOnceTimeoutMillis);
         }
-
+        String useLocalConfig = System.getProperty(DDS_USE_LOCAL_CONFIG_KEY);
+        if (Objects.nonNull(useLocalConfig)) {
+            ddsSDK.setUseLocalConfigOnly(Boolean.parseBoolean(useLocalConfig));
+        }
+        String localConfigPath = System.getProperty(DDS_LOCAL_CONFIG_PATH_KEY);
+        if (Objects.nonNull(localConfigPath)) {
+            ddsSDK.setConfigPath(localConfigPath);
+        }
         ddsSDK.init();
 
         Map<String, ExtendedDataSourceConfig> configs = ddsSDK.getDdsDataSourceConfig().getExtendedDataSourceConfigs();
@@ -278,6 +285,14 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
         ddsSDK.setAppDataSourceName(appDsName);
         ddsSDK.setVersion(version);
         ddsSDK.setConfigFetchOnceTimeoutMillis(timeOutMillis);
+        String useLocalConfig = System.getProperty(DDS_USE_LOCAL_CONFIG_KEY);
+        if (Objects.nonNull(useLocalConfig)) {
+            ddsSDK.setUseLocalConfigOnly(Boolean.parseBoolean(useLocalConfig));
+        }
+        String localConfigPath = System.getProperty(DDS_LOCAL_CONFIG_PATH_KEY);
+        if (Objects.nonNull(localConfigPath)) {
+            ddsSDK.setConfigPath(localConfigPath);
+        }
         ddsSDK.init();
 
         Map<String, ExtendedDataSourceConfig> configs = ddsSDK.getDdsDataSourceConfig().getExtendedDataSourceConfigs();
@@ -1518,7 +1533,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
                         );
                         tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
                         break;
-                        
+
                     } catch (ObTableNotExistException e) {
                         RUNTIME.error("RefreshTableEntry encountered an exception", e);
                         throw e;
@@ -1658,7 +1673,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
     /**
      * 根据 tableGroup 获取其中一个tableName
      * physicalTableName Complete table from table group
-     * @param physicalTableName 
+     * @param physicalTableName
      * @param tableGroupName
      * @return
     * @throws Exception
@@ -4791,5 +4806,5 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
             throws Exception {
         throw new UnsupportedOperationException("Unimplemented method 'getOrRefreshTableEntry'");
     }
-    
+
 }
