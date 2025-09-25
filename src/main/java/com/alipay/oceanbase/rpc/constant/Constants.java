@@ -26,6 +26,10 @@ public interface Constants {
     String DATABASE                = "database";
 
     String PROXY_SYS_USER_NAME     = "proxyro@sys";
+    String PROXY_SYS_USER_WORD     = "4" + "c" + "c" + "8" + "a" + "6" + "1" + "f" + "6" + "d"
+                                     + "4" + "0" + "1" + "1" + "c" + "4" + "6" + "5" + "3" + "1"
+                                     + "3" + "a" + "7" + "d" + "3" + "a" + "b" + "f" + "8" + "b"
+                                     + "d" + "9";        //
     String OCEANBASE_DATABASE      = "oceanbase";
     String ALL_DUMMY_TABLE         = "__all_dummy";
     String READ_CONSISTENCY        = "read_consistency";

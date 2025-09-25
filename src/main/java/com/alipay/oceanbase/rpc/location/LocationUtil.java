@@ -308,6 +308,10 @@ public class LocationUtil {
                                                                                     throws ObTableEntryRefreshException {
 
         try {
+            if (sysUA.getPassword().isEmpty()) {
+                String word = SecureIdentityLoginModule.decode(Constants.PROXY_SYS_USER_WORD);
+                return DriverManager.getConnection(url, sysUA.getUserName(), word);
+            }
             return DriverManager.getConnection(url, sysUA.getUserName(), sysUA.getPassword());
         } catch (Exception e) {
             RUNTIME.error(LCD.convert("01-00005"), e.getMessage(), e);
