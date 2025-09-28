@@ -143,12 +143,12 @@
             <dependency>
                 <groupId>com.alipay.configserver</groupId>
                 <artifactId>config-common</artifactId>
-                <version>4.2.10.alipay</version>
+                <version>4.3.0.alipay</version>
             </dependency>
             <dependency>
                 <groupId>com.taobao.configserver</groupId>
                 <artifactId>config-client</artifactId>
-                <version>4.2.10.alipay</version>
+                <version>4.3.0.alipay</version>
             </dependency>
             <dependency>
                 <groupId>commons-io</groupId>
@@ -159,6 +159,26 @@
                 <groupId>commons-logging</groupId>
                 <artifactId>commons-logging</artifactId>
                 <version>1.1.1</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alipay.lookout</groupId>
+                <artifactId>lookout-api</artifactId>
+                <version>1.3.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alipay.sofa</groupId>
+                <artifactId>sofa-common-configs</artifactId>
+                <version>1.2.2</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alipay.drm</groupId>
+                <artifactId>drm-client</artifactId>
+                <version>4.1.0</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-pool</groupId>
+                <artifactId>commons-pool</artifactId>
+                <version>1.3</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -244,7 +264,7 @@
             <version>1.2.12</version>
             <scope>test</scope>
         </dependency>
-        
+
         <!-- Log4j to SLF4J bridge for ZoneClientUtil compatibility -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -270,6 +290,7 @@
             <groupId>com.alipay.sofa</groupId>
             <artifactId>dds-config</artifactId>
             <version>2.0.0</version>
+            <scope>provided</scope>
             <exclusions>
                 <exclusion>
                     <artifactId>toolkit-common-logging</artifactId>
@@ -325,6 +346,7 @@
         <dependency>
             <groupId>com.alipay.common</groupId>
             <artifactId>tracer</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!-- tracer-biz 依赖 -->
@@ -332,6 +354,7 @@
             <groupId>com.alipay.common</groupId>
             <artifactId>tracer-biz</artifactId>
             <version>1.2.18</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- 添加被排除的依赖，使用统一版本 -->
@@ -339,6 +362,7 @@
             <groupId>com.alibaba.toolkit.common</groupId>
             <artifactId>toolkit-common-logging</artifactId>
             <version>1.13</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -356,65 +380,129 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
-            <version>1.2.50.sec10_noneautotype</version>
+            <version>1.2.68.noneautotype</version>
         </dependency>
 
         <dependency>
             <groupId>com.alipay.drm</groupId>
             <artifactId>drm-client</artifactId>
             <version>4.1.0</version>
+            <scope>provided</scope>
             <exclusions>
                 <exclusion>
-                    <groupId>com.alibaba.toolkit.common</groupId>
                     <artifactId>toolkit-common-logging</artifactId>
+                    <groupId>com.alibaba.toolkit.common</groupId>
                 </exclusion>
                 <exclusion>
-                    <groupId>com.alibaba</groupId>
                     <artifactId>fastjson</artifactId>
+                    <groupId>com.alibaba</groupId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <!-- 添加缺少的 SOFA 相关依赖 -->
+        <dependency>
+            <groupId>com.alipay.lookout</groupId>
+            <artifactId>lookout-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alipay.sofa</groupId>
+            <artifactId>sofa-common-configs</artifactId>
+            <exclusions>
+                <exclusion>
+                    <artifactId>drm-client</artifactId>
+                    <groupId>com.alipay.drm</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- 添加 oceanbase-table-client 中存在的其他依赖 -->
+        <dependency>
+            <groupId>com.alipay.data.conf</groupId>
+            <artifactId>confkeeper-client</artifactId>
+            <version>0.4.7</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>drm-client</artifactId>
+                    <groupId>com.alipay.drm</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-pool</groupId>
+            <artifactId>commons-pool</artifactId>
+            <version>1.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alipay.sofa.cloud</groupId>
+            <artifactId>sdk-core</artifactId>
+            <version>0.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.taobao.remoting</groupId>
+            <artifactId>network.core</artifactId>
+            <version>1.2.5</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.mina</groupId>
+            <artifactId>mina-core</artifactId>
+            <version>1.1.5.bugfix</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>1.1.1</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- 显式添加zoneclient-core依赖，使用与oceanbase-table-client一致的版本 -->
         <dependency>
             <groupId>com.alipay.zoneclient</groupId>
             <artifactId>zoneclient-core</artifactId>
+            <scope>provided</scope>
             <exclusions>
                 <exclusion>
-                    <groupId>com.alipay.antvip</groupId>
                     <artifactId>antvip-client</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>com.alipay.antvip</groupId>
+                </exclusion>
+                <exclusion>
                     <artifactId>antvip-common</artifactId>
+                    <groupId>com.alipay.antvip</groupId>
                 </exclusion>
                 <exclusion>
-                    <groupId>com.alibaba</groupId>
                     <artifactId>fastjson</artifactId>
+                    <groupId>com.alibaba</groupId>
                 </exclusion>
                 <exclusion>
-                    <groupId>com.alipay.drm</groupId>
                     <artifactId>drm-client</artifactId>
+                    <groupId>com.alipay.drm</groupId>
                 </exclusion>
                 <exclusion>
-                    <groupId>com.alipay.configserver</groupId>
                     <artifactId>config-common</artifactId>
+                    <groupId>com.alipay.configserver</groupId>
                 </exclusion>
                 <exclusion>
-                    <groupId>com.taobao.configserver</groupId>
                     <artifactId>config-client</artifactId>
+                    <groupId>com.taobao.configserver</groupId>
                 </exclusion>
                 <exclusion>
-                    <groupId>commons-io</groupId>
                     <artifactId>commons-io</artifactId>
+                    <groupId>commons-io</groupId>
                 </exclusion>
                 <exclusion>
-                    <groupId>commons-logging</groupId>
                     <artifactId>commons-logging</artifactId>
+                    <groupId>commons-logging</groupId>
                 </exclusion>
                 <exclusion>
-                    <groupId>com.alibaba.toolkit.common</groupId>
                     <artifactId>toolkit-common-logging</artifactId>
+                    <groupId>com.alibaba.toolkit.common</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -668,8 +756,7 @@
                                 </goals>
                                 <configuration>
                                     <createDependencyReducedPom>false</createDependencyReducedPom>
-                                    <shadedArtifactAttached>true</shadedArtifactAttached>
-                                    <shadedClassifierName>shade</shadedClassifierName>
+                                    <shadedArtifactAttached>false</shadedArtifactAttached>
                                     <artifactSet>
                                         <excludes>
                                             <exclude>mysql:mysql-connector-java</exclude>
