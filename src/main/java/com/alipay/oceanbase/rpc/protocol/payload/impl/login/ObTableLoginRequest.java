@@ -54,6 +54,7 @@ public class ObTableLoginRequest extends AbstractPayload {
     private String        databaseName;
     private long          ttlUs;
     private String        configsStr;
+    private boolean       allowDistributeCapability;
 
     /*
      * Ob table login request.
@@ -116,6 +117,9 @@ public class ObTableLoginRequest extends AbstractPayload {
         idx += len;
         strbytes = Serialization.encodeVString(configsStr);
         System.arraycopy(strbytes, 0, bytes, idx, strbytes.length);
+        idx += strbytes.length;
+        System.arraycopy(Serialization.encodeI8(allowDistributeCapability ? (byte) 1 : (byte) 0), 0,
+                bytes, idx, 1);
         return bytes;
     }
 
@@ -168,7 +172,7 @@ public class ObTableLoginRequest extends AbstractPayload {
                + Serialization.getNeedBytes(userName) + Serialization.getNeedBytes(passSecret)
                + Serialization.getNeedBytes(passScramble)
                + Serialization.getNeedBytes(databaseName) + Serialization.getNeedBytes(ttlUs)
-               + Serialization.getNeedBytes(configsStr);
+               + Serialization.getNeedBytes(configsStr) + 1 /* allowDistributeCapability */;
     }
 
     /*
@@ -318,6 +322,7 @@ public class ObTableLoginRequest extends AbstractPayload {
         return passSecret;
     }
 
+
     /*
      * Set pass secret.
      */
@@ -380,6 +385,14 @@ public class ObTableLoginRequest extends AbstractPayload {
 
     public void setConfigsStr(String configsStr) {
         this.configsStr = configsStr;
+    }
+
+    public void setAllowDistributeCapability(boolean allowDistributeCapability) {
+        this.allowDistributeCapability = allowDistributeCapability;
+    }
+
+    public boolean getAllowDistributeCapability() {
+        return this.allowDistributeCapability;
     }
 
 }

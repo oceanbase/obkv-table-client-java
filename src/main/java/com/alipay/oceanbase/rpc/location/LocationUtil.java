@@ -1583,11 +1583,10 @@ public class LocationUtil {
             long partitionId;
             partitionId = rs.getLong("tablet_id");
             long lsId = withLsId ? rs.getLong("ls_id") : INVALID_LS_ID;
-            if (!rs.wasNull()) {
-                tabletLsIdMap.put(partitionId, lsId);
-            } else {
-                tabletLsIdMap.put(partitionId, INVALID_LS_ID); // non-partitioned table
+            if (withLsId && rs.wasNull()) {
+                lsId = INVALID_LS_ID;
             }
+            tabletLsIdMap.put(partitionId, lsId);
             ObPartitionLocationInfo partitionLocationInfo = partitionEntry
                 .getPartitionInfo(partitionId);
             ObPartitionLocation location = partitionLocationInfo.getPartitionLocation();
