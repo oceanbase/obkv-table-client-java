@@ -814,15 +814,28 @@ public class LocationUtil {
                     // get location info
                     getTableEntryLocationFromRemote(connection, key, tableEntry);
                 }
+            } else if (null != tableEntry && skip_non_partition_table) {
+                // Fix for 2.x non-partition table: initialize partition entry with default values
+                // following 4.x logic for non-partition tables
+                tableEntry.setTableEntryKey(key);
 
-                if (!initialized) {
-                    if (BOOT.isInfoEnabled()) {
-                        BOOT.info("get table entry from remote, entry={}", objectMapper.writeValueAsString(tableEntry));
-                    }
-                } else {
-                    if (logger.isInfoEnabled()) {
-                        logger.info("get table entry from remote");
-                    }
+                // For 2.x non-partition table, get location info despite the skip flag
+                // This is necessary for 2.x non-partition tables to work properly
+                getTableEntryLocationFromRemote(connection, key, tableEntry);
+                if (logger.isInfoEnabled()) {
+                    logger.info("Successfully got location info for 2.x non-partition table: {}",
+                        key);
+                }
+            }
+
+            if (!initialized) {
+                if (BOOT.isInfoEnabled()) {
+                    BOOT.info("get table entry from remote, entry={}",
+                        objectMapper.writeValueAsString(tableEntry));
+                }
+            } else {
+                if (logger.isInfoEnabled()) {
+                    logger.info("get table entry from remote");
                 }
             }
         } catch (SQLException e) {
