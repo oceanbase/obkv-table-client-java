@@ -1488,15 +1488,6 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
             this.ddsClient = ddsClient;
             this.tableName = tableName;
         }
-
-        @Override
-        public BatchOperationResult execute() throws Exception {
-            // BatchOperation requires special handling as it may contain multiple operations
-            // For now, we delegate to the DdsObTableClient's batch functionality
-            // This is a simplified implementation - full batch support would require
-            // grouping operations by target database/table
-            throw new FeatureNotSupportedException("DDS BatchOperation requires grouping by target database. Use DdsObTableClient.batch() instead.");
-        }
     }
 
 }

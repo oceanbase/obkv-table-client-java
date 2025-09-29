@@ -133,11 +133,7 @@ public class DdsObTableClientBatchOps extends AbstractTableBatchOps {
         batchOperation.addTableOperation((instance));
     }
 
-    /**
-    *
-    * @return
-    * @throws Exception
-    */
+
     @Override
     public List<Object> execute() throws Exception {
         DatabaseAndTable databaseAndTable = ddsObTableClient.calculateDatabaseAndTable(tableName,
@@ -151,9 +147,6 @@ public class DdsObTableClientBatchOps extends AbstractTableBatchOps {
         return obTableClientBatchOpsImpl.execute();
     }
 
-    /**
-    *
-    */
     @Override
     public void clear() {
         batchOperation = new ObTableBatchOperation();
@@ -169,5 +162,13 @@ public class DdsObTableClientBatchOps extends AbstractTableBatchOps {
     public List<Object> executeWithResult() throws Exception {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'executeWithResult'");
+    }
+
+    public boolean isReturningAffectedEntity() {
+        return returningAffectedEntity;
+    }
+
+    public void setReturningAffectedEntity(boolean returningAffectedEntity) {
+        this.returningAffectedEntity = returningAffectedEntity;
     }
 }
