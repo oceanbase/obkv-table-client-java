@@ -114,7 +114,8 @@ public class ObGlobal {
     }
 
     public static boolean isHBaseAdminSupport() {
-        return OB_VERSION >= OB_VERSION_4_3_5_3 && OB_VERSION < OB_VERSION_4_4_0_0;
+        return OB_VERSION >= OB_VERSION_4_3_5_3 && OB_VERSION < OB_VERSION_4_4_0_0
+                || OB_VERSION >= OB_VERSION_4_4_1_0;
     }
 
     public static boolean isCellTTLSupport() {
