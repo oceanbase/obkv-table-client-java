@@ -751,7 +751,8 @@ public enum ResultCodes {
     OB_KV_HBASE_TABLE_NOT_EXISTS(-10523), //
     OB_KV_SESS_NOT_EXIST(-10524), //
     OB_KV_ODP_TIMEOUT(-10650), //
-    OB_ERR_KV_ROUTE_ENTRY_EXPIRE(-10653);
+    OB_ERR_KV_ROUTE_ENTRY_EXPIRE(-10653),
+    OB_ERR_KV_ODP_SERVER_NET_ERROR(-10654);
 
     public final int errorCode;
 
