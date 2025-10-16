@@ -989,6 +989,15 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                     connections[idx].reConnectAndLogin("expired");
                 } catch (Exception e) {
                     log.warn("ObTableConnectionPool::checkAndReconnect reconnect fail {}:{}. {}", obTable.getIp(), obTable.getPort(), e.getMessage());
+                    // In write-disable scenarios (OB_ERR_TENANT_IS_LOCKED), update lastConnectionTime 
+                    // even when login fails to avoid continuously retrying the same connections
+                    if (e instanceof com.alipay.oceanbase.rpc.exception.ObTableException) {
+                        com.alipay.oceanbase.rpc.exception.ObTableException obException = 
+                            (com.alipay.oceanbase.rpc.exception.ObTableException) e;
+                        if (obException.getErrorCode() == com.alipay.oceanbase.rpc.protocol.payload.ResultCodes.OB_ERR_TENANT_IS_LOCKED.errorCode) {
+                            connections[idx].updateLastConnectionTime();
+                        }
+                    }
                 } finally {
                     connections[idx].setExpired(false);
                 }

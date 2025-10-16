@@ -73,6 +73,15 @@ public class ObTableConnection {
         isExpired.set(expired);
     }
 
+    /**
+     * Update last connection time even when login fails.
+     * This is used for write-disable scenarios where login failure is expected
+     * and we don't want to keep retrying the same connections.
+     */
+    public void updateLastConnectionTime() {
+        lastConnectionTime = LocalDateTime.now();
+    }
+
     public void enableLoginWithConfigs() {
         loginWithConfigs = true;
     }
