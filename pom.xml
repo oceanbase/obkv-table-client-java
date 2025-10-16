@@ -129,6 +129,11 @@
                 <version>1.6.5</version>
             </dependency>
             <dependency>
+                <groupId>com.alipay.sofa</groupId>
+                <artifactId>hessian</artifactId>
+                <version>3.2.0</version>
+            </dependency>
+            <dependency>
                 <groupId>org.objenesis</groupId>
                 <artifactId>objenesis</artifactId>
                 <version>3.0.1</version>
@@ -187,6 +192,11 @@
                 <groupId>com.alipay.drm</groupId>
                 <artifactId>drm-client</artifactId>
                 <version>4.1.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alipay.sofa</groupId>
+                <artifactId>sofa-runtime-all</artifactId>
+                <version>3.2.0</version>
             </dependency>
             <dependency>
                 <groupId>commons-pool</groupId>
@@ -289,12 +299,6 @@
 
         <dependency>
             <groupId>com.alipay.sofa</groupId>
-            <artifactId>hessian</artifactId>
-            <version>3.3.13</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.alipay.sofa</groupId>
             <artifactId>dds-config</artifactId>
             <version>2.0.0</version>
             <exclusions>
@@ -390,6 +394,22 @@
                 <exclusion>
                     <artifactId>fastjson</artifactId>
                     <groupId>com.alibaba</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>sofa-common-tools</artifactId>
+                    <groupId>com.alipay.sofa.common</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>commons-lang</artifactId>
+                    <groupId>commons-lang</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>sofa-runtime-all</artifactId>
+                    <groupId>com.alipay.sofa</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>sofa-common-configs</artifactId>
+                    <groupId>com.alipay.sofa</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -771,6 +791,11 @@
                                         <relocation>
                                             <pattern>com.alipay.drm</pattern>
                                             <shadedPattern>com.oceanbase.shaded.alipay.drm</shadedPattern>
+                                        </relocation>
+                                        <!-- sofa drm -->
+                                        <relocation>
+                                            <pattern>com.alipay.sofa.middleware.switcher.drm</pattern>
+                                            <shadedPattern>com.oceanbase.shaded.alipay.sofa.middleware.switcher.drm</shadedPattern>
                                         </relocation>
                                         <!-- jackson -->
                                         <relocation>
