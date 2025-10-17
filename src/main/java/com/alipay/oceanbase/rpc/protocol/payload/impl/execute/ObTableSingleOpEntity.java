@@ -161,31 +161,39 @@ public class ObTableSingleOpEntity extends AbstractPayload {
      */
     @Override
     public Object decode(ByteBuf buf) {
-        // 0. decode header
-        super.decode(buf);
+        int rowkeyLen = 0;
+        int propLen = 0;
+        try {
+            // 0. decode header
+            super.decode(buf);
 
-        // 1. rowkey bitmap
-        rowKeyBitLen = Serialization.decodeVi64(buf);
-        rowKeyBitMap = parseBitMap(rowKeyBitLen, aggRowKeyNames, rowKeyNames, buf);
+            // 1. rowkey bitmap
+            rowKeyBitLen = Serialization.decodeVi64(buf);
+            rowKeyBitMap = parseBitMap(rowKeyBitLen, aggRowKeyNames, rowKeyNames, buf);
 
-        // 2. rowkey obobj
-        int len = (int) Serialization.decodeVi64(buf);
-        for (int i = 0; i < len; i++) {
-            ObObj obj = new ObObj();
-            ObTableSerialUtil.decode(buf, obj);
-            rowkey.add(obj);
-        }
+            // 2. rowkey obobj
+            rowkeyLen = (int) Serialization.decodeVi64(buf);
+            for (int i = 0; i < rowkeyLen; i++) {
+                ObObj obj = new ObObj();
+                ObTableSerialUtil.decode(buf, obj);
+                rowkey.add(obj);
+            }
 
-        // 3. properties bitmap
-        propertiesBitLen = Serialization.decodeVi64(buf);
-        propertiesBitMap = parseBitMap(propertiesBitLen, aggPropertiesNames, propertiesNames, buf);
+            // 3. properties bitmap
+            propertiesBitLen = Serialization.decodeVi64(buf);
+            propertiesBitMap = parseBitMap(propertiesBitLen, aggPropertiesNames, propertiesNames, buf);
 
-        // 4. properties obobj
-        len = (int) Serialization.decodeVi64(buf);
-        for (int i = 0; i < len; i++) {
-            ObObj obj = new ObObj();
-            ObTableSerialUtil.decode(buf, obj);
-            propertiesValues.add(obj);
+            // 4. properties obobj
+            propLen = (int) Serialization.decodeVi64(buf);
+            for (int i = 0; i < propLen; i++) {
+                ObObj obj = new ObObj();
+                ObTableSerialUtil.decode(buf, obj);
+                propertiesValues.add(obj);
+            }
+        } catch (Exception e) {
+            String errMsg = String.format("ObTableSingleOpEntity decode exception: rowkeyBitLen=%d, rowkeyLen=%d, propertiesBitLen=%d, propertiesLen=%d"
+                    , rowKeyBitLen, rowkeyLen, propertiesBitLen, propLen);
+            throw new IllegalArgumentException(errMsg + ", cause: " + e.getMessage(), e);
         }
 
         return this;

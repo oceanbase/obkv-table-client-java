@@ -51,7 +51,7 @@ public class ObTableSerialUtil {
         byte type = Serialization.decodeI8(buf);
         ObTableObjType objType = ObTableObjType.valueOf(type);
         if (objType == null) {
-            throw new IllegalArgumentException("cannot get table object type from value");
+            throw new IllegalArgumentException("cannot get table object type from value, type: " + type);
         }
         return objType;
     }
