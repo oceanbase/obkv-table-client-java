@@ -169,8 +169,13 @@ public class ObTableRemoting extends BaseRemoting {
                     "receive unexpected command code: " + response.getCmdCode().value());
                 throw new ObTableUnexpectedException(errMessage, resultCode.getRcode());
             }
-
-            payload.decode(buf);
+            try {
+                payload.decode(buf);
+            } catch (Exception e) {
+                String errMessage = TraceUtil.formatTraceMessage(conn, response,
+                        "decode meet exception, cause: " + e.getMessage());
+                throw new RuntimeException(errMessage, e);
+            }
             return payload;
         } finally {
             // Very important to release ByteBuf memory
