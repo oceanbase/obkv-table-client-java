@@ -80,21 +80,27 @@ public class ObTableSingleOpResult extends AbstractPayload {
      */
     @Override
     public Object decode(ByteBuf buf) {
-        // 0. decode version
-        super.decode(buf);
+        try {
+            // 0. decode version
+            super.decode(buf);
 
-        // 1. decode ObTableResult
-        this.header.decode(buf);
+            // 1. decode ObTableResult
+            this.header.decode(buf);
 
-        // 2. decode types
-        this.operationType = ObTableOperationType.valueOf(Serialization.decodeI8(buf.readByte()));
+            // 2. decode types
+            this.operationType = ObTableOperationType.valueOf(Serialization.decodeI8(buf.readByte()));
 
-        // 3. decode Entity
-        this.entity.setAggPropertiesNames(propertiesColumnNames);
-        this.entity.decode(buf);
+            // 3. decode Entity
+            this.entity.setAggPropertiesNames(propertiesColumnNames);
+            this.entity.decode(buf);
 
-        // 4. decode affected rows
-        this.affectedRows = Serialization.decodeVi64(buf);
+            // 4. decode affected rows
+            this.affectedRows = Serialization.decodeVi64(buf);
+        } catch (Exception e) {
+            String errMsg = String.format("ObTableSingleOpResult decode exception: header=%s, operationType=%d",
+                    this.header.toString(), this.operationType);
+            throw new IllegalArgumentException(errMsg + ", cause: " + e.getMessage(), e);
+        }
 
         return this;
     }
