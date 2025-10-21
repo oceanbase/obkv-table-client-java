@@ -97,8 +97,8 @@ public class ObTableSingleOpResult extends AbstractPayload {
             // 4. decode affected rows
             this.affectedRows = Serialization.decodeVi64(buf);
         } catch (Exception e) {
-            String errMsg = String.format("ObTableSingleOpResult decode exception: header=%s, operationType=%d",
-                    this.header.toString(), this.operationType);
+            String errMsg = String.format("ObTableSingleOpResult decode exception: header=%s, operationType=%s",
+                    this.header.toString(), this.operationType.toString());
             throw new IllegalArgumentException(errMsg + ", cause: " + e.getMessage(), e);
         }
 
