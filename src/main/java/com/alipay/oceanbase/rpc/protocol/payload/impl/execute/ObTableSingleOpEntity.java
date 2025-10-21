@@ -193,7 +193,7 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         } catch (Exception e) {
             String errMsg = String.format("ObTableSingleOpEntity decode exception: rowkeyBitLen=%d, rowkeyLen=%d, propertiesBitLen=%d, propertiesLen=%d"
                     , rowKeyBitLen, rowkeyLen, propertiesBitLen, propLen);
-            throw new IllegalArgumentException(errMsg + ", cause: " + e.getMessage(), e);
+            throw new IllegalArgumentException(errMsg, e);
         }
 
         return this;

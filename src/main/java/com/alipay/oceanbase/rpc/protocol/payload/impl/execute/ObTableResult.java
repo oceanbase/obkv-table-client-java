@@ -132,4 +132,10 @@ public class ObTableResult extends AbstractPayload {
     public void setMsg(byte[] msg) {
         this.msg = msg;
     }
+
+    @Override
+    public String toString() {
+        return String.format("ObTableResult[errno=%d, sqlState=%s, msg=%s]",
+                errno, new String(sqlState), getErrMsg());
+    }
 }

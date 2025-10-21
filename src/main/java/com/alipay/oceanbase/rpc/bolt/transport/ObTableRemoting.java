@@ -173,7 +173,7 @@ public class ObTableRemoting extends BaseRemoting {
                 payload.decode(buf);
             } catch (Exception e) {
                 String errMessage = TraceUtil.formatTraceMessage(conn, response,
-                        "decode meet exception, cause: " + e.getMessage());
+                        "payload decode meet exception");
                 throw new RuntimeException(errMessage, e);
             }
             return payload;
