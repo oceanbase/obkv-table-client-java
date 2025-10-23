@@ -168,4 +168,14 @@ public class ObHbaseCfRows extends AbstractPayload {
         return this.payLoadContentSize;
     }
 
+    @Override
+    public void resetPayloadContentSize() {
+        super.resetPayloadContentSize();
+        for (ObHbaseCell cell : cells) {
+            if (cell != null) {
+                cell.resetPayloadContentSize();
+            }
+        }
+    }
+
 }
