@@ -155,6 +155,16 @@ public class ObHbaseRequest extends AbstractPayload implements Credentialable {
         return payLoadContentSize;
     }
 
+    @Override
+    public void resetPayloadContentSize() {
+        super.resetPayloadContentSize();
+        for (ObHbaseCfRows cfRows : cfRows) {
+            if (cfRows != null) {
+                cfRows.resetPayloadContentSize();
+            }
+        }
+    }
+
     public void setTimeout(long timeout) {
         this.timeout = timeout;
     }

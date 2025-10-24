@@ -461,6 +461,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                             connection.getObTable().getIp(), connection.getObTable().getPort(),
                             connection.getTenantId(), retryTimes);
                     connection.reConnectAndLogin(msg);
+                    request.resetPayloadContentSize();
                     needReconnect = false;
                 }
                 payload = realClient.invokeSync(connection, request, obTableExecuteTimeout);
