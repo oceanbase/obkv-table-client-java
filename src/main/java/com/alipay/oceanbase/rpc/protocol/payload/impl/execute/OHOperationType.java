@@ -3,24 +3,25 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 import java.util.*;
 
 public enum OHOperationType {
-    PUT(0),
-    PUT_LIST(1),
-    DELETE(2),
-    DELETE_LIST(3),
-    GET(4),
-    GET_LIST(5),
-    EXISTS(6),
-    EXISTS_LIST(7),
-    BATCH(8),
-    BATCH_CALLBACK(9),
-    SCAN(10),
-    CHECK_AND_PUT(11),
-    CHECK_AND_DELETE(12),
-    CHECK_AND_MUTATE(13),
-    APPEND(14),
-    INCREMENT(15),
-    INCREMENT_COLUMN_VALUE(16),
-    MUTATE_ROW(17);
+    INVALID(0),
+    PUT(1),
+    PUT_LIST(2),
+    DELETE(3),
+    DELETE_LIST(4),
+    GET(5),
+    GET_LIST(6),
+    EXISTS(7),
+    EXISTS_LIST(8),
+    BATCH(9),
+    BATCH_CALLBACK(10),
+    SCAN(11),
+    CHECK_AND_PUT(12),
+    CHECK_AND_DELETE(13),
+    CHECK_AND_MUTATE(14),
+    APPEND(15),
+    INCREMENT(16),
+    INCREMENT_COLUMN_VALUE(17),
+    MUTATE_ROW(18);
 
     private final int                                  value;
     private static final Map<Integer, OHOperationType> map = new HashMap<Integer, OHOperationType>();

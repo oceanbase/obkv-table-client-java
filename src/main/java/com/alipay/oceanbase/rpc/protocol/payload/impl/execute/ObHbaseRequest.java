@@ -53,6 +53,7 @@ public class ObHbaseRequest extends AbstractPayload implements Credentialable {
     protected ObTableOperationType    opType;
     protected List<ObObj>             keys       = new ArrayList<>();
     protected List<ObHbaseCfRows>     cfRows;
+    protected OHOperationType         hbaseOpType;
 
     public ObHbaseRequest() {
         this.credential = new ObBytesString();
@@ -182,6 +183,10 @@ public class ObHbaseRequest extends AbstractPayload implements Credentialable {
 
     public void setServerCanRetry(boolean canRetry) {
         optionFlag.setFlagServerCanRetry(canRetry);
+    }
+
+    public void setHbaseOpType(OHOperationType hbaseOpType) {
+        this.hbaseOpType = hbaseOpType;
     }
 
     public boolean getServerCanRetry() {

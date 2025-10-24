@@ -35,7 +35,8 @@ import io.netty.buffer.ByteBuf;
      entity_type_,
      query_and_mutate_,
      binlog_row_image_type_,
-     option_flag_);
+     option_flag_,
+     hbase_op_type_);
  *
  */
 public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationRequest {
@@ -78,6 +79,9 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
         idx += len;
         System.arraycopy(Serialization.encodeI8(option_flag.getByteValue()), 0, bytes, idx, 1);
 
+        idx += 1;
+        System.arraycopy(Serialization.encodeI8(hbaseOpType.getByteValue()), 0, bytes, idx, 1);
+
         return bytes;
     }
 
@@ -111,7 +115,7 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
         if (ObGlobal.obVsnMajor() >= 4)
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
                    + Serialization.getNeedBytes(tableId) + 8 + 1
-                   + tableQueryAndMutate.getPayloadSize() + Serialization.getNeedBytes(type.getValue()) + 1;
+                   + tableQueryAndMutate.getPayloadSize() + Serialization.getNeedBytes(type.getValue()) + 1 + 1;
         else
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
                    + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId)

@@ -39,6 +39,7 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
     protected ObTableOptionFlag       option_flag             = ObTableOptionFlag.DEFAULT;
     protected boolean                 returningAffectedEntity = false;
     protected boolean                 returningAffectedRows   = false;
+    protected OHOperationType         hbaseOpType             = OHOperationType.INVALID; // for table operations, this will be INVALID(0)
 
     /*
      * Get payload content size.
@@ -218,6 +219,10 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
 
     public void setNeedTabletId(boolean needTabletId) {
         option_flag.setNeedTabletId(needTabletId);
+    }
+
+    public void setHbaseOpType(OHOperationType hbaseOpType) {
+        this.hbaseOpType = hbaseOpType;
     }
 
     public boolean getNeedTabletId() {

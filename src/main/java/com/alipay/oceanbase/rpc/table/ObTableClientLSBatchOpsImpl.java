@@ -69,7 +69,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     private boolean               returningAffectedEntity = false;
     private boolean               needAllProp             = false;
     private boolean               serverCanRetry          = false;
-    private boolean               needTabletId  = false;
+    private boolean               needTabletId            = false;
+    protected OHOperationType     hbaseOpType             = OHOperationType.INVALID;
     private List<ObTableSingleOp> batchOperation;
 
     /*
@@ -92,6 +93,10 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
     public List<ObTableSingleOp> getSingleOperations() {
         return batchOperation;
+    }
+
+    public void setHbaseOpType(OHOperationType hbaseOpType) {
+        this.hbaseOpType = hbaseOpType;
     }
 
     /*
@@ -591,6 +596,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
        tableLsOpRequest.setTableId(tableId);
        tableLsOpRequest.setEntityType(entityType);
        tableLsOpRequest.setTimeout(operationTimeout);
+       tableLsOpRequest.setHbaseOpType(hbaseOpType);
 
         ObTableLSOpResult subLSOpResult;
         boolean needRefreshPartitionLocation = false;
