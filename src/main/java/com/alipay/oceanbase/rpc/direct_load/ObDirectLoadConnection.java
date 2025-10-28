@@ -63,7 +63,7 @@ public class ObDirectLoadConnection {
 
     ObDirectLoadConnection(ObDirectLoadConnectionFactory connectionFactory) {
         this.connectionFactory = connectionFactory;
-        this.traceId = ObDirectLoadTraceId.generateTraceId();
+        this.traceId = ObDirectLoadTraceIdGenerator.generate();
         this.logger = ObDirectLoadLogger.getLogger(this.traceId);
     }
 

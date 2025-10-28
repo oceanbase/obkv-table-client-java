@@ -57,7 +57,7 @@ public class ObDirectLoadStatement {
 
     ObDirectLoadStatement(ObDirectLoadConnection connection) {
         this.connection = connection;
-        this.traceId = ObDirectLoadTraceId.generateTraceId();
+        this.traceId = ObDirectLoadTraceIdGenerator.generate();
         this.logger = ObDirectLoadLogger.getLogger(this.traceId);
     }
 
