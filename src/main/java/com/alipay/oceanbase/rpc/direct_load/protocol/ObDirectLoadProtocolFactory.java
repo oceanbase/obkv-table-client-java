@@ -25,40 +25,18 @@ import com.alipay.oceanbase.rpc.direct_load.protocol.v0.ObDirectLoadProtocolV0;
 
 public class ObDirectLoadProtocolFactory {
 
-    private static final ObDirectLoadLogger logger             = ObDirectLoadLogger.getLogger();
-
-    // 起始版本
-    // 4_2_1_release
-    public static final long                OB_VERSION_4_2_1_0 = ObGlobal.calcVersion(4, (short) 2,
-                                                                   (byte) 1, (byte) 0);
-    // 4_2_x_release
-    public static final long                OB_VERSION_4_2_2_0 = ObGlobal.calcVersion(4, (short) 2,
-                                                                   (byte) 2, (byte) 0);
-    // master
-    public static final long                OB_VERSION_4_3_0_0 = ObGlobal.calcVersion(4, (short) 3,
-                                                                   (byte) 0, (byte) 0);
-
-    // 最低支持版本
-    // 4_2_1_release
-    public static final long                OB_VERSION_4_2_1_7 = ObGlobal.calcVersion(4, (short) 2,
-                                                                   (byte) 1, (byte) 7);
-    // 4_2_x_release
-    public static final long                OB_VERSION_4_2_4_0 = ObGlobal.calcVersion(4, (short) 2,
-                                                                   (byte) 4, (byte) 0);
-    // master
-    public static final long                OB_VERSION_4_3_0_1 = ObGlobal.calcVersion(4, (short) 3,
-                                                                   (byte) 0, (byte) 1);
+    private static final ObDirectLoadLogger logger = ObDirectLoadLogger.getLogger();
 
     public static long getSupportedMinimumObVersion(long obVersion) {
         long minimumObVersion = 0;
-        if (obVersion < OB_VERSION_4_2_1_0) { // < 421
-            minimumObVersion = OB_VERSION_4_2_1_7;
-        } else if (obVersion < OB_VERSION_4_2_2_0) { // 421
-            minimumObVersion = OB_VERSION_4_2_1_7;
-        } else if (obVersion < OB_VERSION_4_3_0_0) { // 42x
-            minimumObVersion = OB_VERSION_4_2_4_0;
+        if (obVersion < ObGlobal.OB_VERSION_4_2_1_0) { // < 421
+            minimumObVersion = ObGlobal.OB_VERSION_4_2_1_7;
+        } else if (obVersion < ObGlobal.OB_VERSION_4_2_2_0) { // 421
+            minimumObVersion = ObGlobal.OB_VERSION_4_2_1_7;
+        } else if (obVersion < ObGlobal.OB_VERSION_4_3_0_0) { // 42x
+            minimumObVersion = ObGlobal.OB_VERSION_4_2_4_0;
         } else { // master
-            minimumObVersion = OB_VERSION_4_3_0_1;
+            minimumObVersion = ObGlobal.OB_VERSION_4_3_0_1;
         }
         return minimumObVersion;
     }
