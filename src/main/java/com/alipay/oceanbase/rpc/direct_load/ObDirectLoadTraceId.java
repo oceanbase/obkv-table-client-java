@@ -17,9 +17,6 @@
 
 package com.alipay.oceanbase.rpc.direct_load;
 
-import java.net.InetAddress;
-import java.util.concurrent.atomic.AtomicLong;
-
 import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 
@@ -79,50 +76,9 @@ public class ObDirectLoadTraceId {
     }
 
     public static final ObDirectLoadTraceId DEFAULT_TRACE_ID;
-    public static TraceIdGenerator          traceIdGenerator;
 
     static {
         DEFAULT_TRACE_ID = new ObDirectLoadTraceId(0, 0);
-        traceIdGenerator = new TraceIdGenerator();
     }
-
-    public static ObDirectLoadTraceId generateTraceId() {
-        return traceIdGenerator.generate();
-    }
-
-    public static class TraceIdGenerator {
-
-        private final ObDirectLoadLogger logger = ObDirectLoadLogger.getLogger();
-
-        private final long               uniqueId;
-        private AtomicLong               sequence;
-
-        public TraceIdGenerator() {
-            long ip = 0;
-            try {
-                ip = ipToLong(InetAddress.getLocalHost().getHostAddress());
-            } catch (Exception e) {
-                logger.warn("get local host address failed", e);
-            }
-            long port = (long) (Math.random() % 65536) << 32;
-            long isUserRequest = (1l << (32 + 16));
-            long reserved = 0;
-            uniqueId = ip | port | isUserRequest | reserved;
-            sequence = new AtomicLong(0);
-        }
-
-        private static long ipToLong(String strIp) {
-            String[] ip = strIp.split("\\.");
-            return (Long.parseLong(ip[0]) << 24) + (Long.parseLong(ip[1]) << 16)
-                   + (Long.parseLong(ip[2]) << 8) + (Long.parseLong(ip[3]));
-        }
-
-        public ObDirectLoadTraceId generate() {
-            long newSequence = System.currentTimeMillis() * 1000 + sequence.incrementAndGet()
-                               % 1000;
-            return new ObDirectLoadTraceId(uniqueId, newSequence);
-        }
-
-    };
 
 }

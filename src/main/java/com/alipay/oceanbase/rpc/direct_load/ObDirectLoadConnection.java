@@ -64,7 +64,7 @@ public class ObDirectLoadConnection {
 
     ObDirectLoadConnection(ObDirectLoadConnectionFactory connectionFactory) {
         this.connectionFactory = connectionFactory;
-        this.traceId = ObDirectLoadTraceId.generateTraceId();
+        this.traceId = ObDirectLoadTraceIdGenerator.generate();
         this.logger = ObDirectLoadLogger.getLogger(this.traceId);
     }
 
@@ -259,7 +259,7 @@ public class ObDirectLoadConnection {
         ObDirectLoadStatement stmt = null;
         try {
             final ObDirectLoadTraceId traceId = builder.getTraceId() != null ? builder.getTraceId()
-                : ObDirectLoadTraceId.generateTraceId();
+                : ObDirectLoadTraceIdGenerator.generate();
             stmt = createStatement(traceId);
             stmt.init(builder);
         } catch (Exception e) {
