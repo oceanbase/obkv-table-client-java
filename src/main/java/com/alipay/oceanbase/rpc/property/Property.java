@@ -41,7 +41,7 @@ public enum Property {
     METADATA_REFRESH_LOCK_TIMEOUT("metadata.refresh.lock.timeout", 8000L, "刷新METADATA的锁超时时间"),
 
     // [ObTableClient][RS_LIST]
-    RS_LIST_ACQUIRE_CONNECT_TIMEOUT("rs.list.acquire.connect.timeout", 200, "获取RS列表的建连的超时时间"),
+    RS_LIST_ACQUIRE_CONNECT_TIMEOUT("rs.list.acquire.connect.timeout", 1000, "获取RS列表的建连的超时时间"),
 
     RS_LIST_ACQUIRE_READ_TIMEOUT("rs.list.acquire.read.timeout", 1000, "获取RS列表的读取的超时时间"),
 
