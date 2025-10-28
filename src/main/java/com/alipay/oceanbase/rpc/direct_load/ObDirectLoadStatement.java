@@ -57,7 +57,7 @@ public class ObDirectLoadStatement {
 
     ObDirectLoadStatement(ObDirectLoadConnection connection) {
         this.connection = connection;
-        this.traceId = ObDirectLoadTraceId.generateTraceId();
+        this.traceId = ObDirectLoadTraceIdGenerator.generate();
         this.logger = ObDirectLoadLogger.getLogger(this.traceId);
     }
 
@@ -309,7 +309,7 @@ public class ObDirectLoadStatement {
         private long                         maxErrorRowCount  = 0;
         private String                       loadMethod        = "full";
 
-        private static final long            MAX_QUERY_TIMEOUT = 1L * 365 * 24 * 3600 * 1000;     // 1year
+        private static final long            MAX_QUERY_TIMEOUT = Integer.MAX_VALUE;
 
         Builder(ObDirectLoadConnection connection) {
             this.connection = connection;
