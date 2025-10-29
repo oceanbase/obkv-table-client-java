@@ -2428,7 +2428,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             throw new IllegalArgumentException("table name is null");
         }
         if (isOdpMode()) {
-            return getOdpTable().execute(request);
+            ObTable obTable = getOdpTable();
+            request.setTimeout(obTable.getObTableOperationTimeout());
+            return obTable.execute(request);
         } else {
             Row row = new Row();
             // get the first cell from the first cfRows to route
