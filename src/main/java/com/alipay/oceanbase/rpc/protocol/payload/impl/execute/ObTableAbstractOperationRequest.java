@@ -225,6 +225,10 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
         this.hbaseOpType = hbaseOpType;
     }
 
+    public OHOperationType getHbaseOpType() {
+        return hbaseOpType;
+    }
+
     public boolean getNeedTabletId() {
         return option_flag.isNeedTabletId();
     }

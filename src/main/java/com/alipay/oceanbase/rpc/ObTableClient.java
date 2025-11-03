@@ -2271,6 +2271,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(tableName,
                     ((ObTableQueryRequest) request).getTableQuery(), this);
             tableQuery.setEntityType(request.getEntityType());
+            tableQuery.setHbaseOpType(request.getHbaseOpType());
             return new ObClusterTableQuery(tableQuery).executeInternal();
         } else if (request instanceof ObTableQueryAsyncRequest) {
             // TableGroup -> TableName
@@ -2278,6 +2279,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(tableName,
                     ((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery(), this);
             tableQuery.setEntityType(request.getEntityType());
+            tableQuery.setHbaseOpType(request.getHbaseOpType());
             ObClusterTableQuery clusterTableQuery = new ObClusterTableQuery(tableQuery);
             clusterTableQuery.setAllowDistributeScan(((ObTableQueryAsyncRequest) request).isAllowDistributeScan());
             return clusterTableQuery.asyncExecuteInternal();
