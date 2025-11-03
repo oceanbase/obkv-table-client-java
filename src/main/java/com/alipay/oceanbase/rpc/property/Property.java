@@ -179,7 +179,16 @@ public enum Property {
      * Get default long.
      */
     public long getDefaultLong() {
-        return (Long) defaultV;
+        if (defaultV instanceof Long) {
+            return (Long) defaultV;
+        } else if (defaultV instanceof Integer) {
+            return ((Integer) defaultV).longValue();
+        } else if (defaultV instanceof Number) {
+            return ((Number) defaultV).longValue();
+        } else {
+            throw new ClassCastException("Cannot convert " + defaultV.getClass().getName()
+                                         + " to long for property: " + key);
+        }
     }
 
     /*

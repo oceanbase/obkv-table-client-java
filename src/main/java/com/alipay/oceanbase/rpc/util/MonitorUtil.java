@@ -70,7 +70,8 @@ public class MonitorUtil {
     private static String logMessage(String traceId, String database, String tableName,
                                      String methodName, String type, String endpoint,
                                      List<Object> params, ObTableQueryAndMutateResult result,
-                                     long routeTableTime, long executeTime) throws JsonProcessingException {
+                                     long routeTableTime, long executeTime)
+                                                                           throws JsonProcessingException {
         if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
             endpoint = endpoint.replaceAll(",", "#");
         }
@@ -170,7 +171,8 @@ public class MonitorUtil {
      */
     private static String logMessage(String traceId, String database, String tableName,
                                      String methodName, String endpoint, List<Object> rowKeys,
-                                     int resultSize, long executeTime) throws JsonProcessingException {
+                                     int resultSize, long executeTime)
+                                                                      throws JsonProcessingException {
         if (org.apache.commons.lang.StringUtils.isNotBlank(endpoint)) {
             endpoint = endpoint.replaceAll(",", "#");
         }
@@ -233,7 +235,8 @@ public class MonitorUtil {
     public static void info(final ObPayload payload, String database, String tableName,
                             String methodName, String endpoint,
                             ObTableBatchOperation subOperations, long partId, int resultSize,
-                            long executeTime, long slowQueryMonitorThreshold) throws JsonProcessingException {
+                            long executeTime, long slowQueryMonitorThreshold)
+                                                                             throws JsonProcessingException {
         logMessage0(payload, database, tableName, methodName, endpoint, subOperations, partId,
             resultSize, executeTime, slowQueryMonitorThreshold);
     }
@@ -302,7 +305,8 @@ public class MonitorUtil {
     private static void logLsOpMessage(final ObPayload payload, String database, String tableName,
                                        String methodName, String endpoint,
                                        ObTableLSOperation lsOperation, int resultSize,
-                                       long executeTime, long slowQueryMonitorThreshold) throws JsonProcessingException {
+                                       long executeTime, long slowQueryMonitorThreshold)
+                                                                                        throws JsonProcessingException {
         if (slowQueryMonitorThreshold < 0 || executeTime < slowQueryMonitorThreshold) {
             return;
         }
@@ -313,7 +317,8 @@ public class MonitorUtil {
 
     public static void info(final ObPayload payload, String database, String tableName,
                             String methodName, String endpoint, ObTableLSOperation lsOperation,
-                            int resultSize, long executeTime, long slowQueryMonitorThreshold) throws JsonProcessingException {
+                            int resultSize, long executeTime, long slowQueryMonitorThreshold)
+                                                                                             throws JsonProcessingException {
         logLsOpMessage(payload, database, tableName, methodName, endpoint, lsOperation, resultSize,
             executeTime, slowQueryMonitorThreshold);
     }

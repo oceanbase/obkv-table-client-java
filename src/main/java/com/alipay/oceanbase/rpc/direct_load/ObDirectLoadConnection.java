@@ -177,22 +177,21 @@ public class ObDirectLoadConnection {
     private void initProtocol() throws ObDirectLoadException {
         // 构造一个连接, 获取版本号
         ObTable table = null;
-        synchronized (connectionFactory) { // 防止并发访问ObGlobal.OB_VERSION
-            ObGlobal.OB_VERSION = 0;
-            try {
-                Properties properties = new Properties();
-                properties.setProperty(Property.SERVER_CONNECTION_POOL_SIZE.getKey(),
-                    String.valueOf(1));
-                properties.setProperty(Property.RPC_CONNECT_TIMEOUT.getKey(),
-                    String.valueOf(connectTimeout));
-                table = new ObTable.Builder(ip, port)
-                    .setLoginInfo(tenantName, userName, password, databaseName)
-                    .setProperties(properties).build();
-            } catch (Exception e) {
-                throw new ObDirectLoadException(e);
-            }
+        long obVersion = 0;
+        try {
+            Properties properties = new Properties();
+            properties
+                .setProperty(Property.SERVER_CONNECTION_POOL_SIZE.getKey(), String.valueOf(1));
+            properties.setProperty(Property.RPC_CONNECT_TIMEOUT.getKey(),
+                String.valueOf(connectTimeout));
+            table = new ObTable.Builder(ip, port)
+                .setLoginInfo(tenantName, userName, password, databaseName)
+                .setProperties(properties).build();
+            obVersion = table.getObVersion();
+        } catch (Exception e) {
+            throw new ObDirectLoadException(e);
         }
-        this.protocol = ObDirectLoadProtocolFactory.getProtocol(traceId, ObGlobal.OB_VERSION);
+        this.protocol = ObDirectLoadProtocolFactory.getProtocol(traceId, obVersion);
         this.protocol.init();
         table.close();
     }
@@ -359,9 +358,7 @@ public class ObDirectLoadConnection {
         }
 
         public void init() throws ObDirectLoadException {
-            synchronized (connection.connectionFactory) { // 防止并发访问ObGlobal.OB_VERSION
-                initTables();
-            }
+            initTables();
             initAvailableWriteObTableQueue();
             isInited = true;
         }

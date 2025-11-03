@@ -61,32 +61,48 @@ public class LogicalTable implements Lifecycle {
         tableRuleFunctions = new HashMap<Set<String>, DistributeRuleSimpleFunc>();
         if (tableRules != null) {
             for (String tableRule : tableRules) {
-                DistributeRuleSimpleFunc tableRuleFunc = new DistributeRuleExpressParser(tableRule)
-                    .parse();
-                Set<String> referColumnNameSet = new HashSet<String>(
-                    tableRuleFunc.getRefColumnNames());
-                tableRuleFunctions.put(referColumnNameSet, tableRuleFunc);
+                try {
+                    DistributeRuleSimpleFunc tableRuleFunc = new DistributeRuleExpressParser(
+                        tableRule).parse();
+                    Set<String> referColumnNameSet = new HashSet<String>(
+                        tableRuleFunc.getRefColumnNames());
+                    tableRuleFunctions.put(referColumnNameSet, tableRuleFunc);
+                } catch (Exception e) {
+                    throw new Exception("Failed to parse table rule for logical table '"
+                                        + logicalTableName + "': " + tableRule, e);
+                }
             }
         }
 
         if (dbRules != null) {
             dbRuleFunctions = new HashMap<Set<String>, DistributeRuleSimpleFunc>();
             for (String dbRule : dbRules) {
-                DistributeRuleSimpleFunc dbRuleFunc = new DistributeRuleExpressParser(dbRule)
-                    .parse();
-                Set<String> referColumnNameSet = new HashSet<String>(dbRuleFunc.getRefColumnNames());
-                dbRuleFunctions.put(referColumnNameSet, dbRuleFunc);
+                try {
+                    DistributeRuleSimpleFunc dbRuleFunc = new DistributeRuleExpressParser(dbRule)
+                        .parse();
+                    Set<String> referColumnNameSet = new HashSet<String>(
+                        dbRuleFunc.getRefColumnNames());
+                    dbRuleFunctions.put(referColumnNameSet, dbRuleFunc);
+                } catch (Exception e) {
+                    throw new Exception("Failed to parse db rule for logical table '"
+                                        + logicalTableName + "': " + dbRule, e);
+                }
             }
         }
 
         if (elasticRules != null) {
             elasticRuleFunctions = new HashMap<Set<String>, DistributeRuleSimpleFunc>();
             for (String elasticRule : elasticRules) {
-                DistributeRuleSimpleFunc elasticRuleFunc = new DistributeRuleExpressParser(
-                    elasticRule).parse();
-                Set<String> referColumnNameSet = new HashSet<String>(
-                    elasticRuleFunc.getRefColumnNames());
-                dbRuleFunctions.put(referColumnNameSet, elasticRuleFunc);
+                try {
+                    DistributeRuleSimpleFunc elasticRuleFunc = new DistributeRuleExpressParser(
+                        elasticRule).parse();
+                    Set<String> referColumnNameSet = new HashSet<String>(
+                        elasticRuleFunc.getRefColumnNames());
+                    dbRuleFunctions.put(referColumnNameSet, elasticRuleFunc);
+                } catch (Exception e) {
+                    throw new Exception("Failed to parse elastic rule for logical table '"
+                                        + logicalTableName + "': " + elasticRule, e);
+                }
             }
         }
 

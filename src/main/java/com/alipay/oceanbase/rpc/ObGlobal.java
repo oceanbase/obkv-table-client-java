@@ -39,7 +39,6 @@ public class ObGlobal {
                + (minor_patch << OB_VSN_MINOR_PATCH_SHIFT);
     }
 
-
     public static long calcVersionForV2(int major, short minor, byte major_patch) {
         return ((long) major << OB_VSN_MAJOR_SHIFT) + ((long) minor << OB_VSN_MINOR_SHIFT)
                + ((long) major_patch << OB_VSN_MAJOR_PATCH_SHIFT);
@@ -50,6 +49,10 @@ public class ObGlobal {
                + (major_patch << OB_VSN_MAJOR_PATCH_SHIFT);
     }
 
+    /**
+     * @deprecated Use getObVsnMajor(long version) instead with instance version
+     */
+    @Deprecated
     public static int obVsnMajor() {
         return getObVsnMajor(OB_VERSION);
     }
@@ -58,6 +61,10 @@ public class ObGlobal {
         return (int) ((version >> OB_VSN_MAJOR_SHIFT) & OB_VSN_MAJOR_MASK);
     }
 
+    /**
+     * @deprecated Use getObVsnMinor(long version) instead with instance version
+     */
+    @Deprecated
     public static short obVsnMinor() {
         return getObVsnMinor(OB_VERSION);
     }
@@ -66,6 +73,10 @@ public class ObGlobal {
         return (short) ((version >> OB_VSN_MINOR_SHIFT) & OB_VSN_MINOR_MASK);
     }
 
+    /**
+     * @deprecated Use getObVsnMajorPatch(long version) instead with instance version
+     */
+    @Deprecated
     public static byte obVsnMajorPatch() {
         return getObVsnMajorPatch(OB_VERSION);
     }
@@ -74,6 +85,10 @@ public class ObGlobal {
         return (byte) ((version >> OB_VSN_MAJOR_PATCH_SHIFT) & OB_VSN_MAJOR_PATCH_MASK);
     }
 
+    /**
+     * @deprecated Use getObVsnMinorPatch(long version) instead with instance version
+     */
+    @Deprecated
     public static byte obVsnMinorPatch() {
         return getObVsnMinorPatch(OB_VERSION);
     }
@@ -82,6 +97,10 @@ public class ObGlobal {
         return (byte) ((version >> OB_VSN_MINOR_PATCH_SHIFT) & OB_VSN_MINOR_PATCH_MASK);
     }
 
+    /**
+     * @deprecated Use getObVsnString(long version) instead with instance version
+     */
+    @Deprecated
     public static String obVsnString() {
         return String.format("%d.%d.%d.%d", obVsnMajor(), obVsnMinor(), obVsnMajorPatch(),
             obVsnMinorPatch());
@@ -92,32 +111,80 @@ public class ObGlobal {
             getObVsnMajorPatch(version), getObVsnMinorPatch(version));
     }
 
+    /**
+     * @deprecated Use isLsOpSupport(long version) instead with instance version
+     */
+    @Deprecated
     public static boolean isLsOpSupport() {
-        return OB_VERSION >= OB_VERSION_4_2_3_0 && OB_VERSION < OB_VERSION_4_3_0_0
-               || OB_VERSION >= OB_VERSION_4_3_4_0;
+        return isLsOpSupport(OB_VERSION);
     }
 
+    public static boolean isLsOpSupport(long version) {
+        return version >= OB_VERSION_4_2_3_0 && version < OB_VERSION_4_3_0_0
+               || version >= OB_VERSION_4_3_4_0;
+    }
+
+    /**
+     * @deprecated Use isFtsQuerySupport(long version) instead with instance version
+     */
+    @Deprecated
     public static boolean isFtsQuerySupport() {
-        return OB_VERSION >= OB_VERSION_4_3_5_1;
+        return isFtsQuerySupport(OB_VERSION);
     }
 
+    public static boolean isFtsQuerySupport(long version) {
+        return version >= OB_VERSION_4_3_5_1;
+    }
+
+    /**
+     * @deprecated Use isReturnOneResultSupport(long version) instead with instance version
+     */
+    @Deprecated
     public static boolean isReturnOneResultSupport() {
-        return OB_VERSION >= OB_VERSION_4_2_3_0 && OB_VERSION < OB_VERSION_4_3_0_0
-               || OB_VERSION >= OB_VERSION_4_3_4_0;
+        return isReturnOneResultSupport(OB_VERSION);
     }
 
+    public static boolean isReturnOneResultSupport(long version) {
+        return version >= OB_VERSION_4_2_3_0 && version < OB_VERSION_4_3_0_0
+               || version >= OB_VERSION_4_3_4_0;
+    }
+
+    /**
+     * @deprecated Use isHBaseBatchGetSupport(long version) instead with instance version
+     */
+    @Deprecated
     public static boolean isHBaseBatchGetSupport() {
-        return OB_VERSION >= OB_VERSION_4_2_5_2 && OB_VERSION < OB_VERSION_4_3_0_0
-                || OB_VERSION >= OB_VERSION_4_3_5_1;
+        return isHBaseBatchGetSupport(OB_VERSION);
     }
 
+    public static boolean isHBaseBatchGetSupport(long version) {
+        return version >= OB_VERSION_4_2_5_2 && version < OB_VERSION_4_3_0_0
+               || version >= OB_VERSION_4_3_5_1;
+    }
+
+    /**
+     * @deprecated Use isHBaseBatchSupport(long version) instead with instance version
+     */
+    @Deprecated
     public static boolean isHBaseBatchSupport() {
-        return OB_VERSION >= OB_VERSION_4_2_5_2 && OB_VERSION < OB_VERSION_4_3_0_0
-               || OB_VERSION >= OB_VERSION_4_3_5_0;
+        return isHBaseBatchSupport(OB_VERSION);
     }
 
+    public static boolean isHBaseBatchSupport(long version) {
+        return version >= OB_VERSION_4_2_5_2 && version < OB_VERSION_4_3_0_0
+               || version >= OB_VERSION_4_3_5_0;
+    }
+
+    /**
+     * @deprecated Use isCellTTLSupport(long version) instead with instance version
+     */
+    @Deprecated
     public static boolean isCellTTLSupport() {
-        return OB_VERSION >= OB_VERSION_4_3_5_1;
+        return isCellTTLSupport(OB_VERSION);
+    }
+
+    public static boolean isCellTTLSupport(long version) {
+        return version >= OB_VERSION_4_3_5_1;
     }
 
     public static final long OB_VERSION_4_2_3_0 = calcVersion(4, (short) 2, (byte) 3, (byte) 0);
@@ -132,5 +199,10 @@ public class ObGlobal {
 
     public static final long OB_VERSION_4_3_5_1 = calcVersion(4, (short) 3, (byte) 5, (byte) 1);
 
+    /**
+     * @deprecated This global version is deprecated. Use instance-level version in ObTable/ObTableClient instead.
+     * This is kept for backward compatibility only.
+     */
+    @Deprecated
     public static long       OB_VERSION         = calcVersion(0, (short) 0, (byte) 0, (byte) 0);
 }

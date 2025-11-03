@@ -40,13 +40,15 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
     protected boolean                 returningRowKey         = false;
     protected boolean                 returningAffectedEntity = false;
     protected boolean                 returningAffectedRows   = false;
+    protected long                    obVersion               = 0;                             // OceanBase server version for encoding
 
     /*
      * Get payload content size.
      */
     @Override
     public long getPayloadContentSize() {
-        if (ObGlobal.obVsnMajor() >= 4)
+        int obVsnMajor = obVersion > 0 ? ObGlobal.getObVsnMajor(obVersion) : ObGlobal.obVsnMajor();
+        if (obVsnMajor >= 4)
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
                    + Serialization.getNeedBytes(tableId) + 8 + 2 + 3;
         else
@@ -72,7 +74,8 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
         int len = Serialization.getNeedBytes(tableId);
         System.arraycopy(Serialization.encodeVi64(tableId), 0, bytes, idx, len);
         idx += len;
-        if (ObGlobal.obVsnMajor() >= 4) {
+        int obVsnMajor = obVersion > 0 ? ObGlobal.getObVsnMajor(obVersion) : ObGlobal.obVsnMajor();
+        if (obVsnMajor >= 4) {
             System.arraycopy(Serialization.encodeI64(partitionId), 0, bytes, idx, 8);
             idx += 8;
         } else {
@@ -235,5 +238,19 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
      */
     public void setReturningAffectedRows(boolean returningAffectedRows) {
         this.returningAffectedRows = returningAffectedRows;
+    }
+
+    /*
+     * Get OceanBase version.
+     */
+    public long getObVersion() {
+        return obVersion;
+    }
+
+    /*
+     * Set OceanBase version.
+     */
+    public void setObVersion(long obVersion) {
+        this.obVersion = obVersion;
     }
 }

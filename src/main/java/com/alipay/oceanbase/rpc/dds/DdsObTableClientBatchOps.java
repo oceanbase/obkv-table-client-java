@@ -133,7 +133,6 @@ public class DdsObTableClientBatchOps extends AbstractTableBatchOps {
         batchOperation.addTableOperation((instance));
     }
 
-
     @Override
     public List<Object> execute() throws Exception {
         DatabaseAndTable databaseAndTable = ddsObTableClient.calculateDatabaseAndTable(tableName,

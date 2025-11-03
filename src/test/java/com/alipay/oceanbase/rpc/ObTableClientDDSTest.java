@@ -40,7 +40,7 @@ public class ObTableClientDDSTest {
     private DdsObTableClient    client;
 
     private static final String appName   = "obkv";
-    private static final String appDsName = "obkv4_adapt_dds_client_test";
+    private static final String appDsName = "dds_migrate_2x_4x_test";
     private static final String version   = "v1.0";
 
     /*
@@ -171,6 +171,18 @@ public class ObTableClientDDSTest {
             client.delete(tableName, new Object[] { testKey2 });
             client.delete(tableName, new Object[] { testKey3 });
         }
+    }
+
+    @Test
+    public void testHoldClientAndConfChange() throws Exception {
+        client = new DdsObTableClient();
+        client.setAppName(appName);
+        client.setAppDsName(appDsName);
+        client.setVersion(version);
+        client.init();
+
+        // do nothing, just keep the client alive and wait for config change
+        Thread.sleep(Long.MAX_VALUE);
     }
 
     @Test

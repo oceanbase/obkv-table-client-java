@@ -191,6 +191,18 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
 
     private Long                                              clientId;
     private Map<String, Object>                               TableConfigs                            = new HashMap<>();
+    
+    // Instance-level OB version to support connecting to different server versions
+    private volatile long                                     obVersion                               = 0;
+    
+    /**
+     * Get major version from instance obVersion.
+     * @return major version number (e.g., 2, 3, 4)
+     */
+    private int getObVsnMajor() {
+        return ObGlobal.getObVsnMajor(obVersion);
+    }
+    
     /*
      * Init.
      */
@@ -410,6 +422,20 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
         return TableConfigs;
     }
 
+    /**
+     * Get OB server version for this client instance
+     */
+    public long getObVersion() {
+        return obVersion;
+    }
+
+    /**
+     * Set OB server version for this client instance
+     */
+    public void setObVersion(long obVersion) {
+        this.obVersion = obVersion;
+    }
+
     private void initTableConfigs() {
         TableConfigs.put("client_id", clientId);
         TableConfigs.put("runtime", new HashMap<String, String>());
@@ -584,7 +610,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
         TableEntry tableEntry = loadTableEntryRandomly(rsList,//
             rootServerKey,//
             tableEntryAcquireConnectTimeout,//
-            tableEntryAcquireSocketTimeout, sysUA, initialized);
+            tableEntryAcquireSocketTimeout, sysUA, initialized, obVersion);
         BOOT.info("{} success to get tableEntry with rootServerKey all_dummy_tables {}",
             this.database, objectMapper.writeValueAsString(tableEntry));
 
@@ -613,6 +639,11 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
                     .setProperties(getProperties()).setConfigs(TableConfigs).build();
                 tableRoster.put(addr, obTable);
                 servers.add(addr);
+                // Sync version from the first successfully connected ObTable
+                if (obVersion == 0 && obTable.getObVersion() > 0) {
+                    obVersion = obTable.getObVersion();
+                    BOOT.info("{} synced OB version {} from server {}:{}", this.database, obVersion, addr.getIp(), addr.getSvrPort());
+                }
             } catch (Exception e) {
                 BOOT.warn(
                     "The addr{}:{} failed to put into table roster, the node status may be wrong, Ignore",
@@ -641,7 +672,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
 
         List<ObServerLdcItem> ldcServers = getServerLdc(serverRoster,
             tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
-            serverAddressPriorityTimeout, serverAddressCachingTimeout, sysUA);
+            serverAddressPriorityTimeout, serverAddressCachingTimeout, sysUA, obVersion);
 
         this.serverRoster.resetServerLdc(ObServerLdcLocation.buildLdcLocation(ldcServers,
             currentIDC, regionFromOcp));
@@ -924,7 +955,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
                         if (tryTimes > 1) {
                             TableEntry entry = getOrRefreshTableEntry(tableName, false, false, false);
                             Long partId = getPartition(entry, callback.getRowKey());
-                            if (ObGlobal.obVsnMajor() >= 4) {
+                            if (ObGlobal.getObVsnMajor(obVersion) >= 4) {
                                 refreshTableLocationByTabletId(entry, tableName, getTabletIdByPartId(entry, partId));
                             }
                         }
@@ -1095,7 +1126,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
             TableEntry tableEntry = loadTableEntryRandomly(rsList,//
                 allDummyKey,//
                 tableEntryAcquireConnectTimeout,//
-                tableEntryAcquireSocketTimeout, sysUA, initialized);
+                tableEntryAcquireSocketTimeout, sysUA, initialized, obVersion);
 
             List<ReplicaLocation> replicaLocations = tableEntry.getTableLocation()
                 .getReplicaLocations();
@@ -1146,7 +1177,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
 
             List<ObServerLdcItem> ldcServers = getServerLdc(serverRoster,
                 tableEntryAcquireConnectTimeout, tableEntryAcquireSocketTimeout,
-                serverAddressPriorityTimeout, serverAddressCachingTimeout, sysUA);
+                serverAddressPriorityTimeout, serverAddressCachingTimeout, sysUA, obVersion);
 
             // reset Server LDC location.
             String regionFromOcp = ocpModel.getIdc2Region(currentIDC);
@@ -1529,7 +1560,8 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
                                 tableEntryAcquireSocketTimeout,
                                 serverAddressPriorityTimeout,
                                 serverAddressCachingTimeout,
-                                sysUA
+                                sysUA,
+                                obVersion
                         );
                         tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
                         break;
@@ -1595,7 +1627,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
         try {
             // if table entry is exist we just need to refresh table locations
             if (tableEntry != null && !fetchAll) {
-                if (ObGlobal.obVsnMajor() >= 4) {
+                if (getObVsnMajor() >= 4) {
                     // do nothing
                 } else {
                     // 3.x still proactively refreshes all locations
@@ -1807,8 +1839,11 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
         // In all cases for 3.x and for non-partitioned tables in 4.x, partId will not change.
         // If it is 4.x, it will be converted to tablet id.
         partId = getTabletIdByPartId(tableEntry, partId);
-        return tableEntry.getPartitionEntry().getPartitionLocationWithTabletId(partId)
-            .getReplica(route);
+        ObPartitionLocation location = tableEntry.getPartitionEntry().getPartitionLocationWithTabletId(partId);
+        if (location == null) {
+            return null;
+        }
+        return location.getReplica(route);
 
     }
 
@@ -1879,7 +1914,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
         }
 
         long partId = getPartition(tableEntry, row); // partition id in 3.x, origin partId in 4.x, logicId
-        if (refresh && ObGlobal.obVsnMajor() >= 4) {
+        if (refresh && getObVsnMajor() >= 4) {
             refreshTableLocationByTabletId(tableEntry, tableName, getTabletIdByPartId(tableEntry, partId));
         }
         return getTableInternal(tableName, tableEntry, partId, waitForRefresh, route);
@@ -2126,7 +2161,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
         long tabletId = getTabletIdByPartId(tableEntry, partId);
         long partitionId = partId;
         ObPartitionLocationInfo obPartitionLocationInfo = null;
-        if (ObGlobal.obVsnMajor() >= 4) {
+        if (getObVsnMajor() >= 4) {
             obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
             replica = getPartitionLocation(obPartitionLocationInfo, route);
             /**
@@ -2165,7 +2200,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
             ++retryTimes;
             if (addrExpired) {
                 logger.info("Server addr {} is expired, refreshing tableEntry.", addr);
-                if (ObGlobal.obVsnMajor() >= 4) {
+                if (getObVsnMajor() >= 4) {
                     refreshTableLocationByTabletId(tableEntry, tableName, tabletId);
                 } else {
                     tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
@@ -2182,7 +2217,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
                 // refresh tablet location based on the latest roster, in case that some of the observers hase been killed
                 // and used the old location
                 tableEntry = refreshTableLocationByTabletId(tableEntry, tableName, tabletId);
-                if (ObGlobal.obVsnMajor() >= 4) {
+                if (getObVsnMajor() >= 4) {
                     obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
                     replica = getPartitionLocation(obPartitionLocationInfo, route);
                 } else {
@@ -2201,7 +2236,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
             throw new ObTableGetException("obTable is null, addr is: " + addr.getIp() + ":" + addr.getSvrPort());
         }
         ObTableParam param = createTableParam(obTable, tableEntry, obPartitionLocationInfo, partId, tabletId);
-        if (ObGlobal.obVsnMajor() >= 4) {
+        if (getObVsnMajor() >= 4) {
         } else {
             param.setPartitionId(partId);
         }
@@ -2227,7 +2262,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
                                           long partId, long tabletId) {
         ObTableParam param = new ObTableParam(obTable);
         param.setPartId(partId);
-        if (ObGlobal.obVsnMajor() >= 4 && tableEntry != null) {
+        if (getObVsnMajor() >= 4 && tableEntry != null) {
             param.setLsId(obPartitionLocationInfo.getTabletLsId());
         }
         param.setTableId(tableEntry.getTableId());
@@ -2240,7 +2275,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
         ObTableParam param = new ObTableParam(obTable);
         param.setPartId(partId);
         long tabletId = partId;
-        if (ObGlobal.obVsnMajor() >= 4) {
+        if (getObVsnMajor() >= 4) {
             long partIdx = odpTableEntry.getPartIdx(partId);
             tabletId = odpTableEntry.isPartitionTable() ? odpTableEntry.getPartitionInfo()
                     .getPartTabletIdMap().get(partIdx) : partId;
@@ -2273,7 +2308,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
         List<ObPair<Long, ReplicaLocation>> replicas = new ArrayList<>();
 
         if (!tableEntry.isPartitionTable() || tableEntry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ZERO) {
-            if (ObGlobal.obVsnMajor() >= 4) {
+            if (getObVsnMajor() >= 4) {
                 long tabletId = getTabletIdByPartId(tableEntry, 0L);
                 ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
                 replicas.add(new ObPair<>(0L, getPartitionLocation(locationInfo, route)));
@@ -2287,7 +2322,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
         ObPartitionLevel partitionLevel = tableEntry.getPartitionInfo().getLevel();
         List<Long> partIds = getPartitionTablePartitionIds(tableEntry, startRow, startIncluded, endRow, endIncluded, partitionLevel);
 
-        if (ObGlobal.obVsnMajor() >= 4) {
+        if (getObVsnMajor() >= 4) {
             for (Long partId : partIds) {
                 long tabletId = getTabletIdByPartId(tableEntry, partId);
                 ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
@@ -2326,7 +2361,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
     }
 
     public long getTabletIdByPartId(TableEntry tableEntry, Long partId) {
-        if (ObGlobal.obVsnMajor() >= 4 && tableEntry.isPartitionTable()) {
+        if (getObVsnMajor() >= 4 && tableEntry.isPartitionTable()) {
             ObPartitionInfo partInfo = tableEntry.getPartitionInfo();
             Map<Long, Long> tabletIdMap = partInfo.getPartTabletIdMap();
             long partIdx = tableEntry.getPartIdx(partId);
@@ -2469,7 +2504,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
                 ++retryTimes;
                 if (addrExpired) {
                     logger.info("Server addr {} is expired, refreshing tableEntry.", addr);
-                    if (ObGlobal.obVsnMajor() >= 4) {
+                    if (getObVsnMajor() >= 4) {
                         refreshTableLocationByTabletId(tableEntry, tableName, tabletId);
                     } else {
                         tableEntry = getOrRefreshTableEntry(tableName, true, waitForRefresh, false);
@@ -2486,7 +2521,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
                     // refresh tablet location based on the latest roster, in case that some of the observers hase been killed
                     // and used the old location
                     tableEntry = refreshTableLocationByTabletId(tableEntry, tableName, tabletId);
-                    if (ObGlobal.obVsnMajor() >= 4) {
+                    if (getObVsnMajor() >= 4) {
                         ObPartitionLocationInfo locationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
                         replica = getPartitionLocation(locationInfo, route);
                     } else {
@@ -2508,7 +2543,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
             ObTableParam param = new ObTableParam(obTable);
             param.setPartId(partId);
             partId = getTabletIdByPartId(tableEntry, partId);
-            if (ObGlobal.obVsnMajor() >= 4 && tableEntry != null) {
+            if (getObVsnMajor() >= 4 && tableEntry != null) {
                 param.setLsId(tableEntry.getPartitionEntry().getPartitionInfo(partId).getTabletLsId());
             }
             param.setTableId(tableEntry.getTableId());
@@ -2572,7 +2607,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
             ObTableParam param = new ObTableParam(obTable);
             param.setPartId(partId);
             Long tabletId = partId;
-            if (ObGlobal.obVsnMajor() >= 4) {
+            if (getObVsnMajor() >= 4) {
                 long partIdx = odpTableEntry.getPartIdx(partId);
                 tabletId = odpTableEntry.isPartitionTable() ? odpTableEntry.getPartitionInfo()
                         .getPartTabletIdMap().get(partIdx) : partId;

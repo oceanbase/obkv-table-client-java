@@ -53,7 +53,8 @@ public class ObTableGroupUpdateResult extends ObTableOperationResult {
         idx += len;
 
         // 2. encode ObTableOperationResult
-        System.arraycopy(Serialization.encodeI8(getOperationType().getByteValue()), 0, bytes, idx, 1);
+        System.arraycopy(Serialization.encodeI8(getOperationType().getByteValue()), 0, bytes, idx,
+            1);
         idx += 1;
 
         // 3. encode entity

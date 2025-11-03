@@ -173,16 +173,20 @@ public class ObTableConnection {
                     && result.getCredential().length() > 0) {
                     credential = result.getCredential();
                     tenantId = result.getTenantId();
-                    // Set version if missing
-                    if (ObGlobal.obVsnMajor() == 0) {
+                    // Set version if missing on this table instance
+                    if (obTable.getObVersion() == 0) {
                         // version should be set before login when direct mode
                         if (result.getServerVersion().isEmpty()) {
                             throw new RuntimeException(
                                 "Failed to get server version from login result");
                         }
-                        LocationUtil.parseObVerionFromLogin(result.getServerVersion());
-                        LOGGER.info("The OB_VERSION parsed from login result is: {}",
-                            ObGlobal.OB_VERSION);
+                        long parsedVersion = LocationUtil.parseObVersionFromLogin(result
+                            .getServerVersion());
+                        obTable.setObVersion(parsedVersion);
+                        LOGGER.info(
+                            "The OB_VERSION parsed from login result for table {}:{} is: {}",
+                            obTable.getIp(), obTable.getPort(),
+                            ObGlobal.getObVsnMajor(obTable.getObVersion()));
                     }
                     break;
                 }
@@ -260,7 +264,8 @@ public class ObTableConnection {
         } catch (ObTableServerConnectException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new ObTableConnectionStatusException("check status failed, cause: " + ex.getMessage(), ex);
+            throw new ObTableConnectionStatusException("check status failed, cause: "
+                                                       + ex.getMessage(), ex);
         }
     }
 

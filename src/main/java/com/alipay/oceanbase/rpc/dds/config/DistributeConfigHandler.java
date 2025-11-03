@@ -19,17 +19,16 @@
 
 package com.alipay.oceanbase.rpc.dds.config;
 
+import java.util.Map;
+import java.util.Objects;
+
 import com.alipay.oceanbase.rpc.Lifecycle;
+import static com.alipay.oceanbase.rpc.constant.Constants.DDS_LOCAL_CONFIG_PATH_KEY;
+import static com.alipay.oceanbase.rpc.constant.Constants.DDS_USE_LOCAL_CONFIG_KEY;
 import com.alipay.sofa.dds.config.ExtendedDataSourceConfig;
 import com.alipay.sofa.dds.config.group.GroupClusterConfig;
 import com.alipay.sofa.dds.config.rule.AppRule;
 import com.alipay.sofa.dds.sdk.DdsSDK;
-
-import java.util.Map;
-import java.util.Objects;
-
-import static com.alipay.oceanbase.rpc.constant.Constants.DDS_LOCAL_CONFIG_PATH_KEY;
-import static com.alipay.oceanbase.rpc.constant.Constants.DDS_USE_LOCAL_CONFIG_KEY;
 
 /**
  * @author zhiqi.zzq
@@ -37,17 +36,17 @@ import static com.alipay.oceanbase.rpc.constant.Constants.DDS_USE_LOCAL_CONFIG_K
  */
 public class DistributeConfigHandler implements Lifecycle {
 
-    private final String                   appName;
-    private final String                   appDsName;
-    private final String                   version;
-    private final DistributeDynamicHandler dynamicHandler;
-    private final Long                     timeout;
+    private final String                 appName;
+    private final String                 appDsName;
+    private final String                 version;
+    private final DdsConfigUpdateHandler dynamicHandler;
+    private final Long                   timeout;
 
-    private DdsSDK                         ddsSDK;
+    private DdsSDK                       ddsSDK;
 
     public DistributeConfigHandler(String appName, String appDsName, String version,
                                    long configFetchOnceTimeoutMillis,
-                                   DistributeDynamicHandler dynamicHandler) {
+                                   DdsConfigUpdateHandler dynamicHandler) {
         this.appName = appName;
         this.appDsName = appDsName;
         this.version = version;

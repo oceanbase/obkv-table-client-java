@@ -65,6 +65,9 @@ public class ObTable extends AbstractObTable implements Lifecycle {
     
     private Map<String, Object> configs;
 
+    // Instance-level OB version to support connecting to different server versions
+    private volatile long obVersion = 0;
+
     private volatile boolean      initialized = false;
     private volatile boolean      closed      = false;
     private boolean enableRerouting = true;              // only used for init packet factory
@@ -177,6 +180,20 @@ public class ObTable extends AbstractObTable implements Lifecycle {
 
     public boolean isEnableRerouting(){
         return enableRerouting;
+    }
+
+    /**
+     * Get OB server version for this table instance
+     */
+    public long getObVersion() {
+        return obVersion;
+    }
+
+    /**
+     * Set OB server version for this table instance
+     */
+    public void setObVersion(long obVersion) {
+        this.obVersion = obVersion;
     }
 
     /*
@@ -387,6 +404,11 @@ public class ObTable extends AbstractObTable implements Lifecycle {
      */
     public ObPayload execute(final ObPayload request) throws RemotingException,
                                                      InterruptedException {
+
+        // Set OceanBase version for request encoding if it's an operation request
+        if (request instanceof ObTableAbstractOperationRequest) {
+            ((ObTableAbstractOperationRequest) request).setObVersion(this.obVersion);
+        }
 
         ObTableConnection connection = null;
         try {

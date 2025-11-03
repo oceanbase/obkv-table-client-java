@@ -19,18 +19,21 @@ package com.alipay.oceanbase.rpc.dds.rule;
 
 import com.alipay.oceanbase.rpc.Lifecycle;
 import com.alipay.oceanbase.rpc.exception.DistributeDispatchException;
-import com.alipay.oceanbase.rpc.dds.config.DistributeConfigHandler;
 import com.alipay.oceanbase.rpc.dds.parser.DistributeRuleSimpleFunc;
+import com.alipay.oceanbase.rpc.dds.util.VersionedConfigSnapshot;
 import com.alipay.oceanbase.rpc.util.StringUtil;
-import com.alipay.sofa.dds.config.rule.AppRule;
-import com.alipay.sofa.dds.config.rule.ShardRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.LCD;
 
@@ -40,69 +43,65 @@ import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.LCD;
  */
 public class DistributeDispatcher implements Lifecycle {
 
-    private static final Logger           logger = LoggerFactory
-                                                     .getLogger(DistributeDispatcher.class);
+    private static final Logger                     logger = LoggerFactory
+                                                               .getLogger(DistributeDispatcher.class);
 
-    private final DistributeConfigHandler distributeConfigHandler;
+    private final Supplier<VersionedConfigSnapshot> snapshotSupplier;
 
-    private Map<String, LogicalTable>     logicalTables;
+    public DistributeDispatcher(Supplier<VersionedConfigSnapshot> snapshotSupplier) {
+        this.snapshotSupplier = snapshotSupplier;
+    }
 
-    public DistributeDispatcher(DistributeConfigHandler distributeConfigHandler) {
-        this.distributeConfigHandler = distributeConfigHandler;
+    public DistributeDispatcher(AtomicReference<VersionedConfigSnapshot> snapshotReference) {
+        this(snapshotReference::get);
     }
 
     @Override
-     public void init() throws Exception {
-         logicalTables = new HashMap<String, LogicalTable>();
-         buildLogicalTables(logicalTables, distributeConfigHandler.getAppRule());
-         ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-         scheduledExecutorService.scheduleAtFixedRate(new Thread(() -> {
-             try {
-                 buildLogicalTables(logicalTables, distributeConfigHandler.getAppRule());
-             } catch (Exception e) {
-                 logger.error("failed to update dds logical table info.", e);
-             }
-         }), 300, 300, TimeUnit.SECONDS);
-     }
+    public void init() throws Exception {
+        // LogicalTable 现在从 VersionedConfigSnapshot 中统一管理，无需初始化
+        // 配置更新时会通过原子替换快照自动更新
+    }
 
-    private void buildLogicalTables(Map<String, LogicalTable> logicalTables, AppRule appRule)
-                                                                                             throws Exception {
-        if (appRule != null && appRule.getShardRules() != null) {
-            for (Map.Entry<String, ShardRule> ruleEntry : appRule.getShardRules().entrySet()) {
-                // 1、Trim the table name to avoid the unexpected char
-                // 2. Upper the table name to unify the usage
-                String tableName = ruleEntry.getKey().trim().toUpperCase();
-                if (logicalTables.containsKey(tableName)) {
-                    continue;
-                }
-                ShardRule rule = ruleEntry.getValue();
-                LogicalTable table = new LogicalTable(tableName, rule.getTbRules(),
-                    rule.getDbRules(), rule.getElasticRules(), rule.getTbNamePattern(),
-                    rule.getRowKeyColumn());
-                table.init();
+    private Map<String, LogicalTable> fetchLogicalTables() {
+        VersionedConfigSnapshot snapshot = snapshotSupplier != null ? snapshotSupplier.get() : null;
+        return snapshot != null ? snapshot.getLogicalTables() : Collections.emptyMap();
+    }
 
-                logicalTables.putIfAbsent(tableName, table);
-            }
-        }
+    private Map<String, LogicalTable> getLogicalTablesFromSnapshot(VersionedConfigSnapshot snapshot) {
+        return snapshot != null ? snapshot.getLogicalTables() : Collections.emptyMap();
     }
 
     public DatabaseAndTable resolveDatabaseAndTable(String tableName, Object[] columnValues) {
+        return resolveDatabaseAndTable(tableName, columnValues, null);
+    }
+
+    public DatabaseAndTable resolveDatabaseAndTable(String tableName, Object[] columnValues,
+                                                    VersionedConfigSnapshot snapshot) {
 
         // 1、Trim the table name to avoid the unexpected char
         // 2. Upper the table name to unify the usage
         tableName = tableName.trim().toUpperCase();
 
+        Map<String, LogicalTable> logicalTables = snapshot != null ? getLogicalTablesFromSnapshot(snapshot)
+            : fetchLogicalTables();
         LogicalTable logicalTable = logicalTables.get(tableName);
 
         if (logicalTable != null) {
-            return resolveDatabaseAndTable(tableName, logicalTable.getRowKeyColumns(), columnValues);
+            return resolveDatabaseAndTable(tableName, logicalTable.getRowKeyColumns(),
+                columnValues, snapshot);
         } else {
-            return resolveDatabaseAndTable(tableName, null, columnValues);
+            return resolveDatabaseAndTable(tableName, null, columnValues, snapshot);
         }
     }
 
     public DatabaseAndTable resolveDatabaseAndTable(String tableName, String[] columnNames,
                                                     Object[] columnValues) {
+        return resolveDatabaseAndTable(tableName, columnNames, columnValues, null);
+    }
+
+    public DatabaseAndTable resolveDatabaseAndTable(String tableName, String[] columnNames,
+                                                    Object[] columnValues,
+                                                    VersionedConfigSnapshot snapshot) {
 
         // if (tableName == null || columnNames == null || columnValues == null) {
         //     logger.error("tableName, columnNames, columnValues is null");
@@ -120,6 +119,8 @@ public class DistributeDispatcher implements Lifecycle {
         // 2. Upper the table name to unify the usage
         tableName = tableName.trim().toUpperCase();
 
+        Map<String, LogicalTable> logicalTables = snapshot != null ? getLogicalTablesFromSnapshot(snapshot)
+            : fetchLogicalTables();
         LogicalTable logicalTable = logicalTables.get(tableName);
 
         if (logicalTable == null) {
@@ -162,11 +163,23 @@ public class DistributeDispatcher implements Lifecycle {
                                                           boolean includeStart,
                                                           Object[] endColumnValues,
                                                           boolean includeEnd) {
+        return resolveDatabaseAndTable(tableName, columnNames, startColumnValues, includeStart,
+            endColumnValues, includeEnd, null);
+    }
+
+    public List<DatabaseAndTable> resolveDatabaseAndTable(String tableName, String[] columnNames,
+                                                          Object[] startColumnValues,
+                                                          boolean includeStart,
+                                                          Object[] endColumnValues,
+                                                          boolean includeEnd,
+                                                          VersionedConfigSnapshot snapshot) {
 
         // 1、Trim the table name to avoid the unexpected char
         // 2. Upper the table name to unify the usage
         tableName = tableName.trim().toUpperCase();
 
+        Map<String, LogicalTable> logicalTables = snapshot != null ? getLogicalTablesFromSnapshot(snapshot)
+            : fetchLogicalTables();
         LogicalTable logicalTable = logicalTables.get(tableName);
 
         List<DatabaseAndTable> databaseAndTables = new ArrayList<DatabaseAndTable>();
@@ -787,6 +800,10 @@ public class DistributeDispatcher implements Lifecycle {
     }
 
     public LogicalTable findLogicalTable(String tableName) {
+        return findLogicalTable(tableName, null);
+    }
+
+    public LogicalTable findLogicalTable(String tableName, VersionedConfigSnapshot snapshot) {
         if (tableName == null) {
             return null;
         }
@@ -794,15 +811,9 @@ public class DistributeDispatcher implements Lifecycle {
         // 2. Upper the table name to unify the usage
         tableName = tableName.trim().toUpperCase();
 
+        Map<String, LogicalTable> logicalTables = snapshot != null ? getLogicalTablesFromSnapshot(snapshot)
+            : fetchLogicalTables();
         return logicalTables.get(tableName);
-    }
-
-    public Map<String, LogicalTable> getLogicalTables() {
-        return logicalTables;
-    }
-
-    public void setLogicalTables(Map<String, LogicalTable> logicalTables) {
-        this.logicalTables = logicalTables;
     }
 
     @Override

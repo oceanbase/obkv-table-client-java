@@ -133,7 +133,9 @@ public class ObTableClientInfoTest {
             String json_config_str = resultMap.get(clients[i].getClientId());
             Assert.assertTrue(json_config_str != null);
             ObjectMapper objectMapper = new ObjectMapper();
-            Map<String, Object> config_map = objectMapper.readValue(json_config_str, new TypeReference<Map<String, Object>>() {});
+            Map<String, Object> config_map = objectMapper.readValue(json_config_str,
+                new TypeReference<Map<String, Object>>() {
+                });
             Long srcClientId = (Long) clients[i].getTableConfigs().get("client_id");
             Long dstClientId = (Long) config_map.get("client_id");
             Assert.assertEquals(srcClientId, dstClientId);

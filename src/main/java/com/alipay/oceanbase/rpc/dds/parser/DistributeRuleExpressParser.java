@@ -108,10 +108,19 @@ public class DistributeRuleExpressParser {
                                 listParameters(toIntFunc);
                                 return toIntFunc;
                             default:
-                                throw new DistributeRuleParseException("");
+                                throw new DistributeRuleParseException(
+                                    "Unknown function: '"
+                                            + stringVal
+                                            + "'. Supported functions: substr, substr_loadtest, substr_reverse, "
+                                            + "substr_reverse_loadtest, hash, hash_division, hash_salt, hash_salt_division, "
+                                            + "hash_substr, hash_multiple_field, toint. Position: "
+                                            + lexer.pos());
                         }
                     default:
-                        throw new DistributeRuleParseException("");
+                        throw new DistributeRuleParseException(
+                            "Unexpected token after identifier '" + stringVal + "': "
+                                    + lexer.token() + " at position " + lexer.pos()
+                                    + ". Expected EOF or '('");
                 }
             default:
                 throw new DistributeRuleParseException("ERROR. token :  " + lexer.token()

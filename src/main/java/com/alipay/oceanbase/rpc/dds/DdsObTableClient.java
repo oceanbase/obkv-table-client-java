@@ -19,58 +19,74 @@
 
 package com.alipay.oceanbase.rpc.dds;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
+
+import org.slf4j.Logger;
+
 import com.alibaba.fastjson.JSON;
 import com.alipay.common.tracer.util.LoadTestUtil;
 import com.alipay.oceanbase.rpc.Lifecycle;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.OperationExecuteAble;
+import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
+import com.alipay.oceanbase.rpc.dds.config.DistributeConfigHandler;
+import com.alipay.oceanbase.rpc.dds.config.DdsConfigUpdateHandler;
+import com.alipay.oceanbase.rpc.dds.group.ObTableClientGroup;
+import com.alipay.oceanbase.rpc.dds.rule.DatabaseAndTable;
+import com.alipay.oceanbase.rpc.dds.rule.DistributeDispatcher;
+import com.alipay.oceanbase.rpc.dds.rule.LogicalTable;
+import com.alipay.oceanbase.rpc.dds.util.ConfigWrapper;
+import com.alipay.oceanbase.rpc.dds.util.DataSourceFactory;
+import com.alipay.oceanbase.rpc.dds.util.VersionedConfigSnapshot;
 import com.alipay.oceanbase.rpc.exception.DistributeDispatchException;
 import com.alipay.oceanbase.rpc.exception.FeatureNotSupportedException;
 import com.alipay.oceanbase.rpc.exception.ObTableCloseException;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
-import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
+import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.location.model.TableEntry;
+import com.alipay.oceanbase.rpc.mutation.Append;
+import com.alipay.oceanbase.rpc.mutation.BatchOperation;
+import com.alipay.oceanbase.rpc.mutation.Delete;
+import com.alipay.oceanbase.rpc.mutation.Increment;
+import com.alipay.oceanbase.rpc.mutation.Insert;
+import com.alipay.oceanbase.rpc.mutation.InsertOrUpdate;
+import com.alipay.oceanbase.rpc.mutation.MutationFactory;
+import com.alipay.oceanbase.rpc.mutation.Put;
+import com.alipay.oceanbase.rpc.mutation.Replace;
+import com.alipay.oceanbase.rpc.mutation.Update;
+import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
+import static com.alipay.oceanbase.rpc.property.Property.DDS_CONFIG_FATCH_TIMEOUT;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.groupupdate.ObTableGroupComparator;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableAbstractOperationRequest;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableBatchOperationRequest;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperation;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutateRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObBorderFlag;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQueryRequest;
-import com.alipay.oceanbase.rpc.dds.config.DistributeConfigHandler;
-import com.alipay.oceanbase.rpc.dds.config.DistributeDynamicHandler;
-import com.alipay.oceanbase.rpc.dds.group.ObTableClientGroup;
-import com.alipay.oceanbase.rpc.dds.rule.DatabaseAndTable;
-import com.alipay.oceanbase.rpc.dds.rule.DistributeDispatcher;
-import com.alipay.oceanbase.rpc.dds.rule.LogicalTable;
 import com.alipay.oceanbase.rpc.table.AbstractTable;
-import com.alipay.oceanbase.rpc.table.ConcurrentTask;
-import com.alipay.oceanbase.rpc.table.ConcurrentTaskExecutor;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
-import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
-import com.alipay.oceanbase.rpc.mutation.*;
-import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
-import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
-import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
-import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
-import com.alipay.sofa.common.thread.SofaThreadPoolExecutor;
+import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.BOOT;
+import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.LCD;
+import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.RUNTIME;
+import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.getLogger;
 import com.alipay.sofa.dds.config.ExtendedDataSourceConfig;
-import com.alipay.sofa.dds.config.group.AtomDataSourceWeight;
 import com.alipay.sofa.dds.config.group.GroupClusterConfig;
-import com.alipay.sofa.dds.config.group.GroupDataSourceConfig;
-import com.alipay.sofa.dds.config.group.GroupDataSourceWeight;
-import org.slf4j.Logger;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.locks.ReentrantLock;
-
-import static com.alipay.oceanbase.rpc.property.Property.DDS_CONFIG_FATCH_TIMEOUT;
-import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
+import com.alipay.sofa.dds.config.rule.AppRule;
 
 /**
 * @author zhiqi.zzq
@@ -91,8 +107,10 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
     public static final String               DEFAULT_TEST_LOAD_SUFFIX     = "_t";
     public static final String               DEFAULT_HBASE_FAMILY_SEP     = "$";
 
-    private Map<String, ObTableClient>       atomDataSources;
-    private Map<Integer, ObTableClientGroup> groupDataSources;
+    private final AtomicReference<VersionedConfigSnapshot> currentConfigRef = new AtomicReference<>();
+
+    // private Map<String, ObTableClient>       atomDataSources;
+    // private Map<Integer, ObTableClientGroup> groupDataSources;
 
     private DistributeDispatcher             distributeDispatcher;
 
@@ -100,7 +118,7 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
     private volatile boolean                 closed                       = false;
     private ReentrantLock                    statusLock                   = new ReentrantLock();
 
-    private Map<String, String[]>            tableRowKeyElement = new ConcurrentHashMap<>();
+    private final Map<String, String[]>            tableRowKeyElement = new ConcurrentHashMap<>();
     private Properties                       tableClientProperty = new Properties();
     /**
     *
@@ -123,7 +141,6 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
     */
     @Override
     public void init() throws Exception {
-
         if (initialized) {
             return;
         }
@@ -132,22 +149,42 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
             if (initialized) {
                 return;
             }
-            DistributeDynamicHandler dynamicHandler = new DistributeDynamicHandler();
-            configFetchOnceTimeoutMillis = parseToLong(DDS_CONFIG_FATCH_TIMEOUT.getKey(), configFetchOnceTimeoutMillis);
+
+            DdsConfigUpdateHandler dynamicHandler = new DdsConfigUpdateHandler(
+                runningMode,
+                tableClientProperty,
+                currentConfigRef);
+            // 初始化配置处理器
             DistributeConfigHandler distributeConfigHandler = new DistributeConfigHandler(appName,
                 appDsName, version, configFetchOnceTimeoutMillis, dynamicHandler);
+            dynamicHandler.setExtendedDataSourceSupplier(distributeConfigHandler::getExtendedDataSourceConfigs);
+            dynamicHandler.setAppRuleSupplier(distributeConfigHandler::getAppRule);
             distributeConfigHandler.init();
-            initDistributeRule(distributeConfigHandler);
-            initDistributeDataSource(distributeConfigHandler.getGroupClusterConfig(),
-                distributeConfigHandler.getExtendedDataSourceConfigs());
+
+            // 获取初始配置
+            GroupClusterConfig groupClusterConfig = distributeConfigHandler.getGroupClusterConfig();
+            Map<String, ExtendedDataSourceConfig> extendedDataSourceConfigs = new ConcurrentHashMap<>();
+            Map<String, ExtendedDataSourceConfig> fetchedConfigs =
+                distributeConfigHandler.getExtendedDataSourceConfigs();
+            if (fetchedConfigs != null) {
+                extendedDataSourceConfigs.putAll(fetchedConfigs);
+            }
+
+            // 初始化数据源 (will create and set initial config snapshot)
+            initDistributeDataSource(groupClusterConfig, extendedDataSourceConfigs,
+                distributeConfigHandler.getAppRule());
+
+            // init distribute dispatcher
+            distributeDispatcher = new DistributeDispatcher(currentConfigRef::get);
+            distributeDispatcher.init();
+            
             initialized = true;
-        } catch (Throwable t) {
+        } catch (Exception t) {
             logger.error("DdsObTableClient init failed", t);
             throw new RuntimeException(t);
         } finally {
             statusLock.unlock();
         }
-
     }
 
     /**
@@ -166,9 +203,10 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
             }
             closed = true;
 
+            Map<String, ObTableClient> atomDataSources = getAtomDataSources();
             if (atomDataSources != null) {
                 Exception throwException = null;
-                List<String> exceptionClient = new ArrayList<String>();
+                List<String> exceptionClient = new ArrayList<>();
                 for (Map.Entry<String, ObTableClient> entry : atomDataSources.entrySet()) {
                     try {
                         entry.getValue().close();
@@ -179,7 +217,7 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
                         exceptionClient.add(entry.getKey());
                     }
                 }
-                if (exceptionClient.size() > 0) {
+                if (!exceptionClient.isEmpty()) {
                     StringBuilder sb = new StringBuilder();
                     sb.append("following atom data source [");
                     for (int i = 0; i < exceptionClient.size(); i++) {
@@ -215,192 +253,77 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
         }
     }
 
-    private void initDistributeRule(DistributeConfigHandler distributeConfigHandler) throws Exception {
-        this.distributeDispatcher = new DistributeDispatcher(distributeConfigHandler);
-        distributeDispatcher.init();
-    }
 
     private void initDistributeDataSource(GroupClusterConfig groupClusterConfig,
-                                          Map<String, ExtendedDataSourceConfig> extendedDataSourceConfigs)
+                                          Map<String, ExtendedDataSourceConfig> extendedDataSourceConfigs,
+                                          AppRule appRule)
                                                                                                           throws Exception {
-        this.atomDataSources = initAtomDataSourceConcurrent(extendedDataSourceConfigs,
-                this.runningMode, this.tableClientProperty);
-        this.groupDataSources = initGroupDataSource(groupClusterConfig, atomDataSources);
+        BOOT.info("init AtomicDataSourceConcurrent start");
+
+        Map<String, ObTableClient> atomDataSources = DataSourceFactory.createAtomDataSources(
+            extendedDataSourceConfigs, this.runningMode, this.tableClientProperty);
+        
+        BOOT.info("init AtomDataSourceConcurrent end  " + atomDataSources);
+        
+        BOOT.info("init GroupDataSourceConcurrent start");
+
+        Map<Integer, ObTableClientGroup> groupDataSources = DataSourceFactory.createGroupDataSources(
+            groupClusterConfig, atomDataSources);
+        
+        BOOT.info("init GroupDataSourceConcurrent end  " + JSON.toJSONString(groupDataSources.keySet()));
+        
+        // Create initial configuration snapshot
+        VersionedConfigSnapshot initialConfig = ConfigWrapper.wrapConfig(
+            groupClusterConfig, extendedDataSourceConfigs, appRule,
+            atomDataSources, groupDataSources);
+        currentConfigRef.set(initialConfig);
     }
 
-    private Map<Integer, ObTableClientGroup> initGroupDataSource(GroupClusterConfig groupClusterConfig,
-                                                                Map<String, ObTableClient> atomDataSources)
-                                                                                                            throws Exception {
-        Map<Integer, ObTableClientGroup> groupDataSources = new ConcurrentHashMap<Integer, ObTableClientGroup>();
-
-        for (GroupDataSourceConfig config : groupClusterConfig.getGroupCluster().values()) {
-            String groupKey = config.getGroupKey();
-            String weightString = config.getWeightString();
-            GroupDataSourceWeight groupDataSourceWeight = config.getGroupDataSourceWeight();
-            Map<String, ObTableClient> atomDataSourceInGroup = new HashMap<String, ObTableClient>();
-            for (AtomDataSourceWeight weight : groupDataSourceWeight
-                .getDataSourceReadWriteWeights()) {
-                String dbkey = weight.getDbkey();
-                ObTableClient client = atomDataSources.get(dbkey);
-                atomDataSourceInGroup.put(dbkey, client);
-            }
-            ObTableClientGroup obTableClientGroup = new ObTableClientGroup(groupKey, weightString,
-                groupDataSourceWeight, atomDataSourceInGroup);
-            obTableClientGroup.init();
-            groupDataSources.put(obTableClientGroup.getGroupIndex(), obTableClientGroup);
+    private Map<String, ObTableClient> getAtomDataSources() {
+        VersionedConfigSnapshot snapshot = currentConfigRef.get();
+        if (snapshot == null) {
+            return Collections.emptyMap();
         }
+        Map<String, ObTableClient> atomDataSources = snapshot.getAtomDataSources();
+        return atomDataSources;
+    }
 
+    private Map<Integer, ObTableClientGroup> getGroupDataSources() {
+        VersionedConfigSnapshot snapshot = currentConfigRef.get();
+        if (snapshot == null) {
+            return Collections.emptyMap();
+        }
+        Map<Integer, ObTableClientGroup> groupDataSources = snapshot.getGroupDataSources();
         return groupDataSources;
     }
 
-    private Map<String, ObTableClient> initAtomDataSourceConcurrent(Map<String, ExtendedDataSourceConfig> extendedDataSourceConfigs,
-                                                          ObTableClient.RunningMode runningMode, Properties props)
-            throws Exception {
-        BOOT.info("begin initAtomDataSourceConcurrent {}", this.appDsName);
-        Map<String, ObTableClient> atomDataSources = new ConcurrentHashMap<String, ObTableClient>();
-
-        ThreadFactory threadFactory = Executors.defaultThreadFactory();
-        ThreadPoolExecutor executorService = new SofaThreadPoolExecutor(extendedDataSourceConfigs.size(), extendedDataSourceConfigs.size(),
-                0L, TimeUnit.SECONDS,
-                new LinkedBlockingQueue<Runnable>(), threadFactory);
-        final ConcurrentTaskExecutor executor = new ConcurrentTaskExecutor(executorService,
-                extendedDataSourceConfigs.size());
-
-        String appName = this.appName;
-        String appDsName = this.appDsName;
-        final Map<Object, Object> context = ThreadLocalMap.getContextMap();
-        for (Map.Entry<String, ExtendedDataSourceConfig> configEntry : extendedDataSourceConfigs
-                .entrySet()) {
-            executor.execute(new ConcurrentTask() {
-                /**
-                * Do task.
-                */
-                @Override
-                public void doTask() {
-                    try {
-                        logger.info("initAtomDataSourceConcurrent configEntry {}", configEntry);
-                        ThreadLocalMap.transmitContextMap(context);
-
-                        String dbkey = configEntry.getKey();
-                        ExtendedDataSourceConfig config = configEntry.getValue();
-                        ObTableClient obTableClient = new ObTableClient();
-                        logger.info("initAtomDataSourceConcurrent FullUserName {}, dbkey {}, password {}, jdbcUrl {}", config.getUsername(), dbkey, config.getPassword(), config.getJdbcUrl());
-                        obTableClient.setFullUserName(config.getUsername());
-                        obTableClient.setParamURL(config.getJdbcUrl());
-                        obTableClient.setPassword(config.getPassword());
-                        obTableClient.setSysUserName("proxyro");
-                        obTableClient.setSysPassword("3u^0kCdpE");
-                        obTableClient.setAppName(appName);
-                        obTableClient.setAppDataSourceName(appDsName);
-                        obTableClient.setProperties(props);
-
-                        if (runningMode != null) {
-                            obTableClient.setRunningMode(runningMode);
-                        }
-
-                        obTableClient.init();
-                        atomDataSources.put(dbkey, obTableClient);
-                    } catch (Exception e) {
-                        BOOT.error("initAtomDataSourceConcurrent meet Exception", e);
-                        executor.collectExceptions(e);
-                    } finally {
-                        ThreadLocalMap.reset();
-                    }
-                }
-            });
-        }
-
-        long estimate = 3000000L  * 1000L * 1000L;
-        try {
-            while (estimate > 0) {
-                long nanos = System.nanoTime();
-                try {
-                    executor.waitComplete(1, TimeUnit.MILLISECONDS);
-                } catch (InterruptedException e) {
-                    throw new ObTableUnexpectedException(
-                            "initAtomDataSourceConcurrent Execute interrupted", e);
-                }
-
-                if (executor.getThrowableList().size() > 0) {
-                    throw new ObTableUnexpectedException("initAtomDataSourceConcurrent Execute Error",
-                            executor.getThrowableList().get(0));
-                }
-
-                if (executor.isComplete()) {
-                    break;
-                }
-
-                estimate = estimate - (System.nanoTime() - nanos);
-            }
-        } finally {
-            executor.stop();
-        }
-
-        if (executor.getThrowableList().size() > 0) {
-            throw new ObTableUnexpectedException("initAtomDataSourceConcurrent Execute Error", executor
-                    .getThrowableList().get(0));
-        }
-
-        if (!executor.isComplete()) {
-            throw new ObTableUnexpectedException("initAtomDataSourceConcurrent Execute timeout for 50min");
-        }
-
-        BOOT.info("finish initAtomDataSourceConcurrent {}", this.appDsName);
-        return atomDataSources;
-    }
-
-    private Map<String, ObTableClient> initAtomDataSource(Map<String, ExtendedDataSourceConfig> extendedDataSourceConfigs,
-                                                          ObTableClient.RunningMode runningMode)
-                                                                                                throws Exception {
-        getLogger().info("begin initAtomDataSource {}", this.appDsName);
-        Map<String, ObTableClient> atomDataSources = new ConcurrentHashMap<String, ObTableClient>();
-        for (Map.Entry<String, ExtendedDataSourceConfig> configEntry : extendedDataSourceConfigs
-            .entrySet()) {
-
-            String dbkey = configEntry.getKey();
-            ExtendedDataSourceConfig config = configEntry.getValue();
-            ObTableClient obTableClient = new ObTableClient();
-            obTableClient.setFullUserName(config.getUsername());
-            obTableClient.setParamURL(config.getJdbcUrl());
-            obTableClient.setPassword(config.getPassword());
-            obTableClient.setAppName(this.appName);
-
-            if (runningMode != null) {
-                obTableClient.setRunningMode(runningMode);
-            }
-
-            obTableClient.init();
-            atomDataSources.put(dbkey, obTableClient);
-        }
-
-        getLogger().info("finish initAtomDataSource {}", this.appDsName);
-        return atomDataSources;
-    }
 
     @Override
     public TableEntry getOrRefreshTableEntry(final String tableName, final Integer groupID, final boolean refresh,
                                             final boolean waitForRefresh) throws Exception {
+        Map<String, ObTableClient> atomDataSources = getAtomDataSources();
         getLogger().info("DDS getOrRefreshTableEntry for {}, atomDataSources size {}, keys {}", tableName, atomDataSources.size(), JSON.toJSONString(atomDataSources.keySet()));
+        Map<Integer, ObTableClientGroup> groupDataSources = getGroupDataSources();
         ObTableClientGroup obTableClientGroup = groupDataSources.get(groupID);
         ObTableClient obTableClient = obTableClientGroup.select(true, 0);
 
         try {
-            obTableClient.getOrRefreshTableEntry(tableName, refresh, waitForRefresh);
-        } catch (Throwable t) {
+            return obTableClient.getOrRefreshTableEntry(tableName, refresh, waitForRefresh);
+        } catch (Exception t) {
             logger.error("getOrRefreshTableEntry execption", t);
+            throw new ObTableException("getOrRefreshTableEntry execption", t);
         }
-
-        return null;
     }
 
     @Override
     public TableEntry getOrRefreshTableEntry(final String tableName, final boolean refresh,
                                             final boolean waitForRefresh) throws Exception {
+        Map<String, ObTableClient> atomDataSources = getAtomDataSources();
         getLogger().info("DDS getOrRefreshTableEntry for {}, atomDataSources size {}, keys {}", tableName, atomDataSources.size(), JSON.toJSONString(atomDataSources.keySet()));
         for (Map.Entry<String, ObTableClient> entry: atomDataSources.entrySet()) {
             try {
                 entry.getValue().getOrRefreshTableEntry(tableName, refresh, waitForRefresh);
-            } catch (Throwable t) {
+            } catch (Exception t) {
                 logger.error("getOrRefreshTableEntry execption", t);
             }
         }
@@ -409,7 +332,9 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
     }
 
 
+    @Override
     public void setRuntimeBatchExecutor(ExecutorService runtimeBatchExecutor) {
+        Map<String, ObTableClient> atomDataSources = getAtomDataSources();
         if (atomDataSources != null) {
             for (Map.Entry<String, ObTableClient> entry: atomDataSources.entrySet()) {
                 try {
@@ -480,17 +405,53 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
         return new DdsObTableClientBatchOps(tableName, this);
     }
 
-    private DatabaseAndTable getDatabaseAndTable(String tableName, Object[] rowkeys, boolean readOnly){
-        checkStatus();
-        return calculateDatabaseAndTable(tableName, rowkeys, readOnly);
+    private DatabaseAndTable getDatabaseAndTable(String tableName, Object[] rowkeys, boolean readOnly) {
+        return getDatabaseAndTable(tableName, rowkeys, readOnly, null);
     }
 
-    private ObTableClient buildObTableClient(DatabaseAndTable databaseAndTable){
-        ObTableClientGroup obTableClientGroup = groupDataSources.get(databaseAndTable
+    private DatabaseAndTable getDatabaseAndTable(String tableName, Object[] rowkeys, boolean readOnly,
+                                                  VersionedConfigSnapshot snapshot) {
+        checkStatus();
+        VersionedConfigSnapshot actualSnapshot = snapshot != null ? snapshot : currentConfigRef.get();
+        return calculateDatabaseAndTable(tableName, rowkeys, readOnly, actualSnapshot);
+    }
+
+    private ObTableClient buildObTableClient(DatabaseAndTable databaseAndTable) {
+        return buildObTableClient(databaseAndTable, null);
+    }
+
+    private ObTableClient buildObTableClient(DatabaseAndTable databaseAndTable, VersionedConfigSnapshot snapshot) {
+        Map<Integer, ObTableClientGroup> currentGroupDataSources;
+        if (snapshot != null) {
+            currentGroupDataSources = snapshot.getGroupDataSources();
+        } else {
+            currentGroupDataSources = getGroupDataSources();
+        }
+        
+        if (currentGroupDataSources == null) {
+            logger.error("No client group found for shard: " + databaseAndTable.getDatabaseShardValue());
+            throw new DistributeDispatchException("No client group found for shard: " + databaseAndTable.getDatabaseShardValue());
+        }
+        
+        ObTableClientGroup obTableClientGroup = currentGroupDataSources.get(databaseAndTable
                 .getDatabaseShardValue());
+
+        if (obTableClientGroup == null) {
+            logger.error("No client group found for shard: " + databaseAndTable.getDatabaseShardValue());
+            throw new DistributeDispatchException("No client group found for shard: " + databaseAndTable.getDatabaseShardValue());
+        }
 
         ObTableClient obTableClient = obTableClientGroup.select(!databaseAndTable.isReadOnly(),
                 databaseAndTable.getElasticIndexValue());
+
+        if (obTableClient == null) {
+            logger.error("No ObTableClient available for shard: {} (readOnly: {}, elasticIndex: {})",
+                    databaseAndTable.getDatabaseShardValue(),
+                    databaseAndTable.isReadOnly(),
+                    databaseAndTable.getElasticIndexValue());
+            throw new DistributeDispatchException("No ObTableClient available for shard: "
+                    + databaseAndTable.getDatabaseShardValue());
+        }
 
         if (databaseAndTable.getRowKeyColumns() != null) {
             obTableClient.addRowKeyElement(databaseAndTable.getTableName(),
@@ -509,8 +470,12 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
     @Override
     public Map<String, Object> get(String tableName, Object[] rowkeys, String[] columns)
                                                                                         throws Exception {
-        DatabaseAndTable databaseAndTable = getDatabaseAndTable(tableName, rowkeys, true);
-        ObTableClient obTableClient = buildObTableClient(databaseAndTable);
+        VersionedConfigSnapshot snapshot = currentConfigRef.get();
+        if (snapshot == null) {
+            throw new IllegalStateException("Configuration snapshot is not available");
+        }
+        DatabaseAndTable databaseAndTable = getDatabaseAndTable(tableName, rowkeys, true, snapshot);
+        ObTableClient obTableClient = buildObTableClient(databaseAndTable, snapshot);
 
         return obTableClient.get(getTargetTableName(databaseAndTable.getTableName()), rowkeys,
             columns);
@@ -528,8 +493,12 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
     @Override
     public long update(String tableName, Object[] rowkeys, String[] columns, Object[] values)
                                                                                              throws Exception {
-        DatabaseAndTable databaseAndTable = getDatabaseAndTable(tableName, rowkeys, false);
-        ObTableClient obTableClient = buildObTableClient(databaseAndTable);
+        VersionedConfigSnapshot snapshot = currentConfigRef.get();
+        if (snapshot == null) {
+            throw new IllegalStateException("Configuration snapshot is not available");
+        }
+        DatabaseAndTable databaseAndTable = getDatabaseAndTable(tableName, rowkeys, false, snapshot);
+        ObTableClient obTableClient = buildObTableClient(databaseAndTable, snapshot);
 
         return obTableClient.update(getTargetTableName(databaseAndTable.getTableName()), rowkeys, columns, values);
     }
@@ -543,8 +512,12 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
      */
     @Override
     public long delete(String tableName, Object[] rowkeys) throws Exception {
-        DatabaseAndTable databaseAndTable = getDatabaseAndTable(tableName, rowkeys, true);
-        ObTableClient obTableClient = buildObTableClient(databaseAndTable);
+        VersionedConfigSnapshot snapshot = currentConfigRef.get();
+        if (snapshot == null) {
+            throw new IllegalStateException("Configuration snapshot is not available");
+        }
+        DatabaseAndTable databaseAndTable = getDatabaseAndTable(tableName, rowkeys, true, snapshot);
+        ObTableClient obTableClient = buildObTableClient(databaseAndTable, snapshot);
 
         return obTableClient.delete(getTargetTableName(databaseAndTable.getTableName()), rowkeys);
     }
@@ -561,8 +534,12 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
     @Override
     public long insert(String tableName, Object[] rowkeys, String[] columns, Object[] values)
                                                                                              throws Exception {
-        DatabaseAndTable databaseAndTable = getDatabaseAndTable(tableName, rowkeys, false);
-        ObTableClient obTableClient = buildObTableClient(databaseAndTable);
+        VersionedConfigSnapshot snapshot = currentConfigRef.get();
+        if (snapshot == null) {
+            throw new IllegalStateException("Configuration snapshot is not available");
+        }
+        DatabaseAndTable databaseAndTable = getDatabaseAndTable(tableName, rowkeys, false, snapshot);
+        ObTableClient obTableClient = buildObTableClient(databaseAndTable, snapshot);
 
         return obTableClient.insert(getTargetTableName(databaseAndTable.getTableName()), rowkeys, columns, values);
     }
@@ -579,9 +556,12 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
     @Override
     public long replace(String tableName, Object[] rowkeys, String[] columns, Object[] values)
                                                                                               throws Exception {
-
-        DatabaseAndTable databaseAndTable = getDatabaseAndTable(tableName, rowkeys, false);
-        ObTableClient obTableClient = buildObTableClient(databaseAndTable);
+        VersionedConfigSnapshot snapshot = currentConfigRef.get();
+        if (snapshot == null) {
+            throw new IllegalStateException("Configuration snapshot is not available");
+        }
+        DatabaseAndTable databaseAndTable = getDatabaseAndTable(tableName, rowkeys, false, snapshot);
+        ObTableClient obTableClient = buildObTableClient(databaseAndTable, snapshot);
 
         return obTableClient.replace(getTargetTableName(databaseAndTable.getTableName()), rowkeys, columns, values);
     }
@@ -598,9 +578,12 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
     @Override
     public long insertOrUpdate(String tableName, Object[] rowkeys, String[] columns, Object[] values)
                                                                                                      throws Exception {
-
-        DatabaseAndTable databaseAndTable = getDatabaseAndTable(tableName, rowkeys, false);
-        ObTableClient obTableClient = buildObTableClient(databaseAndTable);
+        VersionedConfigSnapshot snapshot = currentConfigRef.get();
+        if (snapshot == null) {
+            throw new IllegalStateException("Configuration snapshot is not available");
+        }
+        DatabaseAndTable databaseAndTable = getDatabaseAndTable(tableName, rowkeys, false, snapshot);
+        ObTableClient obTableClient = buildObTableClient(databaseAndTable, snapshot);
 
         return obTableClient.insertOrUpdate(getTargetTableName(databaseAndTable.getTableName()), rowkeys, columns,
             values);
@@ -619,8 +602,12 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
     @Override
     public Map<String, Object> increment(String tableName, Object[] rowkeys, String[] columns,
                                          Object[] values, boolean withResult) throws Exception {
-        DatabaseAndTable databaseAndTable = getDatabaseAndTable(tableName, rowkeys, false);
-        ObTableClient obTableClient = buildObTableClient(databaseAndTable);
+        VersionedConfigSnapshot snapshot = currentConfigRef.get();
+        if (snapshot == null) {
+            throw new IllegalStateException("Configuration snapshot is not available");
+        }
+        DatabaseAndTable databaseAndTable = getDatabaseAndTable(tableName, rowkeys, false, snapshot);
+        ObTableClient obTableClient = buildObTableClient(databaseAndTable, snapshot);
 
         return obTableClient.increment(getTargetTableName(databaseAndTable.getTableName()), rowkeys, columns, values,
             withResult);
@@ -639,8 +626,12 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
     @Override
     public Map<String, Object> append(String tableName, Object[] rowkeys, String[] columns,
                                       Object[] values, boolean withResult) throws Exception {
-        DatabaseAndTable databaseAndTable = getDatabaseAndTable(tableName, rowkeys, false);
-        ObTableClient obTableClient = buildObTableClient(databaseAndTable);
+        VersionedConfigSnapshot snapshot = currentConfigRef.get();
+        if (snapshot == null) {
+            throw new IllegalStateException("Configuration snapshot is not available");
+        }
+        DatabaseAndTable databaseAndTable = getDatabaseAndTable(tableName, rowkeys, false, snapshot);
+        ObTableClient obTableClient = buildObTableClient(databaseAndTable, snapshot);
 
         return obTableClient.append(getTargetTableName(databaseAndTable.getTableName()), rowkeys, columns, values,
             withResult);
@@ -708,27 +699,33 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
 
         checkStatus();
 
+        // 在请求开始时获取快照，确保整个请求使用同一个快照，保证配置一致性
+        VersionedConfigSnapshot snapshot = currentConfigRef.get();
+        if (snapshot == null) {
+            throw new IllegalStateException("Configuration snapshot is not available");
+        }
+
         String tableName = request.getTableName();
 
         DatabaseAndTable databaseAndTable = null;
         if (request instanceof ObTableOperationRequest) {
             ObTableOperation operation = ((ObTableOperationRequest) request).getTableOperation();
 
-            databaseAndTable = calculateDatabaseAndTable(tableName, operation);
+            databaseAndTable = calculateDatabaseAndTable(tableName, operation, snapshot);
 
         } else if (request instanceof ObTableQueryRequest) {
             ObTableQuery tableQuery = ((ObTableQueryRequest) request).getTableQuery();
-            databaseAndTable = calculateDatabaseAndTable(tableName, tableQuery);
+            databaseAndTable = calculateDatabaseAndTable(tableName, tableQuery, snapshot);
 
         } else if (request instanceof ObTableBatchOperationRequest) {
             List<ObTableOperation> operations = ((ObTableBatchOperationRequest) request)
                 .getBatchOperation().getTableOperations();
 
-            databaseAndTable = calculateDatabaseAndTable(tableName, operations);
+            databaseAndTable = calculateDatabaseAndTable(tableName, operations, snapshot);
         } else if (request instanceof ObTableQueryAndMutateRequest) {
             ObTableQuery tableQuery = ((ObTableQueryAndMutateRequest) request)
                 .getTableQueryAndMutate().getTableQuery();
-            databaseAndTable = calculateDatabaseAndTable(tableName, tableQuery);
+            databaseAndTable = calculateDatabaseAndTable(tableName, tableQuery, snapshot);
             databaseAndTable.setReadOnly(false);
         } else {
             throw new FeatureNotSupportedException(
@@ -736,8 +733,19 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
                         + "is not supported. make sure the correct version");
         }
 
-        ObTableClientGroup obTableClientGroup = groupDataSources.get(databaseAndTable
+        // 使用同一个快照获取客户端组，确保配置一致性
+        Map<Integer, ObTableClientGroup> currentGroupDataSources = snapshot.getGroupDataSources();
+        if (currentGroupDataSources == null) {
+            logger.error("No client group found for shard: " + databaseAndTable.getDatabaseShardValue());
+            throw new DistributeDispatchException("No client group found for shard: " + databaseAndTable.getDatabaseShardValue());
+        }
+        ObTableClientGroup obTableClientGroup = currentGroupDataSources.get(databaseAndTable
             .getDatabaseShardValue());
+
+        if (obTableClientGroup == null) {
+            logger.error("No client group found for shard: " + databaseAndTable.getDatabaseShardValue());
+            throw new DistributeDispatchException("No client group found for shard: " + databaseAndTable.getDatabaseShardValue());
+        }
 
         ObTableClient obTableClient = obTableClientGroup.select(!databaseAndTable.isReadOnly(),
             databaseAndTable.getElasticIndexValue());
@@ -759,6 +767,7 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
      */
     public ObTableClient getObTable(DatabaseAndTable databaseAndTable) {
 
+        Map<Integer, ObTableClientGroup> groupDataSources = getGroupDataSources();
         ObTableClientGroup obTableClientGroup = groupDataSources.get(databaseAndTable
             .getDatabaseShardValue());
 
@@ -775,13 +784,18 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
 
     private DatabaseAndTable calculateDatabaseAndTable(String tableName, Object[] rowKey,
                                                        boolean readOnly) {
+        return calculateDatabaseAndTable(tableName, rowKey, readOnly, null);
+    }
 
-        LogicalTable logicalTable = distributeDispatcher.findLogicalTable(tableName);
+    private DatabaseAndTable calculateDatabaseAndTable(String tableName, Object[] rowKey,
+                                                       boolean readOnly, VersionedConfigSnapshot snapshot) {
+
+        LogicalTable logicalTable = distributeDispatcher.findLogicalTable(tableName, snapshot);
 
         String[] rowKeyColumns = logicalTable != null ? logicalTable.getRowKeyColumns() : null;
 
         DatabaseAndTable databaseAndTable = distributeDispatcher.resolveDatabaseAndTable(tableName,
-            rowKeyColumns, rowKey);
+            rowKeyColumns, rowKey, snapshot);
 
         if (logicalTable == null && rowKeyColumns == null) {
             rowKeyColumns = tableRowKeyElement.get(tableName);
@@ -793,8 +807,13 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
     }
 
     private DatabaseAndTable calculateDatabaseAndTable(String tableName, ObTableOperation operation) {
+        return calculateDatabaseAndTable(tableName, operation, null);
+    }
 
-        LogicalTable logicalTable = distributeDispatcher.findLogicalTable(tableName);
+    private DatabaseAndTable calculateDatabaseAndTable(String tableName, ObTableOperation operation,
+                                                       VersionedConfigSnapshot snapshot) {
+
+        LogicalTable logicalTable = distributeDispatcher.findLogicalTable(tableName, snapshot);
 
         String[] rowKeyColumns = logicalTable != null ? logicalTable.getRowKeyColumns() : null;
 
@@ -806,7 +825,7 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
         }
 
         DatabaseAndTable databaseAndTable = distributeDispatcher.resolveDatabaseAndTable(tableName,
-            rowKeyColumns, rowKey);
+            rowKeyColumns, rowKey, snapshot);
 
         databaseAndTable.setReadOnly(operation.isReadonly());
         databaseAndTable.setRowKeyColumns(rowKeyColumns);
@@ -821,12 +840,18 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
      */
     public DatabaseAndTable calculateDatabaseAndTable(String tableName,
                                                       List<ObTableOperation> operations) {
+        return calculateDatabaseAndTable(tableName, operations, null);
+    }
+
+    public DatabaseAndTable calculateDatabaseAndTable(String tableName,
+                                                      List<ObTableOperation> operations,
+                                                      VersionedConfigSnapshot snapshot) {
 
         DatabaseAndTable databaseAndTable = null;
 
         for (ObTableOperation operation : operations) {
             DatabaseAndTable currentDatabaseAndTable = calculateDatabaseAndTable(tableName,
-                operation);
+                operation, snapshot);
             currentDatabaseAndTable.setReadOnly(operation.isReadonly());
             if (databaseAndTable == null) {
                 databaseAndTable = currentDatabaseAndTable;
@@ -854,7 +879,12 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
      * @return
      */
     public DatabaseAndTable calculateDatabaseAndTable(String tableName, ObTableQuery tableQuery) {
-        LogicalTable logicalTable = distributeDispatcher.findLogicalTable(tableName);
+        return calculateDatabaseAndTable(tableName, tableQuery, null);
+    }
+
+    public DatabaseAndTable calculateDatabaseAndTable(String tableName, ObTableQuery tableQuery,
+                                                      VersionedConfigSnapshot snapshot) {
+        LogicalTable logicalTable = distributeDispatcher.findLogicalTable(tableName, snapshot);
 
         String[] rowKeyColumns = logicalTable != null ? logicalTable.getRowKeyColumns() : null;
 
@@ -862,7 +892,7 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
         Object[] start = null;
         Object[] end = null;
 
-        if (tableQuery.getKeyRanges().size() == 0) {
+        if (tableQuery.getKeyRanges().isEmpty()) {
             logger.error(LCD.convert("02-00015"), tableName);
             throw new DistributeDispatchException(
                 "OBKV-ROUTER Logical table [" + tableName
@@ -887,7 +917,7 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
 
             List<DatabaseAndTable> currentRangeDatabaseAndTables = distributeDispatcher
                 .resolveDatabaseAndTable(tableName, rowKeyColumns, currentStart,
-                    borderFlag.isInclusiveStart(), currentEnd, borderFlag.isInclusiveEnd());
+                    borderFlag.isInclusiveStart(), currentEnd, borderFlag.isInclusiveEnd(), snapshot);
 
             //TODO Distribute Query is not support yet so that we restrict queries to one shard.
 
@@ -1115,6 +1145,14 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
             boolean checkExists, boolean rollbackWhenCheckFailed) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'checkAndInsUp'");
+    }
+
+    public ReentrantLock getStatusLock() {
+        return statusLock;
+    }
+
+    public void setStatusLock(ReentrantLock statusLock) {
+        this.statusLock = statusLock;
     }
 
     /**
@@ -1480,7 +1518,9 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
      * DDS version of BatchOperation that handles distributed dispatch
      */
     private static class DdsBatchOperation extends BatchOperation {
+        @SuppressWarnings("unused")
         private final DdsObTableClient ddsClient;
+        @SuppressWarnings("unused")
         private final String tableName;
 
         public DdsBatchOperation(DdsObTableClient ddsClient, String tableName) {

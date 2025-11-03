@@ -18,9 +18,9 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
 public class ObTableSingleOpFlag {
-    private static final int FLAG_IS_CHECK_NOT_EXISTS = 1 << 0;
+    private static final int FLAG_IS_CHECK_NOT_EXISTS           = 1 << 0;
     private static final int FLAG_IS_ROLLBACK_WHEN_CHECK_FAILED = 1 << 1;
-    private long             flags                    = 0;
+    private long             flags                              = 0;
 
     public void setIsCheckNotExists(boolean isCheckNotExists) {
         if (isCheckNotExists) {
