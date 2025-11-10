@@ -22,7 +22,6 @@ import com.alipay.remoting.InvokeCallback;
 import com.alipay.remoting.InvokeContext;
 import com.alipay.remoting.InvokeFuture;
 import com.alipay.remoting.RemotingCommand;
-import com.alipay.oceanbase.rpc.exception.ObTableTimeoutExcetion;
 import io.netty.util.Timeout;
 
 import java.net.InetSocketAddress;

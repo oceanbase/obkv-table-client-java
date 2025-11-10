@@ -40,6 +40,10 @@ public interface TableBatchOps {
 
     ObTableEntityType getEntityType();
 
+    void setIsWeakRead(boolean isWeakRead);
+
+    boolean isWeakRead();
+
     void get(Object rowkey, String[] columns);
 
     void get(Object[] rowkeys, String[] columns);

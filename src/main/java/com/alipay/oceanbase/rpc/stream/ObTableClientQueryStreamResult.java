@@ -46,7 +46,8 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
         ObTableQueryRequest request = new ObTableQueryRequest();
         request.setTableName(tableName);
         request.setTableQuery(tableQuery);
-        long partitionId = needTabletId(request) ? partIdWithObTable.getRight().getPartitionId() : INVALID_TABLET_ID;
+        long partitionId = needTabletId(request) ? partIdWithObTable.getRight().getPartitionId()
+            : INVALID_TABLET_ID;
         request.setPartitionId(partitionId);
         request.setTableId(partIdWithObTable.getRight().getTableId());
         request.setEntityType(entityType);
@@ -56,7 +57,7 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
             request.setTimeout(partIdWithObTable.getRight().getObTable()
                 .getObTableOperationTimeout());
         }
-        request.setConsistencyLevel(getReadConsistency().toObTableConsistencyLevel());
+        request.setConsistencyLevel(getReadConsistency());
         return execute(partIdWithObTable, request);
     }
 

@@ -23,7 +23,6 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilt
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObScanOrder;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
-import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
 import java.util.Arrays;

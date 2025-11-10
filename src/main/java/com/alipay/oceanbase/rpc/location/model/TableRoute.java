@@ -25,6 +25,7 @@ import com.alipay.oceanbase.rpc.location.model.partition.*;
 import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableConsistencyLevel;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObBorderFlag;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
@@ -48,33 +49,57 @@ import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.*;
 import static java.lang.String.format;
 
 public class TableRoute {
-    private static final Logger       logger                 = getLogger(TableRoute.class);
-    private static final ObjectMapper objectMapper           = new ObjectMapper();
+    private static final Logger       logger                       = getLogger(TableRoute.class);
+    private static final ObjectMapper objectMapper                 = new ObjectMapper();
     private final ObTableClient       tableClient;
-    private final ObUserAuth          sysUA;                                               // user and password to access route table
-    private final ServerRoster        serverRoster           = new ServerRoster();         // all servers which contain current tenant
-    private long                      clusterVersion         = -1;
-    private volatile long             lastRefreshMetadataTimestamp;
-    private volatile ConfigServerInfo configServerInfo       = new ConfigServerInfo();     // rslist and IDC
-    private volatile TableRoster      tableRoster            = new TableRoster();          // table mean connection pool here
-    private TableLocations            tableLocations         = null;                       // map[tableName, TableEntry]
-    private TableLocations            odpTableLocations      = null;                       // for parition handle
-    private IndexLocations            indexLocations         = null;                       // global index location
-    private TableGroupCache           tableGroupCache        = null;
-    private OdpInfo                   odpInfo                = null;
-    private RouteTableRefresher       routeRefresher         = null;
-
-    public final Lock                 refreshTableRosterLock = new ReentrantLock();
+    private final ObUserAuth          sysUA;                                                         // user and password to access route table
+    private volatile ServerRoster     serverRoster                 = null;                           // all servers which contain current tenant
+    private volatile ConfigServerInfo configServerInfo             = null;                           // rslist
+    private volatile TableRoster      tableRoster                  = null;                           // table mean connection pool here
+    private ObTableConsistencyLevel   consistencyLevel             = ObTableConsistencyLevel.STRONG; // global read consistency level
+    private String                    currentIDC                   = null;                           // current client IDC for weak read routing
+    private ObRoutePolicy             routePolicy                  = ObRoutePolicy.FOLLOWER_FIRST;   // route policy for weak read
+    private TableLocations            tableLocations               = null;                           // map[tableName, TableEntry]
+    private TableLocations            odpTableLocations            = null;                           // for parition handle
+    private IndexLocations            indexLocations               = null;                           // global index location
+    private TableGroupCache           tableGroupCache              = null;
+    private OdpInfo                   odpInfo                      = null;
+    private RouteTableRefresher       routeRefresher               = null;
+    private long                      lastRefreshMetadataTimestamp = -1;
+    public final Lock                 refreshTableRosterLock       = new ReentrantLock();
 
     public TableRoute(ObTableClient tableClient, ObUserAuth sysUA) {
         this.tableClient = tableClient;
         this.sysUA = sysUA;
+    }
+
+    public void init() throws Exception {
+        BOOT.info("init TableRoute");
         if (tableClient.isOdpMode()) {
+            BOOT.info("init TableRoute in ODP mode");
             odpTableLocations = new TableLocations(tableClient);
+            try {
+                buildOdpInfo(tableClient.getOdpAddr(), tableClient.getOdpPort(),
+                    tableClient.getRunningMode());
+            } catch (Exception e) {
+                logger
+                    .warn(
+                        "The addr{}:{} failed to put into table roster, the node status may be wrong, Ignore",
+                        tableClient.getOdpAddr(), tableClient.getOdpPort());
+                throw new RuntimeException(e);
+            }
         } else {
+            BOOT.info("init TableRoute in direct mode");
             tableLocations = new TableLocations(tableClient);
             indexLocations = new IndexLocations(tableClient);
             tableGroupCache = new TableGroupCache(tableClient);
+            tableRoster = new TableRoster();
+            serverRoster = new ServerRoster();
+            loadConfigServerInfo(); // build ConfigServerInfo to get rsList
+            TableEntryKey rootServerKey = new TableEntryKey(tableClient.getClusterName(),
+                tableClient.getTenantName(), OCEANBASE_DATABASE, ALL_DUMMY_TABLE);
+            initRoster(rootServerKey, false, tableClient.getRunningMode()); // build tableRoster and ServerRoster
+            launchRouteRefresher(); // create background refresh-checker task
         }
     }
 
@@ -83,6 +108,62 @@ public class TableRoute {
             routeRefresher.close();
         }
         tableRoster.closeRoster();
+        ObTable odpTable = getOdpTable();
+        if (odpTable != null) {
+            odpTable.close();
+        }
+    }
+
+    /**
+    * Set current IDC for weak read routing.
+    * @param idc idc
+    */
+    public void setCurrentIDC(String idc) {
+        this.currentIDC = idc;
+    }
+
+    /**
+     * Get current IDC.
+     * @return current IDC
+     */
+    public String getCurrentIDC() {
+        return this.currentIDC;
+    }
+
+    /**
+     * Set router policy for weak read.
+     * @param policy route policy
+     */
+    public void setRoutePolicy(ObRoutePolicy policy) {
+        this.routePolicy = policy;
+    }
+
+    /**
+     * Get router policy.
+     * @return route policy
+     */
+    public ObRoutePolicy getRoutePolicy() {
+        return this.routePolicy;
+    }
+
+    /**
+     * Get read consistency level.
+     * @return read consistency level
+     */
+    public ObTableConsistencyLevel getReadConsistency() {
+        return this.consistencyLevel;
+    }
+
+    /**
+     * Set read consistency level.
+     * @param readConsistency read consistency level
+     */
+    public void setReadConsistency(String readConsistency) throws IllegalArgumentException {
+        this.consistencyLevel = ObTableConsistencyLevel.getByName(readConsistency);
+    }
+
+    public OdpInfo getOdpInfo() {
+        return odpInfo;
     }
 
     public void setConfigServerInfo(ConfigServerInfo configServerInfo) {
@@ -168,7 +249,7 @@ public class TableRoute {
     }
 
     public void buildOdpInfo(String odpAddr, int odpPort, ObTableClient.RunningMode runningMode)
-                                                                                       throws Exception {
+                                                                                                throws Exception {
         this.odpInfo = new OdpInfo(odpAddr, odpPort);
         this.odpInfo.buildOdpTable(tableClient.getTenantName(), tableClient.getFullUserName(),
             tableClient.getPassword(), tableClient.getDatabase(), runningMode,
@@ -179,6 +260,8 @@ public class TableRoute {
      * load rsList from rootService
      * */
     public ConfigServerInfo loadConfigServerInfo() throws Exception {
+        BOOT.info("load config server info from paramURL: {}, dataSourceName: {}",
+            tableClient.getParamURL(), tableClient.getDataSourceName());
         this.configServerInfo = LocationUtil.loadConfigServerInfo(tableClient.getParamURL(),
             tableClient.getDataSourceName(), tableClient.getRsListAcquireConnectTimeout(),
             tableClient.getRsListAcquireReadTimeout(), tableClient.getRsListAcquireTryTimes(),
@@ -193,12 +276,15 @@ public class TableRoute {
      * */
     public void initRoster(TableEntryKey rootServerKey, boolean initialized,
                            ObTableClient.RunningMode runningMode) throws Exception {
+        BOOT.info(
+            "init tableRoster and serverRoster for rootServerKey: {}, initialized: {}, runningMode: {}",
+            rootServerKey, initialized, runningMode);
         List<ObServerAddr> servers = new ArrayList<ObServerAddr>();
         ConcurrentHashMap<ObServerAddr, ObTable> addr2Table = new ConcurrentHashMap<ObServerAddr, ObTable>();
         List<ObServerAddr> rsList = configServerInfo.getRsList();
-        BOOT.info("{} success to get rsList, paramURL: {}, rsList: {}，idc2Region: {}",
-            tableClient.getDatabase(), configServerInfo.getParamURL(), objectMapper.writeValueAsString(rsList),
-                objectMapper.writeValueAsString(configServerInfo.getIdc2Region()));
+        BOOT.info("{} success to get rsList, paramURL: {}, rsList: {}",
+            tableClient.getDatabase(), configServerInfo.getParamURL(),
+            objectMapper.writeValueAsString(rsList));
 
         TableEntry tableEntry = null;
         int retryMaxTimes = rsList.size();
@@ -233,10 +319,14 @@ public class TableRoute {
                 rootServerKey, rsList);
             throw new ObTableUnexpectedException("all rs servers are not available", exception);
         }
+        if (tableEntry == null) {
+            BOOT.error("tableEntry is null, rootServerKey:{}, rsList: {}", rootServerKey, rsList);
+            throw new ObTableUnexpectedException("tableEntry is null");
+        }
         List<ReplicaLocation> replicaLocations = tableEntry.getTableLocation()
             .getReplicaLocations();
         BOOT.info("{} success to get replicaLocation {}", tableClient.getDatabase(),
-                objectMapper.writeValueAsString(replicaLocations));
+            objectMapper.writeValueAsString(replicaLocations));
 
         for (ReplicaLocation replicaLocation : replicaLocations) {
             ObServerInfo info = replicaLocation.getInfo();
@@ -272,12 +362,9 @@ public class TableRoute {
         this.serverRoster.reset(servers);
 
         // Get Server LDC info for weak read consistency.
-        if (StringUtil.isEmpty(tableClient.getCurrentIDC())) {
-            tableClient.setCurrentIDC(ZoneUtil.getCurrentIDC());
+        if (StringUtil.isEmpty(this.currentIDC)) {
+            this.currentIDC = ZoneUtil.getCurrentIDC();
         }
-        String regionFromOcp = configServerInfo.getIdc2Region(tableClient.getCurrentIDC());
-        BOOT.info("{} success get currentIDC {}, regionFromOcp {}", tableClient.getDatabase(),
-            tableClient.getCurrentIDC(), regionFromOcp);
 
         success = false;
         retryMaxTimes = servers.size();
@@ -305,8 +392,7 @@ public class TableRoute {
                 rootServerKey.getTenantName(), rsList);
             throw new ObTableUnexpectedException("all tenant servers are not available");
         }
-        this.serverRoster.resetServerLdc(ObServerLdcLocation.buildLdcLocation(ldcServers,
-            tableClient.getCurrentIDC(), regionFromOcp));
+        this.serverRoster.resetServerLdc(ObServerLdcLocation.buildLdcLocation(ldcServers, this.currentIDC));
         if (BOOT.isInfoEnabled()) {
             BOOT.info("{} finish refresh serverRoster: {}", tableClient.getDatabase(),
                 objectMapper.writeValueAsString(serverRoster));
@@ -419,9 +505,7 @@ public class TableRoute {
         }
 
         // 3. reset Server LDC location.
-        String regionFromOcp = configServerInfo.getIdc2Region(tableClient.getCurrentIDC());
-        serverRoster.resetServerLdc(ObServerLdcLocation.buildLdcLocation(ldcServers,
-            tableClient.getCurrentIDC(), regionFromOcp));
+        serverRoster.resetServerLdc(ObServerLdcLocation.buildLdcLocation(ldcServers, this.currentIDC));
 
         if (logger.isInfoEnabled()) {
             logger.info("finish refresh serverRoster: {}, servers num: {}",
@@ -522,7 +606,7 @@ public class TableRoute {
         try {
             tableEntry = tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
                 serverRoster, sysUA);
-            validCachedObTableStatus(tableName, tableEntry, tabletId, tableClient.getRoute(false));
+            validCachedObTableStatus(tableName, tableEntry, tabletId);
             return tableEntry;
         } catch (ObTableGetException e) {
             logger
@@ -531,9 +615,9 @@ public class TableRoute {
                     tableName);
             if (e.getMessage().contains("Need to fetch meta")) {
                 tableEntry = refreshMeta(tableName);
-                tableEntry = tableLocations.refreshPartitionLocation(tableEntry, tableName, tabletId,
-                        serverRoster, sysUA);
-                validCachedObTableStatus(tableName, tableEntry, tabletId, tableClient.getRoute(false));
+                tableEntry = tableLocations.refreshPartitionLocation(tableEntry, tableName,
+                    tabletId, serverRoster, sysUA);
+                validCachedObTableStatus(tableName, tableEntry, tabletId);
                 return tableEntry;
             }
             throw e;
@@ -552,7 +636,7 @@ public class TableRoute {
                 serverRoster, sysUA);
             Long[] tablets = getTabletsFromTableEntry(tableEntry);
             for (long tablet : tablets) {
-                validCachedObTableStatus(tableName, tableEntry, tablet, tableClient.getRoute(false));
+                validCachedObTableStatus(tableName, tableEntry, tablet);
             }
             return tableEntry;
         } catch (ObTableGetException e) {
@@ -566,27 +650,31 @@ public class TableRoute {
                     serverRoster, sysUA);
                 Long[] tablets = getTabletsFromTableEntry(tableEntry);
                 for (long tablet : tablets) {
-                    validCachedObTableStatus(tableName, tableEntry, tablet, tableClient.getRoute(false));
+                    validCachedObTableStatus(tableName, tableEntry, tablet);
                 }
                 return tableEntry;
             }
             throw e;
         } catch (Throwable t) {
             logger.error(
-                    "refresh location in batch meets exception, tableName: {}, error message: {}",
-                    tableName, t.getMessage());
+                "refresh location in batch meets exception, tableName: {}, error message: {}",
+                tableName, t.getMessage());
             throw t;
         }
     }
 
-    public Map<Long, ObTableParam> refreshTabletLocationAndGetPartIdMap(String tableName, ObTableQuery query, boolean isHKV) throws Exception {
-        Map<Long, ObTableParam> partIdParamMap = getPartIdParamMapForQuery(tableName, query.getScanRangeColumns(), query.getKeyRanges());
+    public Map<Long, ObTableParam> refreshTabletLocationAndGetPartIdMap(String tableName,
+                                                                        ObTableQuery query,
+                                                                        boolean isHKV)
+                                                                                      throws Exception {
+        Map<Long, ObTableParam> partIdParamMap = getPartIdParamMapForQuery(tableName,
+            query.getScanRangeColumns(), query.getKeyRanges());
         if (isHKV) {
             // for HBase process, if distributed function is enabled, no need to do routing refresh
             boolean isDistributedSupported = getServerCapacity().isSupportDistributedExecute();
             if (partIdParamMap.size() > 1 && !isDistributedSupported) {
                 throw new ObTablePartitionConsistentException(
-                        "query and mutate must be a atomic operation");
+                    "query and mutate must be a atomic operation");
             } else if (isDistributedSupported) {
                 // do nothing
             }
@@ -595,7 +683,7 @@ public class TableRoute {
             // for now only support to query single tablet
             if (partIdParamMap.size() > 1) {
                 throw new ObTablePartitionConsistentException(
-                        "query and mutate must be a atomic operation");
+                    "query and mutate must be a atomic operation");
             } else if (partIdParamMap.isEmpty()) {
                 throw new ObTableException("could not find part id of range");
             }
@@ -611,27 +699,39 @@ public class TableRoute {
         Long[] tablets = null;
         if (tableEntry.isPartitionTable()) {
             tablets = tableEntry.getPartitionInfo().getPartTabletIdMap().values()
-                    .toArray(new Long[0]);
+                .toArray(new Long[0]);
         } else {
-            tablets = new Long[]{0L};
+            tablets = new Long[] { 0L };
         }
         return tablets;
     }
 
-    private void validCachedObTableStatus(String tableName, TableEntry tableEntry, long tabletId, ObServerRoute route) throws Exception {
-        ObPartitionLocationInfo obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
+    private void validCachedObTableStatus(String tableName, TableEntry tableEntry, long tabletId)
+                                                                                                 throws Exception {
+        ObPartitionLocationInfo obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry,
+            tableName, tabletId);
         if (obPartitionLocationInfo.getPartitionLocation() == null) {
             throw new ObTableNotExistException(
-                    "partition location is null after refresh, table: { " + tableName
-                            + " } may not exist");
+                "partition location is null after refresh, table: { " + tableName
+                        + " } may not exist");
         }
-        ReplicaLocation replica = getPartitionLocation(obPartitionLocationInfo, route);
-        ObServerAddr addr = replica.getAddr();
+
+        ReplicaLocation leader = obPartitionLocationInfo.getPartitionLocation().getLeader();
+        ObServerAddr addr = leader.getAddr();
         ObTable obTable = tableRoster.getTable(addr);
         if (obTable != null && !obTable.isValid()) {
             obTable.setValid();
         }
+
+        for (ReplicaLocation replica : obPartitionLocationInfo.getPartitionLocation().getReplicas()) {
+            ObServerAddr replicaAddr = replica.getAddr();
+            ObTable replicaObTable = tableRoster.getTable(replicaAddr);
+            if (replicaObTable != null && !replicaObTable.isValid()) {
+                replicaObTable.setValid();
+            }
+        }
     }
+
     /**
      * get TableParam by tableName and rowkey
      * @param tableName tableName
@@ -639,28 +739,29 @@ public class TableRoute {
      * @return ObTableParam tableParam
      * */
     public ObTableParam getTableParam(String tableName, Row rowkey) throws Exception {
-        ObServerRoute route = tableClient.getRoute(false);
-        return getTableParamWithRoute(tableName, rowkey, route);
+        return getTableParam(tableName, rowkey, null);
     }
 
-    public ObTableParam getTableParamWithRoute(String tableName, Row rowkey, ObServerRoute route)
-                                                                                                 throws Exception {
+    public ObTableParam getTableParam(String tableName, Row rowkey,
+                                      ObTableConsistencyLevel currentConsistencyLevel)
+                                                                                      throws Exception {
         TableEntry tableEntry = getTableEntry(tableName);
         if (tableEntry == null) {
             logger.error("tableEntry is null, tableName: {}", tableName);
             throw new ObTableEntryRefreshException("tableEntry is null, tableName: " + tableName);
         }
         long partId = getPartId(tableEntry, rowkey);
-        return getTableInternal(tableName, tableEntry, partId, route);
+        return getTableInternal(tableName, tableEntry, partId, currentConsistencyLevel);
     }
 
     /**
      * get TableParam by tableName and rowkeys in batch
      * @param tableName tableName
      * @param rowkeys list of row key or partition key names and values
+     * @param currentConsistencyLevel current consistency level
      * @return ObTableParam tableParam
      * */
-    public List<ObTableParam> getTableParams(String tableName, List<Row> rowkeys) throws Exception {
+    public List<ObTableParam> getTableParams(String tableName, List<Row> rowkeys, ObTableConsistencyLevel currentConsistencyLevel) throws Exception {
         TableEntry tableEntry = getTableEntry(tableName);
         if (tableEntry == null) {
             logger.error("tableEntry is null, tableName: {}", tableName);
@@ -668,11 +769,10 @@ public class TableRoute {
         }
 
         List<ObTableParam> params = new ArrayList<>();
-        ObServerRoute route = tableClient.getRoute(false);
         for (Row rowkey : rowkeys) {
             long partId = getPartId(tableEntry, rowkey);
             ObTableParam param = null;
-            param = getTableInternal(tableName, tableEntry, partId, route);
+            param = getTableInternal(tableName, tableEntry, partId, currentConsistencyLevel);
             params.add(param);
         }
         return params;
@@ -720,8 +820,10 @@ public class TableRoute {
         return obPartitionLocationInfo;
     }
 
-    public Map<Long, ObTableParam> getPartIdParamMapForQuery(String tableName, List<String> scanRangeColumns,
-                                                              List<ObNewRange> keyRanges) throws Exception {
+    public Map<Long, ObTableParam> getPartIdParamMapForQuery(String tableName,
+                                                             List<String> scanRangeColumns,
+                                                             List<ObNewRange> keyRanges)
+                                                                                        throws Exception {
         Map<Long, ObTableParam> parIdParamMapObTable = new HashMap<Long, ObTableParam>();
         for (ObNewRange keyRange : keyRanges) {
             ObRowKey startKey = keyRange.getStartKey();
@@ -748,9 +850,9 @@ public class TableRoute {
                 }
             }
             ObBorderFlag borderFlag = keyRange.getBorderFlag();
+            // route parameter is kept for backward compatibility but not used
             List<ObTableParam> paramList = getTablesInternal(tableName, scanRangeColumns, start,
-                    borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(),
-                    tableClient.getRoute(false));
+                borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), null);
             for (ObTableParam param : paramList) {
                 parIdParamMapObTable.put(param.getPartId(), param);
             }
@@ -762,14 +864,16 @@ public class TableRoute {
      * get addr by partId
      * @param tableName table want to get
      * @param partId tabletId of table (real tablet id in 4.x)
-     * @param route ObServer route
+     * @param currentConsistencyLevel current consistency level
      * @return ObTableParam table information for execution
      * @throws Exception exception
      */
-    public ObTableParam getTableWithPartId(String tableName, long partId, ObServerRoute route)
-                                                                                              throws Exception {
+    public ObTableParam getTableWithPartId(String tableName, long partId,
+                                           ObTableConsistencyLevel currentConsistencyLevel)
+                                                                                           throws Exception {
+        // route parameter is kept for backward compatibility but not used
         TableEntry tableEntry = getTableEntry(tableName);
-        return getTableInternal(tableName, tableEntry, partId, route);
+        return getTableInternal(tableName, tableEntry, partId, currentConsistencyLevel);
     }
 
     /**
@@ -777,12 +881,13 @@ public class TableRoute {
      * @param tableName table want to get
      * @param tableEntry tableEntry
      * @param partId logicId of tablet
-     * @param route ObServer route
+     * @param currentConsistencyLevel current consistency level
      * @return ObTableParam table information for execution
      * @throws Exception exception
      */
     private ObTableParam getTableInternal(String tableName, TableEntry tableEntry, long partId,
-                                          ObServerRoute route) throws Exception {
+                                          ObTableConsistencyLevel currentConsistencyLevel)
+                                                                                          throws Exception {
         ReplicaLocation replica = null;
         long tabletId = getTabletIdByPartId(tableEntry, partId);
         ObPartitionLocationInfo obPartitionLocationInfo = null;
@@ -792,7 +897,7 @@ public class TableRoute {
                 "partition location is null after refresh, table: { " + tableName
                         + " } may not exist");
         }
-        replica = getPartitionLocation(obPartitionLocationInfo, route);
+        replica = getPartitionLocation(obPartitionLocationInfo, currentConsistencyLevel);
         /**
          * Normally, getOrRefreshPartitionInfo makes sure that a thread only continues if it finds the leader
          * during a route refresh. But sometimes, there might not be a leader yet. In this case, the thread
@@ -821,13 +926,14 @@ public class TableRoute {
             tableClient.syncRefreshMetadata(true);
             // the addr is wrong, need to refresh location
             if (logger.isInfoEnabled()) {
-                logger.info("Cannot get ObTable by addr {}, refreshing metadata, tryTimes: {}.", addr, retryTimes);
+                logger.info("Cannot get ObTable by addr {}, refreshing metadata, tryTimes: {}.",
+                    addr, retryTimes);
             }
             // refresh tablet location based on the latest roster, in case that some of the observers have been killed
             // and used the old location
             tableEntry = refreshPartitionLocation(tableName, tabletId, tableEntry);
             obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
-            replica = getPartitionLocation(obPartitionLocationInfo, route);
+            replica = getPartitionLocation(obPartitionLocationInfo, currentConsistencyLevel);
 
             if (replica == null) {
                 RUNTIME.error("Cannot get replica by tabletId: " + tabletId);
@@ -847,9 +953,16 @@ public class TableRoute {
         return param;
     }
 
-    private ReplicaLocation getPartitionLocation(ObPartitionLocationInfo obPartitionLocationInfo,
-                                                 ObServerRoute route) {
-        return obPartitionLocationInfo.getPartitionLocation().getReplica(route);
+    private ReplicaLocation getPartitionLocation(ObPartitionLocationInfo locationInfo,
+                                                 ObTableConsistencyLevel currentConsistencyLevel)
+                                                                                                 throws ObTableException {
+        ObPartitionLocation partitionLocation = locationInfo.getPartitionLocation();
+        ObTableConsistencyLevel level = currentConsistencyLevel;
+        // when currentConsistencyLevel is null, we use global consistencyLevel
+        if (level == null) {
+            level = this.consistencyLevel;
+        }
+        return partitionLocation.getReplica(level, routePolicy);
     }
 
     private ObTableParam createTableParam(ObTable obTable, TableEntry tableEntry,
@@ -878,7 +991,9 @@ public class TableRoute {
      * @throws Exception exception
      */
     public ObTableParam getTableParam(String tableName, List<String> scanRangeColumns,
-                                      ObNewRange keyRange) throws Exception {
+                                      ObNewRange keyRange,
+                                      ObTableConsistencyLevel currentConsistencyLevel)
+                                                                                      throws Exception {
         Map<Long, ObTableParam> tabletIdIdMapObTable = new HashMap<Long, ObTableParam>();
         ObRowKey startKey = keyRange.getStartKey();
         int startKeySize = startKey.getObjs().size();
@@ -904,9 +1019,10 @@ public class TableRoute {
             }
         }
         ObBorderFlag borderFlag = keyRange.getBorderFlag();
+        // route parameter is kept for backward compatibility but not used
         List<ObTableParam> paramList = getTablesInternal(tableName, scanRangeColumns, start,
             borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(),
-            tableClient.getRoute(false));
+            currentConsistencyLevel);
         for (ObTableParam param : paramList) {
             tabletIdIdMapObTable.put(param.getTabletId(), param);
         }
@@ -933,9 +1049,11 @@ public class TableRoute {
      * @throws Exception exception
      */
     public ObTableParam getTableParam(String tableName, List<String> scanRangeColumns,
-                                      List<ObNewRange> keyRanges) throws Exception {
-        Map<Long, ObTableParam> partIdIdMapObTable = getPartIdParamMapForQuery(
-                tableName, scanRangeColumns, keyRanges);
+                                      List<ObNewRange> keyRanges,
+                                      ObTableConsistencyLevel currentConsistencyLevel)
+                                                                                      throws Exception {
+        Map<Long, ObTableParam> partIdIdMapObTable = getPartIdParamMapForQuery(tableName,
+            scanRangeColumns, keyRanges);
         // for now only support to query single tablet
         if (partIdIdMapObTable.size() > 1) {
             throw new ObTablePartitionConsistentException(
@@ -962,15 +1080,19 @@ public class TableRoute {
      */
     public List<ObTableParam> getTableParams(String tableName, ObTableQuery query, Object[] start,
                                              boolean startInclusive, Object[] end,
-                                             boolean endInclusive) throws Exception {
+                                             boolean endInclusive,
+                                             ObTableConsistencyLevel currentConsistencyLevel)
+                                                                                             throws Exception {
+        // route parameter is kept for backward compatibility but not used
         return getTablesInternal(tableName, query.getScanRangeColumns(), start, startInclusive,
-            end, endInclusive, tableClient.getRoute(false));
+            end, endInclusive, currentConsistencyLevel);
     }
 
     private List<ObTableParam> getTablesInternal(String tableName, List<String> scanRangeColumns,
                                                       Object[] start, boolean startInclusive,
                                                       Object[] end, boolean endInclusive,
-                                                      ObServerRoute route) throws Exception {
+                                                      ObTableConsistencyLevel currentConsistencyLevel) throws Exception {
+        // route parameter is kept for backward compatibility but not used
         if (start.length != end.length) {
             throw new IllegalArgumentException("length of start key and end key is not equal");
         }
@@ -1007,12 +1129,12 @@ public class TableRoute {
         }
         // <partId, replica location>
         List<ObPair<Long, ReplicaLocation>> partIdWithReplicaList = getPartitionReplica(tableEntry, tableName,
-                startRow, startInclusive, endRow, endInclusive, route);
+                startRow, startInclusive, endRow, endInclusive, currentConsistencyLevel);
 
         List<ObTableParam> params = new ArrayList<>();
         for (ObPair<Long, ReplicaLocation> partIdWithReplica : partIdWithReplicaList) {
             long partId = partIdWithReplica.getLeft();
-            ObTableParam param = getTableInternal(tableName, tableEntry, partId, route);
+            ObTableParam param = getTableInternal(tableName, tableEntry, partId, currentConsistencyLevel);
             params.add(param);
         }
         return params;
@@ -1035,7 +1157,8 @@ public class TableRoute {
                                                                     boolean startIncluded,
                                                                     Row endRow,
                                                                     boolean endIncluded,
-                                                                    ObServerRoute route) throws Exception {
+                                                                    ObTableConsistencyLevel currentConsistencyLevel) throws Exception {
+        // route parameter is kept for backward compatibility but not used
         List<ObPair<Long, ReplicaLocation>> replicas = new ArrayList<>();
         List<Long> partIds = getPartIds(tableEntry, startRow, startIncluded, endRow, endIncluded);
 
@@ -1045,7 +1168,7 @@ public class TableRoute {
             if (locationInfo.getPartitionLocation() == null) {
                 throw new ObTableNotExistException("partition location is null after refresh, table: { " + tableName + " } may not exist");
             }
-            replicas.add(new ObPair<>(partId, getPartitionLocation(locationInfo, route)));
+            replicas.add(new ObPair<>(partId, getPartitionLocation(locationInfo, currentConsistencyLevel)));
         }
 
         return replicas;
@@ -1166,8 +1289,7 @@ public class TableRoute {
      * @return ObTableParam table information for execution
      * @throws Exception exception
      */
-    public ObTableParam getOdpTableWithPartId(String tableName, long partId)
-            throws Exception {
+    public ObTableParam getOdpTableWithPartId(String tableName, long partId) throws Exception {
         TableEntry tableEntry = getOdpTableEntry(tableName);
         return getOdpTableInternal(tableEntry, partId);
     }
@@ -1203,18 +1325,19 @@ public class TableRoute {
      * @return list of table obTableParams
      * @throws Exception exception
      */
-    public List<ObTableParam> getOdpTableParams(String tableName, ObTableQuery query, Object[] start,
-                                                boolean startInclusive, Object[] end,
-                                                boolean endInclusive) throws Exception {
+    public List<ObTableParam> getOdpTableParams(String tableName, ObTableQuery query,
+                                                Object[] start, boolean startInclusive,
+                                                Object[] end, boolean endInclusive)
+                                                                                   throws Exception {
 
-        return getOdpTablesInternal(tableName, query.getScanRangeColumns(), start,
-                startInclusive, end, endInclusive);
+        return getOdpTablesInternal(tableName, query.getScanRangeColumns(), start, startInclusive,
+            end, endInclusive);
     }
 
-    private List<ObTableParam> getOdpTablesInternal(String tableName, List<String> scanRangeColumns,
-                                                    Object[] start, boolean startInclusive,
-                                                    Object[] end, boolean endInclusive)
-            throws Exception {
+    private List<ObTableParam> getOdpTablesInternal(String tableName,
+                                                    List<String> scanRangeColumns, Object[] start,
+                                                    boolean startInclusive, Object[] end,
+                                                    boolean endInclusive) throws Exception {
         if (start.length != end.length) {
             throw new IllegalArgumentException("length of start key and end key is not equal");
         }
@@ -1233,18 +1356,18 @@ public class TableRoute {
         Row endRow = new Row();
         // ensure the format of column names and values if the current table is a table with partition
         if (odpTableEntry.isPartitionTable()
-                && odpTableEntry.getPartitionInfo().getLevel() != ObPartitionLevel.LEVEL_ZERO) {
+            && odpTableEntry.getPartitionInfo().getLevel() != ObPartitionLevel.LEVEL_ZERO) {
             if ((scanRangeColumns == null || scanRangeColumns.isEmpty()) && start.length == 1
-                    && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj() && end.length == 1
-                    && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
+                && start[0] instanceof ObObj && ((ObObj) start[0]).isMinObj() && end.length == 1
+                && end[0] instanceof ObObj && ((ObObj) end[0]).isMaxObj()) {
                 // for getPartition to query all partitions
                 scanRangeColumns = new ArrayList<String>(Collections.nCopies(start.length,
-                        "partition"));
+                    "partition"));
             }
             // scanRangeColumn may be longer than start/end in prefix scanning situation
             if (scanRangeColumns == null || scanRangeColumns.size() < start.length) {
                 throw new IllegalArgumentException(
-                        "length of key and scan range columns do not match, please use addRowKeyElement or set scan range columns");
+                    "length of key and scan range columns do not match, please use addRowKeyElement or set scan range columns");
             }
             for (int i = 0; i < start.length; i++) {
                 startRow.add(scanRangeColumns.get(i), start[i]);
@@ -1253,7 +1376,7 @@ public class TableRoute {
         }
 
         List<Long> partIds = getPartIds(odpTableEntry, startRow, startInclusive, endRow,
-                endInclusive);
+            endInclusive);
         for (Long partId : partIds) {
             ObTable obTable = odpInfo.getObTable();
             ObTableParam param = new ObTableParam(obTable);

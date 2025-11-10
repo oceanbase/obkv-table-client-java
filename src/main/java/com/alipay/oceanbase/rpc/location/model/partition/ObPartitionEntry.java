@@ -34,8 +34,6 @@ public class ObPartitionEntry {
 
     private volatile  Long                                   lastRefreshAllTime   = 0L;
 
-    private Map<Long, ObPartitionLocation>                   partitionLocation    = new HashMap<Long, ObPartitionLocation>();
-
     // mapping from tablet id to ls id, and the part id to tablet id mapping is in ObPartitionInfo
     private Map<Long, Long>                                  tabletLsIdMap        = new HashMap<>();
     
@@ -58,33 +56,12 @@ public class ObPartitionEntry {
         }
     }
 
-    public void removePartitionLocationInfoByLsId(long lsId) {
-        int cnt = 0;
-        for (Map.Entry<Long, ObPartitionLocationInfo> entry : partitionInfos.entrySet()) {
-            if (entry.getValue().getTabletLsId() == lsId) {
-                ++cnt;
-                partitionInfos.remove(entry.getKey());
-            }
-        }
-    }
-
     public long getLastRefreshAllTime() {
         return lastRefreshAllTime;
     }
 
     public void setLastRefreshAllTime(long time) {
         lastRefreshAllTime = time;
-    }
-    
-    public Map<Long, ObPartitionLocation> getPartitionLocation() {
-        return partitionLocation;
-    }
-
-    /*
-     * Set partition location.
-     */
-    public void setPartitionLocation(Map<Long, ObPartitionLocation> partitionLocation) {
-        this.partitionLocation = partitionLocation;
     }
 
     public Map<Long, Long> getTabletLsIdMap() {
@@ -96,44 +73,14 @@ public class ObPartitionEntry {
     }
 
     public long getLsId(long tabletId) { return tabletLsIdMap.get(tabletId); }
-    
-    /*
-     * Get partition location with part id.
-     */
-    public ObPartitionLocation getPartitionLocationWithPartId(long partId) {
-        return partitionLocation.get(partId);
-    }
-
-    /*
-     * Get partition location with tablet id.
-     */
-    public ObPartitionLocation getPartitionLocationWithTabletId(long tabletId) {
-        return partitionLocation.get(tabletId);
-    }
-
-    /*
-     * Put partition location with part id.
-     */
-    public ObPartitionLocation putPartitionLocationWithPartId(long partId,
-                                                              ObPartitionLocation ObpartitionLocation) {
-        return partitionLocation.put(partId, ObpartitionLocation);
-    }
-
-    /*
-     * Put partition location with part id.
-     */
-    public ObPartitionLocation putPartitionLocationWithTabletId(long tabletId,
-                                                                ObPartitionLocation ObpartitionLocation) {
-        return partitionLocation.put(tabletId, ObpartitionLocation);
-    }
 
     /*
      * Prepare for weak read.
      * @param ldcLocation
      */
     public void prepareForWeakRead(ObServerLdcLocation ldcLocation) {
-        for (Map.Entry<Long, ObPartitionLocation> entry : partitionLocation.entrySet()) {
-            entry.getValue().prepareForWeakRead(ldcLocation);
+        for (Map.Entry<Long, ObPartitionLocationInfo> entry : partitionInfos.entrySet()) {
+            entry.getValue().getPartitionLocation().prepareForWeakRead(ldcLocation);
         }
     }
 
@@ -142,6 +89,6 @@ public class ObPartitionEntry {
      */
     @Override
     public String toString() {
-        return "ObPartitionEntry{" + "partitionLocation=" + partitionLocation + '}';
+        return "ObPartitionEntry{" + "partitionInfos=" + partitionInfos + ", tabletLsIdMap=" + tabletLsIdMap + ", lastRefreshAllTime=" + lastRefreshAllTime + '}';
     }
 }

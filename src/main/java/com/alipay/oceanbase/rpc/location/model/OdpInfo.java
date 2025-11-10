@@ -38,21 +38,32 @@ public class OdpInfo {
         this.addr = addr;
     }
 
+    public String getAddr() {
+        return addr;
+    }
+
     public void setPort(int port) {
         this.port = port;
     }
 
+    public int getPort() {
+        return port;
+    }
+
     public void buildOdpTable(String tenantName, String fullUserName, String password,
-                              String database, ObTableClient.RunningMode runningMode, Properties properties,
-                              Map<String, Object> tableConfigs) throws Exception {
+                              String database, ObTableClient.RunningMode runningMode,
+                              Properties properties, Map<String, Object> tableConfigs)
+                                                                                      throws Exception {
 
         this.obTable = new ObTable.Builder(addr, port) //
-                .setLoginInfo(tenantName, fullUserName, password, database, ObTableClientType.JAVA_TABLE_CLIENT) //
-                .setProperties(properties).setConfigs(tableConfigs).setIsOdpMode(true).build();
+            .setLoginInfo(tenantName, fullUserName, password, database,
+                ObTableClientType.JAVA_TABLE_CLIENT) //
+            .setProperties(properties).setConfigs(tableConfigs).setIsOdpMode(true).build();
         if (ObGlobal.isDistributedExecSupport() && runningMode == ObTableClient.RunningMode.HBASE) { // support distributed execute, login again
             this.obTable = new ObTable.Builder(addr, port)
-                    .setLoginInfo(tenantName, fullUserName, password, database, ObTableClientType.JAVA_HBASE_CLIENT)
-                    .setProperties(properties).setConfigs(tableConfigs).setIsOdpMode(true).build();
+                .setLoginInfo(tenantName, fullUserName, password, database,
+                    ObTableClientType.JAVA_HBASE_CLIENT).setProperties(properties)
+                .setConfigs(tableConfigs).setIsOdpMode(true).build();
         }
     }
 

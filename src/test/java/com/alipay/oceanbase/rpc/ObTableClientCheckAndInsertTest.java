@@ -18,7 +18,6 @@
 package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.bolt.ObTableClientTestBase;
-import com.alipay.oceanbase.rpc.bolt.ObTableTest;
 import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.filter.ObCompareOp;
 import com.alipay.oceanbase.rpc.filter.ObTableValueFilter;
