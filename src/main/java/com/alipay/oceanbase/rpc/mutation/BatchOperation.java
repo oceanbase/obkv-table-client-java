@@ -23,11 +23,9 @@ import com.alipay.oceanbase.rpc.exception.FeatureNotSupportedException;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.get.Get;
 import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableConsistencyLevel;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutate;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.queryandmutate.QueryAndMutate;
 import com.alipay.oceanbase.rpc.table.ObTableClientLSBatchOpsImpl;
 import com.alipay.oceanbase.rpc.table.api.Table;
@@ -312,6 +310,18 @@ public class BatchOperation {
         return new BatchOperationResult(batchOps.executeWithResult());
     }
 
+    private boolean checkReadConsistency(ObTableClient obTableClient, String readConsistency) throws IllegalArgumentException {
+        // 如果没有设置语句级别的 readConsistency（空串或null），使用 TableRoute 上的 consistencyLevel
+        if (readConsistency == null || readConsistency.isEmpty()) {
+            return obTableClient.getTableRoute().getReadConsistency() == ObTableConsistencyLevel.EVENTUAL;
+        }
+        if (readConsistency.equalsIgnoreCase("weak")) {
+            return true;
+        } else {
+            throw new IllegalArgumentException("readConsistency is invalid: " + readConsistency);
+        }
+    }
+
     private BatchOperationResult executeWithLSBatchOp() throws Exception {
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
@@ -319,9 +329,11 @@ public class BatchOperation {
         ObTableClientLSBatchOpsImpl batchOps;
         boolean hasSetRowkeyElement = false;
         int checkAndInsUpCnt = 0;
+        boolean isWeakRead = false;
 
         if (client instanceof ObTableClient) {
-            batchOps = new ObTableClientLSBatchOpsImpl(tableName, (ObTableClient) client);
+            ObTableClient obTableClient = (ObTableClient) client;
+            batchOps = new ObTableClientLSBatchOpsImpl(tableName, obTableClient);
             batchOps.setEntityType(entityType);
             batchOps.setServerCanRetry(serverCanRetry);
             batchOps.setNeedTabletId(needTabletId);
@@ -332,19 +344,19 @@ public class BatchOperation {
                     batchOps.addOperation(checkAndInsUp);
                     List<String> rowKeyNames = checkAndInsUp.getInsUp().getRowKeyNames();
                     if (!hasSetRowkeyElement && rowKeyNames != null) {
-                        ((ObTableClient) client).addRowKeyElement(tableName,
+                        obTableClient.addRowKeyElement(tableName,
                             rowKeyNames.toArray(new String[0]));
                         hasSetRowkeyElement = true;
                     }
                 } else if (operation instanceof Mutation) {
                     Mutation mutation = (Mutation) operation;
-                    if (((ObTableClient) client).getRunningMode() == ObTableClient.RunningMode.HBASE) {
+                    if (obTableClient.getRunningMode() == ObTableClient.RunningMode.HBASE) {
                         negateHbaseTimestamp(mutation);
                     }
                     batchOps.addOperation(mutation);
                     if (!hasSetRowkeyElement && mutation.getRowKeyNames() != null) {
                         List<String> rowKeyNames = mutation.getRowKeyNames();
-                        ((ObTableClient) client).addRowKeyElement(tableName,
+                        obTableClient.addRowKeyElement(tableName,
                             rowKeyNames.toArray(new String[0]));
                         hasSetRowkeyElement = true;
                     }
@@ -353,9 +365,11 @@ public class BatchOperation {
                     if (get.getRowKey() == null) {
                         throw new IllegalArgumentException("RowKey is null in Get operation");
                     }
+                    isWeakRead = checkReadConsistency(obTableClient, get.getReadConsistency());
                     batchOps.addOperation(get);
                 } else if (operation instanceof TableQuery) {
                     TableQuery query = (TableQuery) operation;
+                    isWeakRead = checkReadConsistency(obTableClient, query.getReadConsistency());
                     batchOps.addOperation(query);
                 } else if (operation instanceof QueryAndMutate) {
                     QueryAndMutate qm = (QueryAndMutate) operation;
@@ -375,6 +389,15 @@ public class BatchOperation {
                 "Can not mix checkAndInsUP and other types operation in batch");
         }
 
+        boolean isMultiGet = isSameType
+                             && (lastType == ObTableOperationType.GET || lastType == ObTableOperationType.SCAN);
+        System.out.println("[cwxDebug]BatchOperation.executeWithLSBatchOp: isSameType=" + isSameType + ", lastType=" + lastType + ", isMultiGet=" + isMultiGet + ", isWeakRead=" + isWeakRead);
+        if (isMultiGet) {
+            batchOps.setIsWeakRead(isWeakRead);
+            System.out.println("[cwxDebug]BatchOperation.executeWithLSBatchOp: setIsWeakRead(" + isWeakRead + ") called");
+        } else {
+            System.out.println("[cwxDebug]BatchOperation.executeWithLSBatchOp: setIsWeakRead NOT called because isMultiGet=false");
+        }
         batchOps.setReturningAffectedEntity(withResult);
         batchOps.setReturnOneResult(returnOneResult);
         batchOps.setAtomicOperation(isAtomic);

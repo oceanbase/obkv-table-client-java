@@ -17,7 +17,6 @@
 
 package com.alipay.oceanbase.rpc.threadlocal;
 
-import com.alipay.oceanbase.rpc.location.model.ObReadConsistency;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
 import org.slf4j.Logger;
 
@@ -65,20 +64,6 @@ public class ThreadLocalMap {
         }
 
         return (Short) getContextMap().get(PROCESS_PRIORITY);
-    }
-
-    /*
-     * Set read consistency.
-     */
-    public static void setReadConsistency(ObReadConsistency readConsistency) {
-        getContextMap().put(READ_CONSISTENCY, readConsistency);
-    }
-
-    /*
-     * Get read consistency.
-     */
-    public static ObReadConsistency getReadConsistency() {
-        return (ObReadConsistency) getContextMap().get(READ_CONSISTENCY);
     }
 
     /*

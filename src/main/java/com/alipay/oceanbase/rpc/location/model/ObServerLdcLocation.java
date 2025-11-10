@@ -45,19 +45,17 @@ public class ObServerLdcLocation {
     private HashMap<String, ObServerLdcItem> otherRegion = new HashMap<String, ObServerLdcItem>();
 
     /*
-     * 构造 ObServerLdcLocation，根据当前 IDC 和 RegionMap 将服务器按 IDC->Region->OtherRegion的分类整理。
+     * 构造 ObServerLdcLocation，根据当前 IDC 和 Region 将服务器按 IDC->Region->OtherRegion的分类整理。
      *
      * @param allServers
      * @param currentIDC
-     * @param regionFromOcp
      */
-    public static ObServerLdcLocation buildLdcLocation(List<ObServerLdcItem> allServers,
-                                                       String currentIDC, String regionFromOcp) {
+    public static ObServerLdcLocation buildLdcLocation(List<ObServerLdcItem> allServers, String currentIDC) {
         ObServerLdcLocation loc = new ObServerLdcLocation();
         loc.allServers = allServers;
         loc.currentIDC = currentIDC;
 
-        if (StringUtil.isEmpty(currentIDC)) {
+        if (currentIDC == null || StringUtil.isEmpty(currentIDC)) {
             loc.isLdcUsed = false;
         } else {
             // get Region names, refer to odp: ObLDCLocation::get_region_name
@@ -77,11 +75,6 @@ public class ObServerLdcLocation {
                     }
                 }
             }
-            // 3. 再次从 ocp 找 idc-> region 映射
-            if (loc.regionNames.isEmpty() && StringUtil.isNotEmpty(regionFromOcp)) {
-                loc.regionNames.add(regionFromOcp);
-                loc.matchType = RegionMatchType.MATCHED_BY_URL;
-            }
 
             if (!loc.regionNames.isEmpty()) {
                 loc.isLdcUsed = true;
@@ -92,11 +85,11 @@ public class ObServerLdcLocation {
             // classify by idc->region->other
             for (ObServerLdcItem it : allServers) {
                 if (it.getIdc().equalsIgnoreCase(currentIDC)) {
-                    loc.sameIDC.put(it.getIp(), it);
+                    loc.sameIDC.put(it.getIp() + it.getSvrPort(), it);
                 } else if (loc.regionNames.contains(it.getRegion())) {
-                    loc.sameRegion.put(it.getIp(), it);
+                    loc.sameRegion.put(it.getIp() + it.getSvrPort(), it);
                 } else {
-                    loc.otherRegion.put(it.getIp(), it);
+                    loc.otherRegion.put(it.getIp() + it.getSvrPort(), it);
                 }
             }
         }

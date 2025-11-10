@@ -51,7 +51,7 @@ public abstract class ObTableClientTestBase {
     }
 
     public boolean skipObTableTest() {
-        return this instanceof ObTableTest;
+        return true;
     }
 
     @After

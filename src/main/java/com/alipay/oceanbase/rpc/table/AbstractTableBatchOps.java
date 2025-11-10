@@ -28,6 +28,7 @@ public abstract class AbstractTableBatchOps implements TableBatchOps {
     protected boolean           returnOneResult;
 
     protected ObTableEntityType entityType      = ObTableEntityType.KV;
+    protected boolean           isWeakRead      = false;
 
     /**
      * Get.
@@ -159,5 +160,21 @@ public abstract class AbstractTableBatchOps implements TableBatchOps {
     @Override
     public ObTableEntityType getEntityType() {
         return entityType;
+    }
+
+    /*
+     * Set is weak read.
+     */
+    @Override
+    public void setIsWeakRead(boolean isWeakRead) {
+        this.isWeakRead = isWeakRead;
+    }
+
+    /*
+     * Is weak read.
+     */
+    @Override
+    public boolean isWeakRead() {
+        return isWeakRead;
     }
 }

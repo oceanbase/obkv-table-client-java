@@ -26,11 +26,23 @@ import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import java.util.List;
 
 public abstract class AbstractTableQuery implements TableQuery {
-    private static final String PRIMARY_INDEX_NAME = "PRIMARY";
+    private static final String       PRIMARY_INDEX_NAME = "PRIMARY";
 
-    protected ObTableEntityType entityType         = ObTableEntityType.KV;
+    protected ObTableEntityType       entityType         = ObTableEntityType.KV;
 
-    protected long              operationTimeout   = -1;
+    protected long                    operationTimeout   = -1;
+    protected String                  readConsistency    = ""; // 空串表示用户没有设置，将使用 TableRoute 上的 consistencyLevel
+
+    @Override
+    public TableQuery setReadConsistency(String readConsistency) {
+        this.readConsistency = readConsistency;
+        return this;
+    }
+
+    @Override
+    public String getReadConsistency() {
+        return readConsistency;
+    }
 
     /*
      * Limit.

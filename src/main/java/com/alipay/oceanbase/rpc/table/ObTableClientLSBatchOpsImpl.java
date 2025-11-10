@@ -23,7 +23,6 @@ import com.alipay.oceanbase.rpc.checkandmutate.CheckAndInsUp;
 import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.get.Get;
 import com.alipay.oceanbase.rpc.get.result.GetResult;
-import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
 import com.alipay.oceanbase.rpc.location.model.TableEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.*;
@@ -69,7 +68,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     private boolean               returningAffectedEntity = false;
     private boolean               needAllProp             = false;
     private boolean               serverCanRetry          = false;
-    private boolean               needTabletId  = false;
+    private boolean               needTabletId            = false;
     private List<ObTableSingleOp> batchOperation;
 
     /*
@@ -375,6 +374,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     public List<Object> executeWithResult() throws Exception {
         List<Object> results = new ArrayList<Object>(batchOperation.size());
         ObTableSingleOpResult[] singleResults = executeInternal();
+        if (singleResults.length == 1 && singleResults[0] == null) { // get empty result
+            return results;
+        }
         for (int i = 0; i < singleResults.length; i++) {
             ObTableSingleOpResult result = singleResults[i];
             // Sometimes the server does not set the operation type，so we use request operation type
@@ -441,6 +443,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
     private LsOperationsMap prepareByFirstOperation(LsOperationsMap lsOperationsMap,
                         BatchIdxOperationPairList operationsWithIndex) throws Exception {
+        
+        ObTableConsistencyLevel consistencyLevel = isWeakRead ? ObTableConsistencyLevel.EVENTUAL : ObTableConsistencyLevel.STRONG;
+        System.out.println("[cwxDebug]ObTableClientLSBatchOpsImpl.prepareByFirstOperation: isWeakRead=" + isWeakRead + ", consistencyLevel=" + consistencyLevel);
         if (operationsWithIndex.isEmpty()) {
             throw new IllegalArgumentException("batch operations is empty");
         } else {
@@ -453,7 +458,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             }
             ObTableParam obTableParam = null;
             try {
-                obTableParam = obTableClient.getTableParamWithRoute(realTableName, rowKey, obTableClient.getRoute(false));
+                obTableParam = obTableClient.getTableRoute().getTableParam(realTableName, rowKey, consistencyLevel);
             } catch (ObTableNotExistException e) {
                 logger.warn("LSBatch meet TableNotExist Exception, realTableName: {}, errMsg: {}", realTableName, e.getMessage());
                 // if it is HKV and is tableGroup request, TableNotExist and tableGroup cache not empty mean that the table cached had been dropped
@@ -463,7 +468,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         && obTableClient.getTableGroupInverted().get(realTableName) != null) {
                     obTableClient.eraseTableGroupFromCache(tableName);
                     realTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, true);
-                    obTableParam = obTableClient.getTableParamWithRoute(realTableName, rowKey, obTableClient.getRoute(false));
+                    obTableParam = obTableClient.getTableRoute().getTableParam(realTableName, rowKey, consistencyLevel);
                 } else {
                     throw e;
                 }
@@ -481,6 +486,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
     private LsOperationsMap prepareByEachOperation(LsOperationsMap lsOperationsMap,
                          BatchIdxOperationPairList operationsWithIndex) throws Exception {
+        ObTableConsistencyLevel consistencyLevel = isWeakRead ? ObTableConsistencyLevel.EVENTUAL : ObTableConsistencyLevel.STRONG;
+        System.out.println("[cwxDebug]ObTableClientLSBatchOpsImpl.prepareByEachOperation: isWeakRead=" + isWeakRead + ", consistencyLevel=" + consistencyLevel);
         for (int i = 0; i < operationsWithIndex.size(); i++) {
             ObPair<Integer, ObTableSingleOp> operation = operationsWithIndex.get(i);
             Row rowKey = calculateRowKey(operation);
@@ -491,7 +498,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             }
             ObTableParam tableParam = null;
             try {
-                tableParam = obTableClient.getTableParamWithRoute(realTableName, rowKey, obTableClient.getRoute(false));
+                tableParam = obTableClient.getTableRoute().getTableParam(realTableName, rowKey, consistencyLevel);
             } catch (ObTableNotExistException e) {
                 logger.warn("LSBatch meet TableNotExist Exception, realTableName: {}, errMsg: {}", realTableName, e.getMessage());
                 // if it is HKV and is tableGroup request, TableNotExist and tableGroup cache not empty mean that the table cached had been dropped
@@ -501,7 +508,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         && obTableClient.getTableGroupInverted().get(realTableName) != null) {
                     obTableClient.eraseTableGroupFromCache(tableName);
                     realTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, true);
-                    tableParam = obTableClient.getTableParamWithRoute(realTableName, rowKey, obTableClient.getRoute(false));
+                    tableParam = obTableClient.getTableRoute().getTableParam(realTableName, rowKey, consistencyLevel);
                 } else {
                     throw e;
                 }
@@ -591,12 +598,16 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
        tableLsOpRequest.setTableId(tableId);
        tableLsOpRequest.setEntityType(entityType);
        tableLsOpRequest.setTimeout(operationTimeout);
+       if (isWeakRead) {
+           tableLsOpRequest.setConsistencyLevel(ObTableConsistencyLevel.EVENTUAL);
+       } else {
+           tableLsOpRequest.setConsistencyLevel(ObTableConsistencyLevel.STRONG);
+       }
 
         ObTableLSOpResult subLSOpResult;
         boolean needRefreshPartitionLocation = false;
         int tryTimes = 0;
         Set<String> failedServerList = null;
-        ObServerRoute route = null;
         // maybe get real table name
         String realTableName = obTableClient.getPhyTableNameFromTableGroup(tableLsOpRequest.getEntityType(), tableName);
         long startExecute = System.currentTimeMillis();
@@ -619,17 +630,12 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     subObTable = obTableClient.getOdpTable();
                 } else {
                     if (tryTimes > 1) {
-                        if (route == null) {
-                            route = obTableClient.getRoute(false);
-                        }
-                        if (failedServerList != null) {
-                            route.setBlackList(failedServerList);
-                        }
                         if (needRefreshPartitionLocation) {
                             // refresh partition location
+                            ObTableConsistencyLevel consistencyLevel = isWeakRead ? ObTableConsistencyLevel.EVENTUAL : ObTableConsistencyLevel.STRONG;
                             TableEntry entry = obTableClient.getOrRefreshTableEntry(realTableName, false);
                             obTableClient.refreshTableLocationByTabletId(realTableName, obTableClient.getTabletIdByPartId(entry, originPartId));
-                            ObTableParam param = obTableClient.getTableParamWithPartId(realTableName, originPartId, route);
+                            ObTableParam param = obTableClient.getTableRoute().getTableWithPartId(realTableName, originPartId, consistencyLevel);
                             subObTable = param.getObTable();
                         }
                     }
@@ -659,6 +665,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 obTableClient.resetExecuteContinuousFailureCount(realTableName);
                 break;
             } catch (Exception ex) {
+                System.out.println("[cwxDebug]ObTableClientLSBatchOpsImpl.partitionExecute: exception caught, tryTimes=" + tryTimes + ", exception=" + ex.getClass().getSimpleName() + ", message=" + ex.getMessage());
                 needRefreshPartitionLocation = true;
                 if (obTableClient.isOdpMode()) {
                     needRefreshPartitionLocation = false;
@@ -849,9 +856,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             long costMillis = System.currentTimeMillis() - startExecute;
             if (costMillis > runTimeMaxWait) {
                 errMsg = tableName + " failed to execute operation after retrying " + retryCount
-                        + " times and it has waited " +  costMillis + " ms"
-                        + " which exceeds runtime max wait timeout " + runTimeMaxWait
-                        + " ms. Last error Msg:" + "[errCode=" + errCode + "] " + errMsg;
+                         + " times and it has waited " + costMillis + " ms"
+                         + " which exceeds runtime max wait timeout " + runTimeMaxWait
+                         + " ms. Last error Msg:" + "[errCode=" + errCode + "] " + errMsg;
                 logger.error(errMsg);
                 throw new ObTableUnexpectedException(errMsg);
             }

@@ -21,8 +21,6 @@ import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.bolt.transport.TransportCodes;
 import com.alipay.oceanbase.rpc.exception.*;
-import com.alipay.oceanbase.rpc.location.model.ObReadConsistency;
-import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
 import com.alipay.oceanbase.rpc.location.model.TableEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
@@ -31,6 +29,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableApiMove;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableConsistencyLevel;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableStreamRequest;
@@ -69,7 +68,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     protected List<String>                                                     cacheProperties     = new LinkedList<String>();
     protected LinkedList<List<ObObj>>                                          cacheRows           = new LinkedList<List<ObObj>>();
     private LinkedList<ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>> partitionLastResult = new LinkedList<ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>>();
-    private ObReadConsistency                                                  readConsistency     = ObReadConsistency.STRONG;
+    private ObTableConsistencyLevel                                            readConsistency     = ObTableConsistencyLevel.STRONG;
     // ObRowKey objs: [startKey, MIN_OBJECT, MIN_OBJECT]
     public List<ObObj>                                                         currentStartKey;
     protected ObTableClient                                                    client;
@@ -120,7 +119,6 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
         Set<String> failedServerList = null;
-        ObServerRoute route = null;
         while (true) {
             client.checkStatus();
             long currentExecute = System.currentTimeMillis();
@@ -140,20 +138,14 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     if (client.isOdpMode()) {
                         subObTable = client.getOdpTable();
                     } else {
-                        if (route == null) {
-                            route = client.getReadRoute();
-                        }
-                        if (failedServerList != null) {
-                            route.setBlackList(failedServerList);
-                        }
                         if (needRefreshPartitionLocation) {
                             // refresh partition
                             TableEntry tableEntry = client.getOrRefreshTableEntry(indexTableName,
                                 false);
                             client.refreshTableLocationByTabletId(indexTableName,
                                 client.getTabletIdByPartId(tableEntry, partIdWithIndex.getLeft()));
-                            subObTable = client.getTableParamWithPartId(indexTableName,
-                                partIdWithIndex.getRight().getTabletId(), route).getObTable();
+                            subObTable = client.getTableRoute().getTableWithPartId(indexTableName,
+                                partIdWithIndex.getRight().getTabletId(), readConsistency).getObTable();
                         }
                     }
                 }
@@ -439,8 +431,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
             }
 
             ObBorderFlag borderFlag = range.getBorderFlag();
-            List<ObTableParam> params = client.getTableParams(indexTableName,
-                    tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd());
+            List<ObTableParam> params = client.getTableRoute().getTableParams(indexTableName,
+                    tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), readConsistency);
 
             if (tableQuery.getScanOrder() == ObScanOrder.Reverse) {
                 for (int i = params.size() - 1; i >= 0; i--) {
@@ -482,8 +474,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                 indexTableName = client.tryGetTableNameFromTableGroupCache(tableName, false);
             }
             ObBorderFlag borderFlag = range.getBorderFlag();
-            List<ObTableParam> params = this.client.getTableParams(indexTableName, tableQuery, start,
-                    borderFlag.isInclusiveStart(), start, borderFlag.isInclusiveEnd());
+            List<ObTableParam> params = this.client.getTableRoute().getTableParams(indexTableName, tableQuery, start,     
+                    borderFlag.isInclusiveStart(), start, borderFlag.isInclusiveEnd(), readConsistency);
 
             partitionObTables.put(INVALID_TABLET_ID, new ObPair<>(params.get(0).getPartId(), params.get(0)));
         }
@@ -805,7 +797,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     /*
      * Get Read Consistency
      */
-    public ObReadConsistency getReadConsistency() {
+    public ObTableConsistencyLevel getReadConsistency() {
         return readConsistency;
     }
 
@@ -814,7 +806,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
      *
      * @param readConsistency
      */
-    public void setReadConsistency(ObReadConsistency readConsistency) {
+    public void setReadConsistency(ObTableConsistencyLevel readConsistency) {
         this.readConsistency = readConsistency;
     }
 

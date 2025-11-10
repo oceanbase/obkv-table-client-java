@@ -271,6 +271,26 @@ public class ObClusterTableQuery extends AbstractTableQuery {
         return this;
     }
 
+    @Override
+    public TableQuery setReadConsistency(String readConsistency) {
+        // 同时设置父类和内部 tableClientQuery 的 readConsistency
+        super.setReadConsistency(readConsistency);
+        tableClientQuery.setReadConsistency(readConsistency);
+        return this;
+    }
+
+    @Override
+    public String getReadConsistency() {
+        // 返回内部 tableClientQuery 的 readConsistency
+        return tableClientQuery.getReadConsistency();
+    }
+
+    @Override
+    public TableQuery setScanRangeColumns(String... columns) {
+        tableClientQuery.setScanRangeColumns(columns);
+        return this;
+    }
+
     public void setAllowDistributeScan(boolean allowDistributeScan) {
         tableClientQuery.setAllowDistributeScan(allowDistributeScan);
     }

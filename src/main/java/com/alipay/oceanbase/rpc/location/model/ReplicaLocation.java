@@ -117,6 +117,13 @@ public class ReplicaLocation {
     }
 
     /*
+     * Get svr port of the replica.
+     */
+    public int getSvrPort() {
+        return addr.getSvrPort();
+    }
+
+    /*
      * To string.
      */
     @Override

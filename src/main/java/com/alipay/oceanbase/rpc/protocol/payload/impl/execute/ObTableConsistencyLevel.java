@@ -37,6 +37,16 @@ public enum ObTableConsistencyLevel {
         }
     }
 
+    public static ObTableConsistencyLevel getByName(String name) throws IllegalArgumentException {
+        if (name.equalsIgnoreCase("weak")) {
+            return EVENTUAL;
+        } else if (name.equalsIgnoreCase("strong")) {
+            return STRONG;
+        } else {
+            throw new IllegalArgumentException("readConsistency is invalid: " + name);
+        }
+    }
+
     /*
      * Value of.
      */

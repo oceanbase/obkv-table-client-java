@@ -119,7 +119,8 @@ public class ObTableConnection {
 
         if (tries >= maxTryTimes) {
             if (!obTable.isOdpMode()) {
-                RouteTableRefresher.SuspectObServer suspectAddr = new RouteTableRefresher.SuspectObServer(obTable.getObServerAddr());
+                RouteTableRefresher.SuspectObServer suspectAddr = new RouteTableRefresher.SuspectObServer(
+                    obTable.getObServerAddr());
                 RouteTableRefresher.addIntoSuspectIPs(suspectAddr);
             }
             LOGGER.warn("connect failed after max " + maxTryTimes + " tries "
