@@ -24,6 +24,7 @@ import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.get.Get;
 import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.OHOperationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.mutate.ObTableQueryAndMutate;
@@ -53,6 +54,7 @@ public class BatchOperation {
     ObTableOperationType        lastType         = ObTableOperationType.INVALID;
     boolean                     isSameType       = true;
     protected ObTableEntityType entityType       = ObTableEntityType.KV;
+    protected OHOperationType   hbaseOpType      = OHOperationType.INVALID;
 
     /*
      * default constructor
@@ -88,6 +90,10 @@ public class BatchOperation {
     public BatchOperation setTable(String tableName) {
         this.tableName = tableName;
         return this;
+    }
+
+    public void setHbaseOpType(OHOperationType hbaseOpType) {
+        this.hbaseOpType = hbaseOpType;
     }
 
     /*
@@ -325,6 +331,7 @@ public class BatchOperation {
             batchOps.setEntityType(entityType);
             batchOps.setServerCanRetry(serverCanRetry);
             batchOps.setNeedTabletId(needTabletId);
+            batchOps.setHbaseOpType(hbaseOpType);
             for (Object operation : operations) {
                 if (operation instanceof CheckAndInsUp) {
                     checkAndInsUpCnt++;

@@ -34,7 +34,9 @@ import io.netty.buffer.ByteBuf;
      partition_id_,
      entity_type_,
      consistency_level_,
-     query_
+     query_,
+     option_flag_,
+     hbase_op_type_
      );
  *
  */
@@ -76,6 +78,9 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
         idx += len;
         System.arraycopy(Serialization.encodeVi64(option_flag.getValue()), 0, bytes, idx, 1);
 
+        idx += 1;
+        System.arraycopy(Serialization.encodeI8(hbaseOpType.getByteValue()), 0, bytes, idx, 1);
+
         return bytes;
     }
 
@@ -109,7 +114,7 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
     public long getPayloadContentSize() {
         if (ObGlobal.obVsnMajor() >= 4)
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
-                   + Serialization.getNeedBytes(tableId) + 8 + 2 + tableQuery.getPayloadSize() + 1;
+                   + Serialization.getNeedBytes(tableId) + 8 + 2 + tableQuery.getPayloadSize() + 1 + 1;
         else
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
                    + Serialization.getNeedBytes(tableId) + Serialization.getNeedBytes(partitionId)
