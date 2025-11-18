@@ -184,6 +184,12 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
         tableBatchOps.setReturnOneResult(returnOneResult);
     }
 
+    @Override
+    public void setIsWeakRead(boolean isWeakRead) {
+        super.setIsWeakRead(isWeakRead);
+        tableBatchOps.setIsWeakRead(isWeakRead);
+    }
+
     void preCheck() {
         List<ObTableOperation> operations = this.tableBatchOps.getObTableBatchOperation()
             .getTableOperations();

@@ -28,6 +28,20 @@ public class ObServerAddr implements Comparable<ObServerAddr> {
     private volatile long       grantPriorityTime = 0;
     private volatile long       lastAccessTime    = System.currentTimeMillis();
 
+    public ObServerAddr() {
+    }
+
+    public ObServerAddr(String ip, int svrPort) {
+        this.ip = ip;
+        this.svrPort = svrPort;
+    }
+
+    public ObServerAddr(String ip, int sqlPort, int svrPort) {
+        this.ip = ip;
+        this.sqlPort = sqlPort;
+        this.svrPort = svrPort;
+    }
+
     /*
      * Whether the addr is expired given the timeout.
      */

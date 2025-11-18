@@ -23,20 +23,23 @@ package com.alipay.oceanbase.rpc.location.model;
  */
 public class ObServerLdcItem {
     private String ip;
-    private String zone;  // concept of OceanBase
-    private String idc;   // physical idc
+    private int    svrPort;
+    private String zone;   // concept of OceanBase
+    private String idc;    // physical idc
     private String region; // city
 
     /*
      * Constructor.
      *
      * @param ip
+     * @param svrPort
      * @param zone
      * @param idc
      * @param region
      */
-    public ObServerLdcItem(String ip, String zone, String idc, String region) {
+    public ObServerLdcItem(String ip, int svrPort, String zone, String idc, String region) {
         this.ip = ip;
+        this.svrPort = svrPort;
         this.zone = zone;
         this.idc = idc;
         this.region = region;
@@ -47,6 +50,13 @@ public class ObServerLdcItem {
      */
     public String getIp() {
         return ip;
+    }
+
+    /*
+     * Get server port.
+     */
+    public int getSvrPort() {
+        return svrPort;
     }
 
     /*
@@ -75,7 +85,7 @@ public class ObServerLdcItem {
      */
     @Override
     public String toString() {
-        return "ObServerLdcItem{" + "ip='" + ip + '\'' + ", zone='" + zone + '\'' + ", idc='" + idc
-               + '\'' + ", region='" + region + '\'' + '}';
+        return "ObServerLdcItem{" + "ip='" + ip + '\'' + ", svrPort=" + svrPort + ", zone='" + zone
+               + '\'' + ", idc='" + idc + '\'' + ", region='" + region + '\'' + '}';
     }
 }

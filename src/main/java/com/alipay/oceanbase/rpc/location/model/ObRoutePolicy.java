@@ -20,23 +20,9 @@ package com.alipay.oceanbase.rpc.location.model;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * There are PRIMARY(P), FOLLOWER(F) and READONLY(R) follower types.
- * ObRoutePolicy defines the weak read routing policy.
- *
- */
 public enum ObRoutePolicy {
-    // read order: same IDC -> same region -> other region
-    IDC_ORDER(0)
-    // read order: F+R ->  P
-    , FOLLOWER_FIRST(1)
-    // read order: R -> F -> P
-    // , READONLY_FIRST(2)
-    // read from: R
-    // , ONLY_READONLY(3)
-    // read from: P + F
-    // , ONLY_READWRITE(4)
-    ;
+    FOLLOWER_FIRST(0),
+    FOLLOWER_ONLY(1);
 
     private int                                value;
 
@@ -58,22 +44,15 @@ public enum ObRoutePolicy {
     }
 
     /*
-     * Get ObRoutePolicy name, return "IDC_ORDER" by default.
+     * Get ObRoutePolicy name.
      */
-    static public ObRoutePolicy getByName(String routePolicy) {
-        if (routePolicy != null) {
-            if (routePolicy.equalsIgnoreCase("idc_order")) {
-                return ObRoutePolicy.IDC_ORDER;
-            } else if (routePolicy.equalsIgnoreCase("follower_first")) {
-                return ObRoutePolicy.FOLLOWER_FIRST;
-            } /*else if (routePolicy.equalsIgnoreCase("readonly_first")) {
-                return ObRoutePolicy.READONLY_FIRST;
-              } else if (routePolicy.equalsIgnoreCase("only_readonly")) {
-                return ObRoutePolicy.ONLY_READONLY;
-              } else if (routePolicy.equalsIgnoreCase("only_readwrite")) {
-                return ObRoutePolicy.ONLY_READWRITE;
-              }*/
+    static public ObRoutePolicy getByName(String routePolicy) throws IllegalArgumentException {
+        if (routePolicy.equalsIgnoreCase("follower_first")) {
+            return ObRoutePolicy.FOLLOWER_FIRST;
+        } else if (routePolicy.equalsIgnoreCase("follower_only")) {
+            return ObRoutePolicy.FOLLOWER_ONLY;
+        } else {
+            throw new IllegalArgumentException("routePolicy is invalid: " + routePolicy);
         }
-        return ObRoutePolicy.IDC_ORDER;
     }
 }

@@ -17,8 +17,6 @@
 
 package com.alipay.oceanbase.rpc.bolt.protocol;
 
-import com.alipay.oceanbase.rpc.exception.ObTableRoutingWrongException;
-import com.alipay.oceanbase.rpc.meta.ObTableMetaRequest;
 import com.alipay.oceanbase.rpc.meta.ObTableMetaResponse;
 import com.alipay.oceanbase.rpc.protocol.packet.ObRpcPacketHeader;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
@@ -35,9 +33,6 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.login.ObTableLoginResult;
 import com.alipay.remoting.CommandCode;
-
-import static com.alipay.oceanbase.rpc.protocol.payload.Pcodes.OB_TABLE_API_HBASE_EXECUTE;
-import static com.alipay.oceanbase.rpc.protocol.payload.Pcodes.OB_TABLE_API_META_INFO_EXECUTE;
 
 public enum ObTablePacketCode implements CommandCode {
 

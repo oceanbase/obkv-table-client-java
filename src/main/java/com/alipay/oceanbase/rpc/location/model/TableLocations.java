@@ -267,7 +267,9 @@ public class TableLocations {
             }
         }
         // prepare the table entry for weak read.
-        tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
+        if (serverRoster.getServerLdcLocation() != null && serverRoster.getServerLdcLocation().isLdcUsed()) {
+            tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
+        }
         locations.put(tableName, tableEntry);
         tableEntryRefreshContinuousFailureCount.set(0);
         if (logger.isDebugEnabled()) {
@@ -392,7 +394,9 @@ public class TableLocations {
                     throw t;
                 }
             } // end while
-            tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
+            if (serverRoster.getServerLdcLocation() != null && serverRoster.getServerLdcLocation().isLdcUsed()) {
+                tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
+            }
             locations.put(tableName, tableEntry);
             tableEntryRefreshContinuousFailureCount.set(0);
             return tableEntry;
@@ -519,7 +523,9 @@ public class TableLocations {
                     throw t;
                 }
             } // end while
-            tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
+            if (serverRoster.getServerLdcLocation() != null && serverRoster.getServerLdcLocation().isLdcUsed()) {
+                tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
+            }
             locations.put(tableName, tableEntry);
             tableEntryRefreshContinuousFailureCount.set(0);
             return tableEntry;

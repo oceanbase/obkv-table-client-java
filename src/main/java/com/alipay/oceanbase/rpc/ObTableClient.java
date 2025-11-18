@@ -41,7 +41,6 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQ
 import com.alipay.oceanbase.rpc.table.*;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
-import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.*;
 import com.alipay.remoting.util.StringUtils;
 import org.slf4j.Logger;
@@ -53,8 +52,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.alipay.oceanbase.rpc.constant.Constants.*;
-import static com.alipay.oceanbase.rpc.location.model.ObServerRoute.STRONG_READ;
 import static com.alipay.oceanbase.rpc.property.Property.*;
 import static com.alipay.oceanbase.rpc.protocol.payload.Constants.INVALID_TABLET_ID;
 import static com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType.*;
@@ -86,7 +83,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                                                                                                           Constants.PROXY_SYS_USER_NAME,
                                                                                                           "");
 
-    private volatile TableRoute                                        tableRoute                              = null;
+    private volatile TableRoute                               tableRoute                              = new TableRoute(this, sysUA);
 
     private volatile RunningMode                              runningMode                             = RunningMode.NORMAL;
 
@@ -104,16 +101,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private volatile boolean                                  closed                                  = false;
     private ReentrantLock                                     statusLock                              = new ReentrantLock();
 
-    private String                                            currentIDC;
-    private ObReadConsistency                                 readConsistency                         = ObReadConsistency.STRONG;
-    private ObRoutePolicy                                     obRoutePolicy                           = ObRoutePolicy.IDC_ORDER;
-
     private boolean                                           odpMode                                 = false;
-
     private String                                            odpAddr                                 = "127.0.0.1";
-
     private int                                               odpPort                                 = 2883;
-
 
     private Long                                              clientId;
     private Map<String, Object>                               TableConfigs                            = new HashMap<>();
@@ -135,8 +125,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             initTableConfigs();
             // 3. init properties
             initProperties();
-            // 4. init metadata
-            initMetadata();
+            // 4. init tableRoute
+            tableRoute.init();
             initialized = true;
         } catch (Throwable t) {
             BOOT.warn("failed to init ObTableClient", t);
@@ -166,13 +156,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 return;
             }
             closed = true;
-            if (tableRoute != null) {
-                tableRoute.close();
-                ObTable odpTable = tableRoute.getOdpTable();
-                if (odpTable != null) {
-                    odpTable.close();
-                }
-            }
+            tableRoute.close();
         } finally {
             BOOT.info("ObTableClient is closed");
             statusLock.unlock();
@@ -342,33 +326,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
     }
 
-    private void initMetadata() throws Exception {
-        BOOT.info("begin initMetadata for all tables in database: {}", this.database);
-        this.tableRoute = new TableRoute(this, sysUA);
-
-        if (odpMode) {
-            try {
-                tableRoute.buildOdpInfo(odpAddr, odpPort, runningMode);
-            } catch (Exception e) {
-                logger
-                    .warn(
-                        "The addr{}:{} failed to put into table roster, the node status may be wrong, Ignore",
-                        odpAddr, odpPort);
-                throw e;
-            }
-            return;
-        }
-        // build ConfigServerInfo to get rsList
-        tableRoute.loadConfigServerInfo();
-
-        // build tableRoster and ServerRoster
-        TableEntryKey rootServerKey = new TableEntryKey(clusterName, tenantName,
-                OCEANBASE_DATABASE, ALL_DUMMY_TABLE);
-        tableRoute.initRoster(rootServerKey, initialized, runningMode);
-        // create background refresh-checker task
-        tableRoute.launchRouteRefresher();
-    }
-
     public boolean isOdpMode() {
         return odpMode;
     }
@@ -445,13 +402,13 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     private <T> T execute(String tableName, TableExecuteCallback<T> callback) throws Exception {
         // force strong read by default, for backward compatibility.
-        return execute(tableName, callback, getRoute(false));
+        return execute(tableName, callback, tableRoute.getReadConsistency());
     }
 
     /**
      * Execute with a route strategy.
      */
-    private <T> T execute(String tableName, TableExecuteCallback<T> callback, ObServerRoute route)
+    private <T> T execute(String tableName, TableExecuteCallback<T> callback, ObTableConsistencyLevel currentConsistencyLevel)
                                                                                                   throws Exception {
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
@@ -487,7 +444,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         long tabletId = tableRoute.getTabletIdByPartId(entry, partId);
                         tableRoute.refreshPartitionLocation(tableName, tabletId, entry);
                     }
-                    tableParam = getTableParamWithRoute(tableName, rowKey, route);
+                    tableParam = tableRoute.getTableParam(tableName, rowKey);
                 }
                 logger.debug("tableName: {}, tableParam obTable ip:port is {}:{}, ls_id: {}, tablet_id: {}",
                         tableName, tableParam.getObTable().getIp(), tableParam.getObTable().getPort(), tableParam.getLsId(), tableParam.getTabletId());
@@ -519,7 +476,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     if (ex instanceof ObTableReplicaNotReadableException) {
                         if (tableParam != null && System.currentTimeMillis() - startExecute < runtimeMaxWait) {
                             logger.warn("retry when replica not readable: {}", ex.getMessage());
-                            route.addToBlackList(tableParam.getObTable().getIp());
                         } else {
                             logger.warn("timeout, cause replica is not readable, tryTimes={}", tryTimes);
                             RUNTIME.error("replica not readable", ex);
@@ -654,14 +610,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     private <T> T execute(String tableName, OperationExecuteCallback<T> callback)
                                                                                         throws Exception {
         // force strong read by default, for backward compatibility.
-        return execute(tableName, callback, getRoute(false));
+        return execute(tableName, callback, null);
     }
 
     /**
      * Execute with a route strategy for mutation
      */
     private <T> T execute(String tableName, OperationExecuteCallback<T> callback,
-                                  ObServerRoute route) throws Exception {
+                                  ObTableConsistencyLevel currentConsistencyLevel) throws Exception {
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
         }
@@ -700,7 +656,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             tableRoute.refreshPartitionLocation(tableName, tabletId, entry);
                         }
                         // using row key
-                        tableParam = tableRoute.getTableParamWithRoute(tableName, callback.getRowKey(), route);
+                        tableParam = tableRoute.getTableParam(tableName, callback.getRowKey(), currentConsistencyLevel);
                     } else if (null != callback.getQuery()) {
                         if (tryTimes > 1 && needRefreshPartitionLocation) {
                             needRefreshPartitionLocation = false;
@@ -717,7 +673,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             ObTableQuery tableQuery = callback.getQuery().getObTableQuery();
                             // using scan range
                             tableParam = tableRoute.getTableParam(tableName, tableQuery.getScanRangeColumns(),
-                                    tableQuery.getKeyRanges());
+                                    tableQuery.getKeyRanges(), currentConsistencyLevel);
                         }
                         routeQueryTabletId = tableParam.getPartitionId();
                     } else {
@@ -755,7 +711,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     if (ex instanceof ObTableReplicaNotReadableException) {
                         if (tableParam != null && System.currentTimeMillis() - startExecute > runtimeMaxWait) {
                             logger.warn("retry when replica not readable: {}", ex.getMessage());
-                            route.addToBlackList(tableParam.getObTable().getIp());
                         } else {
                             logger.warn("timeout, cause replica is not readable, tryTimes={}", tryTimes);
                             RUNTIME.error("replica not readable", ex);
@@ -1009,103 +964,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     /**
-     * this method is designed for the old single operations
-     * @param tableName table want to get
-     * @param rowkey row key
-     * @return table param
-     * @throws Exception exception
-     */
-    public ObTableParam getTableParam(String tableName, Object[] rowkey)
-                                                                                     throws Exception {
-        ObServerRoute route = getRoute(false);
-        Row row = transformToRow(tableName, rowkey);
-        return tableRoute.getTableParamWithRoute(tableName, row, route);
-    }
-
-    /**
-     * this method is designed for the old single operations
-     * @param tableName table want to get
-     * @param rowkey row key
-     * @return table param
-     * @throws Exception exception
-     */
-    public ObTableParam getTableParamWithRoute(String tableName, Object[] rowkey, ObServerRoute route)
-            throws Exception {
-        Row row = transformToRow(tableName, rowkey);
-        return tableRoute.getTableParamWithRoute(tableName, row, route);
-    }
-
-    /**
-     * this method is designed for the old single operations
-     * route is provided from old single operation execution and non-LS BatchOpsImpl
-     * @param tableName table want to get
-     * @param rowkey row key
-     * @param route server route choice
-     * @return table param
-     * @throws Exception exception
-     */
-    public ObTableParam getTableParamWithRoute(String tableName, Row rowkey, ObServerRoute route)
-            throws Exception {
-        return tableRoute.getTableParamWithRoute(tableName, rowkey, route);
-    }
-
-    /**
-     * this method is designed for batch operations
-     * get all tableParams by rowKeys
-     * @param tableName table want to get
-     * @param rowkeys list of row key
-     * @return table param
-     * @throws Exception exception
-     */
-    public List<ObTableParam> getTableParams(String tableName, List<Row> rowkeys) throws Exception {
-        return tableRoute.getTableParams(tableName, rowkeys);
-    }
-
-    /**
-     * get partition ids and addrs by start-end range
-     * @param tableName table want to get
-     * @param query query
-     * @param start start key
-     * @param startInclusive whether include start key
-     * @param end end key
-     * @param endInclusive whether include end key
-     * @return list of table obTableParams
-     * @throws Exception exception
-     */
-    public List<ObTableParam> getTableParams(String tableName, ObTableQuery query,
-                                             Object[] start, boolean startInclusive,
-                                             Object[] end, boolean endInclusive)
-            throws Exception {
-        return tableRoute.getTableParams(tableName, query, start, startInclusive, end, endInclusive);
-    }
-
-    /**
-     * get addr by pardId
-     * @param tableName table want to get
-     * @param partId logic of table
-     * @param route ObServer route
-     * @return ObPair of partId and table
-     * @throws Exception exception
-     */
-    public ObTableParam getTableParamWithPartId(String tableName, long partId, ObServerRoute route)
-                                                                                                   throws Exception {
-        return tableRoute.getTableWithPartId(tableName, partId, route);
-    }
-
-    /**
-     * get addr by pardId in ODP mode
-     * only support by ODP version after 4.3.2
-     * @param tableName table want to get
-     * @param partId logic of table
-     * @return ObPair of partId and table
-     * @throws Exception exception
-     */
-    public ObTableParam getOdpTableParamWithPartId(String tableName, long partId)
-                                                                                                   throws Exception {
-        return tableRoute.getOdpTableWithPartId(tableName, partId);
-    }
-
-    /**
      *
      * @param moveResponse reRoute response
      * @return
@@ -1187,6 +1045,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         RouteTableRefresher.addIntoSuspectIPs(suspectAddr);
         tableRoute.refreshPartitionLocation(tableName, tabletId, null);
     }
+
     public void dealWithRpcTimeoutForBatchTablet(ObServerAddr addr, String tableName) throws Exception {
         RouteTableRefresher.SuspectObServer suspectAddr = new RouteTableRefresher.SuspectObServer(addr);
         RouteTableRefresher.addIntoSuspectIPs(suspectAddr);
@@ -1246,7 +1105,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             throw new IllegalArgumentException("table name is null");
         }
         final long startTime = System.currentTimeMillis();
-        final ObReadConsistency obReadConsistency = this.getReadConsistency();
+        final ObTableConsistencyLevel readConsistency = tableRoute.getReadConsistency();
         return execute(tableName, new TableExecuteCallback<Map<String, Object>>(rowKey) {
             @Override
             public Map<String, Object> execute(ObTableParam tableParam) throws Exception {
@@ -1257,7 +1116,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 request.setTableId(tableParam.getTableId());
                 // partId/tabletId
                 request.setPartitionId(tableParam.getPartitionId());
-                request.setConsistencyLevel(obReadConsistency.toObTableConsistencyLevel());
+                request.setConsistencyLevel(readConsistency);
                 ObPayload result = executeWithRetry(obTable, request, tableName);
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), request, result);
 
@@ -1267,7 +1126,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     System.currentTimeMillis() - getTableTime, getslowQueryMonitorThreshold());
                 return ((ObTableOperationResult) result).getEntity().getSimpleProperties();
             }
-        }, getReadRoute());
+        }, tableRoute.getReadConsistency());
     }
 
     /**
@@ -1308,7 +1167,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), request, result);
                 return ((ObTableOperationResult) result).getAffectedRows();
             }
-        });
+        }, ObTableConsistencyLevel.STRONG);
     }
 
     /**
@@ -1347,7 +1206,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     checkResult(obTable.getIp(), obTable.getPort(), request, result);
                     return result;
                 }
-            });
+            }, ObTableConsistencyLevel.STRONG);
     }
 
     /**
@@ -1388,7 +1247,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), request, result);
                 return ((ObTableOperationResult) result).getAffectedRows();
             }
-        });
+        }, ObTableConsistencyLevel.STRONG);
     }
 
     /**
@@ -1424,7 +1283,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     checkResult(obTable.getIp(), obTable.getPort(), request, result);
                     return result;
                 }
-            });
+            }, ObTableConsistencyLevel.STRONG);
     }
 
     /**
@@ -1465,7 +1324,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), request, result);
                 return ((ObTableOperationResult) result).getAffectedRows();
             }
-        });
+        }, ObTableConsistencyLevel.STRONG);
     }
 
     /**
@@ -1504,7 +1363,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     checkResult(obTable.getIp(), obTable.getPort(), request, result);
                     return result;
                 }
-            });
+            }, ObTableConsistencyLevel.STRONG);
     }
 
     /**
@@ -1524,6 +1383,20 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     public Map<String, Object> get(final String tableName, final Row rowKey,
                                    final String[] selectColumns) throws Exception {
+        return get(tableName, rowKey, selectColumns, null);
+    }
+
+    /**
+     * get
+     * @param tableName which table to insert
+     * @param rowKey insert row key
+     * @param selectColumns select columns
+     * @param readConsistency read consistency
+     * @return execute result
+     * @throws Exception exception
+     */
+    public Map<String, Object> get(final String tableName, final Row rowKey,
+                                   final String[] selectColumns, final ObTableConsistencyLevel readConsistency) throws Exception {
         final long start = System.currentTimeMillis();
         return execute(tableName,
                 new OperationExecuteCallback<Map<String, Object>>(rowKey, null) {
@@ -1537,6 +1410,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         ObTableOperationRequest request = ObTableOperationRequest.getInstance(
                                 tableName, GET, rowKey.getValues(), selectColumns, null,
                                 obTable.getObTableOperationTimeout());
+                        ObTableConsistencyLevel consistencyLevel = readConsistency;
+                        if (readConsistency == null) { // when readConsistency is not set, use the global read consistency level
+                            consistencyLevel = tableRoute.getReadConsistency();
+                        }
+                        request.setConsistencyLevel(consistencyLevel);
                         request.setTableId(tableParam.getTableId());
                         // partId/tabletId
                         request.setPartitionId(tableParam.getPartitionId());
@@ -1548,7 +1426,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         checkResult(obTable.getIp(), obTable.getPort(), request, result);
                         return ((ObTableOperationResult) result).getEntity().getSimpleProperties();
                     }
-                });
+                }, readConsistency);
     }
 
     /**
@@ -1587,7 +1465,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     checkResult(obTable.getIp(), obTable.getPort(), request, result);
                     return result;
                 }
-            });
+            }, ObTableConsistencyLevel.STRONG);
     }
 
     /**
@@ -1628,7 +1506,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), request, result);
                 return ((ObTableOperationResult) result).getAffectedRows();
             }
-        });
+        }, ObTableConsistencyLevel.STRONG);
     }
 
     /**
@@ -1667,7 +1545,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     checkResult(obTable.getIp(), obTable.getPort(), request, result);
                     return result;
                 }
-            });
+            }, ObTableConsistencyLevel.STRONG);
     }
 
     /**
@@ -1708,7 +1586,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), request, result);
                 return ((ObTableOperationResult) result).getAffectedRows();
             }
-        });
+        }, ObTableConsistencyLevel.STRONG);
     }
 
     /**
@@ -1751,7 +1629,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     checkResult(obTable.getIp(), obTable.getPort(), request, result);
                     return result;
                 }
-            });
+            }, ObTableConsistencyLevel.STRONG);
     }
 
     /**
@@ -1810,7 +1688,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), request, result);
                 return ((ObTableOperationResult) result).getEntity().getSimpleProperties();
             }
-        });
+        }, ObTableConsistencyLevel.STRONG);
     }
 
     /**
@@ -1855,7 +1733,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     checkResult(obTable.getIp(), obTable.getPort(), request, result);
                     return result;
                 }
-            });
+            }, ObTableConsistencyLevel.STRONG);
     }
 
     /**
@@ -1892,7 +1770,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), request, result);
                 return ((ObTableOperationResult) result).getEntity().getSimpleProperties();
             }
-        });
+        }, ObTableConsistencyLevel.STRONG);
     }
 
     /**
@@ -1931,7 +1809,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     checkResult(obTable.getIp(), obTable.getPort(), request, result);
                     return result;
                 }
-            });
+            }, ObTableConsistencyLevel.STRONG);
     }
 
     /**
@@ -2010,7 +1888,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 tableRoute.refreshMeta(tableName);
             }
             allTables = tableRoute.getTableParams(tableName, new ObTableQuery(), new Object[]{ ObObj.getMin() }, true,
-                    new Object[]{ ObObj.getMax() }, true);
+                    new Object[]{ ObObj.getMax() }, true, tableRoute.getReadConsistency());
         }
         for (ObTableParam tableParam : allTables) {
             Partition partition = new Partition(tableParam.getPartitionId(), tableParam.getPartId(), tableParam.getTableId(),
@@ -2271,6 +2149,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(tableName,
                     ((ObTableQueryRequest) request).getTableQuery(), this);
             tableQuery.setEntityType(request.getEntityType());
+            if (request.getConsistencyLevel() == ObTableConsistencyLevel.EVENTUAL) {
+                tableQuery.setReadConsistency("weak");
+            }
             tableQuery.setHbaseOpType(request.getHbaseOpType());
             return new ObClusterTableQuery(tableQuery).executeInternal();
         } else if (request instanceof ObTableQueryAsyncRequest) {
@@ -2279,6 +2160,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             ObTableClientQueryImpl tableQuery = new ObTableClientQueryImpl(tableName,
                     ((ObTableQueryAsyncRequest) request).getObTableQueryRequest().getTableQuery(), this);
             tableQuery.setEntityType(request.getEntityType());
+            if (request.getConsistencyLevel() == ObTableConsistencyLevel.EVENTUAL) {
+                tableQuery.setReadConsistency("weak");
+            }
             tableQuery.setHbaseOpType(request.getHbaseOpType());
             ObClusterTableQuery clusterTableQuery = new ObClusterTableQuery(tableQuery);
             clusterTableQuery.setAllowDistributeScan(((ObTableQueryAsyncRequest) request).isAllowDistributeScan());
@@ -2667,12 +2551,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     BOOT.info(String.format("will set database=%s", kv[1]));
                 }
             } else if (Constants.READ_CONSISTENCY.equalsIgnoreCase(kv[0])) {
-                readConsistency = ObReadConsistency.getByName(kv[1]);
+                tableRoute.setReadConsistency(kv[1]);
                 if (BOOT.isInfoEnabled()) {
                     BOOT.info(String.format("will set %s=%s", Constants.READ_CONSISTENCY, kv[1]));
                 }
             } else if (Constants.OB_ROUTE_POLICY.equalsIgnoreCase(kv[0])) {
-                obRoutePolicy = ObRoutePolicy.getByName(kv[1]);
+                tableRoute.setRoutePolicy(ObRoutePolicy.getByName(kv[1]));
                 if (BOOT.isInfoEnabled()) {
                     BOOT.info(String.format("will set %s=%s", Constants.OB_ROUTE_POLICY, kv[1]));
                 }
@@ -2870,53 +2754,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
     }
 
-    /**
-     * Get read consistency.
-     * @return read consistency level.
-     */
-    public ObReadConsistency getReadConsistency() {
-        ObReadConsistency readConsistency = ThreadLocalMap.getReadConsistency();
-        if (readConsistency == null) {
-            readConsistency = this.readConsistency;
-        }
-        return readConsistency;
+    public void setReadConsistency(String readConsistency) throws IllegalArgumentException {
+        tableRoute.setReadConsistency(readConsistency);
     }
 
-    /**
-     * Get OB router policy.
-     * @return policy
-     */
-    public ObRoutePolicy getObRoutePolicy() {
-        return obRoutePolicy;
+    public String getReadConsistency() {
+        return tableRoute.getReadConsistency().name();
     }
 
-    /**
-     * Get OB router.
-     * @return router
-     */
-    public ObServerRoute getReadRoute() {
-        if (odpMode) {
-            return null;
-        }
-        if (getReadConsistency().isStrong()) {
-            return STRONG_READ;
-        }
-        ServerRoster serverRoster = tableRoute.getServerRoster();
-        return new ObServerRoute(ObReadConsistency.WEAK, obRoutePolicy, serverRoster
-            .getServerLdcLocation().isLdcUsed());
-    }
-
-    /**
-     * Get route for read or write.
-     * @param readonly is readonly
-     * @return route
-     */
-    public ObServerRoute getRoute(boolean readonly) {
-        if (readonly) {
-            return getReadRoute();
-        } else {
-            return STRONG_READ;
-        }
+    public void setRoutePolicy(String policy) throws IllegalArgumentException {
+        tableRoute.setRoutePolicy(ObRoutePolicy.getByName(policy));
     }
 
     public ObTableServerCapacity getServerCapacity() {
@@ -2929,22 +2776,40 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
 
     public void setOdpAddr(String odpAddr) {
         this.odpAddr = odpAddr;
+        if (tableRoute != null && tableRoute.getOdpInfo() != null) {
+            tableRoute.getOdpInfo().setAddr(odpAddr);
+        }
     }
 
     public void setOdpPort(int odpPort) {
         this.odpPort = odpPort;
+        if (tableRoute != null && tableRoute.getOdpInfo() != null) {
+            tableRoute.getOdpInfo().setPort(odpPort);
+        }
+    }
+
+    public String getOdpAddr() {
+        return odpAddr;
+    }
+
+    public int getOdpPort() {
+        return odpPort;
     }
 
     /**
-     * Set current IDC, for testing only.
+     * Set current IDC for weak read routing.
      * @param idc idc
      */
     public void setCurrentIDC(String idc) {
-        this.currentIDC = idc;
+        tableRoute.setCurrentIDC(idc);
     }
 
+    /**
+     * Get current IDC.
+     * @return current IDC
+     */
     public String getCurrentIDC() {
-        return this.currentIDC;
+        return tableRoute.getCurrentIDC();
     }
 
     /**
