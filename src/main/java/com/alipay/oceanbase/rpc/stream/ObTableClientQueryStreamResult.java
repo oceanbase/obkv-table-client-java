@@ -51,6 +51,7 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
         request.setPartitionId(partitionId);
         request.setTableId(partIdWithObTable.getRight().getTableId());
         request.setEntityType(entityType);
+        request.setHbaseOpType(hbaseOpType);
         if (operationTimeout > 0) {
             request.setTimeout(operationTimeout);
         } else {

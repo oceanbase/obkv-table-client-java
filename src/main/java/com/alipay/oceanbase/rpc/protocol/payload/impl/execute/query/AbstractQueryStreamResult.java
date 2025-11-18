@@ -28,12 +28,8 @@ import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableApiMove;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableConsistencyLevel;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableStreamRequest;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.QueryStreamResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
@@ -64,6 +60,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     // global index: key is index table name (be like: __idx_<data_table_id>_<index_name>)
     protected String                                                           indexTableName;
     protected ObTableEntityType                                                entityType;
+    protected OHOperationType                                                  hbaseOpType = OHOperationType.INVALID;
     protected Map<Long, ObPair<Long, ObTableParam>>                            expectant;
     protected List<String>                                                     cacheProperties     = new LinkedList<String>();
     protected LinkedList<List<ObObj>>                                          cacheRows           = new LinkedList<List<ObObj>>();
@@ -823,5 +820,13 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
      */
     public void setClient(ObTableClient client) {
         this.client = client;
+    }
+
+    public OHOperationType getHbaseOpType() {
+        return hbaseOpType;
+    }
+
+    public void setHbaseOpType(OHOperationType hbaseOpType) {
+        this.hbaseOpType = hbaseOpType;
     }
 }

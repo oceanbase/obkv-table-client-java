@@ -28,6 +28,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableConsistencyLevel;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.OHOperationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.*;
@@ -52,6 +53,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     private Row                                   rowKey;                    // only used by BatchOperation
 
     private boolean                               allowDistributeScan = true;
+    private OHOperationType                       hbaseOpType = OHOperationType.INVALID;
 
     /*
      * Add aggregation.
@@ -161,6 +163,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         result.setExpectant(partitionObTables);
         result.setOperationTimeout(operationTimeout);
         result.setReadConsistency(actualReadConsistency);
+        result.setHbaseOpType(hbaseOpType);
     }
 
     private abstract static class InitQueryResultCallback<T> {
@@ -451,5 +454,9 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
     public void setAllowDistributeScan(boolean allowDistributeScan) {
         this.allowDistributeScan = allowDistributeScan;
+    }
+
+    public void setHbaseOpType(OHOperationType hbaseOpType) {
+        this.hbaseOpType = hbaseOpType;
     }
 }

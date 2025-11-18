@@ -58,6 +58,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         request.setTableQuery(tableQuery);
         request.setEntityType(entityType);
         request.setConsistencyLevel(getReadConsistency());
+        request.setHbaseOpType(hbaseOpType);
 
         // construct async query request
         asyncRequest.setObTableQueryRequest(request);

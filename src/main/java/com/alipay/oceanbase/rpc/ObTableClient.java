@@ -2152,6 +2152,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (request.getConsistencyLevel() == ObTableConsistencyLevel.EVENTUAL) {
                 tableQuery.setReadConsistency("weak");
             }
+            tableQuery.setHbaseOpType(request.getHbaseOpType());
             return new ObClusterTableQuery(tableQuery).executeInternal();
         } else if (request instanceof ObTableQueryAsyncRequest) {
             // TableGroup -> TableName
@@ -2162,6 +2163,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             if (request.getConsistencyLevel() == ObTableConsistencyLevel.EVENTUAL) {
                 tableQuery.setReadConsistency("weak");
             }
+            tableQuery.setHbaseOpType(request.getHbaseOpType());
             ObClusterTableQuery clusterTableQuery = new ObClusterTableQuery(tableQuery);
             clusterTableQuery.setAllowDistributeScan(((ObTableQueryAsyncRequest) request).isAllowDistributeScan());
             return clusterTableQuery.asyncExecuteInternal();
@@ -2271,6 +2273,15 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     } else {
                         if (ex instanceof ObTableException &&
                                 (((ObTableException) ex).isNeedRefreshTableEntry() || ((ObTableException) ex).isNeedRetryError())) {
+                            if (ex instanceof ObTableNotExistException) {
+                                String logMessage = String.format(
+                                        "exhaust retry while meet TableNotExist Exception, table name: %s, errorCode: %d",
+                                        request.getTableName(),
+                                        ((ObTableException) ex).getErrorCode()
+                                );
+                                logger.warn(logMessage, ex);
+                                throw ex;
+                            }
                             logger.warn(
                                     "tablename:{} partition id:{} batch ops refresh table while meet ObTableMasterChangeException, errorCode: {}",
                                     request.getTableName(), routeTabletId, ((ObTableException) ex).getErrorCode(), ex);
