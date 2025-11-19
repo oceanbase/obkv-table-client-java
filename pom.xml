@@ -4,7 +4,7 @@
 
     <groupId>com.oceanbase</groupId>
     <artifactId>obkv-table-client</artifactId>
-    <version>2.1.0.1</version>
+    <version>2.1.0.1-SNAPSHOT</version>
 
     <name>${project.groupId}:${project.artifactId}</name>
     <description>OceanBase JavaClient for TableApi</description>
@@ -416,11 +416,19 @@
                             <relocations>
                                 <relocation>
                                     <pattern>com.alipay.sofa.common</pattern>
-                                    <shadedPattern>com.shaded.alipay.sofa.common</shadedPattern>
+                                    <shadedPattern>com.oceanbase.shaded.com.alipay.sofa.common</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>com.alipay.remoting</pattern>
-                                    <shadedPattern>com.shaded.alipay.remoting</shadedPattern>
+                                    <shadedPattern>com.oceanbase.shaded.com.alipay.remoting</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.google.protobuf</pattern>
+                                    <shadedPattern>com.oceanbase.shaded.com.google.protobuf</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>io.netty</pattern>
+                                    <shadedPattern>com.oceanbase.shaded.io.netty</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>
