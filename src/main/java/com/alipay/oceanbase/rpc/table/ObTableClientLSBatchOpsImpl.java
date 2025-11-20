@@ -604,14 +604,10 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             obTableClient.checkStatus();
             long costMillis = System.currentTimeMillis() - startExecute;
             if (costMillis > obTableClient.getRuntimeMaxWait()) {
-                logger.error("table name: {} ls id:{} it has tried " + tryTimes
-                                + " times and it has waited " + costMillis + " ms"
-                                + " which exceeds runtime max wait timeout "
-                                + obTableClient.getRuntimeMaxWait() + " ms", realTableName, lsId);
                 throw new ObTableTimeoutExcetion("it has tried " + tryTimes
                         + " times and it has waited " + costMillis
                         + "ms which exceeds runtime max wait timeout "
-                        + obTableClient.getRuntimeMaxWait() + " ms");
+                        + obTableClient.getRuntimeMaxWait() + " ms" + " for table name: " + realTableName + " ls id: " + lsId);
             }
             tryTimes++;
             try {
@@ -641,7 +637,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     result = subObTable.execute(tableLsOpRequest);
                     if (result instanceof ObTableApiMove) {
                         ObTableApiMove move = (ObTableApiMove) result;
-                        logger.warn("The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. " +
+                        logger.info("The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. " +
                                 "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move.getReplica().getServer().ipToString());
                         throw new ObTableRoutingWrongException();
                     }
@@ -655,11 +651,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     needRefreshPartitionLocation = false;
                     // if exceptions need to retry, retry to timeout
                     if (ex instanceof ObTableException && ((ObTableException) ex).isNeedRetryError()) {
-                        logger.warn("meet need retry exception when execute ls batch in odp mode." +
+                        logger.info("meet need retry exception when execute ls batch in odp mode." +
                                 "tableName: {}, errMsg: {}", realTableName, ex.getMessage());
                     } else {
-                        logger.warn("meet exception when execute ls batch in odp mode." +
-                                "tablename: {}, errMsg: {}", realTableName, ex.getMessage());
                         throw ex;
                     }
                 } else if (ex instanceof ObTableReplicaNotReadableException) {
@@ -703,7 +697,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                                     tryTimes,
                                     ((ObTableException) ex).getErrorCode()
                             );
-                            logger.warn(logMessage, ex);
                             obTableClient.calculateContinuousFailure(realTableName, ex.getMessage());
                             throw new ObTableRetryExhaustedException(logMessage, ex);
                         }
@@ -711,7 +704,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         // retry server errors, no need to refresh partition location
                         needRefreshPartitionLocation = false;
                         if (obTableClient.isRetryOnChangeMasterTimes()) {
-                            logger.warn(
+                            logger.info(
                                     "execute while meet server error, need to retry, errorCode: {}, ls id: {}, errorMsg: {}, try times {}",
                                     ((ObTableException) ex).getErrorCode(), lsId, ex.getMessage(),
                                     tryTimes);
@@ -723,7 +716,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                                     tryTimes,
                                     ((ObTableException) ex).getErrorCode()
                             );
-                            logger.warn(logMessage, ex);
                             obTableClient.calculateContinuousFailure(realTableName, ex.getMessage());
                             throw new ObTableRetryExhaustedException(logMessage, ex);
                         }
@@ -752,7 +744,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             String logMessage = String.format(
                     "table name: %s ls id: %d check batch operation result error: client get unexpected NULL result",
                     realTableName, lsId);
-            RUNTIME.error(logMessage);
             throw new ObTableUnexpectedException(logMessage);
         }
 
@@ -843,7 +834,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         + " times and it has waited " +  costMillis + " ms"
                         + " which exceeds runtime max wait timeout " + runTimeMaxWait
                         + " ms. Last error Msg:" + "[errCode=" + errCode + "] " + errMsg;
-                logger.error(errMsg);
                 throw new ObTableUnexpectedException(errMsg);
             }
             boolean allPartitionsSuccess = true;
@@ -907,7 +897,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                             ThreadLocalMap.transmitContextMap(context);
                             executeWithRetries(finalObTableOperationResults, entry);
                         } catch (Exception e) {
-                            logger.error(LCD.convert("01-00026"), e);
                             executor.collectExceptions(e);
                         } finally {
                             ThreadLocalMap.reset();

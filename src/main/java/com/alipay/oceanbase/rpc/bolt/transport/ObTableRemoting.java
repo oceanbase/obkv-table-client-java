@@ -78,14 +78,12 @@ public class ObTableRemoting extends BaseRemoting {
 
         if (response == null) {
             String errMessage = TraceUtil.formatTraceMessage(conn, request, "get null response");
-            logger.warn(errMessage);
             ExceptionUtil.throwObTableTransportException(errMessage,
                 TransportCodes.BOLT_RESPONSE_NULL);
             return null;
         } else if (!response.isSuccess()) {
             String errMessage = TraceUtil.formatTraceMessage(conn, request,
                 "get an error response: " + response.getMessage() + ", transportCode: " + response.getTransportCode());
-            logger.warn(errMessage);
             response.releaseByteBuf();
             ExceptionUtil.throwObTableTransportException(errMessage, response.getTransportCode());
             return null;
@@ -101,7 +99,6 @@ public class ObTableRemoting extends BaseRemoting {
                     request,
                     "Rpc Result is compressed. Java Client is not supported. msg:"
                             + response.getMessage());
-                logger.warn(errMessage);
                 throw new FeatureNotSupportedException(errMessage);
             }
             ByteBuf buf = response.getPacketContentBuf();
@@ -112,7 +109,6 @@ public class ObTableRemoting extends BaseRemoting {
             if (ObPureCrc32C.calculate(content) != expected_checksum) {
                 String errMessage = TraceUtil.formatTraceMessage(conn, request,
                     "get response with checksum error: " + response.getMessage());
-                logger.warn(errMessage);
                 ExceptionUtil.throwObTableTransportException(errMessage,
                     TransportCodes.BOLT_CHECKSUM_ERR);
                 return null;
@@ -151,7 +147,6 @@ public class ObTableRemoting extends BaseRemoting {
                 } else if (needFetchPartitionLocation(resultCode.getRcode())) {
                     throw new ObTableRoutingWrongException(errMessage, resultCode.getRcode());
                 } else {
-                    logger.warn(errMessage);
                     ExceptionUtil.throwObTableException(conn.getObTable().getIp(), conn
                         .getObTable().getPort(), response.getHeader().getTraceId1(), response
                         .getHeader().getTraceId0(), resultCode.getRcode(), resultCode.getErrMsg());
