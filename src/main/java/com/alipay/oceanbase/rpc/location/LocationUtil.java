@@ -1672,7 +1672,7 @@ public class LocationUtil {
             }
 
             rs = pstmt.executeQuery();
-            info = parsePartitionInfo(rs);
+            info = parsePartitionInfo(rs, obVsnMajor);
 
             if (logger.isInfoEnabled()) {
                 logger.info("get part info from remote info:{}",
@@ -1701,10 +1701,10 @@ public class LocationUtil {
 
     }
 
-    private static ObPartitionInfo parsePartitionInfo(ResultSet rs)
-                                                                   throws IllegalArgumentException,
-                                                                   GenerateColumnParseException,
-                                                                   SQLException {
+    private static ObPartitionInfo parsePartitionInfo(ResultSet rs, int obVsnMajor)
+                                                                                   throws IllegalArgumentException,
+                                                                                   GenerateColumnParseException,
+                                                                                   SQLException {
         ObPartitionInfo info = new ObPartitionInfo();
         boolean isFirstRow = true;
         while (rs.next()) {
@@ -1716,7 +1716,7 @@ public class LocationUtil {
 
                 // get first part
                 if (info.getLevel().getIndex() >= ObPartitionLevel.LEVEL_ONE.getIndex()) {
-                    ObPartDesc partDesc = buildPartDesc(ObPartitionLevel.LEVEL_ONE, rs);
+                    ObPartDesc partDesc = buildPartDesc(ObPartitionLevel.LEVEL_ONE, rs, obVsnMajor);
                     if (partDesc == null) {
                         logger.warn("fail to build first part");
                     } else {
@@ -1726,7 +1726,7 @@ public class LocationUtil {
 
                 // get sub part
                 if (info.getLevel().getIndex() == ObPartitionLevel.LEVEL_TWO.getIndex()) {
-                    ObPartDesc partDesc = buildPartDesc(ObPartitionLevel.LEVEL_TWO, rs);
+                    ObPartDesc partDesc = buildPartDesc(ObPartitionLevel.LEVEL_TWO, rs, obVsnMajor);
                     if (partDesc == null) {
                         logger.warn("fail to build sub part");
                     } else {
@@ -1741,7 +1741,7 @@ public class LocationUtil {
             partKeyExtra = partKeyExtra.replace(" ", ""); // ' ' should be removed
             ObColumn column;
             String collationTypeLabel = null;
-            if (ObGlobal.obVsnMajor() >= 4) {
+            if (obVsnMajor >= 4) {
                 collationTypeLabel = "part_key_collation_type";
             } else {
                 collationTypeLabel = "spare1";
@@ -1810,8 +1810,8 @@ public class LocationUtil {
         return info;
     }
 
-    private static ObPartDesc buildPartDesc(ObPartitionLevel level, ResultSet rs)
-                                                                                 throws SQLException {
+    private static ObPartDesc buildPartDesc(ObPartitionLevel level, ResultSet rs, int obVsnMajor)
+                                                                                                 throws SQLException {
         ObPartDesc partDesc = null;
         String partLevelPrefix = (level == ObPartitionLevel.LEVEL_TWO ? "sub_" : "");
         ObPartFuncType partType = ObPartFuncType.getObPartFuncType(rs.getLong(partLevelPrefix
@@ -1838,7 +1838,7 @@ public class LocationUtil {
             hashDesc.setPartFuncType(partType);
             hashDesc.setPartNum(rs.getInt(partLevelPrefix + "part_num"));
             hashDesc.setPartSpace(rs.getInt(partLevelPrefix + "part_space"));
-            if (ObGlobal.obVsnMajor() < 4) {
+            if (obVsnMajor < 4) {
                 Map<String, Long> partNameIdMap = buildDefaultPartNameIdMap(hashDesc.getPartNum());
                 hashDesc.setPartNameIdMap(partNameIdMap);
             }
@@ -1849,7 +1849,7 @@ public class LocationUtil {
             keyPartDesc.setPartExpr(partExpr);
             keyPartDesc.setPartNum(rs.getInt(partLevelPrefix + "part_num"));
             keyPartDesc.setPartSpace(rs.getInt(partLevelPrefix + "part_space"));
-            if (ObGlobal.obVsnMajor() < 4) {
+            if (obVsnMajor < 4) {
                 Map<String, Long> partNameIdMap = buildDefaultPartNameIdMap(keyPartDesc
                     .getPartNum());
                 keyPartDesc.setPartNameIdMap(partNameIdMap);
