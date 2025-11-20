@@ -500,18 +500,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     if (ex instanceof ObTableException) {
                         // errors needed to retry will retry until timeout
                         if (((ObTableException) ex).isNeedRetryError()) {
-                            logger.warn(
+                            logger.info(
                                     "execute while meet server error in odp mode, need to retry, errorCode: {} , errorMsg: {}, try times {}",
                                     ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                     tryTimes);
                         } else {
-                            logger.warn("meet table exception when execute in odp mode." +
-                                    "tablename: {}, errMsg: {}", tableName, ex.getMessage());
                             throw ex;
                         }
                     } else {
-                        logger.warn("meet exception when execute in odp mode." +
-                                "tablename: {}, errMsg: {}", tableName, ex.getMessage());
                         throw ex;
                     }
                 } else {
@@ -522,18 +518,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             route.addToBlackList(tableParam.getObTable().getIp());
                         } else {
                             logger.warn("timeout, cause replica is not readable, tryTimes={}", tryTimes);
-                            RUNTIME.error("replica not readable", ex);
                             throw ex;
                         }
                     } else if (ex instanceof ObTableException
                             && (((ObTableException) ex).isNeedRefreshTableEntry() || ((ObTableException) ex).isNeedRetryError())) {
                         if (ex instanceof ObTableNotExistException) {
-                            String logMessage = String.format(
-                                    "exhaust retry while meet TableNotExist Exception, table name: %s, errorCode: %d",
-                                    tableName,
-                                    ((ObTableException) ex).getErrorCode()
-                            );
-                            logger.warn(logMessage, ex);
                             throw ex;
                         }
                         if (retryOnChangeMasterTimes) {
@@ -544,36 +533,16 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             } else if (((ObTableException) ex).isNeedRetryError()) {
                                 // retry server errors, no need to refresh partition location
                                 needRefreshPartitionLocation = false;
-                                logger.warn(
+                                logger.info(
                                         "execute while meet server error, need to retry, errorCode: {} , errorMsg: {}, try times {}",
                                         ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                         tryTimes);
                             }
                         } else {
-                            String logMessage = String.format(
-                                    "retry is disabled while meet NeedRefresh Exception, table name: %s, errorCode: %d",
-                                    tableName,
-                                    ((ObTableException) ex).getErrorCode()
-                            );
-                            logger.warn(logMessage, ex);
                             calculateContinuousFailure(tableName, ex.getMessage());
                             throw ex;
                         }
                     } else {
-                        String logMessage;
-                        if (ex instanceof ObTableException) {
-                            logMessage = String.format(
-                                    "exhaust retry while meet Exception, table name: %s, batch ops refresh table, errorCode: %d",
-                                    tableName,
-                                    ((ObTableException) ex).getErrorCode()
-                            );
-                        } else {
-                            logMessage = String.format(
-                                    "exhaust retry while meet Exception, table name: %s, batch ops refresh table",
-                                    tableName
-                            );
-                        }
-                        logger.warn(logMessage, ex);
                         if (ex instanceof ObTableTransportException &&
                                 ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
                             logger.debug("client execute meet transport timeout, obTable ip:port is {}:{}",
@@ -736,18 +705,14 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     if (ex instanceof ObTableException) {
                         // errors needed to retry will retry until timeout
                         if (((ObTableException) ex).isNeedRetryError()) {
-                            logger.warn(
+                            logger.info(
                                     "execute while meet server error in odp mode, need to retry, errorCode: {} , errorMsg: {}, try times {}",
                                     ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                     tryTimes);
                         } else {
-                            logger.warn("meet table exception when execute in odp mode." +
-                                    "tablename: {}, errMsg: {}", tableName, ex.getMessage());
                             throw ex;
                         }
                     } else {
-                        logger.warn("meet exception when execute in odp mode." +
-                                "tablename: {}, errMsg: {}", tableName, ex.getMessage());
                         throw ex;
                     }
                 } else {
@@ -758,18 +723,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             route.addToBlackList(tableParam.getObTable().getIp());
                         } else {
                             logger.warn("timeout, cause replica is not readable, tryTimes={}", tryTimes);
-                            RUNTIME.error("replica not readable", ex);
                             throw ex;
                         }
                     } else if (ex instanceof ObTableException
                             && (((ObTableException) ex).isNeedRefreshTableEntry() || ((ObTableException) ex).isNeedRetryError())) {
                         if (ex instanceof ObTableNotExistException) {
-                            String logMessage = String.format(
-                                    "exhaust retry while meet TableNotExist Exception, table name: %s, errorCode: %d",
-                                    tableName,
-                                    ((ObTableException) ex).getErrorCode()
-                            );
-                            logger.warn(logMessage, ex);
                             throw ex;
                         }
                         if (retryOnChangeMasterTimes) {
@@ -784,36 +742,18 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             } else if (((ObTableException) ex).isNeedRetryError()) {
                                 // retry server errors, no need to refresh partition location
                                 needRefreshPartitionLocation = false;
-                                logger.warn(
+                                logger.info(
                                         "execute while meet server error, need to retry, errorCode: {} , errorMsg: {}, try times {}",
                                         ((ObTableException) ex).getErrorCode(), ex.getMessage(),
                                         tryTimes);
                             }
                         } else {
-                            String logMessage = String.format(
-                                    "retry is disabled while meet NeedRefresh Exception, table name: %s, errorCode: %d",
-                                    tableName,
-                                    ((ObTableException) ex).getErrorCode()
-                            );
-                            logger.warn(logMessage, ex);
                             calculateContinuousFailure(tableName, ex.getMessage());
-                            throw new ObTableRetryExhaustedException(logMessage, ex);
+                            throw new ObTableRetryExhaustedException("it has tried to execute batch ops after " 
+                                + tryTimes + " times and it has waited " + costMillis + " ms which exceeds response timeout " 
+                                + runtimeMaxWait + " ms" + " for table name: " + tableName, ex);
                         }
                     } else {
-                        String logMessage;
-                        if (ex instanceof ObTableException) {
-                            logMessage = String.format(
-                                    "exhaust retry while meet Exception, table name: %s, batch ops refresh table, errorCode: %d",
-                                    tableName,
-                                    ((ObTableException) ex).getErrorCode()
-                            );
-                        } else {
-                            logMessage = String.format(
-                                    "exhaust retry while meet Exception, table name: %s, batch ops refresh table",
-                                    tableName
-                            );
-                        }
-                        logger.warn(logMessage, ex);
                         if (ex instanceof ObTableTransportException &&
                                 ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
                             logger.debug("client execute meet transport timeout, obTable ip:port is {}:{}",
@@ -849,7 +789,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             tableRoute.refreshMeta(tableName);
             failures.set(0);
         } else {
-            logger.warn("error msg: {}, current continues failure count: {}", errorMsg, failures);
+            logger.info("error msg: {}, current continues failure count: {}", errorMsg, failures);
         }
     }
 
@@ -2102,7 +2042,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             result = obTable.execute(request);
             if (result instanceof ObTableApiMove) {
                 ObTableApiMove move = (ObTableApiMove) result;
-                logger.warn("The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. " +
+                logger.info("The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. " +
                                 "Rerouting return IP is {}", moveResponse.getReplica().getServer().ipToString(), move .getReplica().getServer().ipToString());
                 throw new ObTableRoutingWrongException();
             }
@@ -2304,11 +2244,6 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 long currentExecute = System.currentTimeMillis();
                 long costMillis = currentExecute - startExecute;
                 if (costMillis > getRuntimeMaxWait()) {
-                    logger.error(
-                            "tablename:{} it has tried " + tryTimes
-                                    + " times and it has waited " + costMillis
-                                    + "/ms which exceeds response timeout "
-                                    + getRuntimeMaxWait() + "/ms", request.getTableName());
                     throw new ObTableTimeoutExcetion("it has tried " + tryTimes
                             + " times and it has waited " + costMillis
                             + "/ms which exceeds response timeout "
@@ -2370,29 +2305,25 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         if (ex instanceof ObTableException) {
                             // errors needed to retry will retry until timeout
                             if (((ObTableException) ex).isNeedRetryError()) {
-                                logger.warn(
+                                logger.info(
                                         "meet need retry exception when execute queryAndMutate in odp mode. tablename: {}, errorCode: {} , errorMsg: {}, try times {}",
                                         request.getTableName(), ((ObTableException) ex).getErrorCode(),
                                         ex.getMessage(), tryTimes);
                             } else {
-                                logger.warn("meet table exception when execute queryAndMutate in odp mode. tablename: {}, errMsg: {}"
-                                        , request.getTableName(), ex.getMessage());
                                 throw ex;
                             }
                         } else {
-                            logger.warn("meet exception when execute queryAndMutate in odp mode. tablename: {}, errMsg: {}",
-                                    request.getTableName(), ex.getMessage());
                             throw ex;
                         }
                     } else {
                         if (ex instanceof ObTableException &&
                                 (((ObTableException) ex).isNeedRefreshTableEntry() || ((ObTableException) ex).isNeedRetryError())) {
-                            logger.warn(
+                            logger.info(
                                     "tablename:{} partition id:{} batch ops refresh table while meet ObTableMasterChangeException, errorCode: {}",
                                     request.getTableName(), routeTabletId, ((ObTableException) ex).getErrorCode(), ex);
 
                             if (isRetryOnChangeMasterTimes()) {
-                                logger.warn(
+                                logger.info(
                                         "tablename:{} partition id:{} batch ops retry while meet ObTableMasterChangeException, errorCode: {} , retry times {}",
                                         request.getTableName(), routeTabletId, ((ObTableException) ex).getErrorCode(),
                                         tryTimes, ex);

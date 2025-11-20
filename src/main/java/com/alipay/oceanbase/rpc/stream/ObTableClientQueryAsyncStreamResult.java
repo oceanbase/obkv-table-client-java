@@ -85,8 +85,6 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                         retryTimes++;
                         long costMillis = System.currentTimeMillis() - startExecute;
                         if (costMillis > client.getRuntimeMaxWait()) {
-                            RUNTIME.error("Fail to get refresh table entry response after {}",
-                                retryTimes);
                             throw new ObTableTimeoutExcetion(
                                 "Fail to get refresh table entry response after " + retryTimes
                                         + "errorCode:"
@@ -375,9 +373,9 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         while (true) {
             long costMillis = System.currentTimeMillis() - startExecute;
             if (costMillis > client.getRuntimeMaxWait()) {
-                logger.error("tableName: {} has tried " + tryTimes + " times and it has waited " + costMillis +
-                        " ms which execeeds runtime max wait timeout " + client.getRuntimeMaxWait() + " ms", tableName);
-                throw new ObTableTimeoutExcetion("query timeout and retried " + tryTimes + " times");
+                throw new ObTableTimeoutExcetion("it has tried to execute async query after " 
+                    + tryTimes + " times and it has waited " + costMillis + " ms which exceeds response timeout " 
+                    + client.getRuntimeMaxWait() + " ms" + " for table name: " + tableName);
             }
             tryTimes++;
             try {
