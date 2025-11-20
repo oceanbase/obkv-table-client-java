@@ -414,10 +414,19 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
         return rowKey;
     }
 
-    private BatchIdxOperationPairList extractOperations(TabletOperationsMap tabletOperationsMap) {
+    private BatchIdxOperationPairList extractOperations(Map.Entry<Long, TabletOperationsMap> currentEntry,
+                                                        Iterator<Map.Entry<Long, TabletOperationsMap>> iterator) {
+        // only reschedule operations from the current entry to avoid repeatedly executing operations
         BatchIdxOperationPairList operationsWithIndex = new BatchIdxOperationPairList();
-        for (ObPair<ObTableParam, BatchIdxOperationPairList> pair : tabletOperationsMap.values()) {
+        TabletOperationsMap currentTabletMap = currentEntry.getValue();
+        for (ObPair<ObTableParam, BatchIdxOperationPairList> pair : currentTabletMap.values()) {
             operationsWithIndex.addAll(pair.getRight());
+        }
+        while (iterator.hasNext()) {
+            currentTabletMap = iterator.next().getValue();
+            for (ObPair<ObTableParam, BatchIdxOperationPairList> pair : currentTabletMap.values()) {
+                operationsWithIndex.addAll(pair.getRight());
+            }
         }
         return operationsWithIndex;
     }
@@ -857,7 +866,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             }
             boolean allPartitionsSuccess = true;
 
-            for (Map.Entry<Long, TabletOperationsMap> currentEntry : currentPartitions.entrySet()) {
+            Iterator<Map.Entry<Long, TabletOperationsMap>> iterator = currentPartitions.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<Long, TabletOperationsMap> currentEntry = iterator.next();
                 try {
                     partitionExecute(results, currentEntry);
                 } catch (Exception e) {
@@ -865,8 +876,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         retryCount++;
                         errCode = ((ObTableNeedFetchMetaException) e).getErrorCode();
                         errMsg = e.getMessage();
-                        BatchIdxOperationPairList failedOperations = extractOperations(currentEntry
-                            .getValue());
+                        BatchIdxOperationPairList failedOperations = extractOperations(currentEntry, iterator); // reschedule failed and sequent operations
                         currentPartitions = prepareOperations(failedOperations);
                         allPartitionsSuccess = false;
                         break;
