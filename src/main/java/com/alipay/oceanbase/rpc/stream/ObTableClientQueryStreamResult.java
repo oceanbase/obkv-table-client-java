@@ -73,9 +73,10 @@ public class ObTableClientQueryStreamResult extends AbstractQueryStreamResult {
         while (true) {
             long costMillis = System.currentTimeMillis() - startExecute;
             if (costMillis > client.getRuntimeMaxWait()) {
-                logger.error("tableName: {} has tried " + tryTimes + " times and it has waited " + costMillis +
-                        " ms which execeeds runtime max wait timeout " + client.getRuntimeMaxWait() + " ms", tableName);
-                throw new ObTableRetryExhaustedException("query timeout and retried " + tryTimes + " times");
+                throw new ObTableRetryExhaustedException("it has tried " + tryTimes
+                                                 + " times and it has waited " + costMillis
+                                                 + "/ms which exceeds response timeout "
+                                                 + client.getRuntimeMaxWait() + "/ms");
             }
             tryTimes++;
             try {
