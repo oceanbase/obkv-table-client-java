@@ -297,9 +297,9 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         if (batchOperation.isReadOnly()) {
             // 如果设置了 isWeakRead，使用弱读；否则使用全局的 readConsistency
             if (isWeakRead) {
-                subRequest.setConsistencyLevel(ObTableConsistencyLevel.EVENTUAL);
+                subRequest.setConsistencyLevel(ObReadConsistency.WEAK);
             } else {
-                subRequest.setConsistencyLevel(ObTableConsistencyLevel.STRONG);
+                subRequest.setConsistencyLevel(ObReadConsistency.STRONG);
             }
         }
         subRequest.setBatchOperationAsAtomic(isAtomicOperation());
@@ -342,7 +342,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                                 obTableClient.getTabletIdByPartId(entry, originPartId));
                             ObTableParam newParam = obTableClient.getTableRoute()
                                 .getTableWithPartId(tableName, originPartId,
-                                    ObTableConsistencyLevel.STRONG);
+                                    ObReadConsistency.STRONG);
                             subObTable = newParam.getObTable();
                             subRequest.setPartitionId(newParam.getPartitionId());
                         }

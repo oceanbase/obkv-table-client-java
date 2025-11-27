@@ -20,6 +20,7 @@ package com.alipay.oceanbase.rpc;
 import com.alipay.oceanbase.rpc.location.model.partition.Partition;
 import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObReadConsistency;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilter;
@@ -272,7 +273,7 @@ public class ObClusterTableQuery extends AbstractTableQuery {
     }
 
     @Override
-    public TableQuery setReadConsistency(String readConsistency) {
+    public TableQuery setReadConsistency(ObReadConsistency readConsistency) {
         // 同时设置父类和内部 tableClientQuery 的 readConsistency
         super.setReadConsistency(readConsistency);
         tableClientQuery.setReadConsistency(readConsistency);
@@ -280,7 +281,7 @@ public class ObClusterTableQuery extends AbstractTableQuery {
     }
 
     @Override
-    public String getReadConsistency() {
+    public ObReadConsistency getReadConsistency() {
         // 返回内部 tableClientQuery 的 readConsistency
         return tableClientQuery.getReadConsistency();
     }

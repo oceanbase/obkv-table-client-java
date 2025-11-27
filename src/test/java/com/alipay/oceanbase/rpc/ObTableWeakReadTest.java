@@ -28,6 +28,7 @@ import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.get.Get;
 import com.alipay.oceanbase.rpc.mutation.BatchOperation;
 import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObReadConsistency;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 
 import org.junit.After;
@@ -488,7 +489,7 @@ public class ObTableWeakReadTest {
         // 3. 获取数据
         Map<String, Object> result = client.get(TABLE_NAME)
                                            .setRowKey(row(colVal("c1", rowkey)))
-                                           .setReadConsistency("weak") // 设置弱一致性读
+                                           .setReadConsistency(ObReadConsistency.WEAK) // 设置弱一致性读
                                            .select("c2")
                                            .execute();
         debugPrint("c2_val: %s", result.get("c2"));
@@ -525,7 +526,7 @@ public class ObTableWeakReadTest {
         // 3. 获取数据
         Map<String, Object> result = client.get(TABLE_NAME)
                                            .setRowKey(row(colVal("c1", rowkey)))
-                                           .setReadConsistency("weak") // 设置弱一致性读
+                                           .setReadConsistency(ObReadConsistency.WEAK) // 设置弱一致性读
                                            .select("c2")
                                            .execute();
         debugPrint("c2_val: %s", result.get("c2"));
@@ -562,7 +563,7 @@ public class ObTableWeakReadTest {
         // 3. 获取数据
         Map<String, Object> result = client.get(TABLE_NAME)
                                            .setRowKey(row(colVal("c1", rowkey)))
-                                           // .setReadConsistency("weak") // 设置弱一致性读
+                                           // .setReadConsistency(ObReadConsistency.WEAK) // 设置弱一致性读
                                            .select("c2")
                                            .execute();
         debugPrint("c2_val: %s", result.get("c2"));
@@ -599,7 +600,7 @@ public class ObTableWeakReadTest {
         // 3. 获取数据
         Map<String, Object> result = client.get(TABLE_NAME)
                                            .setRowKey(row(colVal("c1", rowkey)))
-                                           .setReadConsistency("weak") // 设置弱一致性读
+                                           .setReadConsistency(ObReadConsistency.WEAK) // 设置弱一致性读
                                            .select("c2")
                                            .execute();
         debugPrint("c2_val: %s", result.get("c2"));
@@ -637,7 +638,7 @@ public class ObTableWeakReadTest {
         // 3. 获取数据，使用strong consistency
         Map<String, Object> result = client.get(TABLE_NAME)
                                            .setRowKey(row(colVal("c1", rowkey)))
-                                           .setReadConsistency("strong") // 设置强一致性读
+                                           .setReadConsistency(ObReadConsistency.STRONG) // 设置强一致性读
                                            .select("c2")
                                            .execute();
         debugPrint("c2_val: %s", result.get("c2"));
@@ -674,7 +675,7 @@ public class ObTableWeakReadTest {
         // 3. 获取数据
         Map<String, Object> result = client.get(TABLE_NAME)
                                            .setRowKey(row(colVal("c1", rowkey)))
-                                           .setReadConsistency("weak") // 设置弱一致性读
+                                           .setReadConsistency(ObReadConsistency.WEAK) // 设置弱一致性读
                                            .select("c2")
                                            .execute();
         debugPrint("c2_val: %s", result.get("c2"));
@@ -710,12 +711,7 @@ public class ObTableWeakReadTest {
         setZoneIdc(ZONE3, IDC3);
         // 3. 使用非法的ReadConsistency值，应该抛出异常
         try {
-            client.get(TABLE_NAME)
-                  .setRowKey(row(colVal("c1", rowkey)))
-                  .setReadConsistency("invalid_consistency") // 非法的consistency值
-                  .select("c2")
-                  .execute();
-            // 如果执行到这里，说明没有抛出异常，测试失败
+            ObReadConsistency.getByName("invalid_consistency"); // 非法的consistency值
             Assert.fail("Expected IllegalArgumentException for invalid readConsistency");
         } catch (IllegalArgumentException e) {
             debugPrint("Expected exception caught: %s", e.getMessage());
@@ -747,7 +743,7 @@ public class ObTableWeakReadTest {
         // 3. 获取数据
         Map<String, Object> result = client.get(TABLE_NAME)
                                            .setRowKey(row(colVal("c1", rowkey)))
-                                           .setReadConsistency("weak")
+                                           .setReadConsistency(ObReadConsistency.WEAK)
                                            .select("c2")
                                            .execute();
         debugPrint("c2_val: %s", result.get("c2"));
@@ -822,7 +818,7 @@ public class ObTableWeakReadTest {
         // 3. 使用不同大小写的weak
         Map<String, Object> result = client.get(TABLE_NAME)
                                            .setRowKey(row(colVal("c1", rowkey)))
-                                           .setReadConsistency("WEAK") // 大写
+                                           .setReadConsistency(ObReadConsistency.WEAK) // 大写
                                            .select("c2")
                                            .execute();
         debugPrint("c2_val: %s", result.get("c2"));
@@ -846,7 +842,7 @@ public class ObTableWeakReadTest {
     @Test
     public void testIdcGet11() throws Exception {
         ObTableClient client = newTestClient();
-        client.setReadConsistency("weak"); // 设置全局的read consistency level为weak
+        client.setReadConsistency(ObReadConsistency.WEAK); // 设置全局的read consistency level为weak
         client.setCurrentIDC(IDC2); // 设置当前 idc
         client.init();
         // 1. 准备数据
@@ -884,7 +880,7 @@ public class ObTableWeakReadTest {
     @Test
     public void testIdcGet12() throws Exception {
         ObTableClient client = newTestClient();
-        client.setReadConsistency("weak"); // 设置全局的read consistency level为weak
+        client.setReadConsistency(ObReadConsistency.WEAK); // 设置全局的read consistency level为weak
         client.setCurrentIDC(IDC2); // 设置当前 idc
         client.init();
         // 1. 准备数据
@@ -898,7 +894,7 @@ public class ObTableWeakReadTest {
         // 3. 获取数据，语句级别设置为strong，应该覆盖全局的weak设置
         Map<String, Object> result = client.get(TABLE_NAME)
                                            .setRowKey(row(colVal("c1", rowkey)))
-                                           .setReadConsistency("strong") // 语句级别设置为strong，应该覆盖全局的weak
+                                           .setReadConsistency(ObReadConsistency.STRONG) // 语句级别设置为strong，应该覆盖全局的weak
                                            .select("c2")
                                            .execute();
         debugPrint("c2_val: %s", result.get("c2"));
@@ -936,7 +932,7 @@ public class ObTableWeakReadTest {
         QueryResultSet res = client.query(TABLE_NAME)
                                     .addScanRange(new Object[] { rowkey }, new Object[] { rowkey })
                                     .setScanRangeColumns("c1")
-                                    .setReadConsistency("weak")
+                                    .setReadConsistency(ObReadConsistency.WEAK)
                                     .select("c2")
                                     .execute();
         while (res.next()) {
@@ -976,7 +972,7 @@ public class ObTableWeakReadTest {
         QueryResultSet res = client.query(TABLE_NAME)
                                     .addScanRange(new Object[] { rowkey }, new Object[] { rowkey })
                                     .setScanRangeColumns("c1")
-                                    .setReadConsistency("weak") // 设置弱一致性读
+                                    .setReadConsistency(ObReadConsistency.WEAK) // 设置弱一致性读
                                     .select("c2")
                                     .execute();
         while (res.next()) {
@@ -1016,7 +1012,7 @@ public class ObTableWeakReadTest {
         QueryResultSet res = client.query(TABLE_NAME)
                                     .addScanRange(new Object[] { rowkey }, new Object[] { rowkey })
                                     .setScanRangeColumns("c1")
-                                    // .setReadConsistency("weak") // 不设置弱一致性读
+                                    // .setReadConsistency(ObReadConsistency.WEAK) // 不设置弱一致性读
                                     .select("c2")
                                     .execute();
         while (res.next()) {
@@ -1056,7 +1052,7 @@ public class ObTableWeakReadTest {
         QueryResultSet res = client.query(TABLE_NAME)
                                     .addScanRange(new Object[] { rowkey }, new Object[] { rowkey })
                                     .setScanRangeColumns("c1")
-                                    .setReadConsistency("weak") // 设置弱一致性读
+                                    .setReadConsistency(ObReadConsistency.WEAK) // 设置弱一致性读
                                     .select("c2")
                                     .execute();
         while (res.next()) {
@@ -1097,7 +1093,7 @@ public class ObTableWeakReadTest {
         QueryResultSet res = client.query(TABLE_NAME)
                                     .addScanRange(new Object[] { rowkey }, new Object[] { rowkey })
                                     .setScanRangeColumns("c1")
-                                    .setReadConsistency("strong") // 设置强一致性读
+                                    .setReadConsistency(ObReadConsistency.STRONG) // 设置强一致性读
                                     .select("c2")
                                     .execute();
         while (res.next()) {
@@ -1137,7 +1133,7 @@ public class ObTableWeakReadTest {
         QueryResultSet res = client.query(TABLE_NAME)
                                     .addScanRange(new Object[] { rowkey }, new Object[] { rowkey })
                                     .setScanRangeColumns("c1")
-                                    .setReadConsistency("weak") // 设置弱一致性读
+                                    .setReadConsistency(ObReadConsistency.WEAK) // 设置弱一致性读
                                     .select("c2")
                                     .execute();
         while (res.next()) {
@@ -1175,13 +1171,7 @@ public class ObTableWeakReadTest {
         setZoneIdc(ZONE3, IDC3);
         // 3. 使用非法的ReadConsistency值，应该抛出异常
         try {
-            client.query(TABLE_NAME)
-                  .addScanRange(new Object[] { rowkey }, new Object[] { rowkey })
-                  .setScanRangeColumns("c1")
-                  .setReadConsistency("invalid_consistency") // 非法的consistency值
-                  .select("c2")
-                  .execute();
-            // 如果执行到这里，说明没有抛出异常，测试失败
+            ObReadConsistency.getByName("invalid_consistency"); // 非法的consistency值
             Assert.fail("Expected IllegalArgumentException for invalid readConsistency");
         } catch (IllegalArgumentException e) {
             debugPrint("Expected exception caught: %s", e.getMessage());
@@ -1214,7 +1204,7 @@ public class ObTableWeakReadTest {
         QueryResultSet res = client.query(TABLE_NAME)
                                     .addScanRange(new Object[] { rowkey }, new Object[] { rowkey })
                                     .setScanRangeColumns("c1")
-                                    .setReadConsistency("weak")
+                                    .setReadConsistency(ObReadConsistency.WEAK)
                                     .select("c2")
                                     .execute();
         while (res.next()) {
@@ -1295,7 +1285,7 @@ public class ObTableWeakReadTest {
         QueryResultSet res = client.query(TABLE_NAME)
                                     .addScanRange(new Object[] { rowkey }, new Object[] { rowkey })
                                     .setScanRangeColumns("c1")
-                                    .setReadConsistency("WEAK") // 大写
+                                    .setReadConsistency(ObReadConsistency.WEAK) // 大写
                                     .select("c2")
                                     .execute();
         while (res.next()) {
@@ -1321,7 +1311,7 @@ public class ObTableWeakReadTest {
     @Test
     public void testIdcScan11() throws Exception {
         ObTableClient client = newTestClient();
-        client.setReadConsistency("weak"); // 设置全局的read consistency level为weak
+        client.setReadConsistency(ObReadConsistency.WEAK); // 设置全局的read consistency level为weak
         client.setCurrentIDC(IDC2); // 设置当前 idc
         client.init();
         // 1. 准备数据
@@ -1362,7 +1352,7 @@ public class ObTableWeakReadTest {
     @Test
     public void testIdcScan12() throws Exception {
         ObTableClient client = newTestClient();
-        client.setReadConsistency("weak"); // 设置全局的read consistency level为weak
+        client.setReadConsistency(ObReadConsistency.WEAK); // 设置全局的read consistency level为weak
         client.setCurrentIDC(IDC2); // 设置当前 idc
         client.init();
         // 1. 准备数据
@@ -1377,7 +1367,7 @@ public class ObTableWeakReadTest {
         QueryResultSet res = client.query(TABLE_NAME)
                                     .addScanRange(new Object[] { rowkey }, new Object[] { rowkey })
                                     .setScanRangeColumns("c1")
-                                    .setReadConsistency("strong") // 语句级别设置为strong，应该覆盖全局的weak
+                                    .setReadConsistency(ObReadConsistency.STRONG) // 语句级别设置为strong，应该覆盖全局的weak
                                     .select("c2")
                                     .execute();
         while (res.next()) {
@@ -1417,7 +1407,7 @@ public class ObTableWeakReadTest {
         BatchOperation batch = client.batchOperation(TABLE_NAME);
         Get get = client.get(TABLE_NAME)
             .setRowKey(row(colVal("c1", rowkey)))
-            .setReadConsistency("weak") // 设置弱一致性读
+            .setReadConsistency(ObReadConsistency.WEAK) // 设置弱一致性读
             .select("c2");
         batch.addOperation(get);
         BatchOperationResult res = batch.execute();
@@ -1457,7 +1447,7 @@ public class ObTableWeakReadTest {
         BatchOperation batch = client.batchOperation(TABLE_NAME);
         Get get = client.get(TABLE_NAME)
             .setRowKey(row(colVal("c1", rowkey)))
-            .setReadConsistency("weak") // 设置弱一致性读
+            .setReadConsistency(ObReadConsistency.WEAK) // 设置弱一致性读
             .select("c2");
         batch.addOperation(get);
         BatchOperationResult res = batch.execute();
@@ -1497,7 +1487,7 @@ public class ObTableWeakReadTest {
         BatchOperation batch = client.batchOperation(TABLE_NAME);
         Get get = client.get(TABLE_NAME)
             .setRowKey(row(colVal("c1", rowkey)))
-            // .setReadConsistency("weak") // 不设置弱一致性读
+            // .setReadConsistency(ObReadConsistency.WEAK) // 不设置弱一致性读
             .select("c2");
         batch.addOperation(get);
         BatchOperationResult res = batch.execute();
@@ -1537,7 +1527,7 @@ public class ObTableWeakReadTest {
         BatchOperation batch = client.batchOperation(TABLE_NAME);
         Get get = client.get(TABLE_NAME)
             .setRowKey(row(colVal("c1", rowkey)))
-            .setReadConsistency("weak") // 设置弱一致性读
+            .setReadConsistency(ObReadConsistency.WEAK) // 设置弱一致性读
             .select("c2");
         batch.addOperation(get);
         BatchOperationResult res = batch.execute();
@@ -1578,7 +1568,7 @@ public class ObTableWeakReadTest {
         BatchOperation batch = client.batchOperation(TABLE_NAME);
         Get get = client.get(TABLE_NAME)
             .setRowKey(row(colVal("c1", rowkey)))
-            .setReadConsistency("strong") // 设置强一致性读
+            .setReadConsistency(ObReadConsistency.STRONG) // 设置强一致性读
             .select("c2");
         batch.addOperation(get);
         BatchOperationResult res = batch.execute();
@@ -1618,7 +1608,7 @@ public class ObTableWeakReadTest {
         BatchOperation batch = client.batchOperation(TABLE_NAME);
         Get get = client.get(TABLE_NAME)
             .setRowKey(row(colVal("c1", rowkey)))
-            .setReadConsistency("weak") // 设置弱一致性读
+            .setReadConsistency(ObReadConsistency.WEAK) // 设置弱一致性读
             .select("c2");
         batch.addOperation(get);
         BatchOperationResult res = batch.execute();
@@ -1656,14 +1646,7 @@ public class ObTableWeakReadTest {
         setZoneIdc(ZONE3, IDC3);
         // 3. 使用非法的ReadConsistency值，应该抛出异常
         try {
-            BatchOperation batch = client.batchOperation(TABLE_NAME);
-            Get get = client.get(TABLE_NAME)
-                .setRowKey(row(colVal("c1", rowkey)))
-                .setReadConsistency("invalid_consistency") // 非法的consistency值
-                .select("c2");
-            batch.addOperation(get);
-            batch.execute();
-            // 如果执行到这里，说明没有抛出异常，测试失败
+            ObReadConsistency.getByName("invalid_consistency"); // 非法的consistency值
             Assert.fail("Expected IllegalArgumentException for invalid readConsistency");
         } catch (IllegalArgumentException e) {
             debugPrint("Expected exception caught: %s", e.getMessage());
@@ -1696,7 +1679,7 @@ public class ObTableWeakReadTest {
         BatchOperation batch = client.batchOperation(TABLE_NAME);
         Get get = client.get(TABLE_NAME)
             .setRowKey(row(colVal("c1", rowkey)))
-            .setReadConsistency("weak")
+            .setReadConsistency(ObReadConsistency.WEAK)
             .select("c2");
         batch.addOperation(get);
         BatchOperationResult res = batch.execute();
@@ -1777,7 +1760,7 @@ public class ObTableWeakReadTest {
         BatchOperation batch = client.batchOperation(TABLE_NAME);
         Get get = client.get(TABLE_NAME)
             .setRowKey(row(colVal("c1", rowkey)))
-            .setReadConsistency("WEAK") // 大写
+            .setReadConsistency(ObReadConsistency.WEAK) // 大写
             .select("c2");
         batch.addOperation(get);
         BatchOperationResult res = batch.execute();
@@ -1803,7 +1786,7 @@ public class ObTableWeakReadTest {
     @Test
     public void testIdcBatchGet11() throws Exception {
         ObTableClient client = newTestClient();
-        client.setReadConsistency("weak"); // 设置全局的read consistency level为weak
+        client.setReadConsistency(ObReadConsistency.WEAK); // 设置全局的read consistency level为weak
         client.setCurrentIDC(IDC2); // 设置当前 idc
         client.init();
         // 1. 准备数据
@@ -1844,7 +1827,7 @@ public class ObTableWeakReadTest {
     @Test
     public void testIdcBatchGet12() throws Exception {
         ObTableClient client = newTestClient();
-        client.setReadConsistency("weak"); // 设置全局的read consistency level为weak
+        client.setReadConsistency(ObReadConsistency.WEAK); // 设置全局的read consistency level为weak
         client.setCurrentIDC(IDC2); // 设置当前 idc
         client.init();
         // 1. 准备数据
@@ -1859,7 +1842,7 @@ public class ObTableWeakReadTest {
         BatchOperation batch = client.batchOperation(TABLE_NAME);
         Get get = client.get(TABLE_NAME)
             .setRowKey(row(colVal("c1", rowkey)))
-            .setReadConsistency("strong") // 语句级别设置为strong，应该覆盖全局的weak
+            .setReadConsistency(ObReadConsistency.STRONG) // 语句级别设置为strong，应该覆盖全局的weak
             .select("c2");
         batch.addOperation(get);
         BatchOperationResult res = batch.execute();
@@ -1885,7 +1868,7 @@ public class ObTableWeakReadTest {
     @Test
     public void testDmlInsertWithGlobalWeak() throws Exception {
         ObTableClient client = newTestClient();
-        client.setReadConsistency("weak"); // 设置全局的read consistency level为weak
+        client.setReadConsistency(ObReadConsistency.WEAK); // 设置全局的read consistency level为weak
         client.setCurrentIDC(IDC2); // 设置当前 idc
         client.init();
         // 1. 设置 idc
@@ -1915,7 +1898,7 @@ public class ObTableWeakReadTest {
     @Test
     public void testDmlUpdateWithGlobalWeak() throws Exception {
         ObTableClient client = newTestClient();
-        client.setReadConsistency("weak"); // 设置全局的read consistency level为weak
+        client.setReadConsistency(ObReadConsistency.WEAK); // 设置全局的read consistency level为weak
         client.setCurrentIDC(IDC2); // 设置当前 idc
         client.init();
         // 1. 准备数据
@@ -1948,7 +1931,7 @@ public class ObTableWeakReadTest {
     @Test
     public void testDmlDeleteWithGlobalWeak() throws Exception {
         ObTableClient client = newTestClient();
-        client.setReadConsistency("weak"); // 设置全局的read consistency level为weak
+        client.setReadConsistency(ObReadConsistency.WEAK); // 设置全局的read consistency level为weak
         client.setCurrentIDC(IDC2); // 设置当前 idc
         client.init();
         // 1. 准备数据
@@ -1979,7 +1962,7 @@ public class ObTableWeakReadTest {
     @Test
     public void testDmlReplaceWithGlobalWeak() throws Exception {
         ObTableClient client = newTestClient();
-        client.setReadConsistency("weak"); // 设置全局的read consistency level为weak
+        client.setReadConsistency(ObReadConsistency.WEAK); // 设置全局的read consistency level为weak
         client.setCurrentIDC(IDC2); // 设置当前 idc
         client.init();
         // 1. 设置 idc
@@ -2009,7 +1992,7 @@ public class ObTableWeakReadTest {
     @Test
     public void testDmlInsertOrUpdateWithGlobalWeak() throws Exception {
         ObTableClient client = newTestClient();
-        client.setReadConsistency("weak"); // 设置全局的read consistency level为weak
+        client.setReadConsistency(ObReadConsistency.WEAK); // 设置全局的read consistency level为weak
         client.setCurrentIDC(IDC2); // 设置当前 idc
         client.init();
         // 1. 设置 idc
@@ -2041,7 +2024,7 @@ public class ObTableWeakReadTest {
         try {
             setMinimalImage(tenantConnection);
             ObTableClient client = newTestClient();
-            client.setReadConsistency("weak"); // 设置全局的read consistency level为weak
+            client.setReadConsistency(ObReadConsistency.WEAK); // 设置全局的read consistency level为weak
             client.setCurrentIDC(IDC2); // 设置当前 idc
             client.init();
             // 1. 设置 idc
@@ -2076,7 +2059,7 @@ public class ObTableWeakReadTest {
     @Test
     public void testDmlIncrementWithGlobalWeak() throws Exception {
         ObTableClient client = newTestClient();
-        client.setReadConsistency("weak"); // 设置全局的read consistency level为weak
+        client.setReadConsistency(ObReadConsistency.WEAK); // 设置全局的read consistency level为weak
         client.setCurrentIDC(IDC2); // 设置当前 idc
         client.init();
         // 1. 设置 idc
@@ -2113,7 +2096,7 @@ public class ObTableWeakReadTest {
     @Test
     public void testDmlAppendWithGlobalWeak() throws Exception {
         ObTableClient client = newTestClient();
-        client.setReadConsistency("weak"); // 设置全局的read consistency level为weak
+        client.setReadConsistency(ObReadConsistency.WEAK); // 设置全局的read consistency level为weak
         client.setCurrentIDC(IDC2); // 设置当前 idc
         client.init();
         // 1. 准备数据

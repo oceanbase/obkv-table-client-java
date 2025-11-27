@@ -449,7 +449,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     private LsOperationsMap prepareByFirstOperation(LsOperationsMap lsOperationsMap,
                         BatchIdxOperationPairList operationsWithIndex) throws Exception {
         
-        ObTableConsistencyLevel consistencyLevel = isWeakRead ? ObTableConsistencyLevel.EVENTUAL : ObTableConsistencyLevel.STRONG;
+        ObReadConsistency consistencyLevel = isWeakRead ? ObReadConsistency.WEAK : ObReadConsistency.STRONG;
         if (operationsWithIndex.isEmpty()) {
             throw new IllegalArgumentException("batch operations is empty");
         } else {
@@ -490,7 +490,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
 
     private LsOperationsMap prepareByEachOperation(LsOperationsMap lsOperationsMap,
                          BatchIdxOperationPairList operationsWithIndex) throws Exception {
-        ObTableConsistencyLevel consistencyLevel = isWeakRead ? ObTableConsistencyLevel.EVENTUAL : ObTableConsistencyLevel.STRONG;
+        ObReadConsistency consistencyLevel = isWeakRead ? ObReadConsistency.WEAK : ObReadConsistency.STRONG;
         for (int i = 0; i < operationsWithIndex.size(); i++) {
             ObPair<Integer, ObTableSingleOp> operation = operationsWithIndex.get(i);
             Row rowKey = calculateRowKey(operation);
@@ -602,9 +602,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
        tableLsOpRequest.setEntityType(entityType);
        tableLsOpRequest.setTimeout(operationTimeout);
        if (isWeakRead) {
-           tableLsOpRequest.setConsistencyLevel(ObTableConsistencyLevel.EVENTUAL);
+           tableLsOpRequest.setConsistencyLevel(ObReadConsistency.WEAK);
        } else {
-           tableLsOpRequest.setConsistencyLevel(ObTableConsistencyLevel.STRONG);
+           tableLsOpRequest.setConsistencyLevel(ObReadConsistency.STRONG);
        }
        tableLsOpRequest.setHbaseOpType(hbaseOpType);
 
@@ -636,7 +636,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                     if (tryTimes > 1) {
                         if (needRefreshPartitionLocation) {
                             // refresh partition location
-                            ObTableConsistencyLevel consistencyLevel = isWeakRead ? ObTableConsistencyLevel.EVENTUAL : ObTableConsistencyLevel.STRONG;
+                            ObReadConsistency consistencyLevel = isWeakRead ? ObReadConsistency.WEAK : ObReadConsistency.STRONG;
                             TableEntry entry = obTableClient.getOrRefreshTableEntry(realTableName, false);
                             obTableClient.refreshTableLocationByTabletId(realTableName, obTableClient.getTabletIdByPartId(entry, originPartId));
                             ObTableParam param = obTableClient.getTableRoute().getTableWithPartId(realTableName, originPartId, consistencyLevel);

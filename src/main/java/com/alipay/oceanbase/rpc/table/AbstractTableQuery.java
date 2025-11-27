@@ -20,6 +20,7 @@ package com.alipay.oceanbase.rpc.table;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.mutation.Row;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObReadConsistency;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
@@ -31,16 +32,16 @@ public abstract class AbstractTableQuery implements TableQuery {
     protected ObTableEntityType       entityType         = ObTableEntityType.KV;
 
     protected long                    operationTimeout   = -1;
-    protected String                  readConsistency    = ""; // 空串表示用户没有设置，将使用 TableRoute 上的 consistencyLevel
+    protected ObReadConsistency       readConsistency    = null; // null 表示用户没有设置，将使用 TableRoute 上的 consistencyLevel
 
     @Override
-    public TableQuery setReadConsistency(String readConsistency) {
+    public TableQuery setReadConsistency(ObReadConsistency readConsistency) {
         this.readConsistency = readConsistency;
         return this;
     }
 
     @Override
-    public String getReadConsistency() {
+    public ObReadConsistency getReadConsistency() {
         return readConsistency;
     }
 

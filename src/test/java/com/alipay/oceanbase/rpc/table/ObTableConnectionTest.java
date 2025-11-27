@@ -21,7 +21,7 @@ import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.ObTableClientTestBase;
 import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.property.Property;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableConsistencyLevel;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObReadConsistency;
 import com.alipay.oceanbase.rpc.util.ObTableClientTestUtil;
 import static com.alipay.oceanbase.rpc.mutation.MutationFactory.*;
 
@@ -81,7 +81,7 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
         } else {
             Row rowKey = row(colVal("c1", "abc"));
             ObTableParam param = obTableClient.getTableRoute().getTableParam("test_varchar_table",
-                rowKey, ObTableConsistencyLevel.STRONG);
+                rowKey, ObReadConsistency.STRONG);
             int poolSize = param.getObTable().getObTableConnectionPoolSize();
             assertEquals(TEST_CONNECTION_POOL_SIZE, poolSize);
         }
@@ -114,7 +114,7 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
         } else {
             Row rowKey = row(colVal("c1", "abc"));
             ObTableParam param = obTableClient.getTableRoute().getTableParam("test_varchar_table",
-                rowKey, ObTableConsistencyLevel.STRONG);
+                rowKey, ObReadConsistency.STRONG);
             int lowWatermark = param.getObTable().getNettyBufferLowWatermark();
             int highWatermark = param.getObTable().getNettyBufferHighWatermark();
             int waitInterval = param.getObTable().getNettyBlockingWaitInterval();
@@ -137,7 +137,7 @@ public class ObTableConnectionTest extends ObTableClientTestBase {
         } else {
             Row rowKey = row(colVal("c1", "abc"));
             ObTableParam param = obTableClient.getTableRoute().getTableParam("test_varchar_table",
-                rowKey, ObTableConsistencyLevel.STRONG);
+                rowKey, ObReadConsistency.STRONG);
             int lowWatermark = param.getObTable().getNettyBufferLowWatermark();
             int highWatermark = param.getObTable().getNettyBufferHighWatermark();
             int waitInterval = param.getObTable().getNettyBlockingWaitInterval();

@@ -27,7 +27,7 @@ import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableConsistencyLevel;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObReadConsistency;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.OHOperationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
@@ -155,7 +155,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     /*
      * Set parameter into request
      */
-    private void setCommonParams2Result(AbstractQueryStreamResult result, ObTableConsistencyLevel actualReadConsistency) throws Exception {
+    private void setCommonParams2Result(AbstractQueryStreamResult result, ObReadConsistency actualReadConsistency) throws Exception {
         result.setTableQuery(tableQuery);
         result.setEntityType(entityType);
         result.setTableName(tableName);
@@ -167,7 +167,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     }
 
     private abstract static class InitQueryResultCallback<T> {
-        abstract T execute(ObTableConsistencyLevel actualReadConsistency) throws Exception;
+        abstract T execute(ObReadConsistency actualReadConsistency) throws Exception;
     }
 
     private AbstractQueryStreamResult commonExecute(InitQueryResultCallback<AbstractQueryStreamResult> callable)
@@ -177,12 +177,12 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         final long startTime = System.currentTimeMillis();
         this.partitionObTables = new LinkedHashMap<Long, ObPair<Long, ObTableParam>>(); // partitionObTables -> Map<logicId, Pair<logicId, param>>
 
-        // 如果没有设置语句级别的 readConsistency（空串或null），使用 TableRoute 上的 consistencyLevel
-        ObTableConsistencyLevel actualReadConsistency;
-        if (readConsistency == null || readConsistency.isEmpty()) {
+        // 如果没有设置语句级别的 readConsistency（null），使用 TableRoute 上的 consistencyLevel
+        ObReadConsistency actualReadConsistency;
+        if (readConsistency == null) {
             actualReadConsistency = obTableClient.getTableRoute().getReadConsistency();
         } else {
-            actualReadConsistency = ObTableConsistencyLevel.getByName(readConsistency);
+            actualReadConsistency = readConsistency;
         }
 
         // fill a whole range if no range is added explicitly.
@@ -294,7 +294,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     public ObTableClientQueryStreamResult executeInternal() throws Exception {
         return (ObTableClientQueryStreamResult) commonExecute(new InitQueryResultCallback<AbstractQueryStreamResult>() {
             @Override
-            ObTableClientQueryStreamResult execute(ObTableConsistencyLevel actualReadConsistency) throws Exception {
+            ObTableClientQueryStreamResult execute(ObReadConsistency actualReadConsistency) throws Exception {
                 ObTableClientQueryStreamResult obTableClientQueryStreamResult = new ObTableClientQueryStreamResult();
                 setCommonParams2Result(obTableClientQueryStreamResult, actualReadConsistency);
                 obTableClientQueryStreamResult.setClient(obTableClient);
@@ -307,7 +307,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     public ObTableClientQueryAsyncStreamResult asyncExecuteInternal() throws Exception {
         return (ObTableClientQueryAsyncStreamResult) commonExecute(new InitQueryResultCallback<AbstractQueryStreamResult>() {
             @Override
-            ObTableClientQueryAsyncStreamResult execute(ObTableConsistencyLevel actualReadConsistency) throws Exception {
+            ObTableClientQueryAsyncStreamResult execute(ObReadConsistency actualReadConsistency) throws Exception {
                 ObTableClientQueryAsyncStreamResult obTableClientQueryAsyncStreamResult = new ObTableClientQueryAsyncStreamResult();
                 obTableClientQueryAsyncStreamResult.setAllowDistributeScan(allowDistributeScan);
                 setCommonParams2Result(obTableClientQueryAsyncStreamResult, actualReadConsistency);
@@ -318,7 +318,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         });
     }
 
-    public Map<Long, ObPair<Long, ObTableParam>> initFirstPartition(ObTableQuery tableQuery, String tableName, ObTableConsistencyLevel actualReadConsistency) throws Exception {
+    public Map<Long, ObPair<Long, ObTableParam>> initFirstPartition(ObTableQuery tableQuery, String tableName, ObReadConsistency actualReadConsistency) throws Exception {
         Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new LinkedHashMap<>();
         String indexName = tableQuery.getIndexName();
 
@@ -352,7 +352,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         return partitionObTables;
     }
 
-    public Map<Long, ObPair<Long, ObTableParam>> initPartitions(ObTableQuery tableQuery, String tableName, ObTableConsistencyLevel actualReadConsistency) throws Exception {
+    public Map<Long, ObPair<Long, ObTableParam>> initPartitions(ObTableQuery tableQuery, String tableName, ObReadConsistency actualReadConsistency) throws Exception {
         // partitionObTables -> <logicId, <logicId, tableParam>>
         Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new LinkedHashMap<>();
         String indexName = tableQuery.getIndexName();
@@ -402,7 +402,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     /*
      * Init partition tables involved in this query
      */
-    public void initPartitions(ObTableConsistencyLevel actualReadConsistency) throws Exception {
+    public void initPartitions(ObReadConsistency actualReadConsistency) throws Exception {
         if (obTableClient.getServerCapacity().isSupportDistributedExecute()) {
             this.partitionObTables = initFirstPartition(tableQuery, tableName, actualReadConsistency);
         } else {

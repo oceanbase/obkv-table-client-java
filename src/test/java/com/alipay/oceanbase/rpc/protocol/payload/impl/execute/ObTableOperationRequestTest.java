@@ -34,7 +34,7 @@ public class ObTableOperationRequestTest {
         request.setCredential(new ObBytesString("123".getBytes()));
         request.setTableName("name");
         request.setTableId(456);
-        request.setConsistencyLevel(ObTableConsistencyLevel.EVENTUAL);
+        request.setConsistencyLevel(ObReadConsistency.WEAK);
         ObTableOperation obTableOperation = new ObTableOperation();
         obTableOperation.setOperationType(ObTableOperationType.INSERT);
         request.setTableOperation(obTableOperation);
@@ -63,7 +63,7 @@ public class ObTableOperationRequestTest {
 
         assertEquals(new String("123".getBytes()), new String(deRequest.getCredential().bytes));
         assertEquals("name", deRequest.getTableName());
-        assertEquals(ObTableConsistencyLevel.EVENTUAL, deRequest.getConsistencyLevel());
+        assertEquals(ObReadConsistency.WEAK, deRequest.getConsistencyLevel());
         assertEquals(ObTableOperationType.INSERT, deRequest.getTableOperation().getOperationType());
 
         ObITableEntity deEntity = deRequest.getTableOperation().getEntity();
@@ -101,7 +101,7 @@ public class ObTableOperationRequestTest {
         request.setCredential(new ObBytesString("123".getBytes()));
         request.setTableName("name");
         request.setTableId(456);
-        request.setConsistencyLevel(ObTableConsistencyLevel.EVENTUAL);
+        request.setConsistencyLevel(ObReadConsistency.WEAK);
         ObTableOperation obTableOperation = new ObTableOperation();
         obTableOperation.setOperationType(ObTableOperationType.INSERT);
         request.setTableOperation(obTableOperation);
@@ -123,7 +123,7 @@ public class ObTableOperationRequestTest {
 
         assertEquals(new String("123".getBytes()), new String(deRequest.getCredential().bytes));
         assertEquals("name", deRequest.getTableName());
-        assertEquals(ObTableConsistencyLevel.EVENTUAL, deRequest.getConsistencyLevel());
+        assertEquals(ObReadConsistency.WEAK, deRequest.getConsistencyLevel());
         assertEquals(ObTableOperationType.INSERT, deRequest.getTableOperation().getOperationType());
 
         ObITableEntity deEntity = deRequest.getTableOperation().getEntity();

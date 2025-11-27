@@ -34,7 +34,7 @@ public class ObTableBatchOperationRequestTest {
         request.setCredential(new ObBytesString("123".getBytes()));
         request.setTableName("name");
         request.setTableId(456);
-        request.setConsistencyLevel(ObTableConsistencyLevel.EVENTUAL);
+        request.setConsistencyLevel(ObReadConsistency.WEAK);
         ObTableBatchOperation obTableBatchOperation = new ObTableBatchOperation();
         request.setBatchOperation(obTableBatchOperation);
 
@@ -87,7 +87,7 @@ public class ObTableBatchOperationRequestTest {
 
         assertEquals(new String("123".getBytes()), new String(deRequest.getCredential().bytes));
         assertEquals("name", deRequest.getTableName());
-        assertEquals(ObTableConsistencyLevel.EVENTUAL, deRequest.getConsistencyLevel());
+        assertEquals(ObReadConsistency.WEAK, deRequest.getConsistencyLevel());
         assertEquals(2, deRequest.getBatchOperation().getTableOperations().size());
         assertEquals(ObTableOperationType.INSERT, deRequest.getBatchOperation()
             .getTableOperations().get(0).getOperationType());

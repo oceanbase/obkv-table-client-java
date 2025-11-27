@@ -105,7 +105,7 @@ public class ObTableOperationRequest extends ObTableAbstractOperationRequest {
         }
         this.tableOperation.decode(buf);
 
-        this.consistencyLevel = ObTableConsistencyLevel.valueOf(buf.readByte());
+        this.consistencyLevel = ObReadConsistency.valueOf(buf.readByte());
         this.option_flag = ObTableOptionFlag.valueOf(buf.readByte());
         this.returningAffectedEntity = Serialization.decodeI8(buf) != 0;
         this.returningAffectedRows = Serialization.decodeI8(buf) != 0;

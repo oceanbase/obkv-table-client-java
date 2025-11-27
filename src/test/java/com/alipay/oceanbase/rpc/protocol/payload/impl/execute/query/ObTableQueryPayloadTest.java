@@ -18,7 +18,7 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
 import com.alipay.oceanbase.rpc.protocol.payload.impl.*;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableConsistencyLevel;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObReadConsistency;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.table.ObFTSParams;
 import com.alipay.oceanbase.rpc.table.ObHBaseParams;
@@ -109,7 +109,7 @@ public class ObTableQueryPayloadTest {
         obTableQueryRequest.setTableId(200);
         obTableQueryRequest.setPartitionId(100);
         obTableQueryRequest.setEntityType(ObTableEntityType.KV);
-        obTableQueryRequest.setConsistencyLevel(ObTableConsistencyLevel.EVENTUAL);
+        obTableQueryRequest.setConsistencyLevel(ObReadConsistency.WEAK);
 
         byte[] bytes = obTableQueryRequest.encode();
         ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer();

@@ -20,17 +20,17 @@ package com.alipay.oceanbase.rpc.get;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.mutation.ColumnValue;
 import com.alipay.oceanbase.rpc.mutation.Row;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableConsistencyLevel;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObReadConsistency;
 import com.alipay.oceanbase.rpc.table.api.Table;
 
 import java.util.Map;
 
 public class Get {
-    private Table    client          = null;
-    private String   tableName       = null;
-    private Row      rowKey          = null;
-    private String[] selectColumns   = null;
-    private String   readConsistency = "";
+    private Table             client          = null;
+    private String            tableName       = null;
+    private Row               rowKey          = null;
+    private String[]          selectColumns   = null;
+    private ObReadConsistency readConsistency = null;
 
     public Get(Table client, String tableName) {
         this.client = client;
@@ -62,12 +62,12 @@ public class Get {
         return this;
     }
 
-    public Get setReadConsistency(String readConsistency) {
+    public Get setReadConsistency(ObReadConsistency readConsistency) {
         this.readConsistency = readConsistency;
         return this;
     }
 
-    public String getReadConsistency() {
+    public ObReadConsistency getReadConsistency() {
         return readConsistency;
     }
 
@@ -76,10 +76,6 @@ public class Get {
     }
 
     public Map<String, Object> execute() throws Exception {
-        ObTableConsistencyLevel readConsistency = null;
-        if (this.readConsistency != null && !this.readConsistency.isEmpty()) {
-            readConsistency = ObTableConsistencyLevel.getByName(this.readConsistency);
-        }
         if (client == null) {
             throw new IllegalArgumentException("client is null");
         }

@@ -65,7 +65,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     protected List<String>                                                     cacheProperties     = new LinkedList<String>();
     protected LinkedList<List<ObObj>>                                          cacheRows           = new LinkedList<List<ObObj>>();
     private LinkedList<ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>> partitionLastResult = new LinkedList<ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>>();
-    private ObTableConsistencyLevel                                            readConsistency     = ObTableConsistencyLevel.STRONG;
+    private ObReadConsistency                                                  readConsistency     = ObReadConsistency.STRONG;
     // ObRowKey objs: [startKey, MIN_OBJECT, MIN_OBJECT]
     public List<ObObj>                                                         currentStartKey;
     protected ObTableClient                                                    client;
@@ -794,7 +794,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     /*
      * Get Read Consistency
      */
-    public ObTableConsistencyLevel getReadConsistency() {
+    public ObReadConsistency getReadConsistency() {
         return readConsistency;
     }
 
@@ -803,7 +803,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
      *
      * @param readConsistency
      */
-    public void setReadConsistency(ObTableConsistencyLevel readConsistency) {
+    public void setReadConsistency(ObReadConsistency readConsistency) {
         this.readConsistency = readConsistency;
     }
 

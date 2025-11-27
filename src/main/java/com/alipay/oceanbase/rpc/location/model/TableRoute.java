@@ -25,7 +25,7 @@ import com.alipay.oceanbase.rpc.location.model.partition.*;
 import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableConsistencyLevel;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObReadConsistency;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObBorderFlag;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObNewRange;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
@@ -56,7 +56,7 @@ public class TableRoute {
     private volatile ServerRoster     serverRoster                 = null;                           // all servers which contain current tenant
     private volatile ConfigServerInfo configServerInfo             = null;                           // rslist
     private volatile TableRoster      tableRoster                  = null;                           // table mean connection pool here
-    private ObTableConsistencyLevel   consistencyLevel             = ObTableConsistencyLevel.STRONG; // global read consistency level
+    private ObReadConsistency         consistencyLevel             = ObReadConsistency.STRONG;       // global read consistency level
     private String                    currentIDC                   = null;                           // current client IDC for weak read routing
     private ObRoutePolicy             routePolicy                  = ObRoutePolicy.FOLLOWER_FIRST;   // route policy for weak read
     private TableLocations            tableLocations               = null;                           // map[tableName, TableEntry]
@@ -150,7 +150,7 @@ public class TableRoute {
      * Get read consistency level.
      * @return read consistency level
      */
-    public ObTableConsistencyLevel getReadConsistency() {
+    public ObReadConsistency getReadConsistency() {
         return this.consistencyLevel;
     }
 
@@ -158,8 +158,8 @@ public class TableRoute {
      * Set read consistency level.
      * @param readConsistency read consistency level
      */
-    public void setReadConsistency(String readConsistency) throws IllegalArgumentException {
-        this.consistencyLevel = ObTableConsistencyLevel.getByName(readConsistency);
+    public void setReadConsistency(ObReadConsistency readConsistency) throws IllegalArgumentException {
+        this.consistencyLevel = readConsistency;
     }
 
     public OdpInfo getOdpInfo() {
@@ -743,7 +743,7 @@ public class TableRoute {
     }
 
     public ObTableParam getTableParam(String tableName, Row rowkey,
-                                      ObTableConsistencyLevel currentConsistencyLevel)
+                                      ObReadConsistency currentConsistencyLevel)
                                                                                       throws Exception {
         TableEntry tableEntry = getTableEntry(tableName);
         if (tableEntry == null) {
@@ -761,7 +761,7 @@ public class TableRoute {
      * @param currentConsistencyLevel current consistency level
      * @return ObTableParam tableParam
      * */
-    public List<ObTableParam> getTableParams(String tableName, List<Row> rowkeys, ObTableConsistencyLevel currentConsistencyLevel) throws Exception {
+    public List<ObTableParam> getTableParams(String tableName, List<Row> rowkeys, ObReadConsistency currentConsistencyLevel) throws Exception {
         TableEntry tableEntry = getTableEntry(tableName);
         if (tableEntry == null) {
             logger.error("tableEntry is null, tableName: {}", tableName);
@@ -869,7 +869,7 @@ public class TableRoute {
      * @throws Exception exception
      */
     public ObTableParam getTableWithPartId(String tableName, long partId,
-                                           ObTableConsistencyLevel currentConsistencyLevel)
+                                           ObReadConsistency currentConsistencyLevel)
                                                                                            throws Exception {
         // route parameter is kept for backward compatibility but not used
         TableEntry tableEntry = getTableEntry(tableName);
@@ -886,7 +886,7 @@ public class TableRoute {
      * @throws Exception exception
      */
     private ObTableParam getTableInternal(String tableName, TableEntry tableEntry, long partId,
-                                          ObTableConsistencyLevel currentConsistencyLevel)
+                                          ObReadConsistency currentConsistencyLevel)
                                                                                           throws Exception {
         ReplicaLocation replica = null;
         long tabletId = getTabletIdByPartId(tableEntry, partId);
@@ -954,10 +954,10 @@ public class TableRoute {
     }
 
     private ReplicaLocation getPartitionLocation(ObPartitionLocationInfo locationInfo,
-                                                 ObTableConsistencyLevel currentConsistencyLevel)
+                                                 ObReadConsistency currentConsistencyLevel)
                                                                                                  throws ObTableException {
         ObPartitionLocation partitionLocation = locationInfo.getPartitionLocation();
-        ObTableConsistencyLevel level = currentConsistencyLevel;
+        ObReadConsistency level = currentConsistencyLevel;
         // when currentConsistencyLevel is null, we use global consistencyLevel
         if (level == null) {
             level = this.consistencyLevel;
@@ -992,7 +992,7 @@ public class TableRoute {
      */
     public ObTableParam getTableParam(String tableName, List<String> scanRangeColumns,
                                       ObNewRange keyRange,
-                                      ObTableConsistencyLevel currentConsistencyLevel)
+                                      ObReadConsistency currentConsistencyLevel)
                                                                                       throws Exception {
         Map<Long, ObTableParam> tabletIdIdMapObTable = new HashMap<Long, ObTableParam>();
         ObRowKey startKey = keyRange.getStartKey();
@@ -1050,7 +1050,7 @@ public class TableRoute {
      */
     public ObTableParam getTableParam(String tableName, List<String> scanRangeColumns,
                                       List<ObNewRange> keyRanges,
-                                      ObTableConsistencyLevel currentConsistencyLevel)
+                                      ObReadConsistency currentConsistencyLevel)
                                                                                       throws Exception {
         Map<Long, ObTableParam> partIdIdMapObTable = getPartIdParamMapForQuery(tableName,
             scanRangeColumns, keyRanges);
@@ -1081,7 +1081,7 @@ public class TableRoute {
     public List<ObTableParam> getTableParams(String tableName, ObTableQuery query, Object[] start,
                                              boolean startInclusive, Object[] end,
                                              boolean endInclusive,
-                                             ObTableConsistencyLevel currentConsistencyLevel)
+                                             ObReadConsistency currentConsistencyLevel)
                                                                                              throws Exception {
         // route parameter is kept for backward compatibility but not used
         return getTablesInternal(tableName, query.getScanRangeColumns(), start, startInclusive,
@@ -1091,7 +1091,7 @@ public class TableRoute {
     private List<ObTableParam> getTablesInternal(String tableName, List<String> scanRangeColumns,
                                                       Object[] start, boolean startInclusive,
                                                       Object[] end, boolean endInclusive,
-                                                      ObTableConsistencyLevel currentConsistencyLevel) throws Exception {
+                                                      ObReadConsistency currentConsistencyLevel) throws Exception {
         // route parameter is kept for backward compatibility but not used
         if (start.length != end.length) {
             throw new IllegalArgumentException("length of start key and end key is not equal");
@@ -1157,7 +1157,7 @@ public class TableRoute {
                                                                     boolean startIncluded,
                                                                     Row endRow,
                                                                     boolean endIncluded,
-                                                                    ObTableConsistencyLevel currentConsistencyLevel) throws Exception {
+                                                                    ObReadConsistency currentConsistencyLevel) throws Exception {
         // route parameter is kept for backward compatibility but not used
         List<ObPair<Long, ReplicaLocation>> replicas = new ArrayList<>();
         List<Long> partIds = getPartIds(tableEntry, startRow, startIncluded, endRow, endIncluded);
