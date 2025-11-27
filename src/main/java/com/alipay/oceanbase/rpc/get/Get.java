@@ -32,6 +32,14 @@ public class Get {
     private String[]          selectColumns   = null;
     private ObReadConsistency readConsistency = null;
 
+    public Get() {
+        this.client = null;
+        this.tableName = null;
+        this.rowKey = null;
+        this.selectColumns = null;
+        this.readConsistency = null;
+    }
+
     public Get(Table client, String tableName) {
         this.client = client;
         this.tableName = tableName;
