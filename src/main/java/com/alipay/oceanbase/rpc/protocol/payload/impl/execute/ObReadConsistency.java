@@ -20,26 +20,26 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 import java.util.HashMap;
 import java.util.Map;
 
-public enum ObTableConsistencyLevel {
+public enum ObReadConsistency {
 
-    STRONG(0), EVENTUAL(1);
+    STRONG(0), WEAK(1);
 
     private int                                          value;
-    private static Map<Integer, ObTableConsistencyLevel> map = new HashMap<Integer, ObTableConsistencyLevel>();
+    private static Map<Integer, ObReadConsistency> map = new HashMap<Integer, ObReadConsistency>();
 
-    ObTableConsistencyLevel(int value) {
+    ObReadConsistency(int value) {
         this.value = value;
     }
 
     static {
-        for (ObTableConsistencyLevel type : ObTableConsistencyLevel.values()) {
+        for (ObReadConsistency type : ObReadConsistency.values()) {
             map.put(type.value, type);
         }
     }
 
-    public static ObTableConsistencyLevel getByName(String name) throws IllegalArgumentException {
+    public static ObReadConsistency getByName(String name) throws IllegalArgumentException {
         if (name.equalsIgnoreCase("weak")) {
-            return EVENTUAL;
+            return WEAK;
         } else if (name.equalsIgnoreCase("strong")) {
             return STRONG;
         } else {
@@ -50,7 +50,7 @@ public enum ObTableConsistencyLevel {
     /*
      * Value of.
      */
-    public static ObTableConsistencyLevel valueOf(int value) {
+    public static ObReadConsistency valueOf(int value) {
         return map.get(value);
     }
 
@@ -69,3 +69,4 @@ public enum ObTableConsistencyLevel {
     }
 
 }
+

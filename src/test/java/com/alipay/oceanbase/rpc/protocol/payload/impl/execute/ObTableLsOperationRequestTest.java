@@ -315,7 +315,7 @@ public class ObTableLsOperationRequestTest {
     private ObTableLSOpRequest buildLsReq() {
         ObTableLSOpRequest lsOpReq = new ObTableLSOpRequest();
         lsOpReq.setCredential(new ObBytesString(generateRandomString(100).getBytes()));
-        lsOpReq.setConsistencyLevel(ObTableConsistencyLevel.EVENTUAL);
+        lsOpReq.setConsistencyLevel(ObReadConsistency.WEAK);
         buildLsOperation();
         lsOpReq.setLsOperation(buildLsOperation());
         lsOpReq.setTableId(50001);

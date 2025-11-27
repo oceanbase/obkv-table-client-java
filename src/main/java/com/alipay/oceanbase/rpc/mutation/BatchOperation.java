@@ -23,7 +23,7 @@ import com.alipay.oceanbase.rpc.exception.FeatureNotSupportedException;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.get.Get;
 import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableConsistencyLevel;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObReadConsistency;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.OHOperationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
@@ -317,18 +317,12 @@ public class BatchOperation {
         return new BatchOperationResult(batchOps.executeWithResult());
     }
 
-    private boolean checkReadConsistency(ObTableClient obTableClient, String readConsistency) throws IllegalArgumentException {
-        // 如果没有设置语句级别的 readConsistency（空串或null），使用 TableRoute 上的 consistencyLevel
-        if (readConsistency == null || readConsistency.isEmpty()) {
-            return obTableClient.getTableRoute().getReadConsistency() == ObTableConsistencyLevel.EVENTUAL;
+    private boolean checkReadConsistency(ObTableClient obTableClient, ObReadConsistency readConsistency) throws IllegalArgumentException {
+        // 如果没有设置语句级别的 readConsistency（null），使用 TableRoute 上的 consistencyLevel
+        if (readConsistency == null) {
+            return obTableClient.getTableRoute().getReadConsistency() == ObReadConsistency.WEAK;
         }
-        if (readConsistency.equalsIgnoreCase("weak")) {
-            return true;
-        } else if (readConsistency.equalsIgnoreCase("strong")) {
-            return false;
-        } else {
-            throw new IllegalArgumentException("readConsistency is invalid: " + readConsistency);
-        }
+        return readConsistency == ObReadConsistency.WEAK;
     }
 
     private BatchOperationResult executeWithLSBatchOp() throws Exception {

@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.table.api;
 
 import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.mutation.Row;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObReadConsistency;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHTableFilter;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
@@ -199,7 +200,7 @@ public interface TableQuery {
 
     TableQuery setSearchText(String searchText);
 
-    TableQuery setReadConsistency(String readConsistency);
+    TableQuery setReadConsistency(ObReadConsistency readConsistency);
 
-    String getReadConsistency();
+    ObReadConsistency getReadConsistency();
 }

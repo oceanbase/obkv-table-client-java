@@ -20,7 +20,7 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableAbstractOperationRequest;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableConsistencyLevel;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObReadConsistency;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
@@ -99,7 +99,7 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
         else
             this.partitionId = Serialization.decodeVi64(buf);
         this.entityType = ObTableEntityType.valueOf(buf.readByte());
-        this.consistencyLevel = ObTableConsistencyLevel.valueOf(buf.readByte());
+        this.consistencyLevel = ObReadConsistency.valueOf(buf.readByte());
 
         this.tableQuery = new ObTableQuery();
         this.tableQuery.decode(buf);

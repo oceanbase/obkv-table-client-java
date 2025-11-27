@@ -39,7 +39,7 @@ OB_SERIALIZE_MEMBER(ObTableLSOpRequest,
 public class ObTableLSOpRequest extends AbstractPayload implements Credentialable {
     protected ObBytesString           credential;
     protected ObTableEntityType       entityType       = ObTableEntityType.KV;
-    protected ObTableConsistencyLevel consistencyLevel = ObTableConsistencyLevel.STRONG;
+    protected ObReadConsistency       consistencyLevel = ObReadConsistency.STRONG;
     private ObTableLSOperation        lsOperation      = null;
     protected OHOperationType         hbaseOpType      = OHOperationType.INVALID;
 
@@ -90,7 +90,7 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
         super.decode(buf);
         this.credential = Serialization.decodeBytesString(buf);
         this.entityType = ObTableEntityType.valueOf(buf.readByte());
-        this.consistencyLevel = ObTableConsistencyLevel.valueOf(buf.readByte());
+        this.consistencyLevel = ObReadConsistency.valueOf(buf.readByte());
         this.lsOperation = new ObTableLSOperation();
         this.lsOperation.decode(buf);
 
@@ -151,7 +151,7 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
     /*
      * Set consistency level.
      */
-    public void setConsistencyLevel(ObTableConsistencyLevel consistencyLevel) {
+    public void setConsistencyLevel(ObReadConsistency consistencyLevel) {
         this.consistencyLevel = consistencyLevel;
     }
 

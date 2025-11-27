@@ -18,7 +18,7 @@
 package com.alipay.oceanbase.rpc.location.model.partition;
 
 import com.alipay.oceanbase.rpc.location.model.*;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableConsistencyLevel;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObReadConsistency;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -74,10 +74,10 @@ public class ObPartitionLocation {
      * @param route
      * @return
      */
-    public ReplicaLocation getReplica(ObTableConsistencyLevel consistencyLevel,
+    public ReplicaLocation getReplica(ObReadConsistency consistencyLevel,
                                       ObRoutePolicy routePolicy) throws IllegalArgumentException {
         // strong read : read leader
-        if (consistencyLevel == null || consistencyLevel == ObTableConsistencyLevel.STRONG) {
+        if (consistencyLevel == null || consistencyLevel == ObReadConsistency.STRONG) {
             return leader;
         }
 
