@@ -26,6 +26,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.dds.group.ObTableClientGroup;
 import com.alipay.oceanbase.rpc.dds.util.ConfigWrapper;
+import com.alipay.oceanbase.rpc.dds.util.ConfigComparisonUtil;
 import com.alipay.oceanbase.rpc.dds.util.DataSourceFactory;
 import com.alipay.oceanbase.rpc.dds.util.VersionedConfigSnapshot;
 import com.alipay.sofa.dds.config.AttributesConfig;
@@ -40,11 +46,8 @@ import com.alipay.sofa.dds.config.ExtendedDataSourceConfig;
 import com.alipay.sofa.dds.config.advanced.DoubleWriteRule;
 import com.alipay.sofa.dds.config.advanced.TestLoadRule;
 import com.alipay.sofa.dds.config.dynamic.DynamicConfigHandler;
-import com.alipay.sofa.dds.config.group.AtomDataSourceWeight;
 import com.alipay.sofa.dds.config.group.GroupClusterConfig;
 import com.alipay.sofa.dds.config.group.GroupClusterDbkeyConfig;
-import com.alipay.sofa.dds.config.group.GroupDataSourceConfig;
-import com.alipay.sofa.dds.config.group.GroupDataSourceWeight;
 import com.alipay.sofa.dds.config.rule.AppRule;
 
 public class DdsConfigUpdateHandler implements DynamicConfigHandler {
@@ -56,7 +59,13 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
   private final ReentrantReadWriteLock configLock = new ReentrantReadWriteLock();
 
   private static final Logger logger = LoggerFactory.getLogger(DdsConfigUpdateHandler.class);
-
+  
+  // async cleanup executor
+  private final ScheduledExecutorService scheduledExecutor;
+  private final ConcurrentHashMap<String, AsyncCloseTask> pendingCloseTasks;
+  private final AtomicInteger totalAsyncCloses = new AtomicInteger(0);
+  private final AtomicInteger completedAsyncCloses = new AtomicInteger(0);
+  
   private Supplier<Map<String, ExtendedDataSourceConfig>> extendedDataSourceSupplier = () -> Collections.emptyMap();
   private Supplier<AppRule> appRuleSupplier = () -> null;
   
@@ -65,6 +74,14 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
     this.runningMode = runningMode;
     this.properties = tableClientProperty;
     this.currentConfig = sharedConfig != null ? sharedConfig : new AtomicReference<>();
+    
+    // async cleanup executor
+    this.scheduledExecutor = Executors.newScheduledThreadPool(2, r -> {
+      Thread t = new Thread(r, "ObTableClient-AsyncCleaner");
+      t.setDaemon(true);
+      return t;
+    });
+    this.pendingCloseTasks = new ConcurrentHashMap<>();
   }
 
   public void setExtendedDataSourceSupplier(Supplier<Map<String, ExtendedDataSourceConfig>> supplier) {
@@ -233,25 +250,79 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
   
   /**
    * Build group cluster configuration.
+   * 改进：区分连接更新和规则更新，只有在真正需要时才重建
    */
   private VersionedConfigSnapshot buildGroupClusterConfig(
           VersionedConfigSnapshot current, 
           GroupClusterConfig newGroupCluster) throws Exception {
       
-      // 1. Create new data source configurations
+      // 1. 获取最新和当前的数据源配置
       Map<String, ExtendedDataSourceConfig> availableConfigs = resolveLatestExtendedConfigs();
-      Map<String, ExtendedDataSourceConfig> newDataSourceConfigs =
-          createDataSourceConfigsFromGroupCluster(newGroupCluster, availableConfigs);
+      Map<String, ExtendedDataSourceConfig> currentDataSourceConfigs = current.getDataSourceConfigs();
       
-      // 2. Create new atom data sources
-      Map<String, ObTableClient> newAtomDataSources = DataSourceFactory.createAtomDataSources(
-          newDataSourceConfigs, runningMode, properties);
+      // 2. 分析配置更新类型
+      ConfigComparisonUtil.ConfigUpdateType updateType = ConfigComparisonUtil.analyzeUpdateType(
+          current.getGroupCluster(),
+          newGroupCluster,
+          currentDataSourceConfigs,
+          availableConfigs
+      );
       
-      // 3. Create new client groups
-      Map<Integer, ObTableClientGroup> newGroupDataSources = DataSourceFactory.createGroupDataSources(
-          newGroupCluster, newAtomDataSources);
+      Map<String, ObTableClient> newAtomDataSources = new ConcurrentHashMap<>();
+      Map<Integer, ObTableClientGroup> newGroupDataSources = new ConcurrentHashMap<>();
       
-      // 4. Get latest AppRule (rebuild logical tables if updated)
+      switch (updateType) {
+          case NONE:
+              logger.info("No configuration changes detected, reusing all existing resources");
+              // 完全没有变化，复用所有现有资源
+              newAtomDataSources.putAll(current.getAtomDataSources());
+              newGroupDataSources.putAll(current.getGroupDataSources());
+              break;
+              
+          case RULES_ONLY:
+              logger.info("Only rules (weights) changed, reusing connections but rebuilding groups");
+              // 只有规则变化，复用连接但重新创建组
+              newAtomDataSources.putAll(current.getAtomDataSources());
+              newGroupDataSources = null; // 标记需要重建组
+              break;
+              
+          case CONNECTIONS_ONLY:
+              logger.info("Only connections changed, reusing rules but rebuilding connections and groups");
+              // 只有连接变化，重新创建连接和组
+              newGroupDataSources = null; // 标记需要重建组
+              break;
+              
+          case CONNECTIONS_AND_RULES:
+          default:
+              logger.info("Both connections and rules changed, rebuilding everything");
+              // 连接和规则都变化，全部重建
+              newGroupDataSources = null; // 标记需要重建组
+              break;
+      }
+      
+      // 3. 根据更新类型决定是否需要创建新的连接
+      if (updateType == ConfigComparisonUtil.ConfigUpdateType.CONNECTIONS_ONLY ||
+          updateType == ConfigComparisonUtil.ConfigUpdateType.CONNECTIONS_AND_RULES) {
+          
+          // 需要重建连接
+          Map<String, ExtendedDataSourceConfig> configsToUpdate = ConfigComparisonUtil.findConfigsToUpdate(
+              currentDataSourceConfigs, availableConfigs);
+          
+          newAtomDataSources = createOrReuseAtomDataSources(
+              configsToUpdate, current.getAtomDataSources(), runningMode, properties);
+      }
+      
+      // 4. 根据更新类型决定是否需要重建组
+      if (updateType == ConfigComparisonUtil.ConfigUpdateType.RULES_ONLY ||
+          updateType == ConfigComparisonUtil.ConfigUpdateType.CONNECTIONS_ONLY ||
+          updateType == ConfigComparisonUtil.ConfigUpdateType.CONNECTIONS_AND_RULES) {
+          
+          // 需要重建组（规则变化或完全重建）
+          newGroupDataSources = DataSourceFactory.createGroupDataSources(
+              newGroupCluster, newAtomDataSources);
+      }
+      
+      // 5. Get latest AppRule (rebuild logical tables if updated)
       AppRule latestAppRule;
       try {
         latestAppRule = appRuleSupplier.get();
@@ -263,7 +334,7 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
         latestAppRule = current.getAppRule();
       }
       
-      // 5. Wrap configuration into versioned snapshot
+      // 6. Wrap configuration into versioned snapshot
       boolean appRuleChanged = latestAppRule != current.getAppRule();
       if (appRuleChanged) {
         logger.info("AppRule updated, will rebuild LogicalTables with new AppRule");
@@ -271,7 +342,7 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
       
       return ConfigWrapper.wrapConfig(
           newGroupCluster,
-          newDataSourceConfigs,
+          availableConfigs,  // 使用最新配置
           latestAppRule,
           newAtomDataSources,
           newGroupDataSources
@@ -441,7 +512,8 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
   }
   
   /**
-   * Clean up obsolete data sources that are no longer used.
+   * 异步清理过时的数据源连接
+   * 改进：使用异步清理，给正在进行的RPC请求时间完成
    */
   private void cleanupObsoleteDataSources(VersionedConfigSnapshot oldConfig, 
                                           VersionedConfigSnapshot newConfig) {
@@ -452,29 +524,85 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
           return;
       }
       
-      // Find dbkeys that are removed in the new configuration
-      Set<String> removedDbkeys = new HashSet<>(oldDataSources.keySet());
+      // 找出真正需要清理的dbkey（被完全移除的）
+      Set<String> dbkeysToCleanup = new HashSet<>();
       if (newDataSources != null) {
-          removedDbkeys.removeAll(newDataSources.keySet());
-      }
-      
-      // Close obsolete ObTableClient instances
-      if (!removedDbkeys.isEmpty()) {
-          logger.info("Cleaning up {} obsolete data sources: {}", 
-              removedDbkeys.size(), removedDbkeys);
-          
-          for (String dbkey : removedDbkeys) {
-              ObTableClient client = oldDataSources.get(dbkey);
-              if (client != null) {
-                  try {
-                      client.close();
-                      logger.info("Successfully closed obsolete ObTableClient for dbkey: {}", dbkey);
-                  } catch (Exception e) {
-                      logger.error("Failed to close ObTableClient for dbkey: {}", dbkey, e);
-                  }
+          for (String oldDbkey : oldDataSources.keySet()) {
+              if (!newDataSources.containsKey(oldDbkey)) {
+                  dbkeysToCleanup.add(oldDbkey);
+                  logger.info("Data source config removed for dbkey: {}", oldDbkey);
               }
           }
+      } else {
+          // 如果新配置为空，清理所有旧数据源
+          dbkeysToCleanup.addAll(oldDataSources.keySet());
       }
+      
+      // 异步清理被移除的数据源
+      if (!dbkeysToCleanup.isEmpty()) {
+          logger.info("Scheduling async cleanup for {} obsolete data sources: {}", 
+              dbkeysToCleanup.size(), dbkeysToCleanup);
+          
+          // 获取RPC执行超时时间作为延迟时间
+          long delayMillis = getRpcExecuteTimeout();
+          if (delayMillis <= 0) {
+              delayMillis = 30000; // 默认30秒
+          }
+          
+          logger.info("Using RPC execute timeout ({}ms) as cleanup delay to ensure all in-flight RPC requests complete safely", 
+              delayMillis);
+          
+          for (String dbkey : dbkeysToCleanup) {
+              ObTableClient client = oldDataSources.get(dbkey);
+              if (client != null) {
+                  scheduleAsyncClose(dbkey, client, delayMillis, TimeUnit.MILLISECONDS);
+              }
+          }
+          
+          logger.info("Async cleanup initiated. All RPC requests will complete within {}ms before connections are closed", 
+              delayMillis);
+      } else {
+          logger.info("No obsolete data sources to clean up");
+      }
+  }
+  
+  /**
+   * 获取RPC执行超时时间
+   */
+  private long getRpcExecuteTimeout() {
+      try {
+          // 从属性中获取RPC执行超时时间
+          String timeoutStr = properties.getProperty("rpc.execute.timeout", "30000");
+          return Long.parseLong(timeoutStr);
+      } catch (Exception e) {
+          logger.warn("Failed to get RPC execute timeout, using default 30 seconds", e);
+          return 30000;
+      }
+  }
+  
+  /**
+   * 调度异步连接关闭 - 简化版本
+   */
+  private void scheduleAsyncClose(String dbkey, ObTableClient client, 
+                                  long delay, TimeUnit timeUnit) {
+      AsyncCloseTask task = new AsyncCloseTask(dbkey, client, TimeUnit.MILLISECONDS.convert(delay, timeUnit));
+      pendingCloseTasks.put(dbkey, task);
+      totalAsyncCloses.incrementAndGet();
+      
+      logger.info("Scheduling async close for ObTableClient dbkey: {} with delay: {} {} (elapsed since creation: {}ms)", 
+          dbkey, delay, timeUnit, System.currentTimeMillis() - task.creationTime);
+      
+      scheduledExecutor.schedule(() -> {
+          try {
+              task.run();
+              pendingCloseTasks.remove(dbkey);
+              completedAsyncCloses.incrementAndGet();
+              logger.debug("Async close task completed and removed from pending tasks for dbkey: {}", dbkey);
+          } catch (Exception e) {
+              logger.error("Error executing async close task for dbkey: {}", dbkey, e);
+              pendingCloseTasks.remove(dbkey);
+          }
+      }, delay, timeUnit);
   }
   
   /**
@@ -525,49 +653,63 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
   }
 
 
-  private Map<String, ExtendedDataSourceConfig> createDataSourceConfigsFromGroupCluster(
-      GroupClusterConfig groupCluster, Map<String, ExtendedDataSourceConfig> availableConfigs) {
-    Map<String, ExtendedDataSourceConfig> dataSourceConfigs = new ConcurrentHashMap<>();
-    if (groupCluster == null || availableConfigs == null || availableConfigs.isEmpty()) {
-      return dataSourceConfigs;
-    }
-
-    Map<String, GroupDataSourceConfig> groupMap = groupCluster.getGroupCluster();
-    if (groupMap == null || groupMap.isEmpty()) {
-      return dataSourceConfigs;
-    }
-
-    for (GroupDataSourceConfig groupConfig : groupMap.values()) {
-      if (groupConfig == null) {
-        continue;
+  /**
+   * 创建或复用原子数据源
+   * 复用配置未变化的连接，避免不必要的重连
+   */
+  private Map<String, ObTableClient> createOrReuseAtomDataSources(
+          Map<String, ExtendedDataSourceConfig> configsToUpdate,
+          Map<String, ObTableClient> existingAtomDataSources,
+          ObTableClient.RunningMode runningMode,
+          Properties tableClientProperty) throws Exception {
+      
+      Map<String, ObTableClient> newAtomDataSources = new ConcurrentHashMap<>();
+      
+      // 1. 复用配置未变化的连接
+      if (existingAtomDataSources != null) {
+          for (Map.Entry<String, ObTableClient> entry : existingAtomDataSources.entrySet()) {
+              String dbkey = entry.getKey();
+              ObTableClient existingClient = entry.getValue();
+              
+              // 如果这个dbkey不在更新列表中，说明配置未变化，可以复用
+              if (!configsToUpdate.containsKey(dbkey)) {
+                  newAtomDataSources.put(dbkey, existingClient);
+                  logger.info("Reusing existing ObTableClient for dbkey: {}", dbkey);
+              } else {
+                  logger.info("Config changed for dbkey: {}, will create new ObTableClient", dbkey);
+              }
+          }
       }
-
-      GroupDataSourceWeight groupWeight = groupConfig.getGroupDataSourceWeight();
-      if (groupWeight == null || groupWeight.getDataSourceReadWriteWeights() == null) {
-        continue;
+      
+      // 2. 为配置发生变化的dbkey创建新的连接
+      if (configsToUpdate != null && !configsToUpdate.isEmpty()) {
+          Map<String, ExtendedDataSourceConfig> newConfigs = new ConcurrentHashMap<>();
+          for (Map.Entry<String, ExtendedDataSourceConfig> entry : configsToUpdate.entrySet()) {
+              if (entry.getValue() != null) { // 只创建真正需要更新的配置
+                  newConfigs.put(entry.getKey(), entry.getValue());
+              }
+          }
+          
+          if (!newConfigs.isEmpty()) {
+              logger.info("Creating {} new ObTableClient instances for updated configs", newConfigs.size());
+              Map<String, ObTableClient> newlyCreatedClients = DataSourceFactory.createAtomDataSources(
+                  newConfigs, runningMode, tableClientProperty);
+              newAtomDataSources.putAll(newlyCreatedClients);
+          }
       }
-
-      for (AtomDataSourceWeight weight : groupWeight.getDataSourceReadWriteWeights()) {
-        if (weight == null) {
-          continue;
-        }
-
-        String dbkey = weight.getDbkey();
-        if (dbkey == null || dbkey.isEmpty()) {
-          continue;
-        }
-
-        ExtendedDataSourceConfig config = availableConfigs.get(dbkey);
-        if (config != null) {
-          dataSourceConfigs.putIfAbsent(dbkey, config);
-        } else {
-          logger.warn("Missing ExtendedDataSourceConfig for dbkey {} while rebuilding group cluster", dbkey);
-        }
+      
+      if (configsToUpdate == null) {
+          configsToUpdate = Collections.emptyMap();
       }
-    }
-    return dataSourceConfigs;
+      
+      logger.info("Atom data sources summary: total={}, reused={}, newly created={}", 
+          newAtomDataSources.size(), 
+          newAtomDataSources.size() - configsToUpdate.size(), 
+          configsToUpdate.size());
+      
+      return newAtomDataSources;
   }
-
+  
   private Map<String, ExtendedDataSourceConfig> resolveLatestExtendedConfigs() {
     Map<String, ExtendedDataSourceConfig> configs = null;
     try {
@@ -582,5 +724,77 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
       }
     }
     return configs != null ? new ConcurrentHashMap<>(configs) : new ConcurrentHashMap<>();
+  }
+
+  /**
+   * 异步连接关闭任务 - 简化版本
+   * 直接使用延迟策略，无需复杂的安全检查
+   */
+  private static class AsyncCloseTask implements Runnable {
+    private final String dbkey;
+    private final ObTableClient client;
+    private final long delayMillis;
+    private final long creationTime;
+    
+    public AsyncCloseTask(String dbkey, ObTableClient client, long delayMillis) {
+      this.dbkey = dbkey;
+      this.client = client;
+      this.delayMillis = delayMillis;
+      this.creationTime = System.currentTimeMillis();
+    }
+    
+    @Override
+    public void run() {
+      try {
+        long waitTime = System.currentTimeMillis() - creationTime;
+        logger.info("Executing async close for ObTableClient dbkey: {} (waited {}ms, requested delay: {}ms)", 
+            dbkey, waitTime, delayMillis);
+        
+        // close connection directly, delay strategy ensures all RPC requests complete
+        client.close();
+        logger.info("Successfully completed async close for ObTableClient dbkey: {}", dbkey);
+        
+      } catch (Exception e) {
+        logger.error("Error during async close for ObTableClient dbkey: {}", dbkey, e);
+        try {
+          // ensure to close connection even if error occurs
+          client.close();
+        } catch (Exception closeException) {
+          logger.error("Failed to close ObTableClient dbkey: {} during error handling", dbkey, closeException);
+        }
+      }
+    }
+  }
+  
+  /**
+   * get async cleanup stats
+   */
+  public String getAsyncCleanupStats() {
+      int total = totalAsyncCloses.get();
+      int completed = completedAsyncCloses.get();
+      int pending = pendingCloseTasks.size();
+      
+      return String.format("Async cleanup stats - Total: %d, Completed: %d, Pending: %d", 
+          total, completed, pending);
+  }
+  
+  /**
+   * shutdown async cleanup executor
+   * used for graceful shutdown
+   */
+  public void shutdownAsyncCleanup() {
+      logger.info("Shutting down async cleanup executor, stats: {}", getAsyncCleanupStats());
+      
+      try {
+          scheduledExecutor.shutdown();
+          if (!scheduledExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+              scheduledExecutor.shutdownNow();
+          }
+          logger.info("Async cleanup executor shutdown completed");
+      } catch (InterruptedException e) {
+          logger.error("Interrupted during async cleanup shutdown", e);
+          scheduledExecutor.shutdownNow();
+          Thread.currentThread().interrupt();
+      }
   }
 }

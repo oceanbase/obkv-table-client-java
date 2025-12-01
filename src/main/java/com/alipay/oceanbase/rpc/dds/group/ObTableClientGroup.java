@@ -152,40 +152,40 @@ public class ObTableClientGroup implements Lifecycle {
         sb.append("  groupKey=").append(groupKey).append(",\n");
         sb.append("  groupIndex=").append(groupIndex).append(",\n");
         sb.append("  weightString=").append(weightString).append(",\n");
-        
+
         // Atom data sources
         sb.append("  atomDataSources=");
         if (atomDataSourceInGroup != null && !atomDataSourceInGroup.isEmpty()) {
             sb.append(atomDataSourceInGroup.size()).append(" sources [")
-              .append(String.join(", ", atomDataSourceInGroup.keySet())).append("],\n");
+                .append(String.join(", ", atomDataSourceInGroup.keySet())).append("],\n");
         } else {
             sb.append("empty,\n");
         }
-        
+
         // Weight configuration
-        if (groupDataSourceWeight != null && groupDataSourceWeight.getDataSourceReadWriteWeights() != null) {
+        if (groupDataSourceWeight != null
+            && groupDataSourceWeight.getDataSourceReadWriteWeights() != null) {
             sb.append("  weights=[\n");
-            for (AtomDataSourceWeight weight : groupDataSourceWeight.getDataSourceReadWriteWeights()) {
-                sb.append("    {dbkey=").append(weight.getDbkey())
-                  .append(", index=").append(weight.getIndex())
-                  .append(", r=").append(weight.getReadWeight())
-                  .append(", w=").append(weight.getWriteWeight())
-                  .append("},\n");
+            for (AtomDataSourceWeight weight : groupDataSourceWeight
+                .getDataSourceReadWriteWeights()) {
+                sb.append("    {dbkey=").append(weight.getDbkey()).append(", index=")
+                    .append(weight.getIndex()).append(", r=").append(weight.getReadWeight())
+                    .append(", w=").append(weight.getWriteWeight()).append("},\n");
             }
             sb.append("  ],\n");
         }
-        
+
         // Weight ranges
         sb.append("  readWeightRange=")
-          .append(readWeightRange != null ? readWeightRange.size() + " entries" : "null")
-          .append(",\n");
+            .append(readWeightRange != null ? readWeightRange.size() + " entries" : "null")
+            .append(",\n");
         sb.append("  writeWeightRange=")
-          .append(writeWeightRange != null ? writeWeightRange.size() + " entries" : "null")
-          .append(",\n");
+            .append(writeWeightRange != null ? writeWeightRange.size() + " entries" : "null")
+            .append(",\n");
         sb.append("  elasticIndexRange=")
-          .append(elasticIndexRange != null ? elasticIndexRange.size() + " indexes" : "null")
-          .append("\n");
-        
+            .append(elasticIndexRange != null ? elasticIndexRange.size() + " indexes" : "null")
+            .append("\n");
+
         sb.append("}");
         return sb.toString();
     }
