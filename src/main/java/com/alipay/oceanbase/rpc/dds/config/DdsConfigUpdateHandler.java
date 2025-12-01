@@ -41,6 +41,7 @@ import com.alipay.oceanbase.rpc.dds.util.ConfigWrapper;
 import com.alipay.oceanbase.rpc.dds.util.ConfigComparisonUtil;
 import com.alipay.oceanbase.rpc.dds.util.DataSourceFactory;
 import com.alipay.oceanbase.rpc.dds.util.VersionedConfigSnapshot;
+import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
 import com.alipay.sofa.dds.config.AttributesConfig;
 import com.alipay.sofa.dds.config.ExtendedDataSourceConfig;
 import com.alipay.sofa.dds.config.advanced.DoubleWriteRule;
@@ -59,6 +60,7 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
   private final ReentrantReadWriteLock configLock = new ReentrantReadWriteLock();
 
   private static final Logger logger = LoggerFactory.getLogger(DdsConfigUpdateHandler.class);
+  private static final Logger ddsConfigLogger = TableClientLoggerFactory.getDDSConfigLogger();
   
   // async cleanup executor
   private final ScheduledExecutorService scheduledExecutor;
@@ -202,18 +204,51 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
    * Process configuration update task.
    */
   private void processConfigUpdate(ConfigUpdateTask task) {
+      long startTime = System.currentTimeMillis();
+      String taskType = task.getType().name();
+      
+      ddsConfigLogger.info("DDS_CONFIG_UPDATE_START," +
+              "taskType={},timestamp={},taskCount={}", 
+              taskType, startTime, 1);
+      
       try {
           logger.info("Processing config update task: {}", task.getType());
           
           // 1. Build new configuration
+          VersionedConfigSnapshot oldConfig = currentConfig.get();
           VersionedConfigSnapshot newConfig = buildNewConfig(task);
           
           // 2. Replace configuration atomically
           replaceConfigAtomically(newConfig);
           
+          long endTime = System.currentTimeMillis();
+          long duration = endTime - startTime;
+          
+          // 记录成功的配置变更
+          String oldGroupCount = oldConfig != null ? 
+              String.valueOf(oldConfig.getGroupDataSources().size()) : "0";
+          String newGroupCount = String.valueOf(newConfig.getGroupDataSources().size());
+          String oldAtomCount = oldConfig != null ? 
+              String.valueOf(oldConfig.getAtomDataSources().size()) : "0";
+          String newAtomCount = String.valueOf(newConfig.getAtomDataSources().size());
+          
+          ddsConfigLogger.info("DDS_CONFIG_UPDATE_SUCCESS," +
+                  "taskType={},duration={},oldGroupCount={},newGroupCount={}," +
+                  "oldAtomCount={},newAtomCount={},status=success", 
+                  taskType, duration, oldGroupCount, newGroupCount, 
+                  oldAtomCount, newAtomCount);
+          
           logger.info("Config update completed successfully for task: {}", task.getType());
           
       } catch (Exception e) {
+          long endTime = System.currentTimeMillis();
+          long duration = endTime - startTime;
+          
+          // 记录失败的配置变更
+          ddsConfigLogger.error("DDS_CONFIG_UPDATE_FAILED," +
+                  "taskType={},duration={},errorMessage={},status=failed", 
+                  taskType, duration, e.getMessage());
+          
           logger.error("Failed to process config update task: {}", task.getType(), e);
       }
   }
@@ -268,33 +303,41 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
           availableConfigs
       );
       
+      ddsConfigLogger.info("DDS_CONFIG_ANALYSIS," +
+              "updateType={},groupClusterChanged={},dataSourceConfigsChanged={}," +
+              "currentDataSourceCount={},availableDataSourceCount={}", 
+              updateType.name(), 
+              !ConfigComparisonUtil.isGroupClusterConfigEqual(current.getGroupCluster(), newGroupCluster),
+              !ConfigComparisonUtil.findConfigsToUpdate(currentDataSourceConfigs, availableConfigs).isEmpty(),
+              currentDataSourceConfigs.size(), availableConfigs.size());
+      
       Map<String, ObTableClient> newAtomDataSources = new ConcurrentHashMap<>();
       Map<Integer, ObTableClientGroup> newGroupDataSources = new ConcurrentHashMap<>();
       
       switch (updateType) {
           case NONE:
-              logger.info("No configuration changes detected, reusing all existing resources");
+              ddsConfigLogger.info("No configuration changes detected, reusing all existing resources");
               // 完全没有变化，复用所有现有资源
               newAtomDataSources.putAll(current.getAtomDataSources());
               newGroupDataSources.putAll(current.getGroupDataSources());
               break;
               
           case RULES_ONLY:
-              logger.info("Only rules (weights) changed, reusing connections but rebuilding groups");
+              ddsConfigLogger.info("Only rules (weights) changed, reusing connections but rebuilding groups");
               // 只有规则变化，复用连接但重新创建组
               newAtomDataSources.putAll(current.getAtomDataSources());
               newGroupDataSources = null; // 标记需要重建组
               break;
               
           case CONNECTIONS_ONLY:
-              logger.info("Only connections changed, reusing rules but rebuilding connections and groups");
+              ddsConfigLogger.info("Only connections changed, reusing rules but rebuilding connections and groups");
               // 只有连接变化，重新创建连接和组
               newGroupDataSources = null; // 标记需要重建组
               break;
               
           case CONNECTIONS_AND_RULES:
           default:
-              logger.info("Both connections and rules changed, rebuilding everything");
+              ddsConfigLogger.info("Both connections and rules changed, rebuilding everything");
               // 连接和规则都变化，全部重建
               newGroupDataSources = null; // 标记需要重建组
               break;
@@ -330,14 +373,14 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
           latestAppRule = current.getAppRule();
         }
       } catch (Exception e) {
-        logger.warn("Failed to fetch latest AppRule from supplier, using current snapshot's AppRule", e);
+        ddsConfigLogger.warn("Failed to fetch latest AppRule from supplier, using current snapshot's AppRule", e);
         latestAppRule = current.getAppRule();
       }
       
       // 6. Wrap configuration into versioned snapshot
       boolean appRuleChanged = latestAppRule != current.getAppRule();
       if (appRuleChanged) {
-        logger.info("AppRule updated, will rebuild LogicalTables with new AppRule");
+        ddsConfigLogger.info("AppRule updated, will rebuild LogicalTables with new AppRule");
       }
       
       return ConfigWrapper.wrapConfig(
@@ -356,7 +399,7 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
           VersionedConfigSnapshot current,
           GroupClusterDbkeyConfig groupClusterDbkey) throws Exception {
       
-      logger.info("Building group cluster dbkey configuration");
+      ddsConfigLogger.info("Building group cluster dbkey configuration");
       
       // GroupClusterDbkeyConfig updates are typically incremental updates to existing group cluster
       // Reuse current configuration structure and only update necessary parts
@@ -376,7 +419,7 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
           VersionedConfigSnapshot current,
           AttributesConfig attributes) throws Exception {
       
-      logger.info("Attributes configuration update - reusing current snapshot");
+      ddsConfigLogger.info("Attributes configuration update - reusing current snapshot");
       
       // Attributes configuration typically doesn't require data source rebuild
       // Return current snapshot with new timestamp
@@ -400,7 +443,7 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
           VersionedConfigSnapshot current,
           Map<String, DoubleWriteRule> doubleWriteRules) throws Exception {
       
-      logger.info("Double write rules configuration update - reusing current snapshot");
+      ddsConfigLogger.info("Double write rules configuration update - reusing current snapshot");
       
       // Double write rules typically don't require data source rebuild
       // Return current snapshot with new timestamp
@@ -424,7 +467,7 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
           VersionedConfigSnapshot current,
           Map<String, String> whiteListRules) throws Exception {
       
-      logger.info("White list rules configuration update - reusing current snapshot");
+      ddsConfigLogger.info("White list rules configuration update - reusing current snapshot");
       
       // White list rules typically don't require data source rebuild
       // Return current snapshot with new timestamp
@@ -448,7 +491,7 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
           VersionedConfigSnapshot current,
           Map<String, String> selfAdjustRules) throws Exception {
       
-      logger.info("Self adjust rules configuration update - reusing current snapshot");
+      ddsConfigLogger.info("Self adjust rules configuration update - reusing current snapshot");
       
       // Self adjust rules typically don't require data source rebuild
       // Return current snapshot with new timestamp
@@ -472,7 +515,7 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
           VersionedConfigSnapshot current,
           TestLoadRule testLoadRule) throws Exception {
       
-      logger.info("Test load rule configuration update - reusing current snapshot");
+      ddsConfigLogger.info("Test load rule configuration update - reusing current snapshot");
       
       // Test load rule typically doesn't require data source rebuild
       // Return current snapshot with new timestamp
@@ -505,6 +548,12 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
 
           logger.info("Configuration replaced atomically, deprecated indexes: {}", 
               newConfig.getDeprecatedElasticIndexes());
+          
+          ddsConfigLogger.info("DDS_CONFIG_REPLACED," +
+                  "oldGroupCount={},newGroupCount={},deprecatedIndexes={},status=success", 
+                  oldConfig != null ? oldConfig.getGroupDataSources().size() : 0,
+                  newConfig.getGroupDataSources().size(),
+                  newConfig.getDeprecatedElasticIndexes().size());
 
       } finally {
           configLock.writeLock().unlock();
@@ -530,7 +579,7 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
           for (String oldDbkey : oldDataSources.keySet()) {
               if (!newDataSources.containsKey(oldDbkey)) {
                   dbkeysToCleanup.add(oldDbkey);
-                  logger.info("Data source config removed for dbkey: {}", oldDbkey);
+                  ddsConfigLogger.info("Data source config removed for dbkey: {}", oldDbkey);
               }
           }
       } else {
@@ -540,7 +589,7 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
       
       // 异步清理被移除的数据源
       if (!dbkeysToCleanup.isEmpty()) {
-          logger.info("Scheduling async cleanup for {} obsolete data sources: {}", 
+          ddsConfigLogger.info("Scheduling async cleanup for {} obsolete data sources: {}", 
               dbkeysToCleanup.size(), dbkeysToCleanup);
           
           // 获取RPC执行超时时间作为延迟时间
@@ -549,7 +598,7 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
               delayMillis = 30000; // 默认30秒
           }
           
-          logger.info("Using RPC execute timeout ({}ms) as cleanup delay to ensure all in-flight RPC requests complete safely", 
+          ddsConfigLogger.info("Using RPC execute timeout ({}ms) as cleanup delay to ensure all in-flight RPC requests complete safely", 
               delayMillis);
           
           for (String dbkey : dbkeysToCleanup) {
@@ -559,10 +608,10 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
               }
           }
           
-          logger.info("Async cleanup initiated. All RPC requests will complete within {}ms before connections are closed", 
+          ddsConfigLogger.info("Async cleanup initiated. All RPC requests will complete within {}ms before connections are closed", 
               delayMillis);
       } else {
-          logger.info("No obsolete data sources to clean up");
+          ddsConfigLogger.info("No obsolete data sources to clean up");
       }
   }
   
@@ -575,7 +624,7 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
           String timeoutStr = properties.getProperty("rpc.execute.timeout", "30000");
           return Long.parseLong(timeoutStr);
       } catch (Exception e) {
-          logger.warn("Failed to get RPC execute timeout, using default 30 seconds", e);
+          ddsConfigLogger.warn("Failed to get RPC execute timeout, using default 30 seconds", e);
           return 30000;
       }
   }
@@ -589,7 +638,7 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
       pendingCloseTasks.put(dbkey, task);
       totalAsyncCloses.incrementAndGet();
       
-      logger.info("Scheduling async close for ObTableClient dbkey: {} with delay: {} {} (elapsed since creation: {}ms)", 
+      ddsConfigLogger.info("Scheduling async close for ObTableClient dbkey: {} with delay: {} {} (elapsed since creation: {}ms)", 
           dbkey, delay, timeUnit, System.currentTimeMillis() - task.creationTime);
       
       scheduledExecutor.schedule(() -> {
@@ -597,9 +646,9 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
               task.run();
               pendingCloseTasks.remove(dbkey);
               completedAsyncCloses.incrementAndGet();
-              logger.debug("Async close task completed and removed from pending tasks for dbkey: {}", dbkey);
+              ddsConfigLogger.debug("Async close task completed and removed from pending tasks for dbkey: {}", dbkey);
           } catch (Exception e) {
-              logger.error("Error executing async close task for dbkey: {}", dbkey, e);
+              ddsConfigLogger.error("Error executing async close task for dbkey: {}", dbkey, e);
               pendingCloseTasks.remove(dbkey);
           }
       }, delay, timeUnit);
@@ -674,9 +723,9 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
               // 如果这个dbkey不在更新列表中，说明配置未变化，可以复用
               if (!configsToUpdate.containsKey(dbkey)) {
                   newAtomDataSources.put(dbkey, existingClient);
-                  logger.info("Reusing existing ObTableClient for dbkey: {}", dbkey);
+                  ddsConfigLogger.info("Reusing existing ObTableClient for dbkey: {}", dbkey);
               } else {
-                  logger.info("Config changed for dbkey: {}, will create new ObTableClient", dbkey);
+                  ddsConfigLogger.info("Config changed for dbkey: {}, will create new ObTableClient", dbkey);
               }
           }
       }
@@ -691,7 +740,7 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
           }
           
           if (!newConfigs.isEmpty()) {
-              logger.info("Creating {} new ObTableClient instances for updated configs", newConfigs.size());
+              ddsConfigLogger.info("Creating {} new ObTableClient instances for updated configs", newConfigs.size());
               Map<String, ObTableClient> newlyCreatedClients = DataSourceFactory.createAtomDataSources(
                   newConfigs, runningMode, tableClientProperty);
               newAtomDataSources.putAll(newlyCreatedClients);
@@ -702,7 +751,7 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
           configsToUpdate = Collections.emptyMap();
       }
       
-      logger.info("Atom data sources summary: total={}, reused={}, newly created={}", 
+      ddsConfigLogger.info("Atom data sources summary: total={}, reused={}, newly created={}", 
           newAtomDataSources.size(), 
           newAtomDataSources.size() - configsToUpdate.size(), 
           configsToUpdate.size());
@@ -715,7 +764,7 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
     try {
       configs = extendedDataSourceSupplier.get();
     } catch (Exception e) {
-      logger.warn("Failed to fetch extended data source configs from supplier", e);
+      ddsConfigLogger.warn("Failed to fetch extended data source configs from supplier", e);
     }
     if (configs == null || configs.isEmpty()) {
       VersionedConfigSnapshot snapshot = currentConfig.get();
@@ -747,20 +796,20 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
     public void run() {
       try {
         long waitTime = System.currentTimeMillis() - creationTime;
-        logger.info("Executing async close for ObTableClient dbkey: {} (waited {}ms, requested delay: {}ms)", 
+        ddsConfigLogger.info("Executing async close for ObTableClient dbkey: {} (waited {}ms, requested delay: {}ms)", 
             dbkey, waitTime, delayMillis);
         
         // close connection directly, delay strategy ensures all RPC requests complete
         client.close();
-        logger.info("Successfully completed async close for ObTableClient dbkey: {}", dbkey);
+        ddsConfigLogger.info("Successfully completed async close for ObTableClient dbkey: {}", dbkey);
         
       } catch (Exception e) {
-        logger.error("Error during async close for ObTableClient dbkey: {}", dbkey, e);
+        ddsConfigLogger.error("Error during async close for ObTableClient dbkey: {}", dbkey, e);
         try {
           // ensure to close connection even if error occurs
           client.close();
         } catch (Exception closeException) {
-          logger.error("Failed to close ObTableClient dbkey: {} during error handling", dbkey, closeException);
+          ddsConfigLogger.error("Failed to close ObTableClient dbkey: {} during error handling", dbkey, closeException);
         }
       }
     }
@@ -783,16 +832,16 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
    * used for graceful shutdown
    */
   public void shutdownAsyncCleanup() {
-      logger.info("Shutting down async cleanup executor, stats: {}", getAsyncCleanupStats());
+      ddsConfigLogger.info("Shutting down async cleanup executor, stats: {}", getAsyncCleanupStats());
       
       try {
           scheduledExecutor.shutdown();
           if (!scheduledExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
               scheduledExecutor.shutdownNow();
           }
-          logger.info("Async cleanup executor shutdown completed");
+          ddsConfigLogger.info("Async cleanup executor shutdown completed");
       } catch (InterruptedException e) {
-          logger.error("Interrupted during async cleanup shutdown", e);
+          ddsConfigLogger.error("Interrupted during async cleanup shutdown", e);
           scheduledExecutor.shutdownNow();
           Thread.currentThread().interrupt();
       }

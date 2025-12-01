@@ -33,12 +33,13 @@ public class TableClientLoggerFactory {
     private static final String       DAILY_PATTERN                       = "yyyyMMdd";
     private static final String       HOUR_PATTERN                        = "yyyyMMddHH";
 
+    public static final String        OCEANBASE_TABLE_CLIENT              = "OBKV";
     public static final String        OCEANBASE_TABLE_CLIENT_BOOT         = "OBKV-BOOT";
     public static final String        OCEANBASE_TABLE_CLIENT_MONITOR      = "OBKV-MONITOR";
     public static final String        OCEANBASE_TABLE_CLIENT_RUNTIME      = "OBKV-RUNTIME";
     public static final String        OCEANBASE_TABLE_CLIENT_DIRECT       = "OBKV-DIRECT";
     public static final String        OCEANBASE_TABLE_CLIENT_RULE         = "OBKV-RULE";
-    public static final String        OCEANBASE_TABLE_CLIENT              = "OBKV";
+    public static final String        OCEANBASE_TABLE_CLIENT_DDS_CONFIG   = "OBKV-DDS-CONFIG";
 
     public static LogCode2Description LCD                                 = LogCode2Description
                                                                               .create(OCEANBASE_TABLE_CLIENT_LOGGER_SPACE);
@@ -48,6 +49,7 @@ public class TableClientLoggerFactory {
     public static Logger              MONITOR                             = NOPLogger.NOP_LOGGER;
     public static Logger              RUNTIME                             = NOPLogger.NOP_LOGGER;
     public static Logger              DIRECT                              = NOPLogger.NOP_LOGGER;
+    public static Logger              DDS_CONFIG                          = NOPLogger.NOP_LOGGER;
 
     static {
         LOOGER = getLogger(OCEANBASE_TABLE_CLIENT_LOGGER_SPACE);
@@ -55,6 +57,7 @@ public class TableClientLoggerFactory {
         MONITOR = getMonitorLogger();
         RUNTIME = getRUNTIMELogger();
         DIRECT = getDIRECTLogger();
+        DDS_CONFIG = getDDSConfigLogger();
     }
 
     public static Logger getLogger(String name) {
@@ -111,6 +114,14 @@ public class TableClientLoggerFactory {
         }
 
         return DIRECT;
+    }
+
+    public static Logger getDDSConfigLogger() {
+        if (DDS_CONFIG == NOPLogger.NOP_LOGGER) {
+            DDS_CONFIG = new WrappedLogger(getLogger(OCEANBASE_TABLE_CLIENT_DDS_CONFIG));
+        }
+
+        return DDS_CONFIG;
     }
 
     /**

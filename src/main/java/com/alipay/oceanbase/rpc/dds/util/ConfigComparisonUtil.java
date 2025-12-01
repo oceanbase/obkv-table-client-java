@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
 import com.alipay.sofa.dds.config.ExtendedDataSourceConfig;
 import com.alipay.sofa.dds.config.group.GroupClusterConfig;
 import com.alipay.sofa.dds.config.group.GroupDataSourceConfig;
@@ -39,7 +40,9 @@ import com.alipay.sofa.dds.config.group.AtomDataSourceWeight;
  */
 public class ConfigComparisonUtil {
 
-    private static final Logger logger = LoggerFactory.getLogger(ConfigComparisonUtil.class);
+    private static final Logger logger          = LoggerFactory
+                                                    .getLogger(ConfigComparisonUtil.class);
+    private static final Logger ddsConfigLogger = TableClientLoggerFactory.getDDSConfigLogger();
 
     /**
      * 比较两个数据源配置是否完全相同
@@ -237,8 +240,15 @@ public class ConfigComparisonUtil {
         Map<String, ExtendedDataSourceConfig> configsToUpdate = new ConcurrentHashMap<>();
         
         if (newConfigs == null || newConfigs.isEmpty()) {
+            ddsConfigLogger.info("DDS_CONFIG_COMPARE_RESULT," +
+                    "oldConfigCount=0,newConfigCount=0,configsToUpdate=0," +
+                    "configsToRemove=0,configsToAdd=0,updateType=NONE");
             return configsToUpdate;
         }
+        
+        int configsToAdd = 0;
+        int configsToRemove = 0;
+        int configsChanged = 0;
         
         // 找出新增的或变化的配置
         for (Map.Entry<String, ExtendedDataSourceConfig> entry : newConfigs.entrySet()) {
@@ -248,15 +258,49 @@ public class ConfigComparisonUtil {
             ExtendedDataSourceConfig oldConfig = oldConfigs != null ? oldConfigs.get(dbkey) : null;
             if (oldConfig == null) {
                 // 新增的配置
+                configsToAdd++;
                 logger.info("New data source config found for dbkey: {}", dbkey);
+                ddsConfigLogger.info("DDS_CONFIG_ADD," +
+                        "dbkey={},config={}", dbkey, newConfig.getAppDsName());
                 configsToUpdate.put(dbkey, newConfig);
             } else if (!isConfigEqual(oldConfig, newConfig)) {
                 // 配置发生变化
+                configsChanged++;
                 logger.info("Data source config changed for dbkey: {}", dbkey);
+                ddsConfigLogger.info("DDS_CONFIG_CHANGE," +
+                        "dbkey={},oldConfig={},newConfig={}", 
+                        dbkey, oldConfig.getAppDsName(), newConfig.getAppDsName());
                 configsToUpdate.put(dbkey, newConfig);
             }
             // 如果配置相同，则不添加到更新列表中（复用）
         }
+        
+        // 计算需要移除的配置
+        if (oldConfigs != null) {
+            for (String oldDbkey : oldConfigs.keySet()) {
+                if (!newConfigs.containsKey(oldDbkey)) {
+                    configsToRemove++;
+                }
+            }
+        }
+        
+        String updateType = "PARTIAL";
+        if (configsToAdd > 0 && configsChanged == 0 && configsToRemove == 0) {
+            updateType = "ADD_ONLY";
+        } else if (configsToAdd == 0 && configsChanged > 0 && configsToRemove == 0) {
+            updateType = "CHANGE_ONLY";
+        } else if (configsToAdd == 0 && configsChanged == 0 && configsToRemove > 0) {
+            updateType = "REMOVE_ONLY";
+        } else if (configsToAdd == 0 && configsChanged == 0 && configsToRemove == 0) {
+            updateType = "NONE";
+        }
+        
+        ddsConfigLogger.info("DDS_CONFIG_COMPARE_RESULT," +
+                "oldConfigCount={},newConfigCount={},configsToUpdate={}," +
+                "configsToRemove={},configsToAdd={},configsChanged={},updateType={}", 
+                oldConfigs != null ? oldConfigs.size() : 0,
+                newConfigs.size(), configsToUpdate.size(),
+                configsToRemove, configsToAdd, configsChanged, updateType);
         
         return configsToUpdate;
     }

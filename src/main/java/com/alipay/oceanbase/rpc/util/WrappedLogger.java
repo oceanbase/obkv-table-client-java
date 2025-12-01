@@ -20,6 +20,10 @@ package com.alipay.oceanbase.rpc.util;
 import org.slf4j.Logger;
 import org.slf4j.Marker;
 import com.alipay.remoting.util.StringUtils;
+import com.alipay.common.tracer.context.AbstractLogContext;
+import com.alipay.common.tracer.util.DummyContextUtil;
+import com.alipay.common.tracer.util.LoadTestUtil;
+import com.alipay.tracer.biz.util.TracerBizUtil;
 
 /**
  * <p> Date: 2016-08-17 Time: 10:22 </p>
@@ -36,17 +40,68 @@ public class WrappedLogger implements Logger {
 
     private String getLoggerString(String s) {
         StringBuilder stringBuilder = new StringBuilder();
-        String traceId = getTraceId();
-        if (StringUtils.isNotBlank(traceId)) {
-            stringBuilder.append(traceId).append("-");
-        }
-        stringBuilder.append(s);
+        stringBuilder.append(getMarkValue()).append("-").append(getTraceId()).append(",")
+            .append(getRpcId()).append(",").append(s);
         return stringBuilder.toString();
+    }
+
+    public static boolean isLoadTest() {
+        return (LoadTestUtil.isLoadTestMode() || TracerBizUtil.isShadowTest());
+    }
+
+    private String getMarkValue() {
+        if (isLoadTest()) {
+            return "T";
+        }
+        return "F";
     }
 
     private String getTraceId() {
         String tracerId = "";
+        try {
+            AbstractLogContext logContext = AbstractLogContext.get();
+            if (null == logContext) {
+                DummyContextUtil.createDummyLogContext();
+                logContext = AbstractLogContext.get();
+            }
+
+            if (logContext != null) {
+                tracerId = logContext.getTraceId();
+            }
+        } catch (Exception e) {
+            if (logger.isDebugEnabled()) {
+                logger.error("failed to get traceId", e);
+            } else {
+                return "";
+            }
+
+        }
+
         return tracerId;
+    }
+
+    private String getRpcId() {
+        String rpcId = "";
+        try {
+            AbstractLogContext logContext = AbstractLogContext.get();
+            if (null == logContext) {
+                DummyContextUtil.createDummyLogContext();
+                logContext = AbstractLogContext.get();
+            }
+
+            if (logContext != null) {
+                rpcId = logContext.getRpcId();
+            }
+        } catch (Exception e) {
+            if (logger.isDebugEnabled()) {
+                logger.error("failed to get rpcId", e);
+            } else {
+                return "";
+            }
+
+        }
+
+        return rpcId;
     }
 
     @Override
