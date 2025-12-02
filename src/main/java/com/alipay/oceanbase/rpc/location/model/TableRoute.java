@@ -158,7 +158,7 @@ public class TableRoute {
      * Set read consistency level.
      * @param readConsistency read consistency level
      */
-    public void setReadConsistency(ObReadConsistency readConsistency) throws IllegalArgumentException {
+    public void setReadConsistency(ObReadConsistency readConsistency) {
         this.consistencyLevel = readConsistency;
     }
 

@@ -2754,7 +2754,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         }
     }
 
-    public void setReadConsistency(ObReadConsistency readConsistency) throws IllegalArgumentException {
+    public void setReadConsistency(ObReadConsistency readConsistency) {
         tableRoute.setReadConsistency(readConsistency);
     }
 
@@ -2762,7 +2762,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
         return tableRoute.getReadConsistency().name();
     }
 
-    public void setRoutePolicy(ObRoutePolicy policy) throws IllegalArgumentException {
+    public void setRoutePolicy(ObRoutePolicy policy) {
         tableRoute.setRoutePolicy(policy);
     }
 
