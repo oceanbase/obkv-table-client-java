@@ -29,6 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.slf4j.Logger;
 
@@ -86,6 +88,9 @@ import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.RUNTIME;
 import static com.alipay.oceanbase.rpc.util.TableClientLoggerFactory.getLogger;
 import com.alipay.sofa.dds.config.ExtendedDataSourceConfig;
 import com.alipay.sofa.dds.config.group.GroupClusterConfig;
+import com.alipay.sofa.dds.config.group.GroupDataSourceConfig;
+import com.alipay.sofa.dds.config.group.GroupDataSourceWeight;
+import com.alipay.sofa.dds.config.group.AtomDataSourceWeight;
 import com.alipay.sofa.dds.config.rule.AppRule;
 
 /**
@@ -264,6 +269,10 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
             extendedDataSourceConfigs, this.runningMode, this.tableClientProperty);
         
         BOOT.info("init AtomDataSourceConcurrent end  " + atomDataSources);
+        
+        if (groupClusterConfig != null && !groupClusterConfig.getGroupCluster().isEmpty()) {
+            validateDataSourcesReadyForGroups(groupClusterConfig, atomDataSources);
+        }
         
         BOOT.info("init GroupDataSourceConcurrent start");
 
@@ -997,6 +1006,48 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
     private void checkArgument(boolean expression, Object errorMessage) {
         if (!expression) {
             throw new IllegalArgumentException(String.valueOf(errorMessage));
+        }
+    }
+
+    /**
+     * 从Group配置中提取所需的dbkey集合
+     */
+    private Set<String> extractRequiredDbkeys(GroupClusterConfig groupClusterConfig) {
+        Set<String> requiredDbkeys = new HashSet<>();
+        
+        for (GroupDataSourceConfig groupConfig : groupClusterConfig.getGroupCluster().values()) {
+            GroupDataSourceWeight groupWeight = groupConfig.getGroupDataSourceWeight();
+            if (groupWeight != null) {
+                List<AtomDataSourceWeight> weights = groupWeight.getDataSourceReadWriteWeights();
+                if (weights != null) {
+                    for (AtomDataSourceWeight weight : weights) {
+                        requiredDbkeys.add(weight.getDbkey());
+                    }
+                }
+            }
+        }
+        
+        return requiredDbkeys;
+    }
+
+    /**
+     * 验证数据源是否准备好为Group提供服务
+     * 确保Group配置中引用的所有dbkey都有对应的已初始化数据源
+     */
+    private void validateDataSourcesReadyForGroups(GroupClusterConfig groupClusterConfig,
+                                                   Map<String, ObTableClient> atomDataSources) {
+        Set<String> requiredDbkeys = extractRequiredDbkeys(groupClusterConfig);
+        Set<String> availableDbkeys = atomDataSources.keySet();
+        
+        if (!availableDbkeys.containsAll(requiredDbkeys)) {
+            Set<String> missingDbkeys = new HashSet<>(requiredDbkeys);
+            missingDbkeys.removeAll(availableDbkeys);
+            
+            BOOT.error("CRITICAL: Some required data sources are missing. " +
+                      "Missing: {}, Available: {}", missingDbkeys, availableDbkeys);
+            throw new IllegalStateException("Required data sources not found: " + missingDbkeys);
+        } else {
+            BOOT.info("All required data sources are ready for Group initialization: {}", requiredDbkeys);
         }
     }
 

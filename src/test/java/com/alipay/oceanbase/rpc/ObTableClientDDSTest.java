@@ -18,13 +18,18 @@
 package com.alipay.oceanbase.rpc;
 
 import com.alipay.oceanbase.rpc.dds.DdsObTableClient;
+import com.alipay.oceanbase.rpc.dds.DdsWeightSwitchHelper;
 import com.alipay.oceanbase.rpc.mutation.*;
 import com.alipay.oceanbase.rpc.mutation.result.MutationResult;
+import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
@@ -37,11 +42,18 @@ import org.powermock.modules.junit4.PowerMockRunner;
 @PrepareForTest(DdsObTableClient.class)
 @PowerMockIgnore({ "javax.crypto.*" })
 public class ObTableClientDDSTest {
-    private DdsObTableClient    client;
+    private DdsObTableClient                   client;
 
-    private static final String appName   = "obkv";
-    private static final String appDsName = "dds_migrate_2x_4x_test";
-    private static final String version   = "v1.0";
+    private static final String                appName            = "obkv";
+    private static final String                appDsName          = "dds_migrate_2x_4x_test";
+    private static final String                version            = "v1.0";
+
+    // DDS权重切换测试工具
+    private static final DdsWeightSwitchHelper weightSwitchHelper = new DdsWeightSwitchHelper(
+                                                                      "http://ddsconsole.stable.alipay.net", // DDS控制台地址
+                                                                      "obkv", // 用户名
+                                                                      "96328f194f86102ee3fdbd2695b2753c" // 令牌（实际使用时应替换为有效令牌）
+                                                                  );
 
     /*
         tbRule: substr_loadtest(c1,1,2)
@@ -213,6 +225,7 @@ public class ObTableClientDDSTest {
             // Test BatchOperation interface
             BatchOperation batchOp = client.batchOperation(tableName);
             assertNotNull("BatchOperation interface should return non-null object", batchOp);
+
         } finally {
             // Clean up
             client.delete(tableName, new Object[] { testKey });
@@ -726,6 +739,293 @@ public class ObTableClientDDSTest {
             for (String key : testKeys) {
                 client.delete(tableName, new Object[] { key });
             }
+        }
+    }
+
+    // ================ DDS weight switch test case =================
+
+    @Test
+    public void testDdsWeightSwitchWithContinuousReadWrite() throws Exception {
+        client = new DdsObTableClient();
+        client.setAppName("obkv");
+        client.setAppDsName("obkv_adapt_dds_single");
+        client.setVersion("v1.0");
+        client.init();
+        String tableName = "loadtest_varchar_table_00";
+
+        try {
+            DdsWeightSwitchHelper.MetaDataResponse metaData = weightSwitchHelper.getMetaData(
+                "obkv", "v1.0", "RDB");
+
+            String originalDbkeySet = null;
+            for (DdsWeightSwitchHelper.AppDsInfo appDsInfo : metaData.getData()) {
+                if ("obkv_adapt_dds_single".equals(appDsInfo.getAppDsName())) {
+                    StringBuilder sb = new StringBuilder("group_00");
+                    for (DdsWeightSwitchHelper.ConnProp connProp : appDsInfo.getConnProps()) {
+                        sb.append(",").append(connProp.getDbkeyName()).append(":R10W10");
+                    }
+                    originalDbkeySet = sb.toString();
+                    break;
+                }
+            }
+            assertNotNull("should find original config", originalDbkeySet);
+
+            System.out.println("=== 开始数据库独立性验证 ===");
+            // 验证初始连接状态
+            verifyConnectionDifference(client, tableName, 2);
+            
+            // 第一阶段：验证数据库1独立性
+            System.out.println("\n=== 阶段1：验证第一个数据库的独立性 ===");
+            String switchedConfig1 = generateSwitchedConfig(originalDbkeySet, 0);
+            boolean switch1Success = weightSwitchHelper.switchWeight("obkv",
+                "obkv_adapt_dds_single", "v1.0", switchedConfig1, false);
+            assertTrue("should switch weight successfully", switch1Success);
+            Thread.sleep(10);
+            
+            // 插入带有唯一标识的数据到数据库1
+            for (int i = 1; i <= 10; i++) {
+                String testKey = "db1_independence_test_" + i;
+                verifyDatabaseIndependence(client, tableName, testKey);
+            }
+
+            // 第二阶段：切换到数据库2
+            System.out.println("\n=== 阶段2：切换到第二个数据库 ===");
+            String switchedConfig2 = generateSwitchedConfig(originalDbkeySet, 1);
+            boolean switch2Success = weightSwitchHelper.switchWeight("obkv",
+                "obkv_adapt_dds_single", "v1.0", switchedConfig2, false);
+            assertTrue("should switch weight successfully", switch2Success);
+            Thread.sleep(10);
+            
+            // 插入带有唯一标识的数据到数据库2
+            for (int i = 1; i <= 10; i++) {
+                String testKey = "db2_independence_test_" + i;
+                verifyDatabaseIndependence(client, tableName, testKey);
+            }
+
+            // 第三阶段：验证数据分布
+            System.out.println("\n=== 阶段3：验证数据分布 ===");
+            System.out.println("检查数据库1的数据...");
+            int db1DataCount = 0;
+            for (int i = 1; i <= 10; i++) {
+                String testKey = "db1_independence_test_" + i;
+                try {
+                    Map<String, Object> result = client.get(tableName, new Object[] { testKey }, new String[] { "c2" });
+                    if (result != null && !result.isEmpty()) {
+                        db1DataCount++;
+                    }
+                } catch (Exception e) {
+                    // 忽略查询异常
+                }
+            }
+            
+            System.out.println("检查数据库2的数据...");
+            int db2DataCount = 0;
+            for (int i = 1; i <= 10; i++) {
+                String testKey = "db2_independence_test_" + i;
+                try {
+                    Map<String, Object> result = client.get(tableName, new Object[] { testKey }, new String[] { "c2" });
+                    if (result != null && !result.isEmpty()) {
+                        db2DataCount++;
+                    }
+                } catch (Exception e) {
+                    // 忽略查询异常
+                }
+            }
+            
+            System.out.println("=== 数据分布验证结果 ===");
+            System.out.println("数据库1中的数据记录数: " + db1DataCount);
+            System.out.println("数据库2中的数据记录数: " + db2DataCount);
+            
+            // 第四阶段：持续写入测试
+            System.out.println("\n=== 阶段4：持续写入测试 ===");
+            String switchedConfig3 = generateSwitchedConfig(originalDbkeySet, 0);
+            boolean switch3Success = weightSwitchHelper.switchWeight("obkv",
+                "obkv_adapt_dds_single", "v1.0", switchedConfig3, false);
+            assertTrue("should switch weight successfully", switch3Success);
+            Thread.sleep(10);
+            
+            for (int i = 1; i <= 25; i++) {
+                String testKey = "weight_switch_test_key" + i;
+                try {
+                    client.insert(tableName, new Object[] { testKey }, new String[] { "c2" },
+                        new Object[] { "first_round_value_" + i });
+                    if (i % 5 == 0) {
+                        System.out.println("first round write completed: key" + i);
+                    }
+                } catch (Exception e) {
+                    System.out.println("first round write failed key" + i + ": " + e.getMessage());
+                }
+            }
+
+            String switchedConfig4 = generateSwitchedConfig(originalDbkeySet, 1);
+            boolean switch4Success = weightSwitchHelper.switchWeight("obkv",
+                "obkv_adapt_dds_single", "v1.0", switchedConfig4, false);
+            assertTrue("should switch weight successfully", switch4Success);
+            Thread.sleep(10);
+            
+            for (int i = 26; i <= 50; i++) {
+                String testKey = "weight_switch_test_key" + i;
+                try {
+                    client.insert(tableName, new Object[] { testKey }, new String[] { "c2" },
+                        new Object[] { "second_round_value_" + i });
+                    if (i % 5 == 0) {
+                        System.out.println("second round write completed: key" + i);
+                    }
+                } catch (Exception e) {
+                    System.out.println("second round write failed key" + i + ": " + e.getMessage());
+                }
+            }
+
+            // 第五阶段：最终验证和分析
+            System.out.println("\n=== 阶段5：最终验证和弹性位切换有效性分析 ===");
+            
+            // 分析数据分布模式
+            Map<String, Integer> valuePatternCount = new HashMap<>();
+            String[] sampleKeys = { "weight_switch_test_key1", "weight_switch_test_key25",
+                    "weight_switch_test_key50", "weight_switch_test_key75",
+                    "weight_switch_test_key100" };
+            for (String sampleKey : sampleKeys) {
+                try {
+                    Map<String, Object> result = client.get(tableName, new Object[] { sampleKey },
+                        new String[] { "c2" });
+                    if (result != null && !result.isEmpty()) {
+                        String value = (String) result.get("c2");
+                        System.out.println("样本数据 [" + sampleKey + "] = " + value);
+                        
+                        // 统计值模式
+                        String pattern = value.contains("first_round") ? "GROUP1" : 
+                                       value.contains("second_round") ? "GROUP2" : "OTHER";
+                        valuePatternCount.put(pattern, valuePatternCount.getOrDefault(pattern, 0) + 1);
+                    } else {
+                        System.out.println("样本数据 [" + sampleKey + "] = 未找到");
+                    }
+                } catch (Exception e) {
+                    System.out.println("样本数据 [" + sampleKey + "] = 查询失败: " + e.getMessage());
+                }
+            }
+            
+            // batch put some data
+            TableBatchOps batchOps = client.batch(tableName);
+            for (int i = 1; i <= 10; i++) {
+                String testKey = "weight_switch_test_key" + i;
+                batchOps.insert(new Object[] { testKey }, new String[] { "c2" }, new Object[] { "batch_value_" + i });
+            }
+            List<Object> batchResult = batchOps.execute();
+            System.out.println("batch put data result: " + batchResult);
+
+            System.out.println("\n=== 弹性位切换有效性分析 ===");
+            System.out.println("数据模式统计: " + valuePatternCount);
+            
+            // 结论分析
+            if (valuePatternCount.getOrDefault("GROUP1", 0) > 0 && valuePatternCount.getOrDefault("GROUP2", 0) > 0) {
+                System.out.println("✓ 检测到两种不同的数据模式，弹性位切换可能有效");
+            } else {
+                System.out.println("✗ 只检测到单一数据模式，弹性位切换可能无效");
+                System.out.println("  建议检查：");
+                System.out.println("  1. 两个弹性位是否真正指向不同的数据库实例");
+                System.out.println("  2. 是否存在数据复制/同步机制");
+                System.out.println("  3. 弹性位规则配置是否正确");
+            }
+
+        } finally {
+            // clean up
+            String[] testKeys = { "weight_switch_test_key1", "weight_switch_test_key25",
+                    "weight_switch_test_key50", "weight_switch_test_key75",
+                    "weight_switch_test_key100" };
+            for (String key : testKeys) {
+                client.delete(tableName, new Object[] { key });
+            }
+            // close client
+            client.close();
+        }
+    }
+
+    /**
+     * generate switched config based on original dbkeySet
+     * @param originalDbkeySet the original config
+     * @param enabledDbkeyIndex the index of the dbkey to enable, other dbkeys will be disabled
+     * @return the switched config
+     */
+    private String generateSwitchedConfig(String originalDbkeySet, int enabledDbkeyIndex) {
+        String[] parts = originalDbkeySet.split(",");
+        StringBuilder sb = new StringBuilder("group_00");
+
+        // parse all dbkey names
+        for (int i = 1; i < parts.length; i++) {
+            // parse format: dbkeyName:weight
+            String dbkeyWithWeight = parts[i];
+            String dbkeyName = dbkeyWithWeight.split(":")[0];
+
+            // enable the dbkey at the specified index (R10W10), disable others (R0W0)
+            String weight = (i - 1 == enabledDbkeyIndex) ? "R10W10" : "R0W0";
+            sb.append(",").append(dbkeyName).append(":").append(weight);
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * 验证数据库连接独立性 - 通过创建独特标识符
+     */
+    private void verifyDatabaseIndependence(DdsObTableClient client, String tableName,
+                                            String testKey) {
+        try {
+            // 插入一个带有时间戳和随机数的唯一标识符
+            String uniqueValue = "independence_test_" + System.currentTimeMillis() + "_"
+                                 + Math.random();
+            client.insert(tableName, new Object[] { testKey }, new String[] { "c2", "c3" },
+                new Object[] { uniqueValue, testKey + "_marker" });
+            System.out.println("插入独立性验证数据: " + testKey + " -> " + uniqueValue);
+
+            // 立即读取验证
+            Map<String, Object> result = client.get(tableName, new Object[] { testKey },
+                new String[] { "c2", "c3" });
+            if (result != null && uniqueValue.equals(result.get("c2"))) {
+                System.out.println("✓ 独立性验证数据确认写入: " + testKey);
+            } else {
+                System.out.println("✗ 独立性验证数据写入失败: " + testKey);
+            }
+        } catch (Exception e) {
+            System.out.println("独立性验证异常 " + testKey + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * 验证数据库连接是否真正不同 - 通过插入和查询不同标识符的数据
+     */
+    private void verifyConnectionDifference(DdsObTableClient client, String tableName,
+                                            int expectedGroupCount) {
+        try {
+            System.out.println("验证数据库连接的差异性...");
+
+            // 插入测试数据到不同的key，观察路由模式
+            String[] testKeys = { "connection_test_1", "connection_test_2", "connection_test_3" };
+
+            for (int i = 0; i < testKeys.length; i++) {
+                String testKey = testKeys[i];
+                String testValue = "connection_verification_" + i + "_"
+                                   + System.currentTimeMillis();
+
+                try {
+                    client.insert(tableName, new Object[] { testKey }, new String[] { "c2" },
+                        new Object[] { testValue });
+
+                    // 立即读取验证
+                    Map<String, Object> result = client.get(tableName, new Object[] { testKey },
+                        new String[] { "c2" });
+                    if (result != null && testValue.equals(result.get("c2"))) {
+                        System.out.println("✓ 连接验证数据 " + i + " 写入并读取成功: " + testKey);
+                    } else {
+                        System.out.println("✗ 连接验证数据 " + i + " 验证失败: " + testKey);
+                    }
+
+                } catch (Exception e) {
+                    System.out.println("连接验证异常 " + testKey + ": " + e.getMessage());
+                }
+            }
+
+        } catch (Exception e) {
+            System.out.println("无法验证连接差异: " + e.getMessage());
         }
     }
 }

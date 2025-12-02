@@ -251,6 +251,8 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
         String useLocalConfig = System.getProperty(DDS_USE_LOCAL_CONFIG_KEY);
         if (Objects.nonNull(useLocalConfig)) {
             ddsSDK.setUseLocalConfigOnly(Boolean.parseBoolean(useLocalConfig));
+        } else {
+            ddsSDK.setUseLocalConfigOnly(false);
         }
         String localConfigPath = System.getProperty(DDS_LOCAL_CONFIG_PATH_KEY);
         if (Objects.nonNull(localConfigPath)) {
@@ -300,6 +302,9 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
         String useLocalConfig = System.getProperty(DDS_USE_LOCAL_CONFIG_KEY);
         if (Objects.nonNull(useLocalConfig)) {
             ddsSDK.setUseLocalConfigOnly(Boolean.parseBoolean(useLocalConfig));
+        } else {
+            // 如果没有设置本地配置属性，默认使用远程配置
+            ddsSDK.setUseLocalConfigOnly(false);
         }
         String localConfigPath = System.getProperty(DDS_LOCAL_CONFIG_PATH_KEY);
         if (Objects.nonNull(localConfigPath)) {
@@ -3609,6 +3614,8 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
                     ObPayload result = odpTable.execute(request);
                     checkObFetchPartitionMetaResult(lastOdpRefreshTimeMills, request, result);
                     ObFetchPartitionMetaResult obFetchPartitionMetaResult = (ObFetchPartitionMetaResult) result;
+                    // Set OB version for version-aware decoding
+                    obFetchPartitionMetaResult.setObVersion(obVersion);
                     odpTableEntry = obFetchPartitionMetaResult.getTableEntry();
                     TableEntryKey key = new TableEntryKey(clusterName, tenantName, database,
                         tableName);

@@ -22,8 +22,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class ConcurrentTask implements Runnable {
 
-    private CountDownLatch countDownLatch;
-    private AtomicBoolean  stopped;
+    private CountDownLatch         countDownLatch;
+    private AtomicBoolean          stopped;
+    private ConcurrentTaskExecutor executor;
 
     /*
      * Run.
@@ -35,6 +36,11 @@ public abstract class ConcurrentTask implements Runnable {
                 return;
             }
             doTask();
+        } catch (Exception e) {
+            if (executor != null) {
+                executor.collectExceptions(e);
+            }
+            throw new RuntimeException(e);
         } finally {
             countDownLatch.countDown();
         }
@@ -43,6 +49,10 @@ public abstract class ConcurrentTask implements Runnable {
     void init(AtomicBoolean status, CountDownLatch countDownLatch) {
         this.stopped = status;
         this.countDownLatch = countDownLatch;
+    }
+
+    void init(ConcurrentTaskExecutor executor) {
+        this.executor = executor;
     }
 
     public abstract void doTask();

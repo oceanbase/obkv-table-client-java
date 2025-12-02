@@ -165,6 +165,11 @@ public class ObTableRemoting extends BaseRemoting {
                     .getHeader());
                 payload.setSequence(response.getHeader().getTraceId1());
                 payload.setUniqueId(response.getHeader().getTraceId0());
+                // Set OB version for response decoding if it's a fetch partition meta result
+                if (payload instanceof com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObFetchPartitionMetaResult) {
+                    long obVersion = conn.getObTable().getObVersion();
+                    ((com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObFetchPartitionMetaResult) payload).setObVersion(obVersion);
+                }
             } else {
                 String errMessage = TraceUtil.formatTraceMessage(conn, response,
                     "receive unexpected command code: " + response.getCmdCode().value());

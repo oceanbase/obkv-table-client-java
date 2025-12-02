@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.dds.group.ObTableClientGroup;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
-import static com.alipay.oceanbase.rpc.property.Property.RPC_EXECUTE_TIMEOUT;
+import static com.alipay.oceanbase.rpc.property.Property.RPC_LOGIN_TIMEOUT;
 import com.alipay.oceanbase.rpc.table.ConcurrentTask;
 import com.alipay.oceanbase.rpc.table.ConcurrentTaskExecutor;
 import com.alipay.sofa.common.thread.SofaThreadPoolExecutor;
@@ -135,14 +135,25 @@ public class DataSourceFactory {
                         
                         logger.error("Failed to create AtomDataSource: {}, config: {}, error: {}", 
                             dbkey, config, e.getMessage(), e);
+                        ddsConfigLogger.debug("Collecting exception for dbkey: {}", dbkey, e);
                         throw new RuntimeException("Failed to create AtomDataSource: " + dbkey, e);
                     }
                 }
             });
         }
 
-        executor.waitComplete(RPC_EXECUTE_TIMEOUT.getDefaultLong(), TimeUnit.MILLISECONDS);
+        executor.waitComplete(Math.max(RPC_LOGIN_TIMEOUT.getDefaultLong(), 10000L /* 10 seconds */), TimeUnit.MILLISECONDS);
         executorService.shutdown();
+        
+        // 检查是否有任务执行失败
+        if (!executor.getThrowableList().isEmpty()) {
+            Throwable firstError = executor.getThrowableList().get(0);
+            ddsConfigLogger.error("DDS_DATASOURCE_CREATE_FAILED," +
+                    "configCount={},successCount={},failureCount={},errorMessage={},status=FAILED", 
+                    totalConfigs, successCount[0], failureCount[0], firstError.getMessage());
+            throw new RuntimeException("Failed to create some AtomDataSources. Success: " + successCount[0] + 
+                ", Failed: " + failureCount[0], firstError);
+        }
         
         long endTime = System.currentTimeMillis();
         long duration = endTime - startTime;

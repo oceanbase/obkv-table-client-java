@@ -31,6 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,9 @@ import com.alipay.sofa.dds.config.dynamic.DynamicConfigHandler;
 import com.alipay.sofa.dds.config.group.GroupClusterConfig;
 import com.alipay.sofa.dds.config.group.GroupClusterDbkeyConfig;
 import com.alipay.sofa.dds.config.rule.AppRule;
+import com.alipay.sofa.dds.config.group.GroupDataSourceConfig;
+import com.alipay.sofa.dds.config.group.GroupDataSourceWeight;
+import com.alipay.sofa.dds.config.group.AtomDataSourceWeight;
 
 public class DdsConfigUpdateHandler implements DynamicConfigHandler {
     
@@ -295,6 +299,9 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
       Map<String, ExtendedDataSourceConfig> availableConfigs = resolveLatestExtendedConfigs();
       Map<String, ExtendedDataSourceConfig> currentDataSourceConfigs = current.getDataSourceConfigs();
       
+      // 3. 验证配置完整性：确保Group配置引用的所有dbkey都有对应的数据源配置
+      validateConfigConsistency(newGroupCluster, availableConfigs);
+      
       // 2. 分析配置更新类型
       ConfigComparisonUtil.ConfigUpdateType updateType = ConfigComparisonUtil.analyzeUpdateType(
           current.getGroupCluster(),
@@ -326,6 +333,8 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
               ddsConfigLogger.info("Only rules (weights) changed, reusing connections but rebuilding groups");
               // 只有规则变化，复用连接但重新创建组
               newAtomDataSources.putAll(current.getAtomDataSources());
+              // 验证Group配置与现有连接的兼容性
+              validateGroupConfigCompatibility(newGroupCluster, newAtomDataSources);
               newGroupDataSources = null; // 标记需要重建组
               break;
               
@@ -844,6 +853,80 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
           ddsConfigLogger.error("Interrupted during async cleanup shutdown", e);
           scheduledExecutor.shutdownNow();
           Thread.currentThread().interrupt();
+      }
+  }
+
+  /**
+   * 验证Group配置与数据源配置的一致性
+   * 确保Group配置中引用的所有dbkey都有对应的数据源配置
+   */
+  private void validateConfigConsistency(GroupClusterConfig groupClusterConfig,
+                                        Map<String, ExtendedDataSourceConfig> availableConfigs) {
+    if (groupClusterConfig == null || groupClusterConfig.getGroupCluster().isEmpty()) {
+      ddsConfigLogger.debug("No group cluster config found, skipping consistency validation");
+      return;
+    }
+    
+    Set<String> requiredDbkeys = new HashSet<>();
+    for (GroupDataSourceConfig groupConfig : groupClusterConfig.getGroupCluster().values()) {
+      GroupDataSourceWeight groupWeight = groupConfig.getGroupDataSourceWeight();
+      if (groupWeight != null) {
+        List<AtomDataSourceWeight> weights = groupWeight.getDataSourceReadWriteWeights();
+        if (weights != null) {
+          for (AtomDataSourceWeight weight : weights) {
+            requiredDbkeys.add(weight.getDbkey());
+          }
+        }
+      }
+    }
+    
+    Set<String> availableDbkeys = availableConfigs.keySet();
+    Set<String> missingDbkeys = new HashSet<>(requiredDbkeys);
+    missingDbkeys.removeAll(availableDbkeys);
+    
+    if (!missingDbkeys.isEmpty()) {
+      ddsConfigLogger.error("DDS_CONFIG_VALIDATION_FAILED - Group configuration references missing dbkeys: {}. Available: {}. Required: {}", 
+                           missingDbkeys, availableDbkeys, requiredDbkeys);
+      
+      throw new IllegalArgumentException(String.format(
+          "CRITICAL: Group configuration references missing dbkeys: %s. Available: %s. " +
+          "Please ensure all dbkeys referenced in group weights exist in atom data sources before applying configuration.",
+          missingDbkeys, availableDbkeys));
+    }
+    
+    ddsConfigLogger.info("DDS_CONFIG_VALIDATION_SUCCESS - All required dbkeys are available. Required: {}, Available: {}", 
+                        requiredDbkeys, availableDbkeys);
+  }
+  
+  /**
+   * 验证Group配置与现有连接的兼容性
+   * 在RULES_ONLY模式下，确保新的Group配置不会引用不存在的dbkey
+   */
+  private void validateGroupConfigCompatibility(GroupClusterConfig groupClusterConfig,
+                                               Map<String, ObTableClient> existingAtomDataSources) {
+      Set<String> availableDbkeys = existingAtomDataSources.keySet();
+      Set<String> missingDbkeys = new HashSet<>();
+      
+      for (GroupDataSourceConfig groupConfig : groupClusterConfig.getGroupCluster().values()) {
+          GroupDataSourceWeight groupWeight = groupConfig.getGroupDataSourceWeight();
+          if (groupWeight != null) {
+              List<AtomDataSourceWeight> weights = groupWeight.getDataSourceReadWriteWeights();
+              if (weights != null) {
+                  for (AtomDataSourceWeight weight : weights) {
+                      String dbkey = weight.getDbkey();
+                      if (!availableDbkeys.contains(dbkey)) {
+                          missingDbkeys.add(dbkey);
+                      }
+                  }
+              }
+          }
+      }
+      
+      if (!missingDbkeys.isEmpty()) {
+          throw new IllegalArgumentException(String.format(
+              "CRITICAL: Group configuration references missing dbkeys: %s. Available: %s. " +
+              "Please ensure all dbkeys referenced in group weights exist in atom data sources.",
+              missingDbkeys, availableDbkeys));
       }
   }
 }

@@ -44,6 +44,20 @@ public class ObHashUtils {
      */
     public static long varcharHash(Object varchar, ObCollationType collationType, long hashCode,
                                    ObPartFuncType partFuncType) {
+        return varcharHash(varchar, collationType, hashCode, partFuncType, 0);
+    }
+
+    /**
+     * Varchar hash with OB version.
+     * @param varchar input varchar data
+     * @param collationType collation type
+     * @param hashCode old hashCode
+     * @param partFuncType partition function type
+     * @param obVersion OceanBase server version (0 means use global version)
+     * @return new hashCode
+     */
+    public static long varcharHash(Object varchar, ObCollationType collationType, long hashCode,
+                                   ObPartFuncType partFuncType, long obVersion) {
         // magic number, the same number with observer
         long seed = 0xc6a4a7935bd1e995L;
         byte[] bytes;
@@ -64,10 +78,11 @@ public class ObHashUtils {
             throw new IllegalArgumentException("varchar not supported , ObCollationType = "
                                                + collationType + " Object =" + varchar);
         }
+        int obVsnMajor = obVersion > 0 ? ObGlobal.getObVsnMajor(obVersion) : ObGlobal.obVsnMajor();
         switch (collationType) {
             case CS_TYPE_UTF8MB4_GENERAL_CI:
                 if (partFuncType == ObPartFuncType.KEY_V3
-                    || partFuncType == ObPartFuncType.KEY_IMPLICIT_V2 || ObGlobal.obVsnMajor() >= 4) {
+                    || partFuncType == ObPartFuncType.KEY_IMPLICIT_V2 || obVsnMajor >= 4) {
                     hashCode = ObHashSortUtf8mb4.obHashSortUtf8Mb4(bytes, bytes.length, hashCode,
                         seed, true);
                 } else {
@@ -77,7 +92,7 @@ public class ObHashUtils {
                 break;
             case CS_TYPE_UTF8MB4_BIN:
                 if (partFuncType == ObPartFuncType.KEY_V3
-                    || partFuncType == ObPartFuncType.KEY_IMPLICIT_V2 || ObGlobal.obVsnMajor() >= 4) {
+                    || partFuncType == ObPartFuncType.KEY_IMPLICIT_V2 || obVsnMajor >= 4) {
                     hashCode = MurmurHash.hash64a(bytes, bytes.length, hashCode);
                 } else {
                     hashCode = ObHashSortUtf8mb4.obHashSortMbBin(bytes, bytes.length, hashCode,
@@ -86,7 +101,7 @@ public class ObHashUtils {
                 break;
             case CS_TYPE_BINARY:
                 if (partFuncType == ObPartFuncType.KEY_V3
-                    || partFuncType == ObPartFuncType.KEY_IMPLICIT_V2 || ObGlobal.obVsnMajor() >= 4) {
+                    || partFuncType == ObPartFuncType.KEY_IMPLICIT_V2 || obVsnMajor >= 4) {
                     hashCode = MurmurHash.hash64a(bytes, bytes.length, hashCode);
                 } else {
                     hashCode = ObHashSortBin.obHashSortBin(bytes, bytes.length, hashCode, seed);

@@ -517,7 +517,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         }
                         TableEntry entry = obTableClient.getOrRefreshTableEntry(realTableName, false,
                                 false, false);
-                        if (ObGlobal.obVsnMajor() >= 4) {
+                        long clientObVersion = obTableClient.getObVersion();
+                        int obVsnMajor = clientObVersion > 0 ? ObGlobal.getObVsnMajor(clientObVersion) : ObGlobal.obVsnMajor();
+                        if (obVsnMajor >= 4) {
                             obTableClient.refreshTableLocationByTabletId(entry, realTableName, obTableClient.getTabletIdByPartId(entry, originPartId));
                         } else { // 3.x
                             obTableClient.getOrRefreshTableEntry(realTableName, needRefreshTableEntry,

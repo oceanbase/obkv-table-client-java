@@ -62,10 +62,14 @@ public class DistributeConfigHandler implements Lifecycle {
         ddsSDK.setVersion(version);
         ddsSDK.setDynamicConfigHandler(dynamicHandler);
         ddsSDK.setConfigFetchOnceTimeoutMillis(this.timeout);
+
         String useLocalConfig = System.getProperty(DDS_USE_LOCAL_CONFIG_KEY);
         if (Objects.nonNull(useLocalConfig)) {
             ddsSDK.setUseLocalConfigOnly(Boolean.parseBoolean(useLocalConfig));
+        } else {
+            ddsSDK.setUseLocalConfigOnly(false);
         }
+
         String localConfigPath = System.getProperty(DDS_LOCAL_CONFIG_PATH_KEY);
         if (Objects.nonNull(localConfigPath)) {
             ddsSDK.setConfigPath(localConfigPath);

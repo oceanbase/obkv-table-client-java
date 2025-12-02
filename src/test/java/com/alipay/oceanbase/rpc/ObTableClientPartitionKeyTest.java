@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc;
 
+import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.exception.ObTableUnexpectedException;
 import com.alipay.oceanbase.rpc.filter.ObCompareOp;
 import com.alipay.oceanbase.rpc.mutation.BatchOperation;
@@ -772,12 +773,14 @@ public class ObTableClientPartitionKeyTest {
             }
             TableQuery tableQuery = obTableClient.query(TEST_TABLE);
             // fixme: generated column is not supported by odp mode
+            long clientObVersion = obTableClient.getObVersion();
+            int obVsnMajor = clientObVersion > 0 ? ObGlobal.getObVsnMajor(clientObVersion) : ObGlobal.obVsnMajor();
             if (obTableClient.isOdpMode()) {
                 columnSize = 4;
                 tableQuery.setScanRangeColumns("K");
                 tableQuery.addScanRange(new Object[] { "key".getBytes() },
                     new Object[] { "key".getBytes() });
-                if (ObGlobal.obVsnMajor() < 4) {
+                if (obVsnMajor < 4) {
                     tableQuery.select("K", "Q", "T", "V");
                 }
             } else {
@@ -786,7 +789,7 @@ public class ObTableClientPartitionKeyTest {
                 tableQuery.addScanRange(new Object[] { "key".getBytes(), "a".getBytes(),
                         Long.MIN_VALUE }, new Object[] { "key".getBytes(), "z".getBytes(),
                         Long.MAX_VALUE });
-                if (ObGlobal.obVsnMajor() < 4) {
+                if (obVsnMajor < 4) {
                     tableQuery.select("K", "Q", "T", "V", "K_PREFIX");
                 }
             }
@@ -835,7 +838,9 @@ public class ObTableClientPartitionKeyTest {
                 tableQuery.addScanRange(new Object[] { "key".getBytes() },
                     new Object[] { "key".getBytes() });
                 tableQuery.setBatchSize(3);
-                if (ObGlobal.obVsnMajor() < 4) {
+                long clientObVersion = obTableClient.getObVersion();
+                int obVsnMajor = clientObVersion > 0 ? ObGlobal.getObVsnMajor(clientObVersion) : ObGlobal.obVsnMajor();
+                if (obVsnMajor < 4) {
                     tableQuery.select("K", "Q", "T", "V");
                 }
             } else {
@@ -846,7 +851,9 @@ public class ObTableClientPartitionKeyTest {
                         Long.MAX_VALUE });
                 tableQuery.setBatchSize(3);
                 tableQuery.setOperationTimeout(100);
-                if (ObGlobal.obVsnMajor() < 4) {
+                long clientObVersion = obTableClient.getObVersion();
+                int obVsnMajor = clientObVersion > 0 ? ObGlobal.getObVsnMajor(clientObVersion) : ObGlobal.obVsnMajor();
+                if (obVsnMajor < 4) {
                     tableQuery.select("K", "Q", "T", "V", "K_PREFIX");
                 }
             }

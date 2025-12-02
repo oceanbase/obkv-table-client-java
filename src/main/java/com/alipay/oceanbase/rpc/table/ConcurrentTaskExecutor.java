@@ -46,6 +46,7 @@ public class ConcurrentTaskExecutor {
      */
     public void execute(final ConcurrentTask task) {
         task.init(stopped, taskCountDownLatch);
+        task.init(this);
         executor.execute(task);
     }
 

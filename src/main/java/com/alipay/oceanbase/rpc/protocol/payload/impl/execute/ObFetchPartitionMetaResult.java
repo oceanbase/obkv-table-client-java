@@ -67,6 +67,7 @@ public class ObFetchPartitionMetaResult extends AbstractPayload {
     private Map<Long, Long>     tabletLsIdMap       = new HashMap<>();;
     private ObPartitionInfo     partitionInfo       = null;
     private TableEntry          tableEntry          = new TableEntry();
+    private long                obVersion           = 0;                             // OceanBase server version for decoding
 
     public long getRouteVersion() {
         return routeVersion;
@@ -186,7 +187,7 @@ public class ObFetchPartitionMetaResult extends AbstractPayload {
                     // build first ObPartDesc according to odpFirstSingleParts
                     buildFirstPartFromODP(odpFirstSingleParts, partitionInfo, firstPartFuncType);
                     // build tablet -> lsId according odpFirstSingleParts
-                    if (ObGlobal.obVsnMajor() >= 4) {
+                    if (getObVsnMajor() >= 4) {
                         tmpTableLsIdMap = buildTabletLsIdMap(odpFirstSingleParts);
                         this.tabletLsIdMap = tmpTableLsIdMap;
                     }
@@ -197,7 +198,7 @@ public class ObFetchPartitionMetaResult extends AbstractPayload {
                     // build sub ObPartDesc according to odpSubSingleParts
                     buildSubPartFromODP(odpSubSingleParts, partitionInfo, subPartFuncType);
                     // build tablet -> lsId according odpSubSingleParts
-                    if (ObGlobal.obVsnMajor() >= 4) {
+                    if (getObVsnMajor() >= 4) {
                         tmpTableLsIdMap = buildTabletLsIdMap(odpSubSingleParts);
                         this.tabletLsIdMap = tmpTableLsIdMap;
                     }
@@ -211,7 +212,7 @@ public class ObFetchPartitionMetaResult extends AbstractPayload {
             tabletLsIdMap.put(0L, -1L);
         }
         ObPartitionEntry partitionEntry = new ObPartitionEntry();
-        if (ObGlobal.obVsnMajor() >= 4) { // get tabletId -> lsId mapping only in 4.x
+        if (getObVsnMajor() >= 4) { // get tabletId -> lsId mapping only in 4.x
             // data from PROXY_LOCATION_SQL_PARTITION_V4/PROXY_LOCATION_SQL_PARTITION
             partitionEntry.setTabletLsIdMap(tabletLsIdMap);
         }
@@ -431,7 +432,7 @@ public class ObFetchPartitionMetaResult extends AbstractPayload {
             ((ObRangePartDesc) partitionInfo.getFirstPartDesc())
                     .setHighBoundValues(highBoundVals);
         }
-        else if (ObGlobal.obVsnMajor() >= 4
+        else if (getObVsnMajor() >= 4
                 && (obPartFuncType.isKeyPart() || obPartFuncType.isHashPart())) {
             // get sub_part_num
             partitionInfo.setPartTabletIdMap(
@@ -459,7 +460,7 @@ public class ObFetchPartitionMetaResult extends AbstractPayload {
             ((ObRangePartDesc) partitionInfo.getSubPartDesc())
                     .setHighBoundValues(highBoundVals);
         }
-        else if (ObGlobal.obVsnMajor() >= 4
+        else if (getObVsnMajor() >= 4
                 && (obPartFuncType.isKeyPart() || obPartFuncType.isHashPart())) {
             // get sub_part_num
             partitionInfo.setPartTabletIdMap(
@@ -495,7 +496,7 @@ public class ObFetchPartitionMetaResult extends AbstractPayload {
         Map<String, Long> partNameIdMap = new HashMap<String, Long>();
         Map<Long, Long> partTabletIdMap = new HashMap<Long, Long>();
         ObPartDesc subPartDesc = partitionInfo.getSubPartDesc();
-        if (ObGlobal.obVsnMajor() >= 4 && subPartDesc != null) {
+        if (getObVsnMajor() >= 4 && subPartDesc != null) {
             // get sub_part_num_ in 4.x
             if (!isSubPart && subPartDesc.getPartNum() == 0) {
                 // client only support template partition table
@@ -528,7 +529,7 @@ public class ObFetchPartitionMetaResult extends AbstractPayload {
                 }
             }
             ObPartitionKey partitionKey = new ObPartitionKey(orderPartColumns, partElements);
-            if (ObGlobal.obVsnMajor() >= 4) {
+            if (getObVsnMajor() >= 4) {
                 // get tablet_id for 4.x
                 long tabletId = odpSingleParts.get((int) i).getTabletId();
                 bounds.add(new ObComparableKV<ObPartitionKey, Long>(partitionKey, i));
@@ -541,7 +542,7 @@ public class ObFetchPartitionMetaResult extends AbstractPayload {
                 highBoundVals.add(singleHighBoundVal);
             }
         }
-        if (ObGlobal.obVsnMajor() >= 4) {
+        if (getObVsnMajor() >= 4) {
             //set part_id -> tablet_id mapping
             partitionInfo.setPartTabletIdMap(partTabletIdMap);
         } else {
@@ -601,5 +602,26 @@ public class ObFetchPartitionMetaResult extends AbstractPayload {
             tabletLsId.put(odpSinglePart.getTabletId(), odpSinglePart.getLsId());
         }
         return tabletLsId;
+    }
+
+    /**
+     * Get OceanBase version.
+     */
+    public long getObVersion() {
+        return obVersion;
+    }
+
+    /**
+     * Set OceanBase version.
+     */
+    public void setObVersion(long obVersion) {
+        this.obVersion = obVersion;
+    }
+
+    /**
+     * Get OB version major number, using instance version if available, otherwise global version.
+     */
+    private int getObVsnMajor() {
+        return obVersion > 0 ? ObGlobal.getObVsnMajor(obVersion) : ObGlobal.obVsnMajor();
     }
 }

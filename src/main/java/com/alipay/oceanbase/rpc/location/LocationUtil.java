@@ -303,7 +303,7 @@ public class LocationUtil {
     private static String formatObServerUrl(ObServerAddr obServerAddr, long connectTimeout,
                                             long socketTimeout) {
         return format(
-            "jdbc:mysql://%s/oceanbase?useUnicode=true&characterEncoding=utf-8&connectTimeout=%d&socketTimeout=%d",
+            "jdbc:mysql://%s/oceanbase?useUnicode=true&useSSL=false&characterEncoding=utf-8&connectTimeout=%d&socketTimeout=%d",
             obServerAddr.getIp() + ":" + obServerAddr.getSqlPort(), connectTimeout, socketTimeout);
     }
 
