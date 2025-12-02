@@ -104,26 +104,38 @@ public class ObPartitionLocation {
 
     private ReplicaLocation getReadReplicaByRoutePolicy(ObRoutePolicy routePolicy)
                                                                                   throws IllegalArgumentException {
+        // 路由策略优先：FOLLOWER_FIRST 优先选择 follower，FOLLOWER_ONLY 只能选择 follower
+        // 在满足路由策略的前提下，按就近原则选择（同机房 -> 同 region -> 其他 region）
+
+        // 优先在同机房找 follower
         for (ReplicaLocation r : sameIdc) {
-            if (r.isValid()) {
+            if (r.isValid() && !r.isLeader()) {
                 return r;
             }
         }
+        
+        // 如果同机房没有 follower，在同 region 找 follower
         for (ReplicaLocation r : sameRegion) {
-            if (r.isValid()) {
+            if (r.isValid() && !r.isLeader()) {
                 return r;
             }
         }
+        
+        // 如果同 region 没有 follower，在其他 region 找 follower
         for (ReplicaLocation r : otherRegion) {
-            if (r.isValid()) {
+            if (r.isValid() && !r.isLeader()) {
                 return r;
             }
+        }
+        
+        // 如果都没有找到 follower
+        if (routePolicy == ObRoutePolicy.FOLLOWER_ONLY) {
+            // FOLLOWER_ONLY 必须选择 follower，没有就抛出异常
+            throw new IllegalArgumentException("No follower replica found for route policy: "
+                                                + routePolicy);
         }
 
-        if (routePolicy == ObRoutePolicy.FOLLOWER_ONLY) {
-            throw new IllegalArgumentException("No follower replica found for route policy: "
-                                               + routePolicy);
-        }
+        // 如果都没有找到，返回 leader（兜底）
         return leader;
     }
 
