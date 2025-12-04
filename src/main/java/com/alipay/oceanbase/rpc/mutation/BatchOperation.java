@@ -54,6 +54,7 @@ public class BatchOperation {
     boolean                     isSameType       = true;
     protected ObTableEntityType entityType       = ObTableEntityType.KV;
     protected OHOperationType   hbaseOpType      = OHOperationType.INVALID;
+    protected ObReadConsistency readConsistency  = null; // BatchOperation 级别的弱读设置
 
     /*
      * default constructor
@@ -63,6 +64,7 @@ public class BatchOperation {
         client = null;
         withResult = false;
         operations = new ArrayList<>();
+        readConsistency = null;
     }
 
     /*
@@ -186,6 +188,25 @@ public class BatchOperation {
 
     public void setEntityType(ObTableEntityType entityType) {
         this.entityType = entityType;
+    }
+
+    /**
+     * Set read consistency level for batch operation.
+     * This setting will override the readConsistency settings on individual Get operations.
+     * @param readConsistency read consistency level
+     * @return this
+     */
+    public BatchOperation setReadConsistency(ObReadConsistency readConsistency) {
+        this.readConsistency = readConsistency;
+        return this;
+    }
+
+    /**
+     * Get read consistency level for batch operation.
+     * @return read consistency level
+     */
+    public ObReadConsistency getReadConsistency() {
+        return readConsistency;
     }
 
     public void setServerCanRetry(boolean canRetry) {
@@ -317,13 +338,6 @@ public class BatchOperation {
         return new BatchOperationResult(batchOps.executeWithResult());
     }
 
-    private boolean checkReadConsistency(ObTableClient obTableClient, ObReadConsistency readConsistency) throws IllegalArgumentException {
-        // 如果没有设置语句级别的 readConsistency（null），使用 TableRoute 上的 consistencyLevel
-        if (readConsistency == null) {
-            return obTableClient.getTableRoute().getReadConsistency() == ObReadConsistency.WEAK;
-        }
-        return readConsistency == ObReadConsistency.WEAK;
-    }
 
     private BatchOperationResult executeWithLSBatchOp() throws Exception {
         if (tableName == null || tableName.isEmpty()) {
@@ -369,11 +383,23 @@ public class BatchOperation {
                     if (get.getRowKey() == null) {
                         throw new IllegalArgumentException("RowKey is null in Get operation");
                     }
-                    isWeakRead = checkReadConsistency(obTableClient, get.getReadConsistency());
+                    // BatchOperation 级别的 readConsistency 优先，忽略 Get 上的设置
+                    if (readConsistency != null) {
+                        isWeakRead = (readConsistency == ObReadConsistency.WEAK);
+                    } else {
+                        // 如果 BatchOperation 没有设置，使用 TableRoute 上的全局设置
+                        isWeakRead = obTableClient.getTableRoute().getReadConsistency() == ObReadConsistency.WEAK;
+                    }
                     batchOps.addOperation(get);
                 } else if (operation instanceof TableQuery) {
                     TableQuery query = (TableQuery) operation;
-                    isWeakRead = checkReadConsistency(obTableClient, query.getReadConsistency());
+                    // BatchOperation 级别的 readConsistency 优先，忽略 TableQuery 上的设置
+                    if (readConsistency != null) {
+                        isWeakRead = (readConsistency == ObReadConsistency.WEAK);
+                    } else {
+                        // 如果 BatchOperation 没有设置，使用 TableRoute 上的全局设置
+                        isWeakRead = obTableClient.getTableRoute().getReadConsistency() == ObReadConsistency.WEAK;
+                    }
                     batchOps.addOperation(query);
                 } else if (operation instanceof QueryAndMutate) {
                     QueryAndMutate qm = (QueryAndMutate) operation;
