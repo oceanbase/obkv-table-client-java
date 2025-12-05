@@ -18,6 +18,7 @@
 package com.alipay.oceanbase.rpc.protocol.packet;
 
 import com.alipay.oceanbase.rpc.ObGlobal;
+import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 
@@ -107,6 +108,7 @@ public class ObRpcPacketHeader {
     private long             traceId2;
     private long             traceId3;
     private long             clusterNameHash;
+    private long             obVersion                                 = 0;                                // OceanBase server version for encoding/decoding
 
     /*
      * Ob rpc packet header.
@@ -130,12 +132,23 @@ public class ObRpcPacketHeader {
      */
     public byte[] encode() {
         byte[] bytes = null;
+        // For login requests (pcode == OB_TABLE_API_LOGIN), obVersion may be 0 for initial connection
+        // This is expected behavior - version will be set after login response
+        int obVsnMajor = 0;
+        if (obVersion != 0) {
+            obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
+        } else if (pcode != Pcodes.OB_TABLE_API_LOGIN) {
+            // For non-login requests, version must be set
+            throw new IllegalStateException(
+                "OB version is 0, cannot get major version. Please ensure version is properly initialized.");
+        }
         if (hlen != 0) {
             bytes = new byte[ENCODE_SIZE];
-        } else if (ObGlobal.obVsnMajor() >= 4) {
+        } else if (obVsnMajor >= 4) {
             bytes = new byte[ENCODE_SIZE_V4];
             hlen = (short) ENCODE_SIZE_V4;
         } else {
+            // Use ENCODE_SIZE for login requests with version 0 or versions < 4
             bytes = new byte[ENCODE_SIZE];
             hlen = (short) ENCODE_SIZE;
         }
@@ -172,7 +185,7 @@ public class ObRpcPacketHeader {
         System.arraycopy(Serialization.encodeI32(obCompressType.getCode()), 0, bytes, idx, 4);
         idx += 4;
         System.arraycopy(Serialization.encodeI32(originalLen), 0, bytes, idx, 4);
-        if (ObGlobal.obVsnMajor() >= 4 && hlen >= ENCODE_SIZE_V4) {
+        if (obVsnMajor >= 4 && hlen >= ENCODE_SIZE_V4) {
             idx += 4;
             System.arraycopy(Serialization.encodeI64(srcClusterId), 0, bytes, idx, 8);
             idx += 8;
@@ -559,6 +572,20 @@ public class ObRpcPacketHeader {
      */
     public void setGroupId(int groupId) {
         this.groupId = groupId;
+    }
+
+    /*
+     * Get OceanBase version.
+     */
+    public long getObVersion() {
+        return obVersion;
+    }
+
+    /*
+     * Set OceanBase version.
+     */
+    public void setObVersion(long obVersion) {
+        this.obVersion = obVersion;
     }
 
 }

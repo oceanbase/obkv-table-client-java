@@ -27,6 +27,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
 import com.alipay.oceanbase.rpc.table.ObTableClientLSBatchOpsImpl;
+import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.table.api.Table;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
@@ -182,12 +183,27 @@ public class BatchOperation {
         return this;
     }
 
+    /**
+     * Get obVersion from Table instance (ObTableClient or ObTable)
+     */
+    private long getObVersionFromClient() {
+        if (client instanceof ObTableClient) {
+            return ((ObTableClient) client).getObVersion();
+        } else if (client instanceof ObTable) {
+            return ((ObTable) client).getObVersion();
+        } else {
+            throw new IllegalStateException(
+                "Cannot get obVersion from Table instance. Client must be ObTableClient or ObTable.");
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public BatchOperationResult execute() throws Exception {
-        if (returnOneResult && !ObGlobal.isReturnOneResultSupport()) {
+        long obVersion = getObVersionFromClient();
+        if (returnOneResult && !ObGlobal.isReturnOneResultSupport(obVersion)) {
             throw new FeatureNotSupportedException(
                 "returnOneResult is not supported in this Observer version ["
-                        + ObGlobal.obVsnString() + "]");
+                        + ObGlobal.getObVsnString(obVersion) + "]");
         } else if (returnOneResult
                    && !(isSameType && (lastType == ObTableOperationType.INSERT
                                        || lastType == ObTableOperationType.PUT
@@ -196,7 +212,7 @@ public class BatchOperation {
                 "returnOneResult only support multi-insert/put/replace/del");
         }
 
-        if (hasCheckAndInsUp || ObGlobal.isLsOpSupport()) {
+        if (hasCheckAndInsUp || ObGlobal.isLsOpSupport(obVersion)) {
             return executeWithLSBatchOp();
         } else {
             return executeWithNormalBatchOp();

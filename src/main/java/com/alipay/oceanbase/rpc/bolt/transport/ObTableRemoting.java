@@ -67,6 +67,10 @@ public class ObTableRemoting extends BaseRemoting {
         if (request instanceof ObTableLoginRequest) {
             // setting sys tenant in rpc header when login
             ((ObTableLoginRequest) request).setTenantId(1);
+            // Set obVersion from table instance for login request
+            // Note: obVersion may be 0 for initial login, which is expected and will be set after login response
+            long obVersion = conn.getObTable().getObVersion();
+            ((ObTableLoginRequest) request).setObVersion(obVersion);
         } else if (request instanceof AbstractPayload) {
             ((AbstractPayload) request).setTenantId(conn.getTenantId());
         }
@@ -168,7 +172,8 @@ public class ObTableRemoting extends BaseRemoting {
                 // Set OB version for response decoding if it's a fetch partition meta result
                 if (payload instanceof com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObFetchPartitionMetaResult) {
                     long obVersion = conn.getObTable().getObVersion();
-                    ((com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObFetchPartitionMetaResult) payload).setObVersion(obVersion);
+                    ((com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObFetchPartitionMetaResult) payload)
+                        .setObVersion(obVersion);
                 }
             } else {
                 String errMessage = TraceUtil.formatTraceMessage(conn, response,

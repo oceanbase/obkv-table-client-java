@@ -79,6 +79,13 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
     }
 
     /*
+     * Get ob table client.
+     */
+    public ObTableClient getObTableClient() {
+        return obTableClient;
+    }
+
+    /*
      * Get.
      */
     @Override
@@ -358,7 +365,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         TableEntry entry = obTableClient.getOrRefreshTableEntry(tableName, false,
                             false, false);
                         long clientObVersion = obTableClient.getObVersion();
-                        int obVsnMajor = clientObVersion > 0 ? ObGlobal.getObVsnMajor(clientObVersion) : ObGlobal.obVsnMajor();
+                        int obVsnMajor = ObGlobal.getObVsnMajorRequired(clientObVersion);
                         if (obVsnMajor >= 4) {
                             obTableClient.refreshTableLocationByTabletId(entry, tableName, partId);
                         }

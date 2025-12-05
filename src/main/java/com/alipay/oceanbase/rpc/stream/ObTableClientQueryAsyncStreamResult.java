@@ -233,7 +233,10 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                         TableEntry entry = client.getOrRefreshTableEntry(realTableName, false,
                             false, false);
                         // Calculate the next partition only when the range partition is affected by a split, based on the keys already scanned.
-                        if (ObGlobal.obVsnMajor() >= 4
+                        long clientObVersion = client.getObVersion();
+                        int obVsnMajor = clientObVersion > 0 ? ObGlobal
+                            .getObVsnMajor(clientObVersion) : ObGlobal.obVsnMajor();
+                        if (obVsnMajor >= 4
                             && entry.isPartitionTable()
                             && entry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
                                 .isRangePart()) {
@@ -276,7 +279,10 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                             tableName);
                         TableEntry tableEntry = client.getOrRefreshTableEntry(realTableName, false,
                             false, false);
-                        if (ObGlobal.obVsnMajor() >= 4
+                        long clientObVersion = client.getObVersion();
+                        int obVsnMajor = clientObVersion > 0 ? ObGlobal
+                            .getObVsnMajor(clientObVersion) : ObGlobal.obVsnMajor();
+                        if (obVsnMajor >= 4
                             && tableEntry.isPartitionTable()
                             && tableEntry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
                                 .isRangePart()) {

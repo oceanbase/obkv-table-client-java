@@ -122,6 +122,9 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
     private volatile boolean                 initialized                  = false;
     private volatile boolean                 closed                       = false;
     private ReentrantLock                    statusLock                   = new ReentrantLock();
+    
+    // 添加对DdsConfigUpdateHandler的引用，用于资源清理
+    private DdsConfigUpdateHandler           dynamicHandler;
 
     private final Map<String, String[]>            tableRowKeyElement = new ConcurrentHashMap<>();
     private Properties                       tableClientProperty = new Properties();
@@ -155,7 +158,7 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
                 return;
             }
 
-            DdsConfigUpdateHandler dynamicHandler = new DdsConfigUpdateHandler(
+            this.dynamicHandler = new DdsConfigUpdateHandler(
                 runningMode,
                 tableClientProperty,
                 currentConfigRef);
@@ -233,6 +236,15 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
                     }
                     sb.append("] close error.");
                     throw new ObTableCloseException(sb.toString(), throwException);
+                }
+            }
+
+            // ✅ 修复：清理动态处理器中的ScheduledExecutorService，防止资源泄漏
+            if (dynamicHandler != null) {
+                try {
+                    dynamicHandler.shutdownAsyncCleanup();
+                } catch (Exception e) {
+                    logger.error("Failed to shutdown async cleanup executor", e);
                 }
             }
 
@@ -775,13 +787,64 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
      * @return
      */
     public ObTableClient getObTable(DatabaseAndTable databaseAndTable) {
-
-        Map<Integer, ObTableClientGroup> groupDataSources = getGroupDataSources();
+        // ✅ 修复：使用当前配置快照，确保请求内配置一致性
+        VersionedConfigSnapshot snapshot = currentConfigRef.get();
+        if (snapshot == null) {
+            throw new IllegalStateException("Configuration snapshot is not available");
+        }
+        
+        Map<Integer, ObTableClientGroup> groupDataSources = snapshot.getGroupDataSources();
+        if (groupDataSources == null) {
+            throw new DistributeDispatchException("No client group found for shard: " + databaseAndTable.getDatabaseShardValue());
+        }
+        
         ObTableClientGroup obTableClientGroup = groupDataSources.get(databaseAndTable
             .getDatabaseShardValue());
 
+        if (obTableClientGroup == null) {
+            throw new DistributeDispatchException("No client group found for shard: " + databaseAndTable.getDatabaseShardValue());
+        }
+
         ObTableClient obTableClient = obTableClientGroup.select(!databaseAndTable.isReadOnly(),
             databaseAndTable.getElasticIndexValue());
+
+        if (obTableClient == null) {
+            throw new DistributeDispatchException("No ObTableClient available for shard: " + databaseAndTable.getDatabaseShardValue());
+        }
+
+        if (databaseAndTable.getRowKeyColumns() != null) {
+            obTableClient.addRowKeyElement(databaseAndTable.getTableName(),
+                databaseAndTable.getRowKeyColumns());
+        }
+
+        return obTableClient;
+    }
+
+    /**
+     * Get ObTableClient with specific configuration snapshot (for internal use)
+     * @param databaseAndTable
+     * @param snapshot
+     * @return
+     */
+    ObTableClient getObTableWithSnapshot(DatabaseAndTable databaseAndTable, VersionedConfigSnapshot snapshot) {
+        Map<Integer, ObTableClientGroup> groupDataSources = snapshot.getGroupDataSources();
+        if (groupDataSources == null) {
+            throw new DistributeDispatchException("No client group found for shard: " + databaseAndTable.getDatabaseShardValue());
+        }
+        
+        ObTableClientGroup obTableClientGroup = groupDataSources.get(databaseAndTable
+            .getDatabaseShardValue());
+
+        if (obTableClientGroup == null) {
+            throw new DistributeDispatchException("No client group found for shard: " + databaseAndTable.getDatabaseShardValue());
+        }
+
+        ObTableClient obTableClient = obTableClientGroup.select(!databaseAndTable.isReadOnly(),
+            databaseAndTable.getElasticIndexValue());
+
+        if (obTableClient == null) {
+            throw new DistributeDispatchException("No ObTableClient available for shard: " + databaseAndTable.getDatabaseShardValue());
+        }
 
         if (databaseAndTable.getRowKeyColumns() != null) {
             obTableClient.addRowKeyElement(databaseAndTable.getTableName(),
@@ -1207,6 +1270,14 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
     }
 
     /**
+     * Get current configuration snapshot for internal use
+     * @return current configuration snapshot
+     */
+    VersionedConfigSnapshot getCurrentConfigSnapshot() {
+        return currentConfigRef.get();
+    }
+
+    /**
      * DDS version of Update that handles distributed dispatch
      */
     private static class DdsUpdate extends Update {
@@ -1225,12 +1296,18 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
                 throw new ObTableException("rowKey is null, please set rowKey before execute");
             }
             
+
+            VersionedConfigSnapshot snapshot = ddsClient.getCurrentConfigSnapshot();
+            if (snapshot == null) {
+                throw new IllegalStateException("Configuration snapshot is not available");
+            }
+            
             // Convert rowKey to Object array for DDS dispatch
             Object[] rowkeys = getRowKey().getValues();
             
             // Get target database and table through DDS dispatcher
-            DatabaseAndTable databaseAndTable = ddsClient.getDatabaseAndTable(tableName, rowkeys, false);
-            ObTableClient obTableClient = ddsClient.buildObTableClient(databaseAndTable);
+            DatabaseAndTable databaseAndTable = ddsClient.getDatabaseAndTable(tableName, rowkeys, false, snapshot);
+            ObTableClient obTableClient = ddsClient.getObTableWithSnapshot(databaseAndTable, snapshot);
             
             // Create a new Update for the target ObTableClient
             Update targetUpdate = new Update(obTableClient, ddsClient.getTargetTableName(databaseAndTable.getTableName()));
@@ -1271,12 +1348,18 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
                 throw new ObTableException("rowKey is null, please set rowKey before execute");
             }
             
+
+            VersionedConfigSnapshot snapshot = ddsClient.getCurrentConfigSnapshot();
+            if (snapshot == null) {
+                throw new IllegalStateException("Configuration snapshot is not available");
+            }
+            
             // Convert rowKey to Object array for DDS dispatch
             Object[] rowkeys = getRowKey().getValues();
             
             // Get target database and table through DDS dispatcher
-            DatabaseAndTable databaseAndTable = ddsClient.getDatabaseAndTable(tableName, rowkeys, true);
-            ObTableClient obTableClient = ddsClient.buildObTableClient(databaseAndTable);
+            DatabaseAndTable databaseAndTable = ddsClient.getDatabaseAndTable(tableName, rowkeys, true, snapshot);
+            ObTableClient obTableClient = ddsClient.getObTableWithSnapshot(databaseAndTable, snapshot);
             
             // Create a new Delete for the target ObTableClient
             Delete targetDelete = new Delete(obTableClient, ddsClient.getTargetTableName(databaseAndTable.getTableName()));
@@ -1311,9 +1394,15 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
             // Convert rowKey to Object array for DDS dispatch
             Object[] rowkeys = getRowKey().getValues();
             
+
+            VersionedConfigSnapshot snapshot = ddsClient.getCurrentConfigSnapshot();
+            if (snapshot == null) {
+                throw new IllegalStateException("Configuration snapshot is not available");
+            }
+            
             // Get target database and table through DDS dispatcher
-            DatabaseAndTable databaseAndTable = ddsClient.getDatabaseAndTable(tableName, rowkeys, false);
-            ObTableClient obTableClient = ddsClient.buildObTableClient(databaseAndTable);
+            DatabaseAndTable databaseAndTable = ddsClient.getDatabaseAndTable(tableName, rowkeys, false, snapshot);
+            ObTableClient obTableClient = ddsClient.getObTableWithSnapshot(databaseAndTable, snapshot);
             
             // Create a new Insert for the target ObTableClient
             Insert targetInsert = new Insert(obTableClient, ddsClient.getTargetTableName(databaseAndTable.getTableName()));
@@ -1357,9 +1446,15 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
             // Convert rowKey to Object array for DDS dispatch
             Object[] rowkeys = getRowKey().getValues();
             
+
+            VersionedConfigSnapshot snapshot = ddsClient.getCurrentConfigSnapshot();
+            if (snapshot == null) {
+                throw new IllegalStateException("Configuration snapshot is not available");
+            }
+            
             // Get target database and table through DDS dispatcher
-            DatabaseAndTable databaseAndTable = ddsClient.getDatabaseAndTable(tableName, rowkeys, false);
-            ObTableClient obTableClient = ddsClient.buildObTableClient(databaseAndTable);
+            DatabaseAndTable databaseAndTable = ddsClient.getDatabaseAndTable(tableName, rowkeys, false, snapshot);
+            ObTableClient obTableClient = ddsClient.getObTableWithSnapshot(databaseAndTable, snapshot);
             
             // Create a new Replace for the target ObTableClient
             Replace targetReplace = new Replace(obTableClient, ddsClient.getTargetTableName(databaseAndTable.getTableName()));
@@ -1403,9 +1498,15 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
             // Convert rowKey to Object array for DDS dispatch
             Object[] rowkeys = getRowKey().getValues();
             
+
+            VersionedConfigSnapshot snapshot = ddsClient.getCurrentConfigSnapshot();
+            if (snapshot == null) {
+                throw new IllegalStateException("Configuration snapshot is not available");
+            }
+            
             // Get target database and table through DDS dispatcher
-            DatabaseAndTable databaseAndTable = ddsClient.getDatabaseAndTable(tableName, rowkeys, false);
-            ObTableClient obTableClient = ddsClient.buildObTableClient(databaseAndTable);
+            DatabaseAndTable databaseAndTable = ddsClient.getDatabaseAndTable(tableName, rowkeys, false, snapshot);
+            ObTableClient obTableClient = ddsClient.getObTableWithSnapshot(databaseAndTable, snapshot);
             
             // Create a new InsertOrUpdate for the target ObTableClient
             InsertOrUpdate targetInsertOrUpdate = new InsertOrUpdate(obTableClient, ddsClient.getTargetTableName(databaseAndTable.getTableName()));
@@ -1449,9 +1550,15 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
             // Convert rowKey to Object array for DDS dispatch
             Object[] rowkeys = getRowKey().getValues();
             
+
+            VersionedConfigSnapshot snapshot = ddsClient.getCurrentConfigSnapshot();
+            if (snapshot == null) {
+                throw new IllegalStateException("Configuration snapshot is not available");
+            }
+            
             // Get target database and table through DDS dispatcher
-            DatabaseAndTable databaseAndTable = ddsClient.getDatabaseAndTable(tableName, rowkeys, false);
-            ObTableClient obTableClient = ddsClient.buildObTableClient(databaseAndTable);
+            DatabaseAndTable databaseAndTable = ddsClient.getDatabaseAndTable(tableName, rowkeys, false, snapshot);
+            ObTableClient obTableClient = ddsClient.getObTableWithSnapshot(databaseAndTable, snapshot);
             
             // Create a new Put for the target ObTableClient
             Put targetPut = new Put(obTableClient, ddsClient.getTargetTableName(databaseAndTable.getTableName()));
@@ -1495,9 +1602,15 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
             // Convert rowKey to Object array for DDS dispatch
             Object[] rowkeys = getRowKey().getValues();
             
+
+            VersionedConfigSnapshot snapshot = ddsClient.getCurrentConfigSnapshot();
+            if (snapshot == null) {
+                throw new IllegalStateException("Configuration snapshot is not available");
+            }
+            
             // Get target database and table through DDS dispatcher
-            DatabaseAndTable databaseAndTable = ddsClient.getDatabaseAndTable(tableName, rowkeys, false);
-            ObTableClient obTableClient = ddsClient.buildObTableClient(databaseAndTable);
+            DatabaseAndTable databaseAndTable = ddsClient.getDatabaseAndTable(tableName, rowkeys, false, snapshot);
+            ObTableClient obTableClient = ddsClient.getObTableWithSnapshot(databaseAndTable, snapshot);
             
             // Create a new Increment for the target ObTableClient
             Increment targetIncrement = new Increment(obTableClient, ddsClient.getTargetTableName(databaseAndTable.getTableName()));
@@ -1541,9 +1654,15 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
             // Convert rowKey to Object array for DDS dispatch
             Object[] rowkeys = getRowKey().getValues();
             
+
+            VersionedConfigSnapshot snapshot = ddsClient.getCurrentConfigSnapshot();
+            if (snapshot == null) {
+                throw new IllegalStateException("Configuration snapshot is not available");
+            }
+            
             // Get target database and table through DDS dispatcher
-            DatabaseAndTable databaseAndTable = ddsClient.getDatabaseAndTable(tableName, rowkeys, false);
-            ObTableClient obTableClient = ddsClient.buildObTableClient(databaseAndTable);
+            DatabaseAndTable databaseAndTable = ddsClient.getDatabaseAndTable(tableName, rowkeys, false, snapshot);
+            ObTableClient obTableClient = ddsClient.getObTableWithSnapshot(databaseAndTable, snapshot);
             
             // Create a new Append for the target ObTableClient
             Append targetAppend = new Append(obTableClient, ddsClient.getTargetTableName(databaseAndTable.getTableName()));

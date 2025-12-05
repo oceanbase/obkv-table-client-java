@@ -145,7 +145,10 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         if (failedServerList != null) {
                             route.setBlackList(failedServerList);
                         }
-                        if (ObGlobal.obVsnMajor() >= 4) {
+                        long clientObVersion = client.getObVersion();
+                        int obVsnMajor = clientObVersion > 0 ? ObGlobal
+                            .getObVsnMajor(clientObVersion) : ObGlobal.obVsnMajor();
+                        if (obVsnMajor >= 4) {
                             TableEntry tableEntry = client.getOrRefreshTableEntry(indexTableName,
                                 false, false, false);
                             client.refreshTableLocationByTabletId(tableEntry, indexTableName,

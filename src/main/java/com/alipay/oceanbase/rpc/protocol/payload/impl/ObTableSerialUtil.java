@@ -71,7 +71,9 @@ public class ObTableSerialUtil {
             encodedSize += ObTableSerialUtil.getEncodedSize(obObj);
         }
 
-        if (ObGlobal.obVsnMajor() >= 4) {
+        long obVersion = range.getObVersion();
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
+        if (obVsnMajor >= 4) {
             encodedSize += Serialization.getNeedBytes(range.getFlag());
         }
 
@@ -114,7 +116,9 @@ public class ObTableSerialUtil {
             idx += objBytes.length;
         }
 
-        if (ObGlobal.obVsnMajor() >= 4) {
+        long obVersion = range.getObVersion();
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
+        if (obVsnMajor >= 4) {
             long flag = range.getFlag();
             len = Serialization.getNeedBytes(flag);
             System.arraycopy(Serialization.encodeVi64(flag), 0, bytes, idx, len);
@@ -124,7 +128,7 @@ public class ObTableSerialUtil {
         return bytes;
     }
 
-    static public void decode(ByteBuf buf, ObNewRange range) {
+    static public void decode(ByteBuf buf, ObNewRange range, long obVersion) {
         range.setTableId(Serialization.decodeVi64(buf));
         range.setBorderFlag(ObBorderFlag.valueOf(Serialization.decodeI8(buf.readByte())));
 
@@ -146,7 +150,8 @@ public class ObTableSerialUtil {
         }
         range.setEndKey(endKey);
 
-        if (ObGlobal.obVsnMajor() >= 4) {
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
+        if (obVsnMajor >= 4) {
             range.setFlag(Serialization.decodeVi64(buf));
         }
     }

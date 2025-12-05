@@ -53,6 +53,7 @@ public class ObNewRange implements ObSimplePayload {
     private ObRowKey     startKey;
     private ObRowKey     endKey;
     private long         flag       = 0L;
+    private long         obVersion  = 0;                      // OceanBase server version for encoding/decoding
 
     /*
      * Ob new range.
@@ -98,7 +99,8 @@ public class ObNewRange implements ObSimplePayload {
             idx += objBytes.length;
         }
 
-        if (ObGlobal.obVsnMajor() >= 4) {
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
+        if (obVsnMajor >= 4) {
             len = Serialization.getNeedBytes(flag);
             System.arraycopy(Serialization.encodeVi64(flag), 0, bytes, idx, len);
             idx += len;
@@ -124,7 +126,8 @@ public class ObNewRange implements ObSimplePayload {
         for (int i = 0; i < endKeyObjCount; ++i) {
             endKey.getObj(i).encode(buf);
         }
-        if (ObGlobal.obVsnMajor() >= 4) {
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
+        if (obVsnMajor >= 4) {
             Serialization.encodeVi64(buf, flag);
         }
     }
@@ -153,7 +156,8 @@ public class ObNewRange implements ObSimplePayload {
             this.endKey.addObj(obObj);
         }
 
-        if (ObGlobal.obVsnMajor() >= 4) {
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
+        if (obVsnMajor >= 4) {
             this.flag = Serialization.decodeVi64(buf);
         }
 
@@ -182,7 +186,8 @@ public class ObNewRange implements ObSimplePayload {
             encodedSize += obObj.getEncodedSize();
         }
 
-        if (ObGlobal.obVsnMajor() >= 4) {
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
+        if (obVsnMajor >= 4) {
             encodedSize += Serialization.getNeedBytes(flag);
         }
 
@@ -263,6 +268,20 @@ public class ObNewRange implements ObSimplePayload {
 
     public void setFlag(long flag) {
         this.flag = flag;
+    }
+
+    /*
+     * Get OceanBase version.
+     */
+    public long getObVersion() {
+        return obVersion;
+    }
+
+    /*
+     * Set OceanBase version.
+     */
+    public void setObVersion(long obVersion) {
+        this.obVersion = obVersion;
     }
 
 }

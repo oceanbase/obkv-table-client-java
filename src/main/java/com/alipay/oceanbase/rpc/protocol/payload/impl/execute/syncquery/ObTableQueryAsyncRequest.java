@@ -51,6 +51,7 @@ public class ObTableQueryAsyncRequest extends ObTableAbstractOperationRequest {
     @Override
     public byte[] encode() {
         obTableQueryRequest.setCredential(credential);
+        obTableQueryRequest.setObVersion(obVersion);
 
         byte[] bytes = new byte[(int) getPayloadSize()];
         int idx = 0;
@@ -112,6 +113,10 @@ public class ObTableQueryAsyncRequest extends ObTableAbstractOperationRequest {
      */
     @Override
     public long getPayloadContentSize() {
+        // Ensure obVersion is synced before calculating size
+        if (obTableQueryRequest != null) {
+            obTableQueryRequest.setObVersion(obVersion);
+        }
         return Serialization.getNeedBytes(querySessionId) + 1
                + obTableQueryRequest.getPayloadSize();
     }
@@ -122,6 +127,18 @@ public class ObTableQueryAsyncRequest extends ObTableAbstractOperationRequest {
 
     public void setObTableQueryRequest(ObTableQueryRequest obTableQueryRequest) {
         this.obTableQueryRequest = obTableQueryRequest;
+        if (this.obTableQueryRequest != null) {
+            this.obTableQueryRequest.setObVersion(obVersion);
+        }
+    }
+
+    @Override
+    public void setObVersion(long obVersion) {
+        super.setObVersion(obVersion);
+        // Sync obVersion to inner obTableQueryRequest
+        if (obTableQueryRequest != null) {
+            obTableQueryRequest.setObVersion(obVersion);
+        }
     }
 
 }

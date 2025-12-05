@@ -476,8 +476,8 @@ public class LocationUtil {
                                                         final long socketTimeout,
                                                         final long priorityTimeout,
                                                         final long cachingTimeout,
-                                                        final ObUserAuth sysUA)
-                                                                               throws ObTableEntryRefreshException {
+                                                        final ObUserAuth sysUA, final long obVersion)
+                                                                                                     throws ObTableEntryRefreshException {
         return callTableEntryRefreshWithPriority(serverRoster, priorityTimeout, cachingTimeout,
             new TableEntryRefreshWithPriorityCallback<TableEntry>() {
                 @Override
@@ -487,7 +487,7 @@ public class LocationUtil {
                             @Override
                             TableEntry execute(Connection connection)
                                                                      throws ObTableEntryRefreshException {
-                                return getTableEntryFromRemote(connection, key, true);
+                                return getTableEntryFromRemote(connection, key, true, obVersion);
                             }
                         });
                 }
@@ -516,7 +516,9 @@ public class LocationUtil {
                             @Override
                             TableEntry execute(Connection connection)
                                                                      throws ObTablePartitionLocationRefreshException {
-                                return getTableEntryLocationFromRemote(connection, key, tableEntry);
+                                // Use global version as fallback when obVersion is not available
+                                return getTableEntryLocationFromRemote(connection, key, tableEntry,
+                                    0);
                             }
                         });
                 }
@@ -564,8 +566,8 @@ public class LocationUtil {
                                                     final long socketTimeout,
                                                     final long priorityTimeout,
                                                     final long cachingTimeout,
-                                                    final ObUserAuth sysUA)
-                                                                           throws ObTableNotExistException {
+                                                    final ObUserAuth sysUA, final long obVersion)
+                                                                                                 throws ObTableNotExistException {
         Connection connection = null;
         String realTableName = "";
         String url = "";
@@ -573,7 +575,7 @@ public class LocationUtil {
         try {
             url = formatObServerUrl(addr, connectTimeout, socketTimeout);
             connection = getMetaRefreshConnection(url, sysUA);
-            realTableName = getTableNameByGroupNameFromRemote(connection, key);
+            realTableName = getTableNameByGroupNameFromRemote(connection, key, obVersion);
             serverRoster.resetPriority(addr);
         } catch (ObTableNotExistException e) {
             RUNTIME.error("callTableEntryNameWithPriority meet exception", e);
@@ -611,18 +613,20 @@ public class LocationUtil {
     /*
      * get TableName From Remote with Group
      */
-    private static String getTableNameByGroupNameFromRemote(Connection connection, TableEntryKey key)
-                                                                                                     throws ObTableNotExistException {
+    private static String getTableNameByGroupNameFromRemote(Connection connection,
+                                                            TableEntryKey key, long obVersion)
+                                                                                              throws ObTableNotExistException {
         PreparedStatement ps = null;
         ResultSet rs = null;
         String realTableName = "";
         int tenantId = -1;
         try {
-            if (ObGlobal.obVsnMajor() == 0) {
-                getObVersionFromRemote(connection);
+            if (obVersion == 0) {
+                obVersion = getObVersionFromRemoteWithoutGlobal(connection);
             }
+            int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
             tenantId = checkTenantExistFromRemote(connection, key);
-            if (ObGlobal.obVsnMajor() >= 4) {
+            if (obVsnMajor >= 4) {
                 ps = connection.prepareStatement(TABLE_GROUP_GET_TABLE_NAME_V4);
                 ps.setString(1, key.getTableName());
                 ps.setString(2, String.valueOf(tenantId));
@@ -658,20 +662,6 @@ public class LocationUtil {
     }
 
     /*
-     * Load table entry randomly.
-     */
-    public static TableEntry loadTableEntryRandomly(final List<ObServerAddr> rsList,//
-                                                    final TableEntryKey key, //
-                                                    final long connectTimeout,//
-                                                    final long socketTimeout,
-                                                    final ObUserAuth sysUA,
-                                                    final boolean initialized)
-                                                                              throws ObTableEntryRefreshException {
-        return loadTableEntryRandomly(rsList, key, connectTimeout, socketTimeout, sysUA,
-            initialized, 0);
-    }
-
-    /*
      * Load table entry randomly with client version.
      */
     public static TableEntry loadTableEntryRandomly(final List<ObServerAddr> rsList,//
@@ -689,6 +679,42 @@ public class LocationUtil {
                     return getTableEntryFromRemote(connection, key, initialized, clientVersion);
                 }
             });
+    }
+
+    /*
+     * Get OB version from remote server without updating global version.
+     * This method tries to get version from a random server in rsList.
+     */
+    public static long getObVersionFromRemoteWithoutGlobal(final List<ObServerAddr> rsList,//
+                                                           final long connectTimeout,//
+                                                           final long socketTimeout,
+                                                           final ObUserAuth sysUA)
+                                                                                  throws ObTableEntryRefreshException {
+        if (rsList == null || rsList.isEmpty()) {
+            throw new ObTableEntryRefreshException("rsList is empty, cannot get OB version");
+        }
+
+        ObServerAddr serverAddr = randomObServers(rsList);
+        String url = formatObServerUrl(serverAddr, connectTimeout, socketTimeout);
+        Connection connection = null;
+        try {
+            connection = getMetaRefreshConnection(url, sysUA);
+            return getObVersionFromRemoteWithoutGlobal(connection);
+        } catch (Exception e) {
+            if (e instanceof ObTableEntryRefreshException) {
+                throw e;
+            }
+            throw new ObTableEntryRefreshException(format(
+                "fail to get ob version from remote url=%s", url), e);
+        } finally {
+            try {
+                if (null != connection) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                // ignore
+            }
+        }
     }
 
     private static void getObVersionFromRemote(Connection connection)
@@ -831,12 +857,6 @@ public class LocationUtil {
     }
 
     private static TableEntry getTableEntryFromRemote(Connection connection, TableEntryKey key,
-                                                      boolean initialized)
-                                                                          throws ObTableEntryRefreshException {
-        return getTableEntryFromRemote(connection, key, initialized, 0);
-    }
-
-    private static TableEntry getTableEntryFromRemote(Connection connection, TableEntryKey key,
                                                       boolean initialized, long clientVersion)
                                                                                               throws ObTableEntryRefreshException {
         PreparedStatement ps = null;
@@ -844,15 +864,27 @@ public class LocationUtil {
         TableEntry tableEntry;
         int tenantId = -1;
 
-        // Use client version if provided, otherwise fall back to global version
-        int obVsnMajor = clientVersion > 0 ? ObGlobal.getObVsnMajor(clientVersion) : ObGlobal
-            .obVsnMajor();
-
         try {
-            if (obVsnMajor == 0) {
-                // Fetch version from remote and use it locally without updating global
-                long fetchedVersion = getObVersionFromRemoteWithoutGlobal(connection);
-                obVsnMajor = ObGlobal.getObVsnMajor(fetchedVersion);
+            // Use client version if provided, otherwise try to fetch from remote
+            // If clientVersion is 0, try to fetch from remote first
+            int obVsnMajor;
+            long obVersionToUse;
+            if (clientVersion > 0) {
+                obVersionToUse = clientVersion;
+                obVsnMajor = ObGlobal.getObVsnMajorRequired(clientVersion);
+            } else {
+                // If clientVersion is 0, try to fetch from remote
+                try {
+                    obVersionToUse = getObVersionFromRemoteWithoutGlobal(connection);
+                    obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersionToUse);
+                } catch (Exception e) {
+                    // If fetch fails, throw exception instead of falling back to global version
+                    IllegalStateException ex = new IllegalStateException(
+                        "clientVersion is 0 and failed to fetch version from remote, cannot proceed.",
+                        e);
+                    ex.printStackTrace();
+                    throw ex;
+                }
             }
             tenantId = checkTenantExistFromRemote(connection, key);
             if (obVsnMajor >= 4) {
@@ -889,27 +921,29 @@ public class LocationUtil {
                 // TODO: check capacity flag later
                 // fetch tablet ids when table is partition table
                 // fetch partition info
-                fetchPartitionInfo(connection, tableEntry, obVsnMajor);
+                fetchPartitionInfo(connection, tableEntry, obVsnMajor, obVersionToUse);
                 if (tableEntry.isPartitionTable()) {
                     if (null != tableEntry.getPartitionInfo()) {
                         // fetch first range part
                         if (null != tableEntry.getPartitionInfo().getFirstPartDesc()) {
                             ObPartFuncType obPartFuncType = tableEntry.getPartitionInfo()
                                 .getFirstPartDesc().getPartFuncType();
-                            fetchFirstPart(connection, tableEntry, obPartFuncType, obVsnMajor);
+                            fetchFirstPart(connection, tableEntry, obPartFuncType, obVsnMajor,
+                                obVersionToUse);
                         }
                         // fetch sub range part
                         if (null != tableEntry.getPartitionInfo().getSubPartDesc()) {
                             ObPartFuncType subPartFuncType = tableEntry.getPartitionInfo()
                                 .getSubPartDesc().getPartFuncType();
-                            fetchSubPart(connection, tableEntry, subPartFuncType, obVsnMajor);
+                            fetchSubPart(connection, tableEntry, subPartFuncType, obVsnMajor,
+                                obVersionToUse);
                         }
                     }
                 }
 
                 if (obVsnMajor >= 4) {
                     if (tableEntry.getPartitionNum() <= TABLE_ENTRY_LOCATION_REFRESH_THRESHOLD) {
-                        getTableEntryLocationFromRemote(connection, key, tableEntry);
+                        getTableEntryLocationFromRemote(connection, key, tableEntry, obVersionToUse);
                     } else {
                         // only set empty partitionEntry 
                         ObPartitionEntry partitionEntry = new ObPartitionEntry();
@@ -918,7 +952,7 @@ public class LocationUtil {
                     }
                 } else {
                     // get location info
-                    getTableEntryLocationFromRemote(connection, key, tableEntry);
+                    getTableEntryLocationFromRemote(connection, key, tableEntry, obVersionToUse);
                 }
             } else if (null != tableEntry && skip_non_partition_table) {
                 // Fix for 2.x non-partition table: initialize partition entry with default values
@@ -927,7 +961,7 @@ public class LocationUtil {
 
                 // For 2.x non-partition table, get location info despite the skip flag
                 // This is necessary for 2.x non-partition tables to work properly
-                getTableEntryLocationFromRemote(connection, key, tableEntry);
+                getTableEntryLocationFromRemote(connection, key, tableEntry, obVersionToUse);
                 if (logger.isInfoEnabled()) {
                     logger.info("Successfully got location info for 2.x non-partition table: {}",
                         key);
@@ -978,7 +1012,8 @@ public class LocationUtil {
     // Note: This code is applicable only for refreshing locations based on tablet ID in version 4.x
     private static String genLocationSQLByTabletId(long obVersion) {
         String sql = null;
-        if (ObGlobal.getObVsnMajor(obVersion) >= 4) {
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
+        if (obVsnMajor >= 4) {
             sql = PROXY_LOCATION_SQL_PARTITION_BY_TABLETID_V4;
         } else {
             throw new FeatureNotSupportedException(
@@ -987,7 +1022,8 @@ public class LocationUtil {
         return sql;
     }
 
-    private static String genLocationSQLByOffset(TableEntry tableEntry, int offset, int size) {
+    private static String genLocationSQLByOffset(TableEntry tableEntry, int offset, int size,
+                                                 long obVersion) {
         StringBuilder sb = new StringBuilder();
         String sql = null;
         long endOffset = -1;
@@ -999,7 +1035,8 @@ public class LocationUtil {
             endOffset = Math.min(offset + size, allPartNum);
         }
 
-        if (ObGlobal.obVsnMajor() >= 4) {
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
+        if (obVsnMajor >= 4) {
             if (tableEntry.isPartitionTable()) {
                 Map<Long, Long> partTabletIdMap = tableEntry.getPartitionInfo()
                     .getPartTabletIdMap();
@@ -1052,7 +1089,22 @@ public class LocationUtil {
         PreparedStatement ps = null;
         ResultSet rs = null;
         ObPartitionEntry partitionEntry = tableEntry.getPartitionEntry();
-        String sql = genLocationSQLByTabletId(obVersion);
+
+        // If obVersion is 0, try to fetch from remote
+        long obVersionToUse = obVersion;
+        if (obVersionToUse == 0) {
+            try {
+                obVersionToUse = getObVersionFromRemoteWithoutGlobal(connection);
+            } catch (Exception e) {
+                IllegalStateException ex = new IllegalStateException(
+                    "obVersion is 0 and failed to fetch version from remote, cannot proceed.", e);
+                ex.printStackTrace();
+                throw new ObTablePartitionLocationRefreshException(
+                    "fail to get partition location entry from remote: " + ex.getMessage(), ex);
+            }
+        }
+
+        String sql = genLocationSQLByTabletId(obVersionToUse);
         ObPartitionLocationInfo partitionLocationInfo = partitionEntry.getPartitionInfo(tabletId);
         // return quickly if recently refreshed 
         if (System.currentTimeMillis() - partitionLocationInfo.getLastUpdateTime() < TABLE_ENTRY_REFRESH_INTERVAL_CEILING
@@ -1068,7 +1120,7 @@ public class LocationUtil {
             ps.setString(5, key.getTableName());
             rs = ps.executeQuery();
             getPartitionLocationFromResultSetByTablet(tableEntry, rs, partitionEntry, tabletId,
-                obVersion);
+                obVersionToUse);
         } catch (SQLException e) {
             // cannot execute sql, maybe some of the observers have been killed
             RUNTIME.error(LCD.convert("01-00010"), key, tableEntry, e.getMessage());
@@ -1100,29 +1152,47 @@ public class LocationUtil {
      */
     public static TableEntry getTableEntryLocationFromRemote(Connection connection,
                                                              TableEntryKey key,
-                                                             TableEntry tableEntry)
-                                                                                   throws ObTablePartitionLocationRefreshException {
+                                                             TableEntry tableEntry, long obVersion)
+                                                                                                   throws ObTablePartitionLocationRefreshException {
 
         PreparedStatement ps = null;
         ResultSet rs = null;
         ObPartitionEntry partitionEntry = new ObPartitionEntry();
         long partitionNum = tableEntry.getPartitionNum();
         int epoch = (int) ((partitionNum / MAX_TABLET_NUMS_EPOCH) + 1);
+
+        // If obVersion is 0, try to fetch from remote
+        long obVersionToUse = obVersion;
+        if (obVersionToUse == 0) {
+            try {
+                obVersionToUse = getObVersionFromRemoteWithoutGlobal(connection);
+            } catch (Exception e) {
+                IllegalStateException ex = new IllegalStateException(
+                    "obVersion is 0 and failed to fetch version from remote, cannot proceed.", e);
+                ex.printStackTrace();
+                throw new ObTablePartitionLocationRefreshException(
+                    "fail to get partition location entry from remote: " + ex.getMessage(), ex);
+            }
+        }
+
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersionToUse);
         for (int i = 0; i < epoch; i++) {
             try {
                 int offset = i * MAX_TABLET_NUMS_EPOCH;
                 // // This code is executed only in version 3.x
-                String sql = genLocationSQLByOffset(tableEntry, offset, MAX_TABLET_NUMS_EPOCH);
+                String sql = genLocationSQLByOffset(tableEntry, offset, MAX_TABLET_NUMS_EPOCH,
+                    obVersionToUse);
                 ps = connection.prepareStatement(sql);
                 ps.setString(1, key.getTenantName());
                 ps.setString(2, key.getDatabaseName());
                 ps.setString(3, key.getTableName());
-                if (ObGlobal.obVsnMajor() >= 4) {
+                if (obVsnMajor >= 4) {
                     // Only for v4.
                     ps.setString(4, key.getTenantName());
                 }
                 rs = ps.executeQuery();
-                partitionEntry = getPartitionLocationFromResultSet(tableEntry, rs, partitionEntry);
+                partitionEntry = getPartitionLocationFromResultSet(tableEntry, rs, partitionEntry,
+                    obVersionToUse);
             } catch (SQLException e) {
                 RUNTIME.error(LCD.convert("01-00010"), key, partitionNum, tableEntry, e);
                 throw new ObTableEntryRefreshException(
@@ -1249,7 +1319,7 @@ public class LocationUtil {
     }
 
     private static void fetchFirstPart(Connection connection, TableEntry tableEntry,
-                                       ObPartFuncType obPartFuncType, int obVsnMajor)
+                                       ObPartFuncType obPartFuncType, int obVsnMajor, long obVersion)
                                                                      throws ObTablePartitionInfoRefreshException,
                                                                             SQLException {
         String tableName = "";
@@ -1276,7 +1346,7 @@ public class LocationUtil {
             if (obPartFuncType.isRangePart()) {
                 List<List<byte[]>> highBoundVals = new ArrayList<>();
                 List<ObComparableKV<ObPartitionKey, Long>> bounds = parseFirstPartRange(rs,
-                    tableEntry, highBoundVals);
+                    tableEntry, highBoundVals, obVersion);
                 ((ObRangePartDesc) tableEntry.getPartitionInfo().getFirstPartDesc())
                     .setBounds(bounds);
                 ((ObRangePartDesc) tableEntry.getPartitionInfo().getFirstPartDesc())
@@ -1322,7 +1392,7 @@ public class LocationUtil {
     }
 
     private static void fetchSubPart(Connection connection, TableEntry tableEntry,
-                                     ObPartFuncType subPartFuncType, int obVsnMajor)
+                                     ObPartFuncType subPartFuncType, int obVsnMajor, long obVersion)
                                                                     throws ObTablePartitionInfoRefreshException,
                                                                            SQLException {
         String tableName = "";
@@ -1350,7 +1420,7 @@ public class LocationUtil {
             if (subPartFuncType.isRangePart()) {
                 List<List<byte[]>> highBoundVals = new ArrayList<>();
                 List<ObComparableKV<ObPartitionKey, Long>> bounds = parseSubPartRange(rs,
-                    tableEntry, highBoundVals);
+                    tableEntry, highBoundVals, obVersion);
                 ((ObRangePartDesc) tableEntry.getPartitionInfo().getSubPartDesc())
                     .setBounds(bounds);
                 ((ObRangePartDesc) tableEntry.getPartitionInfo().getSubPartDesc())
@@ -1447,17 +1517,17 @@ public class LocationUtil {
 
         ObPartitionLocationInfo partitionLocationInfo = partitionEntry.getPartitionInfo(tabletId);
 
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
         while (rs.next()) {
             ReplicaLocation replica = buildReplicaLocation(rs);
-            long partitionId = (ObGlobal.getObVsnMajor(obVersion) >= 4) ? rs.getLong("tablet_id")
-                : rs.getLong("partition_id");
-            long lsId = ObGlobal.getObVsnMajor(obVersion) >= 4 ? rs.getLong("ls_id")
-                : INVALID_LS_ID;
-            if (rs.wasNull() && ObGlobal.getObVsnMajor(obVersion) >= 4) {
+            long partitionId = (obVsnMajor >= 4) ? rs.getLong("tablet_id") : rs
+                .getLong("partition_id");
+            long lsId = obVsnMajor >= 4 ? rs.getLong("ls_id") : INVALID_LS_ID;
+            if (rs.wasNull() && obVsnMajor >= 4) {
                 lsId = INVALID_LS_ID; // For non-partitioned table  
             }
 
-            if (ObGlobal.getObVsnMajor(obVersion) < 4 && tableEntry.isPartitionTable()
+            if (obVsnMajor < 4 && tableEntry.isPartitionTable()
                 && tableEntry.getPartitionInfo().getSubPartDesc() != null) {
                 partitionId = ObPartIdCalculator.getPartIdx(partitionId, tableEntry
                     .getPartitionInfo().getSubPartDesc().getPartNum());
@@ -1511,19 +1581,21 @@ public class LocationUtil {
 
     private static ObPartitionEntry getPartitionLocationFromResultSet(TableEntry tableEntry,
                                                                       ResultSet rs,
-                                                                      ObPartitionEntry partitionEntry)
-                                                                                                      throws SQLException,
-                                                                                                      ObTablePartitionLocationRefreshException {
+                                                                      ObPartitionEntry partitionEntry,
+                                                                      long obVersion)
+                                                                                     throws SQLException,
+                                                                                     ObTablePartitionLocationRefreshException {
         if (partitionEntry == null || tableEntry == null) {
             throw new IllegalArgumentException("partitionEntry: " + partitionEntry
                                                + " tableEntry: " + tableEntry);
         }
         Map<Long, ObPartitionLocation> partitionLocation = partitionEntry.getPartitionLocation();
         Map<Long, Long> tabletLsIdMap = partitionEntry.getTabletLsIdMap();
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
         while (rs.next()) {
             ReplicaLocation replica = buildReplicaLocation(rs);
             long partitionId;
-            if (ObGlobal.obVsnMajor() >= 4) {
+            if (obVsnMajor >= 4) {
                 partitionId = rs.getLong("tablet_id");
                 long lsId = rs.getLong("ls_id");
                 if (!rs.wasNull()) {
@@ -1592,7 +1664,7 @@ public class LocationUtil {
             }
         }
 
-        if (ObGlobal.obVsnMajor() < 4) {
+        if (obVsnMajor < 4) {
             for (long i = 0; i < tableEntry.getPartitionNum(); i++) {
                 ObPartitionLocation location = partitionEntry.getPartitionLocationWithPartId(i);
                 if (location == null) {
@@ -1653,9 +1725,9 @@ public class LocationUtil {
     }
 
     private static void fetchPartitionInfo(Connection connection, TableEntry tableEntry,
-                                           int obVsnMajor)
-                                                          throws ObTablePartitionInfoRefreshException,
-                                                          SQLException {
+                                           int obVsnMajor, long obVersion)
+                                                                          throws ObTablePartitionInfoRefreshException,
+                                                                          SQLException {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         ObPartitionInfo info = null;
@@ -1672,7 +1744,7 @@ public class LocationUtil {
             }
 
             rs = pstmt.executeQuery();
-            info = parsePartitionInfo(rs, obVsnMajor);
+            info = parsePartitionInfo(rs, obVsnMajor, obVersion);
 
             if (logger.isInfoEnabled()) {
                 logger.info("get part info from remote info:{}",
@@ -1701,10 +1773,10 @@ public class LocationUtil {
 
     }
 
-    private static ObPartitionInfo parsePartitionInfo(ResultSet rs, int obVsnMajor)
-                                                                                   throws IllegalArgumentException,
-                                                                                   GenerateColumnParseException,
-                                                                                   SQLException {
+    private static ObPartitionInfo parsePartitionInfo(ResultSet rs, int obVsnMajor, long obVersion)
+                                                                                                   throws IllegalArgumentException,
+                                                                                                   GenerateColumnParseException,
+                                                                                                   SQLException {
         ObPartitionInfo info = new ObPartitionInfo();
         boolean isFirstRow = true;
         while (rs.next()) {
@@ -1716,7 +1788,8 @@ public class LocationUtil {
 
                 // get first part
                 if (info.getLevel().getIndex() >= ObPartitionLevel.LEVEL_ONE.getIndex()) {
-                    ObPartDesc partDesc = buildPartDesc(ObPartitionLevel.LEVEL_ONE, rs, obVsnMajor);
+                    ObPartDesc partDesc = buildPartDesc(ObPartitionLevel.LEVEL_ONE, rs, obVsnMajor,
+                        obVersion);
                     if (partDesc == null) {
                         logger.warn("fail to build first part");
                     } else {
@@ -1726,7 +1799,8 @@ public class LocationUtil {
 
                 // get sub part
                 if (info.getLevel().getIndex() == ObPartitionLevel.LEVEL_TWO.getIndex()) {
-                    ObPartDesc partDesc = buildPartDesc(ObPartitionLevel.LEVEL_TWO, rs, obVsnMajor);
+                    ObPartDesc partDesc = buildPartDesc(ObPartitionLevel.LEVEL_TWO, rs, obVsnMajor,
+                        obVersion);
                     if (partDesc == null) {
                         logger.warn("fail to build sub part");
                     } else {
@@ -1810,8 +1884,8 @@ public class LocationUtil {
         return info;
     }
 
-    private static ObPartDesc buildPartDesc(ObPartitionLevel level, ResultSet rs, int obVsnMajor)
-                                                                                                 throws SQLException {
+    private static ObPartDesc buildPartDesc(ObPartitionLevel level, ResultSet rs, int obVsnMajor,
+                                            long obVersion) throws SQLException {
         ObPartDesc partDesc = null;
         String partLevelPrefix = (level == ObPartitionLevel.LEVEL_TWO ? "sub_" : "");
         ObPartFuncType partType = ObPartFuncType.getObPartFuncType(rs.getLong(partLevelPrefix
@@ -1825,6 +1899,7 @@ public class LocationUtil {
             rangeDesc.setPartExpr(partExpr);
             rangeDesc.setPartNum(rs.getInt(partLevelPrefix + "part_num"));
             rangeDesc.setPartSpace(rs.getInt(partLevelPrefix + "part_space"));
+            rangeDesc.setObVersion(obVersion);
             ArrayList<ObObjType> types = new ArrayList<ObObjType>(1);
             String objTypesStr = rs.getString(partLevelPrefix + "part_range_type");
             for (String typeStr : objTypesStr.split(",")) {
@@ -1838,6 +1913,7 @@ public class LocationUtil {
             hashDesc.setPartFuncType(partType);
             hashDesc.setPartNum(rs.getInt(partLevelPrefix + "part_num"));
             hashDesc.setPartSpace(rs.getInt(partLevelPrefix + "part_space"));
+            hashDesc.setObVersion(obVersion);
             if (obVsnMajor < 4) {
                 Map<String, Long> partNameIdMap = buildDefaultPartNameIdMap(hashDesc.getPartNum());
                 hashDesc.setPartNameIdMap(partNameIdMap);
@@ -1849,6 +1925,7 @@ public class LocationUtil {
             keyPartDesc.setPartExpr(partExpr);
             keyPartDesc.setPartNum(rs.getInt(partLevelPrefix + "part_num"));
             keyPartDesc.setPartSpace(rs.getInt(partLevelPrefix + "part_space"));
+            keyPartDesc.setObVersion(obVersion);
             if (obVsnMajor < 4) {
                 Map<String, Long> partNameIdMap = buildDefaultPartNameIdMap(keyPartDesc
                     .getPartNum());
@@ -1937,11 +2014,12 @@ public class LocationUtil {
 
     private static List<ObComparableKV<ObPartitionKey, Long>> parseFirstPartRange(ResultSet rs,
                                                                                   TableEntry tableEntry,
-                                                                                  List<List<byte[]>> highBoundVals)
-                                                                                                                   throws SQLException,
-                                                                                                                   IllegalArgumentException,
-                                                                                                                   FeatureNotSupportedException {
-        return parseRangePart(rs, tableEntry, highBoundVals, false);
+                                                                                  List<List<byte[]>> highBoundVals,
+                                                                                  long obVersion)
+                                                                                                 throws SQLException,
+                                                                                                 IllegalArgumentException,
+                                                                                                 FeatureNotSupportedException {
+        return parseRangePart(rs, tableEntry, highBoundVals, false, obVersion);
     }
 
     private static Map<ObPartitionKey, Long> parseFirstPartSets(ResultSet rs, TableEntry tableEntry)
@@ -1953,11 +2031,12 @@ public class LocationUtil {
 
     private static List<ObComparableKV<ObPartitionKey, Long>> parseSubPartRange(ResultSet rs,
                                                                                 TableEntry tableEntry,
-                                                                                List<List<byte[]>> highBoundVals)
-                                                                                                                 throws SQLException,
-                                                                                                                 IllegalArgumentException,
-                                                                                                                 FeatureNotSupportedException {
-        return parseRangePart(rs, tableEntry, highBoundVals, true);
+                                                                                List<List<byte[]>> highBoundVals,
+                                                                                long obVersion)
+                                                                                               throws SQLException,
+                                                                                               IllegalArgumentException,
+                                                                                               FeatureNotSupportedException {
+        return parseRangePart(rs, tableEntry, highBoundVals, true, obVersion);
     }
 
     private static Map<ObPartitionKey, Long> parseSubPartSets(ResultSet rs, TableEntry tableEntry)
@@ -2017,10 +2096,11 @@ public class LocationUtil {
     private static List<ObComparableKV<ObPartitionKey, Long>> parseRangePart(ResultSet rs,
                                                                              TableEntry tableEntry,
                                                                              List<List<byte[]>> highBoundVals,
-                                                                             boolean isSubPart)
-                                                                                               throws SQLException,
-                                                                                               IllegalArgumentException,
-                                                                                               FeatureNotSupportedException {
+                                                                             boolean isSubPart,
+                                                                             long obVersion)
+                                                                                            throws SQLException,
+                                                                                            IllegalArgumentException,
+                                                                                            FeatureNotSupportedException {
         String partIdColumnName = "part_id";
         ObPartDesc partDesc = tableEntry.getPartitionInfo().getFirstPartDesc();
         if (isSubPart) {
@@ -2064,7 +2144,8 @@ public class LocationUtil {
                 }
             }
             ObPartitionKey partitionKey = new ObPartitionKey(orderPartColumns, partElements);
-            if (ObGlobal.obVsnMajor() >= 4) {
+            int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
+            if (obVsnMajor >= 4) {
                 long tabletId = rs.getLong("tablet_id");
                 bounds.add(new ObComparableKV<ObPartitionKey, Long>(partitionKey, idx));
                 highBoundVals.add(singleHighBoundVal);
@@ -2078,7 +2159,8 @@ public class LocationUtil {
                 partNameIdMap.put(partName.toLowerCase(), partId);
             }
         }
-        if (ObGlobal.obVsnMajor() >= 4) {
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
+        if (obVsnMajor >= 4) {
             //set single level partition tablet-id mapping
             tableEntry.getPartitionInfo().setPartTabletIdMap(partTabletIdMap);
         } else {

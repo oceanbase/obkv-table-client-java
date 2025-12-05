@@ -77,7 +77,7 @@ public class ObTableSingleOpQuery extends ObTableQuery {
         idx += len;
 
         // encode HBase Batch Get required
-        if (isHbaseQuery && ObGlobal.isHBaseBatchGetSupport()) {
+        if (isHbaseQuery && ObGlobal.isHBaseBatchGetSupport(getObVersion())) {
             len = Serialization.getNeedBytes(selectColumns.size());
             System.arraycopy(Serialization.encodeVi64(selectColumns.size()), 0, bytes, idx, len);
             idx += len;
@@ -136,7 +136,7 @@ public class ObTableSingleOpQuery extends ObTableQuery {
         int len = (int) Serialization.decodeVi64(buf);
         for (int i = 0; i < len; i++) {
             ObNewRange range = new ObNewRange();
-            ObTableSerialUtil.decode(buf, range);
+            ObTableSerialUtil.decode(buf, range, this.getObVersion());
             keyRanges.add(range);
         }
 
@@ -165,7 +165,7 @@ public class ObTableSingleOpQuery extends ObTableQuery {
         payloadContentSize += Serialization.getNeedBytes(filterString);
 
         // calculate part required by HBase Batch Get
-        if (isHbaseQuery && ObGlobal.isHBaseBatchGetSupport()) {
+        if (isHbaseQuery && ObGlobal.isHBaseBatchGetSupport(getObVersion())) {
             payloadContentSize += Serialization.getNeedBytes(selectColumns.size());
             for (String selectColumn : selectColumns) {
                 payloadContentSize += Serialization.getNeedBytes(selectColumn);

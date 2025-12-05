@@ -24,6 +24,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableBatchOperat
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperation;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOperationType;
 import com.alipay.oceanbase.rpc.dds.rule.DatabaseAndTable;
+import com.alipay.oceanbase.rpc.dds.util.VersionedConfigSnapshot;
 import com.alipay.oceanbase.rpc.table.AbstractTableBatchOps;
 import com.alipay.oceanbase.rpc.table.ObTableClientBatchOpsImpl;
 
@@ -135,10 +136,15 @@ public class DdsObTableClientBatchOps extends AbstractTableBatchOps {
 
     @Override
     public List<Object> execute() throws Exception {
+        VersionedConfigSnapshot snapshot = ddsObTableClient.getCurrentConfigSnapshot();
+        if (snapshot == null) {
+            throw new IllegalStateException("Configuration snapshot is not available");
+        }
+        
         DatabaseAndTable databaseAndTable = ddsObTableClient.calculateDatabaseAndTable(tableName,
-            batchOperation.getTableOperations());
+            batchOperation.getTableOperations(), snapshot);
 
-        ObTableClient client = ddsObTableClient.getObTable(databaseAndTable);
+        ObTableClient client = ddsObTableClient.getObTableWithSnapshot(databaseAndTable, snapshot);
         ObTableClientBatchOpsImpl obTableClientBatchOpsImpl = new ObTableClientBatchOpsImpl(
             this.ddsObTableClient.getTargetTableName(databaseAndTable.getTableName()),
             batchOperation, client);

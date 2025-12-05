@@ -78,7 +78,7 @@ public class ObHashUtils {
             throw new IllegalArgumentException("varchar not supported , ObCollationType = "
                                                + collationType + " Object =" + varchar);
         }
-        int obVsnMajor = obVersion > 0 ? ObGlobal.getObVsnMajor(obVersion) : ObGlobal.obVsnMajor();
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
         switch (collationType) {
             case CS_TYPE_UTF8MB4_GENERAL_CI:
                 if (partFuncType == ObPartFuncType.KEY_V3
@@ -128,6 +128,20 @@ public class ObHashUtils {
      */
     public static long toHashcode(Object value, ObColumn refColumn, long hashCode,
                                   ObPartFuncType partFuncType) {
+        return toHashcode(value, refColumn, hashCode, partFuncType, 0);
+    }
+
+    /**
+     * To hash code with OB version
+     * @param value input data
+     * @param refColumn data info, include type and collation type
+     * @param hashCode old hashCode
+     * @param partFuncType partition function type
+     * @param obVersion OceanBase server version (0 means use global version)
+     * @return new hashCode
+     */
+    public static long toHashcode(Object value, ObColumn refColumn, long hashCode,
+                                  ObPartFuncType partFuncType, long obVersion) {
 
         ObObjType type = refColumn.getObObjType();
         int typeValue = type.getValue();
@@ -152,7 +166,7 @@ public class ObHashUtils {
         } else if (ObDateType.getValue() == typeValue) {
             return ObHashUtils.dateHash((Date) value, hashCode);
         } else if (ObVarcharType.getValue() == typeValue || ObCharType.getValue() == typeValue) {
-            return ObHashUtils.varcharHash(value, collationType, hashCode, partFuncType);
+            return ObHashUtils.varcharHash(value, collationType, hashCode, partFuncType, obVersion);
         }
 
         throw new ClassCastException("unexpected type" + type);

@@ -41,6 +41,7 @@ public class ObTableQueryAndMutate extends AbstractPayload {
     private ObTableBatchOperation     mutations;
     private boolean                   returnAffectedEntity = false;
     private ObTableQueryAndMutateFlag queryAndMutateFlag   = new ObTableQueryAndMutateFlag();
+    private long                      obVersion            = 0;                              // OceanBase server version for encoding/decoding
 
     /*
      * Get pcode.
@@ -66,6 +67,10 @@ public class ObTableQueryAndMutate extends AbstractPayload {
         idx += headerLen;
 
         // 1. encode payload
+        // Ensure obVersion is synced before encoding
+        if (tableQuery != null) {
+            tableQuery.setObVersion(obVersion);
+        }
         int len = (int) tableQuery.getPayloadSize();
         System.arraycopy(tableQuery.encode(), 0, bytes, idx, len);
         idx += len;
@@ -106,6 +111,10 @@ public class ObTableQueryAndMutate extends AbstractPayload {
      */
     @Override
     public long getPayloadContentSize() {
+        // Ensure obVersion is synced before calculating size
+        if (tableQuery != null) {
+            tableQuery.setObVersion(obVersion);
+        }
         return tableQuery.getPayloadSize() //
                + mutations.getPayloadSize() //
                + Serialization.getNeedBytes(queryAndMutateFlag.getValue()) + 1;// returnAffectedEntity
@@ -123,6 +132,9 @@ public class ObTableQueryAndMutate extends AbstractPayload {
      */
     public void setTableQuery(ObTableQuery tableQuery) {
         this.tableQuery = tableQuery;
+        if (this.tableQuery != null) {
+            this.tableQuery.setObVersion(obVersion);
+        }
     }
 
     /*
@@ -167,5 +179,23 @@ public class ObTableQueryAndMutate extends AbstractPayload {
 
     public void setIsRollbackWhenCheckFailed(boolean isRollbackWhenCheckFailed) {
         queryAndMutateFlag.setIsRollbackWhenCheckFailed(isRollbackWhenCheckFailed);
+    }
+
+    /*
+     * Get OceanBase version.
+     */
+    public long getObVersion() {
+        return obVersion;
+    }
+
+    /*
+     * Set OceanBase version.
+     */
+    public void setObVersion(long obVersion) {
+        this.obVersion = obVersion;
+        // Sync obVersion to inner tableQuery
+        if (tableQuery != null) {
+            tableQuery.setObVersion(obVersion);
+        }
     }
 }

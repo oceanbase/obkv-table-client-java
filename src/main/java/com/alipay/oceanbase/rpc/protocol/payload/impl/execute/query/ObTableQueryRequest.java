@@ -70,6 +70,10 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
 
         idx = encodeConsistencyLevel(bytes, idx);
 
+        // Ensure obVersion is synced before encoding
+        if (tableQuery != null) {
+            tableQuery.setObVersion(obVersion);
+        }
         int len = (int) tableQuery.getPayloadSize();
         System.arraycopy(tableQuery.encode(), 0, bytes, idx, len);
 
@@ -86,7 +90,8 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
         this.credential = Serialization.decodeBytesString(buf);
         this.tableName = Serialization.decodeVString(buf);
         this.tableId = Serialization.decodeVi64(buf);
-        if (ObGlobal.obVsnMajor() >= 4)
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
+        if (obVsnMajor >= 4)
             this.partitionId = Serialization.decodeI64(buf);
         else
             this.partitionId = Serialization.decodeVi64(buf);
@@ -104,7 +109,12 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
      */
     @Override
     public long getPayloadContentSize() {
-        if (ObGlobal.obVsnMajor() >= 4)
+        // Ensure obVersion is synced before calculating size
+        if (tableQuery != null) {
+            tableQuery.setObVersion(obVersion);
+        }
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
+        if (obVsnMajor >= 4)
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
                    + Serialization.getNeedBytes(tableId) + 8 + 2 + tableQuery.getPayloadSize();
         else
@@ -125,6 +135,18 @@ public class ObTableQueryRequest extends ObTableAbstractOperationRequest {
      */
     public void setTableQuery(ObTableQuery tableQuery) {
         this.tableQuery = tableQuery;
+        if (this.tableQuery != null) {
+            this.tableQuery.setObVersion(obVersion);
+        }
+    }
+
+    @Override
+    public void setObVersion(long obVersion) {
+        super.setObVersion(obVersion);
+        // Sync obVersion to inner tableQuery
+        if (tableQuery != null) {
+            tableQuery.setObVersion(obVersion);
+        }
     }
 
     /*

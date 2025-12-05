@@ -62,6 +62,23 @@ public class ObGlobal {
     }
 
     /**
+     * Get OB version major number, throwing exception if version is 0.
+     * This method ensures version is properly initialized before use.
+     * @param version OB version
+     * @return major version number (e.g., 2, 3, 4)
+     * @throws IllegalStateException if version is 0
+     */
+    public static int getObVsnMajorRequired(long version) {
+        if (version == 0) {
+            IllegalStateException e = new IllegalStateException(
+                "OB version is 0, cannot get major version. Please ensure version is properly initialized.");
+            e.printStackTrace();
+            throw e;
+        }
+        return getObVsnMajor(version);
+    }
+
+    /**
      * @deprecated Use getObVsnMinor(long version) instead with instance version
      */
     @Deprecated
@@ -116,8 +133,11 @@ public class ObGlobal {
      */
     @Deprecated
     public static boolean isLsOpSupport() {
-        return isLsOpSupport(OB_VERSION);
+        throw new IllegalStateException(
+            "isLsOpSupport() without version parameter is deprecated. " +
+            "Please use isLsOpSupport(long version) with instance-level obVersion from ObTableClient/ObTable instead.");
     }
+    
 
     public static boolean isLsOpSupport(long version) {
         return version >= OB_VERSION_4_2_3_0 && version < OB_VERSION_4_3_0_0
@@ -129,7 +149,9 @@ public class ObGlobal {
      */
     @Deprecated
     public static boolean isFtsQuerySupport() {
-        return isFtsQuerySupport(OB_VERSION);
+        throw new IllegalStateException(
+            "isFtsQuerySupport() without version parameter is deprecated. " +
+            "Please use isFtsQuerySupport(long version) with instance-level obVersion from ObTableClient/ObTable instead.");
     }
 
     public static boolean isFtsQuerySupport(long version) {
@@ -141,7 +163,9 @@ public class ObGlobal {
      */
     @Deprecated
     public static boolean isReturnOneResultSupport() {
-        return isReturnOneResultSupport(OB_VERSION);
+        throw new IllegalStateException(
+            "isReturnOneResultSupport() without version parameter is deprecated. " +
+            "Please use isReturnOneResultSupport(long version) with instance-level obVersion from ObTableClient/ObTable instead.");
     }
 
     public static boolean isReturnOneResultSupport(long version) {
@@ -154,7 +178,9 @@ public class ObGlobal {
      */
     @Deprecated
     public static boolean isHBaseBatchGetSupport() {
-        return isHBaseBatchGetSupport(OB_VERSION);
+        throw new IllegalStateException(
+            "isHBaseBatchGetSupport() without version parameter is deprecated. " +
+            "Please use isHBaseBatchGetSupport(long version) with instance-level obVersion from ObTableClient/ObTable instead.");
     }
 
     public static boolean isHBaseBatchGetSupport(long version) {
@@ -167,7 +193,9 @@ public class ObGlobal {
      */
     @Deprecated
     public static boolean isHBaseBatchSupport() {
-        return isHBaseBatchSupport(OB_VERSION);
+        throw new IllegalStateException(
+            "isHBaseBatchSupport() without version parameter is deprecated. " +
+            "Please use isHBaseBatchSupport(long version) with instance-level obVersion from ObTableClient/ObTable instead.");
     }
 
     public static boolean isHBaseBatchSupport(long version) {
@@ -180,7 +208,9 @@ public class ObGlobal {
      */
     @Deprecated
     public static boolean isCellTTLSupport() {
-        return isCellTTLSupport(OB_VERSION);
+        throw new IllegalStateException(
+            "isCellTTLSupport() without version parameter is deprecated. " +
+            "Please use isCellTTLSupport(long version) with instance-level obVersion from ObTableClient/ObTable instead.");
     }
 
     public static boolean isCellTTLSupport(long version) {

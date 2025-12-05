@@ -79,6 +79,8 @@ public class ObTableQuery extends AbstractPayload {
 
     protected ObKVParams obKVParams = null;
 
+    private long obVersion = 0; // OceanBase server version for encoding/decoding
+
     public void adjustStartKey(List<ObObj> key) throws IllegalArgumentException {
         List<ObNewRange> keyRanges = getKeyRanges();
         for (ObNewRange range : keyRanges) {
@@ -163,6 +165,8 @@ public class ObTableQuery extends AbstractPayload {
         System.arraycopy(Serialization.encodeVi64(keyRanges.size()), 0, bytes, idx, len);
         idx += len;
         for (ObNewRange keyRange : keyRanges) {
+            // Sync obVersion to keyRange before encoding
+            keyRange.setObVersion(obVersion);
             len = keyRange.getEncodedSize();
             System.arraycopy(keyRange.encode(), 0, bytes, idx, len);
             idx += len;
@@ -254,6 +258,7 @@ public class ObTableQuery extends AbstractPayload {
         long size = Serialization.decodeVi64(buf);
         for (int i = 0; i < size; i++) {
             ObNewRange obNewRange = new ObNewRange();
+            obNewRange.setObVersion(obVersion);
             obNewRange.decode(buf);
             this.keyRanges.add(obNewRange);
         }
@@ -315,6 +320,8 @@ public class ObTableQuery extends AbstractPayload {
         long contentSize = 0;
         contentSize += Serialization.getNeedBytes(keyRanges.size());
         for (ObNewRange obNewRange : keyRanges) {
+            // Sync obVersion to keyRange before calculating size
+            obNewRange.setObVersion(obVersion);
             contentSize += obNewRange.getEncodedSize();
         }
         contentSize += Serialization.getNeedBytes(selectColumns.size());
@@ -579,4 +586,18 @@ public class ObTableQuery extends AbstractPayload {
     }
 
     public boolean isFTSQuery() { return isFTSQuery; }
+
+    /*
+     * Get OceanBase version.
+     */
+    public long getObVersion() {
+        return obVersion;
+    }
+
+    /*
+     * Set OceanBase version.
+     */
+    public void setObVersion(long obVersion) {
+        this.obVersion = obVersion;
+    }
 }

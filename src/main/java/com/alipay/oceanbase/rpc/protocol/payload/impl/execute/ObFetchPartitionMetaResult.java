@@ -378,6 +378,7 @@ public class ObFetchPartitionMetaResult extends AbstractPayload {
             rangeDesc.setPartNum((int) partNum);
             // get part space for current level
             rangeDesc.setPartSpace((int) partSpace);
+            rangeDesc.setObVersion(this.obVersion);
             // get ObObj typs for range partition
             ArrayList<ObObjType> types = new ArrayList<ObObjType>(1);
             for (String typeStr : objTypesStr.split(",")) {
@@ -392,6 +393,7 @@ public class ObFetchPartitionMetaResult extends AbstractPayload {
             hashDesc.setPartNum((int) partNum);
             // get part space for current level
             hashDesc.setPartSpace((int) partSpace);
+            hashDesc.setObVersion(this.obVersion);
             partDesc = hashDesc;
         } else if (obPartFuncType.isKeyPart()) {
             ObKeyPartDesc keyDesc = new ObKeyPartDesc();
@@ -400,6 +402,7 @@ public class ObFetchPartitionMetaResult extends AbstractPayload {
             keyDesc.setPartNum((int) partNum);
             // get part space for current level
             keyDesc.setPartSpace((int) partSpace);
+            keyDesc.setObVersion(this.obVersion);
             partDesc = keyDesc;
         } else {
             RUNTIME.error(LCD.convert("01-00015"), partType);
@@ -622,6 +625,6 @@ public class ObFetchPartitionMetaResult extends AbstractPayload {
      * Get OB version major number, using instance version if available, otherwise global version.
      */
     private int getObVsnMajor() {
-        return obVersion > 0 ? ObGlobal.getObVsnMajor(obVersion) : ObGlobal.obVsnMajor();
+        return ObGlobal.getObVsnMajorRequired(obVersion);
     }
 }

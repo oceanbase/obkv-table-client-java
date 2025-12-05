@@ -774,7 +774,7 @@ public class ObTableClientPartitionKeyTest {
             TableQuery tableQuery = obTableClient.query(TEST_TABLE);
             // fixme: generated column is not supported by odp mode
             long clientObVersion = obTableClient.getObVersion();
-            int obVsnMajor = clientObVersion > 0 ? ObGlobal.getObVsnMajor(clientObVersion) : ObGlobal.obVsnMajor();
+            int obVsnMajor = ObGlobal.getObVsnMajorRequired(clientObVersion);
             if (obTableClient.isOdpMode()) {
                 columnSize = 4;
                 tableQuery.setScanRangeColumns("K");
@@ -839,7 +839,7 @@ public class ObTableClientPartitionKeyTest {
                     new Object[] { "key".getBytes() });
                 tableQuery.setBatchSize(3);
                 long clientObVersion = obTableClient.getObVersion();
-                int obVsnMajor = clientObVersion > 0 ? ObGlobal.getObVsnMajor(clientObVersion) : ObGlobal.obVsnMajor();
+                int obVsnMajor = ObGlobal.getObVsnMajorRequired(clientObVersion);
                 if (obVsnMajor < 4) {
                     tableQuery.select("K", "Q", "T", "V");
                 }
@@ -852,7 +852,7 @@ public class ObTableClientPartitionKeyTest {
                 tableQuery.setBatchSize(3);
                 tableQuery.setOperationTimeout(100);
                 long clientObVersion = obTableClient.getObVersion();
-                int obVsnMajor = clientObVersion > 0 ? ObGlobal.getObVsnMajor(clientObVersion) : ObGlobal.obVsnMajor();
+                int obVsnMajor = ObGlobal.getObVsnMajorRequired(clientObVersion);
                 if (obVsnMajor < 4) {
                     tableQuery.select("K", "Q", "T", "V", "K_PREFIX");
                 }

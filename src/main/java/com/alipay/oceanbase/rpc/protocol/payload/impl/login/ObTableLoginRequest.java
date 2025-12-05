@@ -54,6 +54,7 @@ public class ObTableLoginRequest extends AbstractPayload {
     private String        databaseName;
     private long          ttlUs;
     private String        configsStr;
+    private long          obVersion     = 0;          // OceanBase server version for encoding/decoding
 
     /*
      * Ob table login request.
@@ -380,6 +381,20 @@ public class ObTableLoginRequest extends AbstractPayload {
 
     public void setConfigsStr(String configsStr) {
         this.configsStr = configsStr;
+    }
+
+    /*
+     * Get OceanBase version.
+     */
+    public long getObVersion() {
+        return obVersion;
+    }
+
+    /*
+     * Set OceanBase version.
+     */
+    public void setObVersion(long obVersion) {
+        this.obVersion = obVersion;
     }
 
 }

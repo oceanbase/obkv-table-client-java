@@ -22,7 +22,9 @@ import com.alipay.oceanbase.rpc.bolt.protocol.ObTablePacketCode;
 import com.alipay.oceanbase.rpc.protocol.packet.ObRpcPacket;
 import com.alipay.oceanbase.rpc.protocol.packet.ObRpcPacketHeader;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableAbstractOperationRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableStreamRequest;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.login.ObTableLoginRequest;
 import com.alipay.oceanbase.rpc.threadlocal.ThreadLocalMap;
 import com.alipay.oceanbase.rpc.util.ObPureCrc32C;
 import com.alipay.remoting.CommandFactory;
@@ -68,6 +70,13 @@ public class ObPacketFactory implements CommandFactory {
         // 2. assemble rpc packet header
         ObRpcPacketHeader rpcHeaderPacket = new ObRpcPacketHeader();
         rpcHeaderPacket.setPcode(payload.getPcode());
+        // Set obVersion if payload is an operation request or login request
+        if (payload instanceof ObTableAbstractOperationRequest) {
+            rpcHeaderPacket
+                .setObVersion(((ObTableAbstractOperationRequest) payload).getObVersion());
+        } else if (payload instanceof ObTableLoginRequest) {
+            rpcHeaderPacket.setObVersion(((ObTableLoginRequest) payload).getObVersion());
+        }
         // flag
         if (reRouting) {
             rpcHeaderPacket.enableRerouting();

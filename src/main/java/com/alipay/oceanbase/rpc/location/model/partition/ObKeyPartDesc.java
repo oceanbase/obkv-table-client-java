@@ -256,7 +256,7 @@ public class ObKeyPartDesc extends ObPartDesc {
         long hashValue = 0L;
         for (int i = 0; i < partColumns.size(); i++) {
             hashValue = ObHashUtils.toHashcode(evalValues.get(i), partColumns.get(i), hashValue,
-                this.getPartFuncType());
+                this.getPartFuncType(), this.getObVersion());
         }
 
         hashValue = (hashValue > 0 ? hashValue : -hashValue);

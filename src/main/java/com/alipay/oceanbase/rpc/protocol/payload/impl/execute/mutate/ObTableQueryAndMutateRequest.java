@@ -63,6 +63,10 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
         idx = encodeCredential(bytes, idx);
         idx = encodeTableMetaWithPartitionId(bytes, idx);
 
+        // Ensure obVersion is synced before encoding
+        if (tableQueryAndMutate != null) {
+            tableQueryAndMutate.setObVersion(obVersion);
+        }
         int len = (int) tableQueryAndMutate.getPayloadSize();
         System.arraycopy(tableQueryAndMutate.encode(), 0, bytes, idx, len);
 
@@ -79,7 +83,7 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
         this.credential = Serialization.decodeBytesString(buf);
         this.tableName = Serialization.decodeVString(buf);
         this.tableId = Serialization.decodeVi64(buf);
-        int obVsnMajor = obVersion > 0 ? ObGlobal.getObVsnMajor(obVersion) : ObGlobal.obVsnMajor();
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
         if (obVsnMajor >= 4)
             this.partitionId = Serialization.decodeI64(buf);
         else
@@ -97,7 +101,11 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
      */
     @Override
     public long getPayloadContentSize() {
-        int obVsnMajor = obVersion > 0 ? ObGlobal.getObVsnMajor(obVersion) : ObGlobal.obVsnMajor();
+        // Ensure obVersion is synced before calculating size
+        if (tableQueryAndMutate != null) {
+            tableQueryAndMutate.setObVersion(obVersion);
+        }
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
         if (obVsnMajor >= 4)
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
                    + Serialization.getNeedBytes(tableId) + 8 + 1
@@ -121,6 +129,18 @@ public class ObTableQueryAndMutateRequest extends ObTableAbstractOperationReques
      */
     public void setTableQueryAndMutate(ObTableQueryAndMutate tableQueryAndMutate) {
         this.tableQueryAndMutate = tableQueryAndMutate;
+        if (this.tableQueryAndMutate != null) {
+            this.tableQueryAndMutate.setObVersion(obVersion);
+        }
+    }
+
+    @Override
+    public void setObVersion(long obVersion) {
+        super.setObVersion(obVersion);
+        // Sync obVersion to inner tableQueryAndMutate
+        if (tableQueryAndMutate != null) {
+            tableQueryAndMutate.setObVersion(obVersion);
+        }
     }
 
     /*

@@ -47,7 +47,7 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
      */
     @Override
     public long getPayloadContentSize() {
-        int obVsnMajor = obVersion > 0 ? ObGlobal.getObVsnMajor(obVersion) : ObGlobal.obVsnMajor();
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
         if (obVsnMajor >= 4)
             return Serialization.getNeedBytes(credential) + Serialization.getNeedBytes(tableName)
                    + Serialization.getNeedBytes(tableId) + 8 + 2 + 3;
@@ -74,7 +74,7 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
         int len = Serialization.getNeedBytes(tableId);
         System.arraycopy(Serialization.encodeVi64(tableId), 0, bytes, idx, len);
         idx += len;
-        int obVsnMajor = obVersion > 0 ? ObGlobal.getObVsnMajor(obVersion) : ObGlobal.obVsnMajor();
+        int obVsnMajor = ObGlobal.getObVsnMajorRequired(obVersion);
         if (obVsnMajor >= 4) {
             System.arraycopy(Serialization.encodeI64(partitionId), 0, bytes, idx, 8);
             idx += 8;

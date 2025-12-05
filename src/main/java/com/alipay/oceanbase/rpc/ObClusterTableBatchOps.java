@@ -191,10 +191,11 @@ public class ObClusterTableBatchOps extends AbstractTableBatchOps {
             throw new IllegalArgumentException("operations is empty");
         }
         ObTableOperationType lastType = operations.get(0).getOperationType();
-        if (returnOneResult && !ObGlobal.isReturnOneResultSupport()) {
+        long obVersion = tableBatchOps.getObTableClient().getObVersion();
+        if (returnOneResult && !ObGlobal.isReturnOneResultSupport(obVersion)) {
             throw new FeatureNotSupportedException(
                 "returnOneResult is not supported in this Observer version ["
-                        + ObGlobal.obVsnString() + "]");
+                        + ObGlobal.getObVsnString(obVersion) + "]");
         } else if (returnOneResult
                    && !(this.tableBatchOps.getObTableBatchOperation().isSameType() && (lastType == ObTableOperationType.INSERT
                                                                                        || lastType == ObTableOperationType.PUT

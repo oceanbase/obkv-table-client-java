@@ -132,9 +132,10 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         } else if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
         } else if (tableQuery.isFTSQuery()) {
-            if (!ObGlobal.isFtsQuerySupport()) {
+            long obVersion = obTableClient != null ? obTableClient.getObVersion() : 0;
+            if (!ObGlobal.isFtsQuerySupport(obVersion)) {
                 throw new FeatureNotSupportedException("full text query is not supported in "
-                                                       + ObGlobal.obVsnString());
+                                                       + ObGlobal.getObVsnString(obVersion));
             }
             if (tableQuery.getIndexName() == null || tableQuery.getIndexName().isEmpty()
                 || tableQuery.getIndexName().equalsIgnoreCase("primary")) {

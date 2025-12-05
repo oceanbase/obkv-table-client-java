@@ -24,6 +24,7 @@ import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObTableQuery;
 import com.alipay.oceanbase.rpc.dds.rule.DatabaseAndTable;
+import com.alipay.oceanbase.rpc.dds.util.VersionedConfigSnapshot;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
 import com.alipay.oceanbase.rpc.table.AbstractTableQueryImpl;
 import com.alipay.oceanbase.rpc.table.ObTable;
@@ -93,14 +94,19 @@ public class DdsObTableClientQuery extends AbstractTableQueryImpl {
     */
     @Override
     public QueryResultSet execute() throws Exception {
+        VersionedConfigSnapshot snapshot = ddsObTableClient.getCurrentConfigSnapshot();
+        if (snapshot == null) {
+            throw new IllegalStateException("Configuration snapshot is not available");
+        }
+        
         ObTableClient client = null;
         DatabaseAndTable dt = null;
         if (this.databaseAndTable == null) {
-            dt = ddsObTableClient.calculateDatabaseAndTable(tableName, tableQuery);
-            client = ddsObTableClient.getObTable(dt);
+            dt = ddsObTableClient.calculateDatabaseAndTable(tableName, tableQuery, snapshot);
+            client = ddsObTableClient.getObTableWithSnapshot(dt, snapshot);
         } else {
             dt = this.databaseAndTable;
-            client = ddsObTableClient.getObTable(databaseAndTable);
+            client = ddsObTableClient.getObTableWithSnapshot(databaseAndTable, snapshot);
         }
 
         return new ObTableClientQueryImpl(this.ddsObTableClient.getTargetTableName(dt

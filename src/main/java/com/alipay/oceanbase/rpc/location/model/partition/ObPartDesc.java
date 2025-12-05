@@ -55,6 +55,21 @@ public abstract class ObPartDesc {
                                                                                                 "default");
     @SuppressWarnings("unchecked")
     protected Map<String, Integer>                  rowKeyElement                       = EMPTY_MAP;
+    private long                                    obVersion                           = 0;                             // OceanBase server version for hash calculation
+
+    /*
+     * Get obVersion.
+     */
+    public long getObVersion() {
+        return obVersion;
+    }
+
+    /*
+     * Set obVersion.
+     */
+    public void setObVersion(long obVersion) {
+        this.obVersion = obVersion;
+    }
 
     /*
      * Get part func type.

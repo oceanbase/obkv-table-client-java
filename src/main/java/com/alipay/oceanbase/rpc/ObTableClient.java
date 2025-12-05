@@ -198,9 +198,10 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
     /**
      * Get major version from instance obVersion.
      * @return major version number (e.g., 2, 3, 4)
+     * @throws IllegalStateException if obVersion is 0
      */
     private int getObVsnMajor() {
-        return ObGlobal.getObVsnMajor(obVersion);
+        return ObGlobal.getObVsnMajorRequired(obVersion);
     }
     
     /*
@@ -612,6 +613,21 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
         BOOT.info("{} success to get rsList, paramURL: {}, rsList: {}，idc2Region: {}",
             this.database, paramURL, objectMapper.writeValueAsString(rsList), objectMapper.writeValueAsString(ocpModel.getIdc2Region()));
 
+        // Get OB version early if not initialized, so it can be used in loadTableEntryRandomly
+        if (obVersion == 0) {
+            try {
+                obVersion = getObVersionFromRemoteWithoutGlobal(rsList,
+                    tableEntryAcquireConnectTimeout,
+                    tableEntryAcquireSocketTimeout, sysUA);
+                BOOT.info("{} success to get OB version {} from remote before loadTableEntryRandomly",
+                    this.database, obVersion);
+            } catch (Exception e) {
+                BOOT.warn("{} failed to get OB version from remote before loadTableEntryRandomly, will try later: {}",
+                    this.database, e.getMessage());
+                // Continue without version, it will be fetched inside loadTableEntryRandomly
+            }
+        }
+
         TableEntry tableEntry = loadTableEntryRandomly(rsList,//
             rootServerKey,//
             tableEntryAcquireConnectTimeout,//
@@ -642,9 +658,14 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
                 ObTable obTable = new ObTable.Builder(addr.getIp(), addr.getSvrPort()) //
                     .setLoginInfo(tenantName, userName, password, database) //
                     .setProperties(getProperties()).setConfigs(TableConfigs).build();
+                // Set version from ObTableClient to ObTable instance if available
+                if (obVersion > 0 && obTable.getObVersion() == 0) {
+                    obTable.setObVersion(obVersion);
+                    BOOT.info("{} set OB version {} to ObTable {}:{}", this.database, obVersion, addr.getIp(), addr.getSvrPort());
+                }
                 tableRoster.put(addr, obTable);
                 servers.add(addr);
-                // Sync version from the first successfully connected ObTable
+                // Sync version from the first successfully connected ObTable if ObTableClient version is still 0
                 if (obVersion == 0 && obTable.getObVersion() > 0) {
                     obVersion = obTable.getObVersion();
                     BOOT.info("{} synced OB version {} from server {}:{}", this.database, obVersion, addr.getIp(), addr.getSvrPort());
@@ -960,7 +981,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
                         if (tryTimes > 1) {
                             TableEntry entry = getOrRefreshTableEntry(tableName, false, false, false);
                             Long partId = getPartition(entry, callback.getRowKey());
-                            if (ObGlobal.getObVsnMajor(obVersion) >= 4) {
+                            if (ObGlobal.getObVsnMajorRequired(obVersion) >= 4) {
                                 refreshTableLocationByTabletId(entry, tableName, getTabletIdByPartId(entry, partId));
                             }
                         }
@@ -1651,7 +1672,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
                     tableEntryAcquireConnectTimeout,//
                     tableEntryAcquireSocketTimeout,//
                     serverAddressPriorityTimeout,//
-                    serverAddressCachingTimeout, sysUA);
+                    serverAddressCachingTimeout, sysUA, obVersion);
                 if (tableEntry.isPartitionTable()) {
                     switch (runningMode) {
                         case HBASE:
@@ -1726,7 +1747,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
                 tableEntryAcquireConnectTimeout,//
                 tableEntryAcquireSocketTimeout,//
                 serverAddressPriorityTimeout,//
-                serverAddressCachingTimeout, sysUA);
+                serverAddressCachingTimeout, sysUA, obVersion);
         } catch (ObTableNotExistException e) {
             RUNTIME.error("refreshTableNameByTableGroup from tableGroup meet exception", e);
             throw e;
@@ -2239,6 +2260,13 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
         if (obTable == null) {
             RUNTIME.error("cannot get table by addr: " + addr);
             throw new ObTableGetException("obTable is null, addr is: " + addr.getIp() + ":" + addr.getSvrPort());
+        }
+        if (obTable.getObVersion() == 0) {
+            if (obVersion == 0) {
+                RUNTIME.error("obVersion invalid" + obVersion);
+                throw new ObTableGetException("get invalid ObVersion" + obVersion);
+            }
+            obTable.setObVersion(obVersion);
         }
         ObTableParam param = createTableParam(obTable, tableEntry, obPartitionLocationInfo, partId, tabletId);
         if (getObVsnMajor() >= 4) {
