@@ -361,7 +361,6 @@ public class BatchOperation {
                 // 如果 BatchOperation 没有设置，使用 TableRoute 上的全局设置
                 isWeakRead = obTableClient.getTableRoute().getReadConsistency() == ObReadConsistency.WEAK;
             }
-            batchOps.setIsWeakRead(isWeakRead);
             for (Object operation : operations) {
                 if (operation instanceof CheckAndInsUp) {
                     checkAndInsUpCnt++;
