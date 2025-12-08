@@ -355,6 +355,13 @@ public class BatchOperation {
             batchOps.setServerCanRetry(serverCanRetry);
             batchOps.setNeedTabletId(needTabletId);
             batchOps.setHbaseOpType(hbaseOpType);
+            if (readConsistency != null) {
+                isWeakRead = (readConsistency == ObReadConsistency.WEAK);
+            } else {
+                // 如果 BatchOperation 没有设置，使用 TableRoute 上的全局设置
+                isWeakRead = obTableClient.getTableRoute().getReadConsistency() == ObReadConsistency.WEAK;
+            }
+            batchOps.setIsWeakRead(isWeakRead);
             for (Object operation : operations) {
                 if (operation instanceof CheckAndInsUp) {
                     checkAndInsUpCnt++;
@@ -383,23 +390,9 @@ public class BatchOperation {
                     if (get.getRowKey() == null) {
                         throw new IllegalArgumentException("RowKey is null in Get operation");
                     }
-                    // BatchOperation 级别的 readConsistency 优先，忽略 Get 上的设置
-                    if (readConsistency != null) {
-                        isWeakRead = (readConsistency == ObReadConsistency.WEAK);
-                    } else {
-                        // 如果 BatchOperation 没有设置，使用 TableRoute 上的全局设置
-                        isWeakRead = obTableClient.getTableRoute().getReadConsistency() == ObReadConsistency.WEAK;
-                    }
                     batchOps.addOperation(get);
                 } else if (operation instanceof TableQuery) {
                     TableQuery query = (TableQuery) operation;
-                    // BatchOperation 级别的 readConsistency 优先，忽略 TableQuery 上的设置
-                    if (readConsistency != null) {
-                        isWeakRead = (readConsistency == ObReadConsistency.WEAK);
-                    } else {
-                        // 如果 BatchOperation 没有设置，使用 TableRoute 上的全局设置
-                        isWeakRead = obTableClient.getTableRoute().getReadConsistency() == ObReadConsistency.WEAK;
-                    }
                     batchOps.addOperation(query);
                 } else if (operation instanceof QueryAndMutate) {
                     QueryAndMutate qm = (QueryAndMutate) operation;

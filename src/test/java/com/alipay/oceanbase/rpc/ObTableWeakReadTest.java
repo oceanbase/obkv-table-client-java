@@ -31,6 +31,7 @@ import com.alipay.oceanbase.rpc.mutation.BatchOperation;
 import com.alipay.oceanbase.rpc.mutation.result.BatchOperationResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObReadConsistency;
 import com.alipay.oceanbase.rpc.stream.QueryResultSet;
+import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -227,10 +228,28 @@ public class ObTableWeakReadTest {
      * 创建新的测试客户端
      */
     private static ObTableClient newTestClient() throws Exception {
+        if (USE_ODP) {
+            ObTableClient obTableClient = new ObTableClient();
+            obTableClient.setOdpMode(true);
+            obTableClient.setFullUserName(FULL_USER_NAME);
+            obTableClient.setOdpAddr(ODP_IP);
+            obTableClient.setOdpPort(ODP_RPC_PORT);
+            obTableClient.setDatabase(ODP_DATABASE);
+            obTableClient.setPassword(PASSWORD);
+            return obTableClient;
+        } else {
+            return newTestClientWithParamURL(PARAM_URL);
+        }
+    }
+
+    /**
+     * 创建新的测试客户端，使用指定的paramURL
+     */
+    private static ObTableClient newTestClientWithParamURL(String paramURL) throws Exception {
         ObTableClient obTableClient = new ObTableClient();
         if (!USE_ODP) {
             obTableClient.setFullUserName(FULL_USER_NAME);
-            obTableClient.setParamURL(PARAM_URL);
+            obTableClient.setParamURL(paramURL);
             obTableClient.setPassword(PASSWORD);
             obTableClient.setSysUserName(PROXY_SYS_USER_NAME);
             obTableClient.setSysPassword(PROXY_SYS_USER_PASSWORD);
@@ -600,6 +619,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, GET_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -638,6 +658,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, GET_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -645,7 +666,7 @@ public class ObTableWeakReadTest {
         ReplicaLocation readReplica = partitionLocation.getReplicaBySvrAddr(sqlAuditResult.svrIp, sqlAuditResult.svrPort);
         debugPrint("readReplica: %s", readReplica.toString());
         Assert.assertTrue(readReplica.isFollower());
-        Assert.assertEquals(IDC2, readReplica.getIdc());
+        Assert.assertEquals(REGION1, readReplica.getRegion());
     }
 
     /*
@@ -676,6 +697,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, GET_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -750,6 +772,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, GET_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -825,6 +848,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, GET_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -1006,6 +1030,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, GET_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -1084,6 +1109,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, SCAN_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -1124,6 +1150,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, SCAN_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -1204,6 +1231,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, SCAN_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -1285,6 +1313,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, SCAN_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -1356,6 +1385,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, SCAN_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -1437,6 +1467,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, SCAN_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -1478,6 +1509,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, SCAN_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -1615,6 +1647,51 @@ public class ObTableWeakReadTest {
          Assert.assertTrue(readReplica.isLeader());
      }
 
+     /*
+     * 测试场景：没有设置全局弱读，即使 Get 设置了弱读，BatchOperation 没有设置，走强读
+     * 测试预期：走强读，发到leader副本上进行读取
+     */
+    @Test
+    public void testIdcBatchGet1_2() throws Exception {
+        ObTableClient client = newTestClient();
+        client.setCurrentIDC(IDC2); // 设置当前 idc
+        client.init();
+        // 1. 准备数据
+        String rowkey = getRandomRowkString();
+        insertData(client, rowkey);
+        Thread.sleep(1000); // 等待数据同步到所有节点
+        // 2. 设置 idc
+        setZoneRegionIdc(ZONE1, REGION1, IDC1);
+        setZoneRegionIdc(ZONE2, REGION2, IDC2);
+        setZoneRegionIdc(ZONE3, REGION3, IDC3);
+        // 3. 获取数据
+        BatchOperation batch = client.batchOperation(TABLE_NAME);
+        Get get1 = client.get(TABLE_NAME)
+            .setRowKey(row(colVal("c1", rowkey)))
+            .setReadConsistency(ObReadConsistency.WEAK) // 设置弱一致性读
+            .select("c2");
+        Get get2 = client.get(TABLE_NAME)
+            .setRowKey(row(colVal("c1", rowkey + "2")))
+            .setReadConsistency(ObReadConsistency.WEAK) // 设置弱一致性读
+            .select("c2");
+        batch.addOperation(get1, get2);
+        BatchOperationResult res = batch.execute();
+        Assert.assertNotNull(res);
+        Assert.assertEquals(2, res.getResults().size());
+        Assert.assertEquals("c2_val", res.get(0).getOperationRow().get("c2"));
+        // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
+        SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, BATCH_GET_STMT_TYPE);
+        debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.STRONG.getValue(), sqlAuditResult.consistency_level);
+        // 5. 查询分区的位置信息
+        PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
+        debugPrint("partitionLocation: %s", partitionLocation.toString());
+        // 6. 校验
+        ReplicaLocation readReplica = partitionLocation.getReplicaBySvrAddr(sqlAuditResult.svrIp, sqlAuditResult.svrPort);
+        debugPrint("readReplica: %s", readReplica.toString());
+        Assert.assertTrue(readReplica.isLeader());
+    }
+
     /*
      * 测试场景：未设置当前IDC进行弱读
      * 测试预期：发到任意follower上进行弱读
@@ -1726,6 +1803,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, BATCH_GET_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -1878,6 +1956,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, BATCH_GET_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -1959,6 +2038,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, BATCH_GET_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -2000,6 +2080,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, BATCH_GET_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -2071,6 +2152,7 @@ public class ObTableWeakReadTest {
         // 3. 查询 sql audit，确定写请求发到哪个节点和分区上
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, INSERT_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.STRONG.getValue(), sqlAuditResult.consistency_level);
         // 4. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -2104,6 +2186,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit，确定写请求发到哪个节点和分区上
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, UPDATE_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.STRONG.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -2135,6 +2218,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit，确定写请求发到哪个节点和分区上
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, DELETE_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.STRONG.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -2165,6 +2249,7 @@ public class ObTableWeakReadTest {
         // 3. 查询 sql audit，确定写请求发到哪个节点和分区上
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, REPLACE_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.STRONG.getValue(), sqlAuditResult.consistency_level);
         // 4. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -2195,6 +2280,7 @@ public class ObTableWeakReadTest {
         // 3. 查询 sql audit，确定写请求发到哪个节点和分区上
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, INSERT_OR_UPDATE_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.STRONG.getValue(), sqlAuditResult.consistency_level);
         // 4. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -2227,6 +2313,7 @@ public class ObTableWeakReadTest {
             // 4. 查询 sql audit，确定写请求发到哪个节点和分区上
             SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, PUT_STMT_TYPE);
             debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+            Assert.assertEquals(ObReadConsistency.STRONG.getValue(), sqlAuditResult.consistency_level);
             // 4. 查询分区的位置信息
             PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
             debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -2261,9 +2348,10 @@ public class ObTableWeakReadTest {
         try {
             client.increment(TABLE_NAME).setRowKey(row(colVal("c1", rowkey)))
                 .addMutateRow(row(colVal("c2", "1"))).execute();
-            // 4. 查询 sql audit，确定写请求发到哪个节点和分区上
+            // 3. 查询 sql audit，确定写请求发到哪个节点和分区上
             SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, INCREMENT_STMT_TYPE);
             debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+            Assert.assertEquals(ObReadConsistency.STRONG.getValue(), sqlAuditResult.consistency_level);
             // 4. 查询分区的位置信息
             PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
             debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -2301,6 +2389,7 @@ public class ObTableWeakReadTest {
         // 4. 查询 sql audit，确定写请求发到哪个节点和分区上
         SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, APPEND_STMT_TYPE);
         debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.STRONG.getValue(), sqlAuditResult.consistency_level);
         // 5. 查询分区的位置信息
         PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
         debugPrint("partitionLocation: %s", partitionLocation.toString());
@@ -2309,5 +2398,537 @@ public class ObTableWeakReadTest {
         debugPrint("writeReplica: %s", writeReplica.toString());
         Assert.assertTrue(writeReplica.isLeader());
     }
-    
+
+    /*
+     * 测试场景：老接口只能使用全局弱读
+     * 测试预期：发到对应的IDC上进行读取
+     */
+    @Test
+    public void testOldInterfaceIdcGet1_1() throws Exception {
+        ObTableClient client = newTestClient();
+        client.setReadConsistency(ObReadConsistency.WEAK); // 设置全局的read consistency level为weak
+        setIdc(client, IDC2); // 设置当前 idc
+        setRoutePolicy(client, "follower_first"); // 设置路由策略
+        client.init();
+        // 1. 准备数据
+        String rowkey = getRandomRowkString();
+        insertData(client, rowkey);
+        Thread.sleep(1000); // 等待数据同步到所有节点
+        // 2. 设置 idc
+        setZoneRegionIdc(ZONE1, REGION1, IDC1);
+        setZoneRegionIdc(ZONE2, REGION2, IDC2);
+        setZoneRegionIdc(ZONE3, REGION3, IDC3);
+        // 3. 获取数据
+        Map<String, Object> result = client.get(TABLE_NAME, row(colVal("c1", rowkey)), new String[] { "c2" });
+        debugPrint("c2_val: %s", result.get("c2"));
+        Assert.assertEquals("c2_val", result.get("c2"));
+        // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
+        SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, GET_STMT_TYPE);
+        debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
+        // 5. 查询分区的位置信息
+        PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
+        debugPrint("partitionLocation: %s", partitionLocation.toString());
+        // 6. 校验
+        ReplicaLocation readReplica = partitionLocation.getReplicaBySvrAddr(sqlAuditResult.svrIp, sqlAuditResult.svrPort);
+        debugPrint("readReplica: %s", readReplica.toString());
+        Assert.assertEquals(IDC2, readReplica.getIdc());
+    }
+
+    /*
+     * 测试场景：老接口只能使用全局弱读
+     * 测试预期：发到对应的IDC上进行读取
+     */
+    @Test
+    public void testOldInterfaceIdcGet1_2() throws Exception {
+        ObTableClient client = newTestClient();
+        setIdc(client, IDC2); // 设置当前 idc
+        setRoutePolicy(client, "follower_first"); // 设置路由策略
+        client.init();
+        // 1. 准备数据
+        String rowkey = getRandomRowkString();
+        insertData(client, rowkey);
+        Thread.sleep(1000); // 等待数据同步到所有节点
+        // 2. 设置 idc
+        setZoneRegionIdc(ZONE1, REGION1, IDC1);
+        setZoneRegionIdc(ZONE2, REGION2, IDC2);
+        setZoneRegionIdc(ZONE3, REGION3, IDC3);
+        // 3. 获取数据
+        Map<String, Object> result = client.get(TABLE_NAME, row(colVal("c1", rowkey)), new String[] { "c2" });
+        debugPrint("c2_val: %s", result.get("c2"));
+        Assert.assertEquals("c2_val", result.get("c2"));
+        // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
+        SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, GET_STMT_TYPE);
+        debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.STRONG.getValue(), sqlAuditResult.consistency_level);
+        // 5. 查询分区的位置信息
+        PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
+        debugPrint("partitionLocation: %s", partitionLocation.toString());
+        // 6. 校验
+        ReplicaLocation readReplica = partitionLocation.getReplicaBySvrAddr(sqlAuditResult.svrIp, sqlAuditResult.svrPort);
+        debugPrint("readReplica: %s", readReplica.toString());
+        Assert.assertTrue(readReplica.isLeader());
+    }
+
+    /*
+     * 测试场景：在paramUrl中设置弱读核路由策略
+     * 测试预期：走弱读，发到对应的IDC上进行读取
+     */
+    @Test
+    public void testOldInterfaceIdcGet2_1() throws Exception {
+        ObTableClient client = newTestClientWithParamURL(PARAM_URL + "&read_consistency=weak&route_policy=follower_first");
+        setIdc(client, IDC2); // 设置当前 idc
+        client.init();
+        // 1. 准备数据
+        String rowkey = getRandomRowkString();
+        insertData(client, rowkey);
+        Thread.sleep(1000); // 等待数据同步到所有节点
+        // 2. 设置 idc
+        setZoneRegionIdc(ZONE1, REGION1, IDC1);
+        setZoneRegionIdc(ZONE2, REGION2, IDC2);
+        setZoneRegionIdc(ZONE3, REGION3, IDC3);
+        // 3. 获取数据
+        Map<String, Object> result = client.get(TABLE_NAME, row(colVal("c1", rowkey)), new String[] { "c2" });
+        debugPrint("c2_val: %s", result.get("c2"));
+        Assert.assertEquals("c2_val", result.get("c2"));
+        // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
+        SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, GET_STMT_TYPE);
+        debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
+        // 5. 查询分区的位置信息
+        PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
+        debugPrint("partitionLocation: %s", partitionLocation.toString());
+        // 6. 校验
+        ReplicaLocation readReplica = partitionLocation.getReplicaBySvrAddr(sqlAuditResult.svrIp, sqlAuditResult.svrPort);
+        debugPrint("readReplica: %s", readReplica.toString());
+        Assert.assertEquals(IDC2, readReplica.getIdc());
+    }
+
+    /*
+     * 测试场景：在paramUrl中设置弱读核路由策略，不设置IDC
+     * 测试预期：走弱读
+     */
+    @Test
+    public void testOldInterfaceIdcGet2_2() throws Exception {
+        ObTableClient client = newTestClientWithParamURL(PARAM_URL + "&read_consistency=weak&route_policy=follower_first");
+        client.init();
+        // 1. 准备数据
+        String rowkey = getRandomRowkString();
+        insertData(client, rowkey);
+        Thread.sleep(1000); // 等待数据同步到所有节点
+        // 2. 设置 idc
+        setZoneRegionIdc(ZONE1, REGION1, IDC1);
+        setZoneRegionIdc(ZONE2, REGION2, IDC2);
+        setZoneRegionIdc(ZONE3, REGION3, IDC3);
+        // 3. 获取数据
+        Map<String, Object> result = client.get(TABLE_NAME, row(colVal("c1", rowkey)), new String[] { "c2" });
+        debugPrint("c2_val: %s", result.get("c2"));
+        Assert.assertEquals("c2_val", result.get("c2"));
+        // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
+        SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, GET_STMT_TYPE);
+        debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
+        // 5. 查询分区的位置信息
+        PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
+        debugPrint("partitionLocation: %s", partitionLocation.toString());
+        // 6. 校验
+        ReplicaLocation readReplica = partitionLocation.getReplicaBySvrAddr(sqlAuditResult.svrIp, sqlAuditResult.svrPort);
+        debugPrint("readReplica: %s", readReplica.toString());
+        Assert.assertTrue(readReplica.isFollower());
+    }
+
+    /*
+     * 测试场景：read_consistency和route_policy 大小写不敏感
+     * 测试预期：走弱读
+     */
+    @Test
+    public void testOldInterfaceIdcGet2_3() throws Exception {
+        ObTableClient client = newTestClientWithParamURL(PARAM_URL + "&read_consistency=weaK&route_policy=follower_firsT");
+        client.init();
+        // 1. 准备数据
+        String rowkey = getRandomRowkString();
+        insertData(client, rowkey);
+        Thread.sleep(1000); // 等待数据同步到所有节点
+        // 2. 设置 idc
+        setZoneRegionIdc(ZONE1, REGION1, IDC1);
+        setZoneRegionIdc(ZONE2, REGION2, IDC2);
+        setZoneRegionIdc(ZONE3, REGION3, IDC3);
+        // 3. 获取数据
+        Map<String, Object> result = client.get(TABLE_NAME, row(colVal("c1", rowkey)), new String[] { "c2" });
+        debugPrint("c2_val: %s", result.get("c2"));
+        Assert.assertEquals("c2_val", result.get("c2"));
+        // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
+        SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, GET_STMT_TYPE);
+        debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
+        // 5. 查询分区的位置信息
+        PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
+        debugPrint("partitionLocation: %s", partitionLocation.toString());
+        // 6. 校验
+        ReplicaLocation readReplica = partitionLocation.getReplicaBySvrAddr(sqlAuditResult.svrIp, sqlAuditResult.svrPort);
+        debugPrint("readReplica: %s", readReplica.toString());
+        Assert.assertTrue(readReplica.isFollower());
+    }
+
+    /*
+     * 测试场景：老接口只能使用全局弱读
+     * 测试预期：发到对应的IDC上进行读取
+     */
+    @Test
+    public void testOldInterfaceIdcBatchGet1_1() throws Exception {
+        ObTableClient client = newTestClient();
+        client.setReadConsistency(ObReadConsistency.WEAK); // 设置全局的read consistency level为weak
+        setIdc(client, IDC2); // 设置当前 idc
+        setRoutePolicy(client, "follower_first"); // 设置路由策略
+        client.init();
+        // 1. 准备数据
+        String rowkey = getRandomRowkString();
+        insertData(client, rowkey);
+        Thread.sleep(1000); // 等待数据同步到所有节点
+        // 2. 设置 idc
+        setZoneRegionIdc(ZONE1, REGION1, IDC1);
+        setZoneRegionIdc(ZONE2, REGION2, IDC2);
+        setZoneRegionIdc(ZONE3, REGION3, IDC3);
+        // 3. 获取数据
+        TableBatchOps batchOps = client.batch(TABLE_NAME);
+        batchOps.get(rowkey, new String[] { "c2" });
+        batchOps.get(rowkey + "2", new String[] { "c2" });
+        List<Object> results = batchOps.execute();
+        Assert.assertEquals(2, results.size());
+        // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
+        SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, BATCH_GET_STMT_TYPE);
+        debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
+        // 5. 查询分区的位置信息
+        PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
+        debugPrint("partitionLocation: %s", partitionLocation.toString());
+        // 6. 校验
+        ReplicaLocation readReplica = partitionLocation.getReplicaBySvrAddr(sqlAuditResult.svrIp, sqlAuditResult.svrPort);
+        debugPrint("readReplica: %s", readReplica.toString());
+        Assert.assertEquals(IDC2, readReplica.getIdc());
+    }
+
+    /*
+     * 测试场景：老接口只能使用全局弱读，执行scan操作
+     * 测试预期：发到对应的IDC上进行读取
+     */
+    @Test
+    public void testOldInterfaceIdcScan1_1() throws Exception {
+        ObTableClient client = newTestClient();
+        client.setReadConsistency(ObReadConsistency.WEAK); // 设置全局的read consistency level为weak
+        setIdc(client, IDC2); // 设置当前 idc
+        setRoutePolicy(client, "follower_first"); // 设置路由策略
+        client.init();
+        // 1. 准备数据
+        String rowkey = getRandomRowkString();
+        insertData(client, rowkey);
+        Thread.sleep(1000); // 等待数据同步到所有节点
+        // 2. 设置 idc
+        setZoneRegionIdc(ZONE1, REGION1, IDC1);
+        setZoneRegionIdc(ZONE2, REGION2, IDC2);
+        setZoneRegionIdc(ZONE3, REGION3, IDC3);
+        // 3. 获取数据
+        client.query(TABLE_NAME)
+            .addScanRange(new Object[] { rowkey }, new Object[] { rowkey })
+            .setScanRangeColumns("c1")
+            .select("c2")
+            .execute();
+        // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
+        SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, SCAN_STMT_TYPE);
+        debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
+        // 5. 查询分区的位置信息
+        PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
+        debugPrint("partitionLocation: %s", partitionLocation.toString());
+        // 6. 校验
+        ReplicaLocation readReplica = partitionLocation.getReplicaBySvrAddr(sqlAuditResult.svrIp, sqlAuditResult.svrPort);
+        debugPrint("readReplica: %s", readReplica.toString());
+        Assert.assertEquals(IDC2, readReplica.getIdc());
+    }
+
+    /*
+     * 测试场景：老接口只能使用全局弱读，不设置全局弱读时走强读
+     * 测试预期：走强读，发到leader副本上进行读取
+     */
+    @Test
+    public void testOldInterfaceIdcBatchGet1_2() throws Exception {
+        ObTableClient client = newTestClient();
+        setIdc(client, IDC2); // 设置当前 idc
+        setRoutePolicy(client, "follower_first"); // 设置路由策略
+        client.init();
+        // 1. 准备数据
+        String rowkey = getRandomRowkString();
+        insertData(client, rowkey);
+        Thread.sleep(1000); // 等待数据同步到所有节点
+        // 2. 设置 idc
+        setZoneRegionIdc(ZONE1, REGION1, IDC1);
+        setZoneRegionIdc(ZONE2, REGION2, IDC2);
+        setZoneRegionIdc(ZONE3, REGION3, IDC3);
+        // 3. 获取数据
+        TableBatchOps batchOps = client.batch(TABLE_NAME);
+        batchOps.get(rowkey, new String[] { "c2" });
+        batchOps.get(rowkey + "2", new String[] { "c2" });
+        List<Object> results = batchOps.execute();
+        Assert.assertEquals(2, results.size());
+        // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
+        SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, BATCH_GET_STMT_TYPE);
+        debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.STRONG.getValue(), sqlAuditResult.consistency_level);
+        // 5. 查询分区的位置信息
+        PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
+        debugPrint("partitionLocation: %s", partitionLocation.toString());
+        // 6. 校验
+        ReplicaLocation readReplica = partitionLocation.getReplicaBySvrAddr(sqlAuditResult.svrIp, sqlAuditResult.svrPort);
+        debugPrint("readReplica: %s", readReplica.toString());
+        Assert.assertTrue(readReplica.isLeader());
+    }
+
+    /*
+     * 测试场景：在paramUrl中设置弱读和路由策略，执行batch get操作
+     * 测试预期：走弱读，发到对应的IDC上进行读取
+     */
+    @Test
+    public void testOldInterfaceIdcBatchGet2_1() throws Exception {
+        ObTableClient client = newTestClientWithParamURL(PARAM_URL + "&read_consistency=weak&route_policy=follower_first");
+        setIdc(client, IDC2); // 设置当前 idc
+        client.init();
+        // 1. 准备数据
+        String rowkey = getRandomRowkString();
+        insertData(client, rowkey);
+        Thread.sleep(1000); // 等待数据同步到所有节点
+        // 2. 设置 idc
+        setZoneRegionIdc(ZONE1, REGION1, IDC1);
+        setZoneRegionIdc(ZONE2, REGION2, IDC2);
+        setZoneRegionIdc(ZONE3, REGION3, IDC3);
+        // 3. 获取数据
+        TableBatchOps batchOps = client.batch(TABLE_NAME);
+        batchOps.get(rowkey, new String[] { "c2" });
+        batchOps.get(rowkey + "2", new String[] { "c2" });
+        List<Object> results = batchOps.execute();
+        Assert.assertEquals(2, results.size());
+        // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
+        SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, BATCH_GET_STMT_TYPE);
+        debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
+        // 5. 查询分区的位置信息
+        PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
+        debugPrint("partitionLocation: %s", partitionLocation.toString());
+        // 6. 校验
+        ReplicaLocation readReplica = partitionLocation.getReplicaBySvrAddr(sqlAuditResult.svrIp, sqlAuditResult.svrPort);
+        debugPrint("readReplica: %s", readReplica.toString());
+        Assert.assertEquals(IDC2, readReplica.getIdc());
+    }
+
+    /*
+     * 测试场景：在paramUrl中设置弱读和路由策略，不设置IDC，执行batch get操作
+     * 测试预期：走弱读
+     */
+    @Test
+    public void testOldInterfaceIdcBatchGet2_2() throws Exception {
+        ObTableClient client = newTestClientWithParamURL(PARAM_URL + "&read_consistency=weak&route_policy=follower_first");
+        client.init();
+        // 1. 准备数据
+        String rowkey = getRandomRowkString();
+        insertData(client, rowkey);
+        Thread.sleep(1000); // 等待数据同步到所有节点
+        // 2. 设置 idc
+        setZoneRegionIdc(ZONE1, REGION1, IDC1);
+        setZoneRegionIdc(ZONE2, REGION2, IDC2);
+        setZoneRegionIdc(ZONE3, REGION3, IDC3);
+        // 3. 获取数据
+        TableBatchOps batchOps = client.batch(TABLE_NAME);
+        batchOps.get(rowkey, new String[] { "c2" });
+        batchOps.get(rowkey + "2", new String[] { "c2" });
+        List<Object> results = batchOps.execute();
+        Assert.assertEquals(2, results.size());
+        // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
+        SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, BATCH_GET_STMT_TYPE);
+        debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
+        // 5. 查询分区的位置信息
+        PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
+        debugPrint("partitionLocation: %s", partitionLocation.toString());
+        // 6. 校验
+        ReplicaLocation readReplica = partitionLocation.getReplicaBySvrAddr(sqlAuditResult.svrIp, sqlAuditResult.svrPort);
+        debugPrint("readReplica: %s", readReplica.toString());
+        Assert.assertTrue(readReplica.isFollower());
+    }
+
+    /*
+     * 测试场景：read_consistency和route_policy 大小写不敏感，执行batch get操作
+     * 测试预期：走弱读
+     */
+    @Test
+    public void testOldInterfaceIdcBatchGet2_3() throws Exception {
+        ObTableClient client = newTestClientWithParamURL(PARAM_URL + "&read_consistency=weaK&route_policy=follower_firsT");
+        client.init();
+        // 1. 准备数据
+        String rowkey = getRandomRowkString();
+        insertData(client, rowkey);
+        Thread.sleep(1000); // 等待数据同步到所有节点
+        // 2. 设置 idc
+        setZoneRegionIdc(ZONE1, REGION1, IDC1);
+        setZoneRegionIdc(ZONE2, REGION2, IDC2);
+        setZoneRegionIdc(ZONE3, REGION3, IDC3);
+        // 3. 获取数据
+        TableBatchOps batchOps = client.batch(TABLE_NAME);
+        batchOps.get(rowkey, new String[] { "c2" });
+        batchOps.get(rowkey + "2", new String[] { "c2" });
+        List<Object> results = batchOps.execute();
+        Assert.assertEquals(2, results.size());
+        // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
+        SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, BATCH_GET_STMT_TYPE);
+        debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
+        // 5. 查询分区的位置信息
+        PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
+        debugPrint("partitionLocation: %s", partitionLocation.toString());
+        // 6. 校验
+        ReplicaLocation readReplica = partitionLocation.getReplicaBySvrAddr(sqlAuditResult.svrIp, sqlAuditResult.svrPort);
+        debugPrint("readReplica: %s", readReplica.toString());
+        Assert.assertTrue(readReplica.isFollower());
+    }
+
+    /*
+     * 测试场景：老接口只能使用全局弱读，不设置全局弱读时走强读
+     * 测试预期：走强读，发到leader副本上进行读取
+     */
+    @Test
+    public void testOldInterfaceIdcScan1_2() throws Exception {
+        ObTableClient client = newTestClient();
+        setIdc(client, IDC2); // 设置当前 idc
+        setRoutePolicy(client, "follower_first"); // 设置路由策略
+        client.init();
+        // 1. 准备数据
+        String rowkey = getRandomRowkString();
+        insertData(client, rowkey);
+        Thread.sleep(1000); // 等待数据同步到所有节点
+        // 2. 设置 idc
+        setZoneRegionIdc(ZONE1, REGION1, IDC1);
+        setZoneRegionIdc(ZONE2, REGION2, IDC2);
+        setZoneRegionIdc(ZONE3, REGION3, IDC3);
+        // 3. 获取数据
+        client.query(TABLE_NAME)
+            .addScanRange(new Object[] { rowkey }, new Object[] { rowkey })
+            .setScanRangeColumns("c1")
+            .select("c2")
+            .execute();
+        // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
+        SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, SCAN_STMT_TYPE);
+        debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.STRONG.getValue(), sqlAuditResult.consistency_level);
+        // 5. 查询分区的位置信息
+        PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
+        debugPrint("partitionLocation: %s", partitionLocation.toString());
+        // 6. 校验
+        ReplicaLocation readReplica = partitionLocation.getReplicaBySvrAddr(sqlAuditResult.svrIp, sqlAuditResult.svrPort);
+        debugPrint("readReplica: %s", readReplica.toString());
+        Assert.assertTrue(readReplica.isLeader());
+    }
+
+    /*
+     * 测试场景：在paramUrl中设置弱读和路由策略，执行scan操作
+     * 测试预期：走弱读，发到对应的IDC上进行读取
+     */
+    @Test
+    public void testOldInterfaceIdcScan2_1() throws Exception {
+        ObTableClient client = newTestClientWithParamURL(PARAM_URL + "&read_consistency=weak&route_policy=follower_first");
+        setIdc(client, IDC2); // 设置当前 idc
+        client.init();
+        // 1. 准备数据
+        String rowkey = getRandomRowkString();
+        insertData(client, rowkey);
+        Thread.sleep(1000); // 等待数据同步到所有节点
+        // 2. 设置 idc
+        setZoneRegionIdc(ZONE1, REGION1, IDC1);
+        setZoneRegionIdc(ZONE2, REGION2, IDC2);
+        setZoneRegionIdc(ZONE3, REGION3, IDC3);
+        // 3. 获取数据
+        client.query(TABLE_NAME)
+            .addScanRange(new Object[] { rowkey }, new Object[] { rowkey })
+            .setScanRangeColumns("c1")
+            .select("c2")
+            .execute();
+        // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
+        SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, SCAN_STMT_TYPE);
+        debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
+        // 5. 查询分区的位置信息
+        PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
+        debugPrint("partitionLocation: %s", partitionLocation.toString());
+        // 6. 校验
+        ReplicaLocation readReplica = partitionLocation.getReplicaBySvrAddr(sqlAuditResult.svrIp, sqlAuditResult.svrPort);
+        debugPrint("readReplica: %s", readReplica.toString());
+        Assert.assertEquals(IDC2, readReplica.getIdc());
+    }
+
+    /*
+     * 测试场景：在paramUrl中设置弱读和路由策略，不设置IDC，执行scan操作
+     * 测试预期：走弱读
+     */
+    @Test
+    public void testOldInterfaceIdcScan2_2() throws Exception {
+        ObTableClient client = newTestClientWithParamURL(PARAM_URL + "&read_consistency=weak&route_policy=follower_first");
+        client.init();
+        // 1. 准备数据
+        String rowkey = getRandomRowkString();
+        insertData(client, rowkey);
+        Thread.sleep(1000); // 等待数据同步到所有节点
+        // 2. 设置 idc
+        setZoneRegionIdc(ZONE1, REGION1, IDC1);
+        setZoneRegionIdc(ZONE2, REGION2, IDC2);
+        setZoneRegionIdc(ZONE3, REGION3, IDC3);
+        // 3. 获取数据
+        client.query(TABLE_NAME)
+            .addScanRange(new Object[] { rowkey }, new Object[] { rowkey })
+            .setScanRangeColumns("c1")
+            .select("c2")
+            .execute();
+        // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
+        SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, SCAN_STMT_TYPE);
+        debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
+        // 5. 查询分区的位置信息
+        PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
+        debugPrint("partitionLocation: %s", partitionLocation.toString());
+        // 6. 校验
+        ReplicaLocation readReplica = partitionLocation.getReplicaBySvrAddr(sqlAuditResult.svrIp, sqlAuditResult.svrPort);
+        debugPrint("readReplica: %s", readReplica.toString());
+        Assert.assertTrue(readReplica.isFollower());
+    }
+
+    /*
+     * 测试场景：read_consistency和route_policy 大小写不敏感，执行scan操作
+     * 测试预期：走弱读
+     */
+    @Test
+    public void testOldInterfaceIdcScan2_3() throws Exception {
+        ObTableClient client = newTestClientWithParamURL(PARAM_URL + "&read_consistency=weaK&route_policy=follower_firsT");
+        client.init();
+        // 1. 准备数据
+        String rowkey = getRandomRowkString();
+        insertData(client, rowkey);
+        Thread.sleep(1000); // 等待数据同步到所有节点
+        // 2. 设置 idc
+        setZoneRegionIdc(ZONE1, REGION1, IDC1);
+        setZoneRegionIdc(ZONE2, REGION2, IDC2);
+        setZoneRegionIdc(ZONE3, REGION3, IDC3);
+        // 3. 获取数据
+        client.query(TABLE_NAME)
+            .addScanRange(new Object[] { rowkey }, new Object[] { rowkey })
+            .setScanRangeColumns("c1")
+            .select("c2")
+            .execute();
+        // 4. 查询 sql audit，确定读请求发到哪个节点和分区上
+        SqlAuditResult sqlAuditResult = getServerBySqlAudit(rowkey, SCAN_STMT_TYPE);
+        debugPrint("sqlAuditResult: %s", sqlAuditResult.toString());
+        Assert.assertEquals(ObReadConsistency.WEAK.getValue(), sqlAuditResult.consistency_level);
+        // 5. 查询分区的位置信息
+        PartitionLocation partitionLocation = getPartitionLocation(sqlAuditResult.tabletId);
+        debugPrint("partitionLocation: %s", partitionLocation.toString());
+        // 6. 校验
+        ReplicaLocation readReplica = partitionLocation.getReplicaBySvrAddr(sqlAuditResult.svrIp, sqlAuditResult.svrPort);
+        debugPrint("readReplica: %s", readReplica.toString());
+        Assert.assertTrue(readReplica.isFollower());
+    }
 }

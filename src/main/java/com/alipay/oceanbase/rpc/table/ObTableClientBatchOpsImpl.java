@@ -590,6 +590,10 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
         }
+        if (batchOperation.isReadOnly()) {
+            setIsWeakRead(obTableClient.getTableRoute().getReadConsistency() == ObReadConsistency.WEAK);
+        }
+
         long start = System.currentTimeMillis();
         List<ObTableOperation> operations = batchOperation.getTableOperations();
         ObTableOperationResult[] obTableOperationResults = returnOneResult ? new ObTableOperationResult[1]
