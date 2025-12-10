@@ -172,6 +172,8 @@ public class ObGlobal {
 
     public static final long OB_VERSION_4_5_0_0 = calcVersion(4, (short) 5, (byte) 0, (byte) 0);
 
+    public static final long OB_VERSION_4_5_1_0 = calcVersion(4, (short) 5, (byte) 1, (byte) 0);
+
     public static long       OB_VERSION         = calcVersion(0, (short) 0, (byte) 0, (byte) 0);
 
     /*-------------------------------------------- OB_PROXY_VERSION --------------------------------------------*/

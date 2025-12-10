@@ -125,12 +125,14 @@ public class ObDirectLoadProtocolV0 implements ObDirectLoadProtocol {
                             + " is not supported, minimum version required is "
                             + ObGlobal.getObVsnString(ObGlobal.OB_VERSION_4_4_2_0));
             }
-        } else {
+        } else if (obVersion < ObGlobal.OB_VERSION_4_5_1_0) {
             logger.warn("detach in ob version " + ObGlobal.getObVsnString(obVersion)
-                        + "is not supported");
-            throw new ObDirectLoadNotSupportedException("detach in ob version "
-                                                        + ObGlobal.getObVsnString(obVersion)
-                                                        + " is not supported");
+                        + "is not supported, minimum version required is "
+                        + ObGlobal.getObVsnString(ObGlobal.OB_VERSION_4_5_1_0));
+            throw new ObDirectLoadNotSupportedException(
+                "detach in ob version " + ObGlobal.getObVsnString(obVersion)
+                        + " is not supported, minimum version required is "
+                        + ObGlobal.getObVsnString(ObGlobal.OB_VERSION_4_5_1_0));
         }
         return new ObDirectLoadDetachRpcV0(traceId);
     }
