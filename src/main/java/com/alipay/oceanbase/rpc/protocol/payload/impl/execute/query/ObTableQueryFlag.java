@@ -19,6 +19,7 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 
 public class ObTableQueryFlag {
     private static final int HOT_ONLY = 1 << 0;
+    private static final int GET_OPTIMIZED = 1 << 1;
 
     private long             value    = 0;
 
@@ -41,6 +42,16 @@ public class ObTableQueryFlag {
     public void setHotOnly(boolean hotOnly) {
         if (hotOnly) {
             value = value | HOT_ONLY;
+        }
+    }
+
+    public boolean isGetOptimized() {
+        return (value & GET_OPTIMIZED) != 0;
+    }
+
+    public void setGetOptimized(boolean getOptimized) {
+        if (getOptimized) {
+            value = value | GET_OPTIMIZED;
         }
     }
 };

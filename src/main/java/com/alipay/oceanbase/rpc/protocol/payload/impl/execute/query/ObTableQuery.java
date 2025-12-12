@@ -618,4 +618,8 @@ public class ObTableQuery extends AbstractPayload {
     public void setHotOnly(boolean hotOnly) {
         this.flag.setHotOnly(hotOnly);
     }
+
+    public void setGetOptimized(boolean getOptimized) {
+        this.flag.setGetOptimized(getOptimized);
+    }
 }
