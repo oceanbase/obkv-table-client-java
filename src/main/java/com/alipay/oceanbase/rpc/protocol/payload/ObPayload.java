@@ -97,4 +97,5 @@ public interface ObPayload extends ObUnisVersion {
      */
     long getPayloadContentSize();
 
+    void resetPayloadContentSize();
 }

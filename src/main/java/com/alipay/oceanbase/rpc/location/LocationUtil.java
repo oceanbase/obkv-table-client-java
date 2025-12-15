@@ -43,6 +43,8 @@ import java.net.URL;
 import java.sql.*;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.alipay.oceanbase.rpc.location.model.partition.ObPartitionKey.MAX_PARTITION_ELEMENT;
 import static com.alipay.oceanbase.rpc.location.model.partition.ObPartitionKey.MIN_PARTITION_ELEMENT;
@@ -1235,6 +1237,18 @@ public class LocationUtil {
         return tableId;
     }
 
+    private static String getActualIndexName(String indexTableName) {
+        String actualIndexName = null;
+        if (indexTableName != null && indexTableName.startsWith("__idx_")) {
+            Pattern pattern = Pattern.compile("^__idx_\\d+_(.+)$");
+            Matcher matcher = pattern.matcher(indexTableName);
+            if (matcher.matches()) {
+                actualIndexName = matcher.group(1);
+            }
+        }
+        return actualIndexName == null ? indexTableName == null ? "" : indexTableName : actualIndexName;
+    }
+
     public static ObIndexInfo getIndexInfoFromRemote(ObServerAddr obServerAddr, ObUserAuth sysUA,
                                                      long connectTimeout, long socketTimeout,
                                                      String indexTableName)
@@ -1255,22 +1269,22 @@ public class LocationUtil {
                 indexInfo.setIndexTableId(rs.getLong("table_id"));
                 indexInfo.setIndexType(ObIndexType.valueOf(rs.getInt("index_type")));
             } else {
-                throw new ObTableEntryRefreshException("index is not exist");
+                throw new ObTableEntryRefreshException("[-5224][OB_WRONG_NAME_FOR_INDEX] index name is wrong");
             }
         } catch (SQLException e) {
             // cannot execute sql, maybe some of the observers have been killed
-            RUNTIME.error(LCD.convert("01-00010"), indexTableName, e.getMessage());
+            RUNTIME.error(LCD.convert("01-00010"), getActualIndexName(indexTableName), e.getMessage());
             throw new ObTableEntryRefreshException("fail to get index info from remote", e, true);
         } catch (Exception e) {
             if (e instanceof ObTableEntryRefreshException) {
                 throw new ObTableEntryRefreshException(format(
-                    "fail to get index info from remote, indexTableName: %s, error message: %s",
-                    indexTableName, e.getMessage()), e,
+                    "fail to get index info from remote, indexName: %s, error message: %s",
+                    getActualIndexName(indexTableName), e.getMessage()), e,
                     ((ObTableEntryRefreshException) e).isConnectInactive());
             } else {
                 throw new ObTableEntryRefreshException(format(
-                    "fail to get index info from remote, indexTableName: %s, error message: %s",
-                    indexTableName, e.getMessage()), e);
+                    "fail to get index info from remote, indexName: %s, error message: %s",
+                    getActualIndexName(indexTableName), e.getMessage()), e);
             }
         } finally {
             try {

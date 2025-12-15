@@ -132,11 +132,25 @@ public class ObGlobal {
 
     /*-------------------------------------------- OB_VERSION --------------------------------------------*/
 
+    public static final long OB_VERSION_4_2_1_0 = calcVersion(4, (short) 2, (byte) 1, (byte) 0);
+
+    public static final long OB_VERSION_4_2_1_7 = calcVersion(4, (short) 2, (byte) 1, (byte) 7);
+
+    public static final long OB_VERSION_4_2_2_0 = calcVersion(4, (short) 2, (byte) 2, (byte) 0);
+
     public static final long OB_VERSION_4_2_3_0 = calcVersion(4, (short) 2, (byte) 3, (byte) 0);
+
+    public static final long OB_VERSION_4_2_4_0 = calcVersion(4, (short) 2, (byte) 4, (byte) 0);
 
     public static final long OB_VERSION_4_2_5_2 = calcVersion(4, (short) 2, (byte) 5, (byte) 2);
 
+    public static final long OB_VERSION_4_2_5_3 = calcVersion(4, (short) 2, (byte) 5, (byte) 3);
+
     public static final long OB_VERSION_4_3_0_0 = calcVersion(4, (short) 3, (byte) 0, (byte) 0);
+
+    public static final long OB_VERSION_4_3_0_1 = calcVersion(4, (short) 3, (byte) 0, (byte) 1);
+
+    public static final long OB_VERSION_4_3_2_0 = calcVersion(4, (short) 3, (byte) 2, (byte) 0);
 
     public static final long OB_VERSION_4_3_4_0 = calcVersion(4, (short) 3, (byte) 4, (byte) 0);
 
@@ -153,6 +167,10 @@ public class ObGlobal {
     public static final long OB_VERSION_4_4_0_0 = calcVersion(4, (short) 4, (byte) 0, (byte) 0);
 
     public static final long OB_VERSION_4_4_1_0 = calcVersion(4, (short) 4, (byte) 1, (byte) 0);
+
+    public static final long OB_VERSION_4_4_2_0 = calcVersion(4, (short) 4, (byte) 2, (byte) 0);
+
+    public static final long OB_VERSION_4_5_0_0 = calcVersion(4, (short) 5, (byte) 0, (byte) 0);
 
     public static long       OB_VERSION         = calcVersion(0, (short) 0, (byte) 0, (byte) 0);
 

@@ -157,7 +157,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                         if (result instanceof ObTableApiMove) {
                             ObTableApiMove move = (ObTableApiMove) result;
                             logger
-                                .warn(
+                                .info(
                                     "The server has not yet completed the master switch, and returned an incorrect leader with an IP address of {}. "
                                             + "Rerouting return IP is {}", moveResponse
                                         .getReplica().getServer().ipToString(), move.getReplica()
@@ -182,13 +182,11 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     if (e instanceof ObTableException
                         && ((ObTableException) e).isNeedRetryError()) {
                         logger
-                            .warn(
+                            .info(
                                 "tablename:{} stream query execute while meet Exception in odp mode needing retry, errorCode: {}, errorMsg: {}, try times {}",
                                 indexTableName, ((ObTableException) e).getErrorCode(),
                                 e.getMessage(), tryTimes);
                     } else {
-                        logger.warn("meet exception when execute in odp mode." +
-                                "tablename: {}, errMsg: {}", indexTableName, e.getMessage());
                         throw e;
                     }
                 } else {
@@ -220,11 +218,6 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                             indexTableName = client.getIndexTableName(tableName,
                                     tableQuery.getIndexName(), tableQuery.getScanRangeColumns(), true);
                         } else {
-                            logger
-                                    .warn(
-                                            "meet global index route exception: indexTableName:{} partition id:{}, errorCode: {}, retry to timeout, retry times {}",
-                                            indexTableName, partIdWithIndex.getLeft(),
-                                            ((ObTableException) e).getErrorCode(), tryTimes, e);
                             throw e;
                         }
                     } else if (e instanceof ObTableException) {
@@ -261,7 +254,6 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                     .format(
                                         "retry is disabled while meet NeedRefresh Exception, table name: %s, errorCode: %d",
                                         indexTableName, ((ObTableException) e).getErrorCode());
-                                logger.warn(logMessage, e);
                                 client.calculateContinuousFailure(indexTableName, e.getMessage());
                                 throw new ObTableRetryExhaustedException(logMessage, e);
                             }
@@ -270,7 +262,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                             needRefreshPartitionLocation = false;
                             if (client.isRetryOnChangeMasterTimes()) {
                                 logger
-                                    .warn(
+                                    .info(
                                         "execute while meet server error, need to retry, errorCode: {}, tableName: {}, errorMsg: {}, try times {}",
                                         ((ObTableException) e).getErrorCode(), indexTableName,
                                         e.getMessage(), tryTimes);
@@ -279,7 +271,6 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                     .format(
                                         "retry is disabled while meet NeedRefresh Exception, table name: %s, errorCode: %d",
                                         indexTableName, ((ObTableException) e).getErrorCode());
-                                logger.warn(logMessage, e);
                                 client.calculateContinuousFailure(indexTableName, e.getMessage());
                                 throw new ObTableRetryExhaustedException(logMessage, e);
                             }

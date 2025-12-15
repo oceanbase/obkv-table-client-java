@@ -28,17 +28,7 @@ import com.alipay.oceanbase.rpc.direct_load.protocol.payload.*;
 
 public class ObDirectLoadProtocolV0 implements ObDirectLoadProtocol {
 
-    public static final long         OB_VERSION_4_2_5_3 = ObGlobal.calcVersion(4, (short) 2,
-                                                            (byte) 5, (byte) 3);
-    public static final long         OB_VERSION_4_3_0_0 = ObGlobal.calcVersion(4, (short) 3,
-                                                            (byte) 0, (byte) 0);
-
-    public static final long         OB_VERSION_4_3_2_0 = ObGlobal.calcVersion(4, (short) 3,
-                                                            (byte) 2, (byte) 0);
-    public static final long         OB_VERSION_4_3_5_0 = ObGlobal.calcVersion(4, (short) 3,
-                                                            (byte) 5, (byte) 0);
-
-    private static final int         PROTOCOL_VERSION   = 0;
+    private static final int         PROTOCOL_VERSION = 0;
     private final ObDirectLoadLogger logger;
     private final long               obVersion;
 
@@ -58,26 +48,27 @@ public class ObDirectLoadProtocolV0 implements ObDirectLoadProtocol {
 
     @Override
     public void checkIsSupported(ObDirectLoadStatement statement) throws ObDirectLoadException {
-        if (obVersion < OB_VERSION_4_3_2_0) {
+        if (obVersion < ObGlobal.OB_VERSION_4_3_2_0) {
             // 432以下不支持inc|inc_replace
             String loadMethod = statement.getLoadMethod();
             if (!loadMethod.isEmpty() && !loadMethod.equalsIgnoreCase("full")) {
                 logger.warn("load method in ob version " + ObGlobal.getObVsnString(obVersion)
                             + "is not supported, minimum version required is "
-                            + ObGlobal.getObVsnString(OB_VERSION_4_3_2_0));
+                            + ObGlobal.getObVsnString(ObGlobal.OB_VERSION_4_3_2_0));
                 throw new ObDirectLoadNotSupportedException(
                     "load method in ob version " + ObGlobal.getObVsnString(obVersion)
                             + " is not supported, minimum version required is "
-                            + ObGlobal.getObVsnString(OB_VERSION_4_3_2_0));
+                            + ObGlobal.getObVsnString(ObGlobal.OB_VERSION_4_3_2_0));
             }
-        } else if (obVersion < OB_VERSION_4_3_5_0 && statement.getPartitionNames().length > 0) {
+        } else if (obVersion < ObGlobal.OB_VERSION_4_3_5_0
+                   && statement.getPartitionNames().length > 0) {
             logger.warn("partition names in ob version " + ObGlobal.getObVsnString(obVersion)
                         + "is not supported, minimum version required is "
-                        + ObGlobal.getObVsnString(OB_VERSION_4_3_5_0));
+                        + ObGlobal.getObVsnString(ObGlobal.OB_VERSION_4_3_5_0));
             throw new ObDirectLoadNotSupportedException(
                 "partition names in ob version " + ObGlobal.getObVsnString(obVersion)
                         + " is not supported, minimum version required is "
-                        + ObGlobal.getObVsnString(OB_VERSION_4_3_5_0));
+                        + ObGlobal.getObVsnString(ObGlobal.OB_VERSION_4_3_5_0));
         }
     }
 
@@ -114,15 +105,25 @@ public class ObDirectLoadProtocolV0 implements ObDirectLoadProtocol {
     @Override
     public ObDirectLoadDetachRpc getDetachRpc(ObDirectLoadTraceId traceId)
                                                                           throws ObDirectLoadException {
-        if (obVersion < OB_VERSION_4_3_0_0) {
-            if (obVersion < OB_VERSION_4_2_5_3) {
+        if (obVersion < ObGlobal.OB_VERSION_4_3_0_0) {
+            if (obVersion < ObGlobal.OB_VERSION_4_2_5_3) {
                 logger.warn("detach in ob version " + ObGlobal.getObVsnString(obVersion)
                             + "is not supported, minimum version required is "
-                            + ObGlobal.getObVsnString(OB_VERSION_4_2_5_3));
+                            + ObGlobal.getObVsnString(ObGlobal.OB_VERSION_4_2_5_3));
                 throw new ObDirectLoadNotSupportedException(
                     "detach in ob version " + ObGlobal.getObVsnString(obVersion)
                             + " is not supported, minimum version required is "
-                            + ObGlobal.getObVsnString(OB_VERSION_4_2_5_3));
+                            + ObGlobal.getObVsnString(ObGlobal.OB_VERSION_4_2_5_3));
+            }
+        } else if (obVersion < ObGlobal.OB_VERSION_4_5_0_0) {
+            if (obVersion < ObGlobal.OB_VERSION_4_4_2_0) {
+                logger.warn("detach in ob version " + ObGlobal.getObVsnString(obVersion)
+                            + "is not supported, minimum version required is "
+                            + ObGlobal.getObVsnString(ObGlobal.OB_VERSION_4_4_2_0));
+                throw new ObDirectLoadNotSupportedException(
+                    "detach in ob version " + ObGlobal.getObVsnString(obVersion)
+                            + " is not supported, minimum version required is "
+                            + ObGlobal.getObVsnString(ObGlobal.OB_VERSION_4_4_2_0));
             }
         } else {
             logger.warn("detach in ob version " + ObGlobal.getObVsnString(obVersion)
