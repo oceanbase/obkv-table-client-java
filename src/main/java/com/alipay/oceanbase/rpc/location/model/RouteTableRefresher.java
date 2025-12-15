@@ -116,12 +116,6 @@ public class RouteTableRefresher {
                 }
             }
             if (needRefresh) {
-                newConfigServer = LocationUtil.refreshIDC2RegionMapFroConfigServerInfo(
-                    newConfigServer, tableClient.getParamURL(),
-                    tableClient.getRsListAcquireConnectTimeout(),
-                    tableClient.getRsListAcquireReadTimeout(),
-                    tableClient.getRsListAcquireTryTimes(),
-                    tableClient.getRsListAcquireRetryInterval());
                 tableRoute.setConfigServerInfo(newConfigServer);
                 tableRoute.refreshRosterByRsList(newRsList);
             }

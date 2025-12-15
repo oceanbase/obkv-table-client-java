@@ -22,12 +22,13 @@ import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.exception.FeatureNotSupportedException;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.exception.ObTableNotExistException;
-import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.Row;
 import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObReadConsistency;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.OHOperationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.aggregation.ObTableAggregationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.*;
@@ -42,7 +43,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.alipay.oceanbase.rpc.protocol.payload.Constants.INVALID_TABLET_ID;
-import static com.alipay.oceanbase.rpc.protocol.payload.Constants.OB_INVALID_ID;
 
 public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
@@ -53,6 +53,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     private Row                                   rowKey;                    // only used by BatchOperation
 
     private boolean                               allowDistributeScan = true;
+    private OHOperationType                       hbaseOpType = OHOperationType.INVALID;
 
     /*
      * Add aggregation.
@@ -154,18 +155,19 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     /*
      * Set parameter into request
      */
-    private void setCommonParams2Result(AbstractQueryStreamResult result) throws Exception {
+    private void setCommonParams2Result(AbstractQueryStreamResult result, ObReadConsistency actualReadConsistency) throws Exception {
         result.setTableQuery(tableQuery);
         result.setEntityType(entityType);
         result.setTableName(tableName);
         result.setIndexTableName(indexTableName);
         result.setExpectant(partitionObTables);
         result.setOperationTimeout(operationTimeout);
-        result.setReadConsistency(obTableClient.getReadConsistency());
+        result.setReadConsistency(actualReadConsistency);
+        result.setHbaseOpType(hbaseOpType);
     }
 
     private abstract static class InitQueryResultCallback<T> {
-        abstract T execute() throws Exception;
+        abstract T execute(ObReadConsistency actualReadConsistency) throws Exception;
     }
 
     private AbstractQueryStreamResult commonExecute(InitQueryResultCallback<AbstractQueryStreamResult> callable)
@@ -174,6 +176,14 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
         final long startTime = System.currentTimeMillis();
         this.partitionObTables = new LinkedHashMap<Long, ObPair<Long, ObTableParam>>(); // partitionObTables -> Map<logicId, Pair<logicId, param>>
+
+        // 如果没有设置语句级别的 readConsistency（null），使用 TableRoute 上的 consistencyLevel
+        ObReadConsistency actualReadConsistency;
+        if (readConsistency == null) {
+            actualReadConsistency = obTableClient.getTableRoute().getReadConsistency();
+        } else {
+            actualReadConsistency = readConsistency;
+        }
 
         // fill a whole range if no range is added explicitly.
         if (tableQuery.getKeyRanges().isEmpty()) {
@@ -194,7 +204,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                 // in table mode, there is no way to fetch index information from ODP, so index name not supported
                 // in hbase mode, there is no index for hbase table
                 try {
-                    ObTableParam odpTable = obTableClient.getOdpTableParamWithPartId(tableName, getPartId());
+                    ObTableParam odpTable = obTableClient.getTableRoute().getOdpTableWithPartId(tableName, getPartId());
                     partitionObTables.put(odpTable.getPartId(), new ObPair<>(odpTable.getPartId(), odpTable));
                 } catch (Exception e) {
                     if (e instanceof ObTableException) {
@@ -205,7 +215,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                         } else if (((ObTableException) e).getErrorCode() == ResultCodes.OB_ERR_KV_ROUTE_ENTRY_EXPIRE.errorCode) {
                             // retry table meta one time
                             obTableClient.refreshOdpMeta(tableName);
-                            ObTableParam odpTable = obTableClient.getOdpTableParamWithPartId(tableName, getPartId());
+                            ObTableParam odpTable = obTableClient.getTableRoute().getOdpTableWithPartId(tableName, getPartId());
                             partitionObTables.put(odpTable.getPartId(), new ObPair<>(odpTable.getPartId(), odpTable));
                         } else {
                             throw e;
@@ -220,7 +230,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
             }
         } else {
             if (getPartId() == null) {
-                initPartitions();
+                initPartitions(actualReadConsistency);
             } else { // directly get table from table entry by logic partId
                 if (this.entityType != ObTableEntityType.HKV) {
                     indexTableName = obTableClient.getIndexTableName(tableName,
@@ -230,8 +240,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                         false);
                 }
                 try {
-                    ObTableParam table = obTableClient.getTableParamWithPartId(indexTableName,
-                            getPartId(), obTableClient.getRoute(false));
+                    ObTableParam table = obTableClient.getTableRoute().getTableWithPartId(indexTableName,
+                            getPartId(), actualReadConsistency);
                     partitionObTables.put(table.getPartId(), new ObPair<>(table.getPartId(), table));
                 } catch (ObTableNotExistException e) {
                     if (this.entityType == ObTableEntityType.HKV
@@ -241,8 +251,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                         // not to refresh tableGroup cache
                         obTableClient.eraseTableGroupFromCache(tableName);
                         indexTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, true);
-                        ObTableParam table = obTableClient.getTableParamWithPartId(indexTableName,
-                                getPartId(), obTableClient.getRoute(false));
+                        ObTableParam table = obTableClient.getTableRoute().getTableWithPartId(indexTableName,
+                                getPartId(), actualReadConsistency);
                         partitionObTables.put(table.getPartId(), new ObPair<>(table.getPartId(), table));
                     }
                 }
@@ -267,7 +277,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         }
 
         // init query stream result
-        AbstractQueryStreamResult streamResult = callable.execute();
+        AbstractQueryStreamResult streamResult = callable.execute(actualReadConsistency);
 
         MonitorUtil
             .info((ObPayload) streamResult, obTableClient.getDatabase(), tableName, "QUERY",
@@ -284,9 +294,9 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     public ObTableClientQueryStreamResult executeInternal() throws Exception {
         return (ObTableClientQueryStreamResult) commonExecute(new InitQueryResultCallback<AbstractQueryStreamResult>() {
             @Override
-            ObTableClientQueryStreamResult execute() throws Exception {
+            ObTableClientQueryStreamResult execute(ObReadConsistency actualReadConsistency) throws Exception {
                 ObTableClientQueryStreamResult obTableClientQueryStreamResult = new ObTableClientQueryStreamResult();
-                setCommonParams2Result(obTableClientQueryStreamResult);
+                setCommonParams2Result(obTableClientQueryStreamResult, actualReadConsistency);
                 obTableClientQueryStreamResult.setClient(obTableClient);
                 obTableClientQueryStreamResult.init();
                 return obTableClientQueryStreamResult;
@@ -297,10 +307,10 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     public ObTableClientQueryAsyncStreamResult asyncExecuteInternal() throws Exception {
         return (ObTableClientQueryAsyncStreamResult) commonExecute(new InitQueryResultCallback<AbstractQueryStreamResult>() {
             @Override
-            ObTableClientQueryAsyncStreamResult execute() throws Exception {
+            ObTableClientQueryAsyncStreamResult execute(ObReadConsistency actualReadConsistency) throws Exception {
                 ObTableClientQueryAsyncStreamResult obTableClientQueryAsyncStreamResult = new ObTableClientQueryAsyncStreamResult();
                 obTableClientQueryAsyncStreamResult.setAllowDistributeScan(allowDistributeScan);
-                setCommonParams2Result(obTableClientQueryAsyncStreamResult);
+                setCommonParams2Result(obTableClientQueryAsyncStreamResult, actualReadConsistency);
                 obTableClientQueryAsyncStreamResult.setClient(obTableClient);
                 obTableClientQueryAsyncStreamResult.init();
                 return obTableClientQueryAsyncStreamResult;
@@ -308,7 +318,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         });
     }
 
-    public Map<Long, ObPair<Long, ObTableParam>> initFirstPartition(ObTableQuery tableQuery, String tableName) throws Exception {
+    public Map<Long, ObPair<Long, ObTableParam>> initFirstPartition(ObTableQuery tableQuery, String tableName, ObReadConsistency actualReadConsistency) throws Exception {
         Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new LinkedHashMap<>();
         String indexName = tableQuery.getIndexName();
 
@@ -333,8 +343,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                 indexTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
             }
             ObBorderFlag borderFlag = range.getBorderFlag();
-            List<ObTableParam> params = this.obTableClient.getTableParams(indexTableName, tableQuery, start,
-                    borderFlag.isInclusiveStart(), start, borderFlag.isInclusiveEnd());
+            List<ObTableParam> params = this.obTableClient.getTableRoute().getTableParams(indexTableName, tableQuery, start,
+                    borderFlag.isInclusiveStart(), start, borderFlag.isInclusiveEnd(), actualReadConsistency);
 
             partitionObTables.put(INVALID_TABLET_ID, new ObPair<>(params.get(0).getPartId(), params.get(0)));
         }
@@ -342,7 +352,7 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
         return partitionObTables;
     }
 
-    public Map<Long, ObPair<Long, ObTableParam>> initPartitions(ObTableQuery tableQuery, String tableName) throws Exception {
+    public Map<Long, ObPair<Long, ObTableParam>> initPartitions(ObTableQuery tableQuery, String tableName, ObReadConsistency actualReadConsistency) throws Exception {
         // partitionObTables -> <logicId, <logicId, tableParam>>
         Map<Long, ObPair<Long, ObTableParam>> partitionObTables = new LinkedHashMap<>();
         String indexName = tableQuery.getIndexName();
@@ -372,8 +382,8 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
                 indexTableName = obTableClient.tryGetTableNameFromTableGroupCache(tableName, false);
             }
             ObBorderFlag borderFlag = range.getBorderFlag();
-            List<ObTableParam> params = this.obTableClient.getTableParams(indexTableName, tableQuery, start,
-                borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd());
+            List<ObTableParam> params = this.obTableClient.getTableRoute().getTableParams(indexTableName, tableQuery, start,
+                borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), actualReadConsistency);
             if (tableQuery.getScanOrder() == ObScanOrder.Reverse) {
                 for (int i = params.size() - 1; i >= 0; i--) {
                     ObTableParam param = params.get(i);
@@ -392,11 +402,11 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
     /*
      * Init partition tables involved in this query
      */
-    public void initPartitions() throws Exception {
+    public void initPartitions(ObReadConsistency actualReadConsistency) throws Exception {
         if (obTableClient.getServerCapacity().isSupportDistributedExecute()) {
-            this.partitionObTables = initFirstPartition(tableQuery, tableName);
+            this.partitionObTables = initFirstPartition(tableQuery, tableName, actualReadConsistency);
         } else {
-            this.partitionObTables = initPartitions(tableQuery, tableName);
+            this.partitionObTables = initPartitions(tableQuery, tableName, actualReadConsistency);
         }
     }
 
@@ -444,5 +454,9 @@ public class ObTableClientQueryImpl extends AbstractTableQueryImpl {
 
     public void setAllowDistributeScan(boolean allowDistributeScan) {
         this.allowDistributeScan = allowDistributeScan;
+    }
+
+    public void setHbaseOpType(OHOperationType hbaseOpType) {
+        this.hbaseOpType = hbaseOpType;
     }
 }

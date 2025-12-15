@@ -21,8 +21,6 @@ import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.ObTableConnection;
 import com.alipay.oceanbase.rpc.bolt.transport.TransportCodes;
 import com.alipay.oceanbase.rpc.exception.*;
-import com.alipay.oceanbase.rpc.location.model.ObReadConsistency;
-import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
 import com.alipay.oceanbase.rpc.location.model.TableEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
@@ -30,11 +28,8 @@ import com.alipay.oceanbase.rpc.protocol.payload.ObPayload;
 import com.alipay.oceanbase.rpc.protocol.payload.Pcodes;
 import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableApiMove;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableStreamRequest;
-import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.QueryStreamResult;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncRequest;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
@@ -65,6 +60,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     // global index: key is index table name (be like: __idx_<data_table_id>_<index_name>)
     protected String                                                           indexTableName;
     protected ObTableEntityType                                                entityType;
+    protected OHOperationType                                                  hbaseOpType = OHOperationType.INVALID;
     protected Map<Long, ObPair<Long, ObTableParam>>                            expectant;
     protected List<String>                                                     cacheProperties     = new LinkedList<String>();
     protected LinkedList<List<ObObj>>                                          cacheRows           = new LinkedList<List<ObObj>>();
@@ -120,7 +116,6 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
         Set<String> failedServerList = null;
-        ObServerRoute route = null;
         while (true) {
             client.checkStatus();
             long currentExecute = System.currentTimeMillis();
@@ -140,20 +135,14 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     if (client.isOdpMode()) {
                         subObTable = client.getOdpTable();
                     } else {
-                        if (route == null) {
-                            route = client.getReadRoute();
-                        }
-                        if (failedServerList != null) {
-                            route.setBlackList(failedServerList);
-                        }
                         if (needRefreshPartitionLocation) {
                             // refresh partition
                             TableEntry tableEntry = client.getOrRefreshTableEntry(indexTableName,
                                 false);
                             client.refreshTableLocationByTabletId(indexTableName,
                                 client.getTabletIdByPartId(tableEntry, partIdWithIndex.getLeft()));
-                            subObTable = client.getTableParamWithPartId(indexTableName,
-                                partIdWithIndex.getRight().getTabletId(), route).getObTable();
+                            subObTable = client.getTableRoute().getTableWithPartId(indexTableName,
+                                partIdWithIndex.getRight().getTabletId(), readConsistency).getObTable();
                         }
                     }
                 }
@@ -430,8 +419,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
             }
 
             ObBorderFlag borderFlag = range.getBorderFlag();
-            List<ObTableParam> params = client.getTableParams(indexTableName,
-                    tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd());
+            List<ObTableParam> params = client.getTableRoute().getTableParams(indexTableName,
+                    tableQuery, start, borderFlag.isInclusiveStart(), end, borderFlag.isInclusiveEnd(), readConsistency);
 
             if (tableQuery.getScanOrder() == ObScanOrder.Reverse) {
                 for (int i = params.size() - 1; i >= 0; i--) {
@@ -473,8 +462,8 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                 indexTableName = client.tryGetTableNameFromTableGroupCache(tableName, false);
             }
             ObBorderFlag borderFlag = range.getBorderFlag();
-            List<ObTableParam> params = this.client.getTableParams(indexTableName, tableQuery, start,
-                    borderFlag.isInclusiveStart(), start, borderFlag.isInclusiveEnd());
+            List<ObTableParam> params = this.client.getTableRoute().getTableParams(indexTableName, tableQuery, start,     
+                    borderFlag.isInclusiveStart(), start, borderFlag.isInclusiveEnd(), readConsistency);
 
             partitionObTables.put(INVALID_TABLET_ID, new ObPair<>(params.get(0).getPartId(), params.get(0)));
         }
@@ -822,5 +811,13 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
      */
     public void setClient(ObTableClient client) {
         this.client = client;
+    }
+
+    public OHOperationType getHbaseOpType() {
+        return hbaseOpType;
+    }
+
+    public void setHbaseOpType(OHOperationType hbaseOpType) {
+        this.hbaseOpType = hbaseOpType;
     }
 }

@@ -20,7 +20,6 @@ package com.alipay.oceanbase.rpc.table;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.bolt.transport.TransportCodes;
 import com.alipay.oceanbase.rpc.exception.*;
-import com.alipay.oceanbase.rpc.location.model.ObServerRoute;
 import com.alipay.oceanbase.rpc.location.model.TableEntry;
 import com.alipay.oceanbase.rpc.location.model.partition.ObPair;
 import com.alipay.oceanbase.rpc.mutation.Row;
@@ -222,17 +221,6 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         return results;
     }
 
-    // Helper method to calculate RowKey from ObTableOperation
-    private Object[] calculateRowKey(ObTableOperation operation) {
-        ObRowKey rowKeyObject = operation.getEntity().getRowKey();
-        int rowKeySize = rowKeyObject.getObjs().size();
-        Object[] rowKey = new Object[rowKeySize];
-        for (int j = 0; j < rowKeySize; j++) {
-            rowKey[j] = rowKeyObject.getObj(j).getValue();
-        }
-        return rowKey;
-    }
-
     public Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> prepareOperations(List<ObPair<Integer, ObTableOperation>> operations) throws Exception {
         Map<Long, ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>>> partitionOperationsMap = new HashMap<>();
 
@@ -256,8 +244,7 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                 rowKey[j] = rowKeyObject.getObj(j).getValue();
             }
             Row row = obTableClient.transformToRow(tableName, rowKey);
-            ObTableParam tableParam = obTableClient.getTableParamWithRoute(
-                    tableName, row, obTableClient.getRoute(batchOperation.isReadOnly()));
+            ObTableParam tableParam = obTableClient.getTableRoute().getTableParam(tableName, row);
             ObPair<ObTableParam, List<ObPair<Integer, ObTableOperation>>> obTableOperations = partitionOperationsMap
                     .computeIfAbsent(tableParam.getPartId(), k -> new ObPair<>(
                             tableParam, new ArrayList<>()));
@@ -308,8 +295,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         subRequest.setEntityType(entityType);
         subRequest.setTimeout(subObTable.getObTableOperationTimeout());
         if (batchOperation.isReadOnly()) {
-            subRequest.setConsistencyLevel(obTableClient.getReadConsistency()
-                .toObTableConsistencyLevel());
+            // 如果设置了 isWeakRead，使用弱读；否则使用全局的 readConsistency
+            if (isWeakRead) {
+                subRequest.setConsistencyLevel(ObReadConsistency.WEAK);
+            } else {
+                subRequest.setConsistencyLevel(ObReadConsistency.STRONG);
+            }
         }
         subRequest.setBatchOperationAsAtomic(isAtomicOperation());
         subRequest.setBatchOpReturnOneResult(isReturnOneResult());
@@ -319,7 +310,6 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         boolean needRefreshPartitionLocation = false;
         long startExecute = System.currentTimeMillis();
         Set<String> failedServerList = null;
-        ObServerRoute route = null;
 
         while (true) {
             obTableClient.checkStatus();
@@ -339,20 +329,15 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                     // getTable() when we need retry
                     // we should use partIdx to get table
                     if (tryTimes > 1) {
-                        if (route == null) {
-                            route = obTableClient.getRoute(batchOperation.isReadOnly());
-                        }
-                        if (failedServerList != null) {
-                            route.setBlackList(failedServerList);
-                        }
                         if (needRefreshPartitionLocation) {
                             // refresh partition location
                             TableEntry entry = obTableClient.getOrRefreshTableEntry(tableName,
                                 false);
                             obTableClient.refreshTableLocationByTabletId(tableName,
                                 obTableClient.getTabletIdByPartId(entry, originPartId));
-                            ObTableParam newParam = obTableClient.getTableParamWithPartId(
-                                tableName, originPartId, route);
+                            ObTableParam newParam = obTableClient.getTableRoute()
+                                .getTableWithPartId(tableName, originPartId,
+                                    ObReadConsistency.STRONG);
                             subObTable = newParam.getObTable();
                             subRequest.setPartitionId(newParam.getPartitionId());
                         }
@@ -374,11 +359,14 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         throw new ObTableRoutingWrongException();
                     }
                 } else if (result != null && result.isRoutingWrong() && !obTableClient.isOdpMode()) {
-                    logger.debug("errors happened in server and retried successfully, server ip:port is {}:{}, tableName: {}, need_refresh_meta: {}",
-                            subObTable.getIp(), subObTable.getPort(), tableName, result.isNeedRefreshMeta());
-                    TableEntry entry = result.isNeedRefreshMeta() ?
-                            obTableClient.getOrRefreshTableEntry(tableName, true) :
-                            obTableClient.getOrRefreshTableEntry(tableName, false);
+                    logger
+                        .debug(
+                            "errors happened in server and retried successfully, server ip:port is {}:{}, tableName: {}, need_refresh_meta: {}",
+                            subObTable.getIp(), subObTable.getPort(), tableName,
+                            result.isNeedRefreshMeta());
+                    TableEntry entry = result.isNeedRefreshMeta() ? obTableClient
+                        .getOrRefreshTableEntry(tableName, true) : obTableClient
+                        .getOrRefreshTableEntry(tableName, false);
                     long tabletId = obTableClient.getTabletIdByPartId(entry, originPartId);
                     obTableClient.refreshTableLocationByTabletId(tableName, tabletId);
                 }
@@ -418,10 +406,14 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                         if (obTableClient.isRetryOnChangeMasterTimes()) {
                             if (ex instanceof ObTableNeedFetchMetaException) {
                                 // refresh table info
-                                TableEntry entry = obTableClient.getOrRefreshTableEntry(tableName, true);
-                                if (((ObTableNeedFetchMetaException) ex).isNeedRefreshMetaAndLocation()) {
-                                    long tabletId = obTableClient.getTabletIdByPartId(entry, originPartId);
-                                    obTableClient.refreshTableLocationByTabletId(tableName, tabletId);
+                                TableEntry entry = obTableClient.getOrRefreshTableEntry(tableName,
+                                    true);
+                                if (((ObTableNeedFetchMetaException) ex)
+                                    .isNeedRefreshMetaAndLocation()) {
+                                    long tabletId = obTableClient.getTabletIdByPartId(entry,
+                                        originPartId);
+                                    obTableClient.refreshTableLocationByTabletId(tableName,
+                                        tabletId);
                                 }
                                 throw ex;
                             }
@@ -453,10 +445,12 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
                     } else {
                         if (ex instanceof ObTableTransportException
                             && ((ObTableTransportException) ex).getErrorCode() == TransportCodes.BOLT_TIMEOUT) {
-                            logger.debug("normal batch meet transport timeout, obTable ip:port is {}:{}",
-                                    subObTable.getIp(), subObTable.getPort());
+                            logger.debug(
+                                "normal batch meet transport timeout, obTable ip:port is {}:{}",
+                                subObTable.getIp(), subObTable.getPort());
                             subObTable.setDirty();
-                            obTableClient.dealWithRpcTimeoutForSingleTablet(subObTable.getObServerAddr(), tableName, partId);
+                            obTableClient.dealWithRpcTimeoutForSingleTablet(
+                                subObTable.getObServerAddr(), tableName, partId);
                         }
                         obTableClient.calculateContinuousFailure(tableName, ex.getMessage());
                         throw ex;
@@ -582,6 +576,10 @@ public class ObTableClientBatchOpsImpl extends AbstractTableBatchOps {
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
         }
+        if (batchOperation.isReadOnly()) {
+            setIsWeakRead(obTableClient.getTableRoute().getReadConsistency() == ObReadConsistency.WEAK);
+        }
+
         long start = System.currentTimeMillis();
         List<ObTableOperation> operations = batchOperation.getTableOperations();
         ObTableOperationResult[] obTableOperationResults = returnOneResult ? new ObTableOperationResult[1]

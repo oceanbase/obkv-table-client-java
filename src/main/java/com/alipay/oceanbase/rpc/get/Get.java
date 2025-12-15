@@ -20,21 +20,24 @@ package com.alipay.oceanbase.rpc.get;
 import com.alipay.oceanbase.rpc.ObTableClient;
 import com.alipay.oceanbase.rpc.mutation.ColumnValue;
 import com.alipay.oceanbase.rpc.mutation.Row;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObReadConsistency;
 import com.alipay.oceanbase.rpc.table.api.Table;
 
 import java.util.Map;
 
 public class Get {
-    private Table      client;
-    private String     tableName;
-    protected Row      rowKey;
-    protected String[] selectColumns;
+    private Table             client          = null;
+    private String            tableName       = null;
+    private Row               rowKey          = null;
+    private String[]          selectColumns   = null;
+    private ObReadConsistency readConsistency = null;
 
     public Get() {
-        tableName = null;
-        client = null;
-        rowKey = null;
-        selectColumns = null;
+        this.client = null;
+        this.tableName = null;
+        this.rowKey = null;
+        this.selectColumns = null;
+        this.readConsistency = null;
     }
 
     public Get(Table client, String tableName) {
@@ -67,6 +70,15 @@ public class Get {
         return this;
     }
 
+    public Get setReadConsistency(ObReadConsistency readConsistency) {
+        this.readConsistency = readConsistency;
+        return this;
+    }
+
+    public ObReadConsistency getReadConsistency() {
+        return readConsistency;
+    }
+
     public String[] getSelectColumns() {
         return selectColumns;
     }
@@ -75,6 +87,6 @@ public class Get {
         if (client == null) {
             throw new IllegalArgumentException("client is null");
         }
-        return ((ObTableClient) client).get(tableName, rowKey, selectColumns);
+        return ((ObTableClient) client).get(tableName, rowKey, selectColumns, readConsistency);
     }
 }

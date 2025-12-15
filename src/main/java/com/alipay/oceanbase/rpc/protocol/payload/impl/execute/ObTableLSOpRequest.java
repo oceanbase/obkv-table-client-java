@@ -33,13 +33,15 @@ OB_SERIALIZE_MEMBER(ObTableLSOpRequest,
                     credential_,
                     entity_type_,
                     consistency_level_,
-                    ls_op_);
+                    ls_op_,
+                    hbase_op_type_);
  */
 public class ObTableLSOpRequest extends AbstractPayload implements Credentialable {
     protected ObBytesString           credential;
     protected ObTableEntityType       entityType       = ObTableEntityType.KV;
-    protected ObTableConsistencyLevel consistencyLevel = ObTableConsistencyLevel.STRONG;
+    protected ObReadConsistency       consistencyLevel = ObReadConsistency.STRONG;
     private ObTableLSOperation        lsOperation      = null;
+    protected OHOperationType         hbaseOpType      = OHOperationType.INVALID;
 
     /*
      * Get pcode.
@@ -70,6 +72,9 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
 
         // 4. encode lsOperation
         lsOperation.encode(buf);
+
+        // 5. encode hbase op type, for table operations, this will be INVALID(0)
+        Serialization.encodeI8(buf, hbaseOpType.getByteValue());
         if (buf.pos != buf.bytes.length) {
             throw new IllegalArgumentException("error in encode lsOperationRequest (" +
                     "pos:" + buf.pos + ", buf.capacity:" + buf.bytes.length + ")");
@@ -85,7 +90,7 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
         super.decode(buf);
         this.credential = Serialization.decodeBytesString(buf);
         this.entityType = ObTableEntityType.valueOf(buf.readByte());
-        this.consistencyLevel = ObTableConsistencyLevel.valueOf(buf.readByte());
+        this.consistencyLevel = ObReadConsistency.valueOf(buf.readByte());
         this.lsOperation = new ObTableLSOperation();
         this.lsOperation.decode(buf);
 
@@ -99,7 +104,7 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
     public long getPayloadContentSize() {
         if (payLoadContentSize == INVALID_PAYLOAD_CONTENT_SIZE) {
             payLoadContentSize = lsOperation.getPayloadSize() + Serialization.getNeedBytes(credential) + 1 // entityType
-                    + 1; // consistencyLevel
+                    + 1 /* consistencyLevel */ + 1 /* hbaseOpType */;
         }
         return payLoadContentSize;
     }
@@ -146,7 +151,7 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
     /*
      * Set consistency level.
      */
-    public void setConsistencyLevel(ObTableConsistencyLevel consistencyLevel) {
+    public void setConsistencyLevel(ObReadConsistency consistencyLevel) {
         this.consistencyLevel = consistencyLevel;
     }
 
@@ -159,6 +164,10 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
 
     public void setTableId(long tableId) {
         this.lsOperation.setTableId(tableId);
+    }
+
+    public void setHbaseOpType(OHOperationType hbaseOpType) {
+        this.hbaseOpType = hbaseOpType;
     }
 
     /**

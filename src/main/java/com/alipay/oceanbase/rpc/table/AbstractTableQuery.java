@@ -20,17 +20,30 @@ package com.alipay.oceanbase.rpc.table;
 import com.alipay.oceanbase.rpc.exception.ObTableException;
 import com.alipay.oceanbase.rpc.filter.ObTableFilter;
 import com.alipay.oceanbase.rpc.mutation.Row;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObReadConsistency;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableEntityType;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 
 import java.util.List;
 
 public abstract class AbstractTableQuery implements TableQuery {
-    private static final String PRIMARY_INDEX_NAME = "PRIMARY";
+    private static final String       PRIMARY_INDEX_NAME = "PRIMARY";
 
-    protected ObTableEntityType entityType         = ObTableEntityType.KV;
+    protected ObTableEntityType       entityType         = ObTableEntityType.KV;
 
-    protected long              operationTimeout   = -1;
+    protected long                    operationTimeout   = -1;
+    protected ObReadConsistency       readConsistency    = null; // null 表示用户没有设置，将使用 TableRoute 上的 consistencyLevel
+
+    @Override
+    public TableQuery setReadConsistency(ObReadConsistency readConsistency) {
+        this.readConsistency = readConsistency;
+        return this;
+    }
+
+    @Override
+    public ObReadConsistency getReadConsistency() {
+        return readConsistency;
+    }
 
     /*
      * Limit.

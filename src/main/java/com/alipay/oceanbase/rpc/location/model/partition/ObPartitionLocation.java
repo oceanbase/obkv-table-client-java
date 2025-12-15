@@ -17,8 +17,8 @@
 
 package com.alipay.oceanbase.rpc.location.model.partition;
 
-import com.alipay.oceanbase.rpc.exception.ObTablePartitionNoMasterException;
 import com.alipay.oceanbase.rpc.location.model.*;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObReadConsistency;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -74,63 +74,68 @@ public class ObPartitionLocation {
      * @param route
      * @return
      */
-    public ReplicaLocation getReplica(ObServerRoute route) {
+    public ReplicaLocation getReplica(ObReadConsistency consistencyLevel,
+                                      ObRoutePolicy routePolicy) throws IllegalArgumentException {
         // strong read : read leader
-        if (route.getReadConsistency() == ObReadConsistency.STRONG) {
+        if (consistencyLevel == null || consistencyLevel == ObReadConsistency.STRONG) {
             return leader;
         }
 
-        // weak read by LDC
-        if (route.isLdcEnabled()) {
-            return getReadReplicaByLDC(route);
-        } else {
-            return getReadReplicaNoLdc(route);
+        // empty means not idc route
+        if (sameIdc.isEmpty() && sameRegion.isEmpty() && otherRegion.isEmpty()) {
+            return getReadReplicaNoLdc(routePolicy);
         }
+
+        return getReadReplicaByRoutePolicy(routePolicy);
     }
 
-    /*
-     * Get read replica according to LDC route strategy.
-     *
-     * @param route
-     * @return
-     */
-    public ReplicaLocation getReadReplicaByLDC(ObServerRoute route) {
-        if (route.getReadRoutePolicy() == ObRoutePolicy.FOLLOWER_FIRST) {
-            if (!route.isInBlackList(leader.getIp())) {
-                route.addToBlackList(leader.getIp());
-            }
-        }
-        for (ReplicaLocation r : sameIdc) {
-            if (!route.isInBlackList(r.getAddr().getIp())) {
+    private ReplicaLocation getReadReplicaNoLdc(ObRoutePolicy routePolicy) {
+        for (ReplicaLocation r : replicas) {
+            if (r.isValid() && !r.isLeader()) {
                 return r;
             }
         }
-        for (ReplicaLocation r : sameRegion) {
-            if (!route.isInBlackList(r.getAddr().getIp())) {
-                return r;
-            }
-        }
-        for (ReplicaLocation r : otherRegion) {
-            if (!route.isInBlackList(r.getAddr().getIp())) {
-                return r;
-            }
+        if (routePolicy == ObRoutePolicy.FOLLOWER_ONLY) {
+            throw new IllegalArgumentException("No follower replica found for route policy: "
+                                               + routePolicy);
         }
         return leader;
     }
 
-    /*
-     * Get read replica according to LDC route strategy.
-     *
-     * @param route
-     * @return
-     */
-    public ReplicaLocation getReadReplicaNoLdc(ObServerRoute route) {
-        for (ReplicaLocation r : replicas) {
-            if (!route.isInBlackList(r.getIp())
-                && !(r.isLeader() && route.getReadRoutePolicy() == ObRoutePolicy.FOLLOWER_FIRST)) {
+    private ReplicaLocation getReadReplicaByRoutePolicy(ObRoutePolicy routePolicy)
+                                                                                  throws IllegalArgumentException {
+        // 路由策略优先：FOLLOWER_FIRST 优先选择 follower，FOLLOWER_ONLY 只能选择 follower
+        // 在满足路由策略的前提下，按就近原则选择（同机房 -> 同 region -> 其他 region）
+
+        // 优先在同机房找 follower
+        for (ReplicaLocation r : sameIdc) {
+            if (r.isValid() && !r.isLeader()) {
                 return r;
             }
         }
+        
+        // 如果同机房没有 follower，在同 region 找 follower
+        for (ReplicaLocation r : sameRegion) {
+            if (r.isValid() && !r.isLeader()) {
+                return r;
+            }
+        }
+        
+        // 如果同 region 没有 follower，在其他 region 找 follower
+        for (ReplicaLocation r : otherRegion) {
+            if (r.isValid() && !r.isLeader()) {
+                return r;
+            }
+        }
+        
+        // 如果都没有找到 follower
+        if (routePolicy == ObRoutePolicy.FOLLOWER_ONLY) {
+            // FOLLOWER_ONLY 必须选择 follower，没有就抛出异常
+            throw new IllegalArgumentException("No follower replica found for route policy: "
+                                                + routePolicy);
+        }
+
+        // 如果都没有找到，返回 leader（兜底）
         return leader;
     }
 
@@ -144,9 +149,9 @@ public class ObPartitionLocation {
         Collections.shuffle(replicas);
         if (ldcLocation != null && ldcLocation.isLdcUsed()) {
             for (ReplicaLocation replica : replicas) {
-                if (ldcLocation.inSameIDC(replica.getIp())) {
+                if (ldcLocation.inSameIDC(replica.getIp() + replica.getSvrPort())) {
                     sameIdc.add(replica);
-                } else if (ldcLocation.inSameRegion(replica.getIp())) {
+                } else if (ldcLocation.inSameRegion(replica.getIp() + replica.getSvrPort())) {
                     sameRegion.add(replica);
                 } else {
                     otherRegion.add(replica);

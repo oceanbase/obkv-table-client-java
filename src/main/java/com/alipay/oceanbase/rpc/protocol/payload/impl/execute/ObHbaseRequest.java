@@ -38,7 +38,8 @@ OB_SERIALIZE_MEMBER(ObHbaseRequest,
                     option_flag_,
                     op_type_,
                     keys_,
-                    cf_rows_);
+                    cf_rows_,
+                    hbase_op_type_);
  */
 /*
     [k1][k2][k3]...
@@ -53,6 +54,7 @@ public class ObHbaseRequest extends AbstractPayload implements Credentialable {
     protected ObTableOperationType    opType;
     protected List<ObObj>             keys       = new ArrayList<>();
     protected List<ObHbaseCfRows>     cfRows;
+    protected OHOperationType         hbaseOpType = OHOperationType.INVALID;
 
     public ObHbaseRequest() {
         this.credential = new ObBytesString();
@@ -112,6 +114,9 @@ public class ObHbaseRequest extends AbstractPayload implements Credentialable {
             ObHbaseCfRows sameCfRows = cfRows.get(i);
             sameCfRows.encode(buf);
         }
+
+        // 7. encode hbase op type, to differentiate put and put list
+        Serialization.encodeI8(buf, hbaseOpType.getByteValue());
         
         if (buf.pos != buf.bytes.length) {
             throw new IllegalArgumentException("error in encode ObHbaseRequest (" +
@@ -151,6 +156,7 @@ public class ObHbaseRequest extends AbstractPayload implements Credentialable {
             for (ObHbaseCfRows cfRows : cfRows) {
                 payLoadContentSize += cfRows.getPayloadSize();
             }
+            payLoadContentSize += 1; // hbase_op_type_
         }
         return payLoadContentSize;
     }
@@ -192,6 +198,10 @@ public class ObHbaseRequest extends AbstractPayload implements Credentialable {
 
     public void setServerCanRetry(boolean canRetry) {
         optionFlag.setFlagServerCanRetry(canRetry);
+    }
+
+    public void setHbaseOpType(OHOperationType hbaseOpType) {
+        this.hbaseOpType = hbaseOpType;
     }
 
     public boolean getServerCanRetry() {

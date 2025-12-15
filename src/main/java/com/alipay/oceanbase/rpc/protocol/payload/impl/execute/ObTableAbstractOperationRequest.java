@@ -35,10 +35,11 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
     protected long                    tableId                 = Constants.OB_INVALID_ID;       // table id. 如果知道表id，可以用于优化，如果不知道，设定为OB_INVALID_ID
     protected long                    partitionId             = Constants.INVALID_TABLET_ID;   // Constants.OB_INVALID_ID; // partition id / tabletId. 如果知道表分区id，可以用于优化，如果不知道，设定为OB_INVALID_ID
     protected ObTableEntityType       entityType              = ObTableEntityType.KV;          // entity type. 如果明确entity类型，可以用于优化，如果不知道，设定为ObTableEntityType::DYNAMIC
-    protected ObTableConsistencyLevel consistencyLevel        = ObTableConsistencyLevel.STRONG; // read consistency level. 读一致性，是否要强一致性等（必须读到刚写入的数据）. 目前只支持STRONG.
+    protected ObReadConsistency       consistencyLevel        = ObReadConsistency.STRONG;      // read consistency level. 读一致性
     protected ObTableOptionFlag       option_flag             = ObTableOptionFlag.DEFAULT;
     protected boolean                 returningAffectedEntity = false;
     protected boolean                 returningAffectedRows   = false;
+    protected OHOperationType         hbaseOpType             = OHOperationType.INVALID; // for table operations, this will be INVALID(0)
 
     /*
      * Get payload content size.
@@ -190,14 +191,14 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
     /*
      * Get consistency level.
      */
-    public ObTableConsistencyLevel getConsistencyLevel() {
+    public ObReadConsistency getConsistencyLevel() {
         return consistencyLevel;
     }
 
     /*
      * Set consistency level.
      */
-    public void setConsistencyLevel(ObTableConsistencyLevel consistencyLevel) {
+    public void setConsistencyLevel(ObReadConsistency consistencyLevel) {
         this.consistencyLevel = consistencyLevel;
     }
 
@@ -218,6 +219,14 @@ public abstract class ObTableAbstractOperationRequest extends AbstractPayload im
 
     public void setNeedTabletId(boolean needTabletId) {
         option_flag.setNeedTabletId(needTabletId);
+    }
+
+    public void setHbaseOpType(OHOperationType hbaseOpType) {
+        this.hbaseOpType = hbaseOpType;
+    }
+
+    public OHOperationType getHbaseOpType() {
+        return hbaseOpType;
     }
 
     public boolean getNeedTabletId() {

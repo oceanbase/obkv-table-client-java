@@ -41,12 +41,12 @@ import static com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableOper
 import static com.alipay.oceanbase.rpc.table.ObKVParamsBase.paramType.HBase;
 
 public class ObTableLsOperationRequestTest {
-    private int lsOpReqSize = 10;
-    private int tabletOpSize = 10;
-    private int singleOpSize = 10;
-    private int defaultIterSize = 10;
+    private int                 lsOpReqSize     = 10;
+    private int                 tabletOpSize    = 10;
+    private int                 singleOpSize    = 10;
+    private int                 defaultIterSize = 10;
 
-    private static final Random random = new Random();
+    private static final Random random          = new Random();
 
     @Test
     public void testLsReqEncodePerformance() {
@@ -295,25 +295,27 @@ public class ObTableLsOperationRequestTest {
         perfComparator.printResult("testDefaultKVParamsEncode");
     }
 
-
     private static void assertEncodeByteArray(byte[] bytes1, byte[] bytes2) {
-        if (bytes1 == bytes2) return;
-        if (bytes1 == null || bytes2 == null) Assert.fail();
-        if (bytes1.length != bytes2.length) Assert.fail();
+        if (bytes1 == bytes2)
+            return;
+        if (bytes1 == null || bytes2 == null)
+            Assert.fail();
+        if (bytes1.length != bytes2.length)
+            Assert.fail();
 
         for (int i = 0; i < bytes1.length; i++) {
             if (bytes1[i] != bytes2[i]) {
-                System.err.println("byte not equal in index:"+ i + " ,bytes1:" + bytes1[i] + " ,bytes2:" + bytes2[i]);
+                System.err.println("byte not equal in index:" + i + " ,bytes1:" + bytes1[i]
+                                   + " ,bytes2:" + bytes2[i]);
                 Assert.assertEquals(bytes1, bytes2);
             }
         }
     }
 
-
     private ObTableLSOpRequest buildLsReq() {
         ObTableLSOpRequest lsOpReq = new ObTableLSOpRequest();
         lsOpReq.setCredential(new ObBytesString(generateRandomString(100).getBytes()));
-        lsOpReq.setConsistencyLevel(ObTableConsistencyLevel.EVENTUAL);
+        lsOpReq.setConsistencyLevel(ObReadConsistency.WEAK);
         buildLsOperation();
         lsOpReq.setLsOperation(buildLsOperation());
         lsOpReq.setTableId(50001);
@@ -476,6 +478,7 @@ public class ObTableLsOperationRequestTest {
         return range;
     }
 }
+
 class PerformanceComparator {
     PerformanceCalculator calc1 = new PerformanceCalculator();
     PerformanceCalculator calc2 = new PerformanceCalculator();
@@ -508,7 +511,8 @@ class PerformanceComparator {
         if (!calc2.isValid() && !calc1.isValid()) {
             System.out.println("not valid results");
         }
-        System.out.println("===========================================================================");
+        System.out
+            .println("===========================================================================");
     }
 }
 
@@ -546,7 +550,7 @@ class PerformanceCalculator {
     }
 
     public void printResults(String msg) {
-        System.out.println(msg +  ": \n\taverage execution time: " + getAverageTime() + " ns");
+        System.out.println(msg + ": \n\taverage execution time: " + getAverageTime() + " ns");
     }
 
     public void clear() {
