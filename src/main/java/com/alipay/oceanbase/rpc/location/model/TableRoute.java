@@ -107,10 +107,15 @@ public class TableRoute {
         if (routeRefresher != null) {
             routeRefresher.close();
         }
-        tableRoster.closeRoster();
-        ObTable odpTable = getOdpTable();
-        if (odpTable != null) {
-            odpTable.close();
+        if (tableClient.isOdpMode()) {
+            ObTable odpTable = getOdpTable();
+            if (odpTable != null) {
+                odpTable.close();
+            }
+        } else {
+            if (tableRoster != null) {
+                tableRoster.closeRoster();
+            }
         }
     }
 
