@@ -406,11 +406,20 @@ public class ObTableConnection {
         return stringBuilder.toString();
     }
 
+    // for server version, only ObServer 441 and above can support distributed execution
+    // for ODP version, only ODP 436 and above can support distributed execution
+    // so here we have to check both ObServer and ODP version to ensure the capability of distributed execution is supported or not
     private boolean isAllowDistributeCapability() {
         if (isOdpMode) {
-            return ObGlobal.OB_PROXY_VERSION >= ObGlobal.OB_PROXY_VERSION_4_3_6_0;
-        } else {
+            if (ObGlobal.OB_VERSION >= ObGlobal.OB_VERSION_4_4_1_0) {
+                return ObGlobal.OB_PROXY_VERSION >= ObGlobal.OB_PROXY_VERSION_4_3_6_0;
+            } else {
+                return false;
+            }
+        } else if (ObGlobal.OB_VERSION >= ObGlobal.OB_VERSION_4_4_1_0) {
             return true;
+        } else {
+            return false;
         }
     }
 }
