@@ -46,6 +46,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
     private ObTableQueryAsyncRequest asyncRequest        = new ObTableQueryAsyncRequest();
     private ObTableConnection        prevConnection      = null;
     private boolean                  allowDistributeScan = true;                                              // false when partition scan
+    private boolean                  hasDoneRpc          = false;                                             // this flag is for obkv-hbase scan
 
     @Override
     public void init() throws Exception {
@@ -74,6 +75,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             while (it.hasNext()) {
                 Map.Entry<Long, ObPair<Long, ObTableParam>> firstEntry = it.next();
                 try {
+                    hasDoneRpc = true;
                     // try access new partition, async will not remove useless expectant
                     referToNewPartition(firstEntry.getValue());
                     break;
@@ -183,6 +185,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         Iterator<Map.Entry<Long, ObPair<Long, ObTableParam>>> it = expectant.entrySet().iterator();
         Map.Entry<Long, ObPair<Long, ObTableParam>> lastEntry = it.next();
         try {
+            hasDoneRpc = true;
             // try access new partition, async will not remove useless expectant
             referToLastStreamResult(lastEntry.getValue());
         } catch (Exception e) {
@@ -223,6 +226,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         int retryTimes = 0;
         long startExecute = System.currentTimeMillis();
         while (it.hasNext()) {
+            hasDoneRpc = true;
             Map.Entry<Long, ObPair<Long, ObTableParam>> entry = it.next();
             try {
                 // try access new partition, async will not remove useless expectant
@@ -316,6 +320,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         checkStatus();
         lock.lock();
         try {
+            hasDoneRpc = false;
             // firstly, refer to the cache
             if (!cacheRows.isEmpty()) {
                 nextRow();
@@ -452,5 +457,9 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
 
     public void setAllowDistributeScan(boolean allowDistributeScan) {
         this.allowDistributeScan = allowDistributeScan;
+    }
+
+    public boolean hasDoneRpc() {
+        return hasDoneRpc;
     }
 }
