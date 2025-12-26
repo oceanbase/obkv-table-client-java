@@ -106,6 +106,12 @@ public class ObTableSingleOpQuery extends ObTableQuery {
                 idx += len;
             }
         }
+
+        // 5. encode flag
+        len = Serialization.getNeedBytes(flag.getValue());
+        System.arraycopy(Serialization.encodeVi64(flag.getValue()), 0, bytes, idx, len);
+        idx += len;
+
         return bytes;
     }
 
@@ -151,6 +157,9 @@ public class ObTableSingleOpQuery extends ObTableQuery {
                 buf.writeBytes(HTABLE_DUMMY_BYTES);
             }
         }
+
+        // encode flag
+        Serialization.encodeVi64(buf, flag.getValue());
     }
 
     /*
@@ -233,6 +242,10 @@ public class ObTableSingleOpQuery extends ObTableQuery {
                     payloadContentSize += HTABLE_DUMMY_BYTES.length;
                 }
             }
+
+            // calculate flag size
+            payloadContentSize += Serialization.getNeedBytes(flag.getValue());
+
             this.payLoadContentSize = payloadContentSize;
         }
 
