@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.bolt.protocol;
 
+import com.alipay.oceanbase.rpc.bolt.transport.ObTableTimeTrace;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import com.alipay.oceanbase.rpc.util.TableClientLoggerFactory;
 import com.alipay.remoting.CommandEncoder;
@@ -48,6 +49,12 @@ public class ObTablePacketEncoder implements CommandEncoder {
                  * -----------------------------------
                  */
                 ObTablePacket cmd = (ObTablePacket) msg;
+                
+                // Record when EventLoop starts encoding (reflects queue wait time)
+                ObTableTimeTrace timeTrace = cmd.getTimeTrace();
+                if (timeTrace != null) {
+                    timeTrace.markNettyEncodeStart();
+                }
 
                 // 1. header
                 out.writeBytes(ObTableProtocol.MAGIC_HEADER_FLAG);
@@ -57,6 +64,11 @@ public class ObTablePacketEncoder implements CommandEncoder {
 
                 // 2. payload
                 out.writeBytes(cmd.getPacketContent());
+                
+                // Record when encoding is complete
+                if (timeTrace != null) {
+                    timeTrace.markNettyEncodeEnd();
+                }
 
             } else {
                 String warnMsg = "msg type [" + msg.getClass() + "] is not subclass of ObCommand";

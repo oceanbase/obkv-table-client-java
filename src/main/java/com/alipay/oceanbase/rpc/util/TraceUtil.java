@@ -67,4 +67,11 @@ public class TraceUtil {
     public static String formatTraceMessage(final ObPayload payload) {
         return String.format("[Y%X-%016X]", payload.getUniqueId(), payload.getSequence());
     }
+
+    /*
+     * Format trace id from payload.
+     */
+    public static String formatTraceId(final ObPayload payload) {
+        return String.format("Y%X-%016X", payload.getUniqueId(), payload.getSequence());
+    }
 }

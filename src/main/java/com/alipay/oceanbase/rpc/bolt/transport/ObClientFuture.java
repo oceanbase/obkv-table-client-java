@@ -43,12 +43,26 @@ public class ObClientFuture implements InvokeFuture {
     private static int      BY_BACKGROUND = 2;
 
     private AtomicInteger   releaseFlag   = new AtomicInteger(INIT);
+    
+    // 响应接收时间
+    private long            responseReceivedTime;
+    
+    // 时间追踪
+    private ObTableTimeTrace timeTrace;
 
     /*
      * Ob client future.
      */
     public ObClientFuture(int channelId) {
         this.channelId = channelId;
+    }
+    
+    /*
+     * Ob client future with time trace.
+     */
+    public ObClientFuture(int channelId, ObTableTimeTrace timeTrace) {
+        this.channelId = channelId;
+        this.timeTrace = timeTrace;
     }
 
     /*
@@ -87,6 +101,12 @@ public class ObClientFuture implements InvokeFuture {
      */
     @Override
     public void putResponse(RemotingCommand response) {
+        // 记录响应接收时间
+        this.responseReceivedTime = System.currentTimeMillis();
+        // 更新时间追踪
+        if (timeTrace != null) {
+            timeTrace.markResponseReceived();
+        }
         this.response = response;
         waiter.countDown();
         if (!releaseFlag.compareAndSet(INIT, BY_WORKER)) {
@@ -94,6 +114,27 @@ public class ObClientFuture implements InvokeFuture {
                 ((ObTablePacket) response).releaseByteBuf();
             }
         }
+    }
+
+    /*
+     * Get response received time.
+     */
+    public long getResponseReceivedTime() {
+        return responseReceivedTime;
+    }
+
+    /*
+     * Get time trace.
+     */
+    public ObTableTimeTrace getTimeTrace() {
+        return timeTrace;
+    }
+
+    /*
+     * Set time trace.
+     */
+    public void setTimeTrace(ObTableTimeTrace timeTrace) {
+        this.timeTrace = timeTrace;
     }
 
     /*

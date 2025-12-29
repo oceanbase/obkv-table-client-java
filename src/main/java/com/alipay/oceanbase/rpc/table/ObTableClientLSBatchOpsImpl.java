@@ -375,6 +375,9 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
     public List<Object> executeWithResult() throws Exception {
         List<Object> results = new ArrayList<Object>(batchOperation.size());
         ObTableSingleOpResult[] singleResults = executeInternal();
+        if (singleResults.length == 1 && singleResults[0] == null) { // get empty result
+            return results;
+        }
         for (int i = 0; i < singleResults.length; i++) {
             ObTableSingleOpResult result = singleResults[i];
             // Sometimes the server does not set the operation type，so we use request operation type

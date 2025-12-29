@@ -43,6 +43,8 @@ public abstract class AbstractObTable extends AbstractTable {
 
     protected long maxConnExpiredTime        = MAX_CONN_EXPIRED_TIME.getDefaultLong();
 
+    protected boolean timeTraceEnabled       = RPC_TIME_TRACE_ENABLED.getDefaultBoolean();
+
     /*
      * Get ob table connect try times.
      */
@@ -167,5 +169,19 @@ public abstract class AbstractObTable extends AbstractTable {
      */
     public long getConnMaxExpiredTime() {
         return maxConnExpiredTime;
+    }
+
+    /*
+     * Check if time trace is enabled.
+     */
+    public boolean isTimeTraceEnabled() {
+        return timeTraceEnabled;
+    }
+
+    /*
+     * Set time trace enabled.
+     */
+    public void setTimeTraceEnabled(boolean timeTraceEnabled) {
+        this.timeTraceEnabled = timeTraceEnabled;
     }
 }

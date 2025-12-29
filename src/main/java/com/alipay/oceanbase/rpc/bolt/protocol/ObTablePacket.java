@@ -17,6 +17,7 @@
 
 package com.alipay.oceanbase.rpc.bolt.protocol;
 
+import com.alipay.oceanbase.rpc.bolt.transport.ObTableTimeTrace;
 import com.alipay.oceanbase.rpc.protocol.packet.ObRpcPacketHeader;
 import com.alipay.remoting.CommandCode;
 import com.alipay.remoting.InvokeContext;
@@ -43,6 +44,9 @@ public class ObTablePacket implements RemotingCommand {
     private int                 transportCode;
     private String              message;
     private Throwable           cause;
+    
+    // 时间追踪
+    private ObTableTimeTrace    timeTrace;
 
     /**
      * Decode packet header.
@@ -203,6 +207,20 @@ public class ObTablePacket implements RemotingCommand {
      */
     public void setCause(Throwable cause) {
         this.cause = cause;
+    }
+
+    /*
+     * Get time trace.
+     */
+    public ObTableTimeTrace getTimeTrace() {
+        return timeTrace;
+    }
+
+    /*
+     * Set time trace.
+     */
+    public void setTimeTrace(ObTableTimeTrace timeTrace) {
+        this.timeTrace = timeTrace;
     }
 
     // TODO useless for now

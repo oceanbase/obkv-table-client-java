@@ -96,6 +96,10 @@ public class ObTableConnection {
     }
 
     private boolean connect() throws Exception {
+        return connect(obTable.getObTableConnectTimeout());
+    }
+
+    private boolean connect(int connectTimeoutMs) throws Exception {
         if (checkAvailable()) { // double check status available
             return false;
         }
@@ -106,7 +110,7 @@ public class ObTableConnection {
         for (; tries < maxTryTimes; tries++) {
             try {
                 connection = obTable.getConnectionFactory().createConnection(obTable.getIp(),
-                    obTable.getPort(), obTable.getObTableConnectTimeout());
+                    obTable.getPort(), connectTimeoutMs);
                 break;
             } catch (Exception e) {
                 cause = e;
@@ -243,20 +247,20 @@ public class ObTableConnection {
         if (connection.getChannel() == null || !connection.getChannel().isActive()) {
             reconnect("Check connection failed for address: " + connection.getUrl());
         }
-        if (!connection.getChannel().isWritable()) {
-            LOGGER.warn("The connection might be write overflow : " + connection.getUrl());
-            // Wait some interval for the case when a big package is blocking the buffer but server is ok.
-            // Don't bother to call flush() here as we invoke writeAndFlush() when send request.
-            Thread.sleep(obTable.getNettyBlockingWaitInterval());
-            if (!connection.getChannel().isWritable()) {
-                throw new ObTableConnectionUnWritableException(
-                    "Check connection failed for address: " + connection.getUrl()
-                            + ", maybe write overflow!");
-            }
-        }
     }
 
     public void reConnectAndLogin(String msg) throws ObTableException {
+        reConnectAndLogin(msg, obTable.getObTableConnectTimeout());
+    }
+
+    /**
+     * Reconnect and login with a specified connect timeout.
+     * This is useful for background tasks that need a longer timeout to ensure connection success.
+     *
+     * @param msg the reconnect reason
+     * @param connectTimeoutMs the connection timeout in milliseconds
+     */
+    public void reConnectAndLogin(String msg, int connectTimeoutMs) throws ObTableException {
         try {
             // 1. check the connection is available, force to close it
             if (checkAvailable()) {
@@ -264,8 +268,8 @@ public class ObTableConnection {
                             + connection.getUrl());
                 close();
             }
-            // 2. reconnect
-            reconnect(msg);
+            // 2. reconnect with specified timeout
+            reconnect(msg, connectTimeoutMs);
         } catch (ConnectException ex) {
             // cannot connect to ob server, need refresh table location
             throw new ObTableServerConnectException(ex);
@@ -286,9 +290,22 @@ public class ObTableConnection {
      *
      */
     private void reconnect(String msg) throws Exception {
+        reconnect(msg, obTable.getObTableConnectTimeout());
+    }
+
+    /**
+     * Reconnect current connection and login with specified timeout
+     *
+     * @param msg the reconnect reason
+     * @param connectTimeoutMs the connection timeout in milliseconds
+     * @exception Exception if connect successfully or connection already reconnected by others
+     *                      throw exception if connect failed
+     *
+     */
+    private void reconnect(String msg, int connectTimeoutMs) throws Exception {
         if (isReConnecting.compareAndSet(false, true)) {
             try {
-                if (connect()) {
+                if (connect(connectTimeoutMs)) {
                     LOGGER.info("reconnect success. reconnect reason: [{}]", msg);
                 } else {
                     LOGGER.info(
