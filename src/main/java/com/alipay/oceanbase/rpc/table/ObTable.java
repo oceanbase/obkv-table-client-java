@@ -711,26 +711,55 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         return connectionPool.getConnectionNum();
     }
 
-    /*
-     * Get connection.
+    /**
+     * Get a connection from the pool.
+     * <p>
+     * This method will:
+     * 1. Skip connections with null credential
+     * 2. Skip connections that are not writable (try to find a writable one)
+     * 3. If all connections are not writable, return the last one anyway
+     *    (backoff will be handled in invokeSync before sending)
+     *
+     * @return an available connection
+     * @throws Exception if no connection is available
      */
     public ObTableConnection getConnection() throws Exception {
         ObTableConnection conn = connectionPool.getConnection();
-        int count = 0;
+        int credentialRetryCount = 0;
+        int writableRetryCount = 0;
+        
+        // Step 1: Skip connections with null credential
         while (conn != null 
-                && (conn.getConnection() != null
-                    && (conn.getCredential() == null || conn.getCredential().length() == 0)
-                    && count < obTableConnectionPoolSize)) {
+                && conn.getConnection() != null
+                && (conn.getCredential() == null || conn.getCredential().length() == 0)
+                && credentialRetryCount < obTableConnectionPoolSize) {
             conn = connectionPool.getConnection();
-            count++;
+            credentialRetryCount++;
         }
-        if (count == obTableConnectionPoolSize) {
+        
+        if (credentialRetryCount >= obTableConnectionPoolSize) {
             throw new ObTableException("all connection's credential is null");
         }
-        // conn is null, maybe all connection has expired and reconnect fail
+        
+        // conn is null, maybe all connections have expired and reconnect failed
         if (conn == null) {
             throw new ObTableServerConnectException("connection is null");
         }
+        
+        // Step 2: Try to find a writable connection
+        // If current connection is not writable, try to get another one
+        while (conn != null 
+                && conn.getConnection() != null 
+                && conn.getConnection().getChannel() != null 
+                && !conn.getConnection().getChannel().isWritable()
+                && writableRetryCount < obTableConnectionPoolSize) {
+            conn = connectionPool.getConnection();
+            writableRetryCount++;
+        }
+        
+        // Note: Even if all connections are not writable (writableRetryCount == poolSize),
+        // we still return the connection. The invokeSync will handle backoff before sending.
+        
         return conn;
     }
 
@@ -972,21 +1001,23 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                 connections[idx].setExpired(true);
             }
 
-            // Sleep for a predefined timeout period before attempting reconnection
+            // Sleep for 1.5x the user-configured RPC timeout before attempting reconnection
             try {
-                Thread.sleep(RPC_EXECUTE_TIMEOUT.getDefaultInt());
+                Thread.sleep((long) (obTable.getObTableExecuteTimeout() * 1.5));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
             
-            // Attempt to reconnect the marked connections
+            // Attempt to reconnect the marked connections with a dedicated timeout (10 seconds)
+            // to ensure background reconnection has enough time to complete
+            final int BACKGROUND_RECONNECT_TIMEOUT_MS = 10000;
             for (int i = 0; i < needReconnectCount; i++) {
                 int idx = expiredConnIds.get(i);
                 try {
                     if (i == 0) {
                         connections[idx].enableLoginWithConfigs();
                     }
-                    connections[idx].reConnectAndLogin("expired");
+                    connections[idx].reConnectAndLogin("expired", BACKGROUND_RECONNECT_TIMEOUT_MS);
                 } catch (Exception e) {
                     log.warn("ObTableConnectionPool::checkAndReconnect reconnect fail {}:{}. {}", obTable.getIp(), obTable.getPort(), e.getMessage());
                 } finally {

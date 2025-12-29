@@ -37,6 +37,9 @@ import static com.alipay.oceanbase.rpc.protocol.packet.ObCompressType.NONE_COMPR
 public class ObTableRemoting extends BaseRemoting {
 
     private static final Logger logger = TableClientLoggerFactory.getLogger(ObTableRemoting.class);
+    
+    // 使用 ThreadLocal 传递 timeTrace 给 createInvokeFuture
+    private static final ThreadLocal<ObTableTimeTrace> currentTimeTrace = new ThreadLocal<>();
 
     /*
      * Ob table remoting.
@@ -51,7 +54,9 @@ public class ObTableRemoting extends BaseRemoting {
     public ObPayload invokeSync(final ObTableConnection conn, final ObPayload request,
                                 final int timeoutMillis) throws RemotingException,
                                                         InterruptedException {
-
+        // Create time trace for debugging timeout issues
+        ObTableTimeTrace timeTrace = new ObTableTimeTrace();
+        
         request.setSequence(conn.getNextSequence());
         request.setUniqueId(conn.getUniqueId());
 
@@ -71,21 +76,48 @@ public class ObTableRemoting extends BaseRemoting {
             ((AbstractPayload) request).setTenantId(conn.getTenantId());
         }
 
+        // Serialize request (done in createRequestCommand)
         ObTablePacket obRequest = this.getCommandFactory().createRequestCommand(request);
+        timeTrace.markSerializeEnd();
+        
+        // Set time trace info (use lazy formatting to avoid String.format in hot path)
+        timeTrace.setChannelId(obRequest.getId());
+        timeTrace.setTraceIdComponents(request.getUniqueId(), request.getSequence());
+        if (obRequest.getPacketContent() != null) {
+            timeTrace.setPayloadSize(obRequest.getPacketContent().length);
+        }
+        obRequest.setTimeTrace(timeTrace);
 
-        ObTablePacket response = (ObTablePacket) super.invokeSync(conn.getConnection(), obRequest,
-            timeoutMillis);
+        // Wait for channel to become writable before sending (with backoff)
+        waitForChannelWritable(conn, timeoutMillis, timeTrace);
+        
+        // Mark time when submitting to Netty
+        timeTrace.markWriteToNetty();
+        
+        // Set ThreadLocal so that createInvokeFuture can access timeTrace
+        currentTimeTrace.set(timeTrace);
+        ObTablePacket response;
+        try {
+            response = (ObTablePacket) super.invokeSync(conn.getConnection(), obRequest,
+                timeoutMillis);
+        } finally {
+            currentTimeTrace.remove();
+        }
 
         if (response == null) {
-            String errMessage = TraceUtil.formatTraceMessage(conn, request, "get null response");
-            logger.warn(errMessage);
+            // Timeout - generate time trace report for debugging
+            timeTrace.markEnd();
+            String errMessage = TraceUtil.formatTraceMessage(conn, request, "get null response")
+                + timeTrace.generateReport();
             ExceptionUtil.throwObTableTransportException(errMessage,
                 TransportCodes.BOLT_RESPONSE_NULL);
             return null;
         } else if (!response.isSuccess()) {
+            // Transport error - generate time trace report for debugging
+            timeTrace.markEnd();
             String errMessage = TraceUtil.formatTraceMessage(conn, request,
-                "get an error response: " + response.getMessage() + ", transportCode: " + response.getTransportCode());
-            logger.warn(errMessage);
+                "get an error response: " + response.getMessage() + ", transportCode: " + response.getTransportCode())
+                + timeTrace.generateReport();
             response.releaseByteBuf();
             ExceptionUtil.throwObTableTransportException(errMessage, response.getTransportCode());
             return null;
@@ -178,16 +210,103 @@ public class ObTableRemoting extends BaseRemoting {
         }
     }
 
+    /**
+     * Wait for channel to become writable with exponential backoff.
+     * First wait uses NETTY_BLOCKING_WAIT_INTERVAL, then exponential backoff.
+     * If channel is not writable after timeout, throw -20002 timeout exception.
+     * 
+     * @param conn the connection
+     * @param timeoutMillis the timeout in milliseconds
+     * @param timeTrace the time trace for logging
+     */
+    private void waitForChannelWritable(ObTableConnection conn, int timeoutMillis, 
+                                        ObTableTimeTrace timeTrace) throws RemotingException {
+        if (conn.getConnection() == null || conn.getConnection().getChannel() == null) {
+            return; // Will be handled later
+        }
+        
+        if (conn.getConnection().getChannel().isWritable()) {
+            return; // Channel is writable, proceed
+        }
+        
+        // Channel is not writable, start backoff
+        timeTrace.markWaitWritableStart();
+        long startTime = System.currentTimeMillis();
+        long deadline = startTime + timeoutMillis;
+        
+        // First wait uses NETTY_BLOCKING_WAIT_INTERVAL (in ms), then exponential backoff
+        // e.g., if interval=1ms: 1ms -> 2ms -> 4ms -> 8ms -> ... -> maxSleepMs
+        int nettyBlockingWaitInterval = conn.getObTable().getNettyBlockingWaitInterval();
+        long sleepMs = Math.max(nettyBlockingWaitInterval, 1); // At least 1ms
+        final long maxSleepMs = 2000; // Max backoff: 2000ms
+        
+        logger.info("Channel {} is not writable, waiting with backoff. " +
+            "initialInterval={}ms, timeout={}ms", 
+            conn.getConnection().getUrl(), sleepMs, timeoutMillis);
+        
+        while (!conn.getConnection().getChannel().isWritable()) {
+            long now = System.currentTimeMillis();
+            if (now >= deadline) {
+                // Timeout - throw -20002
+                timeTrace.markEnd();
+                String errMessage = String.format(
+                    "Channel %s is not writable after waiting %dms, timeout. " +
+                    "This may be caused by slow network or large packets blocking the send buffer.%s",
+                    conn.getConnection().getUrl(), 
+                    now - startTime,
+                    timeTrace.generateReport());
+                logger.warn(errMessage);
+                ExceptionUtil.throwObTableTransportException(errMessage, TransportCodes.BOLT_TIMEOUT);
+            }
+            
+            // Sleep with backoff
+            long remainingTime = deadline - now;
+            long actualSleep = Math.min(sleepMs, remainingTime);
+            if (actualSleep > 0) {
+                try {
+                    Thread.sleep(actualSleep);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RemotingException("Interrupted while waiting for channel to become writable");
+                }
+            }
+            
+            // Exponential backoff based on initial interval
+            // e.g., 1 -> 2 -> 4 -> 8 -> 16 -> ... -> 2000 (max)
+            sleepMs = Math.min(sleepMs * 2, maxSleepMs);
+        }
+        
+        // Channel became writable
+        timeTrace.markWaitWritableEnd();
+        long waitedMs = System.currentTimeMillis() - startTime;
+        if (waitedMs > 100) {
+            logger.info("Channel {} became writable after waiting {}ms", 
+                conn.getConnection().getUrl(), waitedMs);
+        }
+    }
+
     @Override
     protected InvokeFuture createInvokeFuture(RemotingCommand request, InvokeContext invokeContext) {
-        return new ObClientFuture(request.getId());
+        ObClientFuture future = new ObClientFuture(request.getId());
+        // Get timeTrace from ThreadLocal and set to future for response time tracking
+        ObTableTimeTrace timeTrace = currentTimeTrace.get();
+        if (timeTrace != null) {
+            future.setTimeTrace(timeTrace);
+        }
+        return future;
     }
 
     @Override
     protected InvokeFuture createInvokeFuture(Connection conn, RemotingCommand request,
                                               InvokeContext invokeContext,
                                               InvokeCallback invokeCallback) {
-        return new ObClientFuture(request.getId());
+        ObClientFuture future = new ObClientFuture(request.getId());
+        // Get timeTrace from ThreadLocal and set to future for response time tracking
+        ObTableTimeTrace timeTrace = currentTimeTrace.get();
+        if (timeTrace != null) {
+            future.setTimeTrace(timeTrace);
+        }
+        return future;
     }
 
     // schema changed
