@@ -54,8 +54,9 @@ public class ObTableRemoting extends BaseRemoting {
     public ObPayload invokeSync(final ObTableConnection conn, final ObPayload request,
                                 final int timeoutMillis) throws RemotingException,
                                                         InterruptedException {
-        // Create time trace for debugging timeout issues
-        ObTableTimeTrace timeTrace = new ObTableTimeTrace();
+        // Create time trace for debugging timeout issues (if enabled)
+        final boolean traceEnabled = conn.getObTable().isTimeTraceEnabled();
+        ObTableTimeTrace timeTrace = traceEnabled ? new ObTableTimeTrace() : null;
         
         request.setSequence(conn.getNextSequence());
         request.setUniqueId(conn.getUniqueId());
@@ -78,13 +79,14 @@ public class ObTableRemoting extends BaseRemoting {
 
         // Serialize request (done in createRequestCommand)
         ObTablePacket obRequest = this.getCommandFactory().createRequestCommand(request);
-        timeTrace.markSerializeEnd();
-        
-        // Set time trace info (use lazy formatting to avoid String.format in hot path)
-        timeTrace.setChannelId(obRequest.getId());
-        timeTrace.setTraceIdComponents(request.getUniqueId(), request.getSequence());
-        if (obRequest.getPacketContent() != null) {
-            timeTrace.setPayloadSize(obRequest.getPacketContent().length);
+        if (timeTrace != null) {
+            timeTrace.markSerializeEnd();
+            // Set time trace info (use lazy formatting to avoid String.format in hot path)
+            timeTrace.setChannelId(obRequest.getId());
+            timeTrace.setTraceIdComponents(request.getUniqueId(), request.getSequence());
+            if (obRequest.getPacketContent() != null) {
+                timeTrace.setPayloadSize(obRequest.getPacketContent().length);
+            }
         }
         obRequest.setTimeTrace(timeTrace);
 
@@ -92,32 +94,42 @@ public class ObTableRemoting extends BaseRemoting {
         waitForChannelWritable(conn, timeoutMillis, timeTrace);
         
         // Mark time when submitting to Netty
-        timeTrace.markWriteToNetty();
+        if (timeTrace != null) {
+            timeTrace.markWriteToNetty();
+        }
         
-        // Set ThreadLocal so that createInvokeFuture can access timeTrace
-        currentTimeTrace.set(timeTrace);
+        // Set ThreadLocal so that createInvokeFuture can access timeTrace (only if enabled)
+        if (timeTrace != null) {
+            currentTimeTrace.set(timeTrace);
+        }
         ObTablePacket response;
         try {
             response = (ObTablePacket) super.invokeSync(conn.getConnection(), obRequest,
                 timeoutMillis);
         } finally {
-            currentTimeTrace.remove();
+            if (timeTrace != null) {
+                currentTimeTrace.remove();
+            }
         }
 
         if (response == null) {
             // Timeout - generate time trace report for debugging
-            timeTrace.markEnd();
-            String errMessage = TraceUtil.formatTraceMessage(conn, request, "get null response")
-                + timeTrace.generateReport();
+            String errMessage = TraceUtil.formatTraceMessage(conn, request, "get null response");
+            if (timeTrace != null) {
+                timeTrace.markEnd();
+                errMessage += timeTrace.generateReport();
+            }
             ExceptionUtil.throwObTableTransportException(errMessage,
                 TransportCodes.BOLT_RESPONSE_NULL);
             return null;
         } else if (!response.isSuccess()) {
             // Transport error - generate time trace report for debugging
-            timeTrace.markEnd();
             String errMessage = TraceUtil.formatTraceMessage(conn, request,
-                "get an error response: " + response.getMessage() + ", transportCode: " + response.getTransportCode())
-                + timeTrace.generateReport();
+                "get an error response: " + response.getMessage() + ", transportCode: " + response.getTransportCode());
+            if (timeTrace != null) {
+                timeTrace.markEnd();
+                errMessage += timeTrace.generateReport();
+            }
             response.releaseByteBuf();
             ExceptionUtil.throwObTableTransportException(errMessage, response.getTransportCode());
             return null;
@@ -230,7 +242,9 @@ public class ObTableRemoting extends BaseRemoting {
         }
         
         // Channel is not writable, start backoff
-        timeTrace.markWaitWritableStart();
+        if (timeTrace != null) {
+            timeTrace.markWaitWritableStart();
+        }
         long startTime = System.currentTimeMillis();
         long deadline = startTime + timeoutMillis;
         
@@ -248,13 +262,15 @@ public class ObTableRemoting extends BaseRemoting {
             long now = System.currentTimeMillis();
             if (now >= deadline) {
                 // Timeout - throw -20002
-                timeTrace.markEnd();
                 String errMessage = String.format(
                     "Channel %s is not writable after waiting %dms, timeout. " +
-                    "This may be caused by slow network or large packets blocking the send buffer.%s",
+                    "This may be caused by slow network or large packets blocking the send buffer.",
                     conn.getConnection().getUrl(), 
-                    now - startTime,
-                    timeTrace.generateReport());
+                    now - startTime);
+                if (timeTrace != null) {
+                    timeTrace.markEnd();
+                    errMessage += timeTrace.generateReport();
+                }
                 logger.warn(errMessage);
                 ExceptionUtil.throwObTableTransportException(errMessage, TransportCodes.BOLT_TIMEOUT);
             }
@@ -277,7 +293,9 @@ public class ObTableRemoting extends BaseRemoting {
         }
         
         // Channel became writable
-        timeTrace.markWaitWritableEnd();
+        if (timeTrace != null) {
+            timeTrace.markWaitWritableEnd();
+        }
         long waitedMs = System.currentTimeMillis() - startTime;
         if (waitedMs > 100) {
             logger.info("Channel {} became writable after waiting {}ms", 

@@ -139,6 +139,9 @@ public enum Property {
     // [ObTable][OTHERS]
     SERVER_ENABLE_REROUTING("server.enable.rerouting", false, "开启server端的重定向回复功能"),
 
+    // [ObTable][DEBUG]
+    RPC_TIME_TRACE_ENABLED("rpc.time.trace.enabled", true, "启用RPC时间追踪，用于分析超时问题"),
+
     /*
      * other config
      */
