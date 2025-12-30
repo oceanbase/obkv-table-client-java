@@ -223,6 +223,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 obTableQuery.getSelectColumns(), obTableQuery.getScanOrder(),
                 obTableQuery.isHbaseQuery(), obTableQuery.gethTableFilter(),
                 obTableQuery.getObKVParams(), obTableQuery.getFilterString());
+            singleOpQuery.setFlag(obTableQuery.getFlag());
             singleOp.setQuery(singleOpQuery);
             singleOp.setSingleOpType(ObTableOperationType.SCAN);
         } else {
@@ -243,6 +244,7 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                 obTableQuery.getSelectColumns(), obTableQuery.getScanOrder(),
                 obTableQuery.isHbaseQuery(), obTableQuery.gethTableFilter(),
                 obTableQuery.getObKVParams(), obTableQuery.getFilterString());
+            singleOpQuery.setFlag(obTableQuery.getFlag());
             singleOp.setQuery(singleOpQuery);
             singleOp.setQuery(singleOpQuery);
             singleOp.setSingleOpType(ObTableOperationType.QUERY_AND_MUTATE);
@@ -859,14 +861,15 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
             long costMillis = System.currentTimeMillis() - startExecute;
             if (costMillis > runTimeMaxWait) {
                 errMsg = tableName + " failed to execute operation after retrying " + retryCount
-                        + " times and it has waited " +  costMillis + " ms"
-                        + " which exceeds runtime max wait timeout " + runTimeMaxWait
-                        + " ms. Last error Msg:" + "[errCode=" + errCode + "] " + errMsg;
+                         + " times and it has waited " + costMillis + " ms"
+                         + " which exceeds runtime max wait timeout " + runTimeMaxWait
+                         + " ms. Last error Msg:" + "[errCode=" + errCode + "] " + errMsg;
                 throw new ObTableUnexpectedException(errMsg);
             }
             boolean allPartitionsSuccess = true;
 
-            Iterator<Map.Entry<Long, TabletOperationsMap>> iterator = currentPartitions.entrySet().iterator();
+            Iterator<Map.Entry<Long, TabletOperationsMap>> iterator = currentPartitions.entrySet()
+                .iterator();
             while (iterator.hasNext()) {
                 Map.Entry<Long, TabletOperationsMap> currentEntry = iterator.next();
                 try {
@@ -876,7 +879,8 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
                         retryCount++;
                         errCode = ((ObTableNeedFetchMetaException) e).getErrorCode();
                         errMsg = e.getMessage();
-                        BatchIdxOperationPairList failedOperations = extractOperations(currentEntry, iterator); // reschedule failed and sequent operations
+                        BatchIdxOperationPairList failedOperations = extractOperations(
+                            currentEntry, iterator); // reschedule failed and sequent operations
                         currentPartitions = prepareOperations(failedOperations);
                         allPartitionsSuccess = false;
                         break;
