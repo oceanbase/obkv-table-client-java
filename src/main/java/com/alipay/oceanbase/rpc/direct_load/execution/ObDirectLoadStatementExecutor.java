@@ -196,7 +196,6 @@ public class ObDirectLoadStatementExecutor {
         try {
             if (NodeRole.P2P == nodeRole) {
                 compareAndSetState(NONE, LOADING, "resume in P2P mode");
-                startHeartBeat();
             } else {
                 nodeRole = NodeRole.WRITE_ONLY;
                 compareAndSetState(NONE, LOADING_ONLY, "resume");
@@ -208,6 +207,9 @@ public class ObDirectLoadStatementExecutor {
         tableId = executionId.getTableId();
         taskId = executionId.getTaskId();
         svrAddr = executionId.getSvrAddr();
+        if (NodeRole.P2P == nodeRole) {
+            startHeartBeat();
+        }
     }
 
     public void close() {
