@@ -88,12 +88,12 @@ public class ObDirectLoadStatement {
         obTablePool = new ObDirectLoadConnection.ObTablePool(connection, logger, queryTimeout);
         obTablePool.init();
         executor = new ObDirectLoadStatementExecutor(this, builder.isP2PMode);
-        if (builder.executionId != null) {
-            executor.resume(builder.executionId);
-        }
         startQueryTimeMillis = System.currentTimeMillis();
         isInited = true;
         logger.info("statement init successful, args:" + builder);
+        if (builder.executionId != null) {
+            executor.resume(builder.executionId);
+        }
     }
 
     public synchronized void close() {
