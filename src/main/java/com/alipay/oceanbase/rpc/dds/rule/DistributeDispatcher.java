@@ -128,7 +128,7 @@ public class DistributeDispatcher implements Lifecycle {
             DatabaseAndTable dt = new DatabaseAndTable();
             dt.setDatabaseShardValue(0);
             dt.setTableShardValue(0);
-            dt.setTableName(tableName);
+            dt.setTableName(tableName.toLowerCase());
             dt.setElasticIndexValue(-1);
             return dt;
         }
@@ -189,7 +189,7 @@ public class DistributeDispatcher implements Lifecycle {
             DatabaseAndTable dt = new DatabaseAndTable();
             dt.setDatabaseShardValue(0);
             dt.setTableShardValue(0);
-            dt.setTableName(tableName);
+            dt.setTableName(tableName.toLowerCase());
             dt.setElasticIndexValue(-1);
             databaseAndTables.add(dt);
             return databaseAndTables;
