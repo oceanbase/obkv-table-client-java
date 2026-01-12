@@ -58,7 +58,7 @@ import com.alipay.sofa.dds.config.group.AtomDataSourceWeight;
 public class DdsConfigUpdateHandler implements DynamicConfigHandler {
     
   private final AtomicReference<VersionedConfigSnapshot> currentConfig;
-  ObTableClient.RunningMode runningMode;
+  ObTableClient.RunningMode runningMode = ObTableClient.RunningMode.NORMAL;
   Properties properties;
   
   private final ReentrantReadWriteLock configLock = new ReentrantReadWriteLock();
@@ -77,7 +77,7 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
   
   public DdsConfigUpdateHandler(ObTableClient.RunningMode runningMode, Properties tableClientProperty,
       AtomicReference<VersionedConfigSnapshot> sharedConfig) {
-    this.runningMode = runningMode;
+    this.runningMode = runningMode != null ? runningMode : ObTableClient.RunningMode.NORMAL;
     this.properties = tableClientProperty;
     this.currentConfig = sharedConfig != null ? sharedConfig : new AtomicReference<>();
     

@@ -1674,7 +1674,8 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
                     serverAddressPriorityTimeout,//
                     serverAddressCachingTimeout, sysUA, obVersion);
                 if (tableEntry.isPartitionTable()) {
-                    switch (runningMode) {
+                    RunningMode mode = runningMode != null ? runningMode : RunningMode.NORMAL;
+                    switch (mode) {
                         case HBASE:
                             tableRowKeyElement.put(tableName, HBASE_ROW_KEY_ELEMENT);
                             tableEntry.setRowKeyElement(HBASE_ROW_KEY_ELEMENT);
@@ -3649,7 +3650,8 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
                         tableName);
                     odpTableEntry.setTableEntryKey(key);
                     if (odpTableEntry.isPartitionTable()) {
-                        switch (runningMode) {
+                        RunningMode mode = runningMode != null ? runningMode : RunningMode.NORMAL;
+                        switch (mode) {
                             case HBASE:
                                 tableRowKeyElement.put(tableName, HBASE_ROW_KEY_ELEMENT);
                                 odpTableEntry.setRowKeyElement(HBASE_ROW_KEY_ELEMENT);
@@ -4448,8 +4450,12 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
     /**
      * Set running mode.
      * @param runningMode mode, NORMAL: table client, HBASE: hbase client.
+     * @throws IllegalArgumentException if runningMode is null
      */
     public void setRunningMode(RunningMode runningMode) {
+        if (runningMode == null) {
+            throw new IllegalArgumentException("runningMode cannot be null");
+        }
         this.runningMode = runningMode;
     }
 

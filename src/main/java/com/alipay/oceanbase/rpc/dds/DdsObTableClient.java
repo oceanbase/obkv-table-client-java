@@ -105,7 +105,7 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
     private String                           appName;
     private String                           appDsName;
     private String                           version;
-    private ObTableClient.RunningMode        runningMode;
+    private ObTableClient.RunningMode        runningMode = ObTableClient.RunningMode.NORMAL;
     private long                             configFetchOnceTimeoutMillis = DDS_CONFIG_FATCH_TIMEOUT.getDefaultLong();
 
     private String                           testLoadSuffix;
