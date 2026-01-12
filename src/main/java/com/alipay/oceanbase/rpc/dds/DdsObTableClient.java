@@ -196,6 +196,68 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
     }
 
     /**
+     * Warm up all ObTableClient instances with table names
+     * This method will iterate through all ObTableClient instances and call warmUp
+     * to pre-load table entries for better performance.
+     * 
+     * @param tableNames array of table names to warm up
+     * @throws Exception if warmUp fails
+     */
+    public void warmUp(String[] tableNames) throws Exception {
+        if (tableNames == null || tableNames.length == 0) {
+            logger.warn("Table names array is null or empty, skip warmUp");
+            return;
+        }
+
+        checkStatus();
+
+        VersionedConfigSnapshot snapshot = currentConfigRef.get();
+        if (snapshot == null) {
+            throw new IllegalStateException("Configuration snapshot is not available");
+        }
+
+        // Get all ObTableClient instances from atom data sources (with deduplication)
+        Map<String, ObTableClient> atomDataSources = snapshot.getAtomDataSources();
+        if (atomDataSources == null || atomDataSources.isEmpty()) {
+            logger.warn("No atom data sources found, skip warmUp");
+            return;
+        }
+
+        Set<ObTableClient> allTableClients = new HashSet<>(atomDataSources.values());
+
+        if (allTableClients.isEmpty()) {
+            logger.warn("No ObTableClient instances found, skip warmUp");
+            return;
+        }
+
+        logger.info("Starting warmUp for {} table(s) on {} ObTableClient instance(s)", 
+            tableNames.length, allTableClients.size());
+
+        // Warm up each ObTableClient instance
+        int successCount = 0;
+        int failureCount = 0;
+        Exception lastException = null;
+        
+        for (ObTableClient tableClient : allTableClients) {
+            try {
+                tableClient.warmUp(tableNames);
+                successCount++;
+            } catch (Exception e) {
+                failureCount++;
+                lastException = e;
+                logger.warn("Failed to warmUp ObTableClient: {}", e.getMessage(), e);
+            }
+        }
+
+        logger.info("WarmUp completed: {} success, {} failure", successCount, failureCount);
+        
+        // If all warmUp operations failed, throw the last exception
+        if (successCount == 0 && lastException != null) {
+            throw new Exception("All warmUp operations failed", lastException);
+        }
+    }
+
+    /**
     *
     * @throws Exception
     */

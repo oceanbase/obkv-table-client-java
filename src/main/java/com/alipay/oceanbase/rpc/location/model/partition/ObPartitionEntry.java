@@ -94,8 +94,13 @@ public class ObPartitionEntry {
      * @param ldcLocation
      */
     public void prepareForWeakRead(ObServerLdcLocation ldcLocation) {
-        for (Map.Entry<Long, ObPartitionLocation> entry : partitionLocation.entrySet()) {
-            entry.getValue().prepareForWeakRead(ldcLocation);
+        if (partitionLocation != null) {
+            for (Map.Entry<Long, ObPartitionLocation> entry : partitionLocation.entrySet()) {
+                ObPartitionLocation location = entry.getValue();
+                if (location != null) {
+                    location.prepareForWeakRead(ldcLocation);
+                }
+            }
         }
     }
 
