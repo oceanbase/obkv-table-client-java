@@ -1248,6 +1248,44 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
         this.runningMode = runningMode;
     }
 
+    /**
+     * Get OB server version from any available underlying ObTableClient
+     * @return obVersion
+     */
+    public long getObVersion() {
+        VersionedConfigSnapshot snapshot = currentConfigRef.get();
+        if (snapshot == null) {
+            throw new IllegalStateException("Configuration snapshot is not available");
+        }
+        
+        // Try to get obVersion from groupDataSources first (prefer read-write client)
+        Map<Integer, ObTableClientGroup> groupDataSources = snapshot.getGroupDataSources();
+        if (groupDataSources != null && !groupDataSources.isEmpty()) {
+            for (ObTableClientGroup group : groupDataSources.values()) {
+                if (group != null) {
+                    // Select a read-write client (readOnly=false)
+                    ObTableClient client = group.select(false, 0);
+                    if (client != null) {
+                        return client.getObVersion();
+                    }
+                }
+            }
+        }
+        
+        // If no groupDataSources, try atomDataSources
+        Map<String, ObTableClient> atomDataSources = snapshot.getAtomDataSources();
+        if (atomDataSources != null && !atomDataSources.isEmpty()) {
+            for (ObTableClient client : atomDataSources.values()) {
+                if (client != null) {
+                    return client.getObVersion();
+                }
+            }
+        }
+        
+        // If no clients available, return 0 (will be handled by caller)
+        return 0;
+    }
+
     public Properties getTableClientProperty() {
         return tableClientProperty;
     }
@@ -1759,6 +1797,14 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
             super();
             this.ddsClient = ddsClient;
             this.tableName = tableName;
+        }
+
+        /**
+         * Override to handle DdsObTableClient
+         */
+        @Override
+        protected long getObVersionFromClient() {
+            return ddsClient.getObVersion();
         }
     }
 

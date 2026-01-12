@@ -184,9 +184,10 @@ public class BatchOperation {
     }
 
     /**
-     * Get obVersion from Table instance (ObTableClient or ObTable)
+     * Get obVersion from Table instance (ObTableClient or ObTable).
+     * Subclasses can override this method to handle other client types.
      */
-    private long getObVersionFromClient() {
+    protected long getObVersionFromClient() {
         if (client instanceof ObTableClient) {
             return ((ObTableClient) client).getObVersion();
         } else if (client instanceof ObTable) {
