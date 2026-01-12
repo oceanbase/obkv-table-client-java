@@ -1794,7 +1794,7 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
         private final String tableName;
 
         public DdsBatchOperation(DdsObTableClient ddsClient, String tableName) {
-            super();
+            super(null, tableName);
             this.ddsClient = ddsClient;
             this.tableName = tableName;
         }
