@@ -186,6 +186,9 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
             distributeDispatcher = new DistributeDispatcher(currentConfigRef::get);
             distributeDispatcher.init();
             
+            // Sync row key elements to all ObTableClient instances after initialization
+            syncRowKeyElementsToAllClients();
+            
             initialized = true;
         } catch (Exception t) {
             logger.error("DdsObTableClient init failed", t);
@@ -378,6 +381,63 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
         }
         Map<Integer, ObTableClientGroup> groupDataSources = snapshot.getGroupDataSources();
         return groupDataSources;
+    }
+
+    /**
+     * Sync row key elements from DdsObTableClient to all managed ObTableClient instances.
+     * This method collects all ObTableClient instances from atomDataSources.
+     * Note: groupDataSources contain references to the same ObTableClient instances from atomDataSources,
+     * so we only need to sync to atomDataSources.
+     * 
+     * This method applies all row key elements that were set via addRowKeyElement() before init().
+     */
+    private void syncRowKeyElementsToAllClients() {
+        if (tableRowKeyElement.isEmpty()) {
+            // No row key elements to sync
+            return;
+        }
+
+        VersionedConfigSnapshot snapshot = currentConfigRef.get();
+        if (snapshot == null) {
+            logger.warn("Configuration snapshot is not available, cannot sync row key elements");
+            return;
+        }
+
+        // Get all ObTableClient instances from atomDataSources
+        // Note: groupDataSources contain references to the same instances, so we only need atomDataSources
+        Map<String, ObTableClient> atomDataSources = snapshot.getAtomDataSources();
+        if (atomDataSources == null || atomDataSources.isEmpty()) {
+            logger.warn("No ObTableClient instances found to sync row key elements");
+            return;
+        }
+
+        // Sync each row key element to all ObTableClient instances
+        for (Map.Entry<String, String[]> entry : tableRowKeyElement.entrySet()) {
+            String tableName = entry.getKey();
+            String[] rowKeyColumns = entry.getValue();
+            
+            if (rowKeyColumns == null || rowKeyColumns.length == 0) {
+                continue;
+            }
+
+            for (ObTableClient tableClient : atomDataSources.values()) {
+                try {
+                    tableClient.addRowKeyElement(tableName, rowKeyColumns);
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Synced row key element for table {} to ObTableClient: {}", 
+                            tableName, Arrays.toString(rowKeyColumns));
+                    }
+                } catch (Exception e) {
+                    logger.warn("Failed to sync row key element for table {} to ObTableClient: {}", 
+                        tableName, e.getMessage());
+                }
+            }
+        }
+
+        if (logger.isInfoEnabled()) {
+            logger.info("Synced {} row key element(s) to {} ObTableClient instance(s)", 
+                tableRowKeyElement.size(), atomDataSources.size());
+        }
     }
 
 

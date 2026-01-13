@@ -1685,12 +1685,32 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
                             if (rowKeyElement != null) {
                                 tableEntry.setRowKeyElement(rowKeyElement);
                             } else {
-                                RUNTIME
-                                    .error("partition table must add row key element name for table: "
-                                           + tableName + " with table entry key: " + tableEntryKey);
-                                throw new ObTableEntryRefreshException(
-                                    "partition table must add row key element name for table: "
-                                            + tableName + " with table entry key: " + tableEntryKey);
+                                // Try to auto-detect row key element from partition columns
+                                ObPartitionInfo partitionInfo = tableEntry.getPartitionInfo();
+                                if (partitionInfo != null && partitionInfo.getPartColumns() != null 
+                                    && !partitionInfo.getPartColumns().isEmpty()) {
+                                    // Extract column names from partition columns
+                                    List<com.alipay.oceanbase.rpc.protocol.payload.impl.ObColumn> partColumns = 
+                                        partitionInfo.getPartColumns();
+                                    rowKeyElement = new LinkedHashMap<String, Integer>();
+                                    for (int i = 0; i < partColumns.size(); i++) {
+                                        rowKeyElement.put(partColumns.get(i).getColumnName(), i);
+                                    }
+                                    // Cache it for future use
+                                    tableRowKeyElement.put(tableName, rowKeyElement);
+                                    tableEntry.setRowKeyElement(rowKeyElement);
+                                    if (logger.isDebugEnabled()) {
+                                        logger.debug("Auto-detected row key element for table {} from partition columns: {}", 
+                                            tableName, rowKeyElement.keySet());
+                                    }
+                                } else {
+                                    RUNTIME
+                                        .error("partition table must add row key element name for table: "
+                                               + tableName + " with table entry key: " + tableEntryKey);
+                                    throw new ObTableEntryRefreshException(
+                                        "partition table must add row key element name for table: "
+                                                + tableName + " with table entry key: " + tableEntryKey);
+                                }
                             }
                     }
                     tableEntry.prepare();
