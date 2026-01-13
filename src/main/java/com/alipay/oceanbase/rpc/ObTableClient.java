@@ -340,7 +340,7 @@ public class ObTableClient extends AbstractObTableClient implements OperationExe
      */
     public void warmUp(String[] tableNames) throws Exception {
         for (String tableName : tableNames) {
-            getOrRefreshTableEntry(tableName, true, false);
+            getPartition(tableName, true);
         }
     }
 

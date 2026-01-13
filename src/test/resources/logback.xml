@@ -157,6 +157,7 @@
 
     <!-- 网络库日志级别配置，避免DEBUG级别日志输出 -->
     <logger name="com.alipay.remoting" level="INFO"/>
+    <logger name="com.taobao.remoting" level="INFO"/>
     <logger name="io.netty" level="INFO"/>
     <logger name="io.grpc.netty" level="INFO"/>
 
@@ -164,6 +165,7 @@
     <logger name="com.taobao.configserver" level="WARN"/>
     <logger name="com.alipay.drm" level="WARN"/>
     <logger name="com.alipay.sofa.config" level="WARN"/>
+    <logger name="com.alipay.data.conf" level="WARN"/>
 
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
