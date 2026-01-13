@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    OceanBase Table Client 默认日志配置
+    
+    此配置文件仅设置日志级别，不配置具体的 appender。
+    使用方可以在自己的 logback.xml 中覆盖这些配置，或者添加自己的 appender。
+    
+    注意：如果使用方已经配置了 logback.xml，此文件中的 logger 配置仍然会生效（logback 会合并多个配置文件）。
+-->
+<configuration>
+    <!-- 
+        业务代码日志级别配置
+        注意：这里不设置 additivity="false"，让日志输出到使用方配置的 root logger
+    -->
+    <logger name="com.alipay.oceanbase.rpc" level="INFO"/>
+    <logger name="OBKV-BOOT" level="INFO"/>
+    <logger name="OBKV-MONITOR" level="INFO"/>
+    <logger name="OBKV-RUNTIME" level="INFO"/>
+    <logger name="OBKV-DIRECT" level="INFO"/>
+
+    <!-- 网络库日志级别配置，避免DEBUG级别日志输出 -->
+    <logger name="com.alipay.remoting" level="INFO"/>
+    <logger name="io.netty" level="INFO"/>
+    <logger name="io.grpc.netty" level="INFO"/>
+
+    <!-- 配置注册中心日志级别配置，减少INFO级别日志输出 -->
+    <logger name="com.taobao.configserver" level="WARN"/>
+    <logger name="com.alipay.drm" level="WARN"/>
+    <logger name="com.alipay.sofa.config" level="WARN"/>
+
+    <!-- 
+        注意：这里不配置 root logger，让使用方自己配置。
+        如果使用方没有配置 logback.xml，logback 会使用默认配置（INFO 级别输出到控制台）。
+    -->
+</configuration>
