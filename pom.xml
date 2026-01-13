@@ -56,7 +56,7 @@
             <dependency>
                 <groupId>com.alipay.sofa.common</groupId>
                 <artifactId>sofa-common-tools</artifactId>
-                <version>2.1.1</version>
+                <version>1.3.12</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -81,7 +81,7 @@
             <groupId>com.alipay.sofa.common</groupId>
             <artifactId>sofa-common-tools</artifactId>
             <exclusions>
-                <!-- 排除 log4j 相关传递依赖 -->
+                <!-- 排除 log4j 相关传递依赖，避免版本冲突，由使用方提供 log4j 实现 -->
                 <exclusion>
                     <artifactId>log4j-slf4j-impl</artifactId>
                     <groupId>org.apache.logging.log4j</groupId>
@@ -422,10 +422,12 @@
                                         <excludes>
                                             <exclude>mysql:mysql-connector-java</exclude>
                                             <exclude>org.slf4j:slf4j-api</exclude>
-                                            <!-- 排除 log4j 相关依赖，使用项目中的版本 -->
+                                            <!-- 排除 log4j 相关依赖，避免版本冲突，由使用方提供 log4j 实现 -->
                                             <exclude>org.apache.logging.log4j:log4j-slf4j-impl</exclude>
                                             <exclude>org.apache.logging.log4j:log4j-core</exclude>
                                             <exclude>org.apache.logging.log4j:log4j-api</exclude>
+                                            <!-- 排除 sofa-common-tools，避免版本冲突，由使用方提供兼容版本 -->
+                                            <exclude>com.alipay.sofa.common:sofa-common-tools</exclude>
                                         </excludes>
                                     </artifactSet>
                                 </configuration>
@@ -433,10 +435,11 @@
                         </executions>
                         <configuration>
                             <relocations>
-                                <relocation>
+                                <!-- 不重定位 sofa-common-tools，避免版本冲突，由使用方提供兼容版本 -->
+                                <!-- <relocation>
                                     <pattern>com.alipay.sofa.common</pattern>
                                     <shadedPattern>com.oceanbase.shaded.com.alipay.sofa.common</shadedPattern>
-                                </relocation>
+                                </relocation> -->
                                 <relocation>
                                     <pattern>com.alipay.remoting</pattern>
                                     <shadedPattern>com.oceanbase.shaded.com.alipay.remoting</shadedPattern>
