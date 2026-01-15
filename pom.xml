@@ -192,23 +192,27 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>commons-lang</groupId>
             <artifactId>commons-lang</artifactId>
             <version>2.6</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>2.15.2</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -277,6 +281,7 @@
             <groupId>com.alipay.sofa</groupId>
             <artifactId>bolt</artifactId>
             <version>1.6.5</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Hessian 序列化 -->
@@ -284,6 +289,7 @@
             <groupId>com.alipay.sofa</groupId>
             <artifactId>hessian</artifactId>
             <version>3.3.13</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -369,18 +375,21 @@
             <groupId>com.alipay.antvip</groupId>
             <artifactId>antvip-common</artifactId>
             <version>1.5.0</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>com.alipay.antvip</groupId>
             <artifactId>antvip-client</artifactId>
             <version>1.5.0</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
             <version>1.2.68.noneautotype</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -596,7 +605,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.20</version>
                 <configuration>
-                    <argLine>${argLine} -server -Xms2048m -Xmx2048m -Xmn768m -Xss256k -XX:MaxDirectMemorySize=1024M</argLine>
+                    <argLine>${argLine} -server -Xms2048m -Xmx2048m -Xmn768m -Xss256m -XX:MaxDirectMemorySize=1024M</argLine>
                 </configuration>
             </plugin>
             <plugin>
@@ -773,10 +782,10 @@
                                     <pattern>com.alipay.sofa.common</pattern>
                                     <shadedPattern>com.shaded.alipay.sofa.common</shadedPattern>
                                 </relocation>
-                                <relocation>
+                                <!-- <relocation>
                                     <pattern>com.alipay.remoting</pattern>
                                     <shadedPattern>com.shaded.alipay.remoting</shadedPattern>
-                                </relocation>
+                                </relocation> -->
                             </relocations>
                         </configuration>
                     </plugin>
