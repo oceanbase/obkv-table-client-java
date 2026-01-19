@@ -74,7 +74,10 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
   
   private Supplier<Map<String, ExtendedDataSourceConfig>> extendedDataSourceSupplier = () -> Collections.emptyMap();
   private Supplier<AppRule> appRuleSupplier = () -> null;
-  
+
+  // Callback to notify DdsObTableClient when config is updated (e.g., for syncing row key elements)
+  private ConfigUpdateCallback configUpdateCallback;
+
   public DdsConfigUpdateHandler(ObTableClient.RunningMode runningMode, Properties tableClientProperty,
       AtomicReference<VersionedConfigSnapshot> sharedConfig) {
     this.runningMode = runningMode != null ? runningMode : ObTableClient.RunningMode.NORMAL;
@@ -97,7 +100,19 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
   public void setAppRuleSupplier(Supplier<AppRule> supplier) {
     this.appRuleSupplier = supplier != null ? supplier : () -> null;
   }
-  
+
+  /**
+   * Set a callback to be invoked before configuration update is applied.
+   * This is used to sync row key elements to new data sources BEFORE they become visible.
+   * IMPORTANT: The callback is executed INSIDE the write lock, BEFORE the new config is set.
+   * This ensures that all data sources are properly configured before being exposed to requests.
+   *
+   * @param callback the callback to run before config update
+   */
+  public void setConfigUpdateCallback(ConfigUpdateCallback callback) {
+    this.configUpdateCallback = callback;
+  }
+
   /**
    * Reset group cluster configuration.
    * NOTE: This method is called by DDS SDK in its background thread.
@@ -543,23 +558,43 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
 
   /**
    * Replace configuration atomically.
+   * IMPORTANT: Sync row key elements to new data sources BEFORE exposing the new config
+   * to avoid race conditions where requests might use unconfigured data sources.
    */
   private void replaceConfigAtomically(VersionedConfigSnapshot newConfig) {
       configLock.writeLock().lock();
       try {
           VersionedConfigSnapshot oldConfig = currentConfig.get();
+
+          // Sync row key elements to newly created data sources BEFORE exposing the config
+          // This ensures that when the new config is set, all data sources are properly configured
+          if (configUpdateCallback != null) {
+              try {
+                  // Pass the new config to the callback so it can sync to the new data sources
+                  // IMPORTANT: Callback is executed BEFORE setting the new config
+                  configUpdateCallback.onConfigUpdate(newConfig, oldConfig);
+                  ddsConfigLogger.info("DDS_CONFIG_CALLBACK_EXECUTED,status=success");
+              } catch (Exception e) {
+                  ddsConfigLogger.error("DDS_CONFIG_CALLBACK_FAILED,errorMessage={}", e.getMessage(), e);
+                  logger.error("Failed to execute config update callback", e);
+                  // Don't proceed with config update if callback fails
+                  return;
+              }
+          }
+
+          // Now atomically set the new config (all data sources are properly configured)
           currentConfig.set(newConfig);
 
-          // Clean up obsolete data sources
+          // Clean up obsolete data sources (async, after config is set)
           if (oldConfig != null) {
               cleanupObsoleteDataSources(oldConfig, newConfig);
           }
 
-          logger.info("Configuration replaced atomically, deprecated indexes: {}", 
+          logger.info("Configuration replaced atomically, deprecated indexes: {}",
               newConfig.getDeprecatedElasticIndexes());
-          
+
           ddsConfigLogger.info("DDS_CONFIG_REPLACED," +
-                  "oldGroupCount={},newGroupCount={},deprecatedIndexes={},status=success", 
+                  "oldGroupCount={},newGroupCount={},deprecatedIndexes={},status=success",
                   oldConfig != null ? oldConfig.getGroupDataSources().size() : 0,
                   newConfig.getGroupDataSources().size(),
                   newConfig.getDeprecatedElasticIndexes().size());
@@ -567,6 +602,23 @@ public class DdsConfigUpdateHandler implements DynamicConfigHandler {
       } finally {
           configLock.writeLock().unlock();
       }
+  }
+
+  /**
+   * Functional interface for config update callback.
+   * Called BEFORE the new config is set, ensuring data sources are properly configured
+   * before being exposed to requests.
+   */
+  public interface ConfigUpdateCallback {
+      /**
+       * Called during config update, before the new config is atomically set.
+       * This allows the callback to sync configurations to new data sources
+       * before they become visible to requests.
+       *
+       * @param newConfig the new configuration snapshot (contains new data sources)
+       * @param oldConfig the old configuration snapshot (may contain old data sources to be cleaned up)
+       */
+      void onConfigUpdate(VersionedConfigSnapshot newConfig, VersionedConfigSnapshot oldConfig);
   }
   
   /**

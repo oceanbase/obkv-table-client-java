@@ -162,6 +162,11 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
                 runningMode,
                 tableClientProperty,
                 currentConfigRef);
+            // 设置配置更新回调，用于在新增数据源时同步 row key elements
+            // 注意：回调在配置生效前执行，确保新数据源在暴露前已完成配置同步
+            dynamicHandler.setConfigUpdateCallback((newConfig, oldConfig) -> {
+                syncRowKeyElementsToAllClients(newConfig);
+            });
             // 初始化配置处理器
             DistributeConfigHandler distributeConfigHandler = new DistributeConfigHandler(appName,
                 appDsName, version, configFetchOnceTimeoutMillis, dynamicHandler);
@@ -388,24 +393,31 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
      * This method collects all ObTableClient instances from atomDataSources.
      * Note: groupDataSources contain references to the same ObTableClient instances from atomDataSources,
      * so we only need to sync to atomDataSources.
-     * 
+     *
      * This method applies all row key elements that were set via addRowKeyElement() before init().
+     *
+     * @param snapshot the configuration snapshot to sync from (pass null to use currentConfigRef)
      */
-    private void syncRowKeyElementsToAllClients() {
+    private void syncRowKeyElementsToAllClients(VersionedConfigSnapshot snapshot) {
         if (tableRowKeyElement.isEmpty()) {
             // No row key elements to sync
             return;
         }
 
-        VersionedConfigSnapshot snapshot = currentConfigRef.get();
-        if (snapshot == null) {
+        // Use provided snapshot or fall back to currentConfigRef
+        VersionedConfigSnapshot targetSnapshot = snapshot;
+        if (targetSnapshot == null) {
+            targetSnapshot = currentConfigRef.get();
+        }
+
+        if (targetSnapshot == null) {
             logger.warn("Configuration snapshot is not available, cannot sync row key elements");
             return;
         }
 
         // Get all ObTableClient instances from atomDataSources
         // Note: groupDataSources contain references to the same instances, so we only need atomDataSources
-        Map<String, ObTableClient> atomDataSources = snapshot.getAtomDataSources();
+        Map<String, ObTableClient> atomDataSources = targetSnapshot.getAtomDataSources();
         if (atomDataSources == null || atomDataSources.isEmpty()) {
             logger.warn("No ObTableClient instances found to sync row key elements");
             return;
@@ -415,7 +427,7 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
         for (Map.Entry<String, String[]> entry : tableRowKeyElement.entrySet()) {
             String tableName = entry.getKey();
             String[] rowKeyColumns = entry.getValue();
-            
+
             if (rowKeyColumns == null || rowKeyColumns.length == 0) {
                 continue;
             }
@@ -424,20 +436,28 @@ public class DdsObTableClient extends AbstractTable implements OperationExecuteA
                 try {
                     tableClient.addRowKeyElement(tableName, rowKeyColumns);
                     if (logger.isDebugEnabled()) {
-                        logger.debug("Synced row key element for table {} to ObTableClient: {}", 
+                        logger.debug("Synced row key element for table {} to ObTableClient: {}",
                             tableName, Arrays.toString(rowKeyColumns));
                     }
                 } catch (Exception e) {
-                    logger.warn("Failed to sync row key element for table {} to ObTableClient: {}", 
+                    logger.warn("Failed to sync row key element for table {} to ObTableClient: {}",
                         tableName, e.getMessage());
                 }
             }
         }
 
         if (logger.isInfoEnabled()) {
-            logger.info("Synced {} row key element(s) to {} ObTableClient instance(s)", 
+            logger.info("Synced {} row key element(s) to {} ObTableClient instance(s)",
                 tableRowKeyElement.size(), atomDataSources.size());
         }
+    }
+
+    /**
+     * Sync row key elements using current config (convenience method for init phase).
+     * This is called during initialization to sync to all existing data sources.
+     */
+    private void syncRowKeyElementsToAllClients() {
+        syncRowKeyElementsToAllClients(null);
     }
 
 
