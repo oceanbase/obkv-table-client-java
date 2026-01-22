@@ -432,6 +432,7 @@
         <dependency>
             <groupId>com.alipay.data.conf</groupId>
             <artifactId>confkeeper-client</artifactId>
+            <scope>provided</scope>
             <version>0.4.7</version>
             <exclusions>
                 <exclusion>
