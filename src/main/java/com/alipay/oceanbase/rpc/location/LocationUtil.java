@@ -320,6 +320,7 @@ public class LocationUtil {
         try {
             if (sysUA.getPassword().isEmpty()) {
                 String word = SecureIdentityLoginModule.decode(Constants.PROXY_SYS_USER_WORD);
+                logger.info("getMetaRefreshConnection url: {}, userName: {}, password: {}", url, sysUA.getUserName(), word);
                 return DriverManager.getConnection(url, sysUA.getUserName(), word);
             }
             return DriverManager.getConnection(url, sysUA.getUserName(), sysUA.getPassword());
