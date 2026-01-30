@@ -252,7 +252,7 @@ public class ObTableConnection {
             if (!connection.getChannel().isWritable()) {
                 throw new ObTableConnectionUnWritableException(
                     "Check connection failed for address: " + connection.getUrl()
-                            + ", maybe write overflow! channel used buffer size:" + connection.getChannel().bytesBeforeWritable());
+                            + ", maybe write overflow! Overflow bytes:" + connection.getChannel().bytesBeforeWritable());
             }
         }
     }
