@@ -41,6 +41,8 @@ public abstract class AbstractObTable extends AbstractTable {
 
     protected int  nettyBlockingWaitInterval = NETTY_BLOCKING_WAIT_INTERVAL.getDefaultInt();
 
+    protected boolean nettyCheckWritableEnabled = NETTY_CHECK_WRITABLE_ENABLED.getDefaultBoolean();
+
     protected long maxConnExpiredTime        = MAX_CONN_EXPIRED_TIME.getDefaultLong();
 
     /*
@@ -160,6 +162,13 @@ public abstract class AbstractObTable extends AbstractTable {
      */
     public int getNettyBlockingWaitInterval() {
         return nettyBlockingWaitInterval;
+    }
+
+    /*
+     * Get netty check writable enabled.
+     */
+    public boolean isNettyCheckWritableEnabled() {
+        return nettyCheckWritableEnabled;
     }
 
     /*

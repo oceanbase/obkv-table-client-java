@@ -244,7 +244,7 @@ public class ObTableConnection {
         if (connection.getChannel() == null || !connection.getChannel().isActive()) {
             reconnect("Check connection failed for address: " + connection.getUrl());
         }
-        if (!connection.getChannel().isWritable()) {
+        if (obTable.isNettyCheckWritableEnabled() && !connection.getChannel().isWritable()) {
             LOGGER.warn("The connection might be write overflow : " + connection.getUrl());
             // Wait some interval for the case when a big package is blocking the buffer but server is ok.
             // Don't bother to call flush() here as we invoke writeAndFlush() when send request.
@@ -252,7 +252,7 @@ public class ObTableConnection {
             if (!connection.getChannel().isWritable()) {
                 throw new ObTableConnectionUnWritableException(
                     "Check connection failed for address: " + connection.getUrl()
-                            + ", maybe write overflow!");
+                            + ", maybe write overflow! channel used buffer size:" + connection.getChannel().bytesBeforeWritable());
             }
         }
     }
