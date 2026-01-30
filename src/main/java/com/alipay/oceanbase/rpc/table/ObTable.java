@@ -178,6 +178,8 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             nettyBufferHighWatermark);
         nettyBlockingWaitInterval = parseToInt(NETTY_BLOCKING_WAIT_INTERVAL.getKey(),
             nettyBlockingWaitInterval);
+        nettyCheckWritableEnabled = parseToBoolean(NETTY_CHECK_WRITABLE_ENABLED.getKey(),
+            nettyCheckWritableEnabled);
         enableRerouting = parseToBoolean(SERVER_ENABLE_REROUTING.getKey(), enableRerouting);
         maxConnExpiredTime = parseToLong(MAX_CONN_EXPIRED_TIME.getKey(), maxConnExpiredTime);
 
