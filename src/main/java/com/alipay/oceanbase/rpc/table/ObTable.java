@@ -844,8 +844,10 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         private final int                                     obTableConnectionPoolSize;
         private ObTable                                       obTable;
         private volatile AtomicReference<ObTableConnection[]> connectionPool;
-        // round-robin scheduling
-        private AtomicLong                                    turn = new AtomicLong(0);
+        // counter for checkAndReconnect: records the start position of each scan
+        private AtomicLong                                    reconnectTurn = new AtomicLong(0);
+        // counter for getConnection: increments on each call to ensure random distribution
+        private AtomicLong                                    getConnectionTurn = new AtomicLong(0);
         private boolean                                       shouldStopExpand = false;
         private ScheduledFuture<?>                            expandTaskFuture = null;
         private ScheduledFuture<?>                            checkAndReconnectFuture = null;
@@ -864,11 +866,14 @@ public class ObTable extends AbstractObTable implements Lifecycle {
         public void init() throws Exception {
             // only create at most 2 connections for use
             // expand other connections (if needed) in the background
+            int initConnectionNum = this.obTableConnectionPoolSize > 10 ? 10 : this.obTableConnectionPoolSize;
             connectionPool = new AtomicReference<ObTableConnection[]>();
-            ObTableConnection[] curConnectionPool = new ObTableConnection[1];
-            curConnectionPool[0] = new ObTableConnection(obTable, obTable.isOdpMode());
-            curConnectionPool[0].enableLoginWithConfigs();
-            curConnectionPool[0].init();
+            ObTableConnection[] curConnectionPool = new ObTableConnection[initConnectionNum];
+            for (int i = 0; i < initConnectionNum; i++) {
+                curConnectionPool[i] = new ObTableConnection(obTable, obTable.isOdpMode());
+                curConnectionPool[i].enableLoginWithConfigs();
+                curConnectionPool[i].init();
+            }
 
             connectionPool.set(curConnectionPool);
             // check connection pool size and expand every 3 seconds
@@ -879,16 +884,20 @@ public class ObTable extends AbstractObTable implements Lifecycle {
 
         /*
          * Get connection.
+         * Use counter (getConnectionTurn) that increments on each connection access
+         * to ensure random distribution of connections, regardless of expired connections.
          */
         public ObTableConnection getConnection() {
             ObTableConnection[] connections = connectionPool.get();
-            long nextTurn = turn.getAndIncrement();
-            if (nextTurn == Long.MAX_VALUE) {
-                turn.set(0);
-            }
-            int round = (int) (nextTurn % connections.length);
+            
+            // Start from current counter position and find first valid connection
+            // Increment counter for each connection accessed
             for (int i = 0; i < connections.length; i++) {
-                int idx = (round + i) % connections.length;
+                long nextTurn = getConnectionTurn.getAndIncrement();
+                if (nextTurn == Long.MAX_VALUE) {
+                    getConnectionTurn.set(0);
+                }
+                int idx = (int) (nextTurn % connections.length);
                 if (!connections[idx].isExpired()) {
                     return connections[idx];
                 }
@@ -902,12 +911,13 @@ public class ObTable extends AbstractObTable implements Lifecycle {
          * This method will not impact the connections in use and create a reasonable number of connections.
          * */
         private void checkAndExpandPool() {
-            if (obTableConnectionPoolSize == 1 || shouldStopExpand) {
+            ObTableConnection[] curConnections = connectionPool.get();
+            if (curConnections.length == obTableConnectionPoolSize) {
                 // stop the background task if pools reach the setting
                 this.expandTaskFuture.cancel(false);
                 return;
             }
-            ObTableConnection[] curConnections = connectionPool.get();
+            
             if (curConnections.length < obTableConnectionPoolSize) {
                 int diffSize = obTableConnectionPoolSize - curConnections.length;
                 // limit expand size not too big to ensure the instant availability of connections
@@ -949,6 +959,9 @@ public class ObTable extends AbstractObTable implements Lifecycle {
          * 2. Mark a third of the expired connections for reconnection.  
          * 3. Pause for a predefined timeout period.  
          * 4. Attempt to reconnect the marked connections.
+         * 
+         * The scan starts from the end position of the previous scan to ensure
+         * all connections are checked over time.
          **/
         private void checkAndReconnect() {
             if (obTableConnectionPoolSize == 1) {
@@ -960,9 +973,10 @@ public class ObTable extends AbstractObTable implements Lifecycle {
             // Iterate over the connection pool to identify connections that have expired
             List<Integer> expiredConnIds = new ArrayList<>();
             ObTableConnection[] connections = connectionPool.get();
-            long num = turn.get();
-            for (int i = 1; i <= connections.length; ++i) {
-                int idx = (int) ((i + num) % connections.length);
+            // Start from the end position of previous scan
+            long startPos = reconnectTurn.get();
+            for (int i = 0; i < connections.length; ++i) {
+                int idx = (int) ((i + startPos) % connections.length);
                 if (connections[idx].checkExpired()) {
                     expiredConnIds.add(idx);
                 }
@@ -975,9 +989,17 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                 connections[idx].setExpired(true);
             }
 
+            // Update counter to the end position of this scan for next time
+            // Use modulo to keep it within reasonable range
+            long nextStartPos = startPos + needReconnectCount;
+            if (nextStartPos >= Long.MAX_VALUE) {
+                nextStartPos = nextStartPos % connections.length;
+            }
+            reconnectTurn.set(nextStartPos);
+
             // Sleep for a predefined timeout period before attempting reconnection
             try {
-                Thread.sleep(RPC_EXECUTE_TIMEOUT.getDefaultInt());
+                Thread.sleep((long) (obTable.getObTableExecuteTimeout() * 1.5));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
