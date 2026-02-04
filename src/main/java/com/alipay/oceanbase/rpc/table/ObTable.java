@@ -884,20 +884,25 @@ public class ObTable extends AbstractObTable implements Lifecycle {
 
         /*
          * Get connection.
-         * Use counter (getConnectionTurn) that increments on each connection access
-         * to ensure random distribution of connections, regardless of expired connections.
+         * Use counter (getConnectionTurn) that increments on each call to ensure random distribution.
+         * Guarantees to return a valid connection if one exists, and avoids multiple threads
+         * getting the same connection even when there are consecutive expired connections.
          */
         public ObTableConnection getConnection() {
             ObTableConnection[] connections = connectionPool.get();
+
             
-            // Start from current counter position and find first valid connection
-            // Increment counter for each connection accessed
+            // Get starting position from counter (increments on each call for randomness)
+            long startTurn = getConnectionTurn.getAndIncrement();
+            if (startTurn == Long.MAX_VALUE) {
+                getConnectionTurn.set(0);
+            }
+            int startIdx = (int) (startTurn % connections.length);
+            
+            // Traverse all connections starting from startIdx to guarantee finding a valid one
+            // This ensures we check all connections if needed, avoiding null return
             for (int i = 0; i < connections.length; i++) {
-                long nextTurn = getConnectionTurn.getAndIncrement();
-                if (nextTurn == Long.MAX_VALUE) {
-                    getConnectionTurn.set(0);
-                }
-                int idx = (int) (nextTurn % connections.length);
+                int idx = (startIdx + i) % connections.length;
                 if (!connections[idx].isExpired()) {
                     return connections[idx];
                 }
@@ -981,6 +986,9 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                     expiredConnIds.add(idx);
                 }
             }
+
+            // Shuffle the expired connection indices to avoid consecutive connections
+            Collections.shuffle(expiredConnIds);
 
             // Mark a third of the expired connections for reconnection
             int needReconnectCount = (int) Math.ceil(expiredConnIds.size() / 3.0);
