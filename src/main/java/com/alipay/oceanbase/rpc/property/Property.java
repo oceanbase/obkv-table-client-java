@@ -136,6 +136,8 @@ public enum Property {
     // when a big package is blocking the buffer but the server is OK.
     NETTY_BLOCKING_WAIT_INTERVAL("bolt.netty.blocking.wait.interval", 1, "netty写缓存满后等待时间"),
 
+    NETTY_CHECK_WRITABLE_ENABLED("bolt.netty.check.writable.enabled", false, "是否启用netty写缓存可写性检查"),
+
     // [ObTable][OTHERS]
     SERVER_ENABLE_REROUTING("server.enable.rerouting", false, "开启server端的重定向回复功能"),
 
