@@ -20,6 +20,7 @@ package com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query;
 public class ObTableQueryFlag {
     private static final int HOT_ONLY = 1 << 0;
     private static final int GET_OPTIMIZED = 1 << 1;
+    private static final int QUERY_WITH_SINGLE_QUALIFIER_HINT = 1 << 2;
 
     private long             value    = 0;
 
@@ -52,6 +53,16 @@ public class ObTableQueryFlag {
     public void setGetOptimized(boolean getOptimized) {
         if (getOptimized) {
             value = value | GET_OPTIMIZED;
+        }
+    }
+
+    public boolean isQueryWithSingleQualifierHint() {
+        return (value & QUERY_WITH_SINGLE_QUALIFIER_HINT) != 0;
+    }
+
+    public void setQueryWithSingleQualifierHint(boolean queryWithSingleQualifierHint) {
+        if (queryWithSingleQualifierHint) {
+            value = value | QUERY_WITH_SINGLE_QUALIFIER_HINT;
         }
     }
 };
