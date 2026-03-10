@@ -1907,7 +1907,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 checkResult(obTable.getIp(), obTable.getPort(), request, result);
                 return result;
             }
-        });
+        }, ObReadConsistency.STRONG);
     }
 
     public ObPayload executeWithRetry(ObTable obTable, ObPayload request, String tableName) throws Exception {
