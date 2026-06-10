@@ -2484,27 +2484,28 @@ public class LocationUtil {
 
     public static void parseObVerionFromLogin(String serverVersion)
                                                                    throws FeatureNotSupportedException {
-        Pattern pattern;
-        if (serverVersion.startsWith("OceanBase_CE")) {
-            // serverVersion in CE is like "OceanBase_CE 4.0.0.0 (+ Obproxy 4.3.6.0), content in () is optional and valid after Obproxy 4.3.5"
-            pattern = Pattern
-                .compile("OceanBase_CE\\s+(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)(\\s+\\+\\s+(Obproxy)\\s+(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+))?");
-        } else {
-            // serverVersion is like "OceanBase 4.0.0.0 (+ Obproxy 4.3.6.0), content in () is optional and valid after Obproxy 4.3.5"
-            pattern = Pattern
-                .compile("OceanBase\\s+(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)(\\s+\\+\\s+(Obproxy)\\s+(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+))?");
-        }
-        Matcher matcher = pattern.matcher(serverVersion);
-        if (matcher.find() && ObGlobal.OB_VERSION == 0) {
-            ObGlobal.OB_VERSION = ObGlobal.calcVersion(Integer.parseInt(matcher.group(1)),
-                (short) Integer.parseInt(matcher.group(2)),
-                (byte) Integer.parseInt(matcher.group(3)),
-                (byte) Integer.parseInt(matcher.group(4)));
-            if (matcher.group(5) != null && matcher.group(6) != null) { // Obproxy part
+        // Compatible examples:
+        // 1) OceanBase 4.0.0.0 + Obproxy 4.3.6.0
+        // 2) OceanBase_CE 4.0.0.0 + Obproxy 4.3.6.0
+        // 3) OceanBase Database AI 4.6.1.0 + Obproxy 4.4.0.0
+        Pattern obVersionPattern = Pattern
+            .compile("(?i)OceanBase[^\\d]*v?(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)");
+        Matcher obMatcher = obVersionPattern.matcher(serverVersion);
+        if (obMatcher.find() && ObGlobal.OB_VERSION == 0) {
+            ObGlobal.OB_VERSION = ObGlobal.calcVersion(Integer.parseInt(obMatcher.group(1)),
+                (short) Integer.parseInt(obMatcher.group(2)),
+                (byte) Integer.parseInt(obMatcher.group(3)),
+                (byte) Integer.parseInt(obMatcher.group(4)));
+
+            Pattern obProxyVersionPattern = Pattern
+                .compile("(?i)\\bObproxy\\s+v?(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)");
+            Matcher obProxyMatcher = obProxyVersionPattern.matcher(serverVersion);
+            if (obProxyMatcher.find()) {
                 ObGlobal.OB_PROXY_VERSION = ObGlobal.calcVersion(
-                    Integer.parseInt(matcher.group(7)), (short) Integer.parseInt(matcher.group(8)),
-                    (byte) Integer.parseInt(matcher.group(9)),
-                    (byte) Integer.parseInt(matcher.group(10)));
+                    Integer.parseInt(obProxyMatcher.group(1)),
+                    (short) Integer.parseInt(obProxyMatcher.group(2)),
+                    (byte) Integer.parseInt(obProxyMatcher.group(3)),
+                    (byte) Integer.parseInt(obProxyMatcher.group(4)));
             }
             if (ObGlobal.obVsnMajor() < 4) {
                 throw new FeatureNotSupportedException(
