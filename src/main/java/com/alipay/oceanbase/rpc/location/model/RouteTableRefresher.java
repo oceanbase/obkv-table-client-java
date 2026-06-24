@@ -193,6 +193,9 @@ public class RouteTableRefresher {
     }
 
     public static void addIntoSuspectIPs(SuspectObServer server) throws InterruptedException {
+        if (server == null || server.getAddr() == null) {
+            return;
+        }
         ObServerAddr addr = server.getAddr();
         if (suspectServers.get(addr) != null) {
             // already in the list, directly return
