@@ -33,7 +33,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.table.api.TableBatchOps;
 import com.alipay.oceanbase.rpc.table.api.TableQuery;
 import com.alipay.oceanbase.rpc.util.TraceUtil;
-import com.alipay.remoting.ConnectionEventHandler;
+import com.alipay.oceanbase.rpc.bolt.transport.ObConnectionEventHandler;
 import com.alipay.remoting.config.switches.GlobalSwitch;
 import com.alipay.remoting.connection.ConnectionFactory;
 import com.alipay.remoting.exception.RemotingException;
@@ -101,7 +101,7 @@ public class ObTable extends AbstractObTable implements Lifecycle {
                 .newBuilder()
                 .configWriteBufferWaterMark(getNettyBufferLowWatermark(),
                     getNettyBufferHighWatermark()).build();
-            connectionFactory.init(new ConnectionEventHandler(new GlobalSwitch())); // Only for monitoring connection status
+            connectionFactory.init(new ObConnectionEventHandler(new GlobalSwitch()));
             realClient = new ObTableRemoting(new ObPacketFactory(enableRerouting));
             connectionPool = new ObTableConnectionPool(this, obTableConnectionPoolSize);
             connectionPool.init();

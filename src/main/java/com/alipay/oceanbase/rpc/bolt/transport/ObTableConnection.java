@@ -118,7 +118,7 @@ public class ObTableConnection {
         MONITOR.info(logMessage(null, "CONNECT", endpoint, System.currentTimeMillis() - start));
 
         if (tries >= maxTryTimes) {
-            if (!obTable.isOdpMode()) {
+            if (!obTable.isOdpMode() && obTable.getObServerAddr() != null) {
                 RouteTableRefresher.SuspectObServer suspectAddr = new RouteTableRefresher.SuspectObServer(
                     obTable.getObServerAddr());
                 RouteTableRefresher.addIntoSuspectIPs(suspectAddr);

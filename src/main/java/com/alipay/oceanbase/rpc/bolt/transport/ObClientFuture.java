@@ -116,7 +116,9 @@ public class ObClientFuture implements InvokeFuture {
      */
     @Override
     public RemotingCommand createConnectionClosedResponse(InetSocketAddress responseHost) {
-        return null;
+        String address = responseHost != null ? responseHost.toString() : "unknown";
+        return ObTablePacket.createTransportErrorPacket(TransportCodes.BOLT_SEND_FAILED,
+            "connection {" + address + "} closed", null);
     }
 
     /*

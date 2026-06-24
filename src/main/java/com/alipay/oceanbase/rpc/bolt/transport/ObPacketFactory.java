@@ -163,6 +163,9 @@ public class ObPacketFactory implements CommandFactory {
      */
     @Override
     public ObTablePacket createConnectionClosedResponse(InetSocketAddress address, String message) {
-        return null;
+        String addressStr = address != null ? address.toString() : "unknown";
+        String errMsg = message != null ? message : "connection {" + addressStr + "} closed";
+        return ObTablePacket.createTransportErrorPacket(TransportCodes.BOLT_SEND_FAILED, errMsg,
+            null);
     }
 }
