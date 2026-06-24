@@ -622,4 +622,8 @@ public class ObTableQuery extends AbstractPayload {
     public void setGetOptimized(boolean getOptimized) {
         this.flag.setGetOptimized(getOptimized);
     }
+
+    public void setQueryWithSingleQualifierHint(boolean queryWithSingleQualifierHint) {
+        this.flag.setQueryWithSingleQualifierHint(queryWithSingleQualifierHint);
+    }
 }
