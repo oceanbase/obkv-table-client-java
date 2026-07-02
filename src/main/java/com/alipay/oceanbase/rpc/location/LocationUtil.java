@@ -328,11 +328,12 @@ public class LocationUtil {
         try {
             return DriverManager.getConnection(url, sysUA.getUserName(), sysUA.getPassword());
         } catch (Exception e) {
-            RUNTIME.error(LCD.convert("01-00005"), e.getMessage(), e);
+            RUNTIME.error(LCD.convert("01-00005"), url, e.getMessage(), e);
             // Since the JDBC connection fails here, it is likely that the server has crashed or scaling down.
             // Therefore, we need to set the Inactive flag of the ObTableEntryRefreshException to true.
             // This allows the upper-layer retry mechanism to catch this exception and immediately refresh the metadata.
-            throw new ObTableEntryRefreshException("fail to connect meta server", e, true /* connect inactive */);
+            throw new ObTableEntryRefreshException(format("fail to connect meta server, url=%s",
+                url), e, true /* connect inactive */);
         }
     }
 
