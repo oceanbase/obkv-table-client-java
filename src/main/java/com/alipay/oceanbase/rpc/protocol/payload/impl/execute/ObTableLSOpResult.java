@@ -32,6 +32,7 @@ public class ObTableLSOpResult extends AbstractPayload {
 
     private List<ObTableTabletOpResult> results = new ArrayList<ObTableTabletOpResult>();
     private List<String> propertiesColumnNames = new ArrayList<>();
+    private boolean decodeHBaseKqtv = false;
 
     /*
      * Get pcode.
@@ -96,6 +97,7 @@ public class ObTableLSOpResult extends AbstractPayload {
         for (int i = 0; i < len; i++) {
             ObTableTabletOpResult tabletOpResult = new ObTableTabletOpResult();
             tabletOpResult.setPropertiesColumnNames(this.propertiesColumnNames);
+            tabletOpResult.setDecodeHBaseKqtv(decodeHBaseKqtv);
             tabletOpResult.decode(buf);
             results.add(tabletOpResult);
         }
@@ -143,6 +145,10 @@ public class ObTableLSOpResult extends AbstractPayload {
      */
     public void addAllResults(List<ObTableTabletOpResult> results) {
         this.results.addAll(results);
+    }
+
+    public void setDecodeHBaseKqtv(boolean decodeHBaseKqtv) {
+        this.decodeHBaseKqtv = decodeHBaseKqtv;
     }
 
 }

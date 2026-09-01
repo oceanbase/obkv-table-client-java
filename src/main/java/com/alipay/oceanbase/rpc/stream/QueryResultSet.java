@@ -68,7 +68,7 @@ public class QueryResultSet {
      * Cache size.
      */
     public int cacheSize() {
-        return queryStreamResult.getCacheRows().size();
+        return queryStreamResult.getCachedRowCount();
     }
 
     /*

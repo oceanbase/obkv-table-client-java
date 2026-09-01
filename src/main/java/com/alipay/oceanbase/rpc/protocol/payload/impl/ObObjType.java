@@ -1270,7 +1270,9 @@ public enum ObObjType {
          */
         @Override
         public byte[] encode(Object obj) {
-            if (obj instanceof byte[]) {
+            if (obj instanceof ObBytesString) {
+                return Serialization.encodeBytesString((ObBytesString) obj);
+            } else if (obj instanceof byte[]) {
                 ObBytesString bytesString = new ObBytesString((byte[]) obj);
                 return Serialization.encodeBytesString(bytesString);
             } else if (obj instanceof ObVString) {
@@ -1282,7 +1284,9 @@ public enum ObObjType {
 
         @Override
         public void encode(ObByteBuf buf, Object obj) {
-            if (obj instanceof byte[]) {
+            if (obj instanceof ObBytesString) {
+                Serialization.encodeBytesString(buf, (ObBytesString) obj);
+            } else if (obj instanceof byte[]) {
                 ObBytesString bytesString = new ObBytesString((byte[]) obj);
                 Serialization.encodeBytesString(buf, bytesString);
             } else if (obj instanceof ObVString) {
@@ -1976,7 +1980,9 @@ public enum ObObjType {
     */
 
     private int                            value;
-    private static Map<Integer, ObObjType> map = new HashMap<Integer, ObObjType>();
+    // Object types encoded as i8 use the array fast path; extended type ids use the map.
+    private static final ObObjType[]             VALUE_LOOKUP = new ObObjType[128];
+    private static final Map<Integer, ObObjType> EXTENDED_VALUE_LOOKUP = new HashMap<Integer, ObObjType>();
 
     ObObjType(int value) {
         this.value = value;
@@ -1984,7 +1990,17 @@ public enum ObObjType {
 
     static {
         for (ObObjType type : ObObjType.values()) {
-            map.put(type.value, type);
+            int value = type.value;
+            if (value < 0) {
+                throw new IllegalStateException("ObObjType value must not be negative: " + value);
+            } else if (value < VALUE_LOOKUP.length) {
+                if (VALUE_LOOKUP[value] != null) {
+                    throw new IllegalStateException("duplicate ObObjType value: " + value);
+                }
+                VALUE_LOOKUP[value] = type;
+            } else if (EXTENDED_VALUE_LOOKUP.put(value, type) != null) {
+                throw new IllegalStateException("duplicate ObObjType value: " + value);
+            }
         }
     }
 
@@ -2016,6 +2032,8 @@ public enum ObObjType {
             return ObVarcharType;
         } else if (object instanceof byte[]) {
             return ObVarcharType;
+        } else if (object instanceof ObBytesString) {
+            return ObVarcharType;
         } else if (object instanceof ObVString) {
             return ObVarcharType;
         } else if (object instanceof Double) {
@@ -2039,7 +2057,11 @@ public enum ObObjType {
      * Value of.
      */
     public static ObObjType valueOf(int value) {
-        return map.get(value);
+        if (value < 0) {
+            return null;
+        }
+        return value < VALUE_LOOKUP.length ? VALUE_LOOKUP[value] : EXTENDED_VALUE_LOOKUP
+            .get(value);
     }
 
     /*
@@ -2113,7 +2135,9 @@ public enum ObObjType {
      * Get text encoded size.
      */
     public static int getTextEncodedSize(Object obj) {
-        if (obj instanceof byte[]) {
+        if (obj instanceof ObBytesString) {
+            return Serialization.getNeedBytes((ObBytesString) obj);
+        } else if (obj instanceof byte[]) {
             ObBytesString bytesString = new ObBytesString((byte[]) obj);
             return Serialization.getNeedBytes(bytesString);
         } else if (obj instanceof ObVString) {
@@ -2130,7 +2154,7 @@ public enum ObObjType {
                                           ObCollationType collationType) {
         if (collationType == ObCollationType.CS_TYPE_BINARY) {
             if (object instanceof ObBytesString) {
-                return ((ObBytesString) object).bytes;
+                return materializeBytesString((ObBytesString) object);
             }
 
             if (object instanceof byte[]) {
@@ -2150,7 +2174,8 @@ public enum ObObjType {
                 return ((String) object).getBytes();
             }
             if (object instanceof ObBytesString) {
-                return (Serialization.decodeVString(((ObBytesString) object).bytes)).getBytes();
+                return Serialization.decodeVString(materializeBytesString((ObBytesString) object))
+                    .getBytes();
             }
 
             if (object instanceof byte[]) {
@@ -2201,7 +2226,7 @@ public enum ObObjType {
                 return (String) object;
             }
             if (object instanceof ObBytesString) {
-                return Serialization.decodeVString(((ObBytesString) object).bytes);
+                return Serialization.decodeVString(materializeBytesString((ObBytesString) object));
             }
 
             if (object instanceof byte[]) {
@@ -2222,6 +2247,14 @@ public enum ObObjType {
 
         throw new IllegalArgumentException(obObjType.name() + "can not parseToComparable argument:"
                                            + object);
+    }
+
+    private static byte[] materializeBytesString(ObBytesString bytesString) {
+        if (bytesString.offset == 0 && bytesString.length() == bytesString.bytes.length) {
+            return bytesString.bytes;
+        }
+        return Arrays.copyOfRange(bytesString.bytes, bytesString.offset,
+            bytesString.offset + bytesString.length());
     }
 
     /*

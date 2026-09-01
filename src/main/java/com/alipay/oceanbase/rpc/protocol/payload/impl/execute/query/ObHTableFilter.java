@@ -303,9 +303,7 @@ public class ObHTableFilter extends AbstractPayload {
      * Set filter string.
      */
     public void setFilterString(byte[] filterString) {
-        if (this.filterString == null) {
-            this.filterString = new ObBytesString();
-        }
-        this.filterString.bytes = filterString;
+        this.filterString = filterString == null ? null : new ObBytesString(filterString);
+        resetPayloadContentSize();
     }
 }

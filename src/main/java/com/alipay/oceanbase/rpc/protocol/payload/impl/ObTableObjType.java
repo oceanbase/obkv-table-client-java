@@ -202,9 +202,11 @@ public enum ObTableObjType {
     ObTableInvalidType(26) {
     };
 
+    private static final int                    LOOKUP_SIZE = 128;
     private int                                 value;
-    // mapping from value to enum
-    private static Map<Integer, ObTableObjType> valueMap = new HashMap<Integer, ObTableObjType>();
+    // Keep current low ids on the fast path; reserve a map for future ids outside the array.
+    private static final ObTableObjType[]       VALUE_LOOKUP = new ObTableObjType[LOOKUP_SIZE];
+    private static final Map<Integer, ObTableObjType> OVERFLOW_VALUE_LOOKUP = new HashMap<>();
     // mapping from ObTableObjType to ObObjType
     private static Map<ObTableObjType, ObObjType> tableObjTypeMap = new HashMap<>();
 
@@ -214,7 +216,21 @@ public enum ObTableObjType {
 
     static {
         for (ObTableObjType type : ObTableObjType.values()) {
-            valueMap.put(type.value, type);
+            registerLookup(type.value, type);
+        }
+    }
+
+    private static void registerLookup(int value, ObTableObjType type) {
+        if (value < 0) {
+            throw new IllegalStateException("Invalid table object type id: " + value);
+        }
+        if (value < VALUE_LOOKUP.length) {
+            if (VALUE_LOOKUP[value] != null) {
+                throw new IllegalStateException("Duplicate table object type id: " + value);
+            }
+            VALUE_LOOKUP[value] = type;
+        } else if (OVERFLOW_VALUE_LOOKUP.put(value, type) != null) {
+            throw new IllegalStateException("Duplicate table object type id: " + value);
         }
     }
 
@@ -298,7 +314,11 @@ public enum ObTableObjType {
      * Value of.
      */
     public static ObTableObjType valueOf(int value) {
-        return valueMap.get(value);
+        if (value < 0) {
+            return null;
+        }
+        return value < VALUE_LOOKUP.length ? VALUE_LOOKUP[value]
+            : OVERFLOW_VALUE_LOOKUP.get(value);
     }
 
     /*

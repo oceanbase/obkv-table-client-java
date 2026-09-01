@@ -18,10 +18,13 @@
 package com.alipay.oceanbase.rpc.protocol.payload.impl.execute;
 
 import com.alipay.oceanbase.rpc.protocol.payload.AbstractPayload;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObCollationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjMeta;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObTableSerialUtil;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.ObTableObjType;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.query.ObHBaseCellBatch;
 import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
@@ -40,6 +43,12 @@ public class ObTableSingleOpEntity extends AbstractPayload {
     private long propertiesBitLen = 0;
     private List<String> aggPropertiesNames = new ArrayList<>();
     private List<ObObj> propertiesValues = new ArrayList<>();
+
+    private boolean decodeHBaseKqtv = false;
+    private ObHBaseCellBatch hbaseCellBatch = null;
+
+    private static final int HBASE_KQTV_COLUMN_COUNT = 4;
+    private static final int HBASE_TIMESTAMP_COLUMN_INDEX = 2;
 
     private boolean ignoreEncodePropertiesColumnNames = false;
 
@@ -173,6 +182,7 @@ public class ObTableSingleOpEntity extends AbstractPayload {
 
             // 2. rowkey obobj
             rowkeyLen = (int) Serialization.decodeVi64(buf);
+            rowkey = new ArrayList<>(rowkeyLen);
             for (int i = 0; i < rowkeyLen; i++) {
                 ObObj obj = new ObObj();
                 ObTableSerialUtil.decode(buf, obj);
@@ -185,10 +195,16 @@ public class ObTableSingleOpEntity extends AbstractPayload {
 
             // 4. properties obobj
             propLen = (int) Serialization.decodeVi64(buf);
-            for (int i = 0; i < propLen; i++) {
-                ObObj obj = new ObObj();
-                ObTableSerialUtil.decode(buf, obj);
-                propertiesValues.add(obj);
+            int propertiesStartIndex = buf.readerIndex();
+            if (decodeHBaseKqtv && isHBaseKqtvSchema()
+                && (propLen & (HBASE_KQTV_COLUMN_COUNT - 1)) == 0) {
+                hbaseCellBatch = tryDecodeHBaseKqtvBatch(buf, propLen);
+                if (hbaseCellBatch == null) {
+                    buf.readerIndex(propertiesStartIndex);
+                    decodeGenericProperties(buf, propLen);
+                }
+            } else {
+                decodeGenericProperties(buf, propLen);
             }
         } catch (Exception e) {
             String errMsg = String.format("ObTableSingleOpEntity decode exception: rowkeyBitLen=%d, rowkeyLen=%d, propertiesBitLen=%d, propertiesLen=%d"
@@ -197,6 +213,83 @@ public class ObTableSingleOpEntity extends AbstractPayload {
         }
 
         return this;
+    }
+
+    private void decodeGenericProperties(ByteBuf buf, int propLen) {
+        propertiesValues = new ArrayList<>(propLen);
+        for (int i = 0; i < propLen; i++) {
+            ObObj obj = new ObObj();
+            ObTableSerialUtil.decode(buf, obj);
+            propertiesValues.add(obj);
+        }
+    }
+
+    private boolean isHBaseKqtvSchema() {
+        return propertiesNames.size() == HBASE_KQTV_COLUMN_COUNT
+               && "K".equals(propertiesNames.get(0))
+               && "Q".equals(propertiesNames.get(1))
+               && "T".equals(propertiesNames.get(2))
+               && "V".equals(propertiesNames.get(3));
+    }
+
+    private ObHBaseCellBatch tryDecodeHBaseKqtvBatch(ByteBuf buf, int propLen) {
+        int cellCount = propLen / HBASE_KQTV_COLUMN_COUNT;
+        ObHBaseCellBatch batch = new ObHBaseCellBatch(cellCount);
+        ObObjMeta binaryMeta = ObObjType.ObVarcharType.getDefaultObjMeta();
+        binaryMeta.setCsType(ObCollationType.CS_TYPE_BINARY);
+        batch.setMeta(0, binaryMeta);
+        batch.setMeta(1, binaryMeta);
+        batch.setMeta(HBASE_TIMESTAMP_COLUMN_INDEX,
+            ObObjType.ObInt64Type.getDefaultObjMeta());
+        batch.setMeta(3, binaryMeta);
+
+        for (int cellIndex = 0; cellIndex < cellCount; cellIndex++) {
+            byte[] rowKey = decodeHBaseBinary(buf, cellIndex, 0);
+            if (rowKey == null) {
+                return null;
+            }
+            byte[] qualifier = decodeHBaseBinary(buf, cellIndex, 1);
+            if (qualifier == null) {
+                if (cellIndex == 0) {
+                    return null;
+                }
+                throw unexpectedHBaseType(cellIndex, 1);
+            }
+            ObTableObjType timestampType = ObTableSerialUtil.decodeTableObjType(buf);
+            if (timestampType != ObTableObjType.ObTableInt64Type) {
+                if (cellIndex == 0) {
+                    return null;
+                }
+                throw unexpectedHBaseType(cellIndex, HBASE_TIMESTAMP_COLUMN_INDEX);
+            }
+            long timestamp = Serialization.decodeVi64(buf);
+            byte[] value = decodeHBaseBinary(buf, cellIndex, 3);
+            if (value == null) {
+                if (cellIndex == 0) {
+                    return null;
+                }
+                throw unexpectedHBaseType(cellIndex, 3);
+            }
+            batch.setCell(cellIndex, rowKey, qualifier, timestamp, value);
+        }
+        propertiesValues = Collections.emptyList();
+        return batch;
+    }
+
+    private byte[] decodeHBaseBinary(ByteBuf buf, int cellIndex, int columnIndex) {
+        ObTableObjType type = ObTableSerialUtil.decodeTableObjType(buf);
+        if (type != ObTableObjType.ObTableVarbinaryType) {
+            if (cellIndex == 0) {
+                return null;
+            }
+            throw unexpectedHBaseType(cellIndex, columnIndex);
+        }
+        return Serialization.decodeBinaryColumn(buf);
+    }
+
+    private IllegalArgumentException unexpectedHBaseType(int cellIndex, int columnIndex) {
+        return new IllegalArgumentException("HBase Batch Get KQTV type changed at cell "
+                                            + cellIndex + ", column " + columnIndex);
     }
 
     /*
@@ -443,6 +536,14 @@ public class ObTableSingleOpEntity extends AbstractPayload {
 
     public List<ObObj> getPropertiesValues() {
         return this.propertiesValues;
+    }
+
+    public void setDecodeHBaseKqtv(boolean decodeHBaseKqtv) {
+        this.decodeHBaseKqtv = decodeHBaseKqtv;
+    }
+
+    public ObHBaseCellBatch getHBaseCellBatch() {
+        return hbaseCellBatch;
     }
 
 }

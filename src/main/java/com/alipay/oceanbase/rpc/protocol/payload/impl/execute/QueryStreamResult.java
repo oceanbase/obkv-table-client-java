@@ -33,5 +33,9 @@ public interface QueryStreamResult extends Lifecycle {
 
     LinkedList<List<ObObj>> getCacheRows();
 
+    default int getCachedRowCount() {
+        return getCacheRows().size();
+    }
+
     List<String> getCacheProperties();
 }

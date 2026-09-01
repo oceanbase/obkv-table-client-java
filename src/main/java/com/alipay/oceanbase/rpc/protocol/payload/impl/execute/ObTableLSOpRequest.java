@@ -170,6 +170,10 @@ public class ObTableLSOpRequest extends AbstractPayload implements Credentialabl
         this.hbaseOpType = hbaseOpType;
     }
 
+    public OHOperationType getHbaseOpType() {
+        return hbaseOpType;
+    }
+
     /**
      * Reset the cached payload content size and propagate to child objects
      */

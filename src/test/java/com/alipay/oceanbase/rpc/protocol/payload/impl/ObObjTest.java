@@ -25,7 +25,10 @@ import org.junit.Test;
 
 import static com.alipay.oceanbase.rpc.protocol.payload.impl.ObCollationType.CS_TYPE_BINARY;
 import static com.alipay.oceanbase.rpc.protocol.payload.impl.ObCollationType.CS_TYPE_UTF8MB4_GENERAL_CI;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class ObObjTest {
@@ -126,6 +129,41 @@ public class ObObjTest {
 
         comparable = ObObjType.ObLongTextType.parseToComparable(test, CS_TYPE_BINARY);
         assertEquals(testBytes, comparable);
+    }
+
+    @Test
+    public void test_text_type_honors_bytes_string_range() {
+        byte[] expected = "test".getBytes();
+        ObBytesString slice = new ObBytesString("__test__".getBytes(), 2, 4);
+
+        assertArrayEquals(expected, ObObjType.ObVarcharType.parseToBytes(slice, CS_TYPE_BINARY));
+        assertArrayEquals(expected,
+            ObObjType.ObVarcharType.parseToBytes(slice, CS_TYPE_UTF8MB4_GENERAL_CI));
+        assertEquals("test",
+            ObObjType.ObVarcharType.parseToComparable(slice, CS_TYPE_UTF8MB4_GENERAL_CI));
+        assertSame(slice, ObObjType.ObVarcharType.parseToComparable(slice, CS_TYPE_BINARY));
+    }
+
+    @Test
+    public void test_obj_type_value_lookup() {
+        ObObjType[] expectedTypes = new ObObjType[128];
+        for (ObObjType type : ObObjType.values()) {
+            assertSame(type, ObObjType.valueOf(type.getValue()));
+            if (type.getValue() < expectedTypes.length) {
+                expectedTypes[type.getValue()] = type;
+            }
+        }
+        for (int value = 0; value < expectedTypes.length; value++) {
+            assertSame(expectedTypes[value], ObObjType.valueOf(value));
+        }
+
+        assertNull(ObObjType.valueOf(-1));
+        assertNull(ObObjType.valueOf(-128));
+        assertNull(ObObjType.valueOf(128));
+        assertNull(ObObjType.valueOf(129));
+        assertNull(ObObjType.valueOf(255));
+        assertNull(ObObjType.valueOf(Integer.MIN_VALUE));
+        assertNull(ObObjType.valueOf(Integer.MAX_VALUE));
     }
 
 }

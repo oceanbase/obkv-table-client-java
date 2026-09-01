@@ -30,6 +30,7 @@ import java.io.UnsupportedEncodingException;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 
 import static com.alipay.oceanbase.rpc.protocol.payload.impl.ObObjType.*;
 
@@ -59,7 +60,12 @@ public class ObHashUtils {
         } else if (varchar instanceof byte[]) {
             bytes = (byte[]) varchar;
         } else if (varchar instanceof ObBytesString) {
-            bytes = ((ObBytesString) varchar).bytes;
+            ObBytesString bytesString = (ObBytesString) varchar;
+            bytes = bytesString.bytes;
+            if (bytesString.offset != 0 || bytesString.length() != bytes.length) {
+                bytes = Arrays.copyOfRange(bytes, bytesString.offset,
+                    bytesString.offset + bytesString.length());
+            }
         } else {
             throw new IllegalArgumentException("varchar not supported , ObCollationType = "
                                                + collationType + " Object =" + varchar);

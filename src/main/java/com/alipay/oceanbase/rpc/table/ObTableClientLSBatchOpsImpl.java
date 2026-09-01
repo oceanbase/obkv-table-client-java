@@ -618,7 +618,6 @@ public class ObTableClientLSBatchOpsImpl extends AbstractTableBatchOps {
            tableLsOpRequest.setConsistencyLevel(ObReadConsistency.STRONG);
        }
        tableLsOpRequest.setHbaseOpType(hbaseOpType);
-
         ObTableLSOpResult subLSOpResult;
         boolean needRefreshPartitionLocation = false;
         int tryTimes = 0;

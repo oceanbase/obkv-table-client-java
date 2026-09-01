@@ -64,6 +64,20 @@ public class ObHashUtilTest {
     }
 
     @Test
+    public void testVarcharHashHonorsObBytesStringRange() {
+        byte[] exact = new byte[] { 'A', 'b', 'C' };
+        ObBytesString slice = new ObBytesString(new byte[] { 0x01, 'A', 'b', 'C', 0x02 }, 1, 3);
+
+        for (ObCollationType collationType : new ObCollationType[] {
+                ObCollationType.CS_TYPE_UTF8MB4_GENERAL_CI, ObCollationType.CS_TYPE_UTF8MB4_BIN,
+                ObCollationType.CS_TYPE_BINARY }) {
+            Assert.assertEquals(
+                ObHashUtils.varcharHash(exact, collationType, 47, ObPartFuncType.KEY_V3),
+                ObHashUtils.varcharHash(slice, collationType, 47, ObPartFuncType.KEY_V3));
+        }
+    }
+
+    @Test
     public void testMurmurHash() {
         String hello = "HelloWorld";
         Assert.assertEquals(1204826224913109481L, MurmurHash.hash64(hello));

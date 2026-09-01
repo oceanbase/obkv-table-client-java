@@ -24,7 +24,9 @@ import com.alipay.oceanbase.rpc.table.ObFTSParams;
 import com.alipay.oceanbase.rpc.table.ObHBaseParams;
 import com.alipay.oceanbase.rpc.table.ObKVParams;
 import com.alipay.oceanbase.rpc.table.ObKVParamsBase;
+import com.alipay.oceanbase.rpc.util.ObByteBuf;
 import com.alipay.oceanbase.rpc.util.ObBytesString;
+import com.alipay.oceanbase.rpc.util.Serialization;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import org.junit.Assert;
@@ -35,6 +37,8 @@ import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 public class ObTableQueryPayloadTest {
 
@@ -57,6 +61,11 @@ public class ObTableQueryPayloadTest {
         ObHTableFilter obHTableFilter = getObHTableFilter();
 
         byte[] bytes = obHTableFilter.encode();
+        ObByteBuf obByteBuf = new ObByteBuf(bytes.length);
+        obHTableFilter.encode(obByteBuf);
+        assertEquals(bytes.length, obByteBuf.pos);
+        assertArrayEquals(bytes, obByteBuf.bytes);
+
         ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer();
         buf.writeBytes(bytes);
 
@@ -65,6 +74,16 @@ public class ObTableQueryPayloadTest {
 
         checkObHTableFilter(obHTableFilter, newObHTableFilter);
 
+    }
+
+    @Test
+    public void test_ObHTableFilterResetPayloadSize() {
+        ObHTableFilter obHTableFilter = new ObHTableFilter();
+        long emptyFilterSize = obHTableFilter.getPayloadContentSize();
+
+        obHTableFilter.setFilterString("123".getBytes());
+
+        assertEquals(emptyFilterSize + 3, obHTableFilter.getPayloadContentSize());
     }
 
     @Test
@@ -154,6 +173,66 @@ public class ObTableQueryPayloadTest {
     }
 
     @Test
+    public void test_ObTableQueryResultWithRows() {
+        ObTableQueryResult obTableQueryResult = getObTableQueryResultWithRows();
+
+        byte[] bytes = obTableQueryResult.encode();
+        ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer();
+        buf.writeBytes(bytes);
+
+        ObTableQueryResult decodedResult = new ObTableQueryResult();
+        decodedResult.decode(buf);
+
+        assertEquals(2, decodedResult.getRowCount());
+        assertEquals(obTableQueryResult.getPropertiesNames(), decodedResult.getPropertiesNames());
+        assertEquals(2, decodedResult.getPropertiesRows().size());
+        assertEquals(3, decodedResult.getPropertiesRows().get(0).size());
+        assertEquals(11L, decodedResult.getPropertiesRows().get(0).get(0).getValue());
+        assertEquals(13L, decodedResult.getPropertiesRows().get(0).get(2).getValue());
+        assertEquals(21L, decodedResult.getPropertiesRows().get(1).get(0).getValue());
+        assertEquals(23L, decodedResult.getPropertiesRows().get(1).get(2).getValue());
+        assertTrue(decodedResult.getPropertiesNames() instanceof ArrayList);
+        assertTrue(decodedResult.getPropertiesRows() instanceof ArrayList);
+        assertTrue(decodedResult.getPropertiesRows().get(0) instanceof ArrayList);
+
+        decodedResult.getPropertiesNames().add("extra");
+        assertEquals("extra", decodedResult.getPropertiesNames().remove(3));
+        decodedResult.getPropertiesRows().get(0).add(ObObj.getInstance(14L));
+        assertEquals(14L, decodedResult.getPropertiesRows().get(0).remove(3).getValue());
+        buf.release();
+    }
+
+    @Test
+    public void test_ObTableQueryResultDecodeReplacesPreviousRows() {
+        ObTableQueryResult decodedResult = new ObTableQueryResult();
+        ByteBuf firstBuf = PooledByteBufAllocator.DEFAULT.buffer();
+        firstBuf.writeBytes(getObTableQueryResultWithRows().encode());
+        decodedResult.decode(firstBuf);
+        firstBuf.release();
+
+        ObTableQueryResult emptyResult = new ObTableQueryResult();
+        emptyResult.addPropertiesName("only");
+        emptyResult.setRowCount(0);
+        ByteBuf secondBuf = PooledByteBufAllocator.DEFAULT.buffer();
+        secondBuf.writeBytes(emptyResult.encode());
+        decodedResult.decode(secondBuf);
+
+        assertEquals(0, decodedResult.getRowCount());
+        assertEquals(1, decodedResult.getPropertiesNames().size());
+        assertEquals("only", decodedResult.getPropertiesNames().get(0));
+        assertTrue(decodedResult.getPropertiesRows().isEmpty());
+        secondBuf.release();
+    }
+
+    @Test
+    public void test_ObTableQueryResultRejectsInvalidCounts() {
+        assertInvalidPropertyCount(-1L);
+        assertInvalidPropertyCount((long) Integer.MAX_VALUE + 1);
+        assertInvalidRowCount(-1L);
+        assertInvalidRowCount((long) Integer.MAX_VALUE + 1);
+    }
+
+    @Test
     public void testFtsParam() {
         ObFTSParams ftsParams = new ObFTSParams();
         ftsParams.setSearchText("oceanbase");
@@ -196,6 +275,54 @@ public class ObTableQueryPayloadTest {
         obTableQuery.setScanOrder(ObScanOrder.Forward);
 
         return obTableQuery;
+    }
+
+    private ObTableQueryResult getObTableQueryResultWithRows() {
+        ObTableQueryResult result = new ObTableQueryResult();
+        result.addPropertiesName("c1");
+        result.addPropertiesName("c2");
+        result.addPropertiesName("c3");
+        result.addPropertiesRow(getObObjRow(11L, 12L, 13L));
+        result.addPropertiesRow(getObObjRow(21L, 22L, 23L));
+        result.setRowCount(result.getPropertiesRows().size());
+        return result;
+    }
+
+    private List<ObObj> getObObjRow(long first, long second, long third) {
+        List<ObObj> row = new ArrayList<ObObj>(3);
+        row.add(ObObj.getInstance(first));
+        row.add(ObObj.getInstance(second));
+        row.add(ObObj.getInstance(third));
+        return row;
+    }
+
+    private void assertInvalidPropertyCount(long propertyCount) {
+        ByteBuf buf = newQueryResultBuffer(Serialization.encodeVi64(propertyCount));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+            () -> new ObTableQueryResult().decode(buf));
+        assertTrue(exception.getMessage().contains("property count"));
+        buf.release();
+    }
+
+    private void assertInvalidRowCount(long rowCount) {
+        byte[] propertyCount = Serialization.encodeVi64(0);
+        byte[] encodedRowCount = Serialization.encodeVi64(rowCount);
+        byte[] content = new byte[propertyCount.length + encodedRowCount.length];
+        System.arraycopy(propertyCount, 0, content, 0, propertyCount.length);
+        System.arraycopy(encodedRowCount, 0, content, propertyCount.length, encodedRowCount.length);
+
+        ByteBuf buf = newQueryResultBuffer(content);
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+            () -> new ObTableQueryResult().decode(buf));
+        assertTrue(exception.getMessage().contains("row count"));
+        buf.release();
+    }
+
+    private ByteBuf newQueryResultBuffer(byte[] content) {
+        ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer();
+        buf.writeBytes(Serialization.encodeObUniVersionHeader(1, content.length));
+        buf.writeBytes(content);
+        return buf;
     }
 
     private void checkObTableQuery(ObTableQuery obTableQuery, ObTableQuery newObTableQuery) {

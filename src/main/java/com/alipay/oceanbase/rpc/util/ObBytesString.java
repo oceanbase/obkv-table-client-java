@@ -25,9 +25,13 @@ import java.util.ArrayList;
 public class ObBytesString implements Comparable<ObBytesString> {
 
     public byte[] bytes;
+    public int    offset;
+    private int   stringLength;
 
     public ObBytesString() {
         this.bytes = new byte[0];
+        this.offset = 0;
+        this.stringLength = 0;
     }
 
     public ObBytesString(byte[] bytes) {
@@ -35,6 +39,25 @@ public class ObBytesString implements Comparable<ObBytesString> {
             throw new IllegalArgumentException("ObBytesString bytes can not be null ");
         }
         this.bytes = bytes;
+        this.offset = 0;
+        this.stringLength = bytes.length;
+    }
+
+    /**
+     * View into {@code bytes[offset, offset+length)}. Encode copies only this region.
+     */
+    public ObBytesString(byte[] bytes, int offset, int length) {
+        if (bytes == null) {
+            throw new IllegalArgumentException("ObBytesString bytes can not be null ");
+        }
+        if (offset < 0 || length < 0 || offset > bytes.length || length > bytes.length - offset) {
+            throw new IllegalArgumentException("ObBytesString invalid range offset=" + offset
+                                               + " length=" + length + " bytes.length="
+                                               + bytes.length);
+        }
+        this.bytes = bytes;
+        this.offset = offset;
+        this.stringLength = length;
     }
 
     public ObBytesString(String str) {
@@ -42,6 +65,8 @@ public class ObBytesString implements Comparable<ObBytesString> {
             throw new IllegalArgumentException("ObBytesString str can not be null ");
         }
         this.bytes = Serialization.strToBytes(str);
+        this.offset = 0;
+        this.stringLength = this.bytes.length;
     }
 
     /**
@@ -49,7 +74,7 @@ public class ObBytesString implements Comparable<ObBytesString> {
      * @return length
      */
     public int length() {
-        return bytes.length;
+        return stringLength;
     }
 
     /**
@@ -64,7 +89,7 @@ public class ObBytesString implements Comparable<ObBytesString> {
         if (o == null || getClass() != o.getClass())
             return false;
         ObBytesString that = (ObBytesString) o;
-        return compare(bytes, that.bytes) == 0;
+        return compare(this, that) == 0;
     }
 
     /**
@@ -74,17 +99,17 @@ public class ObBytesString implements Comparable<ObBytesString> {
      */
     @Override
     public int compareTo(ObBytesString another) {
-        return compare(bytes, another.bytes);
+        return compare(this, another);
     }
 
-    private int compare(byte[] s, byte[] t) {
-        int len1 = s.length;
-        int len2 = t.length;
+    private static int compare(ObBytesString s, ObBytesString t) {
+        int len1 = s.stringLength;
+        int len2 = t.stringLength;
         int lim = Math.min(len1, len2);
         int k = 0;
         while (k < lim) {
-            byte c1 = s[k];
-            byte c2 = t[k];
+            byte c1 = s.bytes[s.offset + k];
+            byte c2 = t.bytes[t.offset + k];
             if (c1 != c2) {
                 return c1 - c2;
             }
@@ -95,21 +120,20 @@ public class ObBytesString implements Comparable<ObBytesString> {
 
     public ObBytesString[] split(byte delim) {
         ArrayList<ObBytesString> list = new ArrayList<>();
-        int start = 0;
-        for (int i = 0; i < bytes.length; ++i) {
+        int start = offset;
+        int end = offset + stringLength;
+        for (int i = offset; i < end; ++i) {
             if (bytes[i] == delim) {
                 byte[] data = new byte[i - start];
                 System.arraycopy(bytes, start, data, 0, data.length);
-                ObBytesString str = new ObBytesString(data);
-                list.add(str);
+                list.add(new ObBytesString(data));
                 start = i + 1;
             }
         }
-        if (start < bytes.length) {
-            byte[] data = new byte[bytes.length - start];
+        if (start < end) {
+            byte[] data = new byte[end - start];
             System.arraycopy(bytes, start, data, 0, data.length);
-            ObBytesString str = new ObBytesString(data);
-            list.add(str);
+            list.add(new ObBytesString(data));
         }
         return list.toArray(new ObBytesString[0]);
     }

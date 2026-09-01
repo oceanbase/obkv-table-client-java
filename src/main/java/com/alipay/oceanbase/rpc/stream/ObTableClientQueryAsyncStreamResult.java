@@ -107,8 +107,11 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
 
     protected void cacheResultRows(ObTableQueryAsyncResult tableQueryResult) {
         cacheRows.clear();
-        cacheRows.addAll(tableQueryResult.getAffectedEntity().getPropertiesRows());
-        cacheProperties = tableQueryResult.getAffectedEntity().getPropertiesNames();
+        cacheHBaseCellBatches.clear();
+        currentHBaseCellBatch = null;
+        currentHBaseCellIndex = -1;
+        currentHBaseCell = false;
+        super.cacheResultRows(tableQueryResult.getAffectedEntity());
     }
 
     protected ObTableQueryAsyncResult referToNewPartition(ObPair<Long, ObTableParam> partIdWithObTable)
@@ -197,7 +200,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                     && entry.getPartitionInfo().getLevel() == ObPartitionLevel.LEVEL_ONE
                     && entry.getPartitionInfo().getFirstPartDesc().getPartFuncType().isRangePart()) {
                     this.asyncRequest.getObTableQueryRequest().getTableQuery()
-                        .adjustStartKey(currentStartKey);
+                        .adjustStartKey(getCurrentStartKeyForRetry());
                     setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
                         .getTableQuery(), realTableName));
                     setEnd(true);
@@ -213,7 +216,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         if (isEnd()) {
             it.remove();
         }
-        if (!cacheRows.isEmpty()) {
+        if (hasCachedRows()) {
             nextRow();
             return true;
         }
@@ -241,7 +244,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                         && tableEntry.getPartitionInfo().getFirstPartDesc().getPartFuncType()
                             .isRangePart()) {
                         this.asyncRequest.getObTableQueryRequest().getTableQuery()
-                            .adjustStartKey(currentStartKey);
+                            .adjustStartKey(getCurrentStartKeyForRetry());
                         setExpectant(refreshPartition(this.asyncRequest.getObTableQueryRequest()
                             .getTableQuery(), realTableName));
                     } else {
@@ -267,7 +270,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
             if (isEnd()) {
                 it.remove();
             }
-            if (!cacheRows.isEmpty()) {
+            if (hasCachedRows()) {
                 hasNext = true;
                 nextRow();
                 break;
@@ -322,7 +325,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
         try {
             hasDoneRpc = false;
             // firstly, refer to the cache
-            if (!cacheRows.isEmpty()) {
+            if (hasCachedRows()) {
                 nextRow();
                 return true;
             }
@@ -337,7 +340,7 @@ public class ObTableClientQueryAsyncStreamResult extends AbstractQueryStreamResu
                     // new server does not store the current session_id
                     // only support range-partitioned table, check in server
                     this.asyncRequest.getObTableQueryRequest().getTableQuery()
-                        .adjustStartKey(currentStartKey);
+                        .adjustStartKey(getCurrentStartKeyForRetry());
                     // just need to asjust startKey to anchor the correct position
                     // no need to refresh partition id for session_id missing
                     hasNext = queryNewStreamResultInNext();

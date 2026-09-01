@@ -33,6 +33,7 @@ public class ObTableSingleOpResult extends AbstractPayload {
     private String                executeHost;
     private int                   executePort;
     private List<String>          propertiesColumnNames = new ArrayList<>();
+    private boolean               decodeHBaseKqtv = false;
     /*
      * Get pcode.
      */
@@ -92,6 +93,8 @@ public class ObTableSingleOpResult extends AbstractPayload {
 
             // 3. decode Entity
             this.entity.setAggPropertiesNames(propertiesColumnNames);
+            this.entity.setDecodeHBaseKqtv(
+                decodeHBaseKqtv && operationType == ObTableOperationType.GET);
             this.entity.decode(buf);
 
             // 4. decode affected rows
@@ -156,6 +159,10 @@ public class ObTableSingleOpResult extends AbstractPayload {
      */
     public void setEntity(ObTableSingleOpEntity entity) {
         this.entity = entity;
+    }
+
+    public void setDecodeHBaseKqtv(boolean decodeHBaseKqtv) {
+        this.decodeHBaseKqtv = decodeHBaseKqtv;
     }
 
     /*

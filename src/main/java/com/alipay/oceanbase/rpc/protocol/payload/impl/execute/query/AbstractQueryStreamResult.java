@@ -64,6 +64,10 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     protected Map<Long, ObPair<Long, ObTableParam>>                            expectant;
     protected List<String>                                                     cacheProperties     = new LinkedList<String>();
     protected LinkedList<List<ObObj>>                                          cacheRows           = new LinkedList<List<ObObj>>();
+    protected ArrayDeque<ObHBaseCellBatch>                                     cacheHBaseCellBatches = new ArrayDeque<ObHBaseCellBatch>();
+    protected ObHBaseCellBatch                                                 currentHBaseCellBatch;
+    protected int                                                              currentHBaseCellIndex = -1;
+    protected boolean                                                          currentHBaseCell;
     private LinkedList<ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>> partitionLastResult = new LinkedList<ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>>();
     private ObReadConsistency                                                  readConsistency     = ObReadConsistency.STRONG;
     // ObRowKey objs: [startKey, MIN_OBJECT, MIN_OBJECT]
@@ -312,7 +316,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         lock.lock();
         try {
             // firstly, refer to the cache
-            if (!cacheRows.isEmpty()) {
+            if (hasCachedRows()) {
                 nextRow();
                 return true;
             }
@@ -341,10 +345,10 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                 Map.Entry<Long, ObPair<Long, ObTableParam>> entry = it.next();
                 referPartition.add(entry);
                 try {
-                    // Mark the refer partition  
+                    // Mark the refer partition
                     referPartition.add(entry);
 
-                    // Try accessing the new partition  
+                    // Try accessing the new partition
                     ObTableQueryResult tableQueryResult = (ObTableQueryResult) referToNewPartition(entry
                         .getValue());
 
@@ -360,7 +364,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                     if (shouldRetry(e)) {
                         // TODO: need to skip over the partitions that have been scanned
                         setExpectant(refreshPartition(tableQuery, tableName));
-                        // Reset the iterator to start over  
+                        // Reset the iterator to start over
                         it = expectant.entrySet().iterator();
                         referPartition.clear(); // Clear the referPartition if needed
                     } else {
@@ -473,10 +477,35 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
 
     protected void nextRow() {
         rowIndex = rowIndex + 1;
-        row = cacheRows.poll();
-        if (row != null) {
+        row = null;
+        currentStartKey = null;
+        currentHBaseCell = false;
+
+        if (!cacheRows.isEmpty()) {
+            row = cacheRows.poll();
             currentStartKey = row;
+            return;
         }
+
+        while (currentHBaseCellBatch == null
+               || currentHBaseCellIndex + 1 >= currentHBaseCellBatch.size()) {
+            currentHBaseCellBatch = cacheHBaseCellBatches.pollFirst();
+            currentHBaseCellIndex = -1;
+            if (currentHBaseCellBatch == null) {
+                return;
+        }
+        }
+
+        currentHBaseCellIndex++;
+        currentHBaseCell = true;
+    }
+
+    protected boolean hasCachedRows() {
+        if (!cacheRows.isEmpty() || !cacheHBaseCellBatches.isEmpty()) {
+            return true;
+        }
+        return currentHBaseCellBatch != null
+               && currentHBaseCellIndex + 1 < currentHBaseCellBatch.size();
     }
 
     protected void checkStatus() throws IllegalStateException {
@@ -562,12 +591,22 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
 
     private void resetCachedResult() {
         cacheRows.clear();
+        cacheHBaseCellBatches.clear();
+        currentHBaseCellBatch = null;
+        currentHBaseCellIndex = -1;
+        currentHBaseCell = false;
         cacheProperties.clear();
         partitionLastResult.clear();
     }
 
     protected void cacheResultRows(ObTableQueryResult tableQueryResult) {
-        cacheRows.addAll(tableQueryResult.getPropertiesRows());
+        ObHBaseCellBatch batch = tableQueryResult.getHBaseCellBatch();
+        if (batch != null && cacheRows.isEmpty()) {
+            cacheHBaseCellBatches.addLast(batch);
+        } else {
+            materializeCachedHBaseCells();
+            cacheRows.addAll(tableQueryResult.getPropertiesRows());
+        }
         cacheProperties = tableQueryResult.getPropertiesNames();
     }
 
@@ -581,8 +620,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
     }
 
     private void cacheResultRows(ObTableQueryAsyncResult tableQueryAsyncResult) {
-        cacheRows.addAll(tableQueryAsyncResult.getAffectedEntity().getPropertiesRows());
-        cacheProperties = tableQueryAsyncResult.getAffectedEntity().getPropertiesNames();
+        cacheResultRows(tableQueryAsyncResult.getAffectedEntity());
     }
 
     protected void cacheStreamNext(ObPair<Long, ObTableParam> partIdWithObTable,
@@ -606,7 +644,90 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         if (rowIndex == -1) {
             throw new IllegalStateException("before result set start");
         }
+        if (row == null && currentHBaseCell) {
+            row = currentHBaseCellBatch.materializeRow(currentHBaseCellIndex);
+            currentStartKey = row;
+        }
         return row;
+    }
+
+    public boolean isCurrentHBaseCell() {
+        return currentHBaseCell;
+    }
+
+    public ObHBaseCellBatch getCurrentHBaseCellBatch() {
+        if (!currentHBaseCell) {
+            throw new IllegalStateException("current row is not a compact HBase cell");
+        }
+        return currentHBaseCellBatch;
+    }
+
+    public int getCurrentHBaseCellIndex() {
+        if (!currentHBaseCell) {
+            throw new IllegalStateException("current row is not a compact HBase cell");
+        }
+        return currentHBaseCellIndex;
+    }
+
+    /**
+     * Drain the compact cells for the current HBase row without materializing them as ObObj rows.
+     * The method only consumes already cached batches and leaves the first cell of the next row
+     * unread. Fetching another stream page remains the responsibility of {@link #next()}.
+     */
+    public ObHBaseCellRow drainCurrentHBaseRow() {
+        lock.lock();
+        try {
+            checkStatus();
+            if (!currentHBaseCell || currentHBaseCellBatch == null || currentHBaseCellIndex < 0) {
+                throw new IllegalStateException("current row is not a compact HBase cell");
+            }
+
+            byte[] rowKey = currentHBaseCellBatch.getRowKey(currentHBaseCellIndex);
+            ObHBaseCellRow hbaseRow = new ObHBaseCellRow(rowKey);
+
+            while (true) {
+                ObHBaseCellBatch batch = currentHBaseCellBatch;
+                int fromIndex = currentHBaseCellIndex;
+                int toIndex = fromIndex + 1;
+                while (toIndex < batch.size() && Arrays.equals(rowKey, batch.getRowKey(toIndex))) {
+                    toIndex++;
+                }
+
+                hbaseRow.addSlice(batch, fromIndex, toIndex);
+                currentHBaseCellIndex = toIndex - 1;
+
+                if (toIndex < batch.size()) {
+                    break;
+                }
+
+                ObHBaseCellBatch nextBatch = cacheHBaseCellBatches.peekFirst();
+                while (nextBatch != null && nextBatch.size() == 0) {
+                    cacheHBaseCellBatches.pollFirst();
+                    nextBatch = cacheHBaseCellBatches.peekFirst();
+                }
+                if (nextBatch == null || !Arrays.equals(rowKey, nextBatch.getRowKey(0))) {
+                    break;
+                }
+
+                currentHBaseCellBatch = cacheHBaseCellBatches.pollFirst();
+                currentHBaseCellIndex = 0;
+            }
+
+            rowIndex += hbaseRow.getCellCount() - 1;
+            row = null;
+            currentStartKey = null;
+            currentHBaseCell = true;
+            return hbaseRow;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    protected List<ObObj> getCurrentStartKeyForRetry() {
+        if (currentStartKey == null && currentHBaseCell) {
+            currentStartKey = currentHBaseCellBatch.materializeRow(currentHBaseCellIndex);
+        }
+        return currentStartKey;
     }
 
     /*
@@ -694,7 +815,37 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
      * Get cache rows.
      */
     public LinkedList<List<ObObj>> getCacheRows() {
+        materializeCachedHBaseCells();
         return cacheRows;
+    }
+
+    @Override
+    public int getCachedRowCount() {
+        int cachedRowCount = cacheRows.size();
+        if (currentHBaseCellBatch != null) {
+            cachedRowCount += currentHBaseCellBatch.size() - currentHBaseCellIndex - 1;
+        }
+        for (ObHBaseCellBatch batch : cacheHBaseCellBatches) {
+            cachedRowCount += batch.size();
+        }
+        return cachedRowCount;
+    }
+
+    private void materializeCachedHBaseCells() {
+        if (currentHBaseCellBatch != null) {
+            if (currentHBaseCell && row == null) {
+                row = currentHBaseCellBatch.materializeRow(currentHBaseCellIndex);
+                currentStartKey = row;
+            }
+            cacheRows.addAll(currentHBaseCellBatch.materializeRows(currentHBaseCellIndex + 1));
+            currentHBaseCellBatch = null;
+            currentHBaseCellIndex = -1;
+            currentHBaseCell = false;
+        }
+        ObHBaseCellBatch batch;
+        while ((batch = cacheHBaseCellBatches.pollFirst()) != null) {
+            cacheRows.addAll(batch.materializeRows(0));
+        }
     }
 
     public LinkedList<ObPair<ObPair<Long, ObTableParam>, ObTableQueryResult>> getPartitionLastResult() {

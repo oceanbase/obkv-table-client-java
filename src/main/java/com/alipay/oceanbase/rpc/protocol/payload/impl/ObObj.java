@@ -29,6 +29,13 @@ public class ObObj implements ObSimplePayload {
     private static long  MAX_OBJECT_VALUE = -2L;
     private static long  MIN_OBJECT_VALUE = -3L;
 
+    /** Cached meta for HBase Put V2 hot path (Q/V rowkey bytes or slice view). */
+    private static final ObObjMeta HBASE_PUT_VARCHAR_META = ObObjType.ObVarcharType
+                                                              .getDefaultObjMeta();
+    /** Cached meta for HBase Put V2 timestamp / TTL (signed int64). */
+    private static final ObObjMeta HBASE_PUT_INT64_META   = ObObjType.ObInt64Type
+                                                              .getDefaultObjMeta();
+
     static {
         MAX_OBJECT = new ObObj(ObObjType.ObExtendType.getDefaultObjMeta(), MAX_OBJECT_VALUE);
         MIN_OBJECT = new ObObj(ObObjType.ObExtendType.getDefaultObjMeta(), MIN_OBJECT_VALUE);
@@ -164,6 +171,20 @@ public class ObObj implements ObSimplePayload {
         } else {
             return new ObObj(meta, value);
         }
+    }
+
+    /**
+     * HBase Put V2 Q/V/rowkey: skip {@link ObObjType#defaultObjMeta(Object)} dispatch.
+     */
+    public static ObObj hbasePutVarchar(Object value) {
+        return new ObObj(HBASE_PUT_VARCHAR_META, value);
+    }
+
+    /**
+     * HBase Put V2 timestamp / cell TTL: skip meta lookup; value autoboxes once to Long.
+     */
+    public static ObObj hbasePutInt64(long value) {
+        return new ObObj(HBASE_PUT_INT64_META, value);
     }
 
     /*

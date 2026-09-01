@@ -750,16 +750,16 @@ public class Serialization {
             str = new ObBytesString(new byte[0]);
         }
         byte[] data = str.bytes;
-        int dataLen = data.length;
+        int dataLen = str.length();
+        int dataOff = str.offset;
         int strLen = getNeedBytes(dataLen);
         byte[] ret = new byte[strLen + dataLen + 1];
         int index = 0;
         for (byte b : encodeVi32(dataLen)) {
             ret[index++] = b;
         }
-        for (byte b : data) {
-            ret[index++] = b;
-        }
+        System.arraycopy(data, dataOff, ret, index, dataLen);
+        index += dataLen;
         ret[index] = 0;
         return ret;
     }
@@ -774,8 +774,8 @@ public class Serialization {
             throw new NullPointerException();
         int dataLen = (str == null ? 0 : str.length());
         encodeVi32(buf, dataLen);
-        if (str != null) {
-            buf.writeBytes(str.bytes);
+        if (str != null && dataLen > 0) {
+            buf.writeBytes(str.bytes, str.offset, dataLen);
         }
         buf.writeByte((byte) 0x00);
     }
@@ -890,6 +890,27 @@ public class Serialization {
         buf.readBytes(content);
         buf.readByte();// skip the end byte '0'
         return new ObBytesString(content);
+    }
+
+    /**
+     * Decode a binary column directly to byte[] without creating an ObBytesString.
+     * @param buf input data
+     * @return decoded binary column
+     */
+    public static byte[] decodeBinaryColumn(ByteBuf buf) {
+        int dataLen = decodeVi32(buf);
+        if (dataLen < 0 || dataLen > buf.readableBytes() - 1) {
+            throw new IllegalArgumentException("invalid binary column length: " + dataLen
+                                               + ", readable bytes: " + buf.readableBytes());
+        }
+
+        byte[] content = new byte[dataLen];
+        buf.readBytes(content);
+        byte terminator = buf.readByte();
+        if (terminator != 0) {
+            throw new IllegalArgumentException("invalid binary column terminator: " + terminator);
+        }
+        return content;
     }
 
     /**

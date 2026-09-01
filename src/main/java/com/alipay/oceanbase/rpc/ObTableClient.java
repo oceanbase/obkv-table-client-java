@@ -2258,8 +2258,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
             String realTableName = request.getCfRows().get(0).getRealTableName();
             int keyIdx = request.getCfRows().get(0).getKeyIndex(0);
             row.add("K", request.getKeys().get(keyIdx).getValue());
-            row.add("Q", request.getCfRows().get(0).getCells().get(0).getQ().getValue());
-            row.add("T", request.getCfRows().get(0).getCells().get(0).getT().getValue());
+            row.add("Q", request.getCfRows().get(0).getFirstCellQualifierValue());
+            row.add("T", request.getCfRows().get(0).getFirstCellTimestampValue());
             return execute(realTableName,
                     new OperationExecuteCallback<ObPayload>(row, null) {
                         @Override

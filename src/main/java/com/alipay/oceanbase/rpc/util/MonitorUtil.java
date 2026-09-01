@@ -261,7 +261,7 @@ public class MonitorUtil {
 
         String argsValue = buildParamsString(params);
 
-        String res = String.valueOf(result.getCacheRows().size());
+        String res = String.valueOf(result.getCachedRowCount());
 
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(traceId).append(",").append(database).append(",").append(tableName)
