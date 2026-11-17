@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -100,6 +101,24 @@ public class TableLocations {
      */
     public TableEntry refreshMeta(String tableName, ServerRoster serverRoster,
                                   final ObUserAuth sysUA) throws Exception {
+        return refreshMeta(tableName, serverRoster, sysUA, null, false);
+    }
+
+    /**
+     * Refresh a known stale entry without removing it first. Reuse a cached entry
+     * only if its table ID differs from the captured entry; otherwise bypass refresh
+     * throttling and load complete metadata, even if the cached object has changed.
+     *
+     * @param expectedEntry entry used by the failed request; null if it had no entry
+     */
+    public TableEntry refreshMeta(String tableName, ServerRoster serverRoster,
+                                  final ObUserAuth sysUA, TableEntry expectedEntry) throws Exception {
+        return refreshMeta(tableName, serverRoster, sysUA, expectedEntry, true);
+    }
+
+    private TableEntry refreshMeta(String tableName, ServerRoster serverRoster,
+                                   final ObUserAuth sysUA, TableEntry expectedEntry,
+                                   boolean forceRefresh) throws Exception {
         long runtimeMaxWait = tableClient.getRuntimeMaxWait();
         int tableEntryRefreshContinuousFailureCeiling = tableClient
             .getTableEntryRefreshContinuousFailureCeiling();
@@ -107,8 +126,12 @@ public class TableLocations {
         long refreshMetaInterval = getTableLevelRefreshInterval(serverRoster);
 
         TableEntry tableEntry = locations.get(tableName);
+        if (forceRefresh && tableEntry != null && expectedEntry != null
+            && !Objects.equals(tableEntry.getTableId(), expectedEntry.getTableId())) {
+            return tableEntry;
+        }
         // avoid bad contention in high concurrent situation
-        if (tableEntry != null) {
+        if (!forceRefresh && tableEntry != null) {
             long current = System.currentTimeMillis();
             long fetchMetaInterval = current - tableEntry.getRefreshMetaTimeMills();
             // if refreshed within refreshMetaInterval, do not refresh
@@ -151,7 +174,11 @@ public class TableLocations {
                     }
                     logger.debug("success to acquire refresh table meta lock, tableName: {}", tableName);
                     tableEntry = locations.get(tableName);
-                    if (tableEntry != null) {
+                    if (forceRefresh && tableEntry != null && expectedEntry != null
+                        && !Objects.equals(tableEntry.getTableId(), expectedEntry.getTableId())) {
+                        return tableEntry;
+                    }
+                    if (!forceRefresh && tableEntry != null) {
                         long current = System.currentTimeMillis();
                         long fetchMetaInterval = current - tableEntry.getRefreshMetaTimeMills();
                         // if refreshed within refreshMetaInterval, do not refresh
@@ -164,7 +191,9 @@ public class TableLocations {
                             return tableEntry;
                         }
                     }
-                    return refreshTableEntry(tableEntry, tableName, serverRoster, sysUA);
+                    // A forced identity refresh must not reuse the old tablet metadata.
+                    return refreshTableEntry(forceRefresh ? null : tableEntry, tableName,
+                        serverRoster, sysUA);
                 } catch (ObTableTryLockTimeoutException e) {
                     // if try lock timeout, need to retry
                     RUNTIME.warn("wait to try lock to timeout when refresh table meta, tryTimes: {}",
@@ -287,6 +316,7 @@ public class TableLocations {
         if (tableEntry == null) {
             throw new ObTableGetException("Need to fetch meta for table: " + tableName + ".");
         }
+        TableEntry expectedEntry = tableEntry;
         ObPartitionLocationInfo locationInfo = tableEntry.getPartitionEntry().getPartitionInfo(
             tabletId);
         long refreshMetaInterval = getTableLevelRefreshInterval(serverRoster);
@@ -397,7 +427,7 @@ public class TableLocations {
             if (serverRoster.getServerLdcLocation() != null && serverRoster.getServerLdcLocation().isLdcUsed()) {
                 tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
             }
-            locations.put(tableName, tableEntry);
+            tableEntry = cacheRefreshedLocation(tableName, expectedEntry, tableEntry);
             tableEntryRefreshContinuousFailureCount.set(0);
             return tableEntry;
         } finally {
@@ -419,6 +449,7 @@ public class TableLocations {
         if (tableEntry == null) {
             throw new ObTableGetException("Need to fetch meta for table: " + tableName + ".");
         }
+        TableEntry expectedEntry = tableEntry;
         int tableEntryRefreshContinuousFailureCeiling = tableClient
             .getTableEntryRefreshContinuousFailureCeiling();
         long runtimeMaxWait = tableClient.getRuntimeMaxWait();
@@ -526,7 +557,7 @@ public class TableLocations {
             if (serverRoster.getServerLdcLocation() != null && serverRoster.getServerLdcLocation().isLdcUsed()) {
                 tableEntry.prepareForWeakRead(serverRoster.getServerLdcLocation());
             }
-            locations.put(tableName, tableEntry);
+            tableEntry = cacheRefreshedLocation(tableName, expectedEntry, tableEntry);
             tableEntryRefreshContinuousFailureCount.set(0);
             return tableEntry;
         } finally {
@@ -534,6 +565,22 @@ public class TableLocations {
                 lock.unlock();
             }
         }
+    }
+
+    /**
+     * An in-flight location refresh must not overwrite a new identity or restore an
+     * explicitly removed entry. Return the current entry if another refresh won.
+     */
+    TableEntry cacheRefreshedLocation(String tableName, TableEntry expectedEntry,
+                                       TableEntry refreshedEntry) {
+        if (locations.replace(tableName, expectedEntry, refreshedEntry)) {
+            return refreshedEntry;
+        }
+        TableEntry currentEntry = locations.get(tableName);
+        if (currentEntry == null) {
+            throw new ObTableGetException("Need to fetch meta for table: " + tableName + ".");
+        }
+        return currentEntry;
     }
 
     private long getTableLevelRefreshInterval(ServerRoster serverRoster) {

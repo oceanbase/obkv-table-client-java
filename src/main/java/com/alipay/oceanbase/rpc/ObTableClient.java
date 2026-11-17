@@ -410,6 +410,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     private <T> T execute(String tableName, TableExecuteCallback<T> callback, ObReadConsistency currentConsistencyLevel)
                                                                                                   throws Exception {
+        return execute(tableName, callback, currentConsistencyLevel, null);
+    }
+
+    private <T> T execute(String tableName, TableExecuteCallback<T> callback,
+                          ObReadConsistency currentConsistencyLevel,
+                          Set<String> failedServers) throws Exception {
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
         }
@@ -444,7 +450,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         long tabletId = tableRoute.getTabletIdByPartId(entry, partId);
                         tableRoute.refreshPartitionLocation(tableName, tabletId, entry);
                     }
-                    tableParam = tableRoute.getTableParam(tableName, rowKey);
+                    tableParam = failedServers == null ? tableRoute.getTableParam(tableName, rowKey)
+                        : tableRoute.getTableParam(tableName, rowKey, currentConsistencyLevel, failedServers);
                 }
                 logger.debug("tableName: {}, tableParam obTable ip:port is {}:{}, ls_id: {}, tablet_id: {}",
                         tableName, tableParam.getObTable().getIp(), tableParam.getObTable().getPort(), tableParam.getLsId(), tableParam.getTabletId());
@@ -471,6 +478,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     needRefreshPartitionLocation = true;
                     if (ex instanceof ObTableReplicaNotReadableException) {
                         if (tableParam != null && System.currentTimeMillis() - startExecute < runtimeMaxWait) {
+                            if (failedServers != null) {
+                                ObTable failedTable = tableParam.getObTable();
+                                failedServers.add(failedTable.getIp() + ":" + failedTable.getPort());
+                            }
                             logger.warn("retry when replica not readable: {}", ex.getMessage());
                         } else {
                             logger.warn("timeout, cause replica is not readable, tryTimes={}", tryTimes);
@@ -587,6 +598,12 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
      */
     private <T> T execute(String tableName, OperationExecuteCallback<T> callback,
                                   ObReadConsistency currentConsistencyLevel) throws Exception {
+        return execute(tableName, callback, currentConsistencyLevel, null);
+    }
+
+    private <T> T execute(String tableName, OperationExecuteCallback<T> callback,
+                          ObReadConsistency currentConsistencyLevel,
+                          Set<String> failedServers) throws Exception {
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("table name is null");
         }
@@ -625,7 +642,9 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                             tableRoute.refreshPartitionLocation(tableName, tabletId, entry);
                         }
                         // using row key
-                        tableParam = tableRoute.getTableParam(tableName, callback.getRowKey(), currentConsistencyLevel);
+                        tableParam = failedServers == null
+                            ? tableRoute.getTableParam(tableName, callback.getRowKey(), currentConsistencyLevel)
+                            : tableRoute.getTableParam(tableName, callback.getRowKey(), currentConsistencyLevel, failedServers);
                     } else if (null != callback.getQuery()) {
                         if (tryTimes > 1 && needRefreshPartitionLocation) {
                             needRefreshPartitionLocation = false;
@@ -674,7 +693,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 } else {
                     needRefreshPartitionLocation = true;
                     if (ex instanceof ObTableReplicaNotReadableException) {
-                        if (tableParam != null && System.currentTimeMillis() - startExecute > runtimeMaxWait) {
+                        if (tableParam != null && System.currentTimeMillis() - startExecute < runtimeMaxWait) {
+                            if (failedServers != null) {
+                                ObTable failedTable = tableParam.getObTable();
+                                failedServers.add(failedTable.getIp() + ":" + failedTable.getPort());
+                            }
                             logger.warn("retry when replica not readable: {}", ex.getMessage());
                         } else {
                             logger.warn("timeout, cause replica is not readable, tryTimes={}", tryTimes);
@@ -1058,7 +1081,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 // partId/tabletId
                 request.setPartitionId(tableParam.getPartitionId());
                 request.setConsistencyLevel(readConsistency);
-                ObPayload result = executeWithRetry(obTable, request, tableName);
+                ObPayload result = executeWithRetry(obTable, request, tableName, tableParam);
+                obTable = tableParam.getObTable();
                 checkObTableOperationResult(obTable.getIp(), obTable.getPort(), request, result);
 
                 String endpoint = obTable.getIp() + ":" + obTable.getPort();
@@ -1067,7 +1091,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                     System.currentTimeMillis() - getTableTime, getslowQueryMonitorThreshold());
                 return ((ObTableOperationResult) result).getEntity().getSimpleProperties();
             }
-        }, tableRoute.getReadConsistency());
+        }, tableRoute.getReadConsistency(), new HashSet<String>());
     }
 
     /**
@@ -1359,7 +1383,8 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         request.setTableId(tableParam.getTableId());
                         // partId/tabletId
                         request.setPartitionId(tableParam.getPartitionId());
-                        ObPayload result = executeWithRetry(obTable, request, tableName);
+                        ObPayload result = executeWithRetry(obTable, request, tableName, tableParam);
+                        obTable = tableParam.getObTable();
                         String endpoint = obTable.getIp() + ":" + obTable.getPort();
                         MonitorUtil.info(request, database, tableName, "GET", endpoint,
                                 rowKey.getValues(), (ObTableOperationResult) result, TableTime - start,
@@ -1367,7 +1392,7 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                         checkResult(obTable.getIp(), obTable.getPort(), request, result);
                         return ((ObTableOperationResult) result).getEntity().getSimpleProperties();
                     }
-                }, readConsistency);
+                }, readConsistency, new HashSet<String>());
     }
 
     /**
@@ -1910,6 +1935,11 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
     }
 
     public ObPayload executeWithRetry(ObTable obTable, ObPayload request, String tableName) throws Exception {
+        return executeWithRetry(obTable, request, tableName, null);
+    }
+
+    private ObPayload executeWithRetry(ObTable obTable, ObPayload request, String tableName,
+                                       ObTableParam executionParam) throws Exception {
         ObPayload result = obTable.execute(request);
         if (result != null && result.getPcode() == Pcodes.OB_TABLE_API_MOVE) {
             ObTableApiMove moveResponse = (ObTableApiMove) result;
@@ -1918,6 +1948,10 @@ public class ObTableClient extends AbstractObTableClient implements Lifecycle {
                 tableRoute.refreshPartitionLocation(tableName, tabletId, null);
             }
             obTable = getTable(moveResponse);
+            // GET must record the actual endpoint if the redirected request fails.
+            if (executionParam != null) {
+                executionParam.setObTable(obTable);
+            }
             result = obTable.execute(request);
             if (result instanceof ObTableApiMove) {
                 ObTableApiMove move = (ObTableApiMove) result;

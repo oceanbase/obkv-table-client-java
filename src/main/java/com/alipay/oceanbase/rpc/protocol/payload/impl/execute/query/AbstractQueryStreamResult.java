@@ -31,6 +31,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.*;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncRequest;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObQueryOperationType;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.syncquery.ObTableQueryAsyncResult;
 import com.alipay.oceanbase.rpc.table.ObTable;
 import com.alipay.oceanbase.rpc.table.ObTableParam;
@@ -120,6 +121,9 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
         int tryTimes = 0;
         long startExecute = System.currentTimeMillis();
         Set<String> failedServerList = null;
+        boolean canSwitchReplica = request instanceof ObTableQueryRequest
+            || (request instanceof ObTableQueryAsyncRequest
+                && ((ObTableQueryAsyncRequest) request).getQueryType() == ObQueryOperationType.QUERY_START);
         while (true) {
             client.checkStatus();
             long currentExecute = System.currentTimeMillis();
@@ -146,7 +150,7 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                             client.refreshTableLocationByTabletId(indexTableName,
                                 client.getTabletIdByPartId(tableEntry, partIdWithIndex.getLeft()));
                             subObTable = client.getTableRoute().getTableWithPartId(indexTableName,
-                                partIdWithIndex.getRight().getTabletId(), readConsistency).getObTable();
+                                partIdWithIndex.getRight().getTabletId(), readConsistency, failedServerList).getObTable();
                         }
                     }
                 }
@@ -178,6 +182,10 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                                 subObTable.getIp(), subObTable.getPort(), indexTableName, result.isNeedRefreshMeta(), tabletId);
                     }
                 }
+                if (!client.isOdpMode()) {
+                    // Subsequent pages must use the server which created the session.
+                    partIdWithIndex.getRight().setObTable(subObTable);
+                }
                 client.resetExecuteContinuousFailureCount(indexTableName);
                 break;
             } catch (Exception e) {
@@ -196,14 +204,18 @@ public abstract class AbstractQueryStreamResult extends AbstractPayload implemen
                 } else {
                     needRefreshPartitionLocation = true;
                     if (e instanceof ObTableReplicaNotReadableException) {
+                        // A session ID cannot be replayed on a different replica.
+                        needRefreshPartitionLocation = canSwitchReplica;
                         if (System.currentTimeMillis() - startExecute < client.getRuntimeMaxWait()) {
                             logger.warn(
                                 "tablename:{} partition id:{} retry when replica not readable: {}",
                                 indexTableName, partIdWithIndex.getLeft(), e.getMessage(), e);
-                            if (failedServerList == null) {
-                                failedServerList = new HashSet<String>();
+                            if (canSwitchReplica) {
+                                if (failedServerList == null) {
+                                    failedServerList = new HashSet<String>();
+                                }
+                                failedServerList.add(subObTable.getIp() + ":" + subObTable.getPort());
                             }
-                            failedServerList.add(subObTable.getIp());
                         } else {
                             logger
                                 .warn(

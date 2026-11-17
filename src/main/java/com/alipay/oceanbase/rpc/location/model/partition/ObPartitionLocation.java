@@ -23,6 +23,7 @@ import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObReadConsistency;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class ObPartitionLocation {
@@ -69,31 +70,50 @@ public class ObPartitionLocation {
         this.replicas.add(replica);
     }
 
-    /*
-     * Get replica according to route strategy.
+    /**
+     * Select a replica without excluding endpoints from previous attempts.
      *
-     * @param route
-     * @return
+     * @param consistencyLevel read consistency; null means strong read
+     * @param routePolicy replica preference for weak reads
+     * @return selected replica, or null if no replica can be selected
+     * @throws IllegalArgumentException if FOLLOWER_ONLY has no valid follower
      */
     public ReplicaLocation getReplica(ObReadConsistency consistencyLevel,
                                       ObRoutePolicy routePolicy) throws IllegalArgumentException {
-        // strong read : read leader
+        return getReplica(consistencyLevel, routePolicy, null);
+    }
+
+    /**
+     * Strong reads select the leader. Weak reads prefer valid, unfailed followers,
+     * then allow an unfailed leader unless the policy is FOLLOWER_ONLY.
+     * If no candidate remains, retry once without the failure filter under the same policy.
+     *
+     * @param consistencyLevel read consistency; null means strong read
+     * @param routePolicy replica preference for weak reads
+     * @param failedServers endpoints in IP:RPC-port form; null or empty disables filtering;
+     *                      the set is not modified
+     * @return selected replica, or null if no replica can be selected
+     * @throws IllegalArgumentException if FOLLOWER_ONLY has no valid follower
+     */
+    public ReplicaLocation getReplica(ObReadConsistency consistencyLevel,
+                                      ObRoutePolicy routePolicy, Set<String> failedServers) {
+        // Strong reads must stay on the leader, even if it previously failed.
         if (consistencyLevel == null || consistencyLevel == ObReadConsistency.STRONG) {
             return leader;
         }
-
-        // empty means not idc route
-        if (sameIdc.isEmpty() && sameRegion.isEmpty() && otherRegion.isEmpty()) {
-            return getReadReplicaNoLdc(routePolicy);
+        ReplicaLocation replica = sameIdc.isEmpty() && sameRegion.isEmpty() && otherRegion.isEmpty()
+            ? getRandomFollowerFromList(replicas, failedServers)
+            : getReadReplicaByRoutePolicy(failedServers);
+        if (replica != null) {
+            return replica;
         }
-
-        return getReadReplicaByRoutePolicy(routePolicy);
-    }
-
-    private ReplicaLocation getReadReplicaNoLdc(ObRoutePolicy routePolicy) {
-        ReplicaLocation follower = getRandomFollowerFromList(replicas);
-        if (follower != null) {
-            return follower;
+        if (routePolicy != ObRoutePolicy.FOLLOWER_ONLY && leader != null
+            && !isFailed(leader, failedServers)) {
+            return leader;
+        }
+        // No unfailed candidate remains: ignore the filter once to allow recovery.
+        if (failedServers != null && !failedServers.isEmpty()) {
+            return getReplica(consistencyLevel, routePolicy, null);
         }
         if (routePolicy == ObRoutePolicy.FOLLOWER_ONLY) {
             throw new IllegalArgumentException("No follower replica found for route policy: "
@@ -102,55 +122,46 @@ public class ObPartitionLocation {
         return leader;
     }
 
-    private ReplicaLocation getReadReplicaByRoutePolicy(ObRoutePolicy routePolicy)
-                                                                                  throws IllegalArgumentException {
-        // 路由策略优先：FOLLOWER_FIRST 优先选择 follower，FOLLOWER_ONLY 只能选择 follower
-        // 在满足路由策略的前提下，按就近原则选择（同机房 -> 同 region -> 其他 region）
+    /**
+     * Select an unfailed follower by locality: same IDC, same region, then other regions.
+     * Route-policy checks and leader fallback are handled by getReplica.
+     *
+     * @param failedServers endpoints in IP:RPC-port form; null or empty disables filtering
+     * @return selected follower, or null if no valid, unfailed follower is available
+     */
+    private ReplicaLocation getReadReplicaByRoutePolicy(Set<String> failedServers) {
+        ReplicaLocation follower = getRandomFollowerFromList(sameIdc, failedServers);
+        if (follower == null) {
+            follower = getRandomFollowerFromList(sameRegion, failedServers);
+        }
+        if (follower == null) {
+            follower = getRandomFollowerFromList(otherRegion, failedServers);
+        }
+        return follower;
+    }
 
-        // 优先在同机房找 follower（随机选择以避免热点）
-        ReplicaLocation follower = getRandomFollowerFromList(sameIdc);
-        if (follower != null) {
-            return follower;
-        }
-        
-        // 如果同机房没有 follower，在同 region 找 follower（随机选择以避免热点）
-        follower = getRandomFollowerFromList(sameRegion);
-        if (follower != null) {
-            return follower;
-        }
-        
-        // 如果同 region 没有 follower，在其他 region 找 follower（随机选择以避免热点）
-        follower = getRandomFollowerFromList(otherRegion);
-        if (follower != null) {
-            return follower;
-        }
-        
-        // 如果都没有找到 follower
-        if (routePolicy == ObRoutePolicy.FOLLOWER_ONLY) {
-            // FOLLOWER_ONLY 必须选择 follower，没有就抛出异常
-            throw new IllegalArgumentException("No follower replica found for route policy: "
-                                                + routePolicy);
-        }
-
-        // 如果都没有找到，返回 leader（兜底）
-        return leader;
+    private boolean isFailed(ReplicaLocation replica, Set<String> failedServers) {
+        return replica != null && failedServers != null
+               && failedServers.contains(replica.getIp() + ":" + replica.getSvrPort());
     }
 
     /**
-     * 从列表中随机选择一个有效的 follower，避免热点问题
+     * 从列表中随机选择一个有效且未被失败集合排除的 follower，避免热点问题
      *
      * @param locations replica 列表
-     * @return 随机选择的 follower，如果没有有效的 follower 则返回 null
+     * @param failedServers IP:RPC端口形式的失败端点；null 或空集合表示不排除
+     * @return 随机选择的 follower；没有满足条件的 follower 时返回 null
      */
-    private ReplicaLocation getRandomFollowerFromList(List<ReplicaLocation> locations) {
+    private ReplicaLocation getRandomFollowerFromList(List<ReplicaLocation> locations,
+                                                        Set<String> failedServers) {
         if (locations == null || locations.isEmpty()) {
             return null;
         }
         
-        // 收集所有有效的 follower
+        // 收集所有有效且未被失败集合排除的 follower
         List<ReplicaLocation> validFollowers = new ArrayList<>();
         for (ReplicaLocation r : locations) {
-            if (r.isValid() && !r.isLeader()) {
+            if (r.isValid() && !r.isLeader() && !isFailed(r, failedServers)) {
                 validFollowers.add(r);
             }
         }

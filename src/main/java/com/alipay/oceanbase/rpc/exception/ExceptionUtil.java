@@ -91,6 +91,10 @@ public class ExceptionUtil {
                     + "]" + "[" + resultCodes.name() + "]" + "["
                     + errMsg + "]" + "[" + server + "]" + "["
                     + trace + "]", resultCodes.errorCode);
+        } else if (resultCodes.errorCode == OB_REPLICA_NOT_READABLE.errorCode) {
+            return new ObTableReplicaNotReadableException("[" + resultCodes.errorCode + "]"
+                    + "[" + resultCodes.name() + "]" + "[" + errMsg + "]"
+                    + "[" + server + "]" + "[" + trace + "]", resultCodes.errorCode);
         } else {
             // [errCode][errCodeName][errMsg][server][trace]
             return new ObTableException("[" + String.valueOf(resultCodes.errorCode) + "]" + "["
