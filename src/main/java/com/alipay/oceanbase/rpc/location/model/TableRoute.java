@@ -23,6 +23,7 @@ import com.alipay.oceanbase.rpc.exception.*;
 import com.alipay.oceanbase.rpc.location.LocationUtil;
 import com.alipay.oceanbase.rpc.location.model.partition.*;
 import com.alipay.oceanbase.rpc.mutation.Row;
+import com.alipay.oceanbase.rpc.protocol.payload.ResultCodes;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObObj;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.ObRowKey;
 import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObReadConsistency;
@@ -536,19 +537,38 @@ public class TableRoute {
     /*------------------------------------------------------------------------Single Operation Routing------------------------------------------------------------------------*/
 
     /**
-     * get global index table name by the index and the table name
+     * Resolve the routing table for an index. If index metadata is missing, refresh
+     * the data-table identity and retry once with the reconstructed index name.
      * */
     public String getIndexTableName(final String tableName, final String indexName,
                                     List<String> scanRangeColumns, boolean forceRefreshIndexInfo)
                                                                                                  throws Exception {
         String indexTableName = tableName;
         if (indexName != null && !indexName.isEmpty() && !indexName.equalsIgnoreCase("PRIMARY")) {
-            String tmpTableName = constructIndexTableName(tableName, indexName);
-            if (tmpTableName == null) {
-                throw new ObTableException("index table name is null");
+            TableEntry dataEntry = getTableEntry(tableName);
+            String tmpTableName = constructIndexTableName(tableName, indexName, dataEntry);
+            ObIndexInfo indexInfo;
+            try {
+                indexInfo = indexLocations.getOrRefreshIndexInfo(tmpTableName,
+                    forceRefreshIndexInfo, serverRoster, sysUA);
+            } catch (ObTableEntryRefreshException e) {
+                if (e.getErrorCode() != ResultCodes.OB_WRONG_NAME_FOR_INDEX.errorCode) {
+                    throw e;
+                }
+                // Keep the cached entry available until a complete replacement is ready.
+                TableEntry currentEntry = tableLocations.refreshMeta(tableName, serverRoster,
+                    sysUA, dataEntry);
+                String currentIndexName = constructIndexTableName(tableName, indexName, currentEntry);
+                logger.warn("Index metadata missing; refresh data-table identity and retry once, "
+                            + "tableName: {}, indexName: {}, oldTableId: {}, newTableId: {}, "
+                            + "oldIndexTableName: {}, newIndexTableName: {}, errorCode: {}",
+                    tableName, indexName, dataEntry == null ? null : dataEntry.getTableId(),
+                    currentEntry == null ? null : currentEntry.getTableId(),
+                    tmpTableName, currentIndexName, e.getErrorCode());
+                tmpTableName = currentIndexName;
+                indexInfo = indexLocations.getOrRefreshIndexInfo(tmpTableName, true,
+                    serverRoster, sysUA);
             }
-            ObIndexInfo indexInfo = indexLocations.getOrRefreshIndexInfo(tmpTableName,
-                forceRefreshIndexInfo, serverRoster, sysUA);
             if (indexInfo == null) {
                 throw new ObTableException("index info is null, indexTableName:" + tmpTableName);
             }
@@ -567,10 +587,13 @@ public class TableRoute {
         return indexTableName;
     }
 
-    private String constructIndexTableName(String tableName, String indexName) throws Exception {
-        // construct index table name
-        TableEntry entry = getTableEntry(tableName);
-        Long dataTableId = null;
+    /**
+     * Construct the index name from the captured data-table entry, without reading
+     * the cache again. Retain the remote-ID fallback if no entry is available.
+     */
+    private String constructIndexTableName(String tableName, String indexName, TableEntry entry)
+                                                                                              throws Exception {
+        Long dataTableId;
         try {
             if (entry == null) {
                 ObServerAddr addr = serverRoster.getServer(tableClient
@@ -756,13 +779,29 @@ public class TableRoute {
     public ObTableParam getTableParam(String tableName, Row rowkey,
                                       ObReadConsistency currentConsistencyLevel)
                                                                                       throws Exception {
+        return getTableParam(tableName, rowkey, currentConsistencyLevel, null);
+    }
+
+    /**
+     * Route a row key while passing request-local failed endpoints to replica selection.
+     *
+     * @param tableName table to access
+     * @param rowkey row key or partition key names and values
+     * @param currentConsistencyLevel read consistency; null uses the client setting
+     * @param failedServers endpoints in IP:RPC-port form; null or empty disables filtering
+     * @return table information for execution
+     * @throws Exception if metadata loading or routing fails
+     */
+    public ObTableParam getTableParam(String tableName, Row rowkey,
+                                      ObReadConsistency currentConsistencyLevel,
+                                      Set<String> failedServers) throws Exception {
         TableEntry tableEntry = getTableEntry(tableName);
         if (tableEntry == null) {
             logger.error("tableEntry is null, tableName: {}", tableName);
             throw new ObTableEntryRefreshException("tableEntry is null, tableName: " + tableName);
         }
         long partId = getPartId(tableEntry, rowkey);
-        return getTableInternal(tableName, tableEntry, partId, currentConsistencyLevel);
+        return getTableInternal(tableName, tableEntry, partId, currentConsistencyLevel, failedServers);
     }
 
     /**
@@ -874,7 +913,7 @@ public class TableRoute {
     /**
      * get addr by partId
      * @param tableName table want to get
-     * @param partId tabletId of table (real tablet id in 4.x)
+     * @param partId logical partition id used to resolve the tablet id
      * @param currentConsistencyLevel current consistency level
      * @return ObTableParam table information for execution
      * @throws Exception exception
@@ -882,9 +921,24 @@ public class TableRoute {
     public ObTableParam getTableWithPartId(String tableName, long partId,
                                            ObReadConsistency currentConsistencyLevel)
                                                                                            throws Exception {
-        // route parameter is kept for backward compatibility but not used
+        return getTableWithPartId(tableName, partId, currentConsistencyLevel, null);
+    }
+
+    /**
+     * Route a partition while passing request-local failed endpoints to replica selection.
+     *
+     * @param tableName table to access
+     * @param partId logical partition id used to resolve the tablet id
+     * @param currentConsistencyLevel read consistency; null uses the client setting
+     * @param failedServers endpoints in IP:RPC-port form; null or empty disables filtering
+     * @return table information for execution
+     * @throws Exception if metadata loading or routing fails
+     */
+    public ObTableParam getTableWithPartId(String tableName, long partId,
+                                           ObReadConsistency currentConsistencyLevel,
+                                           Set<String> failedServers) throws Exception {
         TableEntry tableEntry = getTableEntry(tableName);
-        return getTableInternal(tableName, tableEntry, partId, currentConsistencyLevel);
+        return getTableInternal(tableName, tableEntry, partId, currentConsistencyLevel, failedServers);
     }
 
     /**
@@ -899,6 +953,16 @@ public class TableRoute {
     private ObTableParam getTableInternal(String tableName, TableEntry tableEntry, long partId,
                                           ObReadConsistency currentConsistencyLevel)
                                                                                           throws Exception {
+        return getTableInternal(tableName, tableEntry, partId, currentConsistencyLevel, null);
+    }
+
+    /**
+     * Preserve failed-endpoint filtering when selecting a replica again after a roster refresh.
+     * Leader fallback and exhausted-candidate recovery follow the configured route policy.
+     */
+    private ObTableParam getTableInternal(String tableName, TableEntry tableEntry, long partId,
+                                          ObReadConsistency currentConsistencyLevel,
+                                          Set<String> failedServers) throws Exception {
         ReplicaLocation replica = null;
         long tabletId = getTabletIdByPartId(tableEntry, partId);
         ObPartitionLocationInfo obPartitionLocationInfo = null;
@@ -908,11 +972,10 @@ public class TableRoute {
                 "partition location is null after refresh, table: { " + tableName
                         + " } may not exist");
         }
-        replica = getPartitionLocation(obPartitionLocationInfo, currentConsistencyLevel);
-        /**
-         * Normally, getOrRefreshPartitionInfo makes sure that a thread only continues if it finds the leader
-         * during a route refresh. But sometimes, there might not be a leader yet. In this case, the thread
-         * is released, and since it can't get the replica, it throws a no master exception.
+        replica = getPartitionLocation(obPartitionLocationInfo, currentConsistencyLevel, failedServers);
+        /*
+         * Weak reads may select a follower even when the leader is unknown.
+         * Report no master only if replica selection also failed; check for null before use.
          */
         if (replica == null && obPartitionLocationInfo.getPartitionLocation().getLeader() == null) {
             RUNTIME.error(LCD.convert("01-00028"), tableEntry.getPartitionEntry(), tableEntry);
@@ -944,7 +1007,7 @@ public class TableRoute {
             // and used the old location
             tableEntry = refreshPartitionLocation(tableName, tabletId, tableEntry);
             obPartitionLocationInfo = getOrRefreshPartitionInfo(tableEntry, tableName, tabletId);
-            replica = getPartitionLocation(obPartitionLocationInfo, currentConsistencyLevel);
+            replica = getPartitionLocation(obPartitionLocationInfo, currentConsistencyLevel, failedServers);
 
             if (replica == null) {
                 RUNTIME.error("Cannot get replica by tabletId: " + tabletId);
@@ -967,13 +1030,23 @@ public class TableRoute {
     private ReplicaLocation getPartitionLocation(ObPartitionLocationInfo locationInfo,
                                                  ObReadConsistency currentConsistencyLevel)
                                                                                                  throws ObTableException {
+        return getPartitionLocation(locationInfo, currentConsistencyLevel, null);
+    }
+
+    /**
+     * Apply the request consistency (or client default), route policy and failed endpoints.
+     * The failure set is read-only here; getReplica handles policy-preserving fallback.
+     */
+    private ReplicaLocation getPartitionLocation(ObPartitionLocationInfo locationInfo,
+                                                 ObReadConsistency currentConsistencyLevel,
+                                                 Set<String> failedServers) {
         ObPartitionLocation partitionLocation = locationInfo.getPartitionLocation();
         ObReadConsistency level = currentConsistencyLevel;
         // when currentConsistencyLevel is null, we use global consistencyLevel
         if (level == null) {
             level = this.consistencyLevel;
         }
-        return partitionLocation.getReplica(level, routePolicy);
+        return partitionLocation.getReplica(level, routePolicy, failedServers);
     }
 
     private ObTableParam createTableParam(ObTable obTable, TableEntry tableEntry,

@@ -1270,7 +1270,9 @@ public class LocationUtil {
                 indexInfo.setIndexTableId(rs.getLong("table_id"));
                 indexInfo.setIndexType(ObIndexType.valueOf(rs.getInt("index_type")));
             } else {
-                throw new ObTableEntryRefreshException("[-5224][OB_WRONG_NAME_FOR_INDEX] index name is wrong");
+                throw new ObTableEntryRefreshException(
+                    "[-5224][OB_WRONG_NAME_FOR_INDEX] index name is wrong",
+                    ResultCodes.OB_WRONG_NAME_FOR_INDEX.errorCode);
             }
         } catch (SQLException e) {
             // cannot execute sql, maybe some of the observers have been killed

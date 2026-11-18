@@ -28,6 +28,24 @@ import static com.alipay.oceanbase.rpc.protocol.payload.ResultCodes.*;
 
 public class ExceptionUtilTest {
     @Test
+    public void testReplicaNotReadableMapping() {
+        ObTableException error = ExceptionUtil.convertToObTableException("127.0.0.1", 7002,
+            1L, 1L, OB_REPLICA_NOT_READABLE.errorCode, "replica not readable");
+        Assert.assertTrue(error instanceof ObTableReplicaNotReadableException);
+        Assert.assertEquals(-6231, error.getErrorCode());
+        Assert.assertEquals("[-6231][OB_REPLICA_NOT_READABLE][replica not readable]"
+                            + "[127.0.0.1:7002][Y1-0000000000000001]", error.getMessage());
+        Assert.assertFalse(error.isNeedRetryError());
+        Assert.assertFalse(error.isNeedRefreshTableEntry());
+        try {
+            ExceptionUtil.throwObTableException("127.0.0.1", 7002, 1L, 1L, -6231, "");
+            Assert.fail("expected replica exception");
+        } catch (ObTableReplicaNotReadableException expected) {
+            Assert.assertEquals(-6231, expected.getErrorCode());
+        }
+    }
+
+    @Test
     public void testThrowException() {
         try {
             ExceptionUtil.throwObTableException("0.0.0.0", 0, 0L, 0L, -4001, "");
