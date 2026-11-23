@@ -2487,33 +2487,44 @@ public class LocationUtil {
 
     public static void parseObVerionFromLogin(String serverVersion)
                                                                    throws FeatureNotSupportedException {
+        if (ObGlobal.OB_VERSION != 0) {
+            return;
+        }
+        if (serverVersion == null) {
+            throw new FeatureNotSupportedException("Failed to get server version from login result");
+        }
         // Compatible examples:
         // 1) OceanBase 4.0.0.0 + Obproxy 4.3.6.0
         // 2) OceanBase_CE 4.0.0.0 + Obproxy 4.3.6.0
         // 3) OceanBase Database AI 4.6.1.0 + Obproxy 4.4.0.0
+        // 4) OceanSeek 4.6.3.0 + Obproxy 4.4.2.0
         Pattern obVersionPattern = Pattern
-            .compile("(?i)OceanBase[^\\d]*v?(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)");
+            .compile("(?i)\\b(?:OceanBase|OceanSeek)[^\\d+]*v?(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)");
         Matcher obMatcher = obVersionPattern.matcher(serverVersion);
-        if (obMatcher.find() && ObGlobal.OB_VERSION == 0) {
-            ObGlobal.OB_VERSION = ObGlobal.calcVersion(Integer.parseInt(obMatcher.group(1)),
-                (short) Integer.parseInt(obMatcher.group(2)),
-                (byte) Integer.parseInt(obMatcher.group(3)),
-                (byte) Integer.parseInt(obMatcher.group(4)));
-
-            Pattern obProxyVersionPattern = Pattern
-                .compile("(?i)\\bObproxy\\s+v?(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)");
-            Matcher obProxyMatcher = obProxyVersionPattern.matcher(serverVersion);
-            if (obProxyMatcher.find()) {
-                ObGlobal.OB_PROXY_VERSION = ObGlobal.calcVersion(
-                    Integer.parseInt(obProxyMatcher.group(1)),
-                    (short) Integer.parseInt(obProxyMatcher.group(2)),
-                    (byte) Integer.parseInt(obProxyMatcher.group(3)),
-                    (byte) Integer.parseInt(obProxyMatcher.group(4)));
-            }
-            if (ObGlobal.obVsnMajor() < 4) {
-                throw new FeatureNotSupportedException(
-                    "The current client version supports only server version greater than or equal to 4.0.0.0");
-            }
+        if (!obMatcher.find()) {
+            throw new FeatureNotSupportedException(
+                "Failed to parse server version from login result: " + serverVersion);
         }
+        long obVersion = ObGlobal.calcVersion(Integer.parseInt(obMatcher.group(1)),
+            (short) Integer.parseInt(obMatcher.group(2)),
+            (byte) Integer.parseInt(obMatcher.group(3)),
+            (byte) Integer.parseInt(obMatcher.group(4)));
+        if (ObGlobal.getObVsnMajor(obVersion) < 4) {
+            throw new FeatureNotSupportedException(
+                "The current client version supports only server version greater than or equal to 4.0.0.0");
+        }
+
+        Pattern obProxyVersionPattern = Pattern
+            .compile("(?i)\\bObproxy\\s+v?(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)");
+        Matcher obProxyMatcher = obProxyVersionPattern.matcher(serverVersion);
+        long obProxyVersion = ObGlobal.OB_PROXY_VERSION;
+        if (obProxyMatcher.find()) {
+            obProxyVersion = ObGlobal.calcVersion(Integer.parseInt(obProxyMatcher.group(1)),
+                (short) Integer.parseInt(obProxyMatcher.group(2)),
+                (byte) Integer.parseInt(obProxyMatcher.group(3)),
+                (byte) Integer.parseInt(obProxyMatcher.group(4)));
+        }
+        ObGlobal.OB_PROXY_VERSION = obProxyVersion;
+        ObGlobal.OB_VERSION = obVersion;
     }
 }
