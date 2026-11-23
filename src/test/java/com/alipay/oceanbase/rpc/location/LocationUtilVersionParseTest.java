@@ -19,10 +19,15 @@ package com.alipay.oceanbase.rpc.location;
 
 import com.alipay.oceanbase.rpc.ObGlobal;
 import com.alipay.oceanbase.rpc.exception.FeatureNotSupportedException;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableBatchOperation;
+import com.alipay.oceanbase.rpc.protocol.payload.impl.execute.ObTableBatchOperationRequest;
+import com.alipay.oceanbase.rpc.util.ObBytesString;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.nio.ByteBuffer;
 
 public class LocationUtilVersionParseTest {
 
@@ -105,6 +110,43 @@ public class LocationUtilVersionParseTest {
             ObGlobal.OB_VERSION);
         Assert.assertEquals(ObGlobal.calcVersion(4, (short) 4, (byte) 0, (byte) 0),
             ObGlobal.OB_PROXY_VERSION);
+    }
+
+    @Test
+    public void testParseOceanSeekVersionWithObproxy() {
+        LocationUtil.parseObVerionFromLogin("OceanSeek 4.6.3.0 + Obproxy 4.4.2.0");
+
+        Assert.assertEquals(ObGlobal.calcVersion(4, (short) 6, (byte) 3, (byte) 0),
+            ObGlobal.OB_VERSION);
+        Assert.assertEquals(ObGlobal.calcVersion(4, (short) 4, (byte) 2, (byte) 0),
+            ObGlobal.OB_PROXY_VERSION);
+    }
+
+    @Test
+    public void testRejectUnrecognizedLoginVersions() {
+        for (String serverVersion : new String[] { null, "", "UnknownServer 4.6.3.0",
+                "NotOceanBase 4.6.3.0",
+                "OceanSeek 4.6.3 + Obproxy 4.4.2.0" }) {
+            Assert.assertThrows(FeatureNotSupportedException.class,
+                () -> LocationUtil.parseObVerionFromLogin(serverVersion));
+            Assert.assertEquals(0, ObGlobal.OB_VERSION);
+            Assert.assertEquals(0, ObGlobal.OB_PROXY_VERSION);
+        }
+    }
+
+    @Test
+    public void testOceanSeekBatchUsesFixedWidthTabletId() {
+        LocationUtil.parseObVerionFromLogin("OceanSeek 4.6.3.0 + Obproxy 4.4.2.0");
+
+        ObTableBatchOperationRequest request = new ObTableBatchOperationRequest();
+        request.setCredential(new ObBytesString("credential".getBytes()));
+        request.setTableName("test");
+        request.setPartitionId(1);
+        request.setBatchOperation(new ObTableBatchOperation());
+        byte[] encoded = request.encode();
+
+        // The tablet ID occupies eight bytes before the atomic flag.
+        Assert.assertEquals(1L, ByteBuffer.wrap(encoded, encoded.length - 9, 8).getLong());
     }
 
 }
